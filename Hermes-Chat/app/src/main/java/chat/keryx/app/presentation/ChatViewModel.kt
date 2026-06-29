@@ -9,6 +9,7 @@ import chat.keryx.app.domain.model.SenderType
 import chat.keryx.app.domain.model.Session
 import chat.keryx.app.domain.repository.ChatRepository
 import chat.keryx.app.domain.repository.SettingsRepository
+import chat.keryx.app.presentation.ui.components.MessageParser
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,9 +39,13 @@ class ChatViewModel(
     companion object {
         private const val INITIAL_LIMIT = 50
         private const val PAGE = 50
-        // How long after the agent's last activity to keep the "working" animation up. Short enough
-        // that it doesn't linger once the reply has landed, long enough to bridge thinking/tool gaps.
-        private const val QUIET_MS = 2_500L
+        // How long after the agent's last activity to keep the "working" animation up. Adaptive:
+        // while the agent is mid-run (last thing we saw was a tool call or pure reasoning, so more is
+        // coming) we wait LONG — long enough to bridge a slow terminal command without the animation
+        // vanishing between steps. Once a real prose answer lands we settle quickly (SHORT) so it
+        // doesn't linger. This is what keeps the waiting animation alive across a whole multi-tool run.
+        private const val QUIET_LONG_MS = 30_000L
+        private const val QUIET_SHORT_MS = 2_500L
         // Absolute cap if the agent never responds at all.
         private const val NO_REPLY_MS = 120_000L
     }
@@ -148,6 +153,16 @@ class ChatViewModel(
     val awaitingReply: StateFlow<Boolean> = _awaitingReply.asStateFlow()
     private var quietJob: Job? = null
 
+    // When the current "working" stretch began (elapsed clock for the top status counter); null when
+    // idle. Set when we start awaiting and cleared when the animation goes quiet.
+    private val _workStartedAt = MutableStateFlow<Long?>(null)
+    val workStartedAt: StateFlow<Long?> = _workStartedAt.asStateFlow()
+
+    // A short label of what the agent is currently doing, for the top counter ("Reasoning",
+    // "Running terminal", …). Derived from the latest agent message.
+    private val _workLabel = MutableStateFlow("Working")
+    val workLabel: StateFlow<String> = _workLabel.asStateFlow()
+
     // One-shot text to drop into the composer (e.g. from the Steer quick-action).
     private val _composerPrefill = MutableStateFlow<String?>(null)
     val composerPrefill: StateFlow<String?> = _composerPrefill.asStateFlow()
@@ -157,13 +172,42 @@ class ChatViewModel(
         quietJob = viewModelScope.launch {
             delay(delayMs)
             _awaitingReply.value = false
+            _workStartedAt.value = null
         }
     }
+
+    /** Pick the quiet window from the agent's latest message, and update the "what it's doing" label.
+     *  Mid-run (a tool call, or pure reasoning → more is coming) waits long; a real answer settles fast. */
+    private fun updateWorkStateFrom(last: Message): Long {
+        val segs = MessageParser.parse(last.content)
+        val tools = segs.filterIsInstance<MessageParser.Segment.Tools>().flatMap { it.calls }
+        val hasReasoning = segs.any { it is MessageParser.Segment.Thinking }
+        val hasAnswer = segs.any { it is MessageParser.Segment.Text && (it as MessageParser.Segment.Text).text.isNotBlank() }
+        _workLabel.value = when {
+            tools.isNotEmpty() -> "Running ${tools.last().name}"
+            hasReasoning && !hasAnswer -> "Reasoning"
+            else -> "Working"
+        }
+        return if (tools.isNotEmpty() || !hasAnswer) QUIET_LONG_MS else QUIET_SHORT_MS
+    }
+
+    // A room the user asked to open (e.g. by tapping a notification) before the room list loaded.
+    private var pendingOpenRoomId: String? = null
 
     init {
         viewModelScope.launch {
             repository.getRooms().collectLatest { roomList ->
                 _rooms.value = roomList
+                // A pending notification-tap target takes priority once its room is available.
+                val pending = pendingOpenRoomId
+                if (pending != null) {
+                    val room = roomList.firstOrNull { it.id == pending }
+                    if (room != null) {
+                        pendingOpenRoomId = null
+                        selectSession(Session(room.id, room.id, room.name, 0L))
+                        return@collectLatest
+                    }
+                }
                 // Restore the last open conversation once rooms are available.
                 if (_currentSession.value == null) {
                     val lastId = settingsRepository.lastRoomId
@@ -175,10 +219,11 @@ class ChatViewModel(
         viewModelScope.launch {
             messages.collect { msgs ->
                 // Each agent edit (thinking -> tool -> text via m.replace) re-emits here; keep the
-                // animation alive and push the "quiet" timeout back, so it persists across phases.
+                // animation alive and push the "quiet" timeout back with an adaptive window, so it
+                // persists across thinking/tool phases and only settles once the answer lands.
                 val last = msgs.lastOrNull()
                 if (_awaitingReply.value && last != null && last.sender != SenderType.ME) {
-                    scheduleClearAwaiting(QUIET_MS)
+                    scheduleClearAwaiting(updateWorkStateFrom(last))
                 }
             }
         }
@@ -186,6 +231,13 @@ class ChatViewModel(
 
     fun prefillComposer(text: String) { _composerPrefill.value = text }
     fun consumeComposerPrefill() { _composerPrefill.value = null }
+
+    /** Open a room by id (from a notification tap). Defers until the room list is loaded if needed. */
+    fun openRoomById(roomId: String) {
+        val room = _rooms.value.firstOrNull { it.id == roomId }
+        if (room != null) selectSession(Session(room.id, room.id, room.name, 0L))
+        else pendingOpenRoomId = roomId
+    }
 
     fun selectSession(session: Session) {
         _currentSession.value = session
@@ -195,6 +247,7 @@ class ChatViewModel(
         _replyTarget.value = null
         quietJob?.cancel()
         _awaitingReply.value = false
+        _workStartedAt.value = null
         settingsRepository.lastRoomId = session.id
     }
 
@@ -371,6 +424,8 @@ class ChatViewModel(
         val session = _currentSession.value ?: return
         val replyTo = _replyTarget.value
         _awaitingReply.value = true
+        _workStartedAt.value = System.currentTimeMillis()
+        _workLabel.value = "Working"
         // Clear if the agent never responds at all; agent activity resets this to a shorter quiet timeout.
         scheduleClearAwaiting(NO_REPLY_MS)
         viewModelScope.launch {

@@ -87,6 +87,8 @@ fun ChatScreen(
     val bubbleStyle by viewModel.bubbleStyle.collectAsState()
     val messageTextScale by viewModel.messageTextScale.collectAsState()
     val awaitingReply by viewModel.awaitingReply.collectAsState()
+    val workStartedAt by viewModel.workStartedAt.collectAsState()
+    val workLabel by viewModel.workLabel.collectAsState()
     val replyTarget by viewModel.replyTarget.collectAsState()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -306,6 +308,58 @@ fun ChatScreen(
                 onFocusedAtBottom = { scope.launch { listState.animateScrollToItem(0) } },
                 focusRequester = focusRequester,
             )
+        }
+
+        // Compact top "working" counter: a small spinner + what the agent is doing + elapsed clock.
+        // Pinned at the top so it stays put for the whole run, unlike the per-message tool labels.
+        WorkingStatusBar(
+            visible = awaitingReply,
+            label = workLabel,
+            startedAt = workStartedAt,
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 6.dp),
+        )
+    }
+}
+
+@Composable
+private fun WorkingStatusBar(
+    visible: Boolean,
+    label: String,
+    startedAt: Long?,
+    modifier: Modifier = Modifier,
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn() + slideInVertically(initialOffsetY = { -it }),
+        exit = fadeOut() + slideOutVertically(targetOffsetY = { -it }),
+        modifier = modifier,
+    ) {
+        var now by remember { mutableStateOf(System.currentTimeMillis()) }
+        LaunchedEffect(startedAt) {
+            while (true) { now = System.currentTimeMillis(); kotlinx.coroutines.delay(1000) }
+        }
+        val elapsed = startedAt?.let { ((now - it).coerceAtLeast(0L)) / 1000 } ?: 0L
+        val clock = "${elapsed / 60}:${"%02d".format(elapsed % 60)}"
+        val accent = MaterialTheme.colorScheme.primary
+        Surface(
+            shape = RoundedCornerShape(50),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+            shadowElevation = 6.dp,
+            modifier = Modifier.border(1.dp, accent.copy(alpha = 0.35f), RoundedCornerShape(50)),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(start = 10.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = accent)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "$label · $clock",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
         }
     }
 }

@@ -1,9 +1,15 @@
 package chat.keryx.app
 
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import chat.keryx.app.notify.KeryxNotifications
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -27,6 +33,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var viewModel: ChatViewModel
+
+    private val notificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* best-effort */ }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -42,12 +54,29 @@ class MainActivity : ComponentActivity() {
         // sync keep running with no persistent notification.
         maybeRequestBatteryExemption(settingsRepository)
 
+        // Ask for notification permission on Android 13+ (no-op on older versions).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+
         val factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return ChatViewModel(repository, settingsRepository) as T
             }
         }
-        val viewModel = ViewModelProvider(this, factory)[ChatViewModel::class.java]
+        viewModel = ViewModelProvider(this, factory)[ChatViewModel::class.java]
+
+        // Keep KeryxApp's "currently open room" in sync so we don't notify for the room on screen,
+        // and clear that room's notification when it's opened.
+        lifecycleScope.launch {
+            viewModel.currentSession.collectLatest { session ->
+                app.openRoomId = session?.id
+                session?.id?.let { KeryxNotifications.clear(applicationContext, it) }
+            }
+        }
+
+        // A notification tap delivers the room id; open it.
+        handleNotificationIntent(intent)
 
         enableEdgeToEdge()
         setContent {
@@ -69,6 +98,19 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleNotificationIntent(intent)
+    }
+
+    /** If launched/resumed from a message notification, open the room it points at. */
+    private fun handleNotificationIntent(intent: Intent?) {
+        val roomId = intent?.getStringExtra(KeryxNotifications.EXTRA_ROOM_ID) ?: return
+        if (::viewModel.isInitialized) viewModel.openRoomById(roomId)
+        KeryxNotifications.clear(applicationContext, roomId)
     }
 
     /** One-time system prompt to whitelist the app from battery optimization (keeps sync alive). */

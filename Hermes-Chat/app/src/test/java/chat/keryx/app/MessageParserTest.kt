@@ -35,6 +35,19 @@ class MessageParserTest {
     }
 
     @Test
+    fun toolArgs_stripWrappingBackticks() {
+        // Hermes often wraps the command in markdown code formatting; the card should show it clean.
+        val single = MessageParser.parse("⚙️ terminal: `ls -la /tmp`")
+            .filterIsInstance<MessageParser.Segment.Tools>().single().calls.single()
+        assertEquals("ls -la /tmp", single.args)
+
+        // But backticks that are part of the command (shell substitution) survive.
+        val inner = MessageParser.parse("⚙️ terminal: \"echo `date`\"")
+            .filterIsInstance<MessageParser.Segment.Tools>().single().calls.single()
+        assertEquals("echo `date`", inner.args)
+    }
+
+    @Test
     fun thinkingLines_groupedIntoOnePane() {
         val content = "🧠 memory: \"User: Jonny\"\n🧠 reasoning about the plan"
         val thinking = MessageParser.parse(content)

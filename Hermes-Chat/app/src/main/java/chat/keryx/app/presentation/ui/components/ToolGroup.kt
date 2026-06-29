@@ -23,9 +23,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -106,6 +109,10 @@ fun ToolCallCard(call: MessageParser.ToolCall, accent: Color, baseColor: Color) 
  * A run of consecutive tool-only Hermes messages, collapsed into one compact bubble. While the
  * agent is still working ([active]) it shows a pulsing "Running N tools…"; once done it settles to
  * "Ran N tools". Tap to expand the individual [ToolCallCard]s with a fluid accordion.
+ *
+ * The expanded body opens with all of the run's reasoning gathered into ONE collapsible block (so a
+ * mid-run "let me correct course" thought no longer fragments the chain), then the tool steps in a
+ * height-bounded scroller that always starts at the top — the first (oldest) tool, not the last.
  */
 @Composable
 fun ToolGroupCard(
@@ -166,25 +173,23 @@ fun ToolGroupCard(
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically(),
         ) {
-            Column(
-                modifier = Modifier.padding(top = 6.dp, start = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                run.entries.forEach { entry ->
-                    when (entry) {
-                        is ToolRunEntry.Call -> ToolCallCard(entry.call, accent, baseColor)
-                        is ToolRunEntry.Note -> when (entry.kind) {
-                            // Reasoning/status between tools: muted italic, like a scratchpad aside.
-                            NoteKind.REASONING -> Text(
-                                text = entry.text,
-                                color = baseColor.copy(alpha = 0.6f),
-                                fontSize = 12.sp,
-                                fontStyle = FontStyle.Italic,
-                                modifier = Modifier.padding(start = 3.dp, top = 1.dp, bottom = 1.dp),
-                            )
+            Column(modifier = Modifier.padding(top = 6.dp, start = 8.dp)) {
+                // One consolidated reasoning block for the whole run, above the steps.
+                run.reasoning?.let { RunReasoning(it, baseColor, accent) }
+                // Tool steps: bounded height + own scroll, so a long run opens at the FIRST tool
+                // (the scroll state starts at the top) instead of jumping to the newest one.
+                Column(
+                    modifier = Modifier
+                        .heightIn(max = 360.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    run.entries.forEach { entry ->
+                        when (entry) {
+                            is ToolRunEntry.Call -> ToolCallCard(entry.call, accent, baseColor)
                             // A tool's own output (terminal stdout, vision result): monospace in a
                             // subtle code surface so it reads as machine output, not prose.
-                            NoteKind.OUTPUT -> Text(
+                            is ToolRunEntry.Note -> Text(
                                 text = entry.text,
                                 color = baseColor.copy(alpha = 0.78f),
                                 fontSize = 12.sp,
@@ -203,16 +208,57 @@ fun ToolGroupCard(
     }
 }
 
+/**
+ * The run's gathered reasoning as one muted, collapsible aside (collapsed by default — it's history).
+ * This is where every "💭"/course-correction thought from the burst lands, so it reads as a single
+ * inner monologue instead of being scattered between the tool steps.
+ */
+@Composable
+private fun RunReasoning(text: String, baseColor: Color, accent: Color) {
+    var open by remember(text) { mutableStateOf(false) }
+    Column(
+        modifier = Modifier
+            .padding(bottom = 8.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(accent.copy(alpha = 0.08f))
+            .border(1.dp, accent.copy(alpha = 0.18f), RoundedCornerShape(10.dp))
+            .clickable { open = !open }
+            .animateContentSize(),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+        ) {
+            Text("💭", fontSize = 12.sp)
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "Reasoning",
+                color = accent.copy(alpha = 0.9f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+            )
+            Text(if (open) "▾" else "▸", color = baseColor.copy(alpha = 0.6f), fontSize = 11.sp)
+        }
+        AnimatedVisibility(visible = open, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+            Text(
+                text = text,
+                color = baseColor.copy(alpha = 0.62f),
+                fontSize = 12.sp,
+                fontStyle = FontStyle.Italic,
+                modifier = Modifier.padding(start = 10.dp, end = 10.dp, bottom = 9.dp),
+            )
+        }
+    }
+}
+
 private fun plural(n: Int) = if (n == 1) "tool" else "tools"
 
-/** Distinguishes a tool's attached output (terminal stdout, vision result → code styling) from
- *  the agent's reasoning/status between tools (→ muted italic). */
-enum class NoteKind { REASONING, OUTPUT }
-
-/** One step inside a collapsed tool run: a tool invocation, or text (reasoning or tool output). */
+/** One step inside a collapsed tool run: a tool invocation, or a tool's own output (stdout, a
+ *  vision result, a table, …). Reasoning is NOT an entry — it's gathered into [ChatRenderItem.ToolRun.reasoning]. */
 sealed interface ToolRunEntry {
     data class Call(val call: MessageParser.ToolCall) : ToolRunEntry
-    data class Note(val text: String, val kind: NoteKind) : ToolRunEntry
+    data class Note(val text: String) : ToolRunEntry
 }
 
 /** One rendered row in the chat list: either a normal message bubble or a collapsed tool run. */
@@ -224,61 +270,78 @@ sealed interface ChatRenderItem {
     }
 
     /**
-     * A working burst — every step from the agent's first tool call to its last, with the
-     * interstitial reasoning/status folded in. [id] is the oldest message id (stable as the run
-     * grows). [entries] are chronological (oldest→newest).
+     * A working burst — every step from the agent's first tool call to its last. [id] is the oldest
+     * message id (stable as the run grows). [entries] are the tool calls + their outputs, in order;
+     * [reasoning] is ALL of the burst's reasoning gathered into one block.
      */
-    data class ToolRun(val id: String, val entries: List<ToolRunEntry>) : ChatRenderItem {
+    data class ToolRun(
+        val id: String,
+        val entries: List<ToolRunEntry>,
+        val reasoning: String?,
+    ) : ChatRenderItem {
         override val key get() = "toolrun:$id"
         val callCount: Int get() = entries.count { it is ToolRunEntry.Call }
     }
 }
 
-/** Flatten a parsed message into run entries, in order: tool calls become [ToolRunEntry.Call],
- *  any attached text/reasoning (e.g. a terminal command + its output, a vision analysis) becomes
- *  [ToolRunEntry.Note] so it travels with the tool instead of breaking out of the group. */
-private fun segmentsToEntries(segs: List<MessageParser.Segment>): List<ToolRunEntry> =
-    segs.flatMap { seg ->
+/** A message's contribution to a run: its tool calls/outputs and any reasoning, kept separate so
+ *  reasoning can be consolidated and never interleaved with the steps. */
+private class MsgParts(val entries: List<ToolRunEntry>, val reasoning: String?)
+
+/** Split a parsed message into (entries, reasoning). Tool calls + tool output → entries; 💭/<think>
+ *  reasoning → reasoning text. */
+private fun segmentsToParts(segs: List<MessageParser.Segment>): MsgParts {
+    val entries = mutableListOf<ToolRunEntry>()
+    val reasoning = StringBuilder()
+    segs.forEach { seg ->
         when (seg) {
-            is MessageParser.Segment.Tools -> seg.calls.map { ToolRunEntry.Call(it) }
-            // Text/tables riding along with a tool message are its output → code styling.
-            is MessageParser.Segment.Text ->
-                if (seg.text.isNotBlank()) listOf(ToolRunEntry.Note(seg.text, NoteKind.OUTPUT)) else emptyList()
-            is MessageParser.Segment.Thinking ->
-                if (seg.text.isNotBlank()) listOf(ToolRunEntry.Note(seg.text, NoteKind.REASONING)) else emptyList()
-            is MessageParser.Segment.Table -> {
-                val text = (listOf(seg.header) + seg.rows).joinToString("\n") { it.joinToString(" | ") }
-                if (text.isNotBlank()) listOf(ToolRunEntry.Note(text, NoteKind.OUTPUT)) else emptyList()
+            is MessageParser.Segment.Tools -> seg.calls.forEach { entries += ToolRunEntry.Call(it) }
+            is MessageParser.Segment.Text -> if (seg.text.isNotBlank()) entries += ToolRunEntry.Note(seg.text)
+            is MessageParser.Segment.Thinking -> if (seg.text.isNotBlank()) {
+                if (reasoning.isNotEmpty()) reasoning.append("\n\n"); reasoning.append(seg.text.trim())
             }
-            // A diagram emitted inside a tool message: keep its source as output text.
-            is MessageParser.Segment.Mermaid ->
-                if (seg.code.isNotBlank()) listOf(ToolRunEntry.Note(seg.code, NoteKind.OUTPUT)) else emptyList()
-            // Citations / skill signals don't occur inside tool messages; ignore if they ever do.
-            is MessageParser.Segment.Citations -> emptyList()
-            is MessageParser.Segment.SkillDistilled -> emptyList()
+            is MessageParser.Segment.Table -> {
+                val t = (listOf(seg.header) + seg.rows).joinToString("\n") { it.joinToString(" | ") }
+                if (t.isNotBlank()) entries += ToolRunEntry.Note(t)
+            }
+            is MessageParser.Segment.Mermaid -> if (seg.code.isNotBlank()) entries += ToolRunEntry.Note(seg.code)
+            is MessageParser.Segment.Citations -> Unit
+            is MessageParser.Segment.SkillDistilled -> Unit
         }
     }
+    return MsgParts(entries, reasoning.toString().ifBlank { null })
+}
 
-/**
- * If [m] is an agent message that *contains* at least one tool call (not mine, not a media
- * message), return its flattened entries — tool calls plus any attached text. Otherwise null.
- * Messages with tools-plus-text (terminal, vision, …) still count, so they stay in the group.
- */
-fun messageEntriesIfTool(m: Message): List<ToolRunEntry>? {
-    if (m.sender == SenderType.ME) return null
-    if (m.mediaKind != null) return null
-    if (m.content.isBlank()) return null
-    val segs = MessageParser.parse(m.content)
-    if (segs.none { it is MessageParser.Segment.Tools }) return null
-    return segmentsToEntries(segs)
+/** True for an agent message that contains at least one tool call (not mine, not a media message). */
+fun isToolMessage(m: Message): Boolean {
+    if (m.sender == SenderType.ME) return false
+    if (m.mediaKind != null) return false
+    if (m.content.isBlank()) return false
+    return MessageParser.parse(m.content).any { it is MessageParser.Segment.Tools }
+}
+
+/** Drop a tool call that is identical (same name + args, glyph ignored) to the previous step — the
+ *  doubled calls that show up when Hermes re-emits a step or sync replays an edit while you switch
+ *  apps. Conservative: only strictly-adjacent duplicates are collapsed, so a genuine re-run that is
+ *  separated by its output survives. */
+private fun dedupAdjacent(entries: List<ToolRunEntry>): List<ToolRunEntry> {
+    val out = mutableListOf<ToolRunEntry>()
+    for (e in entries) {
+        val prev = out.lastOrNull()
+        if (e is ToolRunEntry.Call && prev is ToolRunEntry.Call &&
+            e.call.name == prev.call.name && e.call.args == prev.call.args
+        ) continue
+        out += e
+    }
+    return out
 }
 
 /**
  * Collapse each agent "working burst" into one [ChatRenderItem.ToolRun]. A burst spans from the
- * first tool call to the *last* tool call within a contiguous block of agent messages, folding in
- * the short reasoning/status text Hermes emits *between* tool calls in multi-step flows. Text before
- * the first tool (an intro) and after the last tool (the final answer) stays a normal bubble, so a
- * write→read→delete flow becomes one clean "Ran 3 tools" group instead of fragmenting.
+ * first tool call to the *last* tool call within a contiguous block of agent messages. The reasoning
+ * Hermes emits between tools is gathered into the run's single reasoning block (not interleaved), so
+ * a mid-run "let me correct course" thought no longer fragments the chain. Text before the first
+ * tool (an intro) and after the last tool (the final answer) stays a normal bubble.
  *
  * Works in chronological order internally, then returns newest-first to match the reverseLayout list.
  * A burst with only one tool call passes through as a [ChatRenderItem.Single] (renders inline).
@@ -288,7 +351,7 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
     val out = mutableListOf<ChatRenderItem>()
     var i = 0
     while (i < chrono.size) {
-        if (messageEntriesIfTool(chrono[i]) == null) {
+        if (!isToolMessage(chrono[i])) {
             out += ChatRenderItem.Single(chrono[i])
             i++
             continue
@@ -300,21 +363,34 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
         while (k < chrono.size) {
             val m = chrono[k]
             if (m.sender == SenderType.ME || m.mediaKind != null) break
-            if (messageEntriesIfTool(m) != null) lastTool = k
+            if (isToolMessage(m)) lastTool = k
             k++
         }
-        // Build entries for i..lastTool: each tool message's calls+attached-text, plus any pure
-        // interstitial reasoning/status messages between them.
+        // Build steps + gather reasoning for i..lastTool.
         val entries = mutableListOf<ToolRunEntry>()
+        val reasoning = StringBuilder()
+        fun addReasoning(t: String) { if (t.isNotBlank()) { if (reasoning.isNotEmpty()) reasoning.append("\n\n"); reasoning.append(t.trim()) } }
         for (p in i..lastTool) {
             val m = chrono[p]
-            val te = messageEntriesIfTool(m)
-            if (te != null) entries += te
-            else if (m.content.isNotBlank()) entries += ToolRunEntry.Note(m.content, NoteKind.REASONING)
+            if (isToolMessage(m)) {
+                val parts = segmentsToParts(MessageParser.parse(m.content))
+                entries += parts.entries
+                parts.reasoning?.let { addReasoning(it) }
+            } else if (m.content.isNotBlank()) {
+                // A pure interstitial message between tools: its reasoning (or whole body) joins the
+                // run's reasoning block rather than splitting the chain.
+                val parts = segmentsToParts(MessageParser.parse(m.content))
+                addReasoning(parts.reasoning ?: m.content)
+            }
         }
-        val callCount = entries.count { it is ToolRunEntry.Call }
+        val deduped = dedupAdjacent(entries)
+        val callCount = deduped.count { it is ToolRunEntry.Call }
         if (callCount >= 2) {
-            out += ChatRenderItem.ToolRun(id = chrono[i].id, entries = entries)
+            out += ChatRenderItem.ToolRun(
+                id = chrono[i].id,
+                entries = deduped,
+                reasoning = reasoning.toString().ifBlank { null },
+            )
         } else {
             // Single tool call: render it (and any stray note) as normal bubbles.
             for (p in i..lastTool) out += ChatRenderItem.Single(chrono[p])

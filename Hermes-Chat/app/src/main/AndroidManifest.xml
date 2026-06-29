@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Post message notifications (runtime-requested on Android 13+). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Lets Keryx ask to be exempt from battery optimization so the OS (esp. Samsung's
          aggressive "deep sleep" freezing) doesn't suspend the Matrix sync while backgrounded —
          this is what keeps messages arriving without a persistent foreground-service notification. -->
@@ -18,6 +20,7 @@
         <activity
             android:name=".MainActivity"
             android:windowSoftInputMode="adjustResize"
+            android:launchMode="singleTop"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

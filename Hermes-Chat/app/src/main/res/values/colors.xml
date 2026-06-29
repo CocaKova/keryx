@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Edge colour sampled from KryexIconPicture.png so the adaptive-icon background blends with
+         the full-bleed photographic foreground when the launcher mask crops the corners. -->
+    <color name="ic_launcher_bg">#E0DED9</color>
+</resources>

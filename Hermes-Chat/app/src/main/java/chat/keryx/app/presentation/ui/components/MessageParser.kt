@@ -232,8 +232,23 @@ object MessageParser {
         val (emoji, name, rawArgs) = m.destructured
         // Reject prose: the leading glyph must be a symbol/emoji, not a word.
         if (emoji.first().isLetterOrDigit()) return null
-        val args = rawArgs.trim().trim('"', '“', '”').trim()
-        return ToolCall(emoji = emoji.trimEnd('️'), name = name, args = args)
+        return ToolCall(emoji = emoji.trimEnd('️'), name = name, args = cleanArgs(rawArgs))
+    }
+
+    /**
+     * Tidy a tool's argument string for display: drop the markdown code wrappers Hermes often puts
+     * around a command (a surrounding ``` ``` ``` fence or a single `…` backtick pair) and the quote
+     * marks around a quoted arg. We only peel a *wrapping* layer, so backticks/quotes that are part
+     * of the command itself (e.g. shell `$(…)` substitution, an inner quoted word) are preserved.
+     */
+    private fun cleanArgs(raw: String): String {
+        var s = raw.trim()
+        // Strip a wrapping triple-backtick fence (optionally with a language tag), then collapse a
+        // single wrapping backtick pair; finally peel surrounding straight/smart quotes.
+        Regex("""(?s)^```[a-zA-Z0-9]*\n?(.*?)\n?```$""").matchEntire(s)?.let { s = it.groupValues[1].trim() }
+        if (s.length >= 2 && s.startsWith("`") && s.endsWith("`")) s = s.trim('`').trim()
+        s = s.trim('"', '“', '”').trim()
+        return s
     }
 
     /**
