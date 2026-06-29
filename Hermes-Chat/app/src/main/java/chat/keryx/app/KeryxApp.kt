@@ -65,6 +65,11 @@ class KeryxApp : Application() {
      */
     private fun observeForNotifications() {
         appScope.launch {
+            // Only notify for messages that actually arrive after we start watching. During initial
+            // sync a room's timestamp jumps from empty→its real (historical) value, which otherwise
+            // looks like "new activity" and fires a burst of notifications for OLD messages on launch.
+            val watchStart = System.currentTimeMillis()
+            val historyGrace = 15_000L
             var baseline: Map<String, Long>? = null
             repository.getRooms().collect { rooms ->
                 val current = rooms.associate { it.id to it.timestamp }
@@ -76,14 +81,29 @@ class KeryxApp : Application() {
                 }
                 for (room in rooms) {
                     val before = prev[room.id] ?: 0L
-                    val isNew = room.timestamp > before && room.unreadCount > 0
-                    if (!isNew) continue
-                    // Skip what the user is already reading.
-                    if (isForeground && openRoomId == room.id) continue
+                    // A newer last-event timestamp means new activity in the room. (We don't gate on
+                    // unreadCount — Trixnity's unread accounting proved unreliable here and was
+                    // swallowing every notification.) Own messages + the room you're actively viewing
+                    // are filtered below.
+                    if (room.timestamp <= before) continue
+                    if (isForeground && openRoomId == room.id) {
+                        android.util.Log.i("KeryxNotify", "skip ${room.id}: foreground & open")
+                        continue
+                    }
                     val last = withTimeoutOrNull(4_000L) {
                         repository.getMessages(room.id, 1).first { it.isNotEmpty() }.lastOrNull()
-                    } ?: continue
+                    }
+                    if (last == null) {
+                        android.util.Log.w("KeryxNotify", "no last message resolved for ${room.id}")
+                        continue
+                    }
                     if (last.sender == SenderType.ME) continue
+                    // Skip historical messages surfacing during initial sync settle.
+                    if (last.timestamp < watchStart - historyGrace) {
+                        android.util.Log.i("KeryxNotify", "skip ${room.id}: historical (${last.timestamp} < $watchStart)")
+                        continue
+                    }
+                    android.util.Log.i("KeryxNotify", "new activity in ${room.id} (${room.name}); notifying")
                     KeryxNotifications.notifyMessage(
                         context = applicationContext,
                         roomId = room.id,

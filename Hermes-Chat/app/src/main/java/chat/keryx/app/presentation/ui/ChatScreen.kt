@@ -341,25 +341,19 @@ private fun WorkingStatusBar(
         val elapsed = startedAt?.let { ((now - it).coerceAtLeast(0L)) / 1000 } ?: 0L
         val clock = "${elapsed / 60}:${"%02d".format(elapsed % 60)}"
         val accent = MaterialTheme.colorScheme.primary
-        Surface(
-            shape = RoundedCornerShape(50),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-            shadowElevation = 6.dp,
-            modifier = Modifier.border(1.dp, accent.copy(alpha = 0.35f), RoundedCornerShape(50)),
+        // The banner itself is the cloud: bumpy orbiting edges + a gentle bob, with the label inside.
+        chat.keryx.app.presentation.ui.components.CloudBanner(
+            // Opaque fill so the scalloped edge stays crisp (translucency made the bumps ghost
+            // through each other, which is what read as "circles" in light mode).
+            fill = MaterialTheme.colorScheme.surfaceVariant,
+            border = accent.copy(alpha = 0.85f),
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(start = 10.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
-            ) {
-                CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = accent)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "$label · $clock",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                )
-            }
+            Text(
+                text = "$label · $clock",
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+            )
         }
     }
 }

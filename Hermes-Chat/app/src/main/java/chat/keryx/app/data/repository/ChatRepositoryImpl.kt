@@ -249,6 +249,20 @@ class ChatRepositoryImpl(
         }
     }
 
+    override fun othersTyping(sessionId: String): Flow<Boolean> =
+        matrix.client.flatMapLatest { client ->
+            if (client == null) flowOf(false)
+            else {
+                val roomId = RoomId(sessionId)
+                val myId = client.userId
+                // RoomService.usersTyping is a live map of roomId -> who's typing (m.typing EDU).
+                client.room.usersTyping.map { byRoom ->
+                    byRoom[roomId]?.users?.any { it != myId } == true
+                }
+            }
+        }
+            .catch { emit(false) }
+
     override suspend fun markRead(roomId: String, eventId: String) {
         val client = matrix.client.value ?: return
         runCatching {

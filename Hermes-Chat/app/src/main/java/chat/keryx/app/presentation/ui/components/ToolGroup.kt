@@ -337,65 +337,67 @@ private fun dedupAdjacent(entries: List<ToolRunEntry>): List<ToolRunEntry> {
 }
 
 /**
- * Collapse each agent "working burst" into one [ChatRenderItem.ToolRun]. A burst spans from the
- * first tool call to the *last* tool call within a contiguous block of agent messages. The reasoning
- * Hermes emits between tools is gathered into the run's single reasoning block (not interleaved), so
- * a mid-run "let me correct course" thought no longer fragments the chain. Text before the first
- * tool (an intro) and after the last tool (the final answer) stays a normal bubble.
+ * Collapse each agent turn's "working" into one [ChatRenderItem.ToolRun]. We take a contiguous block
+ * of agent messages (broken only by one of my messages or a media message); if it contains AT LEAST
+ * ONE tool call, everything from the block's start up to its LAST tool call becomes the run — every
+ * tool call + its output as steps, and ALL the surrounding prose (the intro, Hermes' "working…"
+ * status, and internal reasoning, whether before or between the tools) folded into the run's single
+ * reasoning block. Only the message(s) AFTER the last tool — the final answer — stay normal bubbles.
+ *
+ * This is what keeps a single long `terminal` call from fragmenting: previously a one-tool turn
+ * wasn't grouped, so its reasoning + status + tool card "broke free" as separate bubbles. Now even a
+ * one-tool turn is one tidy "Ran 1 tool" group.
  *
  * Works in chronological order internally, then returns newest-first to match the reverseLayout list.
- * A burst with only one tool call passes through as a [ChatRenderItem.Single] (renders inline).
  */
 fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
     val chrono = orderedNewestFirst.asReversed()
     val out = mutableListOf<ChatRenderItem>()
     var i = 0
     while (i < chrono.size) {
-        if (!isToolMessage(chrono[i])) {
-            out += ChatRenderItem.Single(chrono[i])
-            i++
-            continue
+        val start = chrono[i]
+        if (start.sender == SenderType.ME || start.mediaKind != null) {
+            out += ChatRenderItem.Single(start); i++; continue
         }
-        // A tool burst starts here. Find the last tool-bearing message within this contiguous agent
-        // block (broken by any of: a message from me, or a media message).
-        var lastTool = i
-        var k = i
-        while (k < chrono.size) {
-            val m = chrono[k]
+        // Extent of this contiguous agent block (broken by one of my messages or a media message).
+        var blockEnd = i
+        while (blockEnd < chrono.size) {
+            val m = chrono[blockEnd]
             if (m.sender == SenderType.ME || m.mediaKind != null) break
-            if (isToolMessage(m)) lastTool = k
-            k++
+            blockEnd++
         }
-        // Build steps + gather reasoning for i..lastTool.
+        // Last tool-bearing message in the block (exclusive blockEnd).
+        var lastTool = -1
+        for (p in i until blockEnd) if (isToolMessage(chrono[p])) lastTool = p
+        if (lastTool < 0) {
+            // A plain agent reply (no tools): normal bubbles.
+            for (p in i until blockEnd) out += ChatRenderItem.Single(chrono[p])
+            i = blockEnd; continue
+        }
+        // Build steps + gather ALL surrounding prose as reasoning for [i .. lastTool].
         val entries = mutableListOf<ToolRunEntry>()
         val reasoning = StringBuilder()
         fun addReasoning(t: String) { if (t.isNotBlank()) { if (reasoning.isNotEmpty()) reasoning.append("\n\n"); reasoning.append(t.trim()) } }
         for (p in i..lastTool) {
             val m = chrono[p]
+            val parts = segmentsToParts(MessageParser.parse(m.content))
             if (isToolMessage(m)) {
-                val parts = segmentsToParts(MessageParser.parse(m.content))
                 entries += parts.entries
                 parts.reasoning?.let { addReasoning(it) }
-            } else if (m.content.isNotBlank()) {
-                // A pure interstitial message between tools: its reasoning (or whole body) joins the
-                // run's reasoning block rather than splitting the chain.
-                val parts = segmentsToParts(MessageParser.parse(m.content))
+            } else {
+                // Intro / "working…" status / standalone reasoning → into the reasoning block, not a
+                // loose bubble. (Use parsed reasoning if present, else the whole body.)
                 addReasoning(parts.reasoning ?: m.content)
             }
         }
-        val deduped = dedupAdjacent(entries)
-        val callCount = deduped.count { it is ToolRunEntry.Call }
-        if (callCount >= 2) {
-            out += ChatRenderItem.ToolRun(
-                id = chrono[i].id,
-                entries = deduped,
-                reasoning = reasoning.toString().ifBlank { null },
-            )
-        } else {
-            // Single tool call: render it (and any stray note) as normal bubbles.
-            for (p in i..lastTool) out += ChatRenderItem.Single(chrono[p])
-        }
-        i = lastTool + 1
+        out += ChatRenderItem.ToolRun(
+            id = chrono[i].id,
+            entries = dedupAdjacent(entries),
+            reasoning = reasoning.toString().ifBlank { null },
+        )
+        // The final answer (anything after the last tool) stays a normal bubble.
+        for (p in (lastTool + 1) until blockEnd) out += ChatRenderItem.Single(chrono[p])
+        i = blockEnd
     }
     return out.asReversed()
 }

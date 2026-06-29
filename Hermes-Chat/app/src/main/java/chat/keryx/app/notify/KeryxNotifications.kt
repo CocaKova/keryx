@@ -40,7 +40,10 @@ object KeryxNotifications {
     /** Post (or update) a notification for [roomId]; one per room, replaced as newer messages land. */
     fun notifyMessage(context: Context, roomId: String, title: String, body: String) {
         val nm = NotificationManagerCompat.from(context)
-        if (!nm.areNotificationsEnabled()) return
+        if (!nm.areNotificationsEnabled()) {
+            android.util.Log.w("KeryxNotify", "notifications disabled at OS level; skipping $roomId")
+            return
+        }
 
         val tapIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -54,7 +57,7 @@ object KeryxNotifications {
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_stat_keryx)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
@@ -66,6 +69,8 @@ object KeryxNotifications {
 
         // Stable id per room so a room's notification updates in place instead of stacking.
         runCatching { nm.notify(roomId.hashCode(), notification) }
+            .onSuccess { android.util.Log.i("KeryxNotify", "posted for $roomId: $title — $body") }
+            .onFailure { android.util.Log.w("KeryxNotify", "notify failed for $roomId: ${it.message}") }
     }
 
     fun clear(context: Context, roomId: String) {

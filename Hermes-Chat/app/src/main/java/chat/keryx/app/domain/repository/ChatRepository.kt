@@ -42,6 +42,10 @@ interface ChatRepository {
     /** Mark the room read up to [eventId] (sends read receipt + fully-read marker). */
     suspend fun markRead(roomId: String, eventId: String)
 
+    /** Emits true while someone OTHER than me is typing in [sessionId]. Hermes sends typing while it
+     *  works, so this is a reliable "agent is busy" signal even through long single tool calls. */
+    fun othersTyping(sessionId: String): Flow<Boolean>
+
     /** Download bytes for a Matrix mxc:// content URI (e.g. a room avatar), or null on failure. */
     suspend fun avatarBytes(mxc: String): ByteArray?
 

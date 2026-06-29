@@ -48,6 +48,18 @@ class MessageParserTest {
     }
 
     @Test
+    fun glyphlessTerminal_stillParsedAsTool() {
+        // Hermes sometimes drops the leading emoji on repeated terminal calls; the fully-quoted arg
+        // is the signal that lets us still treat it as a tool.
+        val call = MessageParser.parse("terminal: \"git status\"")
+            .filterIsInstance<MessageParser.Segment.Tools>().single().calls.single()
+        assertEquals("terminal", call.name)
+        assertEquals("git status", call.args)
+        // Ordinary prose with a colon must NOT become a tool.
+        assertTrue(MessageParser.parse("Note: this is just a note").none { it is MessageParser.Segment.Tools })
+    }
+
+    @Test
     fun thinkingLines_groupedIntoOnePane() {
         val content = "🧠 memory: \"User: Jonny\"\n🧠 reasoning about the plan"
         val thinking = MessageParser.parse(content)

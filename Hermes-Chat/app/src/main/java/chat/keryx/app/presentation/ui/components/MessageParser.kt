@@ -34,6 +34,12 @@ object MessageParser {
      */
     private val TOOL_LINE = Regex("""^(\S+)\s+([a-z][a-z0-9]*(?:_[a-z0-9]+)*):\s*(.*)$""")
 
+    // Fallback for when Hermes drops the leading glyph (notably repeated `terminal` calls): a bare
+    // `name: "args"` line where the WHOLE argument is quote-wrapped. The full-line quoting is the
+    // strong tool signal that keeps this from firing on ordinary prose like `note: something`.
+    private val TOOL_LINE_NOGLYPH =
+        Regex("""^([a-z][a-z0-9]*(?:_[a-z0-9]+)*):\s*(["“`].*["”`])$""")
+
     // Some tools (notably `terminal`) render as a bare header line `<glyph> name` (NO colon) with the
     // command/args in a following ``` fenced block, instead of inline after a colon. Match the header
     // here; the loop then pulls the fence in as the args so it compacts into the tool card too.
@@ -228,11 +234,19 @@ object MessageParser {
 
     /** Parse a single line as a tool call, or null if it isn't one. */
     private fun parseTool(trimmed: String): ToolCall? {
-        val m = TOOL_LINE.matchEntire(trimmed.trim()) ?: return null
-        val (emoji, name, rawArgs) = m.destructured
-        // Reject prose: the leading glyph must be a symbol/emoji, not a word.
-        if (emoji.first().isLetterOrDigit()) return null
-        return ToolCall(emoji = emoji.trimEnd('️'), name = name, args = cleanArgs(rawArgs))
+        val line = trimmed.trim()
+        TOOL_LINE.matchEntire(line)?.let { m ->
+            val (emoji, name, rawArgs) = m.destructured
+            // Reject prose: the leading glyph must be a symbol/emoji, not a word.
+            if (!emoji.first().isLetterOrDigit()) {
+                return ToolCall(emoji = emoji.trimEnd('️'), name = name, args = cleanArgs(rawArgs))
+            }
+        }
+        // Glyph-less fallback (e.g. an emoji-less `terminal: "…"` repeat).
+        TOOL_LINE_NOGLYPH.matchEntire(line)?.let { m ->
+            return ToolCall(emoji = "", name = m.groupValues[1], args = cleanArgs(m.groupValues[2]))
+        }
+        return null
     }
 
     /**

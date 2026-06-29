@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.Color
@@ -41,13 +42,22 @@ class ChatViewModel(
         private const val PAGE = 50
         // How long after the agent's last activity to keep the "working" animation up. Adaptive:
         // while the agent is mid-run (last thing we saw was a tool call or pure reasoning, so more is
-        // coming) we wait LONG — long enough to bridge a slow terminal command without the animation
-        // vanishing between steps. Once a real prose answer lands we settle quickly (SHORT) so it
-        // doesn't linger. This is what keeps the waiting animation alive across a whole multi-tool run.
-        private const val QUIET_LONG_MS = 30_000L
-        private const val QUIET_SHORT_MS = 2_500L
-        // Absolute cap if the agent never responds at all.
-        private const val NO_REPLY_MS = 120_000L
+        // coming) we wait LONG — deliberately generous, because a local brain can go quiet for
+        // minutes between steps (a slow build/terminal command, a long think) without emitting a
+        // single Matrix event to reset the timer. We'd rather over-stay slightly than have the banner
+        // vanish while it's genuinely working. The SHORT window kicks in the moment a real prose
+        // answer lands, so it still settles promptly when the turn is actually done.
+        private const val QUIET_LONG_MS = 240_000L
+        private const val QUIET_SHORT_MS = 3_000L
+        // Absolute cap covering time-to-first-response if the agent never says anything at all.
+        private const val NO_REPLY_MS = 240_000L
+        // On opening a room, treat the agent as still working if its last (mid-run) message landed
+        // within this window — so the cloud/quips appear when you open the app mid-run, not only when
+        // you were the one who sent the message.
+        private const val WORKING_RECENT_MS = 150_000L
+        // Bridge after Hermes stops typing — long enough to hand off to the final message's settle,
+        // short enough that the banner doesn't loiter once it's genuinely done.
+        private const val TYPING_STOP_GRACE_MS = 8_000L
     }
 
     val isLoggedIn: StateFlow<Boolean> = repository.isLoggedIn()
@@ -153,6 +163,15 @@ class ChatViewModel(
     val awaitingReply: StateFlow<Boolean> = _awaitingReply.asStateFlow()
     private var quietJob: Job? = null
 
+    // Tracks the last message we evaluated, so we can tell genuine live activity (a new message, or a
+    // streamed m.replace edit growing the current one) from merely re-observing the same timeline.
+    private var lastSeenId: String? = null
+    private var lastSeenLen: Int = -1
+
+    // True while Hermes' typing indicator is up. Authoritative: a pending quiet-timeout will NOT
+    // clear the banner while this is set, so a long silent tool call (curl) can't make it vanish.
+    @Volatile private var agentTyping = false
+
     // When the current "working" stretch began (elapsed clock for the top status counter); null when
     // idle. Set when we start awaiting and cleared when the animation goes quiet.
     private val _workStartedAt = MutableStateFlow<Long?>(null)
@@ -171,6 +190,7 @@ class ChatViewModel(
         quietJob?.cancel()
         quietJob = viewModelScope.launch {
             delay(delayMs)
+            if (agentTyping) return@launch // still actively working — typing owns the lifecycle
             _awaitingReply.value = false
             _workStartedAt.value = null
         }
@@ -218,14 +238,62 @@ class ChatViewModel(
         }
         viewModelScope.launch {
             messages.collect { msgs ->
-                // Each agent edit (thinking -> tool -> text via m.replace) re-emits here; keep the
-                // animation alive and push the "quiet" timeout back with an adaptive window, so it
-                // persists across thinking/tool phases and only settles once the answer lands.
                 val last = msgs.lastOrNull()
-                if (_awaitingReply.value && last != null && last.sender != SenderType.ME) {
-                    scheduleClearAwaiting(updateWorkStateFrom(last))
+                // Classify this emission relative to the last one we saw.
+                val firstEval = lastSeenId == null
+                val isNewMsg = !firstEval && last != null && last.id != lastSeenId
+                val grew = last != null && last.id == lastSeenId && last.content.length > lastSeenLen
+                lastSeenId = last?.id
+                lastSeenLen = last?.content?.length ?: -1
+
+                if (last == null || last.sender == SenderType.ME) return@collect
+
+                // updateWorkStateFrom both sets the "what it's doing" label and returns the adaptive
+                // quiet window; QUIET_LONG_MS means the agent is mid-run (a tool call, or reasoning
+                // with no answer yet — more is coming).
+                val window = updateWorkStateFrom(last)
+                val midRun = window == QUIET_LONG_MS
+                // Live activity = a brand-new message or a streamed edit growing the current one.
+                val liveActivity = isNewMsg || grew
+                // On first open, fall back to recency so opening the app mid-run still lights up,
+                // without falsely firing for an old conversation that merely ended on a tool call.
+                val openedMidRun = firstEval && (System.currentTimeMillis() - last.timestamp) < WORKING_RECENT_MS
+
+                when {
+                    _awaitingReply.value -> scheduleClearAwaiting(window)
+                    midRun && (liveActivity || openedMidRun) -> {
+                        // The agent is working but we didn't initiate it (app opened / room switched
+                        // mid-run, or a run started elsewhere). Light up the cloud + quips.
+                        _awaitingReply.value = true
+                        if (_workStartedAt.value == null) _workStartedAt.value = last.timestamp
+                        scheduleClearAwaiting(window)
+                    }
                 }
             }
+        }
+    }
+
+    /** Drive the working banner from Hermes' Matrix typing indicator — the authoritative "busy"
+     *  signal. It stays true (Hermes refreshes it) through long single tool calls that emit nothing,
+     *  fixing the "banner vanished while it was still working on a curl" case. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun observeTyping() {
+        viewModelScope.launch {
+            _currentSession
+                .flatMapLatest { s -> if (s == null) flowOf(false) else repository.othersTyping(s.id) }
+                .collect { typing ->
+                    agentTyping = typing
+                    if (typing) {
+                        quietJob?.cancel() // never time out while it's actively typing/working
+                        if (!_awaitingReply.value) {
+                            _awaitingReply.value = true
+                            if (_workStartedAt.value == null) _workStartedAt.value = System.currentTimeMillis()
+                        }
+                    } else if (_awaitingReply.value) {
+                        // Stopped typing → the final message is landing; bridge to the message settle.
+                        scheduleClearAwaiting(TYPING_STOP_GRACE_MS)
+                    }
+                }
         }
     }
 
@@ -248,6 +316,10 @@ class ChatViewModel(
         quietJob?.cancel()
         _awaitingReply.value = false
         _workStartedAt.value = null
+        // Re-baseline activity tracking so the newly-opened room is judged on its own recency, not
+        // treated as "new activity" just because its last message differs from the previous room's.
+        lastSeenId = null
+        lastSeenLen = -1
         settingsRepository.lastRoomId = session.id
     }
 
