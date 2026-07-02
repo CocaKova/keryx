@@ -127,6 +127,14 @@ object MessageParser {
         return lines.isNotEmpty() && lines.all { isSubtextLine(it) || isFooterLine(it) }
     }
 
+    /** True for a standalone runtime footer event (`model · 42% · ~/dir`), not cron/status telemetry. */
+    fun isRuntimeFooterMessage(content: String): Boolean {
+        val body = extractKeryx(content).text.trim()
+        if (body.isBlank()) return false
+        val lines = body.lines().filter { it.isNotBlank() }
+        return lines.isNotEmpty() && lines.all { isFooterLine(it) }
+    }
+
     // --- Streaming resilience ---------------------------------------------------------------
 
     /** Append a closing ``` when a message ends inside an open fence, so a half-streamed (or just

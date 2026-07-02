@@ -20,3 +20,7 @@ local.properties
 # OS
 .DS_Store
 Thumbs.db
+
+# Local-only cruft
+backups/
+Hermes-Chat/jdk.tar.gz

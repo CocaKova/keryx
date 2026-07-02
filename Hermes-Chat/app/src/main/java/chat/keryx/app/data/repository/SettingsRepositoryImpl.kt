@@ -3,6 +3,7 @@ package chat.keryx.app.data.repository
 import android.content.Context
 import android.content.SharedPreferences
 import chat.keryx.app.domain.repository.SettingsRepository
+import java.net.URI
 
 class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     private val prefs: SharedPreferences = context.getSharedPreferences("hermes_settings", Context.MODE_PRIVATE)
@@ -74,7 +75,7 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         set(value) = prefs.edit().putBoolean("battery_prompt_shown", value).apply()
 
     override var gatewayUrl: String
-        get() = prefs.getString("gateway_url", "") ?: ""
+        get() = (prefs.getString("gateway_url", "") ?: "").ifBlank { defaultGatewayUrl() }
         set(value) = prefs.edit().putString("gateway_url", value).apply()
 
     override var gatewayApiKey: String
@@ -88,4 +89,16 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     override var showTelemetry: Boolean
         get() = prefs.getBoolean("show_telemetry", true)
         set(value) = prefs.edit().putBoolean("show_telemetry", value).apply()
+
+    private fun defaultGatewayUrl(): String {
+        val host = runCatching { URI(homeserverUrl).host }
+            .getOrNull()
+            ?: homeserverUrl
+                .removePrefix("https://")
+                .removePrefix("http://")
+                .substringBefore('/')
+                .substringBefore(':')
+                .trim()
+        return if (host.isBlank()) "" else "http://$host:8642"
+    }
 }

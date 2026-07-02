@@ -33,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -326,9 +327,17 @@ private fun ToolCalls(calls: List<MessageParser.ToolCall>, baseColor: Color) {
     }
 }
 
-/** A code block/fence on a subtle surface that scrolls horizontally (long lines pan, not clip). */
+/** A code block/fence on a subtle surface that scrolls horizontally (long lines pan, not clip),
+ *  with a quiet copy affordance floating in the corner: tap → clipboard, glyph melts ❐ → ✓ for a
+ *  beat as confirmation. Kept low-alpha so it never competes with the code itself. */
 @Composable
 private fun ScrollableCodeBlock(code: String, textColor: Color) {
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    val trimmed = code.trim('\n')
+    var copied by remember(trimmed) { mutableStateOf(false) }
+    LaunchedEffect(copied) {
+        if (copied) { kotlinx.coroutines.delay(1600); copied = false }
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -337,14 +346,28 @@ private fun ScrollableCodeBlock(code: String, textColor: Color) {
             .background(textColor.copy(alpha = 0.06f)),
     ) {
         Text(
-            text = code.trim('\n'),
+            text = trimmed,
             color = textColor.copy(alpha = 0.85f),
             fontSize = 12.sp,
             fontFamily = FontFamily.Monospace,
             softWrap = false,
             modifier = Modifier
                 .horizontalScroll(rememberScrollState())
-                .padding(10.dp),
+                .padding(start = 10.dp, top = 10.dp, bottom = 10.dp, end = 34.dp),
+        )
+        Text(
+            text = if (copied) "✓" else "❐",
+            color = if (copied) Color(0xFF4CAF7D) else textColor.copy(alpha = 0.45f),
+            fontSize = 13.sp,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(4.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .clickable {
+                    clipboard.setText(androidx.compose.ui.text.AnnotatedString(trimmed))
+                    copied = true
+                }
+                .padding(horizontal = 6.dp, vertical = 2.dp),
         )
     }
 }

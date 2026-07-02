@@ -350,6 +350,28 @@ fun isTelemetryMessage(m: Message): Boolean {
     return MessageParser.isTelemetryMessage(m.content)
 }
 
+private fun isRuntimeFooterMessage(m: Message): Boolean {
+    if (m.sender == SenderType.ME || m.mediaKind != null || m.content.isBlank()) return false
+    return MessageParser.isRuntimeFooterMessage(m.content)
+}
+
+private fun mergeRuntimeFooters(chrono: List<Message>): List<Message> {
+    val out = mutableListOf<Message>()
+    for (m in chrono) {
+        if (isRuntimeFooterMessage(m)) {
+            val prev = out.lastOrNull()
+            if (prev != null && prev.sender == m.sender && prev.mediaKind == null && !isTelemetryMessage(prev)) {
+                out[out.lastIndex] = prev.copy(
+                    content = prev.content.trimEnd() + "\n\n" + m.content.trim()
+                )
+                continue
+            }
+        }
+        out += m
+    }
+    return out
+}
+
 /**
  * Collapse the visually-doubled tool calls. Two duplication modes exist in the wild:
  *  1. adjacent re-emission of the same step (an edit replay while you switch apps);
@@ -394,7 +416,7 @@ private fun dedupCalls(entries: List<ToolRunEntry>, seenBefore: Set<Pair<String,
  * Works in chronological order internally, then returns newest-first to match the reverseLayout list.
  */
 fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
-    val chrono = orderedNewestFirst.asReversed()
+    val chrono = mergeRuntimeFooters(orderedNewestFirst.asReversed())
     val out = mutableListOf<ChatRenderItem>()
     var i = 0
     while (i < chrono.size) {

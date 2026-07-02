@@ -79,6 +79,34 @@ class ToolGroupingTest {
     }
 
     @Test
+    fun standaloneRuntimeFooter_attachesToPreviousAnswerBubble() {
+        val items = group(
+            msg(SenderType.ME, "task"),
+            msg(SenderType.HERMES, "Here's the result you wanted."),
+            msg(SenderType.HERMES, "qwen3.5-122b · 42% · ~/workspace/keryx"),
+        )
+        val bubbles = items.filterIsInstance<ChatRenderItem.Single>()
+        assertEquals(2, bubbles.size)
+        val answer = bubbles.first().message.content
+        assertTrue(answer.contains("Here's the result you wanted."))
+        assertTrue(answer.contains("qwen3.5-122b · 42% · ~/workspace/keryx"))
+    }
+
+    @Test
+    fun standaloneRuntimeFooterAfterToolAnswer_attachesToAnswerNotToolRun() {
+        val items = group(
+            msg(SenderType.ME, "task"),
+            msg(SenderType.HERMES, "⚙️ terminal: \"work\""),
+            msg(SenderType.HERMES, "Here's the result you wanted."),
+            msg(SenderType.HERMES, "qwen3.5-122b · 42% · ~/workspace/keryx"),
+        )
+        val bubbles = items.filterIsInstance<ChatRenderItem.Single>()
+        assertEquals(2, bubbles.size)
+        assertTrue(runOf(items).entries.none { it is ToolRunEntry.Telemetry })
+        assertTrue(bubbles.first().message.content.contains("qwen3.5-122b · 42% · ~/workspace/keryx"))
+    }
+
+    @Test
     fun plainReply_noRun() {
         val items = group(
             msg(SenderType.ME, "hi"),

@@ -28,6 +28,7 @@ import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material3.*
@@ -207,14 +208,18 @@ fun ChatScreen(
                 (stream.text.isNotBlank() || stream.status == chat.keryx.app.presentation.LiveStreamStatus.INTERRUPTED)
             if (streamVisible && stream != null) {
                 item(key = "livestream") {
-                    StreamingBubble(
-                        stream = stream,
-                        bubbleStyle = bubbleStyle,
-                        textScale = messageTextScale,
-                    )
+                    // animateItem so the handoff reads as a soft cross-fade: this bubble fades out
+                    // the same beat the committed Matrix bubble animates in — no pop, no jump.
+                    Box(modifier = Modifier.animateItem()) {
+                        StreamingBubble(
+                            stream = stream,
+                            bubbleStyle = bubbleStyle,
+                            textScale = messageTextScale,
+                        )
+                    }
                 }
             } else if (awaitingReply) {
-                item(key = "waiting") { WaitingIndicator() }
+                item(key = "waiting") { Box(modifier = Modifier.animateItem()) { WaitingIndicator() } }
             }
             itemsIndexed(
                 items = renderItems,
@@ -609,9 +614,16 @@ fun MessageBubble(
         }
 
         if (showReactionPicker) {
+            val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+            val copyContext = androidx.compose.ui.platform.LocalContext.current
             ReactionPickerRow(
                 onPick = { emoji -> showReactionPicker = false; onReact(emoji) },
                 onReply = { showReactionPicker = false; onReply() },
+                onCopy = {
+                    showReactionPicker = false
+                    clipboard.setText(androidx.compose.ui.text.AnnotatedString(message.content))
+                    android.widget.Toast.makeText(copyContext, "Copied", android.widget.Toast.LENGTH_SHORT).show()
+                },
                 onDismiss = { showReactionPicker = false },
             )
         }
@@ -694,7 +706,7 @@ private fun ReactionChips(reactions: List<MessageReaction>, isMine: Boolean, onR
 }
 
 @Composable
-private fun ReactionPickerRow(onPick: (String) -> Unit, onReply: () -> Unit, onDismiss: () -> Unit) {
+private fun ReactionPickerRow(onPick: (String) -> Unit, onReply: () -> Unit, onCopy: () -> Unit, onDismiss: () -> Unit) {
     // A focusable Popup so a tap anywhere outside (or the back gesture) reliably dismisses it —
     // the inline version was hard to get rid of once it was up.
     androidx.compose.ui.window.Popup(
@@ -757,6 +769,9 @@ private fun ReactionPickerRow(onPick: (String) -> Unit, onReply: () -> Unit, onD
                     Box(modifier = Modifier.width(1.dp).height(22.dp).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)))
                     IconButton(onClick = onReply, modifier = Modifier.size(32.dp)) {
                         Icon(Icons.AutoMirrored.Filled.Reply, contentDescription = "Reply", tint = MaterialTheme.colorScheme.primary)
+                    }
+                    IconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = "Copy text", tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }

@@ -286,19 +286,22 @@ class ChatViewModel(
                 if (last == null || last.sender == SenderType.ME) return@collect
 
                 // Side-channel handoff: the moment the committed Matrix event for the streamed
-                // response is present in the timeline, drop the overlay — same frame, no pop.
-                maybeHandOffStream(last, isNewMsg)
+                // response is present in the timeline, drop the overlay — same frame, no pop. Look
+                // beyond just the last event because Hermes may emit a separate runtime footer right
+                // after the answer; that footer must not keep the stream bubble pinned until timeout.
+                maybeHandOffStream(msgs, last, isNewMsg)
 
                 // updateWorkStateFrom both sets the "what it's doing" label and returns the adaptive
                 // quiet window; QUIET_LONG_MS means the agent is mid-run (a tool call, or reasoning
                 // with no answer yet — more is coming).
-                val window = updateWorkStateFrom(last)
+                val stateMessage = workStateMessage(msgs, last)
+                val window = updateWorkStateFrom(stateMessage)
                 val midRun = window == QUIET_LONG_MS
                 // Live activity = a brand-new message or a streamed edit growing the current one.
                 val liveActivity = isNewMsg || grew
                 // On first open, fall back to recency so opening the app mid-run still lights up,
                 // without falsely firing for an old conversation that merely ended on a tool call.
-                val openedMidRun = firstEval && (System.currentTimeMillis() - last.timestamp) < WORKING_RECENT_MS
+                val openedMidRun = firstEval && (System.currentTimeMillis() - stateMessage.timestamp) < WORKING_RECENT_MS
 
                 when {
                     _awaitingReply.value -> scheduleClearAwaiting(window)
@@ -315,6 +318,19 @@ class ChatViewModel(
         // The typing indicator is the authoritative "busy" signal; this collector was defined but
         // never started, which is why the banner still died during long silent tool calls.
         observeTyping()
+    }
+
+    private fun workStateMessage(messages: List<Message>, latest: Message): Message {
+        if (!MessageParser.isRuntimeFooterMessage(latest.content)) return latest
+        return messages.asReversed()
+            .asSequence()
+            .dropWhile { it.id == latest.id }
+            .firstOrNull {
+                it.sessionId == latest.sessionId &&
+                    it.sender == SenderType.HERMES &&
+                    !MessageParser.isTelemetryMessage(it.content)
+            }
+            ?: latest
     }
 
     /** Drive the working banner from Hermes' Matrix typing indicator — the authoritative "busy"
@@ -429,13 +445,38 @@ class ChatViewModel(
     }
 
     /** Drop the overlay when its committed Matrix counterpart is in the timeline. */
-    private fun maybeHandOffStream(last: Message, isNewMsg: Boolean) {
+    private fun maybeHandOffStream(messages: List<Message>, last: Message, isNewMsg: Boolean) {
         val s = _liveStream.value ?: return
         if (last.sessionId != s.roomId) return
         when (s.status) {
-            LiveStreamStatus.AWAITING_SYNC, LiveStreamStatus.STREAMING -> {
+            LiveStreamStatus.STREAMING -> {
                 val target = s.finalText ?: s.text
-                if (target.isNotBlank() && StreamHandoff.matches(last.content, target)) clearStream()
+                if (target.isNotBlank()) {
+                    val matched = messages.asReversed()
+                        .asSequence()
+                        .filter { it.sessionId == s.roomId && it.sender == SenderType.HERMES }
+                        .filterNot { MessageParser.isTelemetryMessage(it.content) }
+                        .take(8)
+                        .any { StreamHandoff.matches(it.content, target) }
+                    if (matched) clearStream()
+                }
+            }
+            LiveStreamStatus.AWAITING_SYNC -> {
+                val recentHermes = messages.asReversed()
+                    .asSequence()
+                    .filter { it.sessionId == s.roomId && it.sender == SenderType.HERMES }
+                    .take(8)
+                    .toList()
+                val target = s.finalText ?: s.text
+                val matched = target.isNotBlank() && recentHermes
+                    .asSequence()
+                    .filterNot { MessageParser.isTelemetryMessage(it.content) }
+                    .any { StreamHandoff.matches(it.content, target) }
+                val hasCommittedAnswer = recentHermes.any {
+                    !MessageParser.isTelemetryMessage(it.content) &&
+                        StreamHandoff.normalize(it.content).isNotBlank()
+                }
+                if (matched || (isNewMsg && hasCommittedAnswer)) clearStream()
             }
             LiveStreamStatus.INTERRUPTED -> {
                 // Any fresh substantive answer ends the recovery hold — the sync loop has caught up.

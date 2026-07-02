@@ -182,6 +182,12 @@ class MessageParserTest {
     }
 
     @Test
+    fun standaloneRuntimeFooter_classifiedSeparatelyFromCheckins() {
+        assertTrue(MessageParser.isRuntimeFooterMessage("qwen3.5-122b · 42% · ~/workspace/keryx"))
+        assertTrue(!MessageParser.isRuntimeFooterMessage("[status] gateway healthy, 3 sessions active"))
+    }
+
+    @Test
     fun middleDotProse_notFooter() {
         // A middle dot in prose must not trigger footer detection (not the last line + no %/path).
         val segments = MessageParser.parse("I like tea · coffee · juice\nmore text")

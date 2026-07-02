@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Menu
@@ -39,7 +40,18 @@ fun HermesApp(viewModel: ChatViewModel) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     val currentSession by viewModel.currentSession.collectAsState()
+
+    // The drawer can be opened by swipe, not just the menu button — the moment the gesture commits
+    // (targetValue flips to Open) drop focus and hide the IME so the keyboard never sits on top of
+    // the drawer blocking the room list.
+    androidx.compose.runtime.LaunchedEffect(drawerState.targetValue) {
+        if (drawerState.targetValue == DrawerValue.Open) {
+            focusManager.clearFocus()
+            keyboard?.hide()
+        }
+    }
 
     // Surface one-shot status messages (e.g. room-photo set result) regardless of which screen
     // triggered them, so failures are never silent.
@@ -101,8 +113,9 @@ fun HermesApp(viewModel: ChatViewModel) {
                     },
                     actions = {
                         if (currentSession != null) {
-                            // Dynamic reasoning control: effort + visibility via Hermes' native
-                            // /reasoning command (session-scoped — nothing persisted server-side).
+                            // Dynamic reasoning control via Hermes' native /reasoning command.
+                            // Effort levels persist with --global; show/hide persists per-platform
+                            // on the server side already; reset clears this session's override.
                             var reasoningMenu by remember { mutableStateOf(false) }
                             Box {
                                 IconButton(onClick = { reasoningMenu = true }) {
@@ -112,33 +125,11 @@ fun HermesApp(viewModel: ChatViewModel) {
                                         tint = MaterialTheme.colorScheme.primary,
                                     )
                                 }
-                                DropdownMenu(expanded = reasoningMenu, onDismissRequest = { reasoningMenu = false }) {
-                                    Text(
-                                        "REASONING EFFORT",
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontSize = 10.sp,
-                                        modifier = androidx.compose.ui.Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
-                                    )
-                                    listOf("low", "medium", "high").forEach { level ->
-                                        DropdownMenuItem(
-                                            text = { Text(level.replaceFirstChar { it.uppercase() }) },
-                                            onClick = { reasoningMenu = false; viewModel.sendReasoningCommand(level) },
-                                        )
-                                    }
-                                    HorizontalDivider()
-                                    DropdownMenuItem(
-                                        text = { Text("Show reasoning") },
-                                        onClick = { reasoningMenu = false; viewModel.sendReasoningCommand("show") },
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text("Hide reasoning") },
-                                        onClick = { reasoningMenu = false; viewModel.sendReasoningCommand("hide") },
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text("Reset override") },
-                                        onClick = { reasoningMenu = false; viewModel.sendReasoningCommand("reset") },
-                                    )
-                                }
+                                ReasoningMenu(
+                                    expanded = reasoningMenu,
+                                    onDismiss = { reasoningMenu = false },
+                                    onCommand = { arg -> reasoningMenu = false; viewModel.sendReasoningCommand(arg) },
+                                )
                             }
                             // Steer: quick-prefill the composer with "/steer " to redirect the agent mid-task.
                             IconButton(onClick = { viewModel.prefillComposer("/steer ") }) {
@@ -161,5 +152,89 @@ fun HermesApp(viewModel: ChatViewModel) {
             )
         }
         }
+    }
+}
+
+/**
+ * The reasoning control, dream-styled: a frosted rounded panel with a soft accent-gradient border
+ * (same vocabulary as the reaction bar), effort levels drawn with rising intensity glyphs, and the
+ * display/override actions tucked below a hairline. Effort selections persist via `--global`.
+ */
+@Composable
+private fun ReasoningMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    onCommand: (String) -> Unit,
+) {
+    val accent = MaterialTheme.colorScheme.primary
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+        shape = shape,
+        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+        shadowElevation = 16.dp,
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            brush = Brush.verticalGradient(listOf(accent.copy(alpha = 0.45f), accent.copy(alpha = 0.10f))),
+        ),
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
+            Text(
+                "REASONING",
+                color = accent,
+                fontSize = 10.sp,
+                letterSpacing = 2.4.sp,
+            )
+            Text(
+                "effort persists across sessions",
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                fontSize = 9.sp,
+            )
+        }
+        listOf(
+            Triple("minimal", "Minimal", "▁"),
+            Triple("low", "Low", "▁▃"),
+            Triple("medium", "Medium", "▁▃▅"),
+            Triple("high", "High", "▁▃▅▇"),
+            Triple("xhigh", "X-High", "▁▃▅▇█"),
+        ).forEach { (arg, label, glyph) ->
+            DropdownMenuItem(
+                text = {
+                    androidx.compose.foundation.layout.Row(
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            glyph,
+                            color = accent.copy(alpha = 0.75f),
+                            fontSize = 11.sp,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            modifier = Modifier.padding(end = 10.dp).width(38.dp),
+                        )
+                        Text(label, fontSize = 14.sp)
+                    }
+                },
+                onClick = { onCommand("$arg --global") },
+            )
+        }
+        HorizontalDivider(
+            color = accent.copy(alpha = 0.12f),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+        )
+        DropdownMenuItem(
+            text = { Text("Show reasoning", fontSize = 14.sp) },
+            onClick = { onCommand("show") },
+        )
+        DropdownMenuItem(
+            text = { Text("Hide reasoning", fontSize = 14.sp) },
+            onClick = { onCommand("hide") },
+        )
+        DropdownMenuItem(
+            text = {
+                Text("Reset session override", fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            },
+            onClick = { onCommand("reset") },
+        )
     }
 }
