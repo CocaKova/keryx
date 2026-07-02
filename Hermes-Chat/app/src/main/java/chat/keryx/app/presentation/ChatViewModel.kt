@@ -320,6 +320,11 @@ class ChatViewModel(
                 val grew = last != null && last.id == lastSeenId && last.content.length > lastSeenLen
                 lastSeenId = last?.id
                 lastSeenLen = last?.content?.length ?: -1
+                android.util.Log.i(
+                    "KeryxFlow",
+                    "emission n=${msgs.size} last=${last?.id?.take(12)} sender=${last?.sender} len=${last?.content?.length} " +
+                        "new=$isNewMsg grew=$grew stream=${_liveStream.value?.status} awaiting=${_awaitingReply.value}"
+                )
 
                 if (last == null) return@collect
 
@@ -373,13 +378,17 @@ class ChatViewModel(
     }
 
     private fun workStateMessage(messages: List<Message>, latest: Message): Message {
-        if (!MessageParser.isRuntimeFooterMessage(latest.content)) return latest
+        // Judge the work state from the real answer, not from a runtime footer or a blank
+        // placeholder that landed after it. Sender filter is "not mine" (rather than HERMES) so a
+        // misclassified agent id can never blind this again.
+        if (!MessageParser.isRuntimeFooterMessage(latest.content) && latest.content.isNotBlank()) return latest
         return messages.asReversed()
             .asSequence()
             .dropWhile { it.id == latest.id }
             .firstOrNull {
                 it.sessionId == latest.sessionId &&
-                    it.sender == SenderType.HERMES &&
+                    it.sender != SenderType.ME &&
+                    it.content.isNotBlank() &&
                     !MessageParser.isTelemetryMessage(it.content)
             }
             ?: latest
@@ -394,6 +403,7 @@ class ChatViewModel(
             _currentSession
                 .flatMapLatest { s -> if (s == null) flowOf(false) else repository.othersTyping(s.id) }
                 .collect { typing ->
+                    android.util.Log.i("KeryxTyping", "typing=$typing awaiting=${_awaitingReply.value} answerLanded=$answerLanded")
                     agentTyping = typing
                     if (typing) {
                         quietJob?.cancel() // never time out while it's actively typing/working
@@ -449,6 +459,8 @@ class ChatViewModel(
             }
             _liveStream.value = LiveStream(roomId, "", LiveStreamStatus.CONNECTING, System.currentTimeMillis())
             client.stream(roomId).collect { ev ->
+                if (ev !is chat.keryx.app.data.remote.HermesStreamClient.Event.Delta)
+                    android.util.Log.i("KeryxSSE", "event=$ev bufLen=${buf.length}")
                 when (ev) {
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Opened -> {
                         _linkHealth.value = LinkHealth.LIVE
@@ -506,6 +518,7 @@ class ChatViewModel(
     }
 
     private fun clearStream() {
+        android.util.Log.i("KeryxHandoff", "clearStream (was ${_liveStream.value?.status})")
         streamClearJob?.cancel()
         streamJob?.cancel()
         _liveStream.value = null
@@ -514,6 +527,11 @@ class ChatViewModel(
     /** Drop the overlay when its committed Matrix counterpart is in the timeline. */
     private fun maybeHandOffStream(messages: List<Message>, last: Message, isNewMsg: Boolean) {
         val s = _liveStream.value ?: return
+        android.util.Log.i(
+            "KeryxHandoff",
+            "check status=${s.status} room=${last.sessionId == s.roomId} new=$isNewMsg " +
+                "target=${(s.finalText ?: s.text).length}ch last=${last.sender}/${last.content.length}ch"
+        )
         if (last.sessionId != s.roomId) return
         when (s.status) {
             LiveStreamStatus.STREAMING -> {
@@ -521,7 +539,7 @@ class ChatViewModel(
                 if (target.isNotBlank()) {
                     val matched = messages.asReversed()
                         .asSequence()
-                        .filter { it.sessionId == s.roomId && it.sender == SenderType.HERMES }
+                        .filter { it.sessionId == s.roomId && it.sender != SenderType.ME }
                         .filterNot { MessageParser.isTelemetryMessage(it.content) }
                         .take(8)
                         .any { StreamHandoff.matches(it.content, target) }
@@ -531,7 +549,7 @@ class ChatViewModel(
             LiveStreamStatus.AWAITING_SYNC -> {
                 val recentHermes = messages.asReversed()
                     .asSequence()
-                    .filter { it.sessionId == s.roomId && it.sender == SenderType.HERMES }
+                    .filter { it.sessionId == s.roomId && it.sender != SenderType.ME }
                     .take(8)
                     .toList()
                 val target = s.finalText ?: s.text
@@ -543,11 +561,13 @@ class ChatViewModel(
                     !MessageParser.isTelemetryMessage(it.content) &&
                         StreamHandoff.normalize(it.content).isNotBlank()
                 }
+                android.util.Log.i("KeryxHandoff", "awaitSync matched=$matched newMsg=$isNewMsg committed=$hasCommittedAnswer recent=${recentHermes.size}")
                 if (matched || (isNewMsg && hasCommittedAnswer)) clearStream()
             }
             LiveStreamStatus.INTERRUPTED -> {
                 // Any fresh substantive answer ends the recovery hold — the sync loop has caught up.
-                if (isNewMsg && !MessageParser.isTelemetryMessage(last.content) &&
+                if (isNewMsg && last.sender != SenderType.ME &&
+                    !MessageParser.isTelemetryMessage(last.content) &&
                     StreamHandoff.normalize(last.content).isNotBlank()
                 ) clearStream()
             }

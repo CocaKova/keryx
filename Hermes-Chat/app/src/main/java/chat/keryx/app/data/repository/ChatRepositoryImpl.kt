@@ -99,6 +99,11 @@ class ChatRepositoryImpl(
                         events.filterNotNull()
                             .reversed() // newest-first -> oldest-first for display
                             .mapNotNull { it.toMessage(myId, agentId) }
+                            // The gateway occasionally emits empty placeholder messages (an edit
+                            // target that never got its edit while protocol streaming is
+                            // suppressed). They render as stray timestamp rows and poison the
+                            // "is it still working?" classifier — drop them.
+                            .filter { it.content.isNotBlank() || it.mediaKind != null }
                             .distinctBy { it.id } // guard against any double-emission of the same event
                     }
                 }
@@ -332,11 +337,7 @@ class ChatRepositoryImpl(
         // streamed/edited reply as three or four duplicate bubbles.
         if (messageContent.relatesTo is net.folivo.trixnity.core.model.events.m.RelatesTo.Replace) return null
         val senderId = event.sender.full
-        val sender = when {
-            senderId == myId -> SenderType.ME
-            agentId.isNotEmpty() && senderId == agentId -> SenderType.HERMES
-            else -> SenderType.OTHER
-        }
+        val sender = senderTypeOf(senderId, myId, agentId)
         var mediaUrl: String? = null
         var mediaKind: MediaKind? = null
         var fileName = ""
@@ -371,6 +372,25 @@ class ChatRepositoryImpl(
             fileName = fileName,
             replyToId = replyToId,
         )
+    }
+
+    /**
+     * Classify a sender. A strict full-id equality here is what broke streaming handoff, telemetry
+     * rendering, and the working-banner lifecycle in one stroke (live-debugged 2026-07-02): with
+     * the de-personalized default (`agentMatrixId = ""`), every agent message fell to OTHER and
+     * everything downstream that filtered on HERMES went blind. Now:
+     *  - blank agent id → any non-me sender is the agent (a Hermes room is the app's whole point);
+     *  - a configured id matches case-insensitively, and by bare localpart too, so "silas",
+     *    "@silas" and "@SILAS:silas.local" all hit "@silas:silas.local".
+     */
+    private fun senderTypeOf(senderId: String, myId: String, agentId: String): SenderType {
+        if (senderId == myId) return SenderType.ME
+        val cfg = agentId.trim()
+        if (cfg.isEmpty()) return SenderType.HERMES
+        if (senderId.equals(cfg, ignoreCase = true)) return SenderType.HERMES
+        val cfgLocal = cfg.removePrefix("@").substringBefore(':').lowercase()
+        val senderLocal = senderId.removePrefix("@").substringBefore(':').lowercase()
+        return if (cfgLocal.isNotEmpty() && senderLocal == cfgLocal) SenderType.HERMES else SenderType.OTHER
     }
 
     /** Drop the leading "> …" mx-reply fallback block (and the blank line after it) from a reply body. */
