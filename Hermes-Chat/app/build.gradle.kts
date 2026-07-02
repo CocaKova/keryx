@@ -20,6 +20,9 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Personal sideload build: sign with the debug keystore so `adb install -r` upgrades
+            // the existing install in place. Swap for a real keystore before any distribution.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {
