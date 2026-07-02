@@ -107,6 +107,28 @@ class ToolGroupingTest {
     }
 
     @Test
+    fun reasoningMessageMidRun_foldsIntoRun_notALooseBubble() {
+        // The reported old-version flow: "Ran 1 tool" → a standalone reasoning message → edited
+        // tool re-emissions → answer. Everything before the answer must collapse into ONE run,
+        // with the reasoning inside the run's thinking block, not intertwined full-size bubbles.
+        val items = group(
+            msg(SenderType.ME, "task"),
+            msg(SenderType.HERMES, "⚙️ terminal: \"probe the service\""),
+            msg(SenderType.HERMES, "💭 **Reasoning:**\n```\nThe probe timed out, I should retry with a longer deadline.\n```\n\n"),
+            msg(SenderType.HERMES, "⚙️ terminal: \"probe the service\"\n⚙️ terminal: \"probe --timeout 30\""),
+            msg(SenderType.HERMES, "Service is healthy after the retry."),
+        )
+        val run = runOf(items)
+        // Accumulate-mode re-emission deduped: probe once + the retry variant.
+        assertEquals(2, run.callCount)
+        // The standalone reasoning message lives inside the run, not as its own bubble.
+        assertTrue(run.reasoning?.contains("longer deadline") == true)
+        val singles = items.filterIsInstance<ChatRenderItem.Single>()
+        assertEquals(2, singles.size) // my message + the answer, nothing else loose
+        assertEquals("Service is healthy after the retry.", (items.first() as ChatRenderItem.Single).message.content)
+    }
+
+    @Test
     fun plainReply_noRun() {
         val items = group(
             msg(SenderType.ME, "hi"),

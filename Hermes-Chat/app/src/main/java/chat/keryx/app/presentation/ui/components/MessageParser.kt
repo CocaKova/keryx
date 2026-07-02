@@ -167,22 +167,29 @@ object MessageParser {
     // answer in one of three styles; we also accept raw <think>/<thinking>/<reasoning> tags that
     // some brains/homeservers leak. We pull the reasoning out into a leading Thinking segment so it
     // renders as the dream canvas and the answer renders clean.
-    private val THINK_TAG = Regex("""(?is)<(think|thinking|reasoning)>(.*?)</\1>""")
+    // Covers the tag zoo across model families: <think>/<thinking> (Qwen/GLM/DeepSeek-style),
+    // <reasoning>, <thought> (some Gemma tunes), and Kimi's ◁think▷ delimiters.
+    private val THINK_TAG = Regex("""(?is)<(think|thinking|reasoning|thought)>(.*?)</\1>|◁think▷(.*?)◁/think▷""")
     // A tag opened but never closed (mid-stream, or a brain that forgot): everything after it is
     // reasoning-so-far — treat it as such rather than leaking raw tag text into the bubble.
-    private val THINK_TAG_OPEN = Regex("""(?is)<(think|thinking|reasoning)>""")
+    private val THINK_TAG_OPEN = Regex("""(?is)<(think|thinking|reasoning|thought)>|◁think▷""")
     // "code" style:  💭 **Reasoning:**\n```\n…\n```\n\n<answer>
     private val REASON_CODE = Regex("""(?s)^\s*💭\s*\*\*Reasoning:?\*\*\s*\n```[a-zA-Z0-9]*\n(.*?)\n```\s*(.*)$""")
     // "blockquote" style:  > 💭 **Reasoning:**\n> …\n\n<answer>
-    private val REASON_QUOTE = Regex("""(?s)^\s*>\s*💭\s*\*\*Reasoning:?\*\*\s*\n((?:>.*(?:\n|$))+)(.*)$""")
+    // The quoted lines use [^\n] (not `.`): under (?s) a greedy `.` crosses newlines and swallows
+    // the answer into the reasoning group, leaving an empty body.
+    private val REASON_QUOTE = Regex("""(?s)^\s*>\s*💭\s*\*\*Reasoning:?\*\*\s*\n((?:>[^\n]*(?:\n|$))+)(.*)$""")
     // "subtext" style:  -# 💭 Reasoning\n-# …\n\n<answer>
-    private val REASON_SUBTEXT = Regex("""(?s)^\s*-#\s*💭\s*Reasoning\s*\n((?:-#.*(?:\n|$))+)(.*)$""")
+    private val REASON_SUBTEXT = Regex("""(?s)^\s*-#\s*💭\s*Reasoning\s*\n((?:-#[^\n]*(?:\n|$))+)(.*)$""")
 
     /** Pull any leading/embedded reasoning out of [content]; returns (reasoning?, remainingBody). */
     fun extractReasoning(content: String): Pair<String?, String> {
         // 1) Raw <think> tags anywhere → concatenate, strip from body.
         if (THINK_TAG.containsMatchIn(content)) {
-            val reasoning = THINK_TAG.findAll(content).joinToString("\n\n") { it.groupValues[2].trim() }
+            val reasoning = THINK_TAG.findAll(content).joinToString("\n\n") {
+                // Group 2 = <tag> body, group 3 = ◁think▷ body (whichever alternative matched).
+                it.groupValues[2].ifEmpty { it.groupValues[3] }.trim()
+            }
             val body = THINK_TAG.replace(content, "").trim()
             return reasoning.trim().ifBlank { null } to body
         }

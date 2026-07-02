@@ -227,4 +227,56 @@ class MessageParserTest {
         assertEquals("half a thought", reasoning)
         assertEquals("prefix", body)
     }
+
+    // --- Gateway reasoning preludes: all three display.reasoning_style variants must fold into
+    // --- a Thinking segment, never render as plain prose (the "Qwen reasoning not parsed" bug).
+
+    @Test
+    fun gatewayCodeStyleReasoning_becomesThinkingSegment() {
+        val content = "💭 **Reasoning:**\n```\nThe user wants a git status.\nI should run terminal.\n```\n\nHere's the status."
+        val segs = MessageParser.parse(content)
+        val thinking = segs.filterIsInstance<MessageParser.Segment.Thinking>().single()
+        assertTrue(thinking.text.contains("run terminal"))
+        val text = segs.filterIsInstance<MessageParser.Segment.Text>().joinToString { it.text }
+        assertTrue(text.contains("Here's the status"))
+        assertTrue(!text.contains("Reasoning:"))
+    }
+
+    @Test
+    fun gatewayBlockquoteStyleReasoning_becomesThinkingSegment() {
+        val content = "> 💭 **Reasoning:**\n> step one\n> step two\n\nAnswer here."
+        val segs = MessageParser.parse(content)
+        val thinking = segs.filterIsInstance<MessageParser.Segment.Thinking>().single()
+        assertTrue(thinking.text.contains("step one"))
+        assertTrue(segs.filterIsInstance<MessageParser.Segment.Text>().any { it.text.contains("Answer here") })
+    }
+
+    @Test
+    fun gatewaySubtextStyleReasoning_becomesThinkingSegment() {
+        val content = "-# 💭 Reasoning\n-# quiet plan line\n\nAnswer here."
+        val segs = MessageParser.parse(content)
+        val thinking = segs.filterIsInstance<MessageParser.Segment.Thinking>().single()
+        assertTrue(thinking.text.contains("quiet plan line"))
+        assertTrue(segs.filterIsInstance<MessageParser.Segment.Text>().any { it.text.contains("Answer here") })
+    }
+
+    @Test
+    fun thoughtAndKimiTags_alsoExtracted() {
+        val (r1, b1) = MessageParser.extractReasoning("<thought>gemma style</thought>after")
+        assertEquals("gemma style", r1)
+        assertEquals("after", b1)
+        val (r2, b2) = MessageParser.extractReasoning("◁think▷kimi style◁/think▷final answer")
+        assertEquals("kimi style", r2)
+        assertEquals("final answer", b2)
+    }
+
+    @Test
+    fun truncatedReasoningMarker_staysInsideThinking() {
+        // The gateway caps reasoning at 15 lines and appends "_... (N more lines)_".
+        val body = (1..15).joinToString("\n") { "line $it" } + "\n_... (12 more lines)_"
+        val content = "💭 **Reasoning:**\n```\n$body\n```\n\nDone."
+        val thinking = MessageParser.parse(content)
+            .filterIsInstance<MessageParser.Segment.Thinking>().single()
+        assertTrue(thinking.text.contains("(12 more lines)"))
+    }
 }
