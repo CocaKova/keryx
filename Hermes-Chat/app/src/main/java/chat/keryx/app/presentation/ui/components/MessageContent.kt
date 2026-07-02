@@ -95,8 +95,10 @@ fun MessageContent(
     Column(modifier = modifier) {
         segments.forEach { segment ->
             when (segment) {
+                // closeDanglingFences: an unclosed ``` (mid-stream, or a sloppy brain) renders as
+                // a code block instead of visually swallowing the rest of the message.
                 is MessageParser.Segment.Text -> Markdown(
-                    content = segment.text,
+                    content = MessageParser.closeDanglingFences(segment.text),
                     colors = markdownColor(text = textColor),
                     typography = chatMarkdownTypography(),
                     flavour = GFMFlavourDescriptor(),
@@ -109,7 +111,130 @@ fun MessageContent(
                 is MessageParser.Segment.Mermaid -> MermaidDiagram(segment.code, textColor)
                 is MessageParser.Segment.Citations -> CitationsBar(segment.items, textColor)
                 is MessageParser.Segment.SkillDistilled -> SkillDistilledPill(segment, textColor)
+                is MessageParser.Segment.Telemetry -> TelemetryBlock(segment, textColor)
+                is MessageParser.Segment.ActionOutput ->
+                    ActionOutputCard(segment, MaterialTheme.colorScheme.primary, textColor)
             }
+        }
+    }
+}
+
+/**
+ * Automated agent output (runtime footer, cron check-in, subtext aside) rendered as a low-contrast
+ * telemetry block — clearly machine-voice, never competing with dialogue. Footers get a single
+ * hairline-topped caption; check-ins a whisper-quiet mono block.
+ */
+@Composable
+fun TelemetryBlock(segment: MessageParser.Segment.Telemetry, baseColor: Color) {
+    val muted = baseColor.copy(alpha = 0.42f)
+    when (segment.kind) {
+        MessageParser.TelemetryKind.FOOTER -> Column(modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
+            HorizontalDivider(color = baseColor.copy(alpha = 0.10f))
+            Text(
+                text = segment.text,
+                color = muted,
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+        else -> Text(
+            text = segment.text,
+            color = muted,
+            fontSize = 12.sp,
+            fontFamily = FontFamily.Monospace,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 2.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(baseColor.copy(alpha = 0.045f))
+                .padding(horizontal = 10.dp, vertical = 7.dp),
+        )
+    }
+}
+
+/**
+ * A structured tool payload as a stylized "Action Output" card instead of a raw JSON wall:
+ * tool name + status chip, the key parameters as quiet rows, a clean result summary, and the raw
+ * JSON tucked behind a tap.
+ */
+@Composable
+fun ActionOutputCard(
+    action: MessageParser.Segment.ActionOutput,
+    accent: Color,
+    baseColor: Color,
+) {
+    var showRaw by remember(action.raw) { mutableStateOf(false) }
+    val statusColor = when (action.success) {
+        true -> Color(0xFF4CAF7D)
+        false -> Color(0xFFE0524D)
+        null -> baseColor.copy(alpha = 0.5f)
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(Brush.linearGradient(listOf(accent.copy(alpha = 0.12f), accent.copy(alpha = 0.03f))))
+            .border(1.dp, accent.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+            .clickable { showRaw = !showRaw }
+            .animateContentSize()
+            .padding(horizontal = 11.dp, vertical = 9.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("▣", color = accent, fontSize = 13.sp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = action.tool,
+                color = baseColor,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = when (action.success) { true -> "SUCCESS"; false -> "FAILED"; null -> "ACTION" },
+                color = statusColor,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.2.sp,
+            )
+        }
+        action.params.take(6).forEach { (k, v) ->
+            Row(modifier = Modifier.padding(top = 4.dp)) {
+                Text("$k ", color = accent.copy(alpha = 0.75f), fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                Text(
+                    v,
+                    color = baseColor.copy(alpha = 0.68f),
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        if (action.result != null) {
+            Text(
+                text = action.result,
+                color = baseColor.copy(alpha = 0.78f),
+                fontSize = 12.sp,
+                modifier = Modifier
+                    .padding(top = 6.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(baseColor.copy(alpha = 0.05f))
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+            )
+        }
+        AnimatedVisibility(visible = showRaw, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+            Text(
+                text = action.raw,
+                color = baseColor.copy(alpha = 0.55f),
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier.padding(top = 6.dp).horizontalScroll(rememberScrollState()),
+                softWrap = false,
+            )
         }
     }
 }

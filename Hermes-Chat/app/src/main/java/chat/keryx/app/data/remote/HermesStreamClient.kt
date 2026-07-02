@@ -1,0 +1,137 @@
+package chat.keryx.app.data.remote
+
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.channels.trySendBlocking
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.sse.EventSource
+import okhttp3.sse.EventSourceListener
+import okhttp3.sse.EventSources
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
+
+/**
+ * Tier-1 of the dual-tier streaming architecture: a transient Server-Sent-Events subscription to
+ * the Hermes gateway's Keryx side-channel (`GET /keryx/stream` on the OpenAI-compatible API server,
+ * see hermes-plugin/keryx-stream/). Tokens render live from here; the Matrix room only ever gets
+ * the single final committed message — zero m.replace bloat on the homeserver.
+ *
+ * The subscription is per-turn and per-room: opened right before the command is sent, closed once
+ * the final Matrix event has synced (or the turn is abandoned). If this channel can't connect at
+ * all the caller falls back to tier-2 (rendering whatever the Matrix sync delivers, including
+ * throttled m.replace edits when the gateway has protocol streaming enabled).
+ *
+ * Wire format (one JSON object per SSE `data:` line):
+ *   event: delta   data: {"text": "…incremental tokens…"}
+ *   event: segment data: {"final": false}          — a segment boundary (text → tool → text)
+ *   event: stop    data: {"text": "<full final>"}  — turn complete; text is the committed body
+ *   event: ping    data: {}                        — keepalive, ignored
+ */
+class HermesStreamClient(
+    private val baseUrl: String,
+    private val apiKey: String,
+    allowInsecure: Boolean = false,
+) {
+
+    sealed interface Event {
+        /** Incremental assistant text. */
+        data class Delta(val text: String) : Event
+        /** A segment boundary — the current text run ended (e.g. a tool call interleaves). */
+        data object SegmentBreak : Event
+        /** Turn finished. [finalText] is the exact body Hermes commits to Matrix (may be null if
+         *  the server couldn't include it; match then falls back to accumulated text). */
+        data class Stop(val finalText: String?) : Event
+        /** The SSE channel is connected and live. */
+        data object Opened : Event
+        /** The channel failed or dropped. [connected] tells whether any bytes ever flowed —
+         *  a never-connected channel triggers the fallback tier, a dropped one shows an alert. */
+        data class Failed(val reason: String, val connected: Boolean) : Event
+    }
+
+    private val json = Json { ignoreUnknownKeys = true }
+
+    private val client: OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(4, TimeUnit.SECONDS)
+        // SSE is a long-lived read: no read timeout, the server pings to keep NATs open.
+        .readTimeout(0, TimeUnit.MILLISECONDS)
+        .apply {
+            if (allowInsecure) {
+                val trustAll = arrayOf<TrustManager>(object : X509TrustManager {
+                    override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+                    override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+                    override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+                })
+                val ssl = SSLContext.getInstance("TLS").apply { init(null, trustAll, SecureRandom()) }
+                sslSocketFactory(ssl.socketFactory, trustAll[0] as X509TrustManager)
+                hostnameVerifier { _, _ -> true }
+            }
+        }
+        .build()
+
+    /**
+     * Subscribe to the side-channel for [roomId]. Cold flow: the SSE connection lives exactly as
+     * long as the collector. All terminal states surface as [Event.Failed]/[Event.Stop] rather
+     * than exceptions, so the collector's `when` is the single place stream state is decided.
+     */
+    fun stream(roomId: String): Flow<Event> = callbackFlow {
+        val url = baseUrl.trimEnd('/') +
+            "/keryx/stream?platform=matrix&chat_id=" + java.net.URLEncoder.encode(roomId, "UTF-8")
+        val request = Request.Builder()
+            .url(url)
+            .header("Accept", "text/event-stream")
+            .apply { if (apiKey.isNotBlank()) header("Authorization", "Bearer $apiKey") }
+            .build()
+
+        var connected = false
+        val source = EventSources.createFactory(client).newEventSource(
+            request,
+            object : EventSourceListener() {
+                override fun onOpen(eventSource: EventSource, response: Response) {
+                    connected = true
+                    trySendBlocking(Event.Opened)
+                }
+
+                override fun onEvent(eventSource: EventSource, id: String?, type: String?, data: String) {
+                    when (type) {
+                        "delta" -> parseText(data)?.let { trySendBlocking(Event.Delta(it)) }
+                        "segment" -> trySendBlocking(Event.SegmentBreak)
+                        "stop" -> {
+                            trySendBlocking(Event.Stop(parseText(data)))
+                            close() // turn done — tear the transient channel down
+                        }
+                        // "ping" and unknown events: ignore (forward-compatible).
+                    }
+                }
+
+                override fun onClosed(eventSource: EventSource) {
+                    // Server closed without a stop event: treat as a drop so the UI can recover.
+                    trySendBlocking(Event.Failed("closed by server", connected))
+                    close()
+                }
+
+                override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
+                    val reason = t?.message ?: response?.let { "HTTP ${it.code}" } ?: "connection failed"
+                    trySendBlocking(Event.Failed(reason, connected))
+                    close()
+                }
+            },
+        )
+        awaitClose { source.cancel() }
+    }
+
+    private fun parseText(data: String): String? = try {
+        (json.parseToJsonElement(data).jsonObject["text"] as? JsonPrimitive)?.content
+    } catch (e: Exception) {
+        null
+    }
+}

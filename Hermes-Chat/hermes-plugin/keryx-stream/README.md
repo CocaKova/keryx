@@ -1,0 +1,73 @@
+# Keryx Stream — dual-tier live streaming for Keryx ⚡
+
+The server half of Keryx's streaming architecture. Standard Matrix `m.replace` edit-streaming
+bloats the homeserver database and hammers sync; this patch gives Keryx a **side-channel** instead.
+
+## Architecture
+
+**Tier 1 — SSE side-channel (primary).** Keryx opens a transient
+`GET /keryx/stream?platform=matrix&chat_id=<room>` subscription on the gateway's existing API
+server (`:8642`, Bearer-authed with `API_SERVER_KEY`) right before sending a command. While the
+subscriber is attached:
+
+- every assistant token delta is mirrored live to the app (`event: delta`);
+- homeserver protocol edits are **suppressed** — the room gets exactly one final committed message;
+- `event: stop` ends the turn; the app holds its overlay until the final Matrix event syncs, then
+  swaps seamlessly.
+
+**Tier 2 — smart-throttled protocol edits (fallback).** No subscriber attached (app closed,
+side-channel unreachable): Matrix falls back to native `m.replace` edit-streaming throttled by the
+standard streaming config — set to `edit_interval: 1.2` / `buffer_threshold: 60` so the homeserver
+sees at most ~1 edit per 1.2 s / 60 chars. Set `FALLBACK_EDITS = False` in `keryx_stream.py` to
+restore final-message-only behaviour instead.
+
+The switch is evaluated live per flush, so a subscriber attaching mid-turn immediately silences
+protocol edits and vice versa.
+
+## Install (REINSTALL-FRAGILE)
+
+```bash
+python3 install.py            # idempotent; verifies compiles; anchored patches
+systemctl --user restart hermes-gateway.service
+```
+
+`hermes update` wipes the patches — **re-run `install.py` afterwards.** If an anchor is not found
+the script says so and touches nothing else.
+
+Patched files in `~/.hermes/hermes-agent/`:
+- `gateway/keryx_stream.py` (new — hub + SSE handler)
+- `gateway/stream_consumer.py` (4 anchored insertions: delta/segment/stop mirror + edit-tier switch)
+- `gateway/platforms/api_server.py` (1 insertion: the `/keryx/stream` route)
+
+Plus one config change (`~/.hermes/config.yaml`):
+
+```yaml
+streaming:
+  enabled: true
+  transport: auto
+  edit_interval: 1.2
+  buffer_threshold: 60
+```
+
+## Wire protocol
+
+```
+event: delta    data: {"text": "…incremental tokens (may contain <think> blocks — client filters)…"}
+event: segment  data: {}                       # text → tool → text boundary
+event: stop     data: {}                       # turn complete; channel closes
+event: ping     data: {}                       # 20 s keepalive
+```
+
+## App-side setup
+
+Keryx → Settings → **Hermes Link**: Gateway URL `http://<spark-host>:8642`, API key =
+`API_SERVER_KEY` from `~/.hermes/.env`, toggle *Live token streaming* on.
+
+## Verify
+
+```bash
+KEY=$(grep ^API_SERVER_KEY= ~/.hermes/.env | cut -d= -f2)
+curl -N -H "Authorization: Bearer $KEY" \
+  "http://127.0.0.1:8642/keryx/stream?platform=matrix&chat_id=%21room%3Ahost"
+# → 200 text/event-stream, pings every 20 s; deltas appear when that room's agent turn runs
+```

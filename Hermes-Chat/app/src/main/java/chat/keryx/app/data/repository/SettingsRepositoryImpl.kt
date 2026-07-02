@@ -72,4 +72,20 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     override var batteryPromptShown: Boolean
         get() = prefs.getBoolean("battery_prompt_shown", false)
         set(value) = prefs.edit().putBoolean("battery_prompt_shown", value).apply()
+
+    override var gatewayUrl: String
+        get() = prefs.getString("gateway_url", "") ?: ""
+        set(value) = prefs.edit().putString("gateway_url", value).apply()
+
+    override var gatewayApiKey: String
+        get() = prefs.getString("gateway_api_key", "") ?: ""
+        set(value) = prefs.edit().putString("gateway_api_key", value).apply()
+
+    override var sideChannelEnabled: Boolean
+        get() = prefs.getBoolean("side_channel_enabled", true)
+        set(value) = prefs.edit().putBoolean("side_channel_enabled", value).apply()
+
+    override var showTelemetry: Boolean
+        get() = prefs.getBoolean("show_telemetry", true)
+        set(value) = prefs.edit().putBoolean("show_telemetry", value).apply()
 }

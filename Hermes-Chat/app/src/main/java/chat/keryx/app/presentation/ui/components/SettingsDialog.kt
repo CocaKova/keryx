@@ -44,6 +44,14 @@ fun SettingsScreen(
     onMatrixTokenChanged: (String) -> Unit,
     allowInsecure: Boolean,
     onAllowInsecureChanged: (Boolean) -> Unit,
+    gatewayUrl: String,
+    onGatewayUrlChanged: (String) -> Unit,
+    gatewayApiKey: String,
+    onGatewayApiKeyChanged: (String) -> Unit,
+    sideChannelEnabled: Boolean,
+    onSideChannelEnabledChanged: (Boolean) -> Unit,
+    showTelemetry: Boolean,
+    onShowTelemetryChanged: (Boolean) -> Unit,
     biometricLockEnabled: Boolean,
     onBiometricLockChanged: (Boolean) -> Unit,
     e2eeEnabled: Boolean,
@@ -186,6 +194,49 @@ fun SettingsScreen(
                                 Text(testStatus, color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
                             }
                         }
+                    }
+
+                    // --- Hermes Link (side-channel streaming) ---
+                    SettingsCard("Hermes Link") {
+                        SettingsSwitchRow(
+                            title = "Live token streaming",
+                            subtitle = "Stream replies over the gateway side-channel (SSE); falls back to Matrix sync when unreachable",
+                            checked = sideChannelEnabled,
+                            onCheckedChange = onSideChannelEnabledChanged,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = gatewayUrl,
+                            onValueChange = onGatewayUrlChanged,
+                            label = { Text("Gateway URL") },
+                            placeholder = { Text("http://silas.local:8642") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = sideChannelEnabled,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        var keyVisible by remember { mutableStateOf(false) }
+                        OutlinedTextField(
+                            value = gatewayApiKey,
+                            onValueChange = onGatewayApiKeyChanged,
+                            label = { Text("Gateway API key") },
+                            visualTransformation = if (keyVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                TextButton(onClick = { keyVisible = !keyVisible }) {
+                                    Text(if (keyVisible) "Hide" else "Show", fontSize = 12.sp)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = sideChannelEnabled,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        SettingsSwitchRow(
+                            title = "Show telemetry",
+                            subtitle = "Automated check-ins and the runtime footer as quiet blocks",
+                            checked = showTelemetry,
+                            onCheckedChange = onShowTelemetryChanged,
+                        )
                     }
 
                     // --- Message Appearance ---

@@ -24,4 +24,14 @@ interface SettingsRepository {
     var recentCommands: List<String>
     /** Whether we've already asked the user to exempt the app from battery optimization (ask once). */
     var batteryPromptShown: Boolean
+
+    // --- Hermes side-channel streaming (tier-1) ---
+    /** Base URL of the Hermes gateway API server (e.g. http://silas.local:8642). Blank = disabled. */
+    var gatewayUrl: String
+    /** Bearer key for the gateway API server (API_SERVER_KEY). */
+    var gatewayApiKey: String
+    /** Master switch for the SSE side-channel; off = always use the Matrix fallback tier. */
+    var sideChannelEnabled: Boolean
+    /** Show automated telemetry blocks (runtime footer, cron check-ins) in the chat. */
+    var showTelemetry: Boolean
 }

@@ -65,6 +65,10 @@ fun NavigationDrawerContent(
     val bubbleStyle by viewModel.bubbleStyle.collectAsState()
     val messageTextScale by viewModel.messageTextScale.collectAsState()
     val allowInsecure by viewModel.allowInsecure.collectAsState()
+    val gatewayUrl by viewModel.gatewayUrl.collectAsState()
+    val gatewayApiKey by viewModel.gatewayApiKey.collectAsState()
+    val sideChannelEnabled by viewModel.sideChannelEnabled.collectAsState()
+    val showTelemetry by viewModel.showTelemetry.collectAsState()
 
     var showSettings by remember { mutableStateOf(false) }
 
@@ -96,6 +100,14 @@ fun NavigationDrawerContent(
             onMatrixTokenChanged = { viewModel.setMatrixToken(it) },
             allowInsecure = allowInsecure,
             onAllowInsecureChanged = { viewModel.setAllowInsecure(it) },
+            gatewayUrl = gatewayUrl,
+            onGatewayUrlChanged = { viewModel.setGatewayUrl(it) },
+            gatewayApiKey = gatewayApiKey,
+            onGatewayApiKeyChanged = { viewModel.setGatewayApiKey(it) },
+            sideChannelEnabled = sideChannelEnabled,
+            onSideChannelEnabledChanged = { viewModel.setSideChannelEnabled(it) },
+            showTelemetry = showTelemetry,
+            onShowTelemetryChanged = { viewModel.setShowTelemetry(it) },
             biometricLockEnabled = biometricLockEnabled,
             onBiometricLockChanged = { viewModel.setBiometricLock(it) },
             e2eeEnabled = e2eeEnabled,

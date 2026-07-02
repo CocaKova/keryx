@@ -8,10 +8,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -21,6 +25,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import chat.keryx.app.presentation.ChatViewModel
 import kotlinx.coroutines.launch
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -95,8 +100,47 @@ fun HermesApp(viewModel: ChatViewModel) {
                         }
                     },
                     actions = {
-                        // Steer: quick-prefill the composer with "/steer " to redirect the agent mid-task.
                         if (currentSession != null) {
+                            // Dynamic reasoning control: effort + visibility via Hermes' native
+                            // /reasoning command (session-scoped — nothing persisted server-side).
+                            var reasoningMenu by remember { mutableStateOf(false) }
+                            Box {
+                                IconButton(onClick = { reasoningMenu = true }) {
+                                    Icon(
+                                        Icons.Default.Psychology,
+                                        contentDescription = "Reasoning",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                                DropdownMenu(expanded = reasoningMenu, onDismissRequest = { reasoningMenu = false }) {
+                                    Text(
+                                        "REASONING EFFORT",
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontSize = 10.sp,
+                                        modifier = androidx.compose.ui.Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
+                                    )
+                                    listOf("low", "medium", "high").forEach { level ->
+                                        DropdownMenuItem(
+                                            text = { Text(level.replaceFirstChar { it.uppercase() }) },
+                                            onClick = { reasoningMenu = false; viewModel.sendReasoningCommand(level) },
+                                        )
+                                    }
+                                    HorizontalDivider()
+                                    DropdownMenuItem(
+                                        text = { Text("Show reasoning") },
+                                        onClick = { reasoningMenu = false; viewModel.sendReasoningCommand("show") },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Hide reasoning") },
+                                        onClick = { reasoningMenu = false; viewModel.sendReasoningCommand("hide") },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Reset override") },
+                                        onClick = { reasoningMenu = false; viewModel.sendReasoningCommand("reset") },
+                                    )
+                                }
+                            }
+                            // Steer: quick-prefill the composer with "/steer " to redirect the agent mid-task.
                             IconButton(onClick = { viewModel.prefillComposer("/steer ") }) {
                                 Icon(Icons.Default.Explore, contentDescription = "Steer", tint = MaterialTheme.colorScheme.primary)
                             }

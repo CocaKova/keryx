@@ -87,6 +87,8 @@ fun ChatScreen(
     val bubbleStyle by viewModel.bubbleStyle.collectAsState()
     val messageTextScale by viewModel.messageTextScale.collectAsState()
     val awaitingReply by viewModel.awaitingReply.collectAsState()
+    val liveStream by viewModel.liveStream.collectAsState()
+    val showTelemetry by viewModel.showTelemetry.collectAsState()
     val workStartedAt by viewModel.workStartedAt.collectAsState()
     val workLabel by viewModel.workLabel.collectAsState()
     val replyTarget by viewModel.replyTarget.collectAsState()
@@ -140,10 +142,11 @@ fun ChatScreen(
     }
 
     // Follow new messages / edits when the user is at (or near) the bottom, or the new message is
-    // our own. Keyed on a signature that also changes on streamed edits (content length / tool state)
-    // so long "working" updates still pull the view down.
+    // our own. Keyed on a signature that also changes on streamed edits AND live side-channel
+    // tokens (content length / tool state / stream length) so the view keeps following the stream.
     val atBottom by remember { derivedStateOf { listState.firstVisibleItemIndex <= 1 } }
-    val lastSignature = messages.lastOrNull()?.let { "${it.id}:${it.content.length}:${it.toolActivity?.status?.name ?: ""}" }
+    val lastSignature = (messages.lastOrNull()?.let { "${it.id}:${it.content.length}:${it.toolActivity?.status?.name ?: ""}" } ?: "") +
+        ":${liveStream?.text?.length ?: 0}"
     LaunchedEffect(lastSignature, awaitingReply) {
         val mine = messages.lastOrNull()?.sender == SenderType.ME
         if (atBottom || mine) listState.animateScrollToItem(0)
@@ -197,7 +200,20 @@ fun ChatScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             // reverseLayout: this first item sits at the very bottom, below the newest message.
-            if (awaitingReply) {
+            // While side-channel tokens are visible the streaming bubble takes the slot; the
+            // quips indicator covers the silent phases (connecting, reasoning, tools).
+            val stream = liveStream
+            val streamVisible = stream != null && stream.roomId == currentSession?.id &&
+                (stream.text.isNotBlank() || stream.status == chat.keryx.app.presentation.LiveStreamStatus.INTERRUPTED)
+            if (streamVisible && stream != null) {
+                item(key = "livestream") {
+                    StreamingBubble(
+                        stream = stream,
+                        bubbleStyle = bubbleStyle,
+                        textScale = messageTextScale,
+                    )
+                }
+            } else if (awaitingReply) {
                 item(key = "waiting") { WaitingIndicator() }
             }
             itemsIndexed(
@@ -220,6 +236,14 @@ fun ChatScreen(
                         )
                         is ChatRenderItem.Single -> {
                             val message = item.message
+                            // Automated telemetry never gets a chat bubble: it renders as a quiet,
+                            // low-contrast block (or nothing at all when telemetry is hidden).
+                            val isTelem = message.sender == SenderType.HERMES &&
+                                chat.keryx.app.presentation.ui.components.isTelemetryMessage(message)
+                            if (isTelem) {
+                                if (showTelemetry) TelemetryMessageRow(message, textScale = messageTextScale)
+                                return@Box
+                            }
                             // Live reactions: updates the moment anyone adds/removes one — no manual refresh.
                             val reactionsFlow = remember(message.id) {
                                 viewModel.reactionsFlow(message.sessionId, message.id)
@@ -847,6 +871,113 @@ private fun EmptyChat(modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 15.sp,
         )
+    }
+}
+
+/**
+ * The tier-1 live response: tokens streaming over the Hermes side-channel, rendered as an agent
+ * bubble with a softly pulsing accent border. On `stop` it holds perfectly still (AWAITING_SYNC)
+ * until the identical committed Matrix event replaces it — same text, same layout, so the swap is
+ * invisible. A mid-stream drop keeps the partial text and shows a quiet recovery alert instead of
+ * losing what was already read.
+ */
+@Composable
+private fun StreamingBubble(
+    stream: chat.keryx.app.presentation.LiveStream,
+    bubbleStyle: String,
+    textScale: Float,
+) {
+    val appearance = bubbleAppearance(isMine = false, style = bubbleStyle)
+    val accent = MaterialTheme.colorScheme.primary
+    val interrupted = stream.status == chat.keryx.app.presentation.LiveStreamStatus.INTERRUPTED
+    val streaming = stream.status == chat.keryx.app.presentation.LiveStreamStatus.STREAMING
+
+    // Dreamy breathing border while tokens flow; settles once generation stops.
+    val glow = if (streaming) {
+        val t = rememberInfiniteTransition(label = "streamPulse")
+        t.animateFloat(
+            initialValue = 0.25f,
+            targetValue = 0.6f,
+            animationSpec = infiniteRepeatable(tween(1100), RepeatMode.Reverse),
+            label = "streamPulseAlpha",
+        ).value
+    } else 0.3f
+
+    val shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp)
+    val baseDensity = LocalDensity.current
+    Column(horizontalAlignment = Alignment.Start, modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .widthIn(max = 340.dp)
+                .clip(shape)
+                .background(appearance.brush)
+                .border(1.dp, accent.copy(alpha = glow), shape)
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+            CompositionLocalProvider(
+                LocalDensity provides Density(baseDensity.density, baseDensity.fontScale * textScale)
+            ) {
+                Column {
+                    chat.keryx.app.presentation.ui.components.MessageContent(
+                        content = stream.text,
+                        textColor = appearance.textColor,
+                        isStreaming = streaming,
+                    )
+                    if (streaming) {
+                        // A quiet blinking caret marks "still writing" without a layout-shifting spinner.
+                        val caret = rememberInfiniteTransition(label = "caret")
+                        val a by caret.animateFloat(
+                            initialValue = 0.15f, targetValue = 0.9f,
+                            animationSpec = infiniteRepeatable(tween(520), RepeatMode.Reverse),
+                            label = "caretAlpha",
+                        )
+                        Text("▍", color = accent.copy(alpha = a), fontSize = 13.sp)
+                    }
+                }
+            }
+        }
+        if (interrupted) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f))
+                    .padding(horizontal = 10.dp, vertical = 5.dp),
+            ) {
+                Text("⚡", fontSize = 11.sp)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Stream dropped — recovering via Matrix sync…",
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    fontSize = 11.sp,
+                )
+            }
+        }
+    }
+}
+
+/** A pure-telemetry agent message: no chat bubble, just the low-contrast machine-voice block. */
+@Composable
+private fun TelemetryMessageRow(message: Message, textScale: Float) {
+    val baseDensity = LocalDensity.current
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+        CompositionLocalProvider(
+            LocalDensity provides Density(baseDensity.density, baseDensity.fontScale * textScale)
+        ) {
+            chat.keryx.app.presentation.ui.components.MessageContent(
+                content = message.content,
+                textColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (message.timestamp > 0L) {
+            Text(
+                text = formatClock(message.timestamp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                fontSize = 9.sp,
+                modifier = Modifier.padding(start = 4.dp, top = 1.dp),
+            )
+        }
     }
 }
 

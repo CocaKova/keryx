@@ -58,6 +58,19 @@ class ChatViewModel(
         // Bridge after Hermes stops typing — long enough to hand off to the final message's settle,
         // short enough that the banner doesn't loiter once it's genuinely done.
         private const val TYPING_STOP_GRACE_MS = 8_000L
+
+        // --- Side-channel stream tuning ---
+        // UI dispatch throttle for the live token buffer: flush to state when either trips.
+        // ~10 dispatches/s keeps recomposition (and the markdown re-parse) far off the frame budget
+        // even at high token rates, while still reading as a live stream.
+        private const val STREAM_DISPATCH_MS = 100L
+        private const val STREAM_DISPATCH_CHARS = 240
+        // How long to hold the overlay waiting for the final Matrix event after `stop` — sync is
+        // normally sub-second; past this the commit clearly isn't coming as-streamed.
+        private const val STREAM_SYNC_GRACE_MS = 20_000L
+        // How long to keep partial text + the alert after a mid-stream drop before giving the
+        // timeline back to plain Matrix rendering.
+        private const val STREAM_INTERRUPT_HOLD_MS = 60_000L
     }
 
     val isLoggedIn: StateFlow<Boolean> = repository.isLoggedIn()
@@ -157,6 +170,25 @@ class ChatViewModel(
     private val _messageTextScale = MutableStateFlow(settingsRepository.messageTextScale)
     val messageTextScale: StateFlow<Float> = _messageTextScale.asStateFlow()
 
+    // --- Hermes side-channel (tier-1 streaming) ---
+    private val _gatewayUrl = MutableStateFlow(settingsRepository.gatewayUrl)
+    val gatewayUrl: StateFlow<String> = _gatewayUrl.asStateFlow()
+
+    private val _gatewayApiKey = MutableStateFlow(settingsRepository.gatewayApiKey)
+    val gatewayApiKey: StateFlow<String> = _gatewayApiKey.asStateFlow()
+
+    private val _sideChannelEnabled = MutableStateFlow(settingsRepository.sideChannelEnabled)
+    val sideChannelEnabled: StateFlow<Boolean> = _sideChannelEnabled.asStateFlow()
+
+    private val _showTelemetry = MutableStateFlow(settingsRepository.showTelemetry)
+    val showTelemetry: StateFlow<Boolean> = _showTelemetry.asStateFlow()
+
+    /** The transient live response overlay (null = nothing streaming over the side-channel). */
+    private val _liveStream = MutableStateFlow<LiveStream?>(null)
+    val liveStream: StateFlow<LiveStream?> = _liveStream.asStateFlow()
+    private var streamJob: Job? = null
+    private var streamClearJob: Job? = null
+
     // True while the agent is working (drives the waiting animation). Stays up through the agent's
     // thinking / tool-call / streaming phases and only clears after activity goes quiet.
     private val _awaitingReply = MutableStateFlow(false)
@@ -197,14 +229,19 @@ class ChatViewModel(
     }
 
     /** Pick the quiet window from the agent's latest message, and update the "what it's doing" label.
-     *  Mid-run (a tool call, or pure reasoning → more is coming) waits long; a real answer settles fast. */
+     *  Mid-run (a tool call, pure reasoning, or automated telemetry → more is coming) waits long;
+     *  a real answer settles fast. Telemetry counting as an "answer" was why the working banner and
+     *  quips vanished after one automated check-in even though the agent was still mid-run. */
     private fun updateWorkStateFrom(last: Message): Long {
         val segs = MessageParser.parse(last.content)
         val tools = segs.filterIsInstance<MessageParser.Segment.Tools>().flatMap { it.calls }
         val hasReasoning = segs.any { it is MessageParser.Segment.Thinking }
-        val hasAnswer = segs.any { it is MessageParser.Segment.Text && (it as MessageParser.Segment.Text).text.isNotBlank() }
+        val isTelemetry = MessageParser.isTelemetryMessage(last.content)
+        val hasAnswer = !isTelemetry &&
+            segs.any { it is MessageParser.Segment.Text && (it as MessageParser.Segment.Text).text.isNotBlank() }
         _workLabel.value = when {
             tools.isNotEmpty() -> "Running ${tools.last().name}"
+            isTelemetry -> "Working"
             hasReasoning && !hasAnswer -> "Reasoning"
             else -> "Working"
         }
@@ -248,6 +285,10 @@ class ChatViewModel(
 
                 if (last == null || last.sender == SenderType.ME) return@collect
 
+                // Side-channel handoff: the moment the committed Matrix event for the streamed
+                // response is present in the timeline, drop the overlay — same frame, no pop.
+                maybeHandOffStream(last, isNewMsg)
+
                 // updateWorkStateFrom both sets the "what it's doing" label and returns the adaptive
                 // quiet window; QUIET_LONG_MS means the agent is mid-run (a tool call, or reasoning
                 // with no answer yet — more is coming).
@@ -271,6 +312,9 @@ class ChatViewModel(
                 }
             }
         }
+        // The typing indicator is the authoritative "busy" signal; this collector was defined but
+        // never started, which is why the banner still died during long silent tool calls.
+        observeTyping()
     }
 
     /** Drive the working banner from Hermes' Matrix typing indicator — the authoritative "busy"
@@ -297,6 +341,108 @@ class ChatViewModel(
         }
     }
 
+    // --- Side-channel stream orchestration (tier-1) -------------------------------------------
+
+    /**
+     * Open the transient SSE subscription for this turn. Called right before the command is sent
+     * so the gateway sees the subscriber and diverts tokens here instead of protocol edits.
+     * Unreachable channel → the overlay silently vanishes and tier-2 (Matrix sync rendering,
+     * including any throttled m.replace edits) is simply what the user sees.
+     */
+    private fun openSideChannel(roomId: String) {
+        streamJob?.cancel()
+        streamClearJob?.cancel()
+        _liveStream.value = null
+        val url = _gatewayUrl.value.trim()
+        if (!_sideChannelEnabled.value || url.isBlank()) return
+        val client = chat.keryx.app.data.remote.HermesStreamClient(
+            baseUrl = url,
+            apiKey = _gatewayApiKey.value,
+            allowInsecure = settingsRepository.allowInsecure,
+        )
+        streamJob = viewModelScope.launch {
+            val buf = StringBuilder()
+            var lastDispatch = 0L
+            var charsSinceDispatch = 0
+            fun dispatch(status: LiveStreamStatus, finalText: String? = null) {
+                val cur = _liveStream.value ?: LiveStream(roomId, "", status, System.currentTimeMillis())
+                _liveStream.value = cur.copy(
+                    text = MessageParser.sanitizeStreamingTail(buf.toString()),
+                    status = status,
+                    finalText = finalText ?: cur.finalText,
+                )
+                lastDispatch = System.currentTimeMillis()
+                charsSinceDispatch = 0
+            }
+            _liveStream.value = LiveStream(roomId, "", LiveStreamStatus.CONNECTING, System.currentTimeMillis())
+            client.stream(roomId).collect { ev ->
+                when (ev) {
+                    is chat.keryx.app.data.remote.HermesStreamClient.Event.Opened ->
+                        dispatch(LiveStreamStatus.STREAMING)
+                    is chat.keryx.app.data.remote.HermesStreamClient.Event.Delta -> {
+                        buf.append(ev.text)
+                        charsSinceDispatch += ev.text.length
+                        val now = System.currentTimeMillis()
+                        if (now - lastDispatch >= STREAM_DISPATCH_MS || charsSinceDispatch >= STREAM_DISPATCH_CHARS) {
+                            dispatch(LiveStreamStatus.STREAMING)
+                        }
+                    }
+                    is chat.keryx.app.data.remote.HermesStreamClient.Event.SegmentBreak -> {
+                        if (buf.isNotEmpty() && !buf.endsWith("\n\n")) buf.append("\n\n")
+                    }
+                    is chat.keryx.app.data.remote.HermesStreamClient.Event.Stop -> {
+                        dispatch(LiveStreamStatus.AWAITING_SYNC, finalText = ev.finalText ?: buf.toString())
+                        scheduleStreamClear(STREAM_SYNC_GRACE_MS)
+                    }
+                    is chat.keryx.app.data.remote.HermesStreamClient.Event.Failed -> {
+                        if (!ev.connected || buf.isBlank()) {
+                            // Never connected / nothing shown yet: silent fallback to tier-2.
+                            _liveStream.value = null
+                        } else {
+                            // Mid-stream drop with visible partial text: keep it, show the alert,
+                            // and recover the moment the final event syncs via Matrix.
+                            dispatch(LiveStreamStatus.INTERRUPTED)
+                            scheduleStreamClear(STREAM_INTERRUPT_HOLD_MS)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun scheduleStreamClear(delayMs: Long) {
+        streamClearJob?.cancel()
+        streamClearJob = viewModelScope.launch {
+            delay(delayMs)
+            clearStream()
+        }
+    }
+
+    private fun clearStream() {
+        streamClearJob?.cancel()
+        streamJob?.cancel()
+        _liveStream.value = null
+    }
+
+    /** Drop the overlay when its committed Matrix counterpart is in the timeline. */
+    private fun maybeHandOffStream(last: Message, isNewMsg: Boolean) {
+        val s = _liveStream.value ?: return
+        if (last.sessionId != s.roomId) return
+        when (s.status) {
+            LiveStreamStatus.AWAITING_SYNC, LiveStreamStatus.STREAMING -> {
+                val target = s.finalText ?: s.text
+                if (target.isNotBlank() && StreamHandoff.matches(last.content, target)) clearStream()
+            }
+            LiveStreamStatus.INTERRUPTED -> {
+                // Any fresh substantive answer ends the recovery hold — the sync loop has caught up.
+                if (isNewMsg && !MessageParser.isTelemetryMessage(last.content) &&
+                    StreamHandoff.normalize(last.content).isNotBlank()
+                ) clearStream()
+            }
+            else -> Unit
+        }
+    }
+
     fun prefillComposer(text: String) { _composerPrefill.value = text }
     fun consumeComposerPrefill() { _composerPrefill.value = null }
 
@@ -316,6 +462,7 @@ class ChatViewModel(
         quietJob?.cancel()
         _awaitingReply.value = false
         _workStartedAt.value = null
+        clearStream() // the overlay is room-scoped; never carry it across a room switch
         // Re-baseline activity tracking so the newly-opened room is judged on its own recency, not
         // treated as "new activity" just because its last message differs from the previous room's.
         lastSeenId = null
@@ -500,6 +647,9 @@ class ChatViewModel(
         _workLabel.value = "Working"
         // Clear if the agent never responds at all; agent activity resets this to a shorter quiet timeout.
         scheduleClearAwaiting(NO_REPLY_MS)
+        // Subscribe the side-channel BEFORE the command lands, so the gateway already sees a
+        // live subscriber when it decides how to deliver this turn's tokens.
+        openSideChannel(session.id)
         viewModelScope.launch {
             if (replyTo != null) repository.sendReply(session.id, content, replyTo.id)
             else repository.sendMessage(session.id, content)
@@ -528,5 +678,32 @@ class ChatViewModel(
     fun setAllowInsecure(enabled: Boolean) {
         _allowInsecure.value = enabled
         settingsRepository.allowInsecure = enabled
+    }
+
+    fun setGatewayUrl(url: String) {
+        _gatewayUrl.value = url
+        settingsRepository.gatewayUrl = url
+    }
+
+    fun setGatewayApiKey(key: String) {
+        _gatewayApiKey.value = key
+        settingsRepository.gatewayApiKey = key
+    }
+
+    fun setSideChannelEnabled(enabled: Boolean) {
+        _sideChannelEnabled.value = enabled
+        settingsRepository.sideChannelEnabled = enabled
+        if (!enabled) clearStream()
+    }
+
+    fun setShowTelemetry(enabled: Boolean) {
+        _showTelemetry.value = enabled
+        settingsRepository.showTelemetry = enabled
+    }
+
+    /** Dynamic reasoning control: rides Hermes' native `/reasoning` command (per-session scope). */
+    fun sendReasoningCommand(arg: String) {
+        recordCommandUse("/reasoning")
+        sendMessage("/reasoning $arg".trim())
     }
 }

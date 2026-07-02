@@ -100,7 +100,11 @@ fun ToolCallCard(call: MessageParser.ToolCall, accent: Color, baseColor: Color) 
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Text("✓", color = accent.copy(alpha = 0.8f), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            // Verdict glyph: explicit failure reads loud, success stays quiet.
+            when (call.ok) {
+                false -> Text("✗", color = Color(0xFFE0524D), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                else -> Text("✓", color = accent.copy(alpha = 0.8f), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }
@@ -139,7 +143,11 @@ fun ToolGroupCard(
     val distinctEmoji = run.entries.filterIsInstance<ToolRunEntry.Call>()
         .map { it.call.emoji.ifBlank { "⚙" } }.distinct().take(3)
     val n = run.callCount
-    val label = if (active) "Running $n ${plural(n)}…" else "Ran $n ${plural(n)}"
+    val failed = run.entries.count { it is ToolRunEntry.Call && it.call.ok == false }
+    val label = buildString {
+        append(if (active) "Running $n ${plural(n)}…" else "Ran $n ${plural(n)}")
+        if (failed > 0) append(" · $failed failed")
+    }
 
     Column(
         horizontalAlignment = Alignment.Start,
@@ -200,6 +208,15 @@ fun ToolGroupCard(
                                     .background(baseColor.copy(alpha = 0.06f))
                                     .padding(horizontal = 10.dp, vertical = 8.dp),
                             )
+                            is ToolRunEntry.Action -> ActionOutputCard(entry.action, accent, baseColor)
+                            // A mid-run automated check-in: quieter than everything else in the run.
+                            is ToolRunEntry.Telemetry -> Text(
+                                text = entry.text,
+                                color = baseColor.copy(alpha = 0.45f),
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace,
+                                modifier = Modifier.padding(start = 8.dp, top = 2.dp, bottom = 2.dp),
+                            )
                         }
                     }
                 }
@@ -254,11 +271,14 @@ private fun RunReasoning(text: String, baseColor: Color, accent: Color) {
 
 private fun plural(n: Int) = if (n == 1) "tool" else "tools"
 
-/** One step inside a collapsed tool run: a tool invocation, or a tool's own output (stdout, a
- *  vision result, a table, …). Reasoning is NOT an entry — it's gathered into [ChatRenderItem.ToolRun.reasoning]. */
+/** One step inside a collapsed tool run: a tool invocation, a tool's own output (stdout, a
+ *  vision result, a table, …), a structured action payload, or a telemetry aside. Reasoning is NOT
+ *  an entry — it's gathered into [ChatRenderItem.ToolRun.reasoning]. */
 sealed interface ToolRunEntry {
     data class Call(val call: MessageParser.ToolCall) : ToolRunEntry
     data class Note(val text: String) : ToolRunEntry
+    data class Action(val action: MessageParser.Segment.ActionOutput) : ToolRunEntry
+    data class Telemetry(val text: String) : ToolRunEntry
 }
 
 /** One rendered row in the chat list: either a normal message bubble or a collapsed tool run. */
@@ -305,6 +325,8 @@ private fun segmentsToParts(segs: List<MessageParser.Segment>): MsgParts {
                 if (t.isNotBlank()) entries += ToolRunEntry.Note(t)
             }
             is MessageParser.Segment.Mermaid -> if (seg.code.isNotBlank()) entries += ToolRunEntry.Note(seg.code)
+            is MessageParser.Segment.ActionOutput -> entries += ToolRunEntry.Action(seg)
+            is MessageParser.Segment.Telemetry -> if (seg.text.isNotBlank()) entries += ToolRunEntry.Telemetry(seg.text)
             is MessageParser.Segment.Citations -> Unit
             is MessageParser.Segment.SkillDistilled -> Unit
         }
@@ -317,20 +339,41 @@ fun isToolMessage(m: Message): Boolean {
     if (m.sender == SenderType.ME) return false
     if (m.mediaKind != null) return false
     if (m.content.isBlank()) return false
-    return MessageParser.parse(m.content).any { it is MessageParser.Segment.Tools }
+    return MessageParser.parse(m.content).any {
+        it is MessageParser.Segment.Tools || it is MessageParser.Segment.ActionOutput
+    }
 }
 
-/** Drop a tool call that is identical (same name + args, glyph ignored) to the previous step — the
- *  doubled calls that show up when Hermes re-emits a step or sync replays an edit while you switch
- *  apps. Conservative: only strictly-adjacent duplicates are collapsed, so a genuine re-run that is
- *  separated by its output survives. */
-private fun dedupAdjacent(entries: List<ToolRunEntry>): List<ToolRunEntry> {
+/** True for an agent message that is pure automated telemetry (runtime footer, cron check-in…). */
+fun isTelemetryMessage(m: Message): Boolean {
+    if (m.sender == SenderType.ME || m.mediaKind != null || m.content.isBlank()) return false
+    return MessageParser.isTelemetryMessage(m.content)
+}
+
+/**
+ * Collapse the visually-doubled tool calls. Two duplication modes exist in the wild:
+ *  1. adjacent re-emission of the same step (an edit replay while you switch apps);
+ *  2. Hermes' `tool_progress_grouping: accumulate` — each new progress message repeats every
+ *     PREVIOUS call of the turn before appending the new one, so a run built from N messages
+ *     shows call #1 N times.
+ * We therefore drop a Call when the same (name, args) pair was already contributed by an EARLIER
+ * message of the run ([seenBefore]) or is strictly adjacent within this one. A genuine same-message
+ * re-run (same command retried after its output) survives, because within one message only the
+ * adjacent rule applies.
+ */
+private fun dedupCalls(entries: List<ToolRunEntry>, seenBefore: Set<Pair<String, String>>): List<ToolRunEntry> {
     val out = mutableListOf<ToolRunEntry>()
     for (e in entries) {
-        val prev = out.lastOrNull()
-        if (e is ToolRunEntry.Call && prev is ToolRunEntry.Call &&
-            e.call.name == prev.call.name && e.call.args == prev.call.args
-        ) continue
+        if (e is ToolRunEntry.Call) {
+            val key = e.call.name to e.call.args
+            if (key in seenBefore) continue
+            val prev = out.lastOrNull()
+            if (prev is ToolRunEntry.Call && prev.call.name == e.call.name && prev.call.args == e.call.args) {
+                // Same step re-announced adjacently: keep the one carrying a verdict if either does.
+                if (e.call.ok != null && prev.call.ok == null) { out[out.size - 1] = e }
+                continue
+            }
+        }
         out += e
     }
     return out
@@ -366,37 +409,52 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
             if (m.sender == SenderType.ME || m.mediaKind != null) break
             blockEnd++
         }
-        // Last tool-bearing message in the block (exclusive blockEnd).
+        // Last tool-bearing message in the block (exclusive blockEnd). Telemetry after the last
+        // tool does NOT end the run: it's automated noise, not the answer — extending the run over
+        // it is what keeps a mid-run status check-in from splitting one run into fragments that
+        // only "sometimes regroup".
         var lastTool = -1
         for (p in i until blockEnd) if (isToolMessage(chrono[p])) lastTool = p
+        var runEnd = lastTool
+        while (runEnd + 1 < blockEnd && isTelemetryMessage(chrono[runEnd + 1])) runEnd++
         if (lastTool < 0) {
             // A plain agent reply (no tools): normal bubbles.
             for (p in i until blockEnd) out += ChatRenderItem.Single(chrono[p])
             i = blockEnd; continue
         }
-        // Build steps + gather ALL surrounding prose as reasoning for [i .. lastTool].
+        // Build steps + gather ALL surrounding prose as reasoning for [i .. runEnd].
         val entries = mutableListOf<ToolRunEntry>()
         val reasoning = StringBuilder()
+        val seenCalls = mutableSetOf<Pair<String, String>>()
         fun addReasoning(t: String) { if (t.isNotBlank()) { if (reasoning.isNotEmpty()) reasoning.append("\n\n"); reasoning.append(t.trim()) } }
-        for (p in i..lastTool) {
+        for (p in i..runEnd) {
             val m = chrono[p]
             val parts = segmentsToParts(MessageParser.parse(m.content))
-            if (isToolMessage(m)) {
-                entries += parts.entries
-                parts.reasoning?.let { addReasoning(it) }
-            } else {
-                // Intro / "working…" status / standalone reasoning → into the reasoning block, not a
-                // loose bubble. (Use parsed reasoning if present, else the whole body.)
-                addReasoning(parts.reasoning ?: m.content)
+            when {
+                isToolMessage(m) -> {
+                    val deduped = dedupCalls(parts.entries, seenCalls)
+                    entries += deduped
+                    deduped.forEach { if (it is ToolRunEntry.Call) seenCalls += it.call.name to it.call.args }
+                    parts.reasoning?.let { addReasoning(it) }
+                }
+                isTelemetryMessage(m) -> {
+                    // Automated check-in mid-run: a quiet telemetry step, not reasoning or an answer.
+                    entries += ToolRunEntry.Telemetry(m.content.trim())
+                }
+                else -> {
+                    // Intro / "working…" status / standalone reasoning → into the reasoning block,
+                    // not a loose bubble. (Use parsed reasoning if present, else the whole body.)
+                    addReasoning(parts.reasoning ?: m.content)
+                }
             }
         }
         out += ChatRenderItem.ToolRun(
             id = chrono[i].id,
-            entries = dedupAdjacent(entries),
+            entries = entries,
             reasoning = reasoning.toString().ifBlank { null },
         )
-        // The final answer (anything after the last tool) stays a normal bubble.
-        for (p in (lastTool + 1) until blockEnd) out += ChatRenderItem.Single(chrono[p])
+        // The final answer (anything after the last tool / trailing telemetry) stays a normal bubble.
+        for (p in (runEnd + 1) until blockEnd) out += ChatRenderItem.Single(chrono[p])
         i = blockEnd
     }
     return out.asReversed()
