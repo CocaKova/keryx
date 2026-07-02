@@ -134,4 +134,28 @@ class HermesStreamClient(
     } catch (e: Exception) {
         null
     }
+
+    /**
+     * One-shot gateway health probe (`GET /health`) for the Settings "Test link" button. Success
+     * returns a short human line ("ok · hermes-agent 0.18.0"); every failure mode comes back as a
+     * plain Result failure so the caller can toast the reason.
+     */
+    suspend fun health(): Result<String> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            val request = Request.Builder()
+                .url(baseUrl.trimEnd('/') + "/health")
+                .apply { if (apiKey.isNotBlank()) header("Authorization", "Bearer $apiKey") }
+                .build()
+            // The shared client has no read timeout (SSE); a health probe must not hang like that.
+            val probe = client.newBuilder().readTimeout(5, TimeUnit.SECONDS).build()
+            probe.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) error("HTTP ${resp.code}")
+                val obj = json.parseToJsonElement(resp.body?.string().orEmpty()).jsonObject
+                val status = (obj["status"] as? JsonPrimitive)?.content ?: "ok"
+                val platform = (obj["platform"] as? JsonPrimitive)?.content
+                val version = (obj["version"] as? JsonPrimitive)?.content
+                listOfNotNull(status, platform, version).joinToString(" · ")
+            }
+        }
+    }
 }

@@ -26,7 +26,7 @@ interface SettingsRepository {
     var batteryPromptShown: Boolean
 
     // --- Hermes side-channel streaming (tier-1) ---
-    /** Base URL of the Hermes gateway API server (e.g. http://silas.local:8642). Blank = disabled. */
+    /** Base URL of the Hermes gateway API server (e.g. http://your-gateway-host:8642). Blank = disabled. */
     var gatewayUrl: String
     /** Bearer key for the gateway API server (API_SERVER_KEY). */
     var gatewayApiKey: String
@@ -34,4 +34,10 @@ interface SettingsRepository {
     var sideChannelEnabled: Boolean
     /** Show automated telemetry blocks (runtime footer, cron check-ins) in the chat. */
     var showTelemetry: Boolean
+
+    // --- Composer drafts ---
+    /** Unsent composer text for a room ("" when none). */
+    fun getDraft(roomId: String): String
+    /** Persist (or with "" clear) the unsent composer text for a room. */
+    fun setDraft(roomId: String, text: String)
 }

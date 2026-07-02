@@ -15,11 +15,12 @@ subscriber is attached:
 - `event: stop` ends the turn; the app holds its overlay until the final Matrix event syncs, then
   swaps seamlessly.
 
-**Tier 2 — smart-throttled protocol edits (fallback).** No subscriber attached (app closed,
-side-channel unreachable): Matrix falls back to native `m.replace` edit-streaming throttled by the
-standard streaming config — set to `edit_interval: 1.2` / `buffer_threshold: 60` so the homeserver
-sees at most ~1 edit per 1.2 s / 60 chars. Set `FALLBACK_EDITS = False` in `keryx_stream.py` to
-restore final-message-only behaviour instead.
+**Tier 2 — smart-throttled protocol edits (fallback, opt-in).** No subscriber attached (app
+closed, side-channel unreachable): by default Matrix simply receives the single final message.
+Set `KERYX_STREAM_FALLBACK_EDITS=1` in the gateway's environment to instead fall back to native
+`m.replace` edit-streaming throttled by the standard streaming config (`edit_interval: 1.2` /
+`buffer_threshold: 60` ≈ 1 edit per 1.2 s / 60 chars). Left off by default because clients that
+don't collapse `m.replace` fallbacks render the edit stream as duplicate bubbles.
 
 The switch is evaluated live per flush, so a subscriber attaching mid-turn immediately silences
 protocol edits and vice versa.

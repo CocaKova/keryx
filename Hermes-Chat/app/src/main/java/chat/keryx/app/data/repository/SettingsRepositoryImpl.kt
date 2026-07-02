@@ -90,6 +90,16 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getBoolean("show_telemetry", true)
         set(value) = prefs.edit().putBoolean("show_telemetry", value).apply()
 
+    // Drafts are tiny strings keyed per room; empty text removes the key so prefs never
+    // accumulate stale entries for rooms the user finished typing in.
+    override fun getDraft(roomId: String): String =
+        prefs.getString("draft_$roomId", "") ?: ""
+
+    override fun setDraft(roomId: String, text: String) {
+        if (text.isBlank()) prefs.edit().remove("draft_$roomId").apply()
+        else prefs.edit().putString("draft_$roomId", text).apply()
+    }
+
     private fun defaultGatewayUrl(): String {
         val host = runCatching { URI(homeserverUrl).host }
             .getOrNull()

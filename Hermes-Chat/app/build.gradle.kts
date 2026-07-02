@@ -1,9 +1,23 @@
+import java.util.Properties
+
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.ksp)
 }
+
+// Release signing comes from local.properties (never committed):
+//   keryx.keystore=/absolute/path/to/release.keystore
+//   keryx.keystore.password=…
+//   keryx.key.alias=…
+//   keryx.key.password=…
+// Absent those, release builds fall back to the debug keystore (sideload/dev convenience).
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+val releaseKeystorePath: String? = localProps.getProperty("keryx.keystore")
 
 android {
     namespace = "chat.keryx.app"
@@ -12,17 +26,30 @@ android {
         applicationId = "chat.keryx.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
+        versionCode = 2
         versionName = "1.0"
+    }
+
+    signingConfigs {
+        if (releaseKeystorePath != null) {
+            create("release") {
+                storeFile = file(releaseKeystorePath)
+                storePassword = localProps.getProperty("keryx.keystore.password")
+                keyAlias = localProps.getProperty("keryx.key.alias")
+                keyPassword = localProps.getProperty("keryx.key.password")
+            }
+        }
     }
 
     buildTypes {
         release {
+            // Minification stays OFF until the R8 keeps in proguard-rules.pro have been verified
+            // on-device (Trixnity + kotlinx-serialization are reflection-heavy; an untested
+            // minified build is worse than a slightly larger honest one).
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Personal sideload build: sign with the debug keystore so `adb install -r` upgrades
-            // the existing install in place. Swap for a real keystore before any distribution.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (releaseKeystorePath != null) signingConfigs.getByName("release")
+                else signingConfigs.getByName("debug")
         }
     }
     compileOptions {
@@ -32,7 +59,7 @@ android {
     buildFeatures {
       compose = true
       aidl = false
-      buildConfig = false
+      buildConfig = true
       shaders = false
     }
 

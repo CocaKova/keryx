@@ -180,6 +180,14 @@ class ChatViewModel(
     private val _sideChannelEnabled = MutableStateFlow(settingsRepository.sideChannelEnabled)
     val sideChannelEnabled: StateFlow<Boolean> = _sideChannelEnabled.asStateFlow()
 
+    // Last known Hermes Link health, surfaced as the quiet top-bar dot. Session-scoped: it starts
+    // UNKNOWN and is updated by every side-channel attempt and by the Settings "Test link" probe.
+    private val _linkHealth = MutableStateFlow(
+        if (settingsRepository.sideChannelEnabled && settingsRepository.gatewayUrl.isNotBlank())
+            LinkHealth.UNKNOWN else LinkHealth.OFF
+    )
+    val linkHealth: StateFlow<LinkHealth> = _linkHealth.asStateFlow()
+
     private val _showTelemetry = MutableStateFlow(settingsRepository.showTelemetry)
     val showTelemetry: StateFlow<Boolean> = _showTelemetry.asStateFlow()
 
@@ -370,7 +378,10 @@ class ChatViewModel(
         streamClearJob?.cancel()
         _liveStream.value = null
         val url = _gatewayUrl.value.trim()
-        if (!_sideChannelEnabled.value || url.isBlank()) return
+        if (!_sideChannelEnabled.value || url.isBlank()) {
+            _linkHealth.value = LinkHealth.OFF
+            return
+        }
         val client = chat.keryx.app.data.remote.HermesStreamClient(
             baseUrl = url,
             apiKey = _gatewayApiKey.value,
@@ -393,8 +404,10 @@ class ChatViewModel(
             _liveStream.value = LiveStream(roomId, "", LiveStreamStatus.CONNECTING, System.currentTimeMillis())
             client.stream(roomId).collect { ev ->
                 when (ev) {
-                    is chat.keryx.app.data.remote.HermesStreamClient.Event.Opened ->
+                    is chat.keryx.app.data.remote.HermesStreamClient.Event.Opened -> {
+                        _linkHealth.value = LinkHealth.LIVE
                         dispatch(LiveStreamStatus.STREAMING)
+                    }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Delta -> {
                         buf.append(ev.text)
                         charsSinceDispatch += ev.text.length
@@ -407,10 +420,13 @@ class ChatViewModel(
                         if (buf.isNotEmpty() && !buf.endsWith("\n\n")) buf.append("\n\n")
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Stop -> {
+                        _linkHealth.value = LinkHealth.OK
                         dispatch(LiveStreamStatus.AWAITING_SYNC, finalText = ev.finalText ?: buf.toString())
                         scheduleStreamClear(STREAM_SYNC_GRACE_MS)
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Failed -> {
+                        if (!ev.connected) _linkHealth.value = LinkHealth.UNREACHABLE
+                        else if (_linkHealth.value == LinkHealth.LIVE) _linkHealth.value = LinkHealth.OK
                         if (!ev.connected || buf.isBlank()) {
                             // Never connected / nothing shown yet: fall back to tier-2, but SAY so —
                             // a silently dead side-channel just looks like "streaming doesn't work".
@@ -634,7 +650,12 @@ class ChatViewModel(
         // so it auto-dismisses once a command is chosen and the user moves on to its arguments.
         _commandMenuVisible.value = text.startsWith("/") && !text.contains(' ')
         if (text.startsWith("/")) _commandFilter.value = text.removePrefix("/").substringBefore(' ')
+        // Keep the per-room draft current so an app kill / room switch never loses typed text.
+        _currentSession.value?.id?.let { settingsRepository.setDraft(it, text) }
     }
+
+    /** The saved (unsent) composer text for [roomId] — restored when the room opens. */
+    fun draftFor(roomId: String): String = settingsRepository.getDraft(roomId)
 
     /** Remember a slash command the user picked, so the palette can surface recents first. */
     fun recordCommandUse(command: String) {
@@ -700,6 +721,7 @@ class ChatViewModel(
             else repository.sendMessage(session.id, content)
         }
         _replyTarget.value = null
+        settingsRepository.setDraft(session.id, "")
     }
 
     fun loginToMatrix(username: String, password: String, onResult: (Boolean, String?) -> Unit) {
@@ -728,17 +750,45 @@ class ChatViewModel(
     fun setGatewayUrl(url: String) {
         _gatewayUrl.value = url
         settingsRepository.gatewayUrl = url
+        _linkHealth.value = if (url.isBlank()) LinkHealth.OFF else LinkHealth.UNKNOWN
     }
 
     fun setGatewayApiKey(key: String) {
         _gatewayApiKey.value = key
         settingsRepository.gatewayApiKey = key
+        if (_linkHealth.value != LinkHealth.OFF) _linkHealth.value = LinkHealth.UNKNOWN
     }
 
     fun setSideChannelEnabled(enabled: Boolean) {
         _sideChannelEnabled.value = enabled
         settingsRepository.sideChannelEnabled = enabled
-        if (!enabled) clearStream()
+        if (!enabled) {
+            clearStream()
+            _linkHealth.value = LinkHealth.OFF
+        } else {
+            _linkHealth.value = if (_gatewayUrl.value.isBlank()) LinkHealth.OFF else LinkHealth.UNKNOWN
+        }
+    }
+
+    /** Settings "Test link": one-shot /health probe against the configured gateway, result toasted. */
+    fun testGatewayLink() {
+        val url = _gatewayUrl.value.trim()
+        if (url.isBlank()) {
+            _toasts.tryEmit("Set a Gateway URL first")
+            return
+        }
+        viewModelScope.launch {
+            chat.keryx.app.data.remote.HermesStreamClient(url, _gatewayApiKey.value, settingsRepository.allowInsecure)
+                .health()
+                .onSuccess {
+                    _linkHealth.value = LinkHealth.OK
+                    _toasts.tryEmit("Hermes Link OK — $it")
+                }
+                .onFailure {
+                    _linkHealth.value = LinkHealth.UNREACHABLE
+                    _toasts.tryEmit("Hermes Link failed: ${(it.message ?: "connection error").take(80)}")
+                }
+        }
     }
 
     fun setShowTelemetry(enabled: Boolean) {

@@ -106,6 +106,7 @@ fun NavigationDrawerContent(
             onGatewayApiKeyChanged = { viewModel.setGatewayApiKey(it) },
             sideChannelEnabled = sideChannelEnabled,
             onSideChannelEnabledChanged = { viewModel.setSideChannelEnabled(it) },
+            onTestLink = { viewModel.testGatewayLink() },
             showTelemetry = showTelemetry,
             onShowTelemetryChanged = { viewModel.setShowTelemetry(it) },
             biometricLockEnabled = biometricLockEnabled,

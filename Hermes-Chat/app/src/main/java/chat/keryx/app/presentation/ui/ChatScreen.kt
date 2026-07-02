@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material3.*
@@ -131,6 +132,15 @@ fun ChatScreen(
     val byId = remember(messages) { messages.associateBy { it.id } }
     // Collapse runs of consecutive tool-only messages into one expandable "Ran N tools" group.
     val renderItems = remember(messages) { groupChatItems(ordered) }
+
+    // Restore this room's unsent draft when it opens (and swap drafts when switching rooms) so
+    // half-typed thoughts survive room hops and app restarts.
+    LaunchedEffect(currentSession?.id) {
+        val roomId = currentSession?.id ?: return@LaunchedEffect
+        val draft = viewModel.draftFor(roomId)
+        textState = TextFieldValue(draft, selection = TextRange(draft.length))
+        viewModel.onComposerTextChanged(draft)
+    }
 
     // Drop a Steer (or other) prefill into the composer and focus it.
     LaunchedEffect(composerPrefill) {
@@ -268,6 +278,59 @@ fun ChatScreen(
                             )
                         }
                     }
+                }
+            }
+        }
+
+        // Jump-to-now: while scrolled up into history, a frosted chip floats above the composer;
+        // it counts agent messages that landed meanwhile and sails back to the newest on tap.
+        var missedWhileAway by remember { mutableStateOf(0) }
+        LaunchedEffect(messages.lastOrNull()?.id) {
+            val last = messages.lastOrNull() ?: return@LaunchedEffect
+            if (!atBottom && last.sender != SenderType.ME) missedWhileAway++
+        }
+        LaunchedEffect(atBottom) { if (atBottom) missedWhileAway = 0 }
+        val showJump by remember { derivedStateOf { listState.firstVisibleItemIndex > 4 } }
+        AnimatedVisibility(
+            visible = showJump,
+            enter = fadeIn(tween(160)) + scaleIn(initialScale = 0.85f),
+            exit = fadeOut(tween(120)) + scaleOut(targetScale = 0.9f),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = bottomReserve + 10.dp, end = 18.dp),
+        ) {
+            val accent = MaterialTheme.colorScheme.primary
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                shadowElevation = 8.dp,
+                modifier = Modifier.border(
+                    width = 1.dp,
+                    brush = Brush.verticalGradient(listOf(accent.copy(alpha = 0.45f), accent.copy(alpha = 0.10f))),
+                    shape = RoundedCornerShape(18.dp),
+                ),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clickable { scope.launch { listState.animateScrollToItem(0) } }
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                ) {
+                    if (missedWhileAway > 0) {
+                        Text(
+                            text = if (missedWhileAway > 9) "9+" else "$missedWhileAway",
+                            color = accent,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(end = 6.dp),
+                        )
+                    }
+                    Icon(
+                        Icons.Default.KeyboardArrowDown,
+                        contentDescription = "Jump to newest",
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                        modifier = Modifier.size(18.dp),
+                    )
                 }
             }
         }

@@ -50,6 +50,7 @@ fun SettingsScreen(
     onGatewayApiKeyChanged: (String) -> Unit,
     sideChannelEnabled: Boolean,
     onSideChannelEnabledChanged: (Boolean) -> Unit,
+    onTestLink: () -> Unit,
     showTelemetry: Boolean,
     onShowTelemetryChanged: (Boolean) -> Unit,
     biometricLockEnabled: Boolean,
@@ -209,7 +210,7 @@ fun SettingsScreen(
                             value = gatewayUrl,
                             onValueChange = onGatewayUrlChanged,
                             label = { Text("Gateway URL") },
-                            placeholder = { Text("http://silas.local:8642") },
+                            placeholder = { Text("http://your-gateway-host:8642") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             enabled = sideChannelEnabled,
@@ -230,6 +231,16 @@ fun SettingsScreen(
                             singleLine = true,
                             enabled = sideChannelEnabled,
                         )
+                        Spacer(Modifier.height(10.dp))
+                        // One-tap sanity check: probes the gateway's /health with the values above
+                        // and toasts the result, so "why isn't it streaming" is never a mystery.
+                        OutlinedButton(
+                            onClick = onTestLink,
+                            enabled = sideChannelEnabled,
+                            shape = RoundedCornerShape(12.dp),
+                        ) {
+                            Text("Test link", fontSize = 13.sp)
+                        }
                         Spacer(Modifier.height(8.dp))
                         SettingsSwitchRow(
                             title = "Show telemetry",
@@ -332,6 +343,45 @@ fun SettingsScreen(
                                 )
                             }
                         }
+                    }
+
+                    SettingsCard("Diagnostics") {
+                        val diagContext = androidx.compose.ui.platform.LocalContext.current
+                        var crashText by remember { mutableStateOf(chat.keryx.app.CrashLog.read(diagContext)) }
+                        Text(
+                            text = if (crashText.isBlank()) "No crashes recorded"
+                                else "Crash log: ${crashText.length / 1024} KB recorded",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 13.sp,
+                        )
+                        Text(
+                            text = "Kept only on this device; share it when reporting a bug.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            fontSize = 11.sp,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            OutlinedButton(
+                                onClick = { chat.keryx.app.CrashLog.share(diagContext) },
+                                enabled = crashText.isNotBlank(),
+                                shape = RoundedCornerShape(12.dp),
+                            ) { Text("Share", fontSize = 13.sp) }
+                            OutlinedButton(
+                                onClick = {
+                                    chat.keryx.app.CrashLog.clear(diagContext)
+                                    crashText = ""
+                                },
+                                enabled = crashText.isNotBlank(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                            ) { Text("Clear", fontSize = 13.sp) }
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = "Keryx v${chat.keryx.app.BuildConfig.VERSION_NAME}",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            fontSize = 11.sp,
+                        )
                     }
 
                     Spacer(Modifier.height(40.dp))

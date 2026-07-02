@@ -54,6 +54,20 @@ enum class LiveStreamStatus {
     INTERRUPTED,
 }
 
+/** Last known health of the Hermes Link side-channel, for the top-bar indicator. */
+enum class LinkHealth {
+    /** Side-channel disabled or no gateway URL configured. */
+    OFF,
+    /** Enabled but not yet exercised this session. */
+    UNKNOWN,
+    /** Last probe/turn reached the gateway. */
+    OK,
+    /** Tokens are flowing right now. */
+    LIVE,
+    /** Last attempt could not reach the gateway (falling back to Matrix sync). */
+    UNREACHABLE,
+}
+
 /** The transient, room-scoped live response being streamed over the side-channel. */
 data class LiveStream(
     val roomId: String,

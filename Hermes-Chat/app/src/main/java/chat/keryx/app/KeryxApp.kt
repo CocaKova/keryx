@@ -43,6 +43,7 @@ class KeryxApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        CrashLog.install(applicationContext)
         settingsRepository = SettingsRepositoryImpl(applicationContext)
         matrixService = MatrixService(applicationContext)
         repository = ChatRepositoryImpl(matrixService, settingsRepository)

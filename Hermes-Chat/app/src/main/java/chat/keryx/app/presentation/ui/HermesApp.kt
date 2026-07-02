@@ -1,7 +1,12 @@
 package chat.keryx.app.presentation.ui
 
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -112,6 +117,10 @@ fun HermesApp(viewModel: ChatViewModel) {
                         }
                     },
                     actions = {
+                        // Hermes Link health, whispered: a tiny dot that breathes while tokens flow,
+                        // dims when idle, warms red when the gateway is unreachable. Tap explains.
+                        val linkHealth by viewModel.linkHealth.collectAsState()
+                        LinkHealthDot(health = linkHealth)
                         if (currentSession != null) {
                             // Dynamic reasoning control via Hermes' native /reasoning command.
                             // Effort levels persist with --global; show/hide persists per-platform
@@ -152,6 +161,56 @@ fun HermesApp(viewModel: ChatViewModel) {
             )
         }
         }
+    }
+}
+
+/**
+ * Hermes Link health as a single quiet dot: accent and breathing while tokens flow, steady when the
+ * last turn/probe reached the gateway, dim when untested, warm red when unreachable, gone when the
+ * side-channel is off. Tapping it toasts the state in words.
+ */
+@Composable
+private fun LinkHealthDot(health: chat.keryx.app.presentation.LinkHealth) {
+    if (health == chat.keryx.app.presentation.LinkHealth.OFF) return
+    val accent = MaterialTheme.colorScheme.primary
+    val alpha = if (health == chat.keryx.app.presentation.LinkHealth.LIVE) {
+        val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "linkBreath")
+        t.animateFloat(
+            initialValue = 0.35f,
+            targetValue = 1f,
+            animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                androidx.compose.animation.core.tween(900),
+                androidx.compose.animation.core.RepeatMode.Reverse,
+            ),
+            label = "linkBreathAlpha",
+        ).value
+    } else 1f
+    val color = when (health) {
+        chat.keryx.app.presentation.LinkHealth.LIVE -> accent.copy(alpha = alpha)
+        chat.keryx.app.presentation.LinkHealth.OK -> accent.copy(alpha = 0.75f)
+        chat.keryx.app.presentation.LinkHealth.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+        else -> Color(0xFFE0524D).copy(alpha = 0.85f)
+    }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val label = when (health) {
+        chat.keryx.app.presentation.LinkHealth.LIVE -> "Hermes Link: streaming live"
+        chat.keryx.app.presentation.LinkHealth.OK -> "Hermes Link: connected"
+        chat.keryx.app.presentation.LinkHealth.UNKNOWN -> "Hermes Link: not tested yet"
+        else -> "Hermes Link: unreachable — replies fall back to Matrix sync"
+    }
+    Box(
+        contentAlignment = androidx.compose.ui.Alignment.Center,
+        modifier = Modifier.size(24.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(7.dp)
+                .clip(CircleShape)
+                .background(color)
+                .clickable {
+                    android.widget.Toast.makeText(context, label, android.widget.Toast.LENGTH_SHORT).show()
+                },
+        )
     }
 }
 
