@@ -153,15 +153,30 @@ fun ChatScreen(
         }
     }
 
-    // Follow new messages / edits when the user is at (or near) the bottom, or the new message is
-    // our own. Keyed on a signature that also changes on streamed edits AND live side-channel
-    // tokens (content length / tool state / stream length) so the view keeps following the stream.
-    val atBottom by remember { derivedStateOf { listState.firstVisibleItemIndex <= 1 } }
+    // Follow new messages / edits ONLY while the user is actually at the bottom. Two past bugs
+    // live here: (1) "at bottom" must be index 0 with a small pixel offset — `index <= 1` stayed
+    // true a full screen up inside the tall growing stream bubble; (2) the old "or the last
+    // message is mine" clause locked scrolling for entire streamed turns, because while the agent
+    // streams the newest COMMITTED message is your own command — every 100ms token dispatch
+    // yanked the list back down. Own sends get their own effect below instead.
+    val bottomThresholdPx = with(density) { 56.dp.toPx() }
+    val atBottom by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset <= bottomThresholdPx
+        }
+    }
+    // Signature changes on streamed edits AND live side-channel tokens (content length / tool
+    // state / stream length) so the view keeps following the stream while pinned.
     val lastSignature = (messages.lastOrNull()?.let { "${it.id}:${it.content.length}:${it.toolActivity?.status?.name ?: ""}" } ?: "") +
-        ":${liveStream?.text?.length ?: 0}:${pendingSend?.sentAt ?: 0}"
+        ":${liveStream?.text?.length ?: 0}"
     LaunchedEffect(lastSignature, awaitingReply) {
-        val mine = messages.lastOrNull()?.sender == SenderType.ME
-        if (atBottom || mine) listState.animateScrollToItem(0)
+        // Never fight an active user drag/fling — that's what made scroll-up impossible mid-stream.
+        if (atBottom && !listState.isScrollInProgress) listState.scrollToItem(0)
+    }
+    // A message I just sent always snaps to the newest, wherever I was scrolled.
+    val lastMineId = messages.lastOrNull()?.takeIf { it.sender == SenderType.ME }?.id
+    LaunchedEffect(pendingSend?.sentAt, lastMineId) {
+        if (pendingSend != null || lastMineId != null) listState.animateScrollToItem(0)
     }
 
     // Pagination: when the oldest loaded item scrolls into view, request more history.
@@ -236,7 +251,7 @@ fun ChatScreen(
             // of waiting for the homeserver echo. Hidden the frame the real event is in the list.
             val pending = pendingSend
             val echoLanded = pending != null && messages.lastOrNull()?.let {
-                it.sender == SenderType.ME && it.content.trim() == pending.text.trim()
+                it.sender == SenderType.ME && ChatViewModel.pendingEchoMatches(it.content, pending.text)
             } == true
             if (pending != null && pending.roomId == currentSession?.id && !echoLanded) {
                 item(key = "pendingsend") {

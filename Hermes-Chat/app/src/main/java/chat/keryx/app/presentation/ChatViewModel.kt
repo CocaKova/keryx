@@ -76,6 +76,15 @@ class ChatViewModel(
         // How long to keep partial text + the alert after a mid-stream drop before giving the
         // timeline back to plain Matrix rendering.
         private const val STREAM_INTERRUPT_HOLD_MS = 60_000L
+
+        /** True when a timeline event [echo] is the homeserver copy of the optimistic [sent] text.
+         *  Reply sends come back wrapped (quote-fallback prefix), so an exact match OR the echo
+         *  ending with the sent text both count. */
+        fun pendingEchoMatches(echo: String, sent: String): Boolean {
+            val e = echo.trim()
+            val s = sent.trim()
+            return s.isNotEmpty() && (e == s || e.endsWith(s))
+        }
     }
 
     val isLoggedIn: StateFlow<Boolean> = repository.isLoggedIn()
@@ -313,21 +322,25 @@ class ChatViewModel(
                 lastSeenLen = last?.content?.length ?: -1
 
                 if (last == null) return@collect
-                if (last.sender == SenderType.ME) {
-                    // Our echo is back from the homeserver: retire the optimistic send bubble the
-                    // same frame its real timeline event renders — that's the seamless swap.
-                    val pending = _pendingSend.value
-                    if (pending != null && last.sessionId == pending.roomId &&
-                        last.content.trim() == pending.text.trim()
-                    ) clearPendingSend()
-                    return@collect
-                }
 
                 // Side-channel handoff: the moment the committed Matrix event for the streamed
                 // response is present in the timeline, drop the overlay — same frame, no pop. Look
                 // beyond just the last event because Hermes may emit a separate runtime footer right
                 // after the answer; that footer must not keep the stream bubble pinned until timeout.
+                // Runs BEFORE the own-echo early-return: an emission whose last event is my echo can
+                // still be the one that carried the committed answer into the list.
                 maybeHandOffStream(msgs, last, isNewMsg)
+
+                if (last.sender == SenderType.ME) {
+                    // Our echo is back from the homeserver: retire the optimistic send bubble the
+                    // same frame its real timeline event renders — that's the seamless swap. Reply
+                    // echoes may carry a quote-fallback prefix, so suffix match is accepted too.
+                    val pending = _pendingSend.value
+                    if (pending != null && last.sessionId == pending.roomId &&
+                        pendingEchoMatches(last.content, pending.text)
+                    ) clearPendingSend()
+                    return@collect
+                }
 
                 // updateWorkStateFrom both sets the "what it's doing" label and returns the adaptive
                 // quiet window; QUIET_LONG_MS means the agent is mid-run (a tool call, or reasoning
@@ -455,7 +468,12 @@ class ChatViewModel(
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Stop -> {
                         _linkHealth.value = LinkHealth.OK
                         dispatch(LiveStreamStatus.AWAITING_SYNC, finalText = ev.finalText ?: buf.toString())
-                        scheduleStreamClear(STREAM_SYNC_GRACE_MS)
+                        // The committed event may have synced BEFORE stop arrived; nothing else
+                        // re-triggers the handoff check (the messages flow won't emit again), so
+                        // evaluate against the current timeline right now — otherwise the overlay
+                        // sits beside its own committed copy until the sync-grace timeout.
+                        messages.value.lastOrNull()?.let { maybeHandOffStream(messages.value, it, isNewMsg = false) }
+                        if (_liveStream.value != null) scheduleStreamClear(STREAM_SYNC_GRACE_MS)
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Failed -> {
                         if (!ev.connected) _linkHealth.value = LinkHealth.UNREACHABLE

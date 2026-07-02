@@ -147,6 +147,14 @@ object MessageParser {
         return if (open) text + "\n```" else text
     }
 
+    // Every reasoning-tag spelling we accept; a half-typed prefix of one of these at the very end
+    // of a live stream must be held back, not rendered as literal text.
+    private val TAIL_TAG_CANDIDATES = listOf(
+        "<think>", "<thinking>", "<reasoning>", "<thought>",
+        "</think>", "</thinking>", "</reasoning>", "</thought>",
+        "◁think▷", "◁/think▷",
+    )
+
     /** Trim artifacts a live token stream leaves at the tail: a half-written ⟦marker⟧, a lone
      *  partial fence opener, or dangling inline-marker garbage. Only touches the very end. */
     fun sanitizeStreamingTail(text: String): String {
@@ -158,6 +166,16 @@ object MessageParser {
         val lines = s.lines()
         if (lines.isNotEmpty() && lines.last().trim().matches(Regex("^`{1,2}$"))) {
             s = lines.dropLast(1).joinToString("\n")
+        }
+        s = s.trimEnd()
+        // A half-typed reasoning tag at the very end ("<thin", "</think", "◁thi"): hold it back so
+        // it never flashes as literal text between two token dispatches. Complete tags are left
+        // alone — extractReasoning owns those.
+        val tagStart = maxOf(s.lastIndexOf('<'), s.lastIndexOf('◁'))
+        if (tagStart >= 0) {
+            val tail = s.substring(tagStart).lowercase()
+            val partial = TAIL_TAG_CANDIDATES.any { it.startsWith(tail) && it.length > tail.length }
+            if (partial) s = s.substring(0, tagStart)
         }
         return s.trimEnd()
     }
@@ -173,25 +191,34 @@ object MessageParser {
     // A tag opened but never closed (mid-stream, or a brain that forgot): everything after it is
     // reasoning-so-far — treat it as such rather than leaking raw tag text into the bubble.
     private val THINK_TAG_OPEN = Regex("""(?is)<(think|thinking|reasoning|thought)>|◁think▷""")
-    // "code" style:  💭 **Reasoning:**\n```\n…\n```\n\n<answer>
-    private val REASON_CODE = Regex("""(?s)^\s*💭\s*\*\*Reasoning:?\*\*\s*\n```[a-zA-Z0-9]*\n(.*?)\n```\s*(.*)$""")
-    // "blockquote" style:  > 💭 **Reasoning:**\n> …\n\n<answer>
-    // The quoted lines use [^\n] (not `.`): under (?s) a greedy `.` crosses newlines and swallows
-    // the answer into the reasoning group, leaving an empty body.
-    private val REASON_QUOTE = Regex("""(?s)^\s*>\s*💭\s*\*\*Reasoning:?\*\*\s*\n((?:>[^\n]*(?:\n|$))+)(.*)$""")
-    // "subtext" style:  -# 💭 Reasoning\n-# …\n\n<answer>
-    private val REASON_SUBTEXT = Regex("""(?s)^\s*-#\s*💭\s*Reasoning\s*\n((?:-#[^\n]*(?:\n|$))+)(.*)$""")
+    // "code" style:  💭 **Reasoning:**\n```\n…\n```\n\n<answer>   (bold optional — some brains
+    // emit the header without the ** wrapper)
+    private val REASON_CODE = Regex("""(?s)^\s*💭\s*\*{0,2}Reasoning:?\*{0,2}\s*\n```[a-zA-Z0-9]*\n(.*?)\n```\s*(.*)$""")
+    // Header lines for the "blockquote" (`> 💭 **Reasoning:**`) and "subtext" (`-# 💭 Reasoning`)
+    // styles. The quoted/prefixed lines that follow are walked imperatively (not with one big
+    // regex) so a blank line INSIDE the reasoning block — which the old `(?:>[^\n]*\n)+` group
+    // stopped at, leaking the rest of the reasoning into the answer — stays part of the block as
+    // long as another prefixed line follows.
+    private val REASON_QUOTE_HEADER = Regex("""^\s*>\s*💭\s*\*{0,2}Reasoning:?\*{0,2}\s*$""")
+    private val REASON_SUBTEXT_HEADER = Regex("""^\s*-#\s*💭\s*\*{0,2}Reasoning:?\*{0,2}\s*$""")
 
     /** Pull any leading/embedded reasoning out of [content]; returns (reasoning?, remainingBody). */
     fun extractReasoning(content: String): Pair<String?, String> {
-        // 1) Raw <think> tags anywhere → concatenate, strip from body.
+        // 1) Raw <think> tags anywhere → concatenate, strip from body. A SECOND tag that is still
+        //    open (mid-stream: one thought finished, the next being written) is also reasoning —
+        //    without this the unclosed tail leaked into the answer as raw tag text.
         if (THINK_TAG.containsMatchIn(content)) {
-            val reasoning = THINK_TAG.findAll(content).joinToString("\n\n") {
+            val parts = THINK_TAG.findAll(content).map {
                 // Group 2 = <tag> body, group 3 = ◁think▷ body (whichever alternative matched).
                 it.groupValues[2].ifEmpty { it.groupValues[3] }.trim()
+            }.toMutableList()
+            var body = THINK_TAG.replace(content, "").trim()
+            THINK_TAG_OPEN.find(body)?.let { m ->
+                parts.add(body.substring(m.range.last + 1).trim())
+                body = body.substring(0, m.range.first).trim()
             }
-            val body = THINK_TAG.replace(content, "").trim()
-            return reasoning.trim().ifBlank { null } to body
+            val reasoning = parts.filter { it.isNotBlank() }.joinToString("\n\n")
+            return reasoning.ifBlank { null } to body
         }
         // 1b) An unclosed tag (mid-stream): the tail is reasoning-in-progress.
         THINK_TAG_OPEN.find(content)?.let { m ->
@@ -203,15 +230,44 @@ object MessageParser {
         REASON_CODE.matchEntire(content)?.let { m ->
             return m.groupValues[1].trim().ifBlank { null } to m.groupValues[2].trim()
         }
-        REASON_QUOTE.matchEntire(content)?.let { m ->
-            val reasoning = m.groupValues[1].lines().joinToString("\n") { it.removePrefix(">").trimStart() }
-            return reasoning.trim().ifBlank { null } to m.groupValues[2].trim()
-        }
-        REASON_SUBTEXT.matchEntire(content)?.let { m ->
-            val reasoning = m.groupValues[1].lines().joinToString("\n") { it.removePrefix("-#").trimStart() }
-            return reasoning.trim().ifBlank { null } to m.groupValues[2].trim()
-        }
+        extractLinePrefixedReasoning(content, REASON_QUOTE_HEADER, ">")?.let { return it }
+        extractLinePrefixedReasoning(content, REASON_SUBTEXT_HEADER, "-#")?.let { return it }
         return null to content
+    }
+
+    /** Walk a `> …`/`-# …` reasoning block that starts with [header]: consume prefixed lines, and
+     *  blank lines too when more prefixed lines follow. Returns (reasoning?, body) or null when
+     *  [content] doesn't open with this style. */
+    private fun extractLinePrefixedReasoning(
+        content: String,
+        header: Regex,
+        prefix: String,
+    ): Pair<String?, String>? {
+        val lines = content.lines()
+        var i = 0
+        while (i < lines.size && lines[i].isBlank()) i++
+        if (i >= lines.size || !header.matches(lines[i])) return null
+        i++
+        val reason = StringBuilder()
+        var consumedUntil = i
+        var blanksPending = 0
+        var j = i
+        while (j < lines.size) {
+            val l = lines[j]
+            when {
+                l.trimStart().startsWith(prefix) -> {
+                    if (blanksPending > 0 && reason.isNotEmpty()) reason.append('\n')
+                    blanksPending = 0
+                    reason.append(l.trimStart().removePrefix(prefix).trimStart()).append('\n')
+                    consumedUntil = j + 1
+                    j++
+                }
+                l.isBlank() -> { blanksPending++; j++ }
+                else -> break
+            }
+        }
+        val body = lines.drop(consumedUntil).joinToString("\n").trim()
+        return (reason.toString().trim().ifBlank { null }) to body
     }
 
     // --- Keryx marker protocol v1 -----------------------------------------------------------------
@@ -285,9 +341,11 @@ object MessageParser {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     private fun parseUncached(content: String): List<Segment> {
-        val (reasoning, body0) = extractReasoning(content)
-        val keryx = extractKeryx(body0)
-        val body = keryx.text
+        // Markers first: the keryx plugin may prepend its ⟦keryx:v1⟧ beacon (or scatter citation
+        // markers into the reasoning), and the 💭 prelude patterns are start-anchored — extracting
+        // reasoning from the raw body made the whole block leak into the answer as prose.
+        val keryx = extractKeryx(content)
+        val (reasoning, body) = extractReasoning(keryx.text)
         val segments = mutableListOf<Segment>()
         if (reasoning != null) segments.add(Segment.Thinking(reasoning))
         val lines = body.lines()

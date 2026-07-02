@@ -279,4 +279,83 @@ class MessageParserTest {
             .filterIsInstance<MessageParser.Segment.Thinking>().single()
         assertTrue(thinking.text.contains("(12 more lines)"))
     }
+
+    // --- Reasoning-escape edge cases (live-tested 2026-07-02: reasoning leaked out of its bubble) ---
+
+    @Test
+    fun keryxBeaconBeforeReasoningPrelude_stillExtracted() {
+        // The keryx plugin can prepend its version beacon; the 💭 prelude regexes are ^-anchored,
+        // so marker stripping must happen BEFORE reasoning extraction or the whole block leaks.
+        val content = "⟦keryx:v1⟧\n> 💭 **Reasoning:**\n> step one\n> step two\n\nAnswer here."
+        val segs = MessageParser.parse(content)
+        val thinking = segs.filterIsInstance<MessageParser.Segment.Thinking>().single()
+        assertTrue(thinking.text.contains("step one"))
+        val text = segs.filterIsInstance<MessageParser.Segment.Text>().joinToString { it.text }
+        assertTrue(text.contains("Answer here"))
+        assertTrue(!text.contains("step one"))
+    }
+
+    @Test
+    fun blockquoteReasoningWithBlankLineInside_staysOneThinkingBlock() {
+        val content = "> 💭 **Reasoning:**\n> first half\n\n> second half\n\nAnswer here."
+        val segs = MessageParser.parse(content)
+        val thinking = segs.filterIsInstance<MessageParser.Segment.Thinking>().joinToString("\n") { it.text }
+        assertTrue(thinking.contains("first half"))
+        assertTrue(thinking.contains("second half"))
+        val text = segs.filterIsInstance<MessageParser.Segment.Text>().joinToString { it.text }
+        assertTrue(text.contains("Answer here"))
+        assertTrue(!text.contains("second half"))
+    }
+
+    @Test
+    fun subtextReasoningWithBlankLineInside_staysOneThinkingBlock() {
+        val content = "-# 💭 Reasoning\n-# first half\n\n-# second half\n\nAnswer here."
+        val segs = MessageParser.parse(content)
+        val thinking = segs.filterIsInstance<MessageParser.Segment.Thinking>().joinToString("\n") { it.text }
+        assertTrue(thinking.contains("first half"))
+        assertTrue(thinking.contains("second half"))
+        val text = segs.filterIsInstance<MessageParser.Segment.Text>().joinToString { it.text }
+        assertTrue(text.contains("Answer here"))
+        assertTrue(!text.contains("second half"))
+    }
+
+    @Test
+    fun nonBoldReasoningHeader_alsoExtracted() {
+        val content = "> 💭 Reasoning:\n> plain header style\n\nAnswer here."
+        val segs = MessageParser.parse(content)
+        val thinking = segs.filterIsInstance<MessageParser.Segment.Thinking>().single()
+        assertTrue(thinking.text.contains("plain header style"))
+        assertTrue(segs.filterIsInstance<MessageParser.Segment.Text>().any { it.text.contains("Answer here") })
+    }
+
+    @Test
+    fun closedThenUnclosedThinkTag_secondBlockStaysReasoning() {
+        // Mid-stream: one finished think block, then a second one still being written.
+        val (reasoning, body) = MessageParser.extractReasoning(
+            "<think>first thought</think>Partial answer.\n<think>second thought in progress"
+        )
+        assertTrue(reasoning!!.contains("first thought"))
+        assertTrue(reasoning.contains("second thought in progress"))
+        assertEquals("Partial answer.", body)
+    }
+
+    @Test
+    fun sanitizeStreamingTail_stripsHalfWrittenThinkTag() {
+        assertEquals("Answer so far.", MessageParser.sanitizeStreamingTail("Answer so far.\n<thin"))
+        assertEquals("Answer so far.", MessageParser.sanitizeStreamingTail("Answer so far.\n</think"))
+        assertEquals("Answer so far.", MessageParser.sanitizeStreamingTail("Answer so far.\n◁thi"))
+        // A lone '<' being typed is ambiguous but harmless to hold back at the very tail.
+        assertEquals("Answer so far.", MessageParser.sanitizeStreamingTail("Answer so far.\n<"))
+        // Real prose containing '<' mid-text is untouched.
+        assertEquals("a < b holds", MessageParser.sanitizeStreamingTail("a < b holds"))
+    }
+
+    @Test
+    fun reasoningContainingKeryxMarkers_markersStripped() {
+        val content = "<think>check source ⟦c1⟧ first</think>Answer body. ⟦cite 1|web|Docs|https://x⟧"
+        val segs = MessageParser.parse(content)
+        val thinking = segs.filterIsInstance<MessageParser.Segment.Thinking>().single()
+        assertTrue(!thinking.text.contains('⟦'))
+        assertTrue(segs.filterIsInstance<MessageParser.Segment.Citations>().isNotEmpty())
+    }
 }

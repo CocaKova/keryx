@@ -58,6 +58,33 @@ class StreamHandoffTest {
         assertFalse(StreamHandoff.matches("", "anything"))
     }
 
+    // --- Live-tested 2026-07-02: the committed Matrix copy carried a beacon + blockquote
+    // --- reasoning (with a blank line inside) and the handoff match failed → duplicate bubble.
+
+    @Test
+    fun beaconPlusBlockquoteReasoning_onMatrixSide_stillMatches() {
+        val streamed = "The deploy finished cleanly with all checks green across every stage."
+        val committed = "⟦keryx:v1⟧\n> 💭 **Reasoning:**\n> checking the pipeline\n\n> summarizing results\n\n$streamed"
+        assertTrue(StreamHandoff.matches(committed, streamed))
+    }
+
+    @Test
+    fun reasoningPrelude_plusFooter_stillMatches() {
+        val streamed = "Backups verified: all three snapshots restore without errors tonight."
+        val committed = "> 💭 **Reasoning:**\n> verify snapshots\n\n$streamed\n\nOrnith-1.0-35B · 37% · ~/workspace"
+        assertTrue(StreamHandoff.matches(committed, streamed))
+    }
+
+    @Test
+    fun streamedSideCarriesThinkTags_matrixSideCarriesQuoteStyle_stillMatches() {
+        // The side-channel mirrors raw deltas (tag-style reasoning); the gateway commits the
+        // blockquote-style prelude. Both must normalize to the same prose.
+        val answer = "Here is the summary of everything that happened during the run."
+        val streamed = "<think>working through the logs</think>$answer"
+        val committed = "> 💭 **Reasoning:**\n> working through the logs\n\n$answer"
+        assertTrue(StreamHandoff.matches(committed, streamed))
+    }
+
     @Test
     fun normalize_stripsToolChromeAndTelemetry() {
         val body = "🧠 recalling context\n⚙️ terminal: \"ls\"\nHere is the answer.\n\nmodel · 12% · ~/x"
