@@ -31,14 +31,18 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import threading
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("gateway.keryx_stream")
 
-# When True (default), a Matrix chat WITHOUT a live Keryx subscriber gets throttled protocol
-# (m.replace) edit streaming as the fallback tier. False = classic final-message-only.
-FALLBACK_EDITS = True
+# Opt-in fallback tier: when set (KERYX_STREAM_FALLBACK_EDITS=1), a Matrix chat WITHOUT a live
+# side-channel subscriber gets throttled protocol (m.replace) edit streaming instead of the
+# buffer-only default. OFF by default: on clients that don't collapse m.replace fallbacks the
+# edit stream renders as duplicate bubbles, and heavy edit-streaming is exactly the homeserver
+# bloat this side-channel exists to avoid.
+FALLBACK_EDITS = os.getenv("KERYX_STREAM_FALLBACK_EDITS", "").strip().lower() in {"1", "true", "yes", "on"}
 
 # Per-subscriber event buffer. Generous relative to token rate x ping interval; overflow drops
 # oldest-first semantics are approximated by dropping the incoming event for that subscriber.

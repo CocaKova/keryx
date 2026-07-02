@@ -396,8 +396,12 @@ class ChatViewModel(
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Failed -> {
                         if (!ev.connected || buf.isBlank()) {
-                            // Never connected / nothing shown yet: silent fallback to tier-2.
+                            // Never connected / nothing shown yet: fall back to tier-2, but SAY so —
+                            // a silently dead side-channel just looks like "streaming doesn't work".
                             _liveStream.value = null
+                            if (!ev.connected) {
+                                _toasts.tryEmit("Hermes Link unreachable (${ev.reason.take(80)}) — using Matrix sync")
+                            }
                         } else {
                             // Mid-stream drop with visible partial text: keep it, show the alert,
                             // and recover the moment the final event syncs via Matrix.

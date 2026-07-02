@@ -326,6 +326,11 @@ class ChatRepositoryImpl(
 
     private fun TimelineEvent.toMessage(myId: String, agentId: String): Message? {
         val messageContent = content?.getOrNull() as? RoomMessageEventContent ?: return null
+        // Hide m.replace edit events: Trixnity already applies the replacement to the ORIGINAL
+        // event's content (that bubble just grows), but the replace events themselves also appear
+        // in the timeline with their "* edited text" fallback bodies — which is what rendered a
+        // streamed/edited reply as three or four duplicate bubbles.
+        if (messageContent.relatesTo is net.folivo.trixnity.core.model.events.m.RelatesTo.Replace) return null
         val senderId = event.sender.full
         val sender = when {
             senderId == myId -> SenderType.ME
