@@ -90,6 +90,7 @@ fun ChatScreen(
     val messageTextScale by viewModel.messageTextScale.collectAsState()
     val awaitingReply by viewModel.awaitingReply.collectAsState()
     val liveStream by viewModel.liveStream.collectAsState()
+    val pendingSend by viewModel.pendingSend.collectAsState()
     val showTelemetry by viewModel.showTelemetry.collectAsState()
     val workStartedAt by viewModel.workStartedAt.collectAsState()
     val workLabel by viewModel.workLabel.collectAsState()
@@ -157,7 +158,7 @@ fun ChatScreen(
     // tokens (content length / tool state / stream length) so the view keeps following the stream.
     val atBottom by remember { derivedStateOf { listState.firstVisibleItemIndex <= 1 } }
     val lastSignature = (messages.lastOrNull()?.let { "${it.id}:${it.content.length}:${it.toolActivity?.status?.name ?: ""}" } ?: "") +
-        ":${liveStream?.text?.length ?: 0}"
+        ":${liveStream?.text?.length ?: 0}:${pendingSend?.sentAt ?: 0}"
     LaunchedEffect(lastSignature, awaitingReply) {
         val mine = messages.lastOrNull()?.sender == SenderType.ME
         if (atBottom || mine) listState.animateScrollToItem(0)
@@ -230,6 +231,23 @@ fun ChatScreen(
                 }
             } else if (awaitingReply) {
                 item(key = "waiting") { Box(modifier = Modifier.animateItem()) { WaitingIndicator() } }
+            }
+            // Optimistic send: my message blooms into the chat the instant Send is tapped, instead
+            // of waiting for the homeserver echo. Hidden the frame the real event is in the list.
+            val pending = pendingSend
+            val echoLanded = pending != null && messages.lastOrNull()?.let {
+                it.sender == SenderType.ME && it.content.trim() == pending.text.trim()
+            } == true
+            if (pending != null && pending.roomId == currentSession?.id && !echoLanded) {
+                item(key = "pendingsend") {
+                    Box(modifier = Modifier.animateItem()) {
+                        PendingSendBubble(
+                            text = pending.text,
+                            bubbleStyle = bubbleStyle,
+                            textScale = messageTextScale,
+                        )
+                    }
+                }
             }
             itemsIndexed(
                 items = renderItems,
@@ -1031,6 +1049,67 @@ private fun StreamingBubble(
                     fontSize = 11.sp,
                 )
             }
+        }
+    }
+}
+
+/**
+ * The optimistic own-message bubble: appears the instant Send is tapped and blooms into place —
+ * rising from the composer with a soft spring, unfurling from 92% scale, while an accent glow
+ * flares on its border and exhales away as it settles. A faint breathing "sending" tick sits where
+ * the ✓ will be until the homeserver echo replaces this bubble with the real event (same frame).
+ */
+@Composable
+private fun PendingSendBubble(text: String, bubbleStyle: String, textScale: Float) {
+    val accent = MaterialTheme.colorScheme.primary
+    val appearance = bubbleAppearance(isMine = true, style = bubbleStyle)
+    val shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 4.dp)
+
+    // The bloom: one-shot entrance driven by a single progress animatable (0 → 1).
+    val bloom = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) {
+        bloom.animateTo(1f, spring(dampingRatio = 0.68f, stiffness = Spring.StiffnessMediumLow))
+    }
+    // The glow flare rides the same progress but fades back out near the end of the settle.
+    val glowAlpha = (1f - bloom.value) * 0.55f + 0.12f
+    // Breathing "sending" indicator, alive until the echo swap retires this bubble.
+    val breathe = rememberInfiniteTransition(label = "sendBreathe")
+    val tickAlpha by breathe.animateFloat(
+        initialValue = 0.25f, targetValue = 0.9f,
+        animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
+        label = "sendTickAlpha",
+    )
+
+    val baseDensity = LocalDensity.current
+    Column(horizontalAlignment = Alignment.End, modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .graphicsLayer {
+                    val p = bloom.value
+                    alpha = p.coerceIn(0f, 1f)
+                    translationY = (1f - p) * 34.dp.toPx()
+                    scaleX = 0.92f + 0.08f * p
+                    scaleY = 0.92f + 0.08f * p
+                    transformOrigin = TransformOrigin(0.9f, 1f)
+                }
+                .widthIn(max = 340.dp)
+                .clip(shape)
+                .background(appearance.brush)
+                .border(1.dp, accent.copy(alpha = glowAlpha), shape)
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+            CompositionLocalProvider(
+                LocalDensity provides Density(baseDensity.density, baseDensity.fontScale * textScale)
+            ) {
+                chat.keryx.app.presentation.ui.components.MessageContent(
+                    content = text,
+                    textColor = appearance.textColor,
+                )
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 3.dp, end = 4.dp)) {
+            // The pending tick breathes; the real bubble's steady ✓ takes over after the swap.
+            Text("✓", color = accent.copy(alpha = tickAlpha), fontSize = 11.sp)
         }
     }
 }

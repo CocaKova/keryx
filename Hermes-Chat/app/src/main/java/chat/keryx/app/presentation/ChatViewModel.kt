@@ -58,6 +58,8 @@ class ChatViewModel(
         // Bridge after Hermes stops typing — long enough to hand off to the final message's settle,
         // short enough that the banner doesn't loiter once it's genuinely done.
         private const val TYPING_STOP_GRACE_MS = 8_000L
+        // Typing stopped and the answer is already rendered: the turn is over — settle fast.
+        private const val ANSWER_SETTLED_MS = 800L
 
         // --- Side-channel stream tuning ---
         // UI dispatch throttle for the live token buffer: flush to state when either trips.
@@ -68,6 +70,9 @@ class ChatViewModel(
         // How long to hold the overlay waiting for the final Matrix event after `stop` — sync is
         // normally sub-second; past this the commit clearly isn't coming as-streamed.
         private const val STREAM_SYNC_GRACE_MS = 20_000L
+        // Optimistic send bubble safety timeout: if the echo never matches (edited en route,
+        // network hiccup), stop double-rendering after this long — the real event wins.
+        private const val PENDING_SEND_TIMEOUT_MS = 12_000L
         // How long to keep partial text + the alert after a mid-stream drop before giving the
         // timeline back to plain Matrix rendering.
         private const val STREAM_INTERRUPT_HOLD_MS = 60_000L
@@ -180,6 +185,19 @@ class ChatViewModel(
     private val _sideChannelEnabled = MutableStateFlow(settingsRepository.sideChannelEnabled)
     val sideChannelEnabled: StateFlow<Boolean> = _sideChannelEnabled.asStateFlow()
 
+    /** An optimistic own-message bubble shown the instant Send is tapped, retired when the
+     *  homeserver echo appears in the timeline (or after a safety timeout). */
+    data class PendingSend(val roomId: String, val text: String, val sentAt: Long)
+
+    private val _pendingSend = MutableStateFlow<PendingSend?>(null)
+    val pendingSend: StateFlow<PendingSend?> = _pendingSend.asStateFlow()
+    private var pendingSendClearJob: kotlinx.coroutines.Job? = null
+
+    private fun clearPendingSend() {
+        pendingSendClearJob?.cancel()
+        _pendingSend.value = null
+    }
+
     // Last known Hermes Link health, surfaced as the quiet top-bar dot. Session-scoped: it starts
     // UNKNOWN and is updated by every side-channel attempt and by the Settings "Test link" probe.
     private val _linkHealth = MutableStateFlow(
@@ -211,6 +229,9 @@ class ChatViewModel(
     // True while Hermes' typing indicator is up. Authoritative: a pending quiet-timeout will NOT
     // clear the banner while this is set, so a long silent tool call (curl) can't make it vanish.
     @Volatile private var agentTyping = false
+    // True once the latest agent message reads as a real answer (not mid-run); used to shorten the
+    // typing-stop grace so the working animation dies WITH the delivery, not seconds after it.
+    @Volatile private var answerLanded = false
 
     // When the current "working" stretch began (elapsed clock for the top status counter); null when
     // idle. Set when we start awaiting and cleared when the animation goes quiet.
@@ -291,7 +312,16 @@ class ChatViewModel(
                 lastSeenId = last?.id
                 lastSeenLen = last?.content?.length ?: -1
 
-                if (last == null || last.sender == SenderType.ME) return@collect
+                if (last == null) return@collect
+                if (last.sender == SenderType.ME) {
+                    // Our echo is back from the homeserver: retire the optimistic send bubble the
+                    // same frame its real timeline event renders — that's the seamless swap.
+                    val pending = _pendingSend.value
+                    if (pending != null && last.sessionId == pending.roomId &&
+                        last.content.trim() == pending.text.trim()
+                    ) clearPendingSend()
+                    return@collect
+                }
 
                 // Side-channel handoff: the moment the committed Matrix event for the streamed
                 // response is present in the timeline, drop the overlay — same frame, no pop. Look
@@ -305,6 +335,7 @@ class ChatViewModel(
                 val stateMessage = workStateMessage(msgs, last)
                 val window = updateWorkStateFrom(stateMessage)
                 val midRun = window == QUIET_LONG_MS
+                answerLanded = !midRun
                 // Live activity = a brand-new message or a streamed edit growing the current one.
                 val liveActivity = isNewMsg || grew
                 // On first open, fall back to recency so opening the app mid-run still lights up,
@@ -358,8 +389,10 @@ class ChatViewModel(
                             if (_workStartedAt.value == null) _workStartedAt.value = System.currentTimeMillis()
                         }
                     } else if (_awaitingReply.value) {
-                        // Stopped typing → the final message is landing; bridge to the message settle.
-                        scheduleClearAwaiting(TYPING_STOP_GRACE_MS)
+                        // Stopped typing → the final message is landing. If the answer is ALREADY
+                        // on screen (it arrived while typing was still flagged), don't make the
+                        // quips linger through the full grace — settle almost immediately.
+                        scheduleClearAwaiting(if (answerLanded) ANSWER_SETTLED_MS else TYPING_STOP_GRACE_MS)
                     }
                 }
         }
@@ -524,6 +557,7 @@ class ChatViewModel(
         _awaitingReply.value = false
         _workStartedAt.value = null
         clearStream() // the overlay is room-scoped; never carry it across a room switch
+        clearPendingSend()
         // Re-baseline activity tracking so the newly-opened room is judged on its own recency, not
         // treated as "new activity" just because its last message differs from the previous room's.
         lastSeenId = null
@@ -711,11 +745,21 @@ class ChatViewModel(
         _awaitingReply.value = true
         _workStartedAt.value = System.currentTimeMillis()
         _workLabel.value = "Working"
+        answerLanded = false
         // Clear if the agent never responds at all; agent activity resets this to a shorter quiet timeout.
         scheduleClearAwaiting(NO_REPLY_MS)
         // Subscribe the side-channel BEFORE the command lands, so the gateway already sees a
         // live subscriber when it decides how to deliver this turn's tokens.
         openSideChannel(session.id)
+        // Optimistic echo: the bubble appears the moment Send is tapped instead of waiting for the
+        // homeserver round-trip. Retired by the echo match in the messages collector; the timeout
+        // is only a safety net (the real event still renders normally if matching ever misses).
+        pendingSendClearJob?.cancel()
+        _pendingSend.value = PendingSend(session.id, content, System.currentTimeMillis())
+        pendingSendClearJob = viewModelScope.launch {
+            delay(PENDING_SEND_TIMEOUT_MS)
+            _pendingSend.value = null
+        }
         viewModelScope.launch {
             if (replyTo != null) repository.sendReply(session.id, content, replyTo.id)
             else repository.sendMessage(session.id, content)
