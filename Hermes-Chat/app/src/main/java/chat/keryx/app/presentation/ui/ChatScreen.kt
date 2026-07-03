@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
@@ -492,22 +493,28 @@ fun ChatScreen(
             )
         }
 
-        // The braille wisp riding the room-switch dissolve.
+        // The braille dream-field riding the room-switch dissolve: glyphs over the whole screen.
         if (dissolve.value < 1f) {
             BrailleWisp(
                 progress = dissolve.value,
                 color = MaterialTheme.colorScheme.primary,
                 color2 = MaterialTheme.colorScheme.tertiary,
-                modifier = Modifier.align(Alignment.Center),
+                modifier = Modifier.fillMaxSize(),
             )
         }
 
-        // Compact top "working" counter: a small spinner + what the agent is doing + elapsed clock.
+        // Compact top "working" counter: a small spinner + what the agent is doing + elapsed clock,
+        // plus a live ≈tok/s readout while side-channel tokens are flowing.
         // Pinned at the top so it stays put for the whole run, unlike the per-message tool labels.
+        val topTokPerSec = liveStream?.takeIf {
+            it.roomId == currentSession?.id &&
+                it.status == chat.keryx.app.presentation.LiveStreamStatus.STREAMING
+        }?.charsPerSec?.div(4f) ?: 0f
         WorkingStatusBar(
-            visible = awaitingReply,
+            visible = awaitingReply || topTokPerSec > 0f,
             label = workLabel,
             startedAt = workStartedAt,
+            tokPerSec = topTokPerSec,
             modifier = Modifier.align(Alignment.TopCenter).padding(top = 6.dp),
         )
     }
@@ -518,6 +525,7 @@ private fun WorkingStatusBar(
     visible: Boolean,
     label: String,
     startedAt: Long?,
+    tokPerSec: Float = 0f,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -542,7 +550,11 @@ private fun WorkingStatusBar(
             border2 = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f),
         ) {
             Text(
-                text = "$label · $clock",
+                text = buildString {
+                    append("$label · $clock")
+                    // Live generation speed while tokens stream over the side-channel.
+                    if (tokPerSec > 2f) append(" · ≈${tokPerSec.toInt()} tok/s")
+                },
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
@@ -734,7 +746,7 @@ fun MessageBubble(
     val dragX = remember { Animatable(0f) }
     val dragScope = rememberCoroutineScope()
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
-    val replyThresholdPx = with(LocalDensity.current) { 72.dp.toPx() }
+    val replyThresholdPx = with(LocalDensity.current) { 56.dp.toPx() }
 
     Box(modifier = modifier.fillMaxWidth()) {
         // The arrow that materializes as you pull.
@@ -1113,9 +1125,9 @@ private fun DreamPill(
 }
 
 /**
- * A fleeting line of braille glyphs that condenses out of nothing mid-transition and scatters
- * again — dots switching patterns as they drift, like a thought crossing between rooms. Peak
- * visibility at the middle of [progress]; fully gone at both ends, so it never obstructs.
+ * A full-screen dream-field of braille glyphs that condenses out of the blur mid-transition and
+ * scatters again — dots switching patterns as they drift, like thoughts crossing between rooms.
+ * Peak visibility at the middle of [progress]; fully gone at both ends, so it never obstructs.
  */
 @Composable
 private fun BrailleWisp(
@@ -1124,27 +1136,40 @@ private fun BrailleWisp(
     color2: Color,
     modifier: Modifier = Modifier,
 ) {
-    val n = 12
+    val n = 72
     // sin envelope: invisible at 0 and 1, fullest mid-flight.
     val envelope = kotlin.math.sin(progress.coerceIn(0f, 1f) * Math.PI.toFloat())
-    val step = (progress * 24).toInt() // glyph mutation clock
-    Row(modifier = modifier.graphicsLayer {
-        alpha = envelope * 0.9f
-        val sc = 0.9f + 0.25f * progress
-        scaleX = sc; scaleY = sc
-    }) {
+    val step = (progress * 26).toInt() // glyph mutation clock
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 160)
+    androidx.compose.foundation.Canvas(
+        modifier = modifier.graphicsLayer {
+            alpha = envelope
+            // The whole field exhales: slightly swollen while the blur is deep, settling to 1.
+            val sc = 1.05f - 0.05f * progress
+            scaleX = sc; scaleY = sc
+        }
+    ) {
         for (i in 0 until n) {
+            // Deterministic scatter over the whole screen (hash-based, stable per glyph).
+            val fx = ((i * 73 + 31) % 97) / 97f
+            val fy = ((i * 149 + 17) % 101) / 101f
             // Deterministic per-(cell, step) dot pattern in the braille block U+2800–U+28FF.
             val h = (i * 31 + step * 17 + i * step * 7) and 0xFF
-            val drift = ((i * 13 + step * 3) % 7 - 3) * (1f - progress)
-            Text(
+            // Each glyph rises gently as the room re-materializes; odd ones sink instead.
+            val rise = (1f - progress) * (if (i % 2 == 0) 34f else -22f) * ((i % 5 + 2) / 4f)
+            val glyphAlpha = (0.20f + 0.80f * (((i * 7 + step) % 6) / 5f)) * envelope
+            val sizeSp = (13 + (i * 13) % 12).sp
+            val layout = measurer.measure(
                 text = (0x2800 + h).toChar().toString(),
-                color = lerp(color, color2, i / (n - 1f)),
-                fontSize = 18.sp,
-                modifier = Modifier.graphicsLayer {
-                    translationY = drift * 2.dp.toPx()
-                    alpha = 0.35f + 0.65f * (((i * 7 + step) % 5) / 4f)
-                },
+                style = androidx.compose.ui.text.TextStyle(fontSize = sizeSp),
+            )
+            drawText(
+                textLayoutResult = layout,
+                color = lerp(color, color2, fy).copy(alpha = glyphAlpha.coerceIn(0f, 1f)),
+                topLeft = androidx.compose.ui.geometry.Offset(
+                    x = fx * (size.width - layout.size.width),
+                    y = (fy * (size.height - layout.size.height) + rise).coerceIn(0f, size.height - layout.size.height),
+                ),
             )
         }
     }
@@ -1453,12 +1478,19 @@ private fun WaitingIndicator() {
             )
         }
         Spacer(modifier = Modifier.width(8.dp))
+        val quipAccent = MaterialTheme.colorScheme.primary
+        val quipAccent2 = MaterialTheme.colorScheme.tertiary
         androidx.compose.animation.AnimatedContent(targetState = idx, label = "quip") { i ->
             Text(
                 text = quips[i],
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                fontSize = 13.sp,
+                style = androidx.compose.ui.text.TextStyle(
+                    // Same accent-1 → accent-2 sweep as the braille snake beside it.
+                    brush = Brush.linearGradient(
+                        listOf(quipAccent.copy(alpha = 0.9f), quipAccent2.copy(alpha = 0.9f)),
+                    ),
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                    fontSize = 13.sp,
+                ),
             )
         }
     }

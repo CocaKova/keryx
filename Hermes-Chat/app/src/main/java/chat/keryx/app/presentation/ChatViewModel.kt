@@ -307,8 +307,10 @@ class ChatViewModel(
         val hasAnswer = !isTelemetry &&
             segs.any { it is MessageParser.Segment.Text && (it as MessageParser.Segment.Text).text.isNotBlank() }
         _workLabel.value = when {
-            tools.isNotEmpty() -> "Running ${tools.last().name}"
+            // Telemetry first: a "⏳ Working…" heartbeat parses as a tool-shaped line too, and
+            // "Running Working" is not a label.
             isTelemetry -> "Working"
+            tools.isNotEmpty() -> "Running ${tools.last().name}"
             hasReasoning && !hasAnswer -> "Reasoning"
             else -> "Working"
         }

@@ -127,7 +127,10 @@ fun ToolGroupCard(
 ) {
     val accent = MaterialTheme.colorScheme.primary
     // Expand state persists as the group grows (keyed on the stable oldest-message id).
-    var expanded by remember(run.id) { mutableStateOf(false) }
+    // rememberSaveable, not remember: the LazyColumn disposes items that scroll off-screen (a tall
+    // expanded run + one auto-follow was enough), and plain remember state died with the item —
+    // the log "closed on its own" while being watched.
+    var expanded by androidx.compose.runtime.saveable.rememberSaveable(run.id) { mutableStateOf(false) }
 
     // Subtle breathing glow while the agent is actively invoking tools.
     val glow = if (active) {
@@ -232,7 +235,9 @@ fun ToolGroupCard(
  */
 @Composable
 private fun RunReasoning(text: String, baseColor: Color, accent: Color) {
-    var open by remember(text) { mutableStateOf(false) }
+    // NOT keyed on [text]: the reasoning grows while the run is live, and re-keying collapsed the
+    // block mid-read every time a new thought landed. Saveable so scrolling away keeps it too.
+    var open by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .padding(bottom = 8.dp)
@@ -401,19 +406,34 @@ private fun dedupCalls(entries: List<ToolRunEntry>, seenBefore: Set<Pair<String,
     return out
 }
 
+/** One of MY messages that is a slash command (`/steer …`, `/think …`): a control input to the
+ *  running agent, not conversation — it must not split the surrounding tool run in two. */
+private fun isCommandMessage(m: Message): Boolean =
+    m.sender == SenderType.ME && m.mediaKind == null && m.content.trimStart().startsWith("/")
+
+/** Total prose (Text-segment) length of an agent message. Drives the answer-vs-aside call below. */
+private fun proseLength(segs: List<MessageParser.Segment>): Int =
+    segs.filterIsInstance<MessageParser.Segment.Text>().sumOf { it.text.length }
+
+/** A short course-correction ("Let me check the orphan logic…") folds into the run's reasoning; a
+ *  substantial prose message is a REAL (interim or final) answer and must stay a visible bubble.
+ *  Folding those in is what made steered turns swallow whole answers into the 💭 block. */
+private const val ANSWER_PROSE_MIN = 240
+
 /**
- * Collapse each agent turn's "working" into one [ChatRenderItem.ToolRun]. We take a contiguous block
- * of agent messages (broken only by one of my messages or a media message); if it contains AT LEAST
- * ONE tool call, everything from the block's start up to its LAST tool call becomes the run — every
- * tool call + its output as steps, and ALL the surrounding prose (the intro, Hermes' "working…"
- * status, and internal reasoning, whether before or between the tools) folded into the run's single
- * reasoning block. Only the message(s) AFTER the last tool — the final answer — stay normal bubbles.
+ * Collapse each agent turn's "working" into [ChatRenderItem.ToolRun]s. We take a contiguous block
+ * of agent messages — broken by one of my real messages or a media message, but NOT by one of my
+ * slash commands (`/steer` mid-run used to cut every run in two) — and walk it chronologically:
  *
- * This is what keeps a single long `terminal` call from fragmenting: previously a one-tool turn
- * wasn't grouped, so its reasoning + status + tool card "broke free" as separate bubbles. Now even a
- * one-tool turn is one tidy "Ran 1 tool" group.
+ *  - tool-bearing messages open/extend a run (deduped against accumulate-mode re-emission);
+ *  - telemetry check-ins inside a run become quiet [ToolRunEntry.Telemetry] steps;
+ *  - short asides between tools fold into the run's single reasoning block; a bare code-fence
+ *    message (tool stdout that lost its header) becomes a [ToolRunEntry.Note] step instead;
+ *  - substantial prose is an ANSWER: it closes the current run and stays a normal bubble, and any
+ *    tools after it (a steered turn continuing) start a NEW run rather than dragging the answer in.
  *
- * Works in chronological order internally, then returns newest-first to match the reverseLayout list.
+ * This is what keeps a single long `terminal` call from fragmenting: even a one-tool turn is one
+ * tidy "Ran 1 tool" group. Works chronologically, returns newest-first for the reverseLayout list.
  */
 fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
     val chrono = mergeRuntimeFooters(orderedNewestFirst.asReversed())
@@ -424,59 +444,101 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
         if (start.sender == SenderType.ME || start.mediaKind != null) {
             out += ChatRenderItem.Single(start); i++; continue
         }
-        // Extent of this contiguous agent block (broken by one of my messages or a media message).
+        // Extent of this contiguous agent block. My slash commands don't break it — the agent's
+        // run continues right through a /steer.
         var blockEnd = i
         while (blockEnd < chrono.size) {
             val m = chrono[blockEnd]
-            if (m.sender == SenderType.ME || m.mediaKind != null) break
+            if (m.mediaKind != null) break
+            if (m.sender == SenderType.ME && !isCommandMessage(m)) break
             blockEnd++
         }
-        // Last tool-bearing message in the block (exclusive blockEnd). Telemetry after the last
-        // tool does NOT end the run: it's automated noise, not the answer — extending the run over
-        // it is what keeps a mid-run status check-in from splitting one run into fragments that
-        // only "sometimes regroup".
-        var lastTool = -1
-        for (p in i until blockEnd) if (isToolMessage(chrono[p])) lastTool = p
-        var runEnd = lastTool
-        while (runEnd + 1 < blockEnd && isTelemetryMessage(chrono[runEnd + 1])) runEnd++
-        if (lastTool < 0) {
-            // A plain agent reply (no tools): normal bubbles.
+        if ((i until blockEnd).none { isToolMessage(chrono[it]) }) {
+            // A plain agent reply (no tools anywhere): normal bubbles.
             for (p in i until blockEnd) out += ChatRenderItem.Single(chrono[p])
             i = blockEnd; continue
         }
-        // Build steps + gather ALL surrounding prose as reasoning for [i .. runEnd].
+
+        // Sequential walk: build runs, splitting at answer-prose boundaries.
+        var runInsertAt = -1 // where in [out] the open run's card belongs (its chronological spot)
         val entries = mutableListOf<ToolRunEntry>()
         val reasoning = StringBuilder()
         val seenCalls = mutableSetOf<Pair<String, String>>()
-        fun addReasoning(t: String) { if (t.isNotBlank()) { if (reasoning.isNotEmpty()) reasoning.append("\n\n"); reasoning.append(t.trim()) } }
-        for (p in i..runEnd) {
+        var runStartId: String? = null
+        fun addReasoning(t: String) {
+            if (t.isNotBlank()) { if (reasoning.isNotEmpty()) reasoning.append("\n\n"); reasoning.append(t.trim()) }
+        }
+        fun openRun(at: Message) {
+            if (runStartId == null) { runStartId = at.id; runInsertAt = out.size }
+        }
+        fun closeRun() {
+            val id = runStartId ?: return
+            if (entries.any { it is ToolRunEntry.Call }) {
+                out.add(
+                    runInsertAt,
+                    ChatRenderItem.ToolRun(id, entries.toList(), reasoning.toString().ifBlank { null }),
+                )
+            }
+            runStartId = null; runInsertAt = -1
+            entries.clear(); reasoning.setLength(0); seenCalls.clear()
+        }
+        for (p in i until blockEnd) {
             val m = chrono[p]
-            val parts = segmentsToParts(MessageParser.parse(m.content))
+            if (m.sender == SenderType.ME) { // an embedded slash command: keep it visible in place
+                out += ChatRenderItem.Single(m)
+                continue
+            }
+            val segs = MessageParser.parse(m.content)
+            val parts = segmentsToParts(segs)
+            // Is there another tool before the next answer boundary? Decides whether trailing
+            // prose/telemetry still belongs to this run or the run is over.
+            val toolAhead = (p + 1 until blockEnd).asSequence()
+                .takeWhile { q ->
+                    val n = chrono[q]
+                    n.sender == SenderType.ME || isToolMessage(n) || isTelemetryMessage(n) ||
+                        proseLength(MessageParser.parse(n.content)) < ANSWER_PROSE_MIN
+                }
+                .any { isToolMessage(chrono[it]) }
             when {
+                // Telemetry FIRST: a "⏳ Working…" heartbeat can also match the tool-line shapes,
+                // and it must stay a quiet aside, not inflate the "Ran N tools" count.
+                isTelemetryMessage(m) -> {
+                    if (runStartId != null) entries += ToolRunEntry.Telemetry(m.content.trim())
+                    else out += ChatRenderItem.Single(m) // renders as the quiet telemetry row
+                }
                 isToolMessage(m) -> {
+                    openRun(m)
                     val deduped = dedupCalls(parts.entries, seenCalls)
                     entries += deduped
                     deduped.forEach { if (it is ToolRunEntry.Call) seenCalls += it.call.name to it.call.args }
                     parts.reasoning?.let { addReasoning(it) }
                 }
-                isTelemetryMessage(m) -> {
-                    // Automated check-in mid-run: a quiet telemetry step, not reasoning or an answer.
-                    entries += ToolRunEntry.Telemetry(m.content.trim())
+                runStartId != null && !toolAhead -> {
+                    // First prose after the run's last tool: the answer. Close the run; bubble.
+                    closeRun()
+                    out += ChatRenderItem.Single(m)
                 }
-                else -> {
-                    // Intro / "working…" status / standalone reasoning → into the reasoning block,
-                    // not a loose bubble. (Use parsed reasoning if present, else the whole body.)
-                    addReasoning(parts.reasoning ?: m.content)
+                (runStartId != null || toolAhead) && proseLength(segs) >= ANSWER_PROSE_MIN -> {
+                    // A substantial INTERIM answer mid-run (steer continued the turn): visible
+                    // bubble, and whatever tools follow start a fresh run.
+                    closeRun()
+                    out += ChatRenderItem.Single(m)
                 }
+                runStartId != null || toolAhead -> {
+                    openRun(m)
+                    if (m.content.trimStart().startsWith("```")) {
+                        // Tool output that lost its header (a bare fenced block): a machine-output
+                        // step, not inner monologue.
+                        entries += ToolRunEntry.Note(m.content.trim())
+                    } else {
+                        // Intro / "working…" status / standalone reasoning → the reasoning block.
+                        addReasoning(parts.reasoning ?: m.content)
+                    }
+                }
+                else -> out += ChatRenderItem.Single(m)
             }
         }
-        out += ChatRenderItem.ToolRun(
-            id = chrono[i].id,
-            entries = entries,
-            reasoning = reasoning.toString().ifBlank { null },
-        )
-        // The final answer (anything after the last tool / trailing telemetry) stays a normal bubble.
-        for (p in (runEnd + 1) until blockEnd) out += ChatRenderItem.Single(chrono[p])
+        closeRun()
         i = blockEnd
     }
     return out.asReversed()

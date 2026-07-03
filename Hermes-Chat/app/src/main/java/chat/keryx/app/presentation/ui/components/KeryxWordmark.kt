@@ -23,11 +23,14 @@ fun KeryxWordmark(
     fontSize: TextUnit = 20.sp,
 ) {
     val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.tertiary
+    // Sheen runs from a lit accent-1 head into an accent-2 tail so the brand mark carries the
+    // same two-accent gradient as the rest of the app's animations.
     val sheen = Brush.linearGradient(
         listOf(
             lerp(accent, Color.White, 0.35f),
             accent,
-            lerp(accent, Color(0xFF7A2E00), 0.25f),
+            lerp(accent, accent2, 0.65f),
         )
     )
     Text(
