@@ -160,11 +160,21 @@ def apply_thinking_kwargs(agent) -> None:
     effort level becomes a real on/off for local-brain reasoning. Never raises.
     """
     try:
+        # Kill switch for setups whose "custom" endpoint rejects unknown request fields
+        # (vLLM, llama.cpp and Ollama's /v1 all accept or ignore chat_template_kwargs, but
+        # "custom" can point anywhere): KERYX_THINKING_KWARGS=off in ~/.hermes/.env.
+        if os.getenv("KERYX_THINKING_KWARGS", "").strip().lower() in {"0", "off", "false", "no"}:
+            return
         provider = str(getattr(agent, "provider", "") or "").strip().lower()
         if provider != "custom" and not provider.startswith("custom:"):
             return
         rc = getattr(agent, "reasoning_config", None)
-        enabled = not (isinstance(rc, dict) and rc.get("enabled") is False)
+        # Only act when reasoning is explicitly configured (agent.reasoning_effort in
+        # config.yaml, or a /reasoning override). rc is None on stock installs — inject
+        # nothing, change nothing.
+        if not isinstance(rc, dict):
+            return
+        enabled = rc.get("enabled") is not False
         overrides = dict(getattr(agent, "request_overrides", {}) or {})
         extra = dict(overrides.get("extra_body") or {})
         ctk = dict(extra.get("chat_template_kwargs") or {})
