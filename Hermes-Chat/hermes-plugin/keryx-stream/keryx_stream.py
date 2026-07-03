@@ -245,6 +245,79 @@ def _reasoning_capabilities() -> Dict[str, Any]:
     }
 
 
+async def prepend_reasoning_to_streamed(gateway, source, response, sc) -> bool:
+    """Fold the 💭 reasoning block into an already-streamed final message.
+
+    With streaming delivery on, the stream consumer commits the final message itself and the
+    gateway suppresses the normal send (``already_sent``) — but the normal send is the ONLY
+    path that prepends the 💭 reasoning block, so enabling streaming silently killed reasoning
+    display for every model at once (live-debugged 2026-07-02 on Ornith: vLLM delivered 998
+    chars of ``delta.reasoning``; the committed Matrix message had none). Called from the
+    suppression branch (see install.py); edits the streamed message in place, mirroring the
+    plugin-transform branch. Returns True when the edit was applied. Never raises.
+    """
+    try:
+        reasoning = str(response.get("last_reasoning") or "").strip()
+        final = str(response.get("final_response") or "")
+        if not reasoning or not final.strip() or sc is None:
+            return False
+        message_id = getattr(sc, "message_id", None)
+        adapter = getattr(sc, "adapter", None)
+        if not message_id or adapter is None:
+            return False
+
+        from gateway.run import (
+            _load_gateway_config,
+            _platform_config_key,
+            _resolve_gateway_display_bool,
+        )
+
+        cfg = _load_gateway_config()
+        platform_key = _platform_config_key(source.platform)
+        show = _resolve_gateway_display_bool(
+            cfg,
+            platform_key,
+            "show_reasoning",
+            default=bool(getattr(gateway, "_show_reasoning", False)),
+            platform=source.platform,
+        )
+        if not show:
+            return False
+
+        # Same 15-line collapse + per-platform style as the normal-send prepend.
+        lines = reasoning.splitlines()
+        if len(lines) > 15:
+            display = "\n".join(lines[:15]) + f"\n_... ({len(lines) - 15} more lines)_"
+        else:
+            display = reasoning
+        try:
+            from gateway.display_config import resolve_display_setting
+
+            style = resolve_display_setting(cfg, platform_key, "reasoning_style", "code")
+        except Exception:
+            style = "code"
+        if style == "subtext":
+            quoted = "\n".join(f"-# {ln}" if ln else "-#" for ln in display.splitlines())
+            body = f"-# 💭 Reasoning\n{quoted}\n\n{final}"
+        elif style == "blockquote":
+            quoted = "\n".join(f"> {ln}" if ln else ">" for ln in display.splitlines())
+            body = f"> 💭 **Reasoning:**\n{quoted}\n\n{final}"
+        else:
+            body = f"💭 **Reasoning:**\n```\n{display}\n```\n\n{final}"
+
+        await adapter.edit_message(
+            chat_id=source.chat_id,
+            message_id=message_id,
+            content=body,
+            finalize=True,
+        )
+        logger.info("keryx: folded %d chars of reasoning into streamed message", len(reasoning))
+        return True
+    except Exception:
+        logger.debug("prepend_reasoning_to_streamed failed", exc_info=True)
+        return False
+
+
 def make_capabilities_handler(check_auth):
     """aiohttp handler for ``GET /keryx/capabilities`` (wired in api_server.py)."""
     from aiohttp import web

@@ -196,8 +196,31 @@ def main() -> int:
         label="agent_init enable_thinking mapping",
     )
 
+    # 5. Reasoning display for streamed turns: the stream consumer's final commit bypasses the
+    #    normal send — the only path that prepends the 💭 reasoning block — so enabling
+    #    streaming.enabled silently dropped reasoning display for every model. Fold the block
+    #    into the streamed message with one final edit at suppression time.
+    run = gw / "run.py"
+    ok &= patch(
+        run,
+        anchor=(
+            "            if not _is_empty_sentinel and not _transformed and (_streamed or _content_delivered):\n"
+            "                logger.info(\n"
+        ),
+        replacement=(
+            "            if not _is_empty_sentinel and not _transformed and (_streamed or _content_delivered):\n"
+            "                try:\n"
+            "                    from gateway import keryx_stream as _keryx_r\n"
+            "                    await _keryx_r.prepend_reasoning_to_streamed(self, source, response, _sc)\n"
+            "                except Exception:\n"
+            "                    pass\n"
+            "                logger.info(\n"
+        ),
+        label="run.py streamed-turn reasoning fold",
+    )
+
     # Sanity: everything still compiles.
-    for f in (gw / "keryx_stream.py", sc, api, ai):
+    for f in (gw / "keryx_stream.py", sc, api, ai, run):
         try:
             py_compile.compile(str(f), doraise=True)
         except py_compile.PyCompileError as e:
