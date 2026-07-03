@@ -38,6 +38,7 @@ private val BRAILLE_RAMP = listOf("⠁", "⠉", "⠋", "⠛", "⠟", "⠿", "⡿
 fun BrailleSnakeAnimation(
     modifier: Modifier = Modifier,
     color: Color,
+    color2: Color = color,
     running: Boolean = true,
     snakeLength: Int = 22,
     periodMillis: Int = 5200,
@@ -75,8 +76,9 @@ fun BrailleSnakeAnimation(
             val pos = pathMeasure.getPosition(frac * length)
             val t = 1f - i / snakeLength.toFloat() // 1 at head -> 0 at tail
             val radius = (glyphSize / 2f) * (0.40f + 0.60f * t)
+            // Head wears accent 1; the tail cools into accent 2 — one gradient creature.
             drawCircle(
-                color = color.copy(alpha = 0.10f + 0.90f * t),
+                color = androidx.compose.ui.graphics.lerp(color2, color, t).copy(alpha = 0.10f + 0.90f * t),
                 radius = radius,
                 center = pos,
             )

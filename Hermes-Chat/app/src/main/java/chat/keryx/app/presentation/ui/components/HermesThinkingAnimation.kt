@@ -76,6 +76,7 @@ fun HermesThinkingAnimation(
     )
     val quip = remember { phrases.random() }
     val primaryColor = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.tertiary
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -84,10 +85,10 @@ fun HermesThinkingAnimation(
             .alpha(alpha)
     ) {
         when (style) {
-            "Braille" -> BrailleSpinner(primaryColor)
-            "Dots" -> DotsSpinner(primaryColor, infiniteTransition)
+            "Braille" -> BrailleSpinner(primaryColor, accent2)
+            "Dots" -> DotsSpinner(primaryColor, accent2, infiniteTransition)
             "ASCII Wave" -> AsciiWaveSpinner()
-            else -> BrailleSpinner(primaryColor)
+            else -> BrailleSpinner(primaryColor, accent2)
         }
         
         Spacer(modifier = Modifier.width(12.dp))
@@ -104,7 +105,7 @@ fun HermesThinkingAnimation(
 }
 
 @Composable
-fun BrailleSpinner(primaryColor: Color) {
+fun BrailleSpinner(primaryColor: Color, accent2: Color = primaryColor) {
     // A perfect, constant-length (3 dots) snake traveling the perimeter of a 2x3 Braille grid
     val frames = listOf(
         listOf(0, 3, 4), // ⠩
@@ -141,15 +142,14 @@ fun BrailleSpinner(primaryColor: Color) {
             )
             
             val activeDots = frames[frameIndex]
-            
-            for (i in 0..5) {
-                if (i in activeDots) {
-                    drawCircle(
-                        color = primaryColor,
-                        radius = dotRadius,
-                        center = positions[i]
-                    )
-                }
+
+            // The 3-dot snake grades head→tail from accent 1 into accent 2.
+            activeDots.forEachIndexed { order, dot ->
+                drawCircle(
+                    color = androidx.compose.ui.graphics.lerp(primaryColor, accent2, order / 2f),
+                    radius = dotRadius,
+                    center = positions[dot]
+                )
             }
         }
     }
@@ -182,7 +182,7 @@ fun AsciiWaveSpinner() {
 }
 
 @Composable
-fun DotsSpinner(primaryColor: Color, infiniteTransition: InfiniteTransition) {
+fun DotsSpinner(primaryColor: Color, accent2: Color = primaryColor, infiniteTransition: InfiniteTransition) {
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = (2 * PI).toFloat(),
@@ -215,7 +215,8 @@ fun DotsSpinner(primaryColor: Color, infiniteTransition: InfiniteTransition) {
                 val dotRadius = 3.dp.toPx() - (i * 0.3f.dp.toPx())
                 
                 drawCircle(
-                    color = primaryColor.copy(alpha = dotAlpha.coerceIn(0f, 1f)),
+                    color = androidx.compose.ui.graphics.lerp(primaryColor, accent2, i / (numDots - 1f))
+                        .copy(alpha = dotAlpha.coerceIn(0f, 1f)),
                     radius = dotRadius,
                     center = Offset(x, y)
                 )

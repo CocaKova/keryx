@@ -11,6 +11,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -153,7 +156,10 @@ fun ChatScreen(
         val id = currentSession?.id
         if (lastRoomForDissolve != null && id != null && id != lastRoomForDissolve) {
             dissolve.snapTo(0f)
-            dissolve.animateTo(1f, tween(560, easing = LinearOutSlowInEasing))
+            // Hold while the drawer clears the stage — the old 560ms version played almost
+            // entirely BEHIND the closing drawer, which is why it read as "a slight blur".
+            kotlinx.coroutines.delay(230)
+            dissolve.animateTo(1f, tween(1050, easing = LinearOutSlowInEasing))
         }
         lastRoomForDissolve = id
     }
@@ -212,6 +218,19 @@ fun ChatScreen(
         if (roomId != null && lastId != null) viewModel.markRoomRead(roomId, lastId)
     }
 
+    // Tap a reply-quote → sail to the original message and flash it briefly.
+    var flashMessageId by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(flashMessageId) {
+        if (flashMessageId != null) { kotlinx.coroutines.delay(1500); flashMessageId = null }
+    }
+    fun jumpToMessage(id: String) {
+        val idx = renderItems.indexOfFirst { it is ChatRenderItem.Single && it.message.id == id }
+        if (idx >= 0) {
+            flashMessageId = id
+            scope.launch { listState.animateScrollToItem(idx) }
+        }
+    }
+
     fun doSend() {
         val attachment = pendingAttachment
         val text = textState.text
@@ -239,12 +258,14 @@ fun ChatScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
-                    alpha = 0.30f + 0.70f * dissolve.value
-                    translationY = (1f - dissolve.value) * 14.dp.toPx()
+                    alpha = 0.12f + 0.88f * dissolve.value
+                    translationY = (1f - dissolve.value) * 26.dp.toPx()
+                    val sc = 0.985f + 0.015f * dissolve.value
+                    scaleX = sc; scaleY = sc
                 }
                 .then(
                     if (dissolve.value < 1f)
-                        Modifier.blur(((1f - dissolve.value) * 5f).dp)
+                        Modifier.blur(((1f - dissolve.value) * 12f).dp)
                     else Modifier
                 ),
             reverseLayout = true,
@@ -321,6 +342,14 @@ fun ChatScreen(
                             val reactionsFlow = remember(message.id) {
                                 viewModel.reactionsFlow(message.sessionId, message.id)
                             }
+                            // Flash halo when this message is the target of a quote-jump.
+                            val flashed = flashMessageId == message.id
+                            val flashColor by animateColorAsState(
+                                targetValue = if (flashed) MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                                else Color.Transparent,
+                                animationSpec = tween(if (flashed) 220 else 900),
+                                label = "quoteFlash",
+                            )
                             MessageBubble(
                                 message = message,
                                 replyTo = message.replyToId?.let { byId[it] },
@@ -333,6 +362,8 @@ fun ChatScreen(
                                 mediaLoader = { viewModel.loadMessageMedia(message.sessionId, message.id) },
                                 onReply = { viewModel.setReplyTarget(message) },
                                 onReact = { emoji -> viewModel.sendReaction(message.id, emoji) },
+                                onQuoteClick = message.replyToId?.let { target -> { jumpToMessage(target) } },
+                                modifier = Modifier.background(flashColor, RoundedCornerShape(18.dp)),
                             )
                         }
                     }
@@ -640,7 +671,28 @@ private fun AttachmentPreview(att: PendingAttachment, onRemove: () -> Unit) {
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
     ) {
-        Text(if (att.isImage) "🖼" else "📎", fontSize = 18.sp)
+        // A real thumbnail of the staged image (downsampled), not a stand-in emoji.
+        val thumb = if (att.isImage) remember(att.bytes) {
+            runCatching {
+                val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                android.graphics.BitmapFactory.decodeByteArray(att.bytes, 0, att.bytes.size, bounds)
+                var sample = 1
+                while (bounds.outWidth / (sample * 2) >= 128 && bounds.outHeight / (sample * 2) >= 128) sample *= 2
+                val opts = android.graphics.BitmapFactory.Options().apply { inSampleSize = sample }
+                android.graphics.BitmapFactory.decodeByteArray(att.bytes, 0, att.bytes.size, opts)
+                    ?.asImageBitmap()
+            }.getOrNull()
+        } else null
+        if (thumb != null) {
+            androidx.compose.foundation.Image(
+                bitmap = thumb,
+                contentDescription = att.name,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.size(44.dp).clip(RoundedCornerShape(8.dp)),
+            )
+        } else {
+            Text(if (att.isImage) "🖼" else "📎", fontSize = 18.sp)
+        }
         Spacer(modifier = Modifier.width(10.dp))
         Text(
             text = att.name,
@@ -668,6 +720,8 @@ fun MessageBubble(
     mediaLoader: suspend () -> ByteArray?,
     onReply: () -> Unit,
     onReact: (String) -> Unit,
+    onQuoteClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
     val isMine = message.sender == SenderType.ME
     val isAgent = message.sender == SenderType.HERMES
@@ -675,9 +729,57 @@ fun MessageBubble(
 
     val reactions by reactionsFlow.collectAsState(initial = emptyList())
 
+    // Swipe-to-reply: pull the message toward the middle and let go — a reply arrow condenses
+    // behind it as you pull, haptic ticks at the commit point, then the bubble springs home.
+    val dragX = remember { Animatable(0f) }
+    val dragScope = rememberCoroutineScope()
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val replyThresholdPx = with(LocalDensity.current) { 72.dp.toPx() }
+
+    Box(modifier = modifier.fillMaxWidth()) {
+        // The arrow that materializes as you pull.
+        Icon(
+            Icons.AutoMirrored.Filled.Reply,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary.copy(
+                alpha = (dragX.value / replyThresholdPx).coerceIn(0f, 0.9f)
+            ),
+            modifier = Modifier
+                .align(if (isMine) Alignment.CenterEnd else Alignment.CenterStart)
+                .padding(horizontal = 6.dp)
+                .graphicsLayer {
+                    val p = (dragX.value / replyThresholdPx).coerceIn(0f, 1f)
+                    scaleX = 0.5f + 0.5f * p; scaleY = 0.5f + 0.5f * p
+                },
+        )
     Column(
         horizontalAlignment = if (isMine) Alignment.End else Alignment.Start,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer { translationX = if (isMine) -dragX.value else dragX.value }
+            .pointerInput(message.id) {
+                var fired = false
+                detectHorizontalDragGestures(
+                    onDragStart = { fired = false },
+                    onDragEnd = {
+                        if (dragX.value >= replyThresholdPx) onReply()
+                        dragScope.launch { dragX.animateTo(0f, spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow)) }
+                    },
+                    onDragCancel = {
+                        dragScope.launch { dragX.animateTo(0f, spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow)) }
+                    },
+                ) { change, amount ->
+                    // Mine pull left, others pull right — always toward the center line.
+                    val toward = if (isMine) -amount else amount
+                    val next = (dragX.value + toward * 0.62f).coerceIn(0f, replyThresholdPx * 1.5f)
+                    if (!fired && next >= replyThresholdPx) {
+                        fired = true
+                        haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                    }
+                    if (next > 0f) change.consume()
+                    dragScope.launch { dragX.snapTo(next) }
+                }
+            }
     ) {
         if (showSender && !isMine && message.senderName.isNotBlank()) {
             Text(
@@ -694,6 +796,9 @@ fun MessageBubble(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
+        // Double-tap-to-❤️ bloom: a heart swells out of the tap and exhales away.
+        var heartBloomTick by remember { mutableStateOf(0) }
+
         if (message.isStreaming && message.content.isEmpty() && message.mediaKind == null) {
             HermesThinkingAnimation(style = "Braille", modifier = Modifier.padding(8.dp))
         } else if (message.content.isNotEmpty() || message.mediaKind != null) {
@@ -705,6 +810,7 @@ fun MessageBubble(
                 bottomEnd = if (isMine) 4.dp else 16.dp
             )
             val baseDensity = LocalDensity.current
+            Box {
             Box(
                 modifier = Modifier
                     .widthIn(max = 340.dp)
@@ -717,11 +823,12 @@ fun MessageBubble(
                     .combinedClickable(
                         onClick = {},
                         onLongClick = { showReactionPicker = true },
+                        onDoubleClick = { heartBloomTick++; onReact("❤️") },
                     )
                     .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
                 Column {
-                    if (replyTo != null) ReplyQuote(replyTo, appearance.textColor)
+                    if (replyTo != null) ReplyQuote(replyTo, appearance.textColor, onClick = onQuoteClick)
                     val mediaKind = message.mediaKind
                     if (mediaKind != null) {
                         MessageMedia(
@@ -744,6 +851,26 @@ fun MessageBubble(
                     }
                 }
             }
+            if (heartBloomTick > 0) {
+                val bloom = remember(heartBloomTick) { Animatable(0f) }
+                LaunchedEffect(heartBloomTick) { bloom.animateTo(1f, tween(650, easing = LinearOutSlowInEasing)) }
+                if (bloom.value < 1f) {
+                    Text(
+                        "❤️",
+                        fontSize = 34.sp,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .graphicsLayer {
+                                val p = bloom.value
+                                val sc = 0.5f + 1.1f * p
+                                scaleX = sc; scaleY = sc
+                                alpha = (1f - p) * 0.95f
+                                translationY = -p * 26.dp.toPx()
+                            },
+                    )
+                }
+            }
+            } // end bloom wrapper
         }
 
         if (showReactionPicker) {
@@ -780,16 +907,18 @@ fun MessageBubble(
             }
         }
     }
+    } // end swipe wrapper Box
 }
 
 @Composable
-private fun ReplyQuote(replyTo: Message, textColor: Color) {
+private fun ReplyQuote(replyTo: Message, textColor: Color, onClick: (() -> Unit)? = null) {
     val accent = MaterialTheme.colorScheme.primary
     Row(
         modifier = Modifier
             .padding(bottom = 6.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(accent.copy(alpha = 0.10f))
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
             .height(IntrinsicSize.Min),
     ) {
         Box(modifier = Modifier.width(3.dp).fillMaxHeight().background(accent.copy(alpha = 0.7f)))
@@ -999,7 +1128,11 @@ private fun BrailleWisp(
     // sin envelope: invisible at 0 and 1, fullest mid-flight.
     val envelope = kotlin.math.sin(progress.coerceIn(0f, 1f) * Math.PI.toFloat())
     val step = (progress * 24).toInt() // glyph mutation clock
-    Row(modifier = modifier.graphicsLayer { alpha = envelope * 0.55f }) {
+    Row(modifier = modifier.graphicsLayer {
+        alpha = envelope * 0.9f
+        val sc = 0.9f + 0.25f * progress
+        scaleX = sc; scaleY = sc
+    }) {
         for (i in 0 until n) {
             // Deterministic per-(cell, step) dot pattern in the braille block U+2800–U+28FF.
             val h = (i * 31 + step * 17 + i * step * 7) and 0xFF
@@ -1007,7 +1140,7 @@ private fun BrailleWisp(
             Text(
                 text = (0x2800 + h).toChar().toString(),
                 color = lerp(color, color2, i / (n - 1f)),
-                fontSize = 15.sp,
+                fontSize = 18.sp,
                 modifier = Modifier.graphicsLayer {
                     translationY = drift * 2.dp.toPx()
                     alpha = 0.35f + 0.65f * (((i * 7 + step) % 5) / 4f)
@@ -1052,6 +1185,7 @@ private fun EmptyChat(modifier: Modifier = Modifier) {
             chat.keryx.app.presentation.ui.components.BrailleSnakeAnimation(
                 modifier = Modifier.fillMaxSize(),
                 color = MaterialTheme.colorScheme.primary,
+                color2 = MaterialTheme.colorScheme.tertiary,
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -1118,14 +1252,27 @@ private fun StreamingBubble(
                         isStreaming = streaming,
                     )
                     if (streaming) {
-                        // A quiet blinking caret marks "still writing" without a layout-shifting spinner.
+                        // A quiet blinking caret marks "still writing" without a layout-shifting
+                        // spinner; its blink crossfades accent 1 → accent 2. Beside it, a live
+                        // ≈tok/s readout — practical telemetry that also just looks alive.
                         val caret = rememberInfiniteTransition(label = "caret")
                         val a by caret.animateFloat(
                             initialValue = 0.15f, targetValue = 0.9f,
                             animationSpec = infiniteRepeatable(tween(520), RepeatMode.Reverse),
                             label = "caretAlpha",
                         )
-                        Text("▍", color = accent.copy(alpha = a), fontSize = 13.sp)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("▍", color = lerp(accent2, accent, a).copy(alpha = a), fontSize = 13.sp)
+                            if (stream.charsPerSec > 8f) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "≈${(stream.charsPerSec / 4f).toInt()} tok/s",
+                                    color = appearance.textColor.copy(alpha = 0.40f),
+                                    fontSize = 10.sp,
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1299,6 +1446,7 @@ private fun WaitingIndicator() {
             chat.keryx.app.presentation.ui.components.BrailleSnakeAnimation(
                 modifier = Modifier.fillMaxSize(),
                 color = MaterialTheme.colorScheme.primary,
+                color2 = MaterialTheme.colorScheme.tertiary,
                 snakeLength = 10,
                 periodMillis = 1500,
                 glyphSize = 7f,
