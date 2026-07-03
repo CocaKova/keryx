@@ -95,11 +95,16 @@ fun HermesThinkingAnimation(
         
         Text(
             text = quip,
-            color = MaterialTheme.colorScheme.primary,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            fontSize = 12.sp,
-            letterSpacing = 1.2.sp
+            style = androidx.compose.ui.text.TextStyle(
+                // Accent 1 → accent 2 sweep across the quip, matching the spinner's gradient.
+                brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                    listOf(primaryColor, accent2),
+                ),
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                letterSpacing = 1.2.sp,
+            ),
         )
     }
 }

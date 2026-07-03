@@ -219,8 +219,52 @@ def main() -> int:
         label="run.py streamed-turn reasoning fold",
     )
 
+    # 6. Live /steer: steer() only injects into the NEXT tool result, so a steer sent while the
+    #    model was generating a text-only final answer sat pending until the whole answer finished,
+    #    then ran as a queued follow-up turn ("responds, then keeps going" — 2026-07-03). Break the
+    #    token stream at the steer point instead: the partial answer commits normally and the
+    #    leftover steer is delivered as the immediate next turn (gateway already handles
+    #    result["pending_steer"]). Tool-call generation is left alone — the classic injection path.
+    cch = root / "agent" / "chat_completion_helpers.py"
+    ok &= patch(
+        cch,
+        anchor=(
+            "            if agent._interrupt_requested:\n"
+            "                break\n"
+            "\n"
+            "            if not chunk.choices:"
+        ),
+        replacement=(
+            "            if agent._interrupt_requested:\n"
+            "                break\n"
+            "\n"
+            "            # keryx_stream: a pending /steer during a text-only completion ends the\n"
+            "            # stream here — the partial answer commits and the steer becomes the\n"
+            "            # immediate next turn instead of waiting out the full answer.\n"
+            "            if (\n"
+            "                getattr(agent, \"_pending_steer\", None)\n"
+            "                and not tool_calls_acc\n"
+            "                and content_parts\n"
+            "            ):\n"
+            "                finish_reason = \"stop\"\n"
+            "                break\n"
+            "\n"
+            "            if not chunk.choices:"
+        ),
+        label="chat_completion_helpers live-steer stream break",
+    )
+
+    # 7. Matching ack wording (the old text promised "after the next tool call", which is no
+    #    longer the only landing point). Keep the ⏩ prefix — Keryx folds it as telemetry.
+    ok &= patch(
+        run,
+        anchor='                        return f"⏩ Steer queued — arrives after the next tool call: \'{preview}\'"',
+        replacement='                        return f"⏩ Steering — lands at the next tool call or pause: \'{preview}\'"',
+        label="run.py steer ack wording",
+    )
+
     # Sanity: everything still compiles.
-    for f in (gw / "keryx_stream.py", sc, api, ai, run):
+    for f in (gw / "keryx_stream.py", sc, api, ai, run, cch):
         try:
             py_compile.compile(str(f), doraise=True)
         except py_compile.PyCompileError as e:

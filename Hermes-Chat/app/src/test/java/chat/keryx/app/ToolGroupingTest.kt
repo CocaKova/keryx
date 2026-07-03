@@ -129,6 +129,91 @@ class ToolGroupingTest {
     }
 
     @Test
+    fun steerCommandMidRun_doesNotSplitTheRun() {
+        // Live-observed 2026-07-03: a /steer + its ⏩ ack in the middle of a run cut the tool log
+        // in two. The command stays a visible bubble; the ack folds in as telemetry.
+        val items = group(
+            msg(SenderType.ME, "task"),
+            msg(SenderType.HERMES, "⚙️ terminal: \"step one\""),
+            msg(SenderType.ME, "/steer change the LLM to ornith 35b"),
+            msg(SenderType.HERMES, "⏩ Steer queued — arrives after the next tool call: 'change the LLM'"),
+            msg(SenderType.HERMES, "⚙️ terminal: \"step two\""),
+            msg(SenderType.HERMES, "Done — switched."),
+        )
+        val run = runOf(items) // exactly ONE run despite my /steer in the middle
+        assertEquals(2, run.callCount)
+        assertTrue(run.entries.any { it is ToolRunEntry.Telemetry })
+        // My /steer stays visible as its own bubble.
+        assertTrue(items.filterIsInstance<ChatRenderItem.Single>()
+            .any { it.message.content.startsWith("/steer") })
+    }
+
+    @Test
+    fun substantialInterimAnswer_staysABubble_notSwallowedIntoReasoning() {
+        // A steered turn: real answer lands mid-block, then MORE tools follow. The answer must
+        // stay a bubble (it used to vanish into the next run's 💭 reasoning block).
+        val answer = buildString {
+            append("Here's what I found:\n\n")
+            append("The graph is healthy — 266 entities, 77 orphans, proportional growth, no corruption. ")
+            append("Consolidate is safe to run: backup, dedup, distill, decay are all reversible. ")
+            append("Want me to run it, or will you clean up the noise orphans first?")
+        }
+        val items = group(
+            msg(SenderType.ME, "task"),
+            msg(SenderType.HERMES, "⚙️ terminal: \"inspect\""),
+            msg(SenderType.HERMES, answer),
+            msg(SenderType.HERMES, "⚙️ terminal: \"apply the change\""),
+            msg(SenderType.HERMES, "Switched."),
+        )
+        val runs = items.filterIsInstance<ChatRenderItem.ToolRun>()
+        assertEquals(2, runs.size) // run before the answer, fresh run after it
+        val singles = items.filterIsInstance<ChatRenderItem.Single>()
+        assertTrue(singles.any { it.message.content == answer })
+        assertTrue(runs.none { it.reasoning?.contains("Here's what I found") == true })
+    }
+
+    @Test
+    fun bareCodeFenceMidRun_becomesANoteStep_notReasoning() {
+        // A tool output that lost its header (just fenced blocks) is machine output, not thought.
+        val items = group(
+            msg(SenderType.ME, "task"),
+            msg(SenderType.HERMES, "⚙️ terminal: \"step one\""),
+            msg(SenderType.HERMES, "```\ntail -5 ~/.hermes/health.log\n```"),
+            msg(SenderType.HERMES, "⚙️ terminal: \"step two\""),
+            msg(SenderType.HERMES, "All good."),
+        )
+        val run = runOf(items)
+        assertTrue(run.entries.any { it is ToolRunEntry.Note && (it as ToolRunEntry.Note).text.contains("tail -5") })
+        assertTrue(run.reasoning?.contains("tail -5") != true)
+    }
+
+    @Test
+    fun gerundProgressLines_groupAsTools() {
+        // `📖 Reading consolidate.py L80-89` (human-readable progress, no colon) must join the
+        // run — it floated loose as a bubble and fragmented the log (live 2026-07-03).
+        val items = group(
+            msg(SenderType.ME, "task"),
+            msg(SenderType.HERMES, "📖 Reading consolidate.py L80-89"),
+            msg(SenderType.HERMES, "🔧 Editing /home/cocakova/.hermes/hermes-agent/p... (×2)"),
+            msg(SenderType.HERMES, "Fixed."),
+        )
+        assertEquals(2, runOf(items).callCount)
+        // But a sentence with a leading emoji is NOT a tool.
+        val prose = group(
+            msg(SenderType.ME, "hi"),
+            msg(SenderType.HERMES, "✨ Generating magic is what I do best!"),
+        )
+        assertTrue(prose.none { it is ChatRenderItem.ToolRun })
+        // Nor is a markdown heading that happens to start with a gerund (live-caught: a streamed
+        // essay's `## Enduring Legacy` heading became a phantom "Running 1 tool" group).
+        val heading = group(
+            msg(SenderType.ME, "hi"),
+            msg(SenderType.HERMES, "## Enduring Legacy of the Greek Alphabet"),
+        )
+        assertTrue(heading.none { it is ChatRenderItem.ToolRun })
+    }
+
+    @Test
     fun plainReply_noRun() {
         val items = group(
             msg(SenderType.ME, "hi"),

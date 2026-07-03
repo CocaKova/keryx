@@ -78,6 +78,12 @@ object MessageParser {
     private val TOOL_LINE_NOGLYPH =
         Regex("""^([a-z][a-z0-9]*(?:_[a-z0-9]+)*):\s*(["“`].*["”`])$""")
 
+    // Hermes also emits human-readable progress lines for some tools: `📖 Reading consolidate.py
+    // L80-89`, `🔧 Editing /path/to/file (×2)` — a leading glyph, a capitalized gerund, then the
+    // target, no colon. Conservative guards keep prose out: the glyph must be a symbol, the verb
+    // must end in "ing", and the line must not read as a sentence (no terminal punctuation).
+    private val TOOL_LINE_GERUND = Regex("""^(\S+)\s+([A-Z][a-z]+ing)\s+(\S.*)$""")
+
     // Some tools (notably `terminal`) render as a bare header line `<glyph> name` (NO colon) with the
     // command/args in a following ``` fenced block, instead of inline after a colon. Match the header
     // here; the loop then pulls the fence in as the args so it compacts into the tool card too.
@@ -108,6 +114,10 @@ object MessageParser {
     // Deliberately conservative — a false DIALOGUE is harmless, a false TELEMETRY hides an answer.
     private val CHECKIN_PREFIXES = listOf(
         "⏰", "🔔", "🛰", "📊", "🫀",
+        // Gateway control acks (a /steer confirmation) and "⏳ Working — iteration 5/90" progress
+        // heartbeats are plumbing, not dialogue — rendering them as telemetry keeps them from
+        // ending a live tool run (or masquerading as tool calls).
+        "⏩", "⏳",
         "[cron]", "[telemetry]", "[sync]", "[heartbeat]", "[status]", "[background]",
     )
     private val CHECKIN_PATTERNS = listOf(
@@ -509,6 +519,30 @@ object MessageParser {
         TOOL_LINE_NOGLYPH.matchEntire(line)?.let { m ->
             val (args, verdict) = stripTrailingVerdict(cleanArgs(m.groupValues[2]))
             return ToolCall(emoji = "", name = m.groupValues[1], args = args, ok = verdict)
+        }
+        // Progress-style line (`📖 Reading consolidate.py L80-89`). Sentence-shaped lines are
+        // rejected: the glyph must be a symbol and the line must not end like prose.
+        TOOL_LINE_GERUND.matchEntire(line)?.let { m ->
+            val (emoji, verb, rawArgs) = m.destructured
+            val tail = rawArgs.trimEnd()
+            // "..."/"…" is a truncation marker (`🔧 Editing /very/long/pa...`), not a sentence end.
+            val sentenceEnd = (tail.endsWith(".") && !tail.endsWith("...")) ||
+                tail.endsWith("!") || tail.endsWith("?")
+            // Telemetry glyphs (⏳ Working…, ⏩ Steering…) are heartbeats, never tool calls.
+            val telemetryGlyph = CHECKIN_PREFIXES.any { emoji.startsWith(it) }
+            // The glyph must be a real emoji/symbol — ASCII markdown markers must not match, or
+            // a heading like `## Enduring Legacy` becomes a phantom tool (live-caught 2026-07-03).
+            val emojiGlyph = emoji.any { it.code >= 0x2000 }
+            if (emojiGlyph && !emoji.first().isLetterOrDigit() && line.length <= 120 && !sentenceEnd && !telemetryGlyph) {
+                val glyph = emoji.trimEnd('️')
+                val ok = when {
+                    glyph in FAIL_GLYPHS -> false
+                    glyph in OK_GLYPHS -> true
+                    else -> null
+                }
+                val (args, verdict) = stripTrailingVerdict(cleanArgs(rawArgs))
+                return ToolCall(emoji = glyph, name = verb, args = args, ok = verdict ?: ok)
+            }
         }
         return null
     }

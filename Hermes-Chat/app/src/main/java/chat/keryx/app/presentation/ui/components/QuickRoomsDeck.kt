@@ -106,6 +106,7 @@ private fun QuickRoomAvatar(
                 BrailleSnakeAnimation(
                     modifier = Modifier.fillMaxSize(),
                     color = accent,
+                    color2 = MaterialTheme.colorScheme.tertiary,
                     snakeLength = 16,
                     periodMillis = 2800,
                     glyphSize = 9f,
