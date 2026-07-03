@@ -214,6 +214,40 @@ class ToolGroupingTest {
     }
 
     @Test
+    fun headerlessFencesAfterInterimStatus_keepTheRunTogether() {
+        // Live-caught 2026-07-03 (consolidate.py turn): long terminal run → interim status →
+        // header-LESS fence-only progress messages → longer interim → final answer. The fences
+        // weren't recognized as tool activity, so the first status "closed" the run and the
+        // fences floated as loose code bubbles.
+        val longInterim = "The script timed out again, and the backup wasn't created. The LLM is " +
+            "responding fine, but the dedup step calls the LLM in a loop for each candidate " +
+            "cluster — with 266 entities, that's a lot of slow thinking calls. " +
+            "Let me bump the timeout and try once more:"
+        val finalAnswer = "The consolidation is now running in the background with a 10-minute " +
+            "timeout. It's going to be slow because the dedup step alone needs multiple LLM " +
+            "calls for each candidate cluster of similar entities. I'll notify you when it " +
+            "finishes. In the meantime we could clean up orphan noise first. What would you prefer?"
+        val items = group(
+            msg(SenderType.ME, "Yes please"),
+            msg(SenderType.HERMES, "💻 terminal\n```\ncd ~/.hermes && venv/bin/python consolidate.py\n```"),
+            msg(SenderType.HERMES, "⏳ Working — 3 min — iteration 1/90, terminal"),
+            msg(SenderType.HERMES, "\n\n\n\nThe script timed out at 5 minutes — let me check what happened."),
+            msg(SenderType.HERMES, "```\nls -la ~/.hermes/graphiti-backups/\n```\n```\n# Test if the model is responding\n```"),
+            msg(SenderType.HERMES, longInterim),
+            msg(SenderType.HERMES, finalAnswer),
+        )
+        val run = runOf(items) // ONE run — the fences didn't split it
+        assertEquals(1, run.callCount)
+        assertTrue(run.entries.any { it is ToolRunEntry.Note && (it as ToolRunEntry.Note).text.contains("ls -la") })
+        assertTrue(run.entries.any { it is ToolRunEntry.Telemetry })
+        // The short status folds into the run's reasoning; the substantial interim + final stay bubbles.
+        assertTrue(run.reasoning?.contains("timed out at 5 minutes") == true)
+        val agentBubbles = items.filterIsInstance<ChatRenderItem.Single>()
+            .filter { it.message.sender == SenderType.HERMES }
+        assertEquals(listOf(finalAnswer, longInterim), agentBubbles.map { it.message.content })
+    }
+
+    @Test
     fun plainReply_noRun() {
         val items = group(
             msg(SenderType.ME, "hi"),
