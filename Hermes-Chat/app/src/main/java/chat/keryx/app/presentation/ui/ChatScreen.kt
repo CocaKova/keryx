@@ -333,13 +333,14 @@ fun ChatScreen(
                 .padding(bottom = bottomReserve + 10.dp, end = 18.dp),
         ) {
             val accent = MaterialTheme.colorScheme.primary
+            val accent2 = MaterialTheme.colorScheme.tertiary
             Surface(
                 shape = RoundedCornerShape(18.dp),
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
                 shadowElevation = 8.dp,
                 modifier = Modifier.border(
                     width = 1.dp,
-                    brush = Brush.verticalGradient(listOf(accent.copy(alpha = 0.45f), accent.copy(alpha = 0.10f))),
+                    brush = Brush.verticalGradient(listOf(accent.copy(alpha = 0.45f), accent2.copy(alpha = 0.22f))),
                     shape = RoundedCornerShape(18.dp),
                 ),
             ) {
@@ -472,6 +473,7 @@ private fun WorkingStatusBar(
             // through each other, which is what read as "circles" in light mode).
             fill = MaterialTheme.colorScheme.surfaceVariant,
             border = accent.copy(alpha = 0.85f),
+            border2 = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f),
         ) {
             Text(
                 text = "$label · $clock",
@@ -814,6 +816,7 @@ private fun ReactionPickerRow(onPick: (String) -> Unit, onReply: () -> Unit, onC
         // snapping in like a stock menu. Each emoji then settles in with a gentle staggered scale.
         val visible = remember { MutableTransitionState(false).apply { targetState = true } }
         val accent = MaterialTheme.colorScheme.primary
+        val accent2 = MaterialTheme.colorScheme.tertiary
         AnimatedVisibility(
             visibleState = visible,
             enter = fadeIn(animationSpec = tween(180)) +
@@ -834,7 +837,7 @@ private fun ReactionPickerRow(onPick: (String) -> Unit, onReply: () -> Unit, onC
                     .border(
                         width = 1.dp,
                         brush = Brush.verticalGradient(
-                            listOf(accent.copy(alpha = 0.45f), accent.copy(alpha = 0.10f)),
+                            listOf(accent.copy(alpha = 0.45f), accent2.copy(alpha = 0.22f)),
                         ),
                         shape = RoundedCornerShape(22.dp),
                     ),
@@ -924,7 +927,13 @@ private fun DreamPill(
                 scaleX = 0.85f + 0.15f * t
                 scaleY = 0.85f + 0.15f * t
             }
-            .border(1.dp, Brush.verticalGradient(listOf(accent.copy(alpha = 0.45f), accent.copy(alpha = 0.10f))), shape)
+            .border(
+                1.dp,
+                Brush.verticalGradient(
+                    listOf(accent.copy(alpha = 0.45f), MaterialTheme.colorScheme.tertiary.copy(alpha = 0.22f)),
+                ),
+                shape,
+            )
             .clip(shape)
             .clickable { onClick() },
     ) {
@@ -1000,6 +1009,7 @@ private fun StreamingBubble(
 ) {
     val appearance = bubbleAppearance(isMine = false, style = bubbleStyle)
     val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.tertiary
     val interrupted = stream.status == chat.keryx.app.presentation.LiveStreamStatus.INTERRUPTED
     val streaming = stream.status == chat.keryx.app.presentation.LiveStreamStatus.STREAMING
 
@@ -1022,7 +1032,11 @@ private fun StreamingBubble(
                 .widthIn(max = 340.dp)
                 .clip(shape)
                 .background(appearance.brush)
-                .border(1.dp, accent.copy(alpha = glow), shape)
+                .border(
+                    1.dp,
+                    Brush.verticalGradient(listOf(accent.copy(alpha = glow), accent2.copy(alpha = glow * 0.7f))),
+                    shape,
+                )
                 .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             CompositionLocalProvider(

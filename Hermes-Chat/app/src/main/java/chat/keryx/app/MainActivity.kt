@@ -83,6 +83,7 @@ class MainActivity : ComponentActivity() {
             val isDarkOverride by viewModel.isDarkTheme.collectAsState()
             val useDarkTheme = isDarkOverride ?: isSystemInDarkTheme()
             val currentAccent by viewModel.accentColor.collectAsState()
+            val currentAccent2 by viewModel.accentColor2.collectAsState()
 
             // Keep the status-bar icons legible: light glyphs on our dark (OLED-black) background,
             // dark glyphs in light mode. Without this the clock/battery vanish into the black bar.
@@ -92,7 +93,7 @@ class MainActivity : ComponentActivity() {
                 WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !useDarkTheme
             }
 
-            HermesChatTheme(darkTheme = useDarkTheme, customAccent = currentAccent) {
+            HermesChatTheme(darkTheme = useDarkTheme, customAccent = currentAccent, customAccent2 = currentAccent2) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     HermesApp(viewModel = viewModel)
                 }

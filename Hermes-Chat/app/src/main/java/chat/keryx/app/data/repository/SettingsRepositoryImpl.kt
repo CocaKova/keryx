@@ -60,6 +60,9 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     override var accentColorHex: String
         get() = prefs.getString("accent_color_hex", "#E55A00") ?: "#E55A00"
         set(value) = prefs.edit().putString("accent_color_hex", value).apply()
+    override var accentColor2Hex: String
+        get() = prefs.getString("accent_color2_hex", "#8B5CF6") ?: "#8B5CF6"
+        set(value) = prefs.edit().putString("accent_color2_hex", value).apply()
 
     override var lastRoomId: String?
         get() = prefs.getString("last_room_id", null)

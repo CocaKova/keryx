@@ -26,6 +26,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalFocusManager
 import chat.keryx.app.presentation.ChatViewModel
@@ -126,8 +127,9 @@ fun HermesApp(viewModel: ChatViewModel) {
                             // Effort levels persist with --global; show/hide persists per-platform
                             // on the server side already; reset clears this session's override.
                             var reasoningMenu by remember { mutableStateOf(false) }
+                            val reasoningCaps by viewModel.reasoningCaps.collectAsState()
                             Box {
-                                IconButton(onClick = { reasoningMenu = true }) {
+                                IconButton(onClick = { reasoningMenu = true; viewModel.refreshReasoningCaps() }) {
                                     Icon(
                                         Icons.Default.Psychology,
                                         contentDescription = "Reasoning",
@@ -136,6 +138,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                                 }
                                 ReasoningMenu(
                                     expanded = reasoningMenu,
+                                    caps = reasoningCaps,
                                     onDismiss = { reasoningMenu = false },
                                     onCommand = { arg -> reasoningMenu = false; viewModel.sendReasoningCommand(arg) },
                                 )
@@ -222,10 +225,12 @@ private fun LinkHealthDot(health: chat.keryx.app.presentation.LinkHealth) {
 @Composable
 private fun ReasoningMenu(
     expanded: Boolean,
+    caps: chat.keryx.app.data.remote.HermesStreamClient.ReasoningCaps?,
     onDismiss: () -> Unit,
     onCommand: (String) -> Unit,
 ) {
     val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.tertiary
     val shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)
     DropdownMenu(
         expanded = expanded,
@@ -235,7 +240,7 @@ private fun ReasoningMenu(
         shadowElevation = 16.dp,
         border = androidx.compose.foundation.BorderStroke(
             width = 1.dp,
-            brush = Brush.verticalGradient(listOf(accent.copy(alpha = 0.45f), accent.copy(alpha = 0.10f))),
+            brush = Brush.verticalGradient(listOf(accent.copy(alpha = 0.45f), accent2.copy(alpha = 0.22f))),
         ),
     ) {
         Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
@@ -246,18 +251,36 @@ private fun ReasoningMenu(
                 letterSpacing = 2.4.sp,
             )
             Text(
-                "effort persists across sessions",
+                // The menu adapts to what the active brain actually supports (via
+                // /keryx/capabilities): a local vLLM brain is a binary thinking switch, cloud
+                // models take the full effort scale. Until the probe answers, show the generic
+                // scale with a neutral subtitle.
+                text = when {
+                    caps == null -> "effort persists across sessions"
+                    caps.mode == "binary" -> "${caps.model.ifBlank { "local brain" }} · on/off switch"
+                    else -> "${caps.model.ifBlank { "model" }} · effort scale"
+                },
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                 fontSize = 9.sp,
             )
         }
-        listOf(
-            Triple("minimal", "Minimal", "▁"),
-            Triple("low", "Low", "▁▃"),
-            Triple("medium", "Medium", "▁▃▅"),
-            Triple("high", "High", "▁▃▅▇"),
-            Triple("xhigh", "X-High", "▁▃▅▇█"),
-        ).forEach { (arg, label, glyph) ->
+        val entries: List<Triple<String, String, String>> = if (caps?.mode == "binary") {
+            caps.levels.map { arg ->
+                val label = caps.labels[arg] ?: arg.replaceFirstChar { it.uppercase() }
+                Triple(arg, label, if (arg == "none") "·" else "▁▃▅▇")
+            }
+        } else {
+            listOf(
+                Triple("none", "Off", "·"),
+                Triple("minimal", "Minimal", "▁"),
+                Triple("low", "Low", "▁▃"),
+                Triple("medium", "Medium", "▁▃▅"),
+                Triple("high", "High", "▁▃▅▇"),
+                Triple("xhigh", "X-High", "▁▃▅▇█"),
+            )
+        }
+        entries.forEach { (arg, label, glyph) ->
+            val isCurrent = caps?.current == arg
             DropdownMenuItem(
                 text = {
                     androidx.compose.foundation.layout.Row(
@@ -270,7 +293,12 @@ private fun ReasoningMenu(
                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                             modifier = Modifier.padding(end = 10.dp).width(38.dp),
                         )
-                        Text(label, fontSize = 14.sp)
+                        Text(
+                            label,
+                            fontSize = 14.sp,
+                            fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (isCurrent) accent else Color.Unspecified,
+                        )
                     }
                 },
                 onClick = { onCommand("$arg --global") },

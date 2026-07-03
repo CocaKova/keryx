@@ -55,6 +55,7 @@ fun NavigationDrawerContent(
     val currentSession by viewModel.currentSession.collectAsState()
     val isDarkTheme by viewModel.isDarkTheme.collectAsState()
     val currentAccent by viewModel.accentColor.collectAsState()
+    val currentAccent2 by viewModel.accentColor2.collectAsState()
     val matrixUrl by viewModel.matrixUrl.collectAsState()
     val agentMatrixId by viewModel.agentMatrixId.collectAsState()
     val matrixToken by viewModel.matrixToken.collectAsState()
@@ -91,6 +92,8 @@ fun NavigationDrawerContent(
         chat.keryx.app.presentation.ui.components.SettingsScreen(
             currentAccentColor = currentAccent,
             onAccentColorChanged = { viewModel.setAccentColor(it) },
+            currentAccentColor2 = currentAccent2,
+            onAccentColor2Changed = { viewModel.setAccentColor2(it) },
             currentUserId = currentUserId,
             matrixUrl = matrixUrl,
             onMatrixUrlChanged = { viewModel.setMatrixUrl(it) },

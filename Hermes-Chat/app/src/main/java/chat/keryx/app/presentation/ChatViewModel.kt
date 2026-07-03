@@ -48,7 +48,7 @@ class ChatViewModel(
         // vanish while it's genuinely working. The SHORT window kicks in the moment a real prose
         // answer lands, so it still settles promptly when the turn is actually done.
         private const val QUIET_LONG_MS = 240_000L
-        private const val QUIET_SHORT_MS = 3_000L
+        private const val QUIET_SHORT_MS = 1_200L
         // Absolute cap covering time-to-first-response if the agent never says anything at all.
         private const val NO_REPLY_MS = 240_000L
         // On opening a room, treat the agent as still working if its last (mid-run) message landed
@@ -57,9 +57,9 @@ class ChatViewModel(
         private const val WORKING_RECENT_MS = 150_000L
         // Bridge after Hermes stops typing — long enough to hand off to the final message's settle,
         // short enough that the banner doesn't loiter once it's genuinely done.
-        private const val TYPING_STOP_GRACE_MS = 8_000L
+        private const val TYPING_STOP_GRACE_MS = 5_000L
         // Typing stopped and the answer is already rendered: the turn is over — settle fast.
-        private const val ANSWER_SETTLED_MS = 800L
+        private const val ANSWER_SETTLED_MS = 350L
 
         // --- Side-channel stream tuning ---
         // UI dispatch throttle for the live token buffer: flush to state when either trips.
@@ -133,6 +133,15 @@ class ChatViewModel(
         }
     )
     val accentColor: StateFlow<Color> = _accentColor.asStateFlow()
+
+    private val _accentColor2 = MutableStateFlow<Color>(
+        try {
+            Color(android.graphics.Color.parseColor(settingsRepository.accentColor2Hex))
+        } catch (e: Exception) {
+            Color(0xFF8B5CF6)
+        }
+    )
+    val accentColor2: StateFlow<Color> = _accentColor2.asStateFlow()
 
     // Command menu state
     private val _commandMenuVisible = MutableStateFlow(false)
@@ -215,6 +224,23 @@ class ChatViewModel(
     )
     val linkHealth: StateFlow<LinkHealth> = _linkHealth.asStateFlow()
 
+    /** Active brain's reasoning dial (null until fetched; refreshed when the menu opens). */
+    private val _reasoningCaps = MutableStateFlow<chat.keryx.app.data.remote.HermesStreamClient.ReasoningCaps?>(null)
+    val reasoningCaps: StateFlow<chat.keryx.app.data.remote.HermesStreamClient.ReasoningCaps?> = _reasoningCaps.asStateFlow()
+
+    /** Fetch what the active brain supports for /reasoning, so the menu can adapt (binary vs
+     *  effort scale, current level, model name). Silent on failure — the menu falls back to the
+     *  generic effort list. */
+    fun refreshReasoningCaps() {
+        val url = _gatewayUrl.value.trim()
+        if (!_sideChannelEnabled.value || url.isBlank()) return
+        viewModelScope.launch {
+            chat.keryx.app.data.remote.HermesStreamClient(url, _gatewayApiKey.value, settingsRepository.allowInsecure)
+                .capabilities()
+                .onSuccess { _reasoningCaps.value = it }
+        }
+    }
+
     private val _showTelemetry = MutableStateFlow(settingsRepository.showTelemetry)
     val showTelemetry: StateFlow<Boolean> = _showTelemetry.asStateFlow()
 
@@ -256,11 +282,14 @@ class ChatViewModel(
     private val _composerPrefill = MutableStateFlow<String?>(null)
     val composerPrefill: StateFlow<String?> = _composerPrefill.asStateFlow()
 
-    private fun scheduleClearAwaiting(delayMs: Long) {
+    private fun scheduleClearAwaiting(delayMs: Long, force: Boolean = false) {
         quietJob?.cancel()
         quietJob = viewModelScope.launch {
             delay(delayMs)
-            if (agentTyping) return@launch // still actively working — typing owns the lifecycle
+            // Typing owns the lifecycle — except when the caller KNOWS the turn ended (the
+            // streamed answer's committed copy just handed off), where lingering typing EDUs
+            // must not keep the cloud up.
+            if (!force && agentTyping) return@launch
             _awaitingReply.value = false
             _workStartedAt.value = null
         }
@@ -375,6 +404,7 @@ class ChatViewModel(
         // The typing indicator is the authoritative "busy" signal; this collector was defined but
         // never started, which is why the banner still died during long silent tool calls.
         observeTyping()
+        refreshReasoningCaps()
     }
 
     private fun workStateMessage(messages: List<Message>, latest: Message): Message {
@@ -517,6 +547,13 @@ class ChatViewModel(
         }
     }
 
+    /** The streamed answer's committed copy is on screen — the turn is over. Retire the
+     *  working banner almost immediately instead of waiting out typing-stop grace windows. */
+    private fun settleTurn() {
+        answerLanded = true
+        scheduleClearAwaiting(ANSWER_SETTLED_MS, force = true)
+    }
+
     private fun clearStream() {
         android.util.Log.i("KeryxHandoff", "clearStream (was ${_liveStream.value?.status})")
         streamClearJob?.cancel()
@@ -543,7 +580,7 @@ class ChatViewModel(
                         .filterNot { MessageParser.isTelemetryMessage(it.content) }
                         .take(8)
                         .any { StreamHandoff.matches(it.content, target) }
-                    if (matched) clearStream()
+                    if (matched) { clearStream(); settleTurn() }
                 }
             }
             LiveStreamStatus.AWAITING_SYNC -> {
@@ -562,7 +599,7 @@ class ChatViewModel(
                         StreamHandoff.normalize(it.content).isNotBlank()
                 }
                 android.util.Log.i("KeryxHandoff", "awaitSync matched=$matched newMsg=$isNewMsg committed=$hasCommittedAnswer recent=${recentHermes.size}")
-                if (matched || (isNewMsg && hasCommittedAnswer)) clearStream()
+                if (matched || (isNewMsg && hasCommittedAnswer)) { clearStream(); settleTurn() }
             }
             LiveStreamStatus.INTERRUPTED -> {
                 // Any fresh substantive answer ends the recovery hold — the sync loop has caught up.
@@ -665,6 +702,11 @@ class ChatViewModel(
         settingsRepository.accentColorHex = String.format("#%06X", (0xFFFFFF and color.toArgb()))
     }
 
+    fun setAccentColor2(color: Color) {
+        _accentColor2.value = color
+        settingsRepository.accentColor2Hex = String.format("#%06X", (0xFFFFFF and color.toArgb()))
+    }
+
     fun setMatrixUrl(url: String) {
         _matrixUrl.value = url
         settingsRepository.homeserverUrl = url
@@ -715,6 +757,7 @@ class ChatViewModel(
         setBubbleStyle("Gradient")
         setMessageTextScale(1.0f)
         setAccentColor(Color(0xFFE55A00))
+        setAccentColor2(Color(0xFF8B5CF6))
     }
 
     fun onComposerTextChanged(text: String) {

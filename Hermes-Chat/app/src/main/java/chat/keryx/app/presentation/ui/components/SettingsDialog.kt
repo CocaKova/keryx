@@ -35,6 +35,8 @@ import kotlin.math.atan2
 fun SettingsScreen(
     currentAccentColor: Color,
     onAccentColorChanged: (Color) -> Unit,
+    currentAccentColor2: Color,
+    onAccentColor2Changed: (Color) -> Unit,
     currentUserId: String?,
     matrixUrl: String,
     onMatrixUrlChanged: (String) -> Unit,
@@ -295,6 +297,36 @@ fun SettingsScreen(
                                 .align(Alignment.CenterHorizontally)
                         ) {
                             Text(hexString, color = currentAccentColor, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                        Spacer(Modifier.height(18.dp))
+                        Text("Accent 2", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        Text(
+                            "The gradient partner: bubbles, the working cloud, and borders blend Accent → Accent 2.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 11.sp,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        ColorWheel(
+                            modifier = Modifier
+                                .size(140.dp)
+                                .clip(RoundedCornerShape(100.dp))
+                                .align(Alignment.CenterHorizontally),
+                            onColorSelected = onAccentColor2Changed
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        val hexString2 = String.format("#%06X", (0xFFFFFF and currentAccentColor2.toArgb()))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                        listOf(currentAccentColor.copy(alpha = 0.25f), currentAccentColor2.copy(alpha = 0.25f))
+                                    )
+                                )
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .align(Alignment.CenterHorizontally)
+                        ) {
+                            Text(hexString2, color = currentAccentColor2, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         }
                         Spacer(Modifier.height(16.dp))
                         OutlinedButton(onClick = onResetAppearance, modifier = Modifier.align(Alignment.CenterHorizontally)) {

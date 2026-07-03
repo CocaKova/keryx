@@ -149,6 +149,117 @@ def suppress_protocol_edits(adapter: Any, chat_id: Any, default_buffer_only: boo
     return default_buffer_only
 
 
+def apply_thinking_kwargs(agent) -> None:
+    """Map Hermes' reasoning_config onto vLLM's ``chat_template_kwargs.enable_thinking``.
+
+    Called from agent_init after ``_merge_custom_provider_extra_body`` (see install.py).
+    Local OpenAI-compatible brains (provider ``custom``/``custom:*``) don't understand the
+    OpenRouter-style ``extra_body.reasoning`` dial — thinking is a chat-template switch. The
+    gemma-31b template additionally force-opens the thought channel when enable_thinking is set
+    (this tune never opens it voluntarily), so with this mapping ``/reasoning none`` ⇄ any
+    effort level becomes a real on/off for local-brain reasoning. Never raises.
+    """
+    try:
+        provider = str(getattr(agent, "provider", "") or "").strip().lower()
+        if provider != "custom" and not provider.startswith("custom:"):
+            return
+        rc = getattr(agent, "reasoning_config", None)
+        enabled = not (isinstance(rc, dict) and rc.get("enabled") is False)
+        overrides = dict(getattr(agent, "request_overrides", {}) or {})
+        extra = dict(overrides.get("extra_body") or {})
+        ctk = dict(extra.get("chat_template_kwargs") or {})
+        ctk["enable_thinking"] = enabled
+        extra["chat_template_kwargs"] = ctk
+        overrides["extra_body"] = extra
+        agent.request_overrides = overrides
+    except Exception:
+        logger.debug("apply_thinking_kwargs failed", exc_info=True)
+
+
+def _reasoning_capabilities() -> Dict[str, Any]:
+    """Describe the active brain's reasoning dial for the Keryx client.
+
+    Local custom providers are a binary switch (enable_thinking via chat template) — the app
+    should render Off/On. Cloud providers accept the full effort scale. Reads config.yaml
+    fresh on every call so a /model or /reasoning --global change is reflected immediately.
+    """
+    model = ""
+    provider = ""
+    effort = "medium"
+    show = True
+    try:
+        import yaml
+        from pathlib import Path
+
+        cfg = yaml.safe_load((Path.home() / ".hermes" / "config.yaml").read_text()) or {}
+        model_cfg = cfg.get("model") or {}
+        provider = str(model_cfg.get("provider", "") or "").strip().lower()
+        model = str(model_cfg.get("model") or model_cfg.get("name") or "").strip()
+        base = str(model_cfg.get("base_url", "") or "").strip()
+        if (provider == "custom" or provider.startswith("custom:")) and base:
+            # Brain hot-swaps (Spire systemd templates) change what's served without touching
+            # config.yaml — ask the live endpoint what it actually is.
+            try:
+                import urllib.request as _rq
+
+                with _rq.urlopen(base.rstrip("/") + "/models", timeout=2) as resp:
+                    data = json.loads(resp.read().decode())
+                served = [m.get("id", "") for m in data.get("data", []) if isinstance(m, dict)]
+                if served and served[0]:
+                    model = served[0]
+            except Exception:
+                pass
+        if not model:
+            for entry in (cfg.get("providers") or {}).values():
+                if isinstance(entry, dict) and str(entry.get("base_url", "")).strip() == base:
+                    model = str(entry.get("model") or entry.get("name") or "").strip()
+                    if model:
+                        break
+        agent_cfg = cfg.get("agent") or {}
+        effort = str(agent_cfg.get("reasoning_effort", "medium") or "medium").strip().lower()
+        display = ((cfg.get("display") or {}).get("platforms") or {}).get("matrix") or {}
+        show = bool(display.get("show_reasoning", True))
+    except Exception:
+        logger.debug("capabilities config read failed", exc_info=True)
+
+    local = provider == "custom" or provider.startswith("custom:")
+    if local:
+        reasoning = {
+            "mode": "binary",
+            "levels": ["none", "high"],
+            "labels": {"none": "Off", "high": "On"},
+            "current": "none" if effort == "none" else "high",
+        }
+    else:
+        reasoning = {
+            "mode": "effort",
+            "levels": ["none", "minimal", "low", "medium", "high", "xhigh"],
+            "labels": {},
+            "current": effort,
+        }
+    return {
+        "model": model,
+        "provider": provider,
+        "reasoning": reasoning,
+        "show_reasoning": show,
+    }
+
+
+def make_capabilities_handler(check_auth):
+    """aiohttp handler for ``GET /keryx/capabilities`` (wired in api_server.py)."""
+    from aiohttp import web
+
+    async def handle_keryx_capabilities(request: "web.Request") -> "web.Response":
+        auth_err = check_auth(request)
+        if auth_err is not None:
+            return auth_err
+        # Config read + live-model probe both block — keep them off the event loop.
+        caps = await asyncio.to_thread(_reasoning_capabilities)
+        return web.json_response(caps)
+
+    return handle_keryx_capabilities
+
+
 def make_stream_handler(check_auth):
     """Build the aiohttp handler for ``GET /keryx/stream`` (wired in api_server.py).
 

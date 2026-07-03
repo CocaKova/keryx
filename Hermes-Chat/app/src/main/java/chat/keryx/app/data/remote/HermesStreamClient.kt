@@ -135,6 +135,50 @@ class HermesStreamClient(
         null
     }
 
+    /** What the active brain's reasoning dial looks like (from `GET /keryx/capabilities`). */
+    data class ReasoningCaps(
+        val model: String,
+        /** "binary" (local enable_thinking switch), "effort" (full scale), or "none". */
+        val mode: String,
+        /** /reasoning command args in menu order (e.g. ["none","high"] for binary). */
+        val levels: List<String>,
+        /** Optional display labels per arg (binary: none→Off, high→On). */
+        val labels: Map<String, String>,
+        /** The currently configured arg. */
+        val current: String,
+    )
+
+    /**
+     * Fetch the gateway's reasoning capabilities for the active brain, so the app's reasoning
+     * menu can match what the model actually supports (a local vLLM brain is a binary
+     * enable_thinking switch; cloud providers take the full effort scale). Gateways without the
+     * keryx-stream plugin 404 here — callers treat failure as "unknown, show the generic menu".
+     */
+    suspend fun capabilities(): Result<ReasoningCaps> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            val request = Request.Builder()
+                .url(baseUrl.trimEnd('/') + "/keryx/capabilities")
+                .apply { if (apiKey.isNotBlank()) header("Authorization", "Bearer $apiKey") }
+                .build()
+            val probe = client.newBuilder().readTimeout(5, TimeUnit.SECONDS).build()
+            probe.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) error("HTTP ${resp.code}")
+                val obj = json.parseToJsonElement(resp.body?.string().orEmpty()).jsonObject
+                val reasoning = obj["reasoning"]?.jsonObject ?: error("no reasoning block")
+                ReasoningCaps(
+                    model = (obj["model"] as? JsonPrimitive)?.content.orEmpty(),
+                    mode = (reasoning["mode"] as? JsonPrimitive)?.content ?: "effort",
+                    levels = (reasoning["levels"] as? kotlinx.serialization.json.JsonArray)
+                        ?.mapNotNull { (it as? JsonPrimitive)?.content }.orEmpty(),
+                    labels = (reasoning["labels"] as? kotlinx.serialization.json.JsonObject)
+                        ?.mapNotNull { (k, v) -> (v as? JsonPrimitive)?.content?.let { k to it } }
+                        ?.toMap().orEmpty(),
+                    current = (reasoning["current"] as? JsonPrimitive)?.content.orEmpty(),
+                )
+            }
+        }
+    }
+
     /**
      * One-shot gateway health probe (`GET /health`) for the Settings "Test link" button. Success
      * returns a short human line ("ok · hermes-agent 0.18.0"); every failure mode comes back as a

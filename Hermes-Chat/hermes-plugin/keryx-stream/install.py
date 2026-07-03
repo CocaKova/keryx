@@ -140,24 +140,64 @@ def main() -> int:
         label="stream_consumer edit-suppression tier switch",
     )
 
-    # 3. SSE route on the API server (rides existing auth + port 8642).
+    # 3. SSE + capabilities routes on the API server (ride existing auth + port 8642).
+    #    ONE combined block: registering /keryx/stream twice makes aiohttp raise a duplicate-route
+    #    error inside the try, which silently killed BOTH routes (live-debugged 2026-07-02).
     api = gw / "platforms" / "api_server.py"
+    keryx_routes = (
+        "            try:\n"
+        "                from gateway.keryx_stream import make_stream_handler, make_capabilities_handler\n"
+        '                self._app.router.add_get("/keryx/stream", make_stream_handler(self._check_auth))\n'
+        '                self._app.router.add_get("/keryx/capabilities", make_capabilities_handler(self._check_auth))\n'
+        "            except Exception:\n"
+        '                logger.debug("keryx routes unavailable", exc_info=True)\n'
+    )
+    legacy_stream_only = (
+        "            try:\n"
+        "                from gateway.keryx_stream import make_stream_handler\n"
+        '                self._app.router.add_get("/keryx/stream", make_stream_handler(self._check_auth))\n'
+        "            except Exception:\n"
+        '                logger.debug("keryx stream route unavailable", exc_info=True)\n'
+    )
+    src = api.read_text()
+    if keryx_routes in src:
+        # Drop any legacy stream-only block that may sit alongside the combined one.
+        if legacy_stream_only in src:
+            api.write_text(src.replace(legacy_stream_only, "", 1))
+            print("  + api_server routes: removed legacy stream-only block")
+        else:
+            print("  = api_server routes: already applied")
+    elif legacy_stream_only in src:
+        api.write_text(src.replace(legacy_stream_only, keryx_routes, 1))
+        print("  + api_server routes: upgraded stream-only block to combined block")
+    else:
+        ok &= patch(
+            api,
+            anchor='            self._app.router.add_get("/health", self._handle_health)\n',
+            replacement='            self._app.router.add_get("/health", self._handle_health)\n' + keryx_routes,
+            label="api_server keryx routes",
+        )
+
+    # 4. Local-brain thinking switch: map reasoning_config → chat_template_kwargs.enable_thinking
+    #    for custom providers, right after custom-provider extra_body merging. Makes /reasoning
+    #    none ⇄ <level> a real on/off for local vLLM brains (gemma-31b force-open template).
+    ai = root / "agent" / "agent_init.py"
     ok &= patch(
-        api,
-        anchor='            self._app.router.add_get("/health", self._handle_health)\n',
+        ai,
+        anchor="    _merge_custom_provider_extra_body(agent, _custom_providers)\n",
         replacement=(
-            '            self._app.router.add_get("/health", self._handle_health)\n'
-            "            try:\n"
-            "                from gateway.keryx_stream import make_stream_handler\n"
-            '                self._app.router.add_get("/keryx/stream", make_stream_handler(self._check_auth))\n'
-            "            except Exception:\n"
-            '                logger.debug("keryx stream route unavailable", exc_info=True)\n'
+            "    _merge_custom_provider_extra_body(agent, _custom_providers)\n"
+            "    try:\n"
+            "        from gateway import keryx_stream as _keryx\n"
+            "        _keryx.apply_thinking_kwargs(agent)\n"
+            "    except Exception:\n"
+            "        pass\n"
         ),
-        label="api_server /keryx/stream route",
+        label="agent_init enable_thinking mapping",
     )
 
     # Sanity: everything still compiles.
-    for f in (gw / "keryx_stream.py", sc, api):
+    for f in (gw / "keryx_stream.py", sc, api, ai):
         try:
             py_compile.compile(str(f), doraise=True)
         except py_compile.PyCompileError as e:

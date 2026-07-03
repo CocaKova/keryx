@@ -27,6 +27,7 @@ fun contrastColorFor(bg: Color): Color =
 fun bubbleAppearance(isMine: Boolean, style: String): BubbleAppearance {
     val cs = MaterialTheme.colorScheme
     val accent = cs.primary
+    val accent2 = cs.tertiary
     return when (style) {
         BubbleStyles.GLASS ->
             if (isMine) BubbleAppearance(
@@ -50,9 +51,11 @@ fun bubbleAppearance(isMine: Boolean, style: String): BubbleAppearance {
                 border = null,
             )
 
-        else -> // GRADIENT (default) — softer than flat accent, less of an eyesore
+        else -> // GRADIENT (default) — accent melting into accent 2, the sunset-dream look
             if (isMine) BubbleAppearance(
-                brush = Brush.linearGradient(listOf(accent, lerp(accent, Color.Black, 0.22f))),
+                brush = Brush.linearGradient(
+                    listOf(accent, lerp(accent, accent2, 0.55f), lerp(accent2, Color.Black, 0.12f))
+                ),
                 textColor = contrastColorFor(accent),
                 border = null,
             ) else BubbleAppearance(

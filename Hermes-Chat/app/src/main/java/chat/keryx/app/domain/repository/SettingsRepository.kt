@@ -18,6 +18,7 @@ interface SettingsRepository {
     var messageTextScale: Float
     var syncToken: String?
     var accentColorHex: String
+    var accentColor2Hex: String
     /** Room ID of the last conversation the user had open, restored on next launch. */
     var lastRoomId: String?
     /** Slash commands the user has used most recently (most-recent first), for the command palette. */

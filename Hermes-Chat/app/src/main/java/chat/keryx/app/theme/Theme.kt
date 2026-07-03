@@ -32,10 +32,15 @@ private val HermesLightColorScheme = lightColorScheme(
     onSurfaceVariant = TextSecondaryLight
 )
 
+/** The default second accent — a dusk violet that pairs with the amber default for the
+ *  sunset-gradient look (cloud banner, bubble gradients, gradient borders). User-overridable. */
+val HermesDusk = androidx.compose.ui.graphics.Color(0xFF8B5CF6)
+
 @Composable
 fun HermesChatTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     customAccent: androidx.compose.ui.graphics.Color = HermesAmber,
+    customAccent2: androidx.compose.ui.graphics.Color = HermesDusk,
     content: @Composable () -> Unit
 ) {
     val baseScheme = if (darkTheme) {
@@ -44,9 +49,12 @@ fun HermesChatTheme(
         HermesLightColorScheme
     }
 
+    // Accent 2 rides the Material tertiary slot so every composable can reach it via
+    // MaterialTheme.colorScheme.tertiary without new plumbing.
     val colorScheme = baseScheme.copy(
         primary = customAccent,
-        secondary = customAccent
+        secondary = customAccent,
+        tertiary = customAccent2
     )
 
     MaterialTheme(
