@@ -36,6 +36,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
@@ -143,6 +144,20 @@ fun ChatScreen(
         viewModel.onComposerTextChanged(draft)
     }
 
+    // Dream dissolve on room switch: the timeline re-materializes through a soft blur+fade
+    // while a wisp of braille glyphs drifts across and scatters — the app's signature
+    // "crossing rooms in a dream" beat. Skipped on first open (no jarring boot blur).
+    var lastRoomForDissolve by remember { mutableStateOf<String?>(null) }
+    val dissolve = remember { Animatable(1f) }
+    LaunchedEffect(currentSession?.id) {
+        val id = currentSession?.id
+        if (lastRoomForDissolve != null && id != null && id != lastRoomForDissolve) {
+            dissolve.snapTo(0f)
+            dissolve.animateTo(1f, tween(560, easing = LinearOutSlowInEasing))
+        }
+        lastRoomForDissolve = id
+    }
+
     // Drop a Steer (or other) prefill into the composer and focus it.
     LaunchedEffect(composerPrefill) {
         composerPrefill?.let { prefill ->
@@ -221,7 +236,17 @@ fun ChatScreen(
         val bottomReserve = with(density) { composerHeightPx.toDp() } + 28.dp
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    alpha = 0.30f + 0.70f * dissolve.value
+                    translationY = (1f - dissolve.value) * 14.dp.toPx()
+                }
+                .then(
+                    if (dissolve.value < 1f)
+                        Modifier.blur(((1f - dissolve.value) * 5f).dp)
+                    else Modifier
+                ),
             reverseLayout = true,
             contentPadding = PaddingValues(top = 16.dp, bottom = bottomReserve, start = 16.dp, end = 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -433,6 +458,16 @@ fun ChatScreen(
                 hasMessages = messages.isNotEmpty(),
                 onFocusedAtBottom = { scope.launch { listState.animateScrollToItem(0) } },
                 focusRequester = focusRequester,
+            )
+        }
+
+        // The braille wisp riding the room-switch dissolve.
+        if (dissolve.value < 1f) {
+            BrailleWisp(
+                progress = dissolve.value,
+                color = MaterialTheme.colorScheme.primary,
+                color2 = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.align(Alignment.Center),
             )
         }
 
@@ -944,6 +979,40 @@ private fun DreamPill(
         ) {
             Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(18.dp))
             Text(label, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+/**
+ * A fleeting line of braille glyphs that condenses out of nothing mid-transition and scatters
+ * again — dots switching patterns as they drift, like a thought crossing between rooms. Peak
+ * visibility at the middle of [progress]; fully gone at both ends, so it never obstructs.
+ */
+@Composable
+private fun BrailleWisp(
+    progress: Float,
+    color: Color,
+    color2: Color,
+    modifier: Modifier = Modifier,
+) {
+    val n = 12
+    // sin envelope: invisible at 0 and 1, fullest mid-flight.
+    val envelope = kotlin.math.sin(progress.coerceIn(0f, 1f) * Math.PI.toFloat())
+    val step = (progress * 24).toInt() // glyph mutation clock
+    Row(modifier = modifier.graphicsLayer { alpha = envelope * 0.55f }) {
+        for (i in 0 until n) {
+            // Deterministic per-(cell, step) dot pattern in the braille block U+2800–U+28FF.
+            val h = (i * 31 + step * 17 + i * step * 7) and 0xFF
+            val drift = ((i * 13 + step * 3) % 7 - 3) * (1f - progress)
+            Text(
+                text = (0x2800 + h).toChar().toString(),
+                color = lerp(color, color2, i / (n - 1f)),
+                fontSize = 15.sp,
+                modifier = Modifier.graphicsLayer {
+                    translationY = drift * 2.dp.toPx()
+                    alpha = 0.35f + 0.65f * (((i * 7 + step) % 5) / 4f)
+                },
+            )
         }
     }
 }
