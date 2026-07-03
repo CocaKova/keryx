@@ -76,4 +76,6 @@ data class LiveStream(
     val startedAt: Long,
     /** The exact final body reported by the `stop` event (null until then). */
     val finalText: String? = null,
+    /** Live throughput of the side-channel (chars/s; ~4 chars ≈ a token). 0 until measurable. */
+    val charsPerSec: Float = 0f,
 )

@@ -477,12 +477,18 @@ class ChatViewModel(
             val buf = StringBuilder()
             var lastDispatch = 0L
             var charsSinceDispatch = 0
+            var firstDeltaAt = 0L
             fun dispatch(status: LiveStreamStatus, finalText: String? = null) {
                 val cur = _liveStream.value ?: LiveStream(roomId, "", status, System.currentTimeMillis())
+                // Live throughput for the tok/s readout — measured from the first delta so the
+                // connect/think latency doesn't drag the number down.
+                val elapsed = if (firstDeltaAt > 0L) (System.currentTimeMillis() - firstDeltaAt) / 1000f else 0f
+                val cps = if (elapsed > 0.8f) buf.length / elapsed else 0f
                 _liveStream.value = cur.copy(
                     text = MessageParser.sanitizeStreamingTail(buf.toString()),
                     status = status,
                     finalText = finalText ?: cur.finalText,
+                    charsPerSec = cps,
                 )
                 lastDispatch = System.currentTimeMillis()
                 charsSinceDispatch = 0
@@ -497,6 +503,7 @@ class ChatViewModel(
                         dispatch(LiveStreamStatus.STREAMING)
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Delta -> {
+                        if (firstDeltaAt == 0L) firstDeltaAt = System.currentTimeMillis()
                         buf.append(ev.text)
                         charsSinceDispatch += ev.text.length
                         val now = System.currentTimeMillis()

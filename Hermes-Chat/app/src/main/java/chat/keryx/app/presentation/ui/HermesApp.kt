@@ -176,6 +176,7 @@ fun HermesApp(viewModel: ChatViewModel) {
 private fun LinkHealthDot(health: chat.keryx.app.presentation.LinkHealth) {
     if (health == chat.keryx.app.presentation.LinkHealth.OFF) return
     val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.tertiary
     val alpha = if (health == chat.keryx.app.presentation.LinkHealth.LIVE) {
         val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "linkBreath")
         t.animateFloat(
@@ -189,7 +190,9 @@ private fun LinkHealthDot(health: chat.keryx.app.presentation.LinkHealth) {
         ).value
     } else 1f
     val color = when (health) {
-        chat.keryx.app.presentation.LinkHealth.LIVE -> accent.copy(alpha = alpha)
+        // Tokens flowing: the dot breathes BETWEEN the two accents, not just in alpha.
+        chat.keryx.app.presentation.LinkHealth.LIVE ->
+            androidx.compose.ui.graphics.lerp(accent2, accent, alpha).copy(alpha = 0.5f + 0.5f * alpha)
         chat.keryx.app.presentation.LinkHealth.OK -> accent.copy(alpha = 0.75f)
         chat.keryx.app.presentation.LinkHealth.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
         else -> Color(0xFFE0524D).copy(alpha = 0.85f)
