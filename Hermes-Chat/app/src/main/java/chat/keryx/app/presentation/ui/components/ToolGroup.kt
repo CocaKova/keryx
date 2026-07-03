@@ -465,6 +465,11 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
         val reasoning = StringBuilder()
         val seenCalls = mutableSetOf<Pair<String, String>>()
         var runStartId: String? = null
+        // Once a real tool has run in this block, a message that is nothing but ``` fences is that
+        // tool's continued output (Hermes drops the glyph header on follow-up progress sends) —
+        // NOT an answer. Without this, mid-run fences broke the run and floated as code bubbles.
+        var toolSeen = false
+        fun fenceOnly(m: Message) = m.content.trimStart().startsWith("```")
         fun addReasoning(t: String) {
             if (t.isNotBlank()) { if (reasoning.isNotEmpty()) reasoning.append("\n\n"); reasoning.append(t.trim()) }
         }
@@ -490,15 +495,17 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
             }
             val segs = MessageParser.parse(m.content)
             val parts = segmentsToParts(segs)
-            // Is there another tool before the next answer boundary? Decides whether trailing
-            // prose/telemetry still belongs to this run or the run is over.
+            // Is there more tool activity before the next answer boundary? Decides whether
+            // trailing prose/telemetry still belongs to this run or the run is over. Header-less
+            // fence messages count as tool activity (they're tool output continuations).
             val toolAhead = (p + 1 until blockEnd).asSequence()
                 .takeWhile { q ->
                     val n = chrono[q]
                     n.sender == SenderType.ME || isToolMessage(n) || isTelemetryMessage(n) ||
+                        (toolSeen && fenceOnly(n)) ||
                         proseLength(MessageParser.parse(n.content)) < ANSWER_PROSE_MIN
                 }
-                .any { isToolMessage(chrono[it]) }
+                .any { q -> isToolMessage(chrono[q]) || (toolSeen && fenceOnly(chrono[q])) }
             when {
                 // Telemetry FIRST: a "⏳ Working…" heartbeat can also match the tool-line shapes,
                 // and it must stay a quiet aside, not inflate the "Ran N tools" count.
@@ -507,11 +514,18 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
                     else out += ChatRenderItem.Single(m) // renders as the quiet telemetry row
                 }
                 isToolMessage(m) -> {
+                    toolSeen = true
                     openRun(m)
                     val deduped = dedupCalls(parts.entries, seenCalls)
                     entries += deduped
                     deduped.forEach { if (it is ToolRunEntry.Call) seenCalls += it.call.name to it.call.args }
                     parts.reasoning?.let { addReasoning(it) }
+                }
+                // Header-less tool output mid-run: a machine-output step inside the run, however
+                // long the fences are — never an answer boundary, never a loose code bubble.
+                toolSeen && fenceOnly(m) -> {
+                    openRun(m)
+                    entries += ToolRunEntry.Note(m.content.trim())
                 }
                 runStartId != null && !toolAhead -> {
                     // First prose after the run's last tool: the answer. Close the run; bubble.
