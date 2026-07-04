@@ -180,7 +180,7 @@ def main() -> int:
 
     # 4. Local-brain thinking switch: map reasoning_config → chat_template_kwargs.enable_thinking
     #    for custom providers, right after custom-provider extra_body merging. Makes /reasoning
-    #    none ⇄ <level> a real on/off for local vLLM brains (gemma-31b force-open template).
+    #    none ⇄ <level> a real on/off for local vLLM brains (chat templates that force-open think).
     ai = root / "agent" / "agent_init.py"
     ok &= patch(
         ai,

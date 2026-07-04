@@ -35,10 +35,16 @@ systemctl --user restart hermes-gateway.service
 `hermes update` wipes the patches — **re-run `install.py` afterwards.** If an anchor is not found
 the script says so and touches nothing else.
 
-Patched files in `~/.hermes/hermes-agent/`:
-- `gateway/keryx_stream.py` (new — hub + SSE handler)
-- `gateway/stream_consumer.py` (4 anchored insertions: delta/segment/stop mirror + edit-tier switch)
-- `gateway/platforms/api_server.py` (1 insertion: the `/keryx/stream` route)
+Patched files in `~/.hermes/hermes-agent/` — all insertions are anchored and wrapped so a missing
+hook fails soft:
+- `gateway/keryx_stream.py` (new — hub, SSE handler, delta coalescing)
+- `gateway/stream_consumer.py` (delta/segment/stop mirror + edit-suppression tier switch)
+- `gateway/platforms/api_server.py` (`/keryx/stream` + `/keryx/capabilities` routes)
+
+Optional niceties (reasoning + steering; harmless if your brain doesn't use them):
+- `agent/agent_init.py` (map `/reasoning` onto a local brain's `enable_thinking` switch)
+- `gateway/run.py` (fold the reasoning block into the streamed final message)
+- `agent/chat_completion_helpers.py` (let `/steer` break a live text stream at the steer point)
 
 Plus one config change (`~/.hermes/config.yaml`):
 
@@ -57,6 +63,18 @@ event: delta    data: {"text": "…incremental tokens (may contain <think> block
 event: segment  data: {}                       # text → tool → text boundary
 event: stop     data: {}                       # turn complete; channel closes
 event: ping     data: {}                       # 20 s keepalive
+```
+
+`delta` text is **append-only**: a single `delta` may carry one token or many. A fast brain emits
+tokens faster than a remote client drains them, so the handler coalesces whatever is queued into
+one frame — this bounds the write rate to the drain rate and stops the bounded per-subscriber queue
+from overflowing and dropping tokens (a dropped token would break the client's byte-exact handoff).
+Concatenation is associative, so the coalesced stream is identical to the per-token stream.
+
+## Tests
+
+```bash
+python3 -m pytest tests/          # coalescing is byte-exact and order-preserving; no gateway needed
 ```
 
 ## App-side setup
