@@ -11,7 +11,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.horizontalDrag
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.*
@@ -772,27 +776,42 @@ fun MessageBubble(
             .fillMaxWidth()
             .graphicsLayer { translationX = -dragX.value }
             .pointerInput(message.id) {
-                var fired = false
-                detectHorizontalDragGestures(
-                    onDragStart = { fired = false },
-                    onDragEnd = {
+                // Claim the gesture ONLY once the drag proves LEFTWARD at touch slop. The old
+                // detectHorizontalDragGestures consumed the slop-crossing event for either
+                // direction, which cancelled the drawer's own drag detector — that's why the
+                // right-swipe-to-open-drawer only landed when the finger happened to start on
+                // the sliver of screen not covered by a bubble. A rightward slop is now left
+                // completely unconsumed, so the drawer sees a virgin gesture and opens.
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    var fired = false
+                    fun apply(amount: Float): Float {
+                        val next = (dragX.value + -amount * 0.62f).coerceIn(0f, replyThresholdPx * 1.5f)
+                        if (!fired && next >= replyThresholdPx) {
+                            fired = true
+                            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                        }
+                        dragScope.launch { dragX.snapTo(next) }
+                        return next
+                    }
+                    val first = awaitHorizontalTouchSlopOrCancellation(down.id) { change, overSlop ->
+                        if (overSlop < 0f) {
+                            change.consume()
+                            apply(overSlop)
+                        }
+                        // Rightward: never consume — the drawer takes it. (If the finger later
+                        // reverses past slop leftward, this callback re-fires and we claim it.)
+                    }
+                    if (first != null) {
+                        horizontalDrag(first.id) { change ->
+                            val next = apply(change.positionChange().x)
+                            if (next > 0f) change.consume()
+                        }
                         if (dragX.value >= replyThresholdPx) onReply()
                         dragScope.launch { dragX.animateTo(0f, spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow)) }
-                    },
-                    onDragCancel = {
+                    } else if (dragX.value > 0f) {
                         dragScope.launch { dragX.animateTo(0f, spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow)) }
-                    },
-                ) { change, amount ->
-                    // Always pull LEFT to reply; a rightward drag stays at 0 and falls through to
-                    // the navigation drawer's open gesture.
-                    val toward = -amount
-                    val next = (dragX.value + toward * 0.62f).coerceIn(0f, replyThresholdPx * 1.5f)
-                    if (!fired && next >= replyThresholdPx) {
-                        fired = true
-                        haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                     }
-                    if (next > 0f) change.consume()
-                    dragScope.launch { dragX.snapTo(next) }
                 }
             }
     ) {
