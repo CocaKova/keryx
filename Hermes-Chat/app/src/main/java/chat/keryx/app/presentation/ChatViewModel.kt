@@ -67,6 +67,14 @@ class ChatViewModel(
         // even at high token rates, while still reading as a live stream.
         private const val STREAM_DISPATCH_MS = 100L
         private const val STREAM_DISPATCH_CHARS = 240
+        // tok/s readout smoothing: an EMA of the *instantaneous* per-frame rate, not a cumulative
+        // average — the cumulative form was diluted by think-latency and tool-call gaps, so a
+        // 150 tok/s brain read ~32. Frames closer than MIN or farther than MAX apart are skipped
+        // (coalesced sub-frame bursts spike; tool/think stalls tank) so the number tracks live
+        // decode speed. Weight favors history for a steady readout.
+        private const val TPS_EMA_WEIGHT = 0.6f
+        private const val TPS_MIN_FRAME_MS = 15L
+        private const val TPS_MAX_FRAME_MS = 4_000L
         // How long to hold the overlay waiting for the final Matrix event after `stop` — sync is
         // normally sub-second; past this the commit clearly isn't coming as-streamed.
         private const val STREAM_SYNC_GRACE_MS = 20_000L
@@ -480,17 +488,16 @@ class ChatViewModel(
             var lastDispatch = 0L
             var charsSinceDispatch = 0
             var firstDeltaAt = 0L
+            var lastDeltaAt = 0L
+            // EMA of the instantaneous delta rate (chars/s); see TPS_* constants.
+            var emaCps = 0f
             fun dispatch(status: LiveStreamStatus, finalText: String? = null) {
                 val cur = _liveStream.value ?: LiveStream(roomId, "", status, System.currentTimeMillis())
-                // Live throughput for the tok/s readout — measured from the first delta so the
-                // connect/think latency doesn't drag the number down.
-                val elapsed = if (firstDeltaAt > 0L) (System.currentTimeMillis() - firstDeltaAt) / 1000f else 0f
-                val cps = if (elapsed > 0.8f) buf.length / elapsed else 0f
                 _liveStream.value = cur.copy(
                     text = MessageParser.sanitizeStreamingTail(buf.toString()),
                     status = status,
                     finalText = finalText ?: cur.finalText,
-                    charsPerSec = cps,
+                    charsPerSec = emaCps,
                 )
                 lastDispatch = System.currentTimeMillis()
                 charsSinceDispatch = 0
@@ -505,10 +512,20 @@ class ChatViewModel(
                         dispatch(LiveStreamStatus.STREAMING)
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Delta -> {
-                        if (firstDeltaAt == 0L) firstDeltaAt = System.currentTimeMillis()
+                        val now = System.currentTimeMillis()
+                        if (firstDeltaAt == 0L) {
+                            firstDeltaAt = now
+                        } else {
+                            val dt = now - lastDeltaAt
+                            if (dt in TPS_MIN_FRAME_MS..TPS_MAX_FRAME_MS && ev.text.isNotEmpty()) {
+                                val instant = ev.text.length * 1000f / dt
+                                emaCps = if (emaCps <= 0f) instant
+                                         else TPS_EMA_WEIGHT * emaCps + (1f - TPS_EMA_WEIGHT) * instant
+                            }
+                        }
+                        lastDeltaAt = now
                         buf.append(ev.text)
                         charsSinceDispatch += ev.text.length
-                        val now = System.currentTimeMillis()
                         if (now - lastDispatch >= STREAM_DISPATCH_MS || charsSinceDispatch >= STREAM_DISPATCH_CHARS) {
                             dispatch(LiveStreamStatus.STREAMING)
                         }

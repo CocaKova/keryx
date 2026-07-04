@@ -202,8 +202,13 @@ object MessageParser {
     // reasoning-so-far — treat it as such rather than leaking raw tag text into the bubble.
     private val THINK_TAG_OPEN = Regex("""(?is)<(think|thinking|reasoning|thought)>|◁think▷""")
     // "code" style:  💭 **Reasoning:**\n```\n…\n```\n\n<answer>   (bold optional — some brains
-    // emit the header without the ** wrapper)
-    private val REASON_CODE = Regex("""(?s)^\s*💭\s*\*{0,2}Reasoning:?\*{0,2}\s*\n```[a-zA-Z0-9]*\n(.*?)\n```\s*(.*)$""")
+    // emit the header without the ** wrapper). The opening fence is captured (group 1) and the
+    // close is a backreference to it, so a fence LONGER than any ``` run inside the reasoning
+    // isn't closed early — reasoning that quotes fenced code (a thinking brain reasoning about
+    // code) no longer truncates, leaking the answer into a copy-paste block. The gateway also
+    // weaves a zero-width space through inner backtick runs (see keryx_stream._neutralize_fences)
+    // for the same-length case; we strip that ZWSP back out of the extracted reasoning below.
+    private val REASON_CODE = Regex("""(?s)^\s*💭\s*\*{0,2}Reasoning:?\*{0,2}\s*\n(`{3,})[a-zA-Z0-9]*\n(.*?)\n\1\s*(.*)$""")
     // Header lines for the "blockquote" (`> 💭 **Reasoning:**`) and "subtext" (`-# 💭 Reasoning`)
     // styles. The quoted/prefixed lines that follow are walked imperatively (not with one big
     // regex) so a blank line INSIDE the reasoning block — which the old `(?:>[^\n]*\n)+` group
@@ -238,7 +243,10 @@ object MessageParser {
         }
         // 2) Hermes "💭 Reasoning" prelude (code / blockquote / subtext).
         REASON_CODE.matchEntire(content)?.let { m ->
-            return m.groupValues[1].trim().ifBlank { null } to m.groupValues[2].trim()
+            // group 1 = opening fence, 2 = reasoning, 3 = answer body. Strip the gateway's
+            // fence-neutralizing zero-width spaces so the canvas shows clean backticks.
+            val reasoning = m.groupValues[2].replace("\u200B", "").trim()
+            return reasoning.ifBlank { null } to m.groupValues[3].trim()
         }
         extractLinePrefixedReasoning(content, REASON_QUOTE_HEADER, ">")?.let { return it }
         extractLinePrefixedReasoning(content, REASON_SUBTEXT_HEADER, "-#")?.let { return it }
