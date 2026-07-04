@@ -93,10 +93,13 @@ fun MessageContent(
     }
     // Render code blocks/fences in a horizontally-scrollable monospace surface so long lines
     // (e.g. ASCII-art diagrams some brains emit) can be panned instead of overflowing off-screen.
+    // CRITICAL: MarkdownComponentModel.content is the WHOLE markdown source, not this node's
+    // text — passing it directly put the entire message inside every code block (the "identical
+    // message inside a copy-paste block" bug). The node's own range must be extracted.
     val components = remember(textColor) {
         markdownComponents(
-            codeBlock = { ScrollableCodeBlock(it.content, textColor) },
-            codeFence = { ScrollableCodeBlock(it.content, textColor) },
+            codeBlock = { ScrollableCodeBlock(indentedCodeText(it.node.getTextInNode(it.content).toString()), textColor) },
+            codeFence = { ScrollableCodeBlock(fencedCodeText(it.node.getTextInNode(it.content).toString()), textColor) },
         )
     }
     Column(modifier = modifier) {
@@ -154,6 +157,36 @@ fun MessageContent(
 // Fence-line parity: an odd count of ```-starting lines means a code fence is still open.
 private val FENCE_LINE = Regex("(?m)^\\s{0,3}`{3,}")
 private fun hasOpenFence(text: String): Boolean = FENCE_LINE.findAll(text).count() % 2 != 0
+
+/** The code INSIDE a ```fence``` node: drop the opening ```lang line and the closing ``` line
+ *  (which may be missing mid-stream / after closeDanglingFences ate a sloppy brain's tail). */
+internal fun fencedCodeText(raw: String): String {
+    val lines = raw.trim('\n').lines()
+    if (lines.isEmpty() || !lines.first().trimStart().startsWith("```")) return raw.trim('\n')
+    val end = if (lines.size > 1 && lines.last().trim().startsWith("```")) lines.size - 1 else lines.size
+    return lines.subList(1, end).joinToString("\n")
+}
+
+/** The code inside an indented (4-space) code block node: strip the indent prefix per line. */
+internal fun indentedCodeText(raw: String): String =
+    raw.trim('\n').lines().joinToString("\n") { it.removePrefix("    ").removePrefix("\t") }
+
+/** Table cells bypass the markdown renderer (they're drawn as a Compose grid), so **bold** and
+ *  `code` marks arrived as literal asterisks/backticks. Applies bold and drops both markers. */
+internal fun tableCellAnnotated(text: String): androidx.compose.ui.text.AnnotatedString =
+    buildAnnotatedString {
+        var rest = text.replace("`", "")
+        while (true) {
+            val start = rest.indexOf("**")
+            val end = if (start >= 0) rest.indexOf("**", start + 2) else -1
+            if (start < 0 || end < 0) { append(rest); break }
+            append(rest.substring(0, start))
+            pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
+            append(rest.substring(start + 2, end))
+            pop()
+            rest = rest.substring(end + 2)
+        }
+    }
 
 /** How long a freshly-arrived run of streamed characters takes to fade to full opacity. */
 private const val STREAM_FADE_MS = 320f
@@ -535,7 +568,7 @@ private fun TableRow(
         for (c in 0 until colCount) {
             if (c > 0) VerticalDivider(color = border, modifier = Modifier.fillMaxHeight())
             Text(
-                text = cells.getOrElse(c) { "" },
+                text = tableCellAnnotated(cells.getOrElse(c) { "" }),
                 color = textColor,
                 fontSize = 13.sp,
                 fontWeight = if (isHeader) FontWeight.Bold else FontWeight.Normal,
