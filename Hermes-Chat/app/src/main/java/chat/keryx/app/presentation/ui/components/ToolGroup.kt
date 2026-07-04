@@ -145,10 +145,18 @@ fun ToolGroupCard(
 
     val distinctEmoji = run.entries.filterIsInstance<ToolRunEntry.Call>()
         .map { it.call.emoji.ifBlank { "⚙" } }.distinct().take(3)
+        .ifEmpty { listOf("⚙") }
     val n = run.callCount
     val failed = run.entries.count { it is ToolRunEntry.Call && it.call.ok == false }
+    // A continuation run (header-less fence output only — no headered Call survived Hermes'
+    // progress grouping) counts its output steps instead of reading "Ran 0 tools".
+    val steps = run.entries.count { it is ToolRunEntry.Note }
     val label = buildString {
-        append(if (active) "Running $n ${plural(n)}…" else "Ran $n ${plural(n)}")
+        if (n > 0) {
+            append(if (active) "Running $n ${plural(n)}…" else "Ran $n ${plural(n)}")
+        } else {
+            append(if (active) "Working…" else "$steps output ${if (steps == 1) "step" else "steps"}")
+        }
         if (failed > 0) append(" · $failed failed")
     }
 
@@ -494,7 +502,12 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
         }
         fun closeRun() {
             val id = runStartId ?: return
-            if (entries.any { it is ToolRunEntry.Call }) {
+            // A run holding ONLY header-less fence Notes is still real tool output: Hermes puts
+            // the 💻 header on just the FIRST progress send of its group, so when an interim
+            // answer (a steered turn's narration) splits the block mid-group, the continuation
+            // run has Notes but no Call. Dropping those runs vanished the output AND every
+            // aside folded into their reasoning the moment the room reloaded.
+            if (entries.any { it is ToolRunEntry.Call || it is ToolRunEntry.Note }) {
                 out.add(
                     runInsertAt,
                     ChatRenderItem.ToolRun(id, entries.toList(), reasoning.toString().ifBlank { null }),

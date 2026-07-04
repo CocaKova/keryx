@@ -225,34 +225,63 @@ def main() -> int:
     #    token stream at the steer point instead: the partial answer commits normally and the
     #    leftover steer is delivered as the immediate next turn (gateway already handles
     #    result["pending_steer"]). Tool-call generation is left alone — the classic injection path.
+    #    The 120-char floor keeps a just-started answer streaming: breaking on the first token
+    #    committed junk fragments ("The") as real messages (live-caught 2026-07-04); an answer
+    #    that never reaches the floor finishes fast and the steer lands via the leftover path.
     cch = root / "agent" / "chat_completion_helpers.py"
-    ok &= patch(
-        cch,
-        anchor=(
-            "            if agent._interrupt_requested:\n"
-            "                break\n"
-            "\n"
-            "            if not chunk.choices:"
-        ),
-        replacement=(
-            "            if agent._interrupt_requested:\n"
-            "                break\n"
-            "\n"
-            "            # keryx_stream: a pending /steer during a text-only completion ends the\n"
-            "            # stream here — the partial answer commits and the steer becomes the\n"
-            "            # immediate next turn instead of waiting out the full answer.\n"
-            "            if (\n"
-            "                getattr(agent, \"_pending_steer\", None)\n"
-            "                and not tool_calls_acc\n"
-            "                and content_parts\n"
-            "            ):\n"
-            "                finish_reason = \"stop\"\n"
-            "                break\n"
-            "\n"
-            "            if not chunk.choices:"
-        ),
-        label="chat_completion_helpers live-steer stream break",
+    steer_break_v1 = (
+        "            # keryx_stream: a pending /steer during a text-only completion ends the\n"
+        "            # stream here — the partial answer commits and the steer becomes the\n"
+        "            # immediate next turn instead of waiting out the full answer.\n"
+        "            if (\n"
+        "                getattr(agent, \"_pending_steer\", None)\n"
+        "                and not tool_calls_acc\n"
+        "                and content_parts\n"
+        "            ):\n"
+        "                finish_reason = \"stop\"\n"
+        "                break\n"
+        "\n"
     )
+    steer_break_v2 = (
+        "            # keryx_stream: a pending /steer during a text-only completion ends the\n"
+        "            # stream here — the partial answer commits and the steer becomes the\n"
+        "            # immediate next turn instead of waiting out the full answer. The size\n"
+        "            # floor keeps a just-started answer streaming (a first-token break\n"
+        "            # committed bare fragments like \"The\" as real messages); short answers\n"
+        "            # finish on their own and the steer lands via the leftover path.\n"
+        "            if (\n"
+        "                getattr(agent, \"_pending_steer\", None)\n"
+        "                and not tool_calls_acc\n"
+        "                and sum(len(_p) for _p in content_parts) >= 120\n"
+        "            ):\n"
+        "                finish_reason = \"stop\"\n"
+        "                break\n"
+        "\n"
+    )
+    cch_src = cch.read_text()
+    if steer_break_v2 in cch_src:
+        print("  = chat_completion_helpers live-steer stream break: already applied")
+    elif steer_break_v1 in cch_src:
+        cch.write_text(cch_src.replace(steer_break_v1, steer_break_v2, 1))
+        print("  + chat_completion_helpers live-steer stream break: upgraded v1 → v2 (120-char floor)")
+    else:
+        ok &= patch(
+            cch,
+            anchor=(
+                "            if agent._interrupt_requested:\n"
+                "                break\n"
+                "\n"
+                "            if not chunk.choices:"
+            ),
+            replacement=(
+                "            if agent._interrupt_requested:\n"
+                "                break\n"
+                "\n"
+                + steer_break_v2
+                + "            if not chunk.choices:"
+            ),
+            label="chat_completion_helpers live-steer stream break",
+        )
 
     # 7. Matching ack wording (the old text promised "after the next tool call", which is no
     #    longer the only landing point). Keep the ⏩ prefix — Keryx folds it as telemetry.
