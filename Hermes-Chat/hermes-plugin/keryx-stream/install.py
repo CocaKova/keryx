@@ -146,37 +146,62 @@ def main() -> int:
     api = gw / "platforms" / "api_server.py"
     keryx_routes = (
         "            try:\n"
-        "                from gateway.keryx_stream import make_stream_handler, make_capabilities_handler\n"
+        "                from gateway.keryx_stream import (\n"
+        "                    make_stream_handler,\n"
+        "                    make_capabilities_handler,\n"
+        "                    make_commands_handler,\n"
+        "                )\n"
         '                self._app.router.add_get("/keryx/stream", make_stream_handler(self._check_auth))\n'
         '                self._app.router.add_get("/keryx/capabilities", make_capabilities_handler(self._check_auth))\n'
+        '                self._app.router.add_get("/keryx/commands", make_commands_handler(self._check_auth))\n'
         "            except Exception:\n"
         '                logger.debug("keryx routes unavailable", exc_info=True)\n'
     )
-    legacy_stream_only = (
-        "            try:\n"
-        "                from gateway.keryx_stream import make_stream_handler\n"
-        '                self._app.router.add_get("/keryx/stream", make_stream_handler(self._check_auth))\n'
-        "            except Exception:\n"
-        '                logger.debug("keryx stream route unavailable", exc_info=True)\n'
-    )
+    # Older installs to upgrade in place (newest first). Registering the same route twice
+    # raises inside the try and silently kills EVERY route in the block, so upgrades must
+    # REPLACE the old block, never sit beside it.
+    legacy_blocks = [
+        (
+            "            try:\n"
+            "                from gateway.keryx_stream import make_stream_handler, make_capabilities_handler\n"
+            '                self._app.router.add_get("/keryx/stream", make_stream_handler(self._check_auth))\n'
+            '                self._app.router.add_get("/keryx/capabilities", make_capabilities_handler(self._check_auth))\n'
+            "            except Exception:\n"
+            '                logger.debug("keryx routes unavailable", exc_info=True)\n'
+        ),
+        (
+            "            try:\n"
+            "                from gateway.keryx_stream import make_stream_handler\n"
+            '                self._app.router.add_get("/keryx/stream", make_stream_handler(self._check_auth))\n'
+            "            except Exception:\n"
+            '                logger.debug("keryx stream route unavailable", exc_info=True)\n'
+        ),
+    ]
     src = api.read_text()
     if keryx_routes in src:
-        # Drop any legacy stream-only block that may sit alongside the combined one.
-        if legacy_stream_only in src:
-            api.write_text(src.replace(legacy_stream_only, "", 1))
-            print("  + api_server routes: removed legacy stream-only block")
+        stale = [b for b in legacy_blocks if b in src]
+        if stale:
+            for b in stale:
+                src = src.replace(b, "", 1)
+            api.write_text(src)
+            print("  + api_server routes: removed stale legacy block(s)")
         else:
             print("  = api_server routes: already applied")
-    elif legacy_stream_only in src:
-        api.write_text(src.replace(legacy_stream_only, keryx_routes, 1))
-        print("  + api_server routes: upgraded stream-only block to combined block")
     else:
-        ok &= patch(
-            api,
-            anchor='            self._app.router.add_get("/health", self._handle_health)\n',
-            replacement='            self._app.router.add_get("/health", self._handle_health)\n' + keryx_routes,
-            label="api_server keryx routes",
-        )
+        upgraded = False
+        for b in legacy_blocks:
+            if b in src:
+                api.write_text(src.replace(b, keryx_routes, 1))
+                print("  + api_server routes: upgraded legacy block to stream+capabilities+commands")
+                upgraded = True
+                break
+        if not upgraded:
+            ok &= patch(
+                api,
+                anchor='            self._app.router.add_get("/health", self._handle_health)\n',
+                replacement='            self._app.router.add_get("/health", self._handle_health)\n' + keryx_routes,
+                label="api_server keryx routes",
+            )
 
     # 4. Local-brain thinking switch: map reasoning_config → chat_template_kwargs.enable_thinking
     #    for custom providers, right after custom-provider extra_body merging. Makes /reasoning

@@ -249,6 +249,27 @@ class ChatViewModel(
         }
     }
 
+    /** The gateway's live slash-command registry (empty until fetched; palette falls back to
+     *  its preset list). Refreshed at most once a minute, when the "/" palette opens. */
+    private val _gatewayCommands =
+        MutableStateFlow<List<chat.keryx.app.data.remote.HermesStreamClient.GatewayCommand>>(emptyList())
+    val gatewayCommands: StateFlow<List<chat.keryx.app.data.remote.HermesStreamClient.GatewayCommand>> =
+        _gatewayCommands.asStateFlow()
+    private var gatewayCommandsFetchedAt = 0L
+
+    fun refreshGatewayCommands() {
+        val url = _gatewayUrl.value.trim()
+        if (!_sideChannelEnabled.value || url.isBlank()) return
+        val now = System.currentTimeMillis()
+        if (_gatewayCommands.value.isNotEmpty() && now - gatewayCommandsFetchedAt < 60_000L) return
+        gatewayCommandsFetchedAt = now
+        viewModelScope.launch {
+            chat.keryx.app.data.remote.HermesStreamClient(url, _gatewayApiKey.value, settingsRepository.allowInsecure)
+                .commands()
+                .onSuccess { if (it.isNotEmpty()) _gatewayCommands.value = it }
+        }
+    }
+
     private val _showTelemetry = MutableStateFlow(settingsRepository.showTelemetry)
     val showTelemetry: StateFlow<Boolean> = _showTelemetry.asStateFlow()
 

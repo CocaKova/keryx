@@ -321,6 +321,7 @@ fun ChatScreen(
             ) { index, item ->
                 Box(modifier = Modifier.animateItem()) {
                     when (item) {
+                        is ChatRenderItem.DayHeader -> DaySeparator(item.epochMillis)
                         is ChatRenderItem.ToolRun -> ToolGroupCard(
                             run = item,
                             // The newest item (index 0 under reverseLayout) is "running" while we
@@ -435,6 +436,12 @@ fun ChatScreen(
         }
 
         // Floating Command Palette
+        val gatewayCommands by viewModel.gatewayCommands.collectAsState()
+        LaunchedEffect(commandMenuVisible) {
+            // Opening "/" refreshes the live registry (throttled in the VM); the preset list
+            // covers the gap until the first successful fetch.
+            if (commandMenuVisible) viewModel.refreshGatewayCommands()
+        }
         AnimatedVisibility(
             visible = commandMenuVisible,
             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
@@ -446,6 +453,7 @@ fun ChatScreen(
             CommandPaletteMenu(
                 filter = commandFilter,
                 recents = recentCommands,
+                live = gatewayCommands,
                 onCommandSelected = { command, takesArgs ->
                     if (takesArgs) {
                         // Fill the composer and let the user type arguments (palette hides on the space).
@@ -1522,32 +1530,92 @@ private fun WaitingIndicator() {
     }
 }
 
-private data class SlashCommand(val cmd: String, val desc: String, val takesArgs: Boolean)
+/** A quiet centered chip marking a day boundary ("Today", "Yesterday", "Wednesday, Jul 2"). */
+@Composable
+fun DaySeparator(epochMillis: Long) {
+    val label = remember(epochMillis) {
+        val now = java.util.Calendar.getInstance()
+        val then = java.util.Calendar.getInstance().apply { timeInMillis = epochMillis }
+        val sameDay = { a: java.util.Calendar, b: java.util.Calendar ->
+            a.get(java.util.Calendar.YEAR) == b.get(java.util.Calendar.YEAR) &&
+                a.get(java.util.Calendar.DAY_OF_YEAR) == b.get(java.util.Calendar.DAY_OF_YEAR)
+        }
+        val yesterday = (now.clone() as java.util.Calendar).apply { add(java.util.Calendar.DAY_OF_YEAR, -1) }
+        when {
+            sameDay(now, then) -> "Today"
+            sameDay(yesterday, then) -> "Yesterday"
+            now.get(java.util.Calendar.YEAR) == then.get(java.util.Calendar.YEAR) ->
+                java.text.SimpleDateFormat("EEEE, MMM d", java.util.Locale.getDefault()).format(then.time)
+            else ->
+                java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.getDefault()).format(then.time)
+        }
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+    ) {
+        val line = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.18f)
+        Box(Modifier.weight(1f).height(1.dp).background(line))
+        Text(
+            text = label,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(horizontal = 12.dp),
+        )
+        Box(Modifier.weight(1f).height(1.dp).background(line))
+    }
+}
+
+private data class SlashCommand(
+    val cmd: String,
+    val desc: String,
+    val takesArgs: Boolean,
+    val aliases: List<String> = emptyList(),
+)
+
+/** Offline fallback: the palette before the gateway's live registry has been fetched. */
+private val PRESET_COMMANDS = listOf(
+    SlashCommand("/new", "Start a fresh conversation", false),
+    SlashCommand("/compress", "Compress / summarize this thread", false),
+    SlashCommand("/handoff", "Hand off context to a new session", false),
+    SlashCommand("/steer", "Steer the agent mid-task", true),
+    SlashCommand("/think", "Ask for deeper reasoning", true),
+    SlashCommand("/model", "Switch the active model", true),
+    SlashCommand("/reset", "Reset the agent's working state", false),
+    SlashCommand("/help", "List what this agent can do", false),
+    SlashCommand("/status", "Show agent + system status", false),
+    SlashCommand("/memory", "Recall or edit long-term memory", true),
+    SlashCommand("/tools", "List available tools", false),
+)
 
 @Composable
 fun CommandPaletteMenu(
     filter: String,
     recents: List<String>,
     onCommandSelected: (String, Boolean) -> Unit,
+    live: List<chat.keryx.app.data.remote.HermesStreamClient.GatewayCommand> = emptyList(),
 ) {
-    // Common Hermes slash commands; `takesArgs` commands fill the composer, the rest auto-send.
-    val all = remember {
-        listOf(
-            SlashCommand("/new", "Start a fresh conversation", false),
-            SlashCommand("/compress", "Compress / summarize this thread", false),
-            SlashCommand("/handoff", "Hand off context to a new session", false),
-            SlashCommand("/steer", "Steer the agent mid-task", true),
-            SlashCommand("/think", "Ask for deeper reasoning", true),
-            SlashCommand("/model", "Switch the active model", true),
-            SlashCommand("/reset", "Reset the agent's working state", false),
-            SlashCommand("/help", "List what this agent can do", false),
-            SlashCommand("/status", "Show agent + system status", false),
-            SlashCommand("/memory", "Recall or edit long-term memory", true),
-            SlashCommand("/tools", "List available tools", false),
-        )
+    // The live registry (what's actually installed on the connected gateway — core commands
+    // plus plugin-registered ones) replaces the preset guess once fetched. An args_hint means
+    // the command takes arguments: fill the composer instead of auto-sending.
+    val all = remember(live) {
+        if (live.isEmpty()) PRESET_COMMANDS
+        else live.map {
+            SlashCommand(
+                cmd = it.cmd,
+                desc = it.description,
+                takesArgs = it.argsHint.isNotBlank(),
+                aliases = it.aliases,
+            )
+        }
     }
     val q = filter.trim().lowercase()
-    val matches = all.filter { q.isBlank() || it.cmd.removePrefix("/").startsWith(q) }
+    val matches = all.filter {
+        q.isBlank() || it.cmd.removePrefix("/").startsWith(q) ||
+            it.aliases.any { a -> a.removePrefix("/").startsWith(q) }
+    }
     // Surface recently-used commands first.
     val ordered = matches.sortedByDescending { recents.indexOf(it.cmd).let { i -> if (i < 0) -1 else recents.size - i } }
 

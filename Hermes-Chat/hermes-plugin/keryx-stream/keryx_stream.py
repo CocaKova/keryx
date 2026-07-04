@@ -392,6 +392,64 @@ async def prepend_reasoning_to_streamed(gateway, source, response, sc) -> bool:
         return False
 
 
+def _gateway_commands() -> List[Dict[str, Any]]:
+    """The slash commands actually available on THIS gateway, from hermes' own
+    command registry (single source of truth) plus any plugin-registered
+    commands — so a client's "/" autocomplete reflects the installed system
+    instead of a hardcoded guess."""
+    out: List[Dict[str, Any]] = []
+    try:
+        from hermes_cli.commands import COMMAND_REGISTRY
+
+        for cmd in COMMAND_REGISTRY:
+            if cmd.cli_only and not cmd.gateway_config_gate:
+                continue
+            if cmd.name == "start":  # platform start-ping ack, not a user command
+                continue
+            out.append({
+                "cmd": f"/{cmd.name}",
+                "description": cmd.description,
+                "category": cmd.category,
+                "args_hint": cmd.args_hint or "",
+                "aliases": [f"/{a}" for a in cmd.aliases],
+            })
+    except Exception:
+        logger.debug("keryx: command registry unavailable", exc_info=True)
+    try:
+        from hermes_cli.plugins import get_plugin_commands
+
+        # name → {handler, description, plugin}
+        for name, meta in (get_plugin_commands() or {}).items():
+            slug = f"/{str(name).lstrip('/')}"
+            if any(c["cmd"] == slug for c in out):
+                continue
+            desc = meta.get("description", "") if isinstance(meta, dict) else str(meta)
+            out.append({
+                "cmd": slug,
+                "description": str(desc or "Plugin command"),
+                "category": "Plugin",
+                "args_hint": "",
+                "aliases": [],
+            })
+    except Exception:
+        logger.debug("keryx: plugin commands unavailable", exc_info=True)
+    return out
+
+
+def make_commands_handler(check_auth):
+    """aiohttp handler for ``GET /keryx/commands`` (wired in api_server.py)."""
+    from aiohttp import web
+
+    async def handle_keryx_commands(request: "web.Request") -> "web.Response":
+        auth_err = check_auth(request)
+        if auth_err is not None:
+            return auth_err
+        cmds = await asyncio.to_thread(_gateway_commands)
+        return web.json_response({"commands": cmds})
+
+    return handle_keryx_commands
+
+
 def make_capabilities_handler(check_auth):
     """aiohttp handler for ``GET /keryx/capabilities`` (wired in api_server.py)."""
     from aiohttp import web
