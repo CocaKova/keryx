@@ -89,4 +89,45 @@ class GroupChatItemsTest {
         assertEquals(2, run.callCount)
         assertTrue(run.reasoning?.contains("checking the file") == true)
     }
+
+    /**
+     * Pinned against the live 2026-07-04 steered .tffs turn: after a /steer, interim answers
+     * (≥ ANSWER_PROSE_MIN narration) split the block into several runs, but Hermes only headers
+     * the FIRST progress send of its grouping — every later run held only bare ``` fences and
+     * short asides. closeRun used to drop any run without a headered Call, so all of that output
+     * and its folded reasoning silently vanished on room reload.
+     */
+    @Test
+    fun `header-less fence continuation runs survive an interim-answer split`() {
+        val items = group(
+            me("trigger", "style my termux"),
+            agent("tool1", "💻 terminal\n```\nadb connect 192.168.50.182\n```"),
+            me("steer", "/steer look to verify where it goes first"),
+            agent("interim", "Good findings so far. $longProse", replyTo = "trigger"),
+            agent("fence1", "```\nadb shell \"ls /sdcard/\"\n```"),
+            agent("aside", "The phone's an S24 Ultra. Let me push the file.", replyTo = "trigger"),
+            agent("fence2", "```\nadb push cyber-noir.tffs /sdcard/Download/\n```"),
+            agent("final", "The .tffs file is on the phone and verified. $longProse", replyTo = "trigger"),
+        )
+        val runs = items.filterIsInstance<ChatRenderItem.ToolRun>()
+        // Two runs: the headered one before the interim answer, and the fence-only continuation.
+        assertEquals(2, runs.size)
+        val continuation = runs.first { it.callCount == 0 }
+        // Both fence outputs survive as Note steps…
+        assertEquals(
+            2,
+            continuation.entries.count {
+                it is chat.keryx.app.presentation.ui.components.ToolRunEntry.Note
+            },
+        )
+        // …and the aside folded between them is still reachable in the run's reasoning.
+        assertTrue(continuation.reasoning?.contains("S24 Ultra") == true)
+        // The interim answer and final answer stay visible bubbles.
+        items.single("interim"); items.single("final")
+        // Nothing from the continuation leaked out as loose Singles.
+        assertTrue(
+            items.filterIsInstance<ChatRenderItem.Single>()
+                .none { it.message.id in setOf("fence1", "fence2", "aside") },
+        )
+    }
 }
