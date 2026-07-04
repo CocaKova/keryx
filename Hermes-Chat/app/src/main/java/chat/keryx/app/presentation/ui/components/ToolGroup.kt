@@ -290,7 +290,11 @@ sealed interface ToolRunEntry {
 sealed interface ChatRenderItem {
     val key: String
 
-    data class Single(val message: Message) : ChatRenderItem {
+    /** [suppressQuote]: the gateway reply-threads EVERY prose chunk of a turn back to the
+     *  triggering message, so a multi-part turn re-quoted the user's own last message over and
+     *  over. A quote that merely points at the user's most recent message adds nothing — it's
+     *  suppressed; a quote reaching further back (a genuine reference) still renders. */
+    data class Single(val message: Message, val suppressQuote: Boolean = false) : ChatRenderItem {
         override val key get() = message.id
     }
 
@@ -438,10 +442,18 @@ private const val ANSWER_PROSE_MIN = 240
 fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
     val chrono = mergeRuntimeFooters(orderedNewestFirst.asReversed())
     val out = mutableListOf<ChatRenderItem>()
+    // The user's most recent message so far in the walk. An agent quote pointing at it is the
+    // gateway's per-chunk reply-threading, not a meaningful reference — those quotes are hidden.
+    var lastMineId: String? = null
+    fun agentSingle(m: Message) = ChatRenderItem.Single(
+        m,
+        suppressQuote = m.replyToId != null && m.replyToId == lastMineId,
+    )
     var i = 0
     while (i < chrono.size) {
         val start = chrono[i]
         if (start.sender == SenderType.ME || start.mediaKind != null) {
+            if (start.sender == SenderType.ME) lastMineId = start.id
             out += ChatRenderItem.Single(start); i++; continue
         }
         // Extent of this contiguous agent block. My slash commands don't break it — the agent's
@@ -455,7 +467,11 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
         }
         if ((i until blockEnd).none { isToolMessage(chrono[it]) }) {
             // A plain agent reply (no tools anywhere): normal bubbles.
-            for (p in i until blockEnd) out += ChatRenderItem.Single(chrono[p])
+            for (p in i until blockEnd) {
+                val m = chrono[p]
+                if (m.sender == SenderType.ME) { lastMineId = m.id; out += ChatRenderItem.Single(m) }
+                else out += agentSingle(m)
+            }
             i = blockEnd; continue
         }
 
@@ -490,6 +506,7 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
         for (p in i until blockEnd) {
             val m = chrono[p]
             if (m.sender == SenderType.ME) { // an embedded slash command: keep it visible in place
+                lastMineId = m.id
                 out += ChatRenderItem.Single(m)
                 continue
             }
@@ -530,26 +547,34 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
                 runStartId != null && !toolAhead -> {
                     // First prose after the run's last tool: the answer. Close the run; bubble.
                     closeRun()
-                    out += ChatRenderItem.Single(m)
+                    out += agentSingle(m)
                 }
                 (runStartId != null || toolAhead) && proseLength(segs) >= ANSWER_PROSE_MIN -> {
                     // A substantial INTERIM answer mid-run (steer continued the turn): visible
                     // bubble, and whatever tools follow start a fresh run.
                     closeRun()
-                    out += ChatRenderItem.Single(m)
+                    out += agentSingle(m)
                 }
-                runStartId != null || toolAhead -> {
-                    openRun(m)
+                runStartId != null -> {
+                    // A short aside BETWEEN tools folds into the run.
                     if (m.content.trimStart().startsWith("```")) {
                         // Tool output that lost its header (a bare fenced block): a machine-output
                         // step, not inner monologue.
                         entries += ToolRunEntry.Note(m.content.trim())
                     } else {
-                        // Intro / "working…" status / standalone reasoning → the reasoning block.
+                        // "working…" status / mid-run course-correction → the reasoning block.
                         addReasoning(parts.reasoning ?: m.content)
                     }
                 }
-                else -> out += ChatRenderItem.Single(m)
+                toolAhead -> {
+                    // Turn-OPENING prose before the first tool ("No worries — let's do it again.
+                    // **1. Create file**") is dialogue, not inner monologue: folding it into the
+                    // collapsed run made turns appear to start with a bare tool chip and the
+                    // intro text silently vanished. Keep it a visible bubble; the run opens at
+                    // its first actual tool call.
+                    out += agentSingle(m)
+                }
+                else -> out += agentSingle(m)
             }
         }
         closeRun()

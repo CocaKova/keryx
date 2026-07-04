@@ -355,9 +355,13 @@ fun ChatScreen(
                                 animationSpec = tween(if (flashed) 220 else 900),
                                 label = "quoteFlash",
                             )
+                            // The gateway reply-threads every chunk of a turn to the triggering
+                            // message; a quote of the user's own last message is noise (grouping
+                            // marks those suppressed). Genuine references further back still show.
+                            val quotedId = message.replyToId.takeUnless { item.suppressQuote }
                             MessageBubble(
                                 message = message,
-                                replyTo = message.replyToId?.let { byId[it] },
+                                replyTo = quotedId?.let { byId[it] },
                                 bubbleStyle = bubbleStyle,
                                 textScale = messageTextScale,
                                 showSender = isGroupRoom,
@@ -367,7 +371,7 @@ fun ChatScreen(
                                 mediaLoader = { viewModel.loadMessageMedia(message.sessionId, message.id) },
                                 onReply = { viewModel.setReplyTarget(message) },
                                 onReact = { emoji -> viewModel.sendReaction(message.id, emoji) },
-                                onQuoteClick = message.replyToId?.let { target -> { jumpToMessage(target) } },
+                                onQuoteClick = quotedId?.let { target -> { jumpToMessage(target) } },
                                 modifier = Modifier.background(flashColor, RoundedCornerShape(18.dp)),
                             )
                         }
