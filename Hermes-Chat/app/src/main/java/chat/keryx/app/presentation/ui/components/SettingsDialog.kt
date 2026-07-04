@@ -8,9 +8,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -81,12 +93,23 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
+            // Hub-and-spoke: null = the section list; a name = that section's page.
+            // One long scroll of seven dense cards was the old layout — cluttered.
+            var section by remember { mutableStateOf<String?>(null) }
+            BackHandler(enabled = section != null) { section = null }
+
             Column(modifier = Modifier.fillMaxSize()) {
                 TopAppBar(
-                    title = { Text("Settings", fontWeight = FontWeight.Bold) },
+                    title = { Text(section ?: "Settings", fontWeight = FontWeight.Bold) },
                     navigationIcon = {
-                        IconButton(onClick = onDismissRequest) {
-                            Icon(Icons.Default.Close, contentDescription = "Close")
+                        if (section != null) {
+                            IconButton(onClick = { section = null }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            }
+                        } else {
+                            IconButton(onClick = onDismissRequest) {
+                                Icon(Icons.Default.Close, contentDescription = "Close")
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -100,8 +123,29 @@ fun SettingsScreen(
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 16.dp)
                 ) {
+                    if (section == null) {
+                        Spacer(Modifier.height(4.dp))
+                        SettingsHubRow(Icons.Default.Person, "Account",
+                            currentUserId ?: "Not signed in") { section = "Account" }
+                        SettingsHubRow(Icons.Default.Dns, "Connection",
+                            matrixUrl.ifBlank { "Homeserver & agent" }) { section = "Connection" }
+                        SettingsHubRow(Icons.Default.Bolt, "Hermes Link",
+                            if (sideChannelEnabled) "Live token streaming on" else "Live token streaming off") { section = "Hermes Link" }
+                        SettingsHubRow(Icons.Default.Palette, "Appearance",
+                            "Bubbles, text size, accent colors") { section = "Appearance" }
+                        SettingsHubRow(Icons.Default.Lock, "Privacy & Security",
+                            listOfNotNull(
+                                if (biometricLockEnabled) "App lock" else null,
+                                if (e2eeEnabled) "E2EE" else null,
+                            ).ifEmpty { listOf("App lock & encryption") }.joinToString(" · ")) { section = "Privacy & Security" }
+                        SettingsHubRow(Icons.Default.Tune, "Interface",
+                            "Haptics & loading animation") { section = "Interface" }
+                        SettingsHubRow(Icons.Default.BugReport, "Diagnostics",
+                            "Crash log · Keryx v${chat.keryx.app.BuildConfig.VERSION_NAME}") { section = "Diagnostics" }
+                    }
+
                     // --- Account ---
-                    SettingsCard("Account") {
+                    if (section == "Account") SettingsCard("Account") {
                         Text(
                             text = currentUserId ?: "Not signed in",
                             color = MaterialTheme.colorScheme.onSurface,
@@ -125,7 +169,7 @@ fun SettingsScreen(
                     }
 
                     // --- Connection ---
-                    SettingsCard("Connection") {
+                    if (section == "Connection") SettingsCard("Connection") {
                         OutlinedTextField(
                             value = matrixUrl,
                             onValueChange = onMatrixUrlChanged,
@@ -201,7 +245,7 @@ fun SettingsScreen(
                     }
 
                     // --- Hermes Link (side-channel streaming) ---
-                    SettingsCard("Hermes Link") {
+                    if (section == "Hermes Link") SettingsCard("Hermes Link") {
                         SettingsSwitchRow(
                             title = "Live token streaming",
                             subtitle = "Stream replies over the gateway side-channel (SSE); falls back to Matrix sync when unreachable",
@@ -254,7 +298,7 @@ fun SettingsScreen(
                     }
 
                     // --- Message Appearance ---
-                    SettingsCard("Message Appearance") {
+                    if (section == "Appearance") SettingsCard("Message Appearance") {
                         Text("Bubble Style", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -323,7 +367,7 @@ fun SettingsScreen(
                     }
 
                     // --- Privacy & Security ---
-                    SettingsCard("Privacy & Security") {
+                    if (section == "Privacy & Security") SettingsCard("Privacy & Security") {
                         SettingsSwitchRow(
                             title = "Biometric App Lock",
                             subtitle = "Require FaceID/Fingerprint to open Keryx",
@@ -340,7 +384,7 @@ fun SettingsScreen(
                     }
 
                     // --- Interface ---
-                    SettingsCard("Interface") {
+                    if (section == "Interface") SettingsCard("Interface") {
                         SettingsSwitchRow(
                             title = "Haptic Feedback",
                             subtitle = "Vibrate on interactions",
@@ -365,7 +409,7 @@ fun SettingsScreen(
                         }
                     }
 
-                    SettingsCard("Diagnostics") {
+                    if (section == "Diagnostics") SettingsCard("Diagnostics") {
                         val diagContext = androidx.compose.ui.platform.LocalContext.current
                         var crashText by remember { mutableStateOf(chat.keryx.app.CrashLog.read(diagContext)) }
                         Text(
@@ -439,6 +483,46 @@ fun SettingsSectionHeader(title: String) {
         fontWeight = FontWeight.Bold,
         modifier = Modifier.padding(bottom = 16.dp)
     )
+}
+
+/** One row of the settings hub: icon, title, live subtitle, chevron. */
+@Composable
+private fun SettingsHubRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+    ) {
+        Icon(
+            icon, contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(22.dp),
+        )
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text(
+                subtitle, fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+        }
+        Icon(
+            Icons.Default.ChevronRight, contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            modifier = Modifier.size(20.dp),
+        )
+    }
 }
 
 @Composable

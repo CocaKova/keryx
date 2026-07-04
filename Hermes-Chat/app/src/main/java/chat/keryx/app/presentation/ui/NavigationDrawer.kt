@@ -198,6 +198,9 @@ fun NavigationDrawerContent(
             val filtered = if (query.isBlank()) rooms
                 else rooms.filter { it.name.contains(query, ignoreCase = true) }
             val pinned = filtered.filter { it.id in pinnedRoomIds }
+            // Pinned rooms live in the Quick Rooms deck — don't list them twice.
+            // (While searching, show everything that matches.)
+            val listRooms = if (query.isBlank()) filtered.filter { it.id !in pinnedRoomIds } else filtered
 
             LazyColumn(modifier = Modifier.weight(1f)) {
                 if (pinned.isNotEmpty() && query.isBlank()) {
@@ -217,7 +220,9 @@ fun NavigationDrawerContent(
                     item { Spacer(modifier = Modifier.height(20.dp)) }
                 }
 
-                item { DrawerSectionHeader(if (query.isBlank()) "All Rooms" else "Results") }
+                if (listRooms.isNotEmpty() || rooms.isEmpty() || query.isNotBlank()) {
+                    item { DrawerSectionHeader(if (query.isBlank()) "Rooms" else "Results") }
+                }
                 if (filtered.isEmpty()) {
                     item {
                         Text(
@@ -228,7 +233,7 @@ fun NavigationDrawerContent(
                         )
                     }
                 }
-                items(filtered, key = { it.id }) { room ->
+                items(listRooms, key = { it.id }) { room ->
                     RoomRow(
                         room = room,
                         isSelected = currentSession?.id == room.id,
@@ -244,48 +249,68 @@ fun NavigationDrawerContent(
                 }
             }
 
-            // Bottom Actions
+            // Bottom bar — theme toggle and settings side by side (was two
+            // full-width stacked rows; this halves the footer's height).
             Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-            
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { 
-                        val next = when (isDarkTheme) {
-                            null -> true
-                            true -> false
-                            false -> null
-                        }
-                        viewModel.toggleTheme(next)
-                    }
-                    .padding(vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(top = 10.dp, bottom = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                val icon = when (isDarkTheme) {
+                val themeIcon = when (isDarkTheme) {
                     true -> Icons.Default.LightMode
                     false -> Icons.Default.BrightnessAuto
                     null -> Icons.Default.DarkMode
                 }
-                val text = when (isDarkTheme) {
-                    true -> "Light Mode"
-                    false -> "System Mode"
-                    null -> "Dark Mode"
+                val themeText = when (isDarkTheme) {
+                    true -> "Light"
+                    false -> "System"
+                    null -> "Dark"
                 }
-                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(modifier = Modifier.width(16.dp))
-                Text(text, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
-            }
-            
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showSettings = true }
-                    .padding(vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(modifier = Modifier.width(16.dp))
-                Text("Settings", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable {
+                            val next = when (isDarkTheme) {
+                                null -> true
+                                true -> false
+                                false -> null
+                            }
+                            viewModel.toggleTheme(next)
+                        }
+                        .padding(vertical = 12.dp),
+                ) {
+                    Icon(
+                        themeIcon, contentDescription = "Theme",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(themeText, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { showSettings = true }
+                        .padding(vertical = 12.dp),
+                ) {
+                    Icon(
+                        Icons.Default.Settings, contentDescription = "Settings",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Settings", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                }
             }
         }
     }
@@ -312,6 +337,7 @@ fun RoomRow(
     onSetAvatar: () -> Unit,
     avatarLoader: suspend (String) -> ByteArray?,
 ) {
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -319,10 +345,18 @@ fun RoomRow(
             .padding(vertical = 2.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent)
-            .clickable { onClick() }
-            .padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp)
+            // Long-press anywhere on the row to pin/unpin — replaces the
+            // always-visible star button that cluttered every row.
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                    onTogglePin()
+                },
+            )
+            .padding(start = 8.dp, end = 10.dp, top = 10.dp, bottom = 10.dp)
     ) {
-        // Tap the avatar to open the room; long-press it to set a room photo (works for any room).
+        // Long-press the avatar (specifically) to set a room photo.
         Box(
             modifier = Modifier.combinedClickable(
                 onClick = onClick,
@@ -332,15 +366,26 @@ fun RoomRow(
             RoomAvatar(room = room, selected = isSelected, avatarLoader = avatarLoader)
         }
         Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = room.name,
-            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-            fontSize = 16.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+            Text(
+                text = room.name,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                fontSize = 16.sp,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            if (isPinned) {
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = "Pinned",
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                    modifier = Modifier.size(12.dp),
+                )
+            }
+        }
         Spacer(modifier = Modifier.width(8.dp))
         Column(horizontalAlignment = Alignment.End) {
             if (room.timestamp > 0L) {
@@ -367,14 +412,6 @@ fun RoomRow(
                     )
                 }
             }
-        }
-        IconButton(onClick = onTogglePin, modifier = Modifier.size(36.dp)) {
-            Icon(
-                imageVector = if (isPinned) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                contentDescription = if (isPinned) "Unpin room" else "Pin room",
-                tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                modifier = Modifier.size(20.dp)
-            )
         }
     }
 }
