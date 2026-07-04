@@ -315,10 +315,23 @@ sealed interface ChatRenderItem {
         val id: String,
         val entries: List<ToolRunEntry>,
         val reasoning: String?,
+        /** Timestamp of the run's first message — used for day-boundary placement. */
+        val ts: Long = 0L,
     ) : ChatRenderItem {
         override val key get() = "toolrun:$id"
         val callCount: Int get() = entries.count { it is ToolRunEntry.Call }
     }
+
+    /** A quiet centered chip marking a local-calendar day boundary in the timeline. */
+    data class DayHeader(val epochMillis: Long, val dayKey: String) : ChatRenderItem {
+        override val key get() = "day:$dayKey"
+    }
+}
+
+/** Local-calendar day of a timestamp, as a stable key (year * 1000 + day-of-year). */
+internal fun dayKeyOf(epochMillis: Long): String {
+    val cal = java.util.Calendar.getInstance().apply { timeInMillis = epochMillis }
+    return "${cal.get(java.util.Calendar.YEAR)}-${cal.get(java.util.Calendar.DAY_OF_YEAR)}"
 }
 
 /** A message's contribution to a run: its tool calls/outputs and any reasoning, kept separate so
@@ -489,6 +502,7 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
         val reasoning = StringBuilder()
         val seenCalls = mutableSetOf<Pair<String, String>>()
         var runStartId: String? = null
+        var runStartTs = 0L
         // Once a real tool has run in this block, a message that is nothing but ``` fences is that
         // tool's continued output (Hermes drops the glyph header on follow-up progress sends) —
         // NOT an answer. Without this, mid-run fences broke the run and floated as code bubbles.
@@ -498,7 +512,7 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
             if (t.isNotBlank()) { if (reasoning.isNotEmpty()) reasoning.append("\n\n"); reasoning.append(t.trim()) }
         }
         fun openRun(at: Message) {
-            if (runStartId == null) { runStartId = at.id; runInsertAt = out.size }
+            if (runStartId == null) { runStartId = at.id; runStartTs = at.timestamp; runInsertAt = out.size }
         }
         fun closeRun() {
             val id = runStartId ?: return
@@ -510,7 +524,7 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
             if (entries.any { it is ToolRunEntry.Call || it is ToolRunEntry.Note }) {
                 out.add(
                     runInsertAt,
-                    ChatRenderItem.ToolRun(id, entries.toList(), reasoning.toString().ifBlank { null }),
+                    ChatRenderItem.ToolRun(id, entries.toList(), reasoning.toString().ifBlank { null }, runStartTs),
                 )
             }
             runStartId = null; runInsertAt = -1
@@ -592,6 +606,27 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
         }
         closeRun()
         i = blockEnd
+    }
+    // Day boundaries: [out] is chronological here, so a single walk inserts one quiet header
+    // before the first item of each new local-calendar day. Items without a real timestamp
+    // (synthetic ts=0 placeholders) never trigger a boundary.
+    var lastDay: String? = null
+    var j = 0
+    while (j < out.size) {
+        val ts = when (val item = out[j]) {
+            is ChatRenderItem.Single -> item.message.timestamp
+            is ChatRenderItem.ToolRun -> item.ts
+            is ChatRenderItem.DayHeader -> 0L
+        }
+        if (ts > 0L) {
+            val day = dayKeyOf(ts)
+            if (day != lastDay) {
+                out.add(j, ChatRenderItem.DayHeader(ts, day))
+                j++
+            }
+            lastDay = day
+        }
+        j++
     }
     return out.asReversed()
 }

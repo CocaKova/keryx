@@ -179,6 +179,48 @@ class HermesStreamClient(
         }
     }
 
+    /** One slash command actually installed on the connected gateway (from `GET /keryx/commands`). */
+    data class GatewayCommand(
+        val cmd: String,
+        val description: String,
+        val category: String,
+        /** Argument placeholder ("<prompt>", "[name]"); blank = command takes no arguments. */
+        val argsHint: String,
+        val aliases: List<String>,
+    )
+
+    /**
+     * Fetch the gateway's live slash-command registry (core commands + plugin-registered ones),
+     * so the "/" autocomplete reflects the system Keryx is actually pointed at instead of a
+     * hardcoded preset. Gateways without the keryx-stream plugin 404 — callers keep the preset.
+     */
+    suspend fun commands(): Result<List<GatewayCommand>> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            val request = Request.Builder()
+                .url(baseUrl.trimEnd('/') + "/keryx/commands")
+                .apply { if (apiKey.isNotBlank()) header("Authorization", "Bearer $apiKey") }
+                .build()
+            val probe = client.newBuilder().readTimeout(5, TimeUnit.SECONDS).build()
+            probe.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) error("HTTP ${resp.code}")
+                val obj = json.parseToJsonElement(resp.body?.string().orEmpty()).jsonObject
+                (obj["commands"] as? kotlinx.serialization.json.JsonArray)
+                    ?.mapNotNull { el ->
+                        val c = el as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
+                        val cmd = (c["cmd"] as? JsonPrimitive)?.content ?: return@mapNotNull null
+                        GatewayCommand(
+                            cmd = cmd,
+                            description = (c["description"] as? JsonPrimitive)?.content.orEmpty(),
+                            category = (c["category"] as? JsonPrimitive)?.content.orEmpty(),
+                            argsHint = (c["args_hint"] as? JsonPrimitive)?.content.orEmpty(),
+                            aliases = (c["aliases"] as? kotlinx.serialization.json.JsonArray)
+                                ?.mapNotNull { (it as? JsonPrimitive)?.content }.orEmpty(),
+                        )
+                    }.orEmpty()
+            }
+        }
+    }
+
     /**
      * One-shot gateway health probe (`GET /health`) for the Settings "Test link" button. Success
      * returns a short human line ("ok · hermes-agent 0.18.0"); every failure mode comes back as a

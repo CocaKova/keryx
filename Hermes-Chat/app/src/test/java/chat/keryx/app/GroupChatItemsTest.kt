@@ -130,4 +130,25 @@ class GroupChatItemsTest {
                 .none { it.message.id in setOf("fence1", "fence2", "aside") },
         )
     }
+
+    @Test
+    fun `day headers appear once per local day, before that day's first item`() {
+        val day = 86_400_000L
+        val monday = 1_751_500_800_000L // some midday epoch; exact date irrelevant
+        val items = group(
+            Message("m1", "!r", SenderType.ME, "hey", monday),
+            Message("m2", "!r", SenderType.HERMES, "hello!", monday + 60_000L),
+            Message("m3", "!r", SenderType.ME, "next-day question", monday + day),
+            Message("m4", "!r", SenderType.HERMES, "next-day answer", monday + day + 60_000L),
+        )
+        val chrono = items.asReversed()
+        val headers = chrono.filterIsInstance<ChatRenderItem.DayHeader>()
+        assertEquals(2, headers.size)
+        // First item overall is a day header; the second header sits right before m3.
+        assertTrue(chrono.first() is ChatRenderItem.DayHeader)
+        val m3At = chrono.indexOfFirst { it is ChatRenderItem.Single && it.message.id == "m3" }
+        assertTrue(chrono[m3At - 1] is ChatRenderItem.DayHeader)
+        // Same-day messages never repeat a header, and keys are unique per day.
+        assertEquals(headers.map { it.dayKey }.distinct().size, headers.size)
+    }
 }

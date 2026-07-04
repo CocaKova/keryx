@@ -26,8 +26,8 @@ android {
         applicationId = "chat.keryx.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.0.5"
+        versionCode = 8
+        versionName = "1.1.0"
     }
 
     signingConfigs {
@@ -83,6 +83,8 @@ dependencies {
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.activity.compose)
+  implementation("androidx.biometric:biometric:1.1.0")
+  implementation("androidx.fragment:fragment-ktx:1.8.5")  // biometric 1.1.0 pins 1.2.x; ActivityResult needs ≥1.3
 
   // Arch Components
   implementation(libs.androidx.lifecycle.runtime.compose)

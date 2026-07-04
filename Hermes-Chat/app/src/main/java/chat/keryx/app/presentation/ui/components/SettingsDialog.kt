@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -280,24 +281,12 @@ fun SettingsScreen(
                         Spacer(Modifier.height(18.dp))
                         Text("Accent Color", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                         Spacer(Modifier.height(12.dp))
-                        ColorWheel(
-                            modifier = Modifier
-                                .size(180.dp)
-                                .clip(RoundedCornerShape(100.dp))
-                                .align(Alignment.CenterHorizontally),
-                            onColorSelected = onAccentColorChanged
+                        ColorPickerPanel(
+                            current = currentAccentColor,
+                            onColorSelected = onAccentColorChanged,
+                            modifier = Modifier.fillMaxWidth(),
+                            discSize = 180.dp,
                         )
-                        Spacer(Modifier.height(12.dp))
-                        val hexString = String.format("#%06X", (0xFFFFFF and currentAccentColor.toArgb()))
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(currentAccentColor.copy(alpha = 0.2f))
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                                .align(Alignment.CenterHorizontally)
-                        ) {
-                            Text(hexString, color = currentAccentColor, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        }
                         Spacer(Modifier.height(18.dp))
                         Text("Accent 2", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                         Text(
@@ -306,15 +295,14 @@ fun SettingsScreen(
                             fontSize = 11.sp,
                         )
                         Spacer(Modifier.height(12.dp))
-                        ColorWheel(
-                            modifier = Modifier
-                                .size(140.dp)
-                                .clip(RoundedCornerShape(100.dp))
-                                .align(Alignment.CenterHorizontally),
-                            onColorSelected = onAccentColor2Changed
+                        ColorPickerPanel(
+                            current = currentAccentColor2,
+                            onColorSelected = onAccentColor2Changed,
+                            modifier = Modifier.fillMaxWidth(),
+                            discSize = 140.dp,
                         )
                         Spacer(Modifier.height(12.dp))
-                        val hexString2 = String.format("#%06X", (0xFFFFFF and currentAccentColor2.toArgb()))
+                        // Live gradient preview: how Accent → Accent 2 will actually blend.
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
@@ -326,7 +314,7 @@ fun SettingsScreen(
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
                                 .align(Alignment.CenterHorizontally)
                         ) {
-                            Text(hexString2, color = currentAccentColor2, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text("Accent → Accent 2", color = currentAccentColor2, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                         Spacer(Modifier.height(16.dp))
                         OutlinedButton(onClick = onResetAppearance, modifier = Modifier.align(Alignment.CenterHorizontally)) {
@@ -467,36 +455,134 @@ fun SettingsSwitchRow(title: String, subtitle: String, checked: Boolean, onCheck
     }
 }
 
+/** A quick-tap starting set; the disc/slider/hex refine from there. */
+private val SWATCHES = listOf(
+    0xFFE0A458, 0xFF8B5CF6, 0xFFE53935, 0xFFEC4899,
+    0xFF3B82F6, 0xFF10B981, 0xFFF59E0B, 0xFF94A3B8,
+).map { Color(it) }
+
+/**
+ * Full HSV picker: hue/saturation disc (angle = hue, radius = saturation) + brightness slider +
+ * editable hex field + preset swatches. The old wheel only ever emitted `hsv(hue, 1, 1)` — pure
+ * neon hues — which is why precise colors were unreachable.
+ */
 @Composable
-fun ColorWheel(
+fun ColorPickerPanel(
+    current: Color,
+    onColorSelected: (Color) -> Unit,
     modifier: Modifier = Modifier,
-    onColorSelected: (Color) -> Unit
+    discSize: androidx.compose.ui.unit.Dp = 180.dp,
 ) {
-    var center by remember { mutableStateOf(Offset.Zero) }
-    val colors = listOf(Color.Red, Color.Yellow, Color.Green, Color.Cyan, Color.Blue, Color.Magenta, Color.Red)
-    Canvas(
-        modifier = modifier
-            .pointerInput(Unit) {
-                detectTapGestures { offset ->
-                    val angle = atan2(offset.y - center.y, offset.x - center.x)
-                    val degrees = Math.toDegrees(angle.toDouble()).toFloat().let {
-                        if (it < 0) it + 360f else it
+    var hue by remember { mutableStateOf(0f) }
+    var sat by remember { mutableStateOf(1f) }
+    var bright by remember { mutableStateOf(1f) }
+    var lastEmitted by remember { mutableStateOf<Int?>(null) }
+    var hexText by remember { mutableStateOf("") }
+    var hexFocused by remember { mutableStateOf(false) }
+
+    fun deriveFrom(color: Color) {
+        val hsv = FloatArray(3)
+        android.graphics.Color.colorToHSV(color.toArgb(), hsv)
+        hue = hsv[0]; sat = hsv[1]; bright = hsv[2]
+    }
+    // External change (reset button, dialog reopen) re-derives; our own echo must not, or a
+    // gray/desaturated pick would snap the hue slider back to 0.
+    LaunchedEffect(current) {
+        if (current.toArgb() != lastEmitted) deriveFrom(current)
+        if (!hexFocused) hexText = String.format("%06X", 0xFFFFFF and current.toArgb())
+    }
+    fun apply(color: Color, rederive: Boolean) {
+        if (rederive) deriveFrom(color)
+        lastEmitted = color.toArgb()
+        onColorSelected(color)
+    }
+    fun emitHsv() = apply(Color.hsv(hue, sat, bright), rederive = false)
+
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        // ── Hue/saturation disc ──
+        var center by remember { mutableStateOf(Offset.Zero) }
+        var radiusPx by remember { mutableStateOf(1f) }
+        fun pick(offset: Offset) {
+            val dx = offset.x - center.x
+            val dy = offset.y - center.y
+            val degrees = Math.toDegrees(atan2(dy, dx).toDouble()).toFloat().let { if (it < 0) it + 360f else it }
+            hue = degrees
+            sat = kotlin.math.min(1f, kotlin.math.sqrt(dx * dx + dy * dy) / radiusPx)
+            emitHsv()
+        }
+        Canvas(
+            modifier = Modifier
+                .size(discSize)
+                .pointerInput(Unit) { detectTapGestures { pick(it) } }
+                .pointerInput(Unit) { detectDragGestures { change, _ -> pick(change.position) } },
+        ) {
+            center = Offset(size.width / 2, size.height / 2)
+            radiusPx = size.minDimension / 2
+            val hues = listOf(Color.Red, Color.Yellow, Color.Green, Color.Cyan, Color.Blue, Color.Magenta, Color.Red)
+            drawCircle(brush = Brush.sweepGradient(hues, center), radius = radiusPx, center = center)
+            // White core → saturation falls toward the center.
+            drawCircle(
+                brush = Brush.radialGradient(listOf(Color.White, Color.White.copy(alpha = 0f)), center, radiusPx),
+                radius = radiusPx,
+                center = center,
+            )
+            // Selector ring at the current hue/sat position, filled with the actual color.
+            val ang = Math.toRadians(hue.toDouble())
+            val selPos = Offset(
+                center.x + (sat * radiusPx * kotlin.math.cos(ang)).toFloat(),
+                center.y + (sat * radiusPx * kotlin.math.sin(ang)).toFloat(),
+            )
+            drawCircle(Color.hsv(hue, sat, bright), radius = 9.dp.toPx(), center = selPos)
+            drawCircle(Color.White, radius = 9.dp.toPx(), center = selPos, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
+        }
+        Spacer(Modifier.height(10.dp))
+
+        // ── Brightness ──
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Brightness", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.width(10.dp))
+            Slider(
+                value = bright,
+                onValueChange = { bright = it; emitHsv() },
+                valueRange = 0.15f..1f,
+                modifier = Modifier.weight(1f),
+                colors = SliderDefaults.colors(
+                    thumbColor = Color.hsv(hue, sat, bright),
+                    activeTrackColor = Color.hsv(hue, sat, 1f),
+                ),
+            )
+        }
+
+        // ── Exact color: hex in, swatches for quick starts ──
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            OutlinedTextField(
+                value = hexText,
+                onValueChange = { raw ->
+                    val filtered = raw.filter { it.isDigit() || it.lowercaseChar() in 'a'..'f' }.take(6).uppercase()
+                    hexText = filtered
+                    if (filtered.length == 6) {
+                        filtered.toLongOrNull(16)?.let { apply(Color(0xFF000000L or it), rederive = true) }
                     }
-                    onColorSelected(Color.hsv(degrees, 1f, 1f))
-                }
+                },
+                prefix = { Text("#", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    fontSize = 13.sp,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                ),
+                modifier = Modifier
+                    .width(118.dp)
+                    .onFocusChanged { hexFocused = it.isFocused },
+            )
+            SWATCHES.forEach { swatch ->
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(swatch)
+                        .pointerInput(swatch) { detectTapGestures { apply(swatch, rederive = true) } },
+                )
             }
-            .pointerInput(Unit) {
-                detectDragGestures { change, _ ->
-                    val offset = change.position
-                    val angle = atan2(offset.y - center.y, offset.x - center.x)
-                    val degrees = Math.toDegrees(angle.toDouble()).toFloat().let {
-                        if (it < 0) it + 360f else it
-                    }
-                    onColorSelected(Color.hsv(degrees, 1f, 1f))
-                }
-            }
-    ) {
-        center = Offset(size.width / 2, size.height / 2)
-        drawCircle(brush = Brush.sweepGradient(colors, center), radius = size.minDimension / 2, center = center)
+        }
     }
 }

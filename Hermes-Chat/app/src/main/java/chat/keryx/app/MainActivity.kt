@@ -11,11 +11,18 @@ import chat.keryx.app.notify.KeryxNotifications
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
@@ -32,12 +39,71 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class MainActivity : ComponentActivity() {
+// FragmentActivity (not ComponentActivity): androidx BiometricPrompt can only attach to one.
+class MainActivity : androidx.fragment.app.FragmentActivity() {
 
     private lateinit var viewModel: ChatViewModel
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* best-effort */ }
+
+    // ── Biometric app lock ─────────────────────────────────────────────────
+    // The Settings toggle used to be a stub — it saved a preference nothing read. The activity
+    // now locks at cold start and whenever the app returns after RELOCK_AFTER_MS in the
+    // background; content is replaced (not overlaid) by the lock screen while locked.
+    private val locked = androidx.compose.runtime.mutableStateOf(false)
+    private var lastStoppedAt = 0L
+    private var unlockedOnce = false
+
+    private fun lockAvailable(): Boolean =
+        androidx.biometric.BiometricManager.from(this).canAuthenticate(
+            androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK or
+                androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL,
+        ) == androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS
+
+    private fun promptUnlock() {
+        val prompt = androidx.biometric.BiometricPrompt(
+            this,
+            androidx.core.content.ContextCompat.getMainExecutor(this),
+            object : androidx.biometric.BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
+                    unlockedOnce = true
+                    locked.value = false
+                }
+                // Error/cancel keeps the lock screen up; its Unlock button re-prompts.
+            },
+        )
+        val info = androidx.biometric.BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Unlock Keryx")
+            .setAllowedAuthenticators(
+                androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK or
+                    androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL,
+            )
+            .build()
+        prompt.authenticate(info)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val enabled = (application as KeryxApp).settingsRepository.biometricLockEnabled
+        // No enrolled biometrics AND no device credential → never lock, or the user is walled out.
+        if (!enabled || !lockAvailable()) { locked.value = false; return }
+        val awayMs = System.currentTimeMillis() - lastStoppedAt
+        if (!unlockedOnce || awayMs > RELOCK_AFTER_MS) {
+            locked.value = true
+            promptUnlock()
+        }
+    }
+
+    override fun onStop() {
+        lastStoppedAt = System.currentTimeMillis()
+        super.onStop()
+    }
+
+    private companion object {
+        /** Returning within this window skips re-auth (quick app switches stay fluid). */
+        const val RELOCK_AFTER_MS = 60_000L
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,7 +161,11 @@ class MainActivity : ComponentActivity() {
 
             HermesChatTheme(darkTheme = useDarkTheme, customAccent = currentAccent, customAccent2 = currentAccent2) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    HermesApp(viewModel = viewModel)
+                    // While locked, the chat is REPLACED (not overlaid): nothing renders
+                    // underneath, so content can't flash or leak into the app switcher.
+                    val isLocked by locked
+                    if (isLocked) LockScreen(onUnlock = { promptUnlock() })
+                    else HermesApp(viewModel = viewModel)
                 }
             }
         }
@@ -127,6 +197,35 @@ class MainActivity : ComponentActivity() {
                 android.net.Uri.parse("package:$packageName"),
             )
             startActivity(intent)
+        }
+    }
+}
+
+/** Shown INSTEAD of the app while the biometric lock is engaged. The system sheet appears on
+ *  top automatically; this is what's visible behind it and after a cancel. */
+@androidx.compose.runtime.Composable
+private fun LockScreen(onUnlock: () -> Unit) {
+    androidx.compose.foundation.layout.Column(
+        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        chat.keryx.app.presentation.ui.components.KeryxWordmark(fontSize = 34.sp)
+        androidx.compose.foundation.layout.Spacer(Modifier.height(10.dp))
+        androidx.compose.material3.Text(
+            "Locked",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 13.sp,
+        )
+        androidx.compose.foundation.layout.Spacer(Modifier.height(28.dp))
+        androidx.compose.material3.OutlinedButton(onClick = onUnlock) {
+            androidx.compose.material3.Icon(
+                Icons.Filled.Lock,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+            )
+            androidx.compose.foundation.layout.Spacer(Modifier.width(8.dp))
+            androidx.compose.material3.Text("Unlock")
         }
     }
 }
