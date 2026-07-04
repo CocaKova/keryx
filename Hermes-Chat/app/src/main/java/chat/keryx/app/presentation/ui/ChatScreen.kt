@@ -741,8 +741,10 @@ fun MessageBubble(
 
     val reactions by reactionsFlow.collectAsState(initial = emptyList())
 
-    // Swipe-to-reply: pull the message toward the middle and let go — a reply arrow condenses
-    // behind it as you pull, haptic ticks at the commit point, then the bubble springs home.
+    // Swipe-to-reply: pull the message LEFT and let go — a reply arrow condenses behind it on the
+    // right as you pull, haptic ticks at the commit point, then the bubble springs home. Reply is
+    // leftward for every message (mine and agent) so a rightward swipe is always free to open the
+    // left-edge navigation drawer — agent bubbles used to pull right and swallowed that gesture.
     val dragX = remember { Animatable(0f) }
     val dragScope = rememberCoroutineScope()
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
@@ -757,7 +759,7 @@ fun MessageBubble(
                 alpha = (dragX.value / replyThresholdPx).coerceIn(0f, 0.9f)
             ),
             modifier = Modifier
-                .align(if (isMine) Alignment.CenterEnd else Alignment.CenterStart)
+                .align(Alignment.CenterEnd)
                 .padding(horizontal = 6.dp)
                 .graphicsLayer {
                     val p = (dragX.value / replyThresholdPx).coerceIn(0f, 1f)
@@ -768,7 +770,7 @@ fun MessageBubble(
         horizontalAlignment = if (isMine) Alignment.End else Alignment.Start,
         modifier = Modifier
             .fillMaxWidth()
-            .graphicsLayer { translationX = if (isMine) -dragX.value else dragX.value }
+            .graphicsLayer { translationX = -dragX.value }
             .pointerInput(message.id) {
                 var fired = false
                 detectHorizontalDragGestures(
@@ -781,8 +783,9 @@ fun MessageBubble(
                         dragScope.launch { dragX.animateTo(0f, spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow)) }
                     },
                 ) { change, amount ->
-                    // Mine pull left, others pull right — always toward the center line.
-                    val toward = if (isMine) -amount else amount
+                    // Always pull LEFT to reply; a rightward drag stays at 0 and falls through to
+                    // the navigation drawer's open gesture.
+                    val toward = -amount
                     val next = (dragX.value + toward * 0.62f).coerceIn(0f, replyThresholdPx * 1.5f)
                     if (!fired && next >= replyThresholdPx) {
                         fired = true
