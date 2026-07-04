@@ -281,6 +281,15 @@ class ChatViewModel(
     private val _workStartedAt = MutableStateFlow<Long?>(null)
     val workStartedAt: StateFlow<Long?> = _workStartedAt.asStateFlow()
 
+    // Message ids whose mid-run banner already ran its course (lit, then settled on the quiet
+    // timeout with no new activity). Re-entering the room re-baselines lastSeenId, which makes the
+    // opened-mid-run recency check fire AGAIN for the same stale message — the banner kept
+    // resurrecting with an ever-growing clock (workStartedAt = the old message's timestamp). A
+    // settled id never relights the banner; genuinely new activity has a new id, and the typing
+    // indicator can always light it regardless.
+    private val settledWorkIds = HashSet<String>()
+    private var workStateId: String? = null
+
     // A short label of what the agent is currently doing, for the top counter ("Reasoning",
     // "Running terminal", …). Derived from the latest agent message.
     private val _workLabel = MutableStateFlow("Working")
@@ -300,6 +309,8 @@ class ChatViewModel(
             if (!force && agentTyping) return@launch
             _awaitingReply.value = false
             _workStartedAt.value = null
+            // This message's working stretch is over; don't let a room re-entry resurrect it.
+            workStateId?.let { settledWorkIds.add(it) }
         }
     }
 
@@ -390,14 +401,17 @@ class ChatViewModel(
                 // quiet window; QUIET_LONG_MS means the agent is mid-run (a tool call, or reasoning
                 // with no answer yet — more is coming).
                 val stateMessage = workStateMessage(msgs, last)
+                workStateId = stateMessage.id
                 val window = updateWorkStateFrom(stateMessage)
                 val midRun = window == QUIET_LONG_MS
                 answerLanded = !midRun
                 // Live activity = a brand-new message or a streamed edit growing the current one.
                 val liveActivity = isNewMsg || grew
                 // On first open, fall back to recency so opening the app mid-run still lights up,
-                // without falsely firing for an old conversation that merely ended on a tool call.
-                val openedMidRun = firstEval && (System.currentTimeMillis() - stateMessage.timestamp) < WORKING_RECENT_MS
+                // without falsely firing for an old conversation that merely ended on a tool call —
+                // and never for a message whose banner already lit and settled once.
+                val openedMidRun = firstEval && stateMessage.id !in settledWorkIds &&
+                    (System.currentTimeMillis() - stateMessage.timestamp) < WORKING_RECENT_MS
 
                 when {
                     _awaitingReply.value -> scheduleClearAwaiting(window)
