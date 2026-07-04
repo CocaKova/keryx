@@ -32,6 +32,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import threading
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -299,6 +300,25 @@ def _reasoning_capabilities() -> Dict[str, Any]:
     }
 
 
+_FENCE_RUN = re.compile(r"`{3,}")
+
+
+def _neutralize_fences(text: str) -> str:
+    """Make any ```-or-longer backtick run in reasoning inert as a Markdown fence.
+
+    The reasoning is wrapped in a ``` code block below. If the reasoning ITSELF
+    quotes fenced code — which a thinking brain that reasons about code does on
+    nearly every coding turn — an inner ``` closes our fence early. The Keryx
+    client's reasoning-extraction regex then truncates at that inner fence, leaking
+    the real answer into a copy-paste code block AND breaking the stream/commit
+    byte-match so the live overlay never hands off to the committed message
+    (duplicate bubble: overlay = answer without reasoning, commit = mangled block).
+    Weaving a zero-width space between the backticks keeps them visually intact in
+    the reasoning canvas while breaking the 3-in-a-row run that forms a fence.
+    """
+    return _FENCE_RUN.sub(lambda m: "​".join(m.group(0)), text)
+
+
 async def prepend_reasoning_to_streamed(gateway, source, response, sc) -> bool:
     """Fold the 💭 reasoning block into an already-streamed final message.
 
@@ -357,7 +377,7 @@ async def prepend_reasoning_to_streamed(gateway, source, response, sc) -> bool:
             quoted = "\n".join(f"> {ln}" if ln else ">" for ln in display.splitlines())
             body = f"> 💭 **Reasoning:**\n{quoted}\n\n{final}"
         else:
-            body = f"💭 **Reasoning:**\n```\n{display}\n```\n\n{final}"
+            body = f"💭 **Reasoning:**\n```\n{_neutralize_fences(display)}\n```\n\n{final}"
 
         await adapter.edit_message(
             chat_id=source.chat_id,

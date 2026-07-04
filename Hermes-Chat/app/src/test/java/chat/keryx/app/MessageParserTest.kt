@@ -261,6 +261,36 @@ class MessageParserTest {
     }
 
     @Test
+    fun gatewayCodeStyleReasoning_withFencedCodeInside_doesNotLeakOrDuplicate() {
+        // Regression (2026-07-03, Qwen3.6 Heretic): a thinking brain that reasons about code puts
+        // ``` fences INSIDE the reasoning. The gateway neutralizes them with a zero-width space so
+        // our fence can't close early; the reasoning must still fold cleanly and the answer must
+        // NOT leak into a copy-paste code block (which also broke the stream/commit handoff into a
+        // duplicate bubble). ZWSP (U+200B) woven through the inner backtick run:
+        val zwspFence = "`\u200B`\u200B`"
+        val content = "💭 **Reasoning:**\n```\nI'll draft it:\n${zwspFence}python\nx = 1\n$zwspFence\nThat works.\n```\n\nHere is the answer."
+        val segs = MessageParser.parse(content)
+        val thinking = segs.filterIsInstance<MessageParser.Segment.Thinking>().single()
+        assertTrue(thinking.text.contains("I'll draft it"))
+        assertTrue(thinking.text.contains("That works"))
+        assertTrue("ZWSP stripped from canvas", !thinking.text.contains("\u200B"))
+        val text = segs.filterIsInstance<MessageParser.Segment.Text>().joinToString("") { it.text }
+        assertTrue("answer present exactly once", text.contains("Here is the answer"))
+        assertTrue("reasoning header did not leak", !text.contains("Reasoning:"))
+        assertTrue("inner code did not leak into body", !text.contains("x = 1"))
+    }
+
+    @Test
+    fun gatewayCodeStyleReasoning_withLongerOuterFence_extractsInnerFencesIntact() {
+        // A gateway that emits a fence LONGER than any inner run (dynamic fence) must also parse:
+        // the close is a backreference to the opening fence, so inner ``` stay part of reasoning.
+        val content = "💭 **Reasoning:**\n````\n```py\nx=1\n```\ndone\n````\n\nFinal answer."
+        val (reasoning, body) = MessageParser.extractReasoning(content)
+        assertTrue(reasoning!!.contains("x=1"))
+        assertEquals("Final answer.", body)
+    }
+
+    @Test
     fun thoughtAndKimiTags_alsoExtracted() {
         val (r1, b1) = MessageParser.extractReasoning("<thought>gemma style</thought>after")
         assertEquals("gemma style", r1)
