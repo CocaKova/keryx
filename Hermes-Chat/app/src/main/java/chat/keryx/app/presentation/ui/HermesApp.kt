@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -68,7 +69,42 @@ fun HermesApp(viewModel: ChatViewModel) {
         }
     }
 
+    // Drawer-open assist for gestures that start on a horizontal scrollable (code block, wide
+    // table). Those consume the pointer themselves, so the drawer's own drag never starts — but
+    // their *unconsumed* leftover delta flows here through nested scroll. A rightward drag on a
+    // block already at its left edge accumulates and, past a thumb-sized threshold, opens the
+    // drawer: swiping right anywhere finally means "open the drawer", even over code.
+    val drawerAssistThresholdPx = with(androidx.compose.ui.platform.LocalDensity.current) { 48.dp.toPx() }
+    val drawerAssist = remember(drawerState, drawerAssistThresholdPx) {
+        object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+            var pulled = 0f
+            override fun onPostScroll(
+                consumed: androidx.compose.ui.geometry.Offset,
+                available: androidx.compose.ui.geometry.Offset,
+                source: androidx.compose.ui.input.nestedscroll.NestedScrollSource,
+            ): androidx.compose.ui.geometry.Offset {
+                if (source != androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput ||
+                    drawerState.currentValue != DrawerValue.Closed || available.x <= 0f
+                ) return androidx.compose.ui.geometry.Offset.Zero
+                pulled += available.x
+                if (pulled >= drawerAssistThresholdPx) {
+                    pulled = 0f
+                    scope.launch { drawerState.open() }
+                }
+                return androidx.compose.ui.geometry.Offset(available.x, 0f)
+            }
+            override suspend fun onPostFling(
+                consumed: androidx.compose.ui.unit.Velocity,
+                available: androidx.compose.ui.unit.Velocity,
+            ): androidx.compose.ui.unit.Velocity {
+                pulled = 0f
+                return androidx.compose.ui.unit.Velocity.Zero
+            }
+        }
+    }
+
     ModalNavigationDrawer(
+        modifier = Modifier.nestedScroll(drawerAssist),
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {

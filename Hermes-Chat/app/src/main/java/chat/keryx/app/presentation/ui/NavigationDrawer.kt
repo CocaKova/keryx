@@ -163,6 +163,7 @@ fun NavigationDrawerContent(
                     chat.keryx.app.presentation.ui.components.BrailleSnakeAnimation(
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.primary,
+                        color2 = MaterialTheme.colorScheme.tertiary,
                         snakeLength = 18,
                         periodMillis = 5200,
                         glyphSize = 8f,

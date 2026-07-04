@@ -35,15 +35,18 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -94,18 +97,43 @@ fun MessageContent(
         )
     }
     Column(modifier = modifier) {
-        segments.forEach { segment ->
+        val lastIndex = segments.lastIndex
+        segments.forEachIndexed { index, segment ->
             when (segment) {
                 // closeDanglingFences: an unclosed ``` (mid-stream, or a sloppy brain) renders as
                 // a code block instead of visually swallowing the rest of the message.
-                is MessageParser.Segment.Text -> Markdown(
-                    content = MessageParser.closeDanglingFences(segment.text),
-                    colors = markdownColor(text = textColor),
-                    typography = chatMarkdownTypography(),
-                    flavour = GFMFlavourDescriptor(),
-                    annotator = annotator,
-                    components = components,
-                )
+                is MessageParser.Segment.Text -> {
+                    // While streaming, the trailing (still-growing) paragraph is drawn by
+                    // FadingStreamText so new tokens fade in instead of typewriter-popping.
+                    // Completed paragraphs stay full markdown; a paragraph "graduates" the moment
+                    // the next one starts. Inside an unclosed code fence the split would tear the
+                    // fence apart, so the whole segment stays on the markdown path there.
+                    val fadeTail = isStreaming && index == lastIndex && !hasOpenFence(segment.text)
+                    val splitAt = if (fadeTail) segment.text.lastIndexOf("\n\n") else -1
+                    val head = when {
+                        !fadeTail -> segment.text
+                        splitAt >= 0 -> segment.text.substring(0, splitAt + 2)
+                        else -> ""
+                    }
+                    val tail = when {
+                        !fadeTail -> ""
+                        splitAt >= 0 -> segment.text.substring(splitAt + 2)
+                        else -> segment.text
+                    }
+                    if (head.isNotBlank()) Markdown(
+                        content = MessageParser.closeDanglingFences(head),
+                        colors = markdownColor(text = textColor),
+                        typography = chatMarkdownTypography(),
+                        flavour = GFMFlavourDescriptor(),
+                        annotator = annotator,
+                        components = components,
+                    )
+                    if (fadeTail && tail.isNotEmpty()) FadingStreamText(
+                        text = tail,
+                        textColor = textColor,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
                 is MessageParser.Segment.Table -> MarkdownTable(segment.header, segment.rows, textColor)
                 is MessageParser.Segment.Thinking -> ReasoningCanvas(segment.text, textColor, active = isStreaming)
                 is MessageParser.Segment.Tools -> ToolCalls(segment.calls, textColor)
@@ -118,6 +146,68 @@ fun MessageContent(
             }
         }
     }
+}
+
+// Fence-line parity: an odd count of ```-starting lines means a code fence is still open.
+private val FENCE_LINE = Regex("(?m)^\\s{0,3}`{3,}")
+private fun hasOpenFence(text: String): Boolean = FENCE_LINE.findAll(text).count() % 2 != 0
+
+/** How long a freshly-arrived run of streamed characters takes to fade to full opacity. */
+private const val STREAM_FADE_MS = 320f
+
+/**
+ * Streamed text that materializes like settling ink: each newly arrived run of characters fades
+ * from transparent to full opacity over [STREAM_FADE_MS], while everything already settled stays
+ * solid. Replaces the typewriter chunk-pop for live streams. Runs are tracked by append boundary;
+ * if the tail is ever rewritten rather than appended (the sanitizer trimming a partial marker, or
+ * a new message), everything settles instantly rather than re-fading.
+ */
+@Composable
+fun FadingStreamText(
+    text: String,
+    textColor: Color,
+    modifier: Modifier = Modifier,
+    style: androidx.compose.ui.text.TextStyle = MaterialTheme.typography.bodyLarge,
+) {
+    // (startIndex, bornAtMs) per not-yet-settled run, chronological — so a settled prefix can be
+    // pruned front-first and everything before the first entry renders fully opaque.
+    val fading = remember { mutableStateListOf<Pair<Int, Long>>() }
+    var prev by remember { mutableStateOf("") }
+    var now by remember { mutableStateOf(0L) }
+    remember(text) {
+        val t = System.currentTimeMillis()
+        if (text.startsWith(prev)) {
+            if (text.length > prev.length) fading.add(prev.length to t)
+        } else {
+            fading.clear()
+        }
+        prev = text
+        now = t
+        text
+    }
+    // Tick with the frame clock only while something is mid-fade, then go quiet.
+    LaunchedEffect(text) {
+        while (fading.isNotEmpty()) {
+            withFrameMillis { }
+            now = System.currentTimeMillis()
+            fading.removeAll { now - it.second >= STREAM_FADE_MS }
+        }
+    }
+    val annotated = buildAnnotatedString {
+        val runs = fading.toList()
+        val settledEnd = (runs.firstOrNull()?.first ?: text.length).coerceAtMost(text.length)
+        append(text.substring(0, settledEnd))
+        runs.forEachIndexed { i, (start, born) ->
+            if (start >= text.length) return@forEachIndexed
+            val end = (runs.getOrNull(i + 1)?.first ?: text.length).coerceAtMost(text.length)
+            if (end <= start) return@forEachIndexed
+            val alpha = ((now - born) / STREAM_FADE_MS).coerceIn(0f, 1f)
+            pushStyle(SpanStyle(color = textColor.copy(alpha = textColor.alpha * alpha)))
+            append(text.substring(start, end))
+            pop()
+        }
+    }
+    Text(text = annotated, color = textColor, style = style, modifier = modifier)
 }
 
 /**
@@ -228,12 +318,13 @@ fun ActionOutputCard(
             )
         }
         AnimatedVisibility(visible = showRaw, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+            val rawScroll = rememberScrollState()
             Text(
                 text = action.raw,
                 color = baseColor.copy(alpha = 0.55f),
                 fontSize = 10.sp,
                 fontFamily = FontFamily.Monospace,
-                modifier = Modifier.padding(top = 6.dp).horizontalScroll(rememberScrollState()),
+                modifier = Modifier.padding(top = 6.dp).horizontalScroll(rawScroll, enabled = rawScroll.maxValue > 0),
                 softWrap = false,
             )
         }
@@ -299,13 +390,26 @@ private fun ReasoningCanvas(text: String, baseColor: Color, active: Boolean) {
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically(),
         ) {
-            Text(
-                text = text,
-                color = muted,
+            val reasonStyle = MaterialTheme.typography.bodyMedium.copy(
                 fontSize = 13.sp,
                 fontStyle = FontStyle.Italic,
-                modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 11.dp),
             )
+            if (active) {
+                // Live reasoning settles in like ink, same as the answer stream.
+                FadingStreamText(
+                    text = text,
+                    textColor = muted,
+                    style = reasonStyle,
+                    modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 11.dp),
+                )
+            } else {
+                Text(
+                    text = text,
+                    color = muted,
+                    style = reasonStyle,
+                    modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 11.dp),
+                )
+            }
         }
     }
 }
@@ -345,6 +449,10 @@ private fun ScrollableCodeBlock(code: String, textColor: Color) {
             .clip(RoundedCornerShape(8.dp))
             .background(textColor.copy(alpha = 0.06f)),
     ) {
+        // enabled only when the code actually overflows: a scrollable that CAN'T scroll still
+        // claims every horizontal drag over it, which is what made drawer/reply swipes dead
+        // over short code blocks ("you can only swipe in some areas").
+        val codeScroll = rememberScrollState()
         Text(
             text = trimmed,
             color = textColor.copy(alpha = 0.85f),
@@ -352,7 +460,7 @@ private fun ScrollableCodeBlock(code: String, textColor: Color) {
             fontFamily = FontFamily.Monospace,
             softWrap = false,
             modifier = Modifier
-                .horizontalScroll(rememberScrollState())
+                .horizontalScroll(codeScroll, enabled = codeScroll.maxValue > 0)
                 .padding(start = 10.dp, top = 10.dp, bottom = 10.dp, end = 34.dp),
         )
         Text(
@@ -392,12 +500,15 @@ private fun MarkdownTable(header: List<String>, rows: List<List<String>>, textCo
     val colCount = maxOf(header.size, rows.maxOfOrNull { it.size } ?: 0).coerceAtLeast(1)
     val colWidth = 130.dp
 
+    // Same swipe-friendliness rule as ScrollableCodeBlock: only eat horizontal drags when
+    // the table is actually wider than the bubble.
+    val tableScroll = rememberScrollState()
     Column(
         modifier = Modifier
             .padding(vertical = 6.dp)
             .clip(RoundedCornerShape(8.dp))
             .border(1.dp, border, RoundedCornerShape(8.dp))
-            .horizontalScroll(rememberScrollState())
+            .horizontalScroll(tableScroll, enabled = tableScroll.maxValue > 0)
     ) {
         TableRow(header, colCount, colWidth, textColor, border, isHeader = true, rowBg = headerBg)
         rows.forEach { row ->
