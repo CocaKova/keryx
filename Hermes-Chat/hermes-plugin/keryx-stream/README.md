@@ -90,3 +90,10 @@ curl -N -H "Authorization: Bearer $KEY" \
   "http://127.0.0.1:8642/keryx/stream?platform=matrix&chat_id=%21room%3Ahost"
 # → 200 text/event-stream, pings every 20 s; deltas appear when that room's agent turn runs
 ```
+
+## Upstream
+
+The side-channel is also proposed for the Hermes gateway itself in
+[NousResearch/hermes-agent#57091](https://github.com/NousResearch/hermes-agent/pull/57091).
+If that lands, a future `hermes` release may ship it natively; until then (and for any build that
+doesn't carry it), this repo is the standalone, install-on-top version.
