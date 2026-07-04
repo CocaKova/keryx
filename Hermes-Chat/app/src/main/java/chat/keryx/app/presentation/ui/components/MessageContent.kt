@@ -74,7 +74,10 @@ fun MessageContent(
     modifier: Modifier = Modifier,
     isStreaming: Boolean = false,
 ) {
-    val segments = remember(content) { MessageParser.parse(content) }
+    // The gateway splits turns at tool-call boundaries and can leave several blank lines at the
+    // edges of each piece (e.g. a step header stranded after 3 empty lines) — trim so bubbles
+    // never open with dead space.
+    val segments = remember(content) { MessageParser.parse(content.trim('\n')) }
     // Render **strong** spans heavier than the library's default (FontWeight.Bold looked too light).
     val annotator = markdownAnnotator { source, node ->
         // `this` is the AnnotatedString.Builder.
