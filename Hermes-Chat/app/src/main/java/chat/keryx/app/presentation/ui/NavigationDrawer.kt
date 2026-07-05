@@ -211,9 +211,11 @@ fun NavigationDrawerContent(
                             selectedRoomId = currentSession?.id,
                             onRoomClick = { onSessionSelected(sessionFor(it)) },
                             avatarLoader = { viewModel.loadAvatar(it) },
+                            // Long-press a Quick Room to pin/unpin it — consistent with the
+                            // room list below. Setting a room photo lives on the avatar
+                            // long-press in the main list, so the two no longer collide.
                             onRoomLongPress = { room ->
-                                pendingAvatarRoomId = room.id
-                                avatarPicker.launch("image/*")
+                                viewModel.togglePin(room.id)
                             },
                         )
                     }
