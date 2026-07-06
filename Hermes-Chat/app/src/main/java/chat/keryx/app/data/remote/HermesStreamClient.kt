@@ -315,23 +315,45 @@ class HermesStreamClient(
     private suspend fun kanbanCall(
         path: String,
         post: kotlinx.serialization.json.JsonObject? = null,
+    ): kotlinx.serialization.json.JsonObject =
+        apiCall(path, method = if (post != null) "POST" else "GET", body = post)
+
+    /**
+     * One authenticated JSON round-trip to the gateway. The gateway speaks two error dialects —
+     * keryx/openai routes wrap `{"error":{"message":…}}`, the /api/jobs routes return a bare
+     * `{"error":"…"}` string — both surface here as the exception message so every caller's
+     * `Result.onFailure` shows the gateway's own words instead of an HTTP code.
+     */
+    private suspend fun apiCall(
+        path: String,
+        method: String = "GET",
+        body: kotlinx.serialization.json.JsonObject? = null,
     ): kotlinx.serialization.json.JsonObject = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         val request = Request.Builder()
             .url(baseUrl.trimEnd('/') + path)
             .apply {
                 if (apiKey.isNotBlank()) header("Authorization", "Bearer $apiKey")
-                if (post != null) post(post.toString().toRequestBody("application/json".toMediaType()))
+                val payload = body?.toString()?.toRequestBody("application/json".toMediaType())
+                when (method) {
+                    "GET" -> get()
+                    "POST" -> post(payload ?: ByteArray(0).toRequestBody(null))
+                    "PATCH" -> patch(payload ?: ByteArray(0).toRequestBody(null))
+                    "DELETE" -> if (payload != null) delete(payload) else delete()
+                    else -> error("unsupported method $method")
+                }
             }
             .build()
         val probe = client.newBuilder().readTimeout(8, TimeUnit.SECONDS).build()
         probe.newCall(request).execute().use { resp ->
             val text = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) {
-                // Surface the gateway's error message ("assignee is required") over a bare code.
                 val msg = runCatching {
-                    (((json.parseToJsonElement(text).jsonObject["error"])
-                        as? kotlinx.serialization.json.JsonObject)
-                        ?.get("message") as? JsonPrimitive)?.content
+                    when (val err = json.parseToJsonElement(text).jsonObject["error"]) {
+                        is kotlinx.serialization.json.JsonObject ->
+                            (err["message"] as? JsonPrimitive)?.content
+                        is JsonPrimitive -> err.contentOrNull
+                        else -> null
+                    }
                 }.getOrNull()
                 error(msg ?: "HTTP ${resp.code}")
             }
@@ -401,5 +423,243 @@ class HermesStreamClient(
         }
         kanbanCall("/keryx/kanban/task/$taskId/comment", post = payload)
         Unit
+    }
+
+    // --- Agent Hub — gateway console (/health/detailed, /api/jobs, /api/sessions, /v1/*) -------
+
+    /** One platform adapter's connection state from `GET /health/detailed`. */
+    data class PlatformHealth(
+        val name: String,
+        /** "connected", "disconnected", "retrying", … — rendered as a status dot, never assumed. */
+        val state: String,
+        val errorMessage: String,
+        val updatedAt: String,
+    )
+
+    data class HubHealth(
+        val status: String,
+        val version: String,
+        val gatewayState: String,
+        val platforms: List<PlatformHealth>,
+    )
+
+    /** One scheduled job from `GET /api/jobs`. Timestamps stay the gateway's ISO strings — the UI
+     *  formats them fail-soft so a schema change degrades to raw text, never a crash. */
+    data class HubJob(
+        val id: String,
+        val name: String,
+        val scheduleDisplay: String,
+        val enabled: Boolean,
+        val state: String,
+        val nextRunAt: String?,
+        val lastRunAt: String?,
+        val lastStatus: String?,
+        val lastError: String?,
+        val deliver: String,
+        val repeatCompleted: Int,
+    )
+
+    /** One persisted Hermes session from `GET /api/sessions` (epoch-seconds timestamps). */
+    data class HubSession(
+        val id: String,
+        val source: String,
+        val model: String,
+        val title: String?,
+        val messageCount: Int,
+        val toolCallCount: Int,
+        val inputTokens: Long,
+        val outputTokens: Long,
+        val apiCallCount: Int,
+        val startedAt: Double,
+        val lastActive: Double,
+        val endedAt: Double?,
+        val preview: String,
+    )
+
+    /** One transcript entry from `GET /api/sessions/{id}/messages`, preview-shaped. */
+    data class HubMessage(
+        val role: String,
+        val content: String,
+        val toolName: String,
+        val toolCallCount: Int,
+    )
+
+    data class HubSkill(val name: String, val description: String)
+
+    data class HubToolset(
+        val name: String,
+        val label: String,
+        val description: String,
+        val enabled: Boolean,
+        val configured: Boolean,
+        val tools: List<String>,
+    )
+
+    suspend fun healthDetailed(): Result<HubHealth> =
+        runCatching { HubJson.health(apiCall("/health/detailed")) }
+
+    suspend fun jobs(): Result<List<HubJob>> =
+        runCatching { HubJson.jobs(apiCall("/api/jobs")) }
+
+    /** [action] is one of the gateway's job verbs: "pause", "resume", "run". */
+    suspend fun jobAction(jobId: String, action: String): Result<Unit> =
+        runCatching { apiCall("/api/jobs/$jobId/$action", method = "POST"); Unit }
+
+    suspend fun jobDelete(jobId: String): Result<Unit> =
+        runCatching { apiCall("/api/jobs/$jobId", method = "DELETE"); Unit }
+
+    /** Create a scheduled job. [deliver] is a gateway delivery target ("local" or "matrix:<room>"). */
+    suspend fun jobCreate(name: String, schedule: String, prompt: String, deliver: String): Result<Unit> =
+        runCatching {
+            val payload = kotlinx.serialization.json.buildJsonObject {
+                put("name", kotlinx.serialization.json.JsonPrimitive(name))
+                put("schedule", kotlinx.serialization.json.JsonPrimitive(schedule))
+                put("prompt", kotlinx.serialization.json.JsonPrimitive(prompt))
+                put("deliver", kotlinx.serialization.json.JsonPrimitive(deliver))
+            }
+            apiCall("/api/jobs", method = "POST", body = payload)
+            Unit
+        }
+
+    suspend fun sessions(): Result<List<HubSession>> =
+        runCatching { HubJson.sessions(apiCall("/api/sessions")) }
+
+    suspend fun sessionMessages(sessionId: String): Result<List<HubMessage>> =
+        runCatching { HubJson.messages(apiCall("/api/sessions/$sessionId/messages")) }
+
+    suspend fun skills(): Result<List<HubSkill>> =
+        runCatching { HubJson.skills(apiCall("/v1/skills")) }
+
+    /** The api_server platform's toolset surface — the gateway offers no per-platform view. */
+    suspend fun toolsets(): Result<List<HubToolset>> =
+        runCatching { HubJson.toolsets(apiCall("/v1/toolsets")) }
+}
+
+/**
+ * Pure JSON→model mapping for the Agent Hub endpoints, split out of the client so unit tests can
+ * feed it fixture JSON without a network. Every accessor is null-tolerant: a missing or retyped
+ * field degrades to a blank/zero, never a parse crash (the gateway's schema is not ours to pin).
+ */
+internal object HubJson {
+    private fun kotlinx.serialization.json.JsonObject.str(key: String): String =
+        (this[key] as? JsonPrimitive)?.contentOrNull.orEmpty()
+
+    private fun kotlinx.serialization.json.JsonObject.strOrNull(key: String): String? =
+        (this[key] as? JsonPrimitive)?.contentOrNull
+
+    private fun kotlinx.serialization.json.JsonObject.long(key: String): Long =
+        (this[key] as? JsonPrimitive)?.contentOrNull?.toDoubleOrNull()?.toLong() ?: 0L
+
+    private fun kotlinx.serialization.json.JsonObject.dbl(key: String): Double? =
+        (this[key] as? JsonPrimitive)?.contentOrNull?.toDoubleOrNull()
+
+    private fun kotlinx.serialization.json.JsonObject.bool(key: String): Boolean =
+        (this[key] as? JsonPrimitive)?.contentOrNull?.toBooleanStrictOrNull() ?: false
+
+    private fun kotlinx.serialization.json.JsonObject.arr(key: String): kotlinx.serialization.json.JsonArray? =
+        this[key] as? kotlinx.serialization.json.JsonArray
+
+    private fun kotlinx.serialization.json.JsonObject.objs(key: String): List<kotlinx.serialization.json.JsonObject> =
+        arr(key)?.mapNotNull { it as? kotlinx.serialization.json.JsonObject }.orEmpty()
+
+    fun health(obj: kotlinx.serialization.json.JsonObject): HermesStreamClient.HubHealth =
+        HermesStreamClient.HubHealth(
+            status = obj.str("status"),
+            version = obj.str("version"),
+            gatewayState = obj.str("gateway_state"),
+            platforms = (obj["platforms"] as? kotlinx.serialization.json.JsonObject)
+                ?.mapNotNull { (name, v) ->
+                    val p = v as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
+                    HermesStreamClient.PlatformHealth(
+                        name = name,
+                        state = p.str("state"),
+                        errorMessage = p.str("error_message"),
+                        updatedAt = p.str("updated_at"),
+                    )
+                }
+                ?.sortedBy { it.name }
+                .orEmpty(),
+        )
+
+    fun jobs(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.HubJob> =
+        obj.objs("jobs").map { j ->
+            HermesStreamClient.HubJob(
+                id = j.str("id"),
+                name = j.str("name"),
+                scheduleDisplay = j.str("schedule_display").ifBlank {
+                    (j["schedule"] as? kotlinx.serialization.json.JsonObject)?.str("display").orEmpty()
+                },
+                enabled = j.bool("enabled"),
+                state = j.str("state"),
+                nextRunAt = j.strOrNull("next_run_at"),
+                lastRunAt = j.strOrNull("last_run_at"),
+                lastStatus = j.strOrNull("last_status"),
+                lastError = j.strOrNull("last_error"),
+                deliver = j.str("deliver"),
+                repeatCompleted = (j["repeat"] as? kotlinx.serialization.json.JsonObject)
+                    ?.long("completed")?.toInt() ?: 0,
+            )
+        }
+
+    fun sessions(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.HubSession> =
+        obj.objs("data").map { s ->
+            HermesStreamClient.HubSession(
+                id = s.str("id"),
+                source = s.str("source"),
+                model = s.str("model"),
+                title = s.strOrNull("title"),
+                messageCount = s.long("message_count").toInt(),
+                toolCallCount = s.long("tool_call_count").toInt(),
+                inputTokens = s.long("input_tokens"),
+                outputTokens = s.long("output_tokens"),
+                apiCallCount = s.long("api_call_count").toInt(),
+                startedAt = s.dbl("started_at") ?: 0.0,
+                lastActive = s.dbl("last_active") ?: 0.0,
+                endedAt = s.dbl("ended_at"),
+                preview = s.str("preview"),
+            )
+        }
+
+    fun messages(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.HubMessage> =
+        obj.objs("data").map { m ->
+            HermesStreamClient.HubMessage(
+                role = m.str("role"),
+                content = m.str("content"),
+                toolName = m.str("tool_name"),
+                toolCallCount = m.arr("tool_calls")?.size ?: 0,
+            )
+        }
+
+    fun skills(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.HubSkill> =
+        obj.objs("data").map { s ->
+            HermesStreamClient.HubSkill(name = s.str("name"), description = s.str("description"))
+        }
+
+    fun toolsets(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.HubToolset> =
+        obj.objs("data").map { t ->
+            HermesStreamClient.HubToolset(
+                name = t.str("name"),
+                label = t.str("label"),
+                description = t.str("description"),
+                enabled = t.bool("enabled"),
+                configured = t.bool("configured"),
+                tools = t.arr("tools")?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.orEmpty(),
+            )
+        }
+
+    /**
+     * Parse the gateway's ISO-8601 offset timestamps ("2026-07-07T07:00:00-05:00", optionally with
+     * fractional seconds) to epoch millis without java.time (minSdk 24, no desugaring). Null on any
+     * surprise — callers fall back to showing the raw string.
+     */
+    fun isoToMillis(iso: String?): Long? {
+        if (iso.isNullOrBlank()) return null
+        // SimpleDateFormat's X can't take fractional seconds and a colon offset together reliably;
+        // strip the fraction, it never matters for schedule display.
+        val cleaned = iso.replace(Regex("\\.\\d+"), "")
+        return runCatching {
+            java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", java.util.Locale.US)
+                .parse(cleaned)?.time
+        }.getOrNull()
     }
 }
