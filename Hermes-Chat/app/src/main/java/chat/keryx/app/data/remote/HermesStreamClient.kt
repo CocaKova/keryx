@@ -44,6 +44,9 @@ class HermesStreamClient(
     private val baseUrl: String,
     private val apiKey: String,
     allowInsecure: Boolean = false,
+    /** When set, every successful GET's raw body is handed here keyed by path — the Agent Hub's
+     *  offline cache. Kept as a plain hook so this client stays free of Android storage types. */
+    private val snapshotStore: ((path: String, json: String) -> Unit)? = null,
 ) {
 
     sealed interface Event {
@@ -357,6 +360,9 @@ class HermesStreamClient(
                 }.getOrNull()
                 error(msg ?: "HTTP ${resp.code}")
             }
+            // Snapshot plain GETs only: parameterized paths (event cursors, per-id lookups) would
+            // grow the cache without ever being re-read.
+            if (method == "GET" && '?' !in path) snapshotStore?.invoke(path, text)
             json.parseToJsonElement(text).jsonObject
         }
     }
@@ -423,6 +429,14 @@ class HermesStreamClient(
         }
         kanbanCall("/keryx/kanban/task/$taskId/comment", post = payload)
         Unit
+    }
+
+    /** One page of the incremental event feed; pass [cursor] back as `since` next poll. */
+    data class KanbanEventsPage(val events: List<KanbanEvent>, val cursor: Long)
+
+    /** Poll `GET /keryx/kanban/events?since=` — the mission watcher's feed (≤200 events/page). */
+    suspend fun kanbanEvents(since: Long): Result<KanbanEventsPage> = runCatching {
+        HubJson.events(kanbanCall("/keryx/kanban/events?since=$since"), since)
     }
 
     // --- Agent Hub — gateway console (/health/detailed, /api/jobs, /api/sessions, /v1/*) -------
@@ -634,6 +648,21 @@ internal object HubJson {
         obj.objs("data").map { s ->
             HermesStreamClient.HubSkill(name = s.str("name"), description = s.str("description"))
         }
+
+    /** The mission watcher's feed page. [since] is the caller's cursor, kept when the gateway's
+     *  answer omits one so the watcher never accidentally rewinds to 0 and re-alerts history. */
+    fun events(obj: kotlinx.serialization.json.JsonObject, since: Long): HermesStreamClient.KanbanEventsPage =
+        HermesStreamClient.KanbanEventsPage(
+            events = obj.objs("events").map { e ->
+                HermesStreamClient.KanbanEvent(
+                    id = e.long("id"),
+                    taskId = e.str("task_id"),
+                    kind = e.str("kind"),
+                    createdAt = e.long("created_at"),
+                )
+            },
+            cursor = obj.dbl("cursor")?.toLong() ?: since,
+        )
 
     fun toolsets(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.HubToolset> =
         obj.objs("data").map { t ->

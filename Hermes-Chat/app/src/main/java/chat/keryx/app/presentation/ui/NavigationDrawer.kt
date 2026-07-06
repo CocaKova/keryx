@@ -75,6 +75,7 @@ fun NavigationDrawerContent(
     val gatewayApiKey by viewModel.gatewayApiKey.collectAsState()
     val sideChannelEnabled by viewModel.sideChannelEnabled.collectAsState()
     val showTelemetry by viewModel.showTelemetry.collectAsState()
+    val missionAlertsEnabled by viewModel.missionAlertsEnabled.collectAsState()
 
     var showSettings by remember { mutableStateOf(false) }
     var showMissions by remember { mutableStateOf(false) }
@@ -125,6 +126,11 @@ fun NavigationDrawerContent(
             onTestLink = { viewModel.testGatewayLink() },
             showTelemetry = showTelemetry,
             onShowTelemetryChanged = { viewModel.setShowTelemetry(it) },
+            missionAlertsEnabled = missionAlertsEnabled,
+            onMissionAlertsChanged = {
+                viewModel.setMissionAlertsEnabled(it)
+                chat.keryx.app.notify.MissionAlertsWorker.setEnabled(context, it)
+            },
             biometricLockEnabled = biometricLockEnabled,
             onBiometricLockChanged = { viewModel.setBiometricLock(it) },
             e2eeEnabled = e2eeEnabled,

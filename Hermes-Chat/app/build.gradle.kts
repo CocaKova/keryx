@@ -26,8 +26,8 @@ android {
         applicationId = "chat.keryx.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 13
-        versionName = "1.5.0"
+        versionCode = 14
+        versionName = "1.6.0"
     }
 
     signingConfigs {
@@ -106,6 +106,8 @@ dependencies {
   testImplementation(libs.kotlinx.coroutines.test)
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+  // Mission alerts: the 15-min background check survives process death and respects Doze.
+  implementation(libs.androidx.work.runtime)
 
   // Instrumented tests: jUnit rules and runners
   androidTestImplementation(libs.androidx.test.core)
