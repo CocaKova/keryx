@@ -84,6 +84,31 @@ private data class PendingAttachment(
     val isImage: Boolean,
 )
 
+/**
+ * Qwen3-VL patches images on a 32px grid (patch_size 16 * merge_size 2). Images whose
+ * dimensions aren't a multiple of 32 hit a rounding mismatch between vLLM's placeholder-token
+ * estimate and the HF processor's actual patch count, which vLLM rejects with a 400. Rounding
+ * down to the nearest 32px avoids the mismatch at the source.
+ */
+private fun normalizeImageBytes(bytes: ByteArray, contentType: String): Pair<ByteArray, String> {
+    val bitmap = runCatching { android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }.getOrNull()
+        ?: return bytes to contentType
+    val gridSize = 32
+    val targetWidth = (bitmap.width / gridSize) * gridSize
+    val targetHeight = (bitmap.height / gridSize) * gridSize
+    if (targetWidth <= 0 || targetHeight <= 0 ||
+        (targetWidth == bitmap.width && targetHeight == bitmap.height)
+    ) {
+        return bytes to contentType
+    }
+    return runCatching {
+        val scaled = android.graphics.Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
+        val out = java.io.ByteArrayOutputStream()
+        scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 92, out)
+        out.toByteArray() to "image/jpeg"
+    }.getOrDefault(bytes to contentType)
+}
+
 private val QUICK_REACTIONS = listOf("👍", "❤️", "😂", "🎉", "🙏", "🔥", "👀", "✅")
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -116,11 +141,13 @@ fun ChatScreen(
 
     fun stageFromUri(uri: android.net.Uri?, forceImage: Boolean) {
         if (uri == null) return
-        val bytes = runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
+        val rawBytes = runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
             ?: return
-        val type = context.contentResolver.getType(uri) ?: if (forceImage) "image/jpeg" else "application/octet-stream"
+        val rawType = context.contentResolver.getType(uri) ?: if (forceImage) "image/jpeg" else "application/octet-stream"
+        val isImage = forceImage || rawType.startsWith("image")
+        val (bytes, type) = if (isImage) normalizeImageBytes(rawBytes, rawType) else rawBytes to rawType
         val name = queryDisplayName(context, uri)
-        pendingAttachment = PendingAttachment(bytes, name, type, isImage = forceImage || type.startsWith("image"))
+        pendingAttachment = PendingAttachment(bytes, name, type, isImage = isImage)
     }
 
     val galleryPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -282,7 +309,8 @@ fun ChatScreen(
             // quips indicator covers the silent phases (connecting, reasoning, tools).
             val stream = liveStream
             val streamVisible = stream != null && stream.roomId == currentSession?.id &&
-                (stream.text.isNotBlank() || stream.status == chat.keryx.app.presentation.LiveStreamStatus.INTERRUPTED)
+                (stream.text.isNotBlank() || stream.reasoning.isNotBlank() ||
+                    stream.status == chat.keryx.app.presentation.LiveStreamStatus.INTERRUPTED)
             if (streamVisible && stream != null) {
                 item(key = "livestream") {
                     // animateItem so the handoff reads as a soft cross-fade: this bubble fades out
@@ -1305,7 +1333,18 @@ private fun StreamingBubble(
                 LocalDensity provides Density(baseDensity.density, baseDensity.fontScale * textScale)
             ) {
                 Column {
-                    chat.keryx.app.presentation.ui.components.MessageContent(
+                    // Live reasoning, thinking rendered AS it happens: auto-expanded while the
+                    // model is still purely thinking, folding to the "💭 Reasoning" chip the
+                    // moment answer tokens start (same canvas the committed message uses, so the
+                    // handoff swap keeps the identical visual).
+                    if (stream.reasoning.isNotBlank()) {
+                        chat.keryx.app.presentation.ui.components.ReasoningCanvas(
+                            text = stream.reasoning,
+                            baseColor = appearance.textColor,
+                            active = streaming && stream.text.isBlank(),
+                        )
+                    }
+                    if (stream.text.isNotBlank()) chat.keryx.app.presentation.ui.components.MessageContent(
                         content = stream.text,
                         textColor = appearance.textColor,
                         isStreaming = streaming,
