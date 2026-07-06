@@ -45,17 +45,24 @@ fun BrailleSnakeAnimation(
     glyphSize: Float = 7f,
     pathProvider: (Size) -> Path = ::wingPath,
 ) {
-    val transition = rememberInfiniteTransition(label = "braille-snake")
-    val head by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            // Gentle ease-in-out so the conga line breathes rather than marches.
-            animation = tween(durationMillis = periodMillis, easing = androidx.compose.animation.core.FastOutSlowInEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "head",
-    )
+    // The infinite transition only exists while actually animating: an idle/hidden snake (the
+    // drawer emblem with the drawer closed, Battery Saver on) must not keep a frame-clock client
+    // alive rendering ornament at 60fps — that's a measurable battery cost for zero visible pixels.
+    val reducedMotion by rememberReducedMotion()
+    val animate = running && !reducedMotion
+    val head = if (animate) {
+        val transition = rememberInfiniteTransition(label = "braille-snake")
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                // Gentle ease-in-out so the conga line breathes rather than marches.
+                animation = tween(durationMillis = periodMillis, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+            label = "head",
+        ).value
+    } else 0.25f
     val pathMeasure = remember { PathMeasure() }
     // Coverage of the contour by the conga line; the remaining fraction is the "pause" gap as the
     // head wraps around. Higher coverage -> a smidge shorter pause.
@@ -67,7 +74,7 @@ fun BrailleSnakeAnimation(
         val length = pathMeasure.length
         if (length <= 0f) return@Canvas
 
-        val headPos = if (running) head else 0.25f
+        val headPos = head
         // A thin "conga line" of dots tracing the contour: a bright, slightly larger head fading
         // to small, faint dots at the tail. Drawn as circles so each dot sits exactly on the path.
         for (i in 0 until snakeLength) {
