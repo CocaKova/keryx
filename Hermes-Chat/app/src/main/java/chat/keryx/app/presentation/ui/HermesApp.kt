@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Menu
@@ -141,14 +145,37 @@ fun HermesApp(viewModel: ChatViewModel) {
                     title = {
                         Column {
                             chat.keryx.app.presentation.ui.components.KeryxWordmark(fontSize = 18.sp)
-                            currentSession?.title?.let { roomName ->
-                                Text(
-                                    text = roomName,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontSize = 13.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+                            currentSession?.let { session ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = session.title,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 13.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false),
+                                    )
+                                    // Which agent profile answers in this room (from the gateway's
+                                    // room→profile routing map): a small tinted chip by the name.
+                                    val caps by viewModel.reasoningCaps.collectAsState()
+                                    caps?.roomProfiles?.get(session.id)
+                                        // "default" is the unnamed home profile — a "Default" chip
+                                        // is noise; only the named secondaries earn the badge.
+                                        ?.takeIf { !it.equals("default", ignoreCase = true) }
+                                        ?.let { profile ->
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text = profile.replaceFirstChar { it.uppercase() },
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontSize = 10.sp,
+                                            maxLines = 1,
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(7.dp))
+                                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
+                                                .padding(horizontal = 6.dp, vertical = 1.dp),
+                                        )
+                                    }
+                                }
                             }
                         }
                     },

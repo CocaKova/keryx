@@ -149,6 +149,9 @@ class HermesStreamClient(
         val labels: Map<String, String>,
         /** The currently configured arg. */
         val current: String,
+        /** Matrix room id → agent profile name (the gateway's routing-only multiplex map).
+         *  Empty when the gateway predates the field or no map is configured. */
+        val roomProfiles: Map<String, String> = emptyMap(),
     )
 
     /**
@@ -177,6 +180,9 @@ class HermesStreamClient(
                         ?.mapNotNull { (k, v) -> (v as? JsonPrimitive)?.content?.let { k to it } }
                         ?.toMap().orEmpty(),
                     current = (reasoning["current"] as? JsonPrimitive)?.content.orEmpty(),
+                    roomProfiles = (obj["room_profiles"] as? kotlinx.serialization.json.JsonObject)
+                        ?.mapNotNull { (k, v) -> (v as? JsonPrimitive)?.content?.let { k to it } }
+                        ?.toMap().orEmpty(),
                 )
             }
         }

@@ -17,6 +17,8 @@ import net.folivo.trixnity.utils.toByteArray
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -46,7 +48,7 @@ import net.folivo.trixnity.core.model.events.m.room.RoomMessageEventContent
  * Bridges the app's domain layer onto the Trixnity Matrix SDK (via [MatrixService]).
  * In Matrix a room *is* the conversation, so each room maps to one [Session].
  */
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
 class ChatRepositoryImpl(
     private val matrix: MatrixService,
     private val settingsRepository: SettingsRepository,
@@ -116,6 +118,21 @@ class ChatRepositoryImpl(
                 android.util.Log.e("KeryxTimeline", "timeline flow failed for $sessionId: ${e.message}", e)
                 emit(emptyList())
             }
+            // Every NEW timeline event re-emits the paging flow, so flatMapLatest tears the inner
+            // combine down and rebuilds it: one all-null (empty) emission, then a staircase of
+            // partial lists as each event re-resolves from the store. Downstream that read as the
+            // room flashing empty and messages popping back one by one (replayed item animations,
+            // scroll jumps, the working banner re-lighting) — worst on a cold reopen. Two guards:
+            //  * never emit a transient empty list once this flow instance has shown content;
+            //  * debounce the staircase so only the settled list reaches the UI.
+            .let { upstream ->
+                var hadContent = false
+                upstream.filter { list ->
+                    if (list.isNotEmpty()) hadContent = true
+                    list.isNotEmpty() || !hadContent
+                }
+            }
+            .debounce(80)
     }
 
     override suspend fun sendMessage(sessionId: String, content: String) {
