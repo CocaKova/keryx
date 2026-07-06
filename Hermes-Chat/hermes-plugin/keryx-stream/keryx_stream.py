@@ -139,22 +139,33 @@ def drain_coalesced(
         except asyncio.QueueEmpty:
             break
 
+    # Both token-ish event types coalesce (concatenation is associative for each); crossing from
+    # one type to the other flushes, so ordering between reasoning and answer text is preserved.
     frames: List[Tuple[str, Optional[str]]] = []
     buf: List[str] = []
+    buf_event: Optional[str] = None
     stop = False
+
+    def _flush() -> None:
+        nonlocal buf, buf_event
+        if buf:
+            frames.append((buf_event or "delta", "".join(buf)))
+            buf = []
+            buf_event = None
+
     for event, text in pending:
-        if event == "delta":
+        if event in ("delta", "reasoning"):
+            if buf_event not in (None, event):
+                _flush()
+            buf_event = event
             buf.append(text or "")
             continue
-        if buf:
-            frames.append(("delta", "".join(buf)))
-            buf = []
+        _flush()
         frames.append((event, text))
         if event == "stop":
             stop = True
             break
-    if buf:
-        frames.append(("delta", "".join(buf)))
+    _flush()
     return frames, stop
 
 
@@ -177,6 +188,33 @@ def publish_segment(adapter: Any, chat_id: Any) -> None:
 
 def publish_stop(adapter: Any, chat_id: Any, final_text: Optional[str] = None) -> None:
     hub.publish_threadsafe(_platform_of(adapter), str(chat_id), "stop", final_text)
+
+
+def attach_reasoning_callback(agent: Any, source: Any) -> None:
+    """Register a live-reasoning mirror on the agent for this turn.
+
+    The agent core already has a ``reasoning_callback`` hook that fires with every structured
+    reasoning delta (``delta.reasoning_content`` / inline think-block text) — the gateway just
+    never registered one, which is why Keryx only ever saw reasoning folded into the final
+    committed message. Wired from gateway/run.py right after ``stream_delta_callback`` (see
+    install.py), so it's refreshed per-message exactly like the other per-turn callbacks on the
+    cached agent. Publishes ``event: reasoning`` frames to any live subscriber; with nobody
+    attached, publish_threadsafe is a dict lookup and a no-op. Fires on the agent's worker
+    thread — same threading contract as publish_delta. Never raises.
+    """
+    try:
+        platform = str(getattr(source.platform, "value", source.platform)).lower()
+        chat_id = str(source.chat_id)
+
+        def _mirror_reasoning(text: str) -> None:
+            try:
+                hub.publish_threadsafe(platform, chat_id, "reasoning", text)
+            except Exception:
+                pass
+
+        agent.reasoning_callback = _mirror_reasoning
+    except Exception:
+        logger.debug("attach_reasoning_callback failed", exc_info=True)
 
 
 def suppress_protocol_edits(adapter: Any, chat_id: Any, default_buffer_only: bool) -> bool:

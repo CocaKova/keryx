@@ -59,17 +59,24 @@ streaming:
 ## Wire protocol
 
 ```
-event: delta    data: {"text": "…incremental tokens (may contain <think> blocks — client filters)…"}
-event: segment  data: {}                       # text → tool → text boundary
-event: stop     data: {}                       # turn complete; channel closes
-event: ping     data: {}                       # 20 s keepalive
+event: delta     data: {"text": "…incremental tokens (may contain <think> blocks — client filters)…"}
+event: reasoning data: {"text": "…live reasoning/thinking deltas, ahead of the answer tokens…"}
+event: segment   data: {}                       # text → tool → text boundary
+event: stop      data: {}                       # turn complete; channel closes
+event: ping      data: {}                       # 20 s keepalive
 ```
 
-`delta` text is **append-only**: a single `delta` may carry one token or many. A fast brain emits
-tokens faster than a remote client drains them, so the handler coalesces whatever is queued into
-one frame — this bounds the write rate to the drain rate and stops the bounded per-subscriber queue
-from overflowing and dropping tokens (a dropped token would break the client's byte-exact handoff).
-Concatenation is associative, so the coalesced stream is identical to the per-token stream.
+`delta` and `reasoning` text are **append-only** within their own channel: a single frame may carry
+one token or many. A fast brain emits tokens faster than a remote client drains them, so the handler
+coalesces whatever is queued into as few frames as possible — consecutive same-type frames merge,
+a type crossover flushes (reasoning never bleeds into answer bytes) — bounding the write rate to
+the drain rate so the bounded per-subscriber queue can't overflow and drop tokens (a dropped token
+would break the client's byte-exact handoff). Concatenation is associative, so the coalesced stream
+is identical to the per-token stream.
+
+`reasoning` frames come from the agent core's `reasoning_callback` (structured
+`reasoning_content` deltas), registered per-turn by the run.py patch. Clients that don't know the
+event type ignore it; servers without the patch simply never emit it.
 
 ## Tests
 
