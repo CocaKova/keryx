@@ -144,16 +144,13 @@ def main() -> int:
     #    ONE combined block: registering /keryx/stream twice makes aiohttp raise a duplicate-route
     #    error inside the try, which silently killed BOTH routes (live-debugged 2026-07-02).
     api = gw / "platforms" / "api_server.py"
+    # Single registrar call: every /keryx/* route (stream, capabilities, commands, kanban)
+    # is added inside keryx_stream.register_keryx_routes, so future routes ship via the
+    # module copy above without ever touching this api_server patch again.
     keryx_routes = (
         "            try:\n"
-        "                from gateway.keryx_stream import (\n"
-        "                    make_stream_handler,\n"
-        "                    make_capabilities_handler,\n"
-        "                    make_commands_handler,\n"
-        "                )\n"
-        '                self._app.router.add_get("/keryx/stream", make_stream_handler(self._check_auth))\n'
-        '                self._app.router.add_get("/keryx/capabilities", make_capabilities_handler(self._check_auth))\n'
-        '                self._app.router.add_get("/keryx/commands", make_commands_handler(self._check_auth))\n'
+        "                from gateway.keryx_stream import register_keryx_routes\n"
+        "                register_keryx_routes(self._app.router, self._check_auth)\n"
         "            except Exception:\n"
         '                logger.debug("keryx routes unavailable", exc_info=True)\n'
     )
@@ -161,6 +158,19 @@ def main() -> int:
     # raises inside the try and silently kills EVERY route in the block, so upgrades must
     # REPLACE the old block, never sit beside it.
     legacy_blocks = [
+        (
+            "            try:\n"
+            "                from gateway.keryx_stream import (\n"
+            "                    make_stream_handler,\n"
+            "                    make_capabilities_handler,\n"
+            "                    make_commands_handler,\n"
+            "                )\n"
+            '                self._app.router.add_get("/keryx/stream", make_stream_handler(self._check_auth))\n'
+            '                self._app.router.add_get("/keryx/capabilities", make_capabilities_handler(self._check_auth))\n'
+            '                self._app.router.add_get("/keryx/commands", make_commands_handler(self._check_auth))\n'
+            "            except Exception:\n"
+            '                logger.debug("keryx routes unavailable", exc_info=True)\n'
+        ),
         (
             "            try:\n"
             "                from gateway.keryx_stream import make_stream_handler, make_capabilities_handler\n"
@@ -192,7 +202,7 @@ def main() -> int:
         for b in legacy_blocks:
             if b in src:
                 api.write_text(src.replace(b, keryx_routes, 1))
-                print("  + api_server routes: upgraded legacy block to stream+capabilities+commands")
+                print("  + api_server routes: upgraded legacy block to register_keryx_routes")
                 upgraded = True
                 break
         if not upgraded:
