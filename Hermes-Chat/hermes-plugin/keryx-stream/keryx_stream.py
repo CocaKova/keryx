@@ -565,3 +565,212 @@ def make_stream_handler(check_auth):
         return resp
 
     return handle_keryx_stream
+
+
+# ---------------------------------------------------------------------------
+# Kanban board (Keryx 1.6 "Missions") — read/create/comment over the agent's
+# task board. State TRANSITIONS (complete/block/claim) stay agent-side on
+# purpose: the dispatcher owns those; the phone reads, creates, and comments.
+#
+# The pure helpers below take an open sqlite connection and return plain
+# dicts, so they unit-test against a temp board without aiohttp or a gateway.
+# All writes go through hermes_cli.kanban_db — the same code path the agent's
+# kanban_* tools use (WAL, schema migrations, event log, validation).
+# ---------------------------------------------------------------------------
+
+# Comment/created_by identity for phone-originated writes. Fixed server-side
+# (not caller-supplied) for the same reason kanban_comment derives its author
+# from runtime identity: a forged author like "hermes-system" would read as a
+# system directive in future worker context.
+KANBAN_ACTOR = "keryx"
+
+# Fields safe + useful for the app. Excludes claim locks, workspace paths,
+# idempotency keys — dispatcher internals the phone has no business rendering.
+_KANBAN_SUMMARY_FIELDS = (
+    "id", "title", "assignee", "status", "priority", "created_by",
+    "created_at", "started_at", "completed_at", "consecutive_failures",
+)
+_KANBAN_DETAIL_FIELDS = _KANBAN_SUMMARY_FIELDS + (
+    "body", "result", "last_failure_error", "goal_mode", "max_runtime_seconds",
+    "last_heartbeat_at", "workspace_kind", "project_id",
+)
+
+
+def _kanban_connect(board: Optional[str] = None):
+    """Same lazy import + board resolution chain as tools/kanban_tools.py."""
+    from hermes_cli import kanban_db as kb
+
+    return kb, kb.connect(board=board)
+
+
+def _task_dict(task: Any, fields: Tuple[str, ...]) -> Dict[str, Any]:
+    d = {f: getattr(task, f, None) for f in fields}
+    # 200-char excerpt is enough for a card; detail carries the full body.
+    if "body" not in fields:
+        body = getattr(task, "body", None) or ""
+        d["body_excerpt"] = body[:200]
+    return d
+
+
+def kanban_board_snapshot(kb: Any, conn: Any) -> Dict[str, Any]:
+    """Tasks grouped by raw status. Column layout is the client's decision —
+    grouping by status here means a future status never breaks old apps."""
+    tasks = kb.list_tasks(conn, include_archived=False, order_by="priority")
+    by_status: Dict[str, list] = {}
+    for t in tasks:
+        by_status.setdefault(t.status, []).append(_task_dict(t, _KANBAN_SUMMARY_FIELDS))
+    return {
+        "board": kb.get_current_board(),
+        "tasks": by_status,
+        "counts": {s: len(v) for s, v in by_status.items()},
+    }
+
+
+def kanban_task_detail(kb: Any, conn: Any, task_id: str) -> Optional[Dict[str, Any]]:
+    task = kb.get_task(conn, task_id)
+    if task is None:
+        return None
+    return {
+        "task": _task_dict(task, _KANBAN_DETAIL_FIELDS),
+        "comments": [
+            {"id": c.id, "author": c.author, "body": c.body, "created_at": c.created_at}
+            for c in kb.list_comments(conn, task_id)
+        ],
+        "events": [
+            {"id": e.id, "kind": e.kind, "payload": e.payload, "created_at": e.created_at}
+            for e in kb.list_events(conn, task_id)[-50:]
+        ],
+    }
+
+
+def kanban_create(kb: Any, conn: Any, payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Create a mission. Mirrors kanban_create tool semantics: assignee is
+    required (the dispatcher only spawns assigned tasks); triage=True parks it
+    spec-first instead of letting the dispatcher pick it up immediately."""
+    title = str(payload.get("title") or "").strip()
+    assignee = str(payload.get("assignee") or "").strip()
+    if not title:
+        raise ValueError("title is required")
+    if not assignee:
+        raise ValueError("assignee is required (which profile runs this mission)")
+    task_id = kb.create_task(
+        conn,
+        title=title,
+        body=payload.get("body"),
+        assignee=assignee,
+        priority=int(payload.get("priority") or 0),
+        triage=bool(payload.get("triage", False)),
+        goal_mode=bool(payload.get("goal_mode", False)),
+        created_by=KANBAN_ACTOR,
+    )
+    task = kb.get_task(conn, task_id)
+    return {"task_id": task_id, "status": task.status if task else None}
+
+
+def kanban_comment(kb: Any, conn: Any, task_id: str, body: str) -> Dict[str, Any]:
+    cid = kb.add_comment(conn, task_id, author=KANBAN_ACTOR, body=body)
+    return {"task_id": task_id, "comment_id": cid}
+
+
+def kanban_events_since(conn: Any, since: int, limit: int = 200) -> Dict[str, Any]:
+    """Incremental poll for the app's mission watcher. Cursor = task_events.id
+    (AUTOINCREMENT); pass the returned cursor back as ?since= next time."""
+    rows = conn.execute(
+        "SELECT id, task_id, kind, payload, created_at FROM task_events "
+        "WHERE id > ? ORDER BY id ASC LIMIT ?",
+        (int(since), int(limit)),
+    ).fetchall()
+    events = []
+    cursor = int(since)
+    for r in rows:
+        payload = r["payload"]
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except Exception:
+                payload = {"raw": payload}
+        events.append(
+            {
+                "id": r["id"], "task_id": r["task_id"], "kind": r["kind"],
+                "payload": payload, "created_at": r["created_at"],
+            }
+        )
+        cursor = int(r["id"])
+    return {"events": events, "cursor": cursor}
+
+
+def _make_kanban_handler(check_auth, work):
+    """Shared shell: auth → run [work] (sync sqlite) off the event loop →
+    JSON. [work] gets (kb, conn, request-ish dict) and returns (status, body)."""
+    from aiohttp import web
+
+    async def handler(request: "web.Request") -> "web.Response":
+        auth_err = check_auth(request)
+        if auth_err is not None:
+            return auth_err
+        board = request.query.get("board") or None
+        try:
+            body = {}
+            if request.method == "POST":
+                try:
+                    body = await request.json()
+                except Exception:
+                    return web.json_response(
+                        {"error": {"message": "invalid JSON body"}}, status=400
+                    )
+
+            def _run():
+                kb, conn = _kanban_connect(board=board)
+                try:
+                    return work(kb, conn, request, body)
+                finally:
+                    conn.close()
+
+            status, payload = await asyncio.to_thread(_run)
+            return web.json_response(payload, status=status)
+        except ValueError as e:
+            return web.json_response({"error": {"message": str(e)}}, status=400)
+        except Exception:
+            logger.exception("keryx kanban handler failed")
+            return web.json_response(
+                {"error": {"message": "kanban unavailable"}}, status=500
+            )
+
+    return handler
+
+
+def register_keryx_routes(router: Any, check_auth) -> None:
+    """Single registrar for every /keryx/* route — api_server.py calls only
+    this, so future routes ship in this module (copied wholesale by
+    install.py) without touching the api_server patch again."""
+    router.add_get("/keryx/stream", make_stream_handler(check_auth))
+    router.add_get("/keryx/capabilities", make_capabilities_handler(check_auth))
+    router.add_get("/keryx/commands", make_commands_handler(check_auth))
+
+    def _board(kb, conn, request, body):
+        return 200, kanban_board_snapshot(kb, conn)
+
+    def _detail(kb, conn, request, body):
+        detail = kanban_task_detail(kb, conn, request.match_info["task_id"])
+        if detail is None:
+            return 404, {"error": {"message": "unknown task"}}
+        return 200, detail
+
+    def _create(kb, conn, request, body):
+        return 200, kanban_create(kb, conn, body)
+
+    def _comment(kb, conn, request, body):
+        text = str(body.get("body") or "").strip()
+        if not text:
+            raise ValueError("body is required")
+        return 200, kanban_comment(kb, conn, request.match_info["task_id"], text)
+
+    def _events(kb, conn, request, body):
+        since = int(request.query.get("since", 0) or 0)
+        return 200, kanban_events_since(conn, since)
+
+    router.add_get("/keryx/kanban/board", _make_kanban_handler(check_auth, _board))
+    router.add_get("/keryx/kanban/task/{task_id}", _make_kanban_handler(check_auth, _detail))
+    router.add_post("/keryx/kanban/task", _make_kanban_handler(check_auth, _create))
+    router.add_post("/keryx/kanban/task/{task_id}/comment", _make_kanban_handler(check_auth, _comment))
+    router.add_get("/keryx/kanban/events", _make_kanban_handler(check_auth, _events))

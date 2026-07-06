@@ -78,6 +78,30 @@ is identical to the per-token stream.
 `reasoning_content` deltas), registered per-turn by the run.py patch. Clients that don't know the
 event type ignore it; servers without the patch simply never emit it.
 
+## Kanban (Missions) endpoints
+
+Keryx 1.6's Missions board rides the agent's own kanban database
+(`hermes_cli.kanban_db` — same code path as the `kanban_*` tools, so WAL handling, schema
+migrations, and the event log all behave identically). Reads and additive writes only; state
+*transitions* (complete/block/claim) stay agent-side — the dispatcher owns those.
+
+```
+GET  /keryx/kanban/board                     tasks grouped by raw status + counts
+GET  /keryx/kanban/task/{id}                 full task + comments + last 50 events
+POST /keryx/kanban/task                      {"title", "assignee", "body"?, "priority"?,
+                                              "triage"?: bool, "goal_mode"?: bool}
+POST /keryx/kanban/task/{id}/comment         {"body"}
+GET  /keryx/kanban/events?since=<cursor>     incremental event poll; returns {"events", "cursor"}
+```
+
+All accept `?board=<slug>` to target a non-default board. `assignee` is required on create (the
+dispatcher only spawns assigned tasks); `triage: true` parks the task spec-first instead of letting
+the dispatcher pick it up. Phone-originated writes are authored as `keryx` server-side —
+caller-supplied authors are rejected by design (a forged author reads as a system directive in
+future worker context). Gateways without a kanban board return errors the app treats as
+"missions unavailable"; route registration is centralized in `register_keryx_routes`, so new
+routes ship with the module copy and never need a fresh api_server patch.
+
 ## Tests
 
 ```bash
