@@ -351,6 +351,94 @@ class ChatViewModel(
         }
     }
 
+    // --- Agent Hub — gateway console panels ------------------------------------------------------
+
+    /** One hub panel's fetch state. A failed refresh keeps the last good [data] so the panel
+     *  degrades to a stale-but-visible snapshot with the error line on top, never a blank. */
+    data class HubPanel<T>(
+        val data: T? = null,
+        val error: String? = null,
+        val refreshing: Boolean = false,
+    )
+
+    private fun <T> MutableStateFlow<HubPanel<T>>.refreshFrom(
+        fetch: suspend chat.keryx.app.data.remote.HermesStreamClient.() -> Result<T>,
+    ) {
+        val client = gatewayClient() ?: run {
+            value = value.copy(error = "Hermes Link is off — enable it in Settings", refreshing = false)
+            return
+        }
+        value = value.copy(refreshing = true)
+        viewModelScope.launch {
+            client.fetch()
+                .onSuccess { value = HubPanel(data = it) }
+                .onFailure {
+                    value = value.copy(error = it.message?.take(120) ?: "unavailable", refreshing = false)
+                }
+        }
+    }
+
+    private val _hubHealth =
+        MutableStateFlow(HubPanel<chat.keryx.app.data.remote.HermesStreamClient.HubHealth>())
+    val hubHealth: StateFlow<HubPanel<chat.keryx.app.data.remote.HermesStreamClient.HubHealth>> =
+        _hubHealth.asStateFlow()
+    private val _hubJobs =
+        MutableStateFlow(HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubJob>>())
+    val hubJobs: StateFlow<HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubJob>>> =
+        _hubJobs.asStateFlow()
+    private val _hubSessions =
+        MutableStateFlow(HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubSession>>())
+    val hubSessions: StateFlow<HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubSession>>> =
+        _hubSessions.asStateFlow()
+    private val _hubSkills =
+        MutableStateFlow(HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubSkill>>())
+    val hubSkills: StateFlow<HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubSkill>>> =
+        _hubSkills.asStateFlow()
+    private val _hubToolsets =
+        MutableStateFlow(HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubToolset>>())
+    val hubToolsets: StateFlow<HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubToolset>>> =
+        _hubToolsets.asStateFlow()
+
+    fun refreshHubHealth() = _hubHealth.refreshFrom { healthDetailed() }
+    fun refreshHubJobs() = _hubJobs.refreshFrom { jobs() }
+    fun refreshHubSessions() = _hubSessions.refreshFrom { sessions() }
+    fun refreshHubSkills() = _hubSkills.refreshFrom { skills() }
+    fun refreshHubToolsets() = _hubToolsets.refreshFrom { toolsets() }
+
+    /** Pause/resume/run a scheduled job, then re-pull the list so the card reflects reality. */
+    fun hubJobAction(jobId: String, action: String) {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.jobAction(jobId, action)
+                .onSuccess { refreshHubJobs() }
+                .onFailure { _toasts.tryEmit("Job $action failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    fun hubJobDelete(jobId: String) {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.jobDelete(jobId)
+                .onSuccess { _toasts.tryEmit("Job deleted"); refreshHubJobs() }
+                .onFailure { _toasts.tryEmit("Delete failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    fun hubJobCreate(name: String, schedule: String, prompt: String, deliver: String) {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.jobCreate(name, schedule, prompt, deliver)
+                .onSuccess { _toasts.tryEmit("Job scheduled"); refreshHubJobs() }
+                .onFailure { _toasts.tryEmit("Schedule failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    suspend fun hubSessionMessages(
+        sessionId: String,
+    ): Result<List<chat.keryx.app.data.remote.HermesStreamClient.HubMessage>> =
+        gatewayClient()?.sessionMessages(sessionId)
+            ?: Result.failure(IllegalStateException("Hermes Link is off"))
+
     /** The transient live response overlay (null = nothing streaming over the side-channel). */
     private val _liveStream = MutableStateFlow<LiveStream?>(null)
     val liveStream: StateFlow<LiveStream?> = _liveStream.asStateFlow()
