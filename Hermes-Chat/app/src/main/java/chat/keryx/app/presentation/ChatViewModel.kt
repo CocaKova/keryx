@@ -302,6 +302,12 @@ class ChatViewModel(
     private var streamJob: Job? = null
     private var streamClearJob: Job? = null
 
+    // Set by openSideChannel for the lifetime of one SSE turn. Hermes commits each text segment
+    // of a multi-segment turn (text → tool → text) as its OWN Matrix message mid-run; when one of
+    // those lands, the overlay must shed the already-committed part and KEEP STREAMING — killing
+    // the whole SSE job there is what made every post-tool reasoning phase invisible until commit.
+    private var consumeStreamedSegment: (() -> Unit)? = null
+
     // True while the agent is working (drives the waiting animation). Stays up through the agent's
     // thinking / tool-call / streaming phases and only clears after activity goes quiet.
     private val _awaitingReply = MutableStateFlow(false)
@@ -312,6 +318,7 @@ class ChatViewModel(
     // streamed m.replace edit growing the current one) from merely re-observing the same timeline.
     private var lastSeenId: String? = null
     private var lastSeenLen: Int = -1
+    private var lastSeenRoomId: String? = null
 
     // True while Hermes' typing indicator is up. Authoritative: a pending quiet-timeout will NOT
     // clear the banner while this is set, so a long silent tool call (curl) can't make it vanish.
@@ -408,19 +415,26 @@ class ChatViewModel(
         viewModelScope.launch {
             messages.collect { msgs ->
                 val last = msgs.lastOrNull()
-                // Classify this emission relative to the last one we saw.
-                val firstEval = lastSeenId == null
-                val isNewMsg = !firstEval && last != null && last.id != lastSeenId
-                val grew = last != null && last.id == lastSeenId && last.content.length > lastSeenLen
-                lastSeenId = last?.id
-                lastSeenLen = last?.content?.length ?: -1
                 android.util.Log.i(
                     "KeryxFlow",
                     "emission n=${msgs.size} last=${last?.id?.take(12)} sender=${last?.sender} len=${last?.content?.length} " +
-                        "new=$isNewMsg grew=$grew stream=${_liveStream.value?.status} awaiting=${_awaitingReply.value}"
+                        "stream=${_liveStream.value?.status} awaiting=${_awaitingReply.value}"
                 )
-
+                // An empty emission (room switch reset, transient flow restart) must NOT touch the
+                // classification state: nulling lastSeenId made the NEXT emission look like a first
+                // open, and the openedMidRun recency check re-lit the working banner for a message
+                // that had already settled.
                 if (last == null) return@collect
+                // Classify this emission relative to the last one we saw. Crossing into another
+                // room gets first-open semantics (recency-guarded openedMidRun), NOT "new message"
+                // — an old conversation that merely ended on a tool call must not light the banner.
+                val roomChanged = lastSeenRoomId != last.sessionId
+                val firstEval = lastSeenId == null || roomChanged
+                val isNewMsg = !firstEval && last.id != lastSeenId
+                val grew = !firstEval && last.id == lastSeenId && last.content.length > lastSeenLen
+                lastSeenRoomId = last.sessionId
+                lastSeenId = last.id
+                lastSeenLen = last.content.length
 
                 // Side-channel handoff: the moment the committed Matrix event for the streamed
                 // response is present in the timeline, drop the overlay — same frame, no pop. Look
@@ -563,6 +577,15 @@ class ChatViewModel(
                 charsSinceDispatch = 0
             }
             _liveStream.value = LiveStream(roomId, "", LiveStreamStatus.CONNECTING, System.currentTimeMillis())
+            // Mid-turn segment commit: everything streamed so far is now a committed Matrix
+            // message. Shed it from the overlay (text AND its reasoning — the commit carries its
+            // own folded 💭 block) but leave the SSE subscription running for the next phase.
+            consumeStreamedSegment = {
+                android.util.Log.i("KeryxHandoff", "consume segment (${buf.length}ch text, ${reasoningBuf.length}ch reasoning) — stream stays live")
+                buf.setLength(0)
+                reasoningBuf.setLength(0)
+                if (_liveStream.value != null) dispatch(LiveStreamStatus.STREAMING)
+            }
             client.stream(roomId).collect { ev ->
                 if (ev !is chat.keryx.app.data.remote.HermesStreamClient.Event.Delta)
                     android.util.Log.i("KeryxSSE", "event=$ev bufLen=${buf.length}")
@@ -606,6 +629,13 @@ class ChatViewModel(
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Stop -> {
                         _linkHealth.value = LinkHealth.OK
+                        if (ev.finalText.isNullOrBlank() && buf.isBlank() && reasoningBuf.isBlank()) {
+                            // Everything this turn produced was already consumed by mid-turn
+                            // segment commits — nothing left to hand off; don't hold an invisible
+                            // overlay through the 20 s sync grace.
+                            clearStream(); settleTurn()
+                            return@collect
+                        }
                         dispatch(LiveStreamStatus.AWAITING_SYNC, finalText = ev.finalText ?: buf.toString())
                         // The committed event may have synced BEFORE stop arrived; nothing else
                         // re-triggers the handoff check (the messages flow won't emit again), so
@@ -655,6 +685,7 @@ class ChatViewModel(
         android.util.Log.i("KeryxHandoff", "clearStream (was ${_liveStream.value?.status})")
         streamClearJob?.cancel()
         streamJob?.cancel()
+        consumeStreamedSegment = null
         _liveStream.value = null
     }
 
@@ -677,7 +708,11 @@ class ChatViewModel(
                         .filterNot { MessageParser.isTelemetryMessage(it.content) }
                         .take(8)
                         .any { StreamHandoff.matches(it.content, target) }
-                    if (matched) { clearStream(); settleTurn() }
+                    // A match while still STREAMING is a MID-TURN segment commit (tool call coming
+                    // up — Hermes committed the text so far as its own message). Shed the committed
+                    // part but keep the SSE channel: the post-tool reasoning + answer are still on
+                    // their way down this same subscription. `stop` / AWAITING_SYNC ends the turn.
+                    if (matched) consumeStreamedSegment?.invoke() ?: run { clearStream(); settleTurn() }
                 }
             }
             LiveStreamStatus.AWAITING_SYNC -> {

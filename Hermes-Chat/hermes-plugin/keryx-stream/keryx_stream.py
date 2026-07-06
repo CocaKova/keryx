@@ -280,6 +280,7 @@ def _reasoning_capabilities() -> Dict[str, Any]:
     provider = ""
     effort = "medium"
     show = True
+    room_profiles: Dict[str, str] = {}
     try:
         import yaml
         from pathlib import Path
@@ -312,6 +313,11 @@ def _reasoning_capabilities() -> Dict[str, Any]:
         effort = str(agent_cfg.get("reasoning_effort", "medium") or "medium").strip().lower()
         display = ((cfg.get("display") or {}).get("platforms") or {}).get("matrix") or {}
         show = bool(display.get("show_reasoning", True))
+        # Which agent profile answers in which Matrix room (the routing-only multiplex map).
+        # Keryx shows this as a profile chip next to the room name.
+        rp = ((cfg.get("platforms") or {}).get("matrix") or {}).get("room_profile_map") or {}
+        if isinstance(rp, dict):
+            room_profiles = {str(k): str(v) for k, v in rp.items() if k and v}
     except Exception:
         logger.debug("capabilities config read failed", exc_info=True)
 
@@ -335,6 +341,7 @@ def _reasoning_capabilities() -> Dict[str, Any]:
         "provider": provider,
         "reasoning": reasoning,
         "show_reasoning": show,
+        "room_profiles": room_profiles,
     }
 
 
