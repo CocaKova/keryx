@@ -375,7 +375,7 @@ fun ActionOutputCard(
  * keeps it reading as an inner monologue distinct from the answer.
  */
 @Composable
-private fun ReasoningCanvas(text: String, baseColor: Color, active: Boolean) {
+internal fun ReasoningCanvas(text: String, baseColor: Color, active: Boolean) {
     val accent = MaterialTheme.colorScheme.primary
     val muted = baseColor.copy(alpha = 0.7f)
     // Default: follow the agent (open while thinking, collapse when done) until the user decides.

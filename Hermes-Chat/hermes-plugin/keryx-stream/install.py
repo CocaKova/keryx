@@ -308,6 +308,24 @@ def main() -> int:
             label="chat_completion_helpers live-steer stream break",
         )
 
+    # 6b. Live reasoning mirror: the agent core fires reasoning_callback with every structured
+    #     reasoning delta, but the gateway never registers one — so Keryx only ever saw reasoning
+    #     folded into the final commit. Attach the keryx mirror right where the other per-turn
+    #     callbacks are refreshed on the (cached) agent; with no live subscriber it's a no-op.
+    ok &= patch(
+        run,
+        anchor="            agent.stream_delta_callback = _stream_delta_cb\n",
+        replacement=(
+            "            agent.stream_delta_callback = _stream_delta_cb\n"
+            "            try:\n"
+            "                from gateway import keryx_stream as _keryx_rc\n"
+            "                _keryx_rc.attach_reasoning_callback(agent, source)\n"
+            "            except Exception:\n"
+            "                pass\n"
+        ),
+        label="run.py live reasoning mirror",
+    )
+
     # 7. Matching ack wording (the old text promised "after the next tool call", which is no
     #    longer the only landing point). Keep the ⏩ prefix — Keryx folds it as telemetry.
     ok &= patch(

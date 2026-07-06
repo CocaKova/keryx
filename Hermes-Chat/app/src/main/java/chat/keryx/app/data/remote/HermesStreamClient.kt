@@ -46,6 +46,8 @@ class HermesStreamClient(
     sealed interface Event {
         /** Incremental assistant text. */
         data class Delta(val text: String) : Event
+        /** Incremental reasoning/thinking text (streamed live, before any answer tokens). */
+        data class Reasoning(val text: String) : Event
         /** A segment boundary — the current text run ended (e.g. a tool call interleaves). */
         data object SegmentBreak : Event
         /** Turn finished. [finalText] is the exact body Hermes commits to Matrix (may be null if
@@ -104,6 +106,7 @@ class HermesStreamClient(
                 override fun onEvent(eventSource: EventSource, id: String?, type: String?, data: String) {
                     when (type) {
                         "delta" -> parseText(data)?.let { trySendBlocking(Event.Delta(it)) }
+                        "reasoning" -> parseText(data)?.let { trySendBlocking(Event.Reasoning(it)) }
                         "segment" -> trySendBlocking(Event.SegmentBreak)
                         "stop" -> {
                             trySendBlocking(Event.Stop(parseText(data)))

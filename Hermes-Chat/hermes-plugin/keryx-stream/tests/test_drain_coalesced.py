@@ -79,6 +79,29 @@ def test_large_burst_survives_intact():
     assert stop_text == delta_text
 
 
+def test_reasoning_runs_coalesce_but_never_merge_into_answer_text():
+    # Live reasoning rides the same channel as answer deltas. Consecutive reasoning frames
+    # coalesce like deltas do, but a reasoning→delta (or delta→reasoning) crossover must flush,
+    # never concatenate across types — reasoning bytes leaking into the answer would break the
+    # client's StreamHandoff byte-match against the committed message.
+    q = _queue([
+        ("reasoning", "let me "),
+        ("reasoning", "think"),
+        ("delta", "The answer"),
+        ("delta", " is 4."),
+        ("reasoning", "hm"),
+        ("stop", "The answer is 4."),
+    ])
+    frames, stop = drain_coalesced(q, _first(q))
+    assert frames == [
+        ("reasoning", "let me think"),
+        ("delta", "The answer is 4."),
+        ("reasoning", "hm"),
+        ("stop", "The answer is 4."),
+    ]
+    assert stop is True
+
+
 def test_none_delta_text_treated_as_empty():
     # A stray None-text delta must not blow up the join or corrupt the stream.
     q = _queue([("delta", "a"), ("delta", None), ("delta", "b")])

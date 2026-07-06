@@ -78,4 +78,8 @@ data class LiveStream(
     val finalText: String? = null,
     /** Live throughput of the side-channel (chars/s; ~4 chars ≈ a token). 0 until measurable. */
     val charsPerSec: Float = 0f,
+    /** Live reasoning/thinking text streamed ahead of (and between) answer tokens. Rendered as
+     *  its own 💭 canvas above the answer; never partakes in handoff matching — the committed
+     *  message carries its own folded reasoning block. */
+    val reasoning: String = "",
 )
