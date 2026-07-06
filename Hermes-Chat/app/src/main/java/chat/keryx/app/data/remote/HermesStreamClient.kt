@@ -6,9 +6,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
@@ -252,5 +255,151 @@ class HermesStreamClient(
                 listOfNotNull(status, platform, version).joinToString(" · ")
             }
         }
+    }
+
+    // --- Kanban (Missions) — /keryx/kanban/* --------------------------------------------------
+
+    /** One task card on the board (summary shape from `GET /keryx/kanban/board`). */
+    data class KanbanTask(
+        val id: String,
+        val title: String,
+        val assignee: String,
+        val status: String,
+        val priority: Int,
+        val createdBy: String,
+        val createdAt: Long,
+        val startedAt: Long?,
+        val completedAt: Long?,
+        val consecutiveFailures: Int,
+        val bodyExcerpt: String,
+        /** Full body — only populated on the detail call. */
+        val body: String = "",
+        val result: String = "",
+        val lastFailureError: String = "",
+    )
+
+    data class KanbanComment(val author: String, val body: String, val createdAt: Long)
+
+    data class KanbanEvent(val id: Long, val taskId: String, val kind: String, val createdAt: Long)
+
+    /** The whole board: tasks grouped by raw gateway status (column layout is the app's call). */
+    data class KanbanBoard(val board: String, val tasks: Map<String, List<KanbanTask>>)
+
+    data class KanbanDetail(
+        val task: KanbanTask,
+        val comments: List<KanbanComment>,
+        val events: List<KanbanEvent>,
+    )
+
+    private fun kanbanTaskOf(o: kotlinx.serialization.json.JsonObject): KanbanTask {
+        fun s(k: String) = (o[k] as? JsonPrimitive)?.contentOrNull.orEmpty()
+        fun l(k: String) = (o[k] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
+        return KanbanTask(
+            id = s("id"),
+            title = s("title"),
+            assignee = s("assignee"),
+            status = s("status"),
+            priority = l("priority")?.toInt() ?: 0,
+            createdBy = s("created_by"),
+            createdAt = l("created_at") ?: 0L,
+            startedAt = l("started_at"),
+            completedAt = l("completed_at"),
+            consecutiveFailures = l("consecutive_failures")?.toInt() ?: 0,
+            bodyExcerpt = s("body_excerpt"),
+            body = s("body"),
+            result = s("result"),
+            lastFailureError = s("last_failure_error"),
+        )
+    }
+
+    private suspend fun kanbanCall(
+        path: String,
+        post: kotlinx.serialization.json.JsonObject? = null,
+    ): kotlinx.serialization.json.JsonObject = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val request = Request.Builder()
+            .url(baseUrl.trimEnd('/') + path)
+            .apply {
+                if (apiKey.isNotBlank()) header("Authorization", "Bearer $apiKey")
+                if (post != null) post(post.toString().toRequestBody("application/json".toMediaType()))
+            }
+            .build()
+        val probe = client.newBuilder().readTimeout(8, TimeUnit.SECONDS).build()
+        probe.newCall(request).execute().use { resp ->
+            val text = resp.body?.string().orEmpty()
+            if (!resp.isSuccessful) {
+                // Surface the gateway's error message ("assignee is required") over a bare code.
+                val msg = runCatching {
+                    (((json.parseToJsonElement(text).jsonObject["error"])
+                        as? kotlinx.serialization.json.JsonObject)
+                        ?.get("message") as? JsonPrimitive)?.content
+                }.getOrNull()
+                error(msg ?: "HTTP ${resp.code}")
+            }
+            json.parseToJsonElement(text).jsonObject
+        }
+    }
+
+    suspend fun kanbanBoard(): Result<KanbanBoard> = runCatching {
+        val obj = kanbanCall("/keryx/kanban/board")
+        KanbanBoard(
+            board = (obj["board"] as? JsonPrimitive)?.content ?: "default",
+            tasks = (obj["tasks"] as? kotlinx.serialization.json.JsonObject)
+                ?.mapValues { (_, v) ->
+                    (v as? kotlinx.serialization.json.JsonArray)
+                        ?.mapNotNull { (it as? kotlinx.serialization.json.JsonObject)?.let(::kanbanTaskOf) }
+                        .orEmpty()
+                }.orEmpty(),
+        )
+    }
+
+    suspend fun kanbanTask(taskId: String): Result<KanbanDetail> = runCatching {
+        val obj = kanbanCall("/keryx/kanban/task/$taskId")
+        KanbanDetail(
+            task = kanbanTaskOf(obj["task"] as kotlinx.serialization.json.JsonObject),
+            comments = (obj["comments"] as? kotlinx.serialization.json.JsonArray)
+                ?.mapNotNull { el ->
+                    val c = el as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
+                    KanbanComment(
+                        author = (c["author"] as? JsonPrimitive)?.content.orEmpty(),
+                        body = (c["body"] as? JsonPrimitive)?.content.orEmpty(),
+                        createdAt = (c["created_at"] as? JsonPrimitive)?.content?.toLongOrNull() ?: 0L,
+                    )
+                }.orEmpty(),
+            events = (obj["events"] as? kotlinx.serialization.json.JsonArray)
+                ?.mapNotNull { el ->
+                    val e = el as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
+                    KanbanEvent(
+                        id = (e["id"] as? JsonPrimitive)?.content?.toLongOrNull() ?: 0L,
+                        taskId = taskId,
+                        kind = (e["kind"] as? JsonPrimitive)?.content.orEmpty(),
+                        createdAt = (e["created_at"] as? JsonPrimitive)?.content?.toLongOrNull() ?: 0L,
+                    )
+                }.orEmpty(),
+        )
+    }
+
+    /** Create a mission. [triage] parks it spec-first; false lets the dispatcher pick it up. */
+    suspend fun kanbanCreate(
+        title: String,
+        assignee: String,
+        body: String,
+        triage: Boolean,
+    ): Result<String> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("title", kotlinx.serialization.json.JsonPrimitive(title))
+            put("assignee", kotlinx.serialization.json.JsonPrimitive(assignee))
+            if (body.isNotBlank()) put("body", kotlinx.serialization.json.JsonPrimitive(body))
+            put("triage", kotlinx.serialization.json.JsonPrimitive(triage))
+        }
+        val obj = kanbanCall("/keryx/kanban/task", post = payload)
+        (obj["task_id"] as? JsonPrimitive)?.content ?: error("no task_id in response")
+    }
+
+    suspend fun kanbanComment(taskId: String, body: String): Result<Unit> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("body", kotlinx.serialization.json.JsonPrimitive(body))
+        }
+        kanbanCall("/keryx/kanban/task/$taskId/comment", post = payload)
+        Unit
     }
 }

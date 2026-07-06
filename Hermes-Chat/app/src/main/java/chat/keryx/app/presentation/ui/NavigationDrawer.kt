@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ViewKanban
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.BrightnessAuto
@@ -76,6 +77,7 @@ fun NavigationDrawerContent(
     val showTelemetry by viewModel.showTelemetry.collectAsState()
 
     var showSettings by remember { mutableStateOf(false) }
+    var showMissions by remember { mutableStateOf(false) }
 
     // Image picker for setting a Quick Room's avatar (server-side m.room.avatar).
     val context = LocalContext.current
@@ -92,6 +94,13 @@ fun NavigationDrawerContent(
         pendingAvatarRoomId = null
     }
     
+    if (showMissions) {
+        chat.keryx.app.presentation.ui.components.MissionsScreen(
+            viewModel = viewModel,
+            onDismissRequest = { showMissions = false },
+        )
+    }
+
     if (showSettings) {
         chat.keryx.app.presentation.ui.components.SettingsScreen(
             currentAccentColor = currentAccent,
@@ -301,6 +310,23 @@ fun NavigationDrawerContent(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(themeText, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { showMissions = true }
+                        .padding(vertical = 12.dp),
+                ) {
+                    Icon(
+                        Icons.Default.ViewKanban, contentDescription = "Missions",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Missions", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

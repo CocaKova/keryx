@@ -296,6 +296,61 @@ class ChatViewModel(
     private val _showTelemetry = MutableStateFlow(settingsRepository.showTelemetry)
     val showTelemetry: StateFlow<Boolean> = _showTelemetry.asStateFlow()
 
+    // --- Missions (kanban board over the gateway) ----------------------------------------------
+
+    /** A configured gateway client, or null when Hermes Link is off/unconfigured. */
+    private fun gatewayClient(): chat.keryx.app.data.remote.HermesStreamClient? {
+        val url = _gatewayUrl.value.trim()
+        if (!_sideChannelEnabled.value || url.isBlank()) return null
+        return chat.keryx.app.data.remote.HermesStreamClient(url, _gatewayApiKey.value, settingsRepository.allowInsecure)
+    }
+
+    private val _kanbanBoard =
+        MutableStateFlow<chat.keryx.app.data.remote.HermesStreamClient.KanbanBoard?>(null)
+    val kanbanBoard: StateFlow<chat.keryx.app.data.remote.HermesStreamClient.KanbanBoard?> =
+        _kanbanBoard.asStateFlow()
+    private val _kanbanRefreshing = MutableStateFlow(false)
+    val kanbanRefreshing: StateFlow<Boolean> = _kanbanRefreshing.asStateFlow()
+    private val _kanbanError = MutableStateFlow<String?>(null)
+    val kanbanError: StateFlow<String?> = _kanbanError.asStateFlow()
+
+    fun refreshKanban() {
+        val client = gatewayClient() ?: run {
+            _kanbanError.value = "Hermes Link is off — enable it in Settings"
+            return
+        }
+        _kanbanRefreshing.value = true
+        viewModelScope.launch {
+            client.kanbanBoard()
+                .onSuccess { _kanbanBoard.value = it; _kanbanError.value = null }
+                .onFailure { _kanbanError.value = it.message?.take(120) ?: "board unavailable" }
+            _kanbanRefreshing.value = false
+        }
+    }
+
+    suspend fun kanbanTaskDetail(taskId: String): Result<chat.keryx.app.data.remote.HermesStreamClient.KanbanDetail> =
+        gatewayClient()?.kanbanTask(taskId)
+            ?: Result.failure(IllegalStateException("Hermes Link is off"))
+
+    /** Create a mission and refresh the board; toasts the outcome either way. */
+    fun kanbanCreate(title: String, assignee: String, body: String, triage: Boolean) {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.kanbanCreate(title, assignee, body, triage)
+                .onSuccess { _toasts.tryEmit("Mission created${if (triage) " (triage)" else ""}"); refreshKanban() }
+                .onFailure { _toasts.tryEmit("Create failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    fun kanbanComment(taskId: String, body: String, onDone: () -> Unit = {}) {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.kanbanComment(taskId, body)
+                .onSuccess { onDone() }
+                .onFailure { _toasts.tryEmit("Comment failed: ${it.message?.take(80)}") }
+        }
+    }
+
     /** The transient live response overlay (null = nothing streaming over the side-channel). */
     private val _liveStream = MutableStateFlow<LiveStream?>(null)
     val liveStream: StateFlow<LiveStream?> = _liveStream.asStateFlow()
