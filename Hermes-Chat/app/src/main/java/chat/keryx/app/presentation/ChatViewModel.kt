@@ -93,6 +93,29 @@ class ChatViewModel(
             val s = sent.trim()
             return s.isNotEmpty() && (e == s || e.endsWith(s))
         }
+
+        /** One-line drawer preview of a message: dialogue prose only (reasoning/tool chrome and
+         *  markers stripped), "You:" prefix for own sends, sensible stand-ins for media and for
+         *  agent messages that have no prose at all (pure tool runs, telemetry heartbeats). */
+        fun previewOf(m: Message): String {
+            val who = if (m.sender == SenderType.ME) "You: " else ""
+            val body = when {
+                m.mediaKind == chat.keryx.app.domain.model.MediaKind.IMAGE -> "🖼 Photo"
+                m.mediaKind != null -> "📎 ${m.fileName.ifBlank { "Attachment" }}"
+                MessageParser.isTelemetryMessage(m.content) -> "⏳ status check-in"
+                else -> {
+                    val prose = StreamHandoff.normalize(m.content)
+                    if (prose.isNotBlank()) prose
+                    else {
+                        val tools = MessageParser.parse(m.content)
+                            .filterIsInstance<MessageParser.Segment.Tools>()
+                            .flatMap { it.calls }
+                        if (tools.isNotEmpty()) "🛠 ${tools.last().name}" else "💭 thinking…"
+                    }
+                }
+            }
+            return (who + body).take(140)
+        }
     }
 
     val isLoggedIn: StateFlow<Boolean> = repository.isLoggedIn()
@@ -520,6 +543,7 @@ class ChatViewModel(
         )
         streamJob = viewModelScope.launch {
             val buf = StringBuilder()
+            val reasoningBuf = StringBuilder()
             var lastDispatch = 0L
             var charsSinceDispatch = 0
             var firstDeltaAt = 0L
@@ -533,6 +557,7 @@ class ChatViewModel(
                     status = status,
                     finalText = finalText ?: cur.finalText,
                     charsPerSec = emaCps,
+                    reasoning = reasoningBuf.toString(),
                 )
                 lastDispatch = System.currentTimeMillis()
                 charsSinceDispatch = 0
@@ -561,6 +586,17 @@ class ChatViewModel(
                         lastDeltaAt = now
                         buf.append(ev.text)
                         charsSinceDispatch += ev.text.length
+                        if (now - lastDispatch >= STREAM_DISPATCH_MS || charsSinceDispatch >= STREAM_DISPATCH_CHARS) {
+                            dispatch(LiveStreamStatus.STREAMING)
+                        }
+                    }
+                    is chat.keryx.app.data.remote.HermesStreamClient.Event.Reasoning -> {
+                        // Live reasoning: shares the delta throttle so a fast thinker can't outpace
+                        // recomposition. While only reasoning has arrived, the top banner says so.
+                        reasoningBuf.append(ev.text)
+                        charsSinceDispatch += ev.text.length
+                        if (buf.isEmpty() && _workLabel.value == "Working") _workLabel.value = "Reasoning"
+                        val now = System.currentTimeMillis()
                         if (now - lastDispatch >= STREAM_DISPATCH_MS || charsSinceDispatch >= STREAM_DISPATCH_CHARS) {
                             dispatch(LiveStreamStatus.STREAMING)
                         }
@@ -692,7 +728,12 @@ class ChatViewModel(
         quietJob?.cancel()
         _awaitingReply.value = false
         _workStartedAt.value = null
-        clearStream() // the overlay is room-scoped; never carry it across a room switch
+        // The stream is NOT cancelled on a room switch: the overlay is already room-filtered in
+        // the UI, so hopping to another room and back mid-turn resumes the live view instead of
+        // silently degrading the whole turn to Matrix sync (mobile users switch rooms constantly).
+        // The SSE job keeps collecting in viewModelScope; handoff re-evaluates the moment the
+        // origin room's timeline is observed again, and the post-`stop` sync-grace timer still
+        // bounds its lifetime if the user never returns.
         clearPendingSend()
         // Re-baseline activity tracking so the newly-opened room is judged on its own recency, not
         // treated as "new activity" just because its last message differs from the previous room's.
@@ -736,6 +777,24 @@ class ChatViewModel(
         val result = deferred.await() // cancellation propagates to the caller, not the download
         if (result == null) mediaCache.remove(eventId)
         return result
+    }
+
+    // Drawer previews: the latest meaningful message per room, fetched lazily (only when a drawer
+    // row actually composes) and cached against the room's last-event timestamp so re-opening the
+    // drawer is free until new activity lands. Deliberately NOT folded into the rooms flow — that
+    // would keep a timeline flow alive per room for the whole session just to serve a snippet.
+    private val previewCache = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, String>>()
+
+    suspend fun roomPreview(roomId: String, stamp: Long): String? {
+        previewCache[roomId]?.let { (cachedStamp, preview) -> if (cachedStamp == stamp) return preview }
+        val msgs = withTimeoutOrNull(5_000L) {
+            repository.getMessages(roomId, 8).first { it.isNotEmpty() }
+        } ?: return previewCache[roomId]?.second
+        // Skip runtime footers so the preview reads as the conversation, not plumbing.
+        val last = msgs.lastOrNull { !MessageParser.isRuntimeFooterMessage(it.content) } ?: msgs.lastOrNull() ?: return null
+        val preview = previewOf(last)
+        previewCache[roomId] = stamp to preview
+        return preview
     }
 
     // Live reactions: a cold flow per event that updates the instant a reaction is added/redacted by
