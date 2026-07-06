@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -113,7 +114,10 @@ fun HermesApp(viewModel: ChatViewModel) {
                     onSessionSelected = { session ->
                         viewModel.selectSession(session)
                         scope.launch { drawerState.close() }
-                    }
+                    },
+                    // Visible while open OR mid-swing, so the emblem is alive as it slides in.
+                    drawerVisible = drawerState.currentValue == DrawerValue.Open ||
+                        drawerState.targetValue == DrawerValue.Open,
                 )
             }
         }
@@ -155,9 +159,21 @@ fun HermesApp(viewModel: ChatViewModel) {
                     },
                     actions = {
                         // Hermes Link health, whispered: a tiny dot that breathes while tokens flow,
-                        // dims when idle, warms red when the gateway is unreachable. Tap explains.
+                        // dims when idle, warms red when the gateway is unreachable. Tap opens the
+                        // Agent Hub — the live who/what/how of the system Keryx is pointed at.
                         val linkHealth by viewModel.linkHealth.collectAsState()
-                        LinkHealthDot(health = linkHealth)
+                        var showAgentHub by remember { mutableStateOf(false) }
+                        LinkHealthDot(health = linkHealth, onClick = {
+                            showAgentHub = true
+                            viewModel.refreshReasoningCaps()
+                        })
+                        if (showAgentHub) {
+                            AgentHubSheet(
+                                viewModel = viewModel,
+                                health = linkHealth,
+                                onDismiss = { showAgentHub = false },
+                            )
+                        }
                         if (currentSession != null) {
                             // Dynamic reasoning control via Hermes' native /reasoning command.
                             // Effort levels persist with --global; show/hide persists per-platform
@@ -209,7 +225,10 @@ fun HermesApp(viewModel: ChatViewModel) {
  * side-channel is off. Tapping it toasts the state in words.
  */
 @Composable
-private fun LinkHealthDot(health: chat.keryx.app.presentation.LinkHealth) {
+private fun LinkHealthDot(
+    health: chat.keryx.app.presentation.LinkHealth,
+    onClick: (() -> Unit)? = null,
+) {
     if (health == chat.keryx.app.presentation.LinkHealth.OFF) return
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.tertiary
@@ -250,9 +269,146 @@ private fun LinkHealthDot(health: chat.keryx.app.presentation.LinkHealth) {
                 .clip(CircleShape)
                 .background(color)
                 .clickable {
-                    android.widget.Toast.makeText(context, label, android.widget.Toast.LENGTH_SHORT).show()
+                    onClick?.invoke()
+                        ?: android.widget.Toast.makeText(context, label, android.widget.Toast.LENGTH_SHORT).show()
                 },
         )
+    }
+}
+
+/** One-line description of a link-health state, shared by the dot toast and the Agent Hub. */
+private fun linkHealthLabel(health: chat.keryx.app.presentation.LinkHealth): String = when (health) {
+    chat.keryx.app.presentation.LinkHealth.LIVE -> "Streaming live"
+    chat.keryx.app.presentation.LinkHealth.OK -> "Connected"
+    chat.keryx.app.presentation.LinkHealth.UNKNOWN -> "Not tested yet"
+    chat.keryx.app.presentation.LinkHealth.OFF -> "Side-channel off"
+    else -> "Unreachable — using Matrix sync"
+}
+
+/**
+ * The Agent Hub: a bottom sheet with the live identity of the system Keryx is pointed at — the
+ * hermes-agent-desktop "at a glance" panel, phone-sized. Everything here is already known to the
+ * app (capabilities probe, link health, command registry); this just gives it one home, plus
+ * quick actions for the highest-value session commands.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun AgentHubSheet(
+    viewModel: ChatViewModel,
+    health: chat.keryx.app.presentation.LinkHealth,
+    onDismiss: () -> Unit,
+) {
+    val caps by viewModel.reasoningCaps.collectAsState()
+    val gatewayUrl by viewModel.gatewayUrl.collectAsState()
+    val currentSession by viewModel.currentSession.collectAsState()
+    val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.tertiary
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
+            // Header: emblem + title + health line.
+            androidx.compose.foundation.layout.Row(
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            ) {
+                Box(modifier = Modifier.size(38.dp)) {
+                    chat.keryx.app.presentation.ui.components.BrailleSnakeAnimation(
+                        modifier = Modifier.fillMaxSize(),
+                        color = accent,
+                        color2 = accent2,
+                        snakeLength = 12,
+                        periodMillis = 3600,
+                        glyphSize = 7f,
+                    )
+                }
+                Column(modifier = Modifier.padding(start = 12.dp)) {
+                    Text("Agent Hub", fontSize = 17.sp, fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface)
+                    Text(
+                        text = linkHealthLabel(health) +
+                            (gatewayUrl.takeIf { it.isNotBlank() }?.let { url ->
+                                " · " + url.removePrefix("https://").removePrefix("http://").trimEnd('/')
+                            } ?: ""),
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            androidx.compose.foundation.layout.Spacer(Modifier.size(16.dp))
+
+            // The live brain, from the capabilities probe (refreshed when the sheet opened).
+            val rows = listOfNotNull(
+                caps?.model?.takeIf { it.isNotBlank() }?.let { "Model" to it },
+                caps?.let {
+                    "Reasoning" to (it.labels[it.current] ?: it.current.ifBlank { "—" }) +
+                        if (it.mode == "binary") " (on/off brain)" else " (effort scale)"
+                },
+            )
+            if (rows.isEmpty()) {
+                Text(
+                    text = if (health == chat.keryx.app.presentation.LinkHealth.UNREACHABLE)
+                        "Gateway unreachable — model info unavailable"
+                    else "Probing gateway…",
+                    fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                rows.forEach { (k, v) ->
+                    androidx.compose.foundation.layout.Row(modifier = Modifier.padding(vertical = 3.dp)) {
+                        Text(k, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.width(86.dp))
+                        Text(v, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+            androidx.compose.foundation.layout.Spacer(Modifier.size(14.dp))
+            HorizontalDivider(color = accent.copy(alpha = 0.12f))
+            androidx.compose.foundation.layout.Spacer(Modifier.size(10.dp))
+
+            // Quick actions: the session-management commands you reach for most, one tap away
+            // (they send Hermes' own slash commands into the open room).
+            val actions = listOf(
+                Triple("/status", "System status", "Agent, brain and platform health"),
+                Triple("/new", "Fresh session", "Start a clean conversation"),
+                Triple("/compress", "Compress", "Summarize this thread to free context"),
+                Triple("/handoff", "Handoff", "Carry context into a new session"),
+            )
+            val haveRoom = currentSession != null
+            actions.forEach { (cmd, title, desc) ->
+                androidx.compose.foundation.layout.Row(
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                        .clickable(enabled = haveRoom) {
+                            viewModel.recordCommandUse(cmd)
+                            viewModel.sendMessage(cmd)
+                            onDismiss()
+                        }
+                        .padding(horizontal = 8.dp, vertical = 10.dp),
+                ) {
+                    Text(cmd, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                        color = if (haveRoom) accent else accent.copy(alpha = 0.4f),
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        modifier = Modifier.width(96.dp))
+                    Column {
+                        Text(title, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface
+                            .copy(alpha = if (haveRoom) 1f else 0.45f))
+                        Text(desc, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            if (!haveRoom) {
+                Text("Open a room to use quick actions", fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 8.dp, top = 2.dp))
+            }
+            androidx.compose.foundation.layout.Spacer(Modifier.size(10.dp))
+            OutlinedButton(onClick = { viewModel.testGatewayLink() }, modifier = Modifier.fillMaxWidth()) {
+                Text("Test Hermes Link")
+            }
+        }
     }
 }
 
