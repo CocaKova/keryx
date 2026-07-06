@@ -47,7 +47,11 @@ import chat.keryx.app.theme.*
 @Composable
 fun NavigationDrawerContent(
     viewModel: ChatViewModel,
-    onSessionSelected: (Session) -> Unit
+    onSessionSelected: (Session) -> Unit,
+    // ModalNavigationDrawer composes its drawer content even while closed (just translated
+    // offscreen), so anything permanently animated in here would burn frames invisibly. The host
+    // passes the drawer's real visibility so ornament only runs while it can be seen.
+    drawerVisible: Boolean = true,
 ) {
     val rooms by viewModel.rooms.collectAsState()
     val pinnedRoomIds by viewModel.pinnedRoomIds.collectAsState()
@@ -164,6 +168,7 @@ fun NavigationDrawerContent(
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.primary,
                         color2 = MaterialTheme.colorScheme.tertiary,
+                        running = drawerVisible,
                         snakeLength = 18,
                         periodMillis = 5200,
                         glyphSize = 8f,
@@ -247,6 +252,7 @@ fun NavigationDrawerContent(
                             avatarPicker.launch("image/*")
                         },
                         avatarLoader = { viewModel.loadAvatar(it) },
+                        previewLoader = { viewModel.roomPreview(room.id, room.timestamp) },
                     )
                 }
             }
@@ -338,8 +344,14 @@ fun RoomRow(
     onTogglePin: () -> Unit,
     onSetAvatar: () -> Unit,
     avatarLoader: suspend (String) -> ByteArray?,
+    previewLoader: (suspend () -> String?)? = null,
 ) {
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    // Last-message snippet, resolved lazily per row (cached in the VM keyed on room.timestamp so
+    // it only refetches after new activity). Keyed on the timestamp so a new message refreshes it.
+    val preview by produceState<String?>(initialValue = null, room.id, room.timestamp) {
+        value = previewLoader?.invoke()
+    }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -368,23 +380,40 @@ fun RoomRow(
             RoomAvatar(room = room, selected = isSelected, avatarLoader = avatarLoader)
         }
         Spacer(modifier = Modifier.width(12.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-            Text(
-                text = room.name,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                fontSize = 16.sp,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false)
-            )
-            if (isPinned) {
-                Spacer(modifier = Modifier.width(6.dp))
-                Icon(
-                    imageVector = Icons.Filled.Star,
-                    contentDescription = "Pinned",
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                    modifier = Modifier.size(12.dp),
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = room.name,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    fontSize = 16.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (isPinned) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = "Pinned",
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                        modifier = Modifier.size(12.dp),
+                    )
+                }
+            }
+            // The most recent message, like a real chat client's room list. Unread rooms read a
+            // touch brighter so "something new here" is visible before the count even registers.
+            preview?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                        alpha = if (room.unreadCount > 0L) 0.95f else 0.65f
+                    ),
+                    fontSize = 12.sp,
+                    fontWeight = if (room.unreadCount > 0L) FontWeight.Medium else FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 1.dp),
                 )
             }
         }
