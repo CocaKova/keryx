@@ -11,6 +11,7 @@ import chat.keryx.app.domain.repository.ChatRepository
 import chat.keryx.app.domain.repository.SettingsRepository
 import chat.keryx.app.presentation.ui.components.MessageParser
 import kotlinx.coroutines.Deferred
+import kotlinx.serialization.json.jsonObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -302,7 +303,10 @@ class ChatViewModel(
     private fun gatewayClient(): chat.keryx.app.data.remote.HermesStreamClient? {
         val url = _gatewayUrl.value.trim()
         if (!_sideChannelEnabled.value || url.isBlank()) return null
-        return chat.keryx.app.data.remote.HermesStreamClient(url, _gatewayApiKey.value, settingsRepository.allowInsecure)
+        return chat.keryx.app.data.remote.HermesStreamClient(
+            url, _gatewayApiKey.value, settingsRepository.allowInsecure,
+            snapshotStore = settingsRepository::putHubSnapshot,
+        )
     }
 
     private val _kanbanBoard =
@@ -378,24 +382,34 @@ class ChatViewModel(
         }
     }
 
-    private val _hubHealth =
-        MutableStateFlow(HubPanel<chat.keryx.app.data.remote.HermesStreamClient.HubHealth>())
+    /** A panel seeded from the offline cache: the last gateway answer renders instantly (even
+     *  cold-start offline), then the first real refresh replaces it. Parse failures = empty seed. */
+    private fun <T> seededPanel(
+        path: String,
+        parse: (kotlinx.serialization.json.JsonObject) -> T,
+    ): MutableStateFlow<HubPanel<T>> = MutableStateFlow(
+        HubPanel(
+            data = settingsRepository.hubSnapshot(path)?.let { cached ->
+                runCatching {
+                    parse(kotlinx.serialization.json.Json.parseToJsonElement(cached).jsonObject)
+                }.getOrNull()
+            },
+        ),
+    )
+
+    private val _hubHealth = seededPanel("/health/detailed", chat.keryx.app.data.remote.HubJson::health)
     val hubHealth: StateFlow<HubPanel<chat.keryx.app.data.remote.HermesStreamClient.HubHealth>> =
         _hubHealth.asStateFlow()
-    private val _hubJobs =
-        MutableStateFlow(HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubJob>>())
+    private val _hubJobs = seededPanel("/api/jobs", chat.keryx.app.data.remote.HubJson::jobs)
     val hubJobs: StateFlow<HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubJob>>> =
         _hubJobs.asStateFlow()
-    private val _hubSessions =
-        MutableStateFlow(HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubSession>>())
+    private val _hubSessions = seededPanel("/api/sessions", chat.keryx.app.data.remote.HubJson::sessions)
     val hubSessions: StateFlow<HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubSession>>> =
         _hubSessions.asStateFlow()
-    private val _hubSkills =
-        MutableStateFlow(HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubSkill>>())
+    private val _hubSkills = seededPanel("/v1/skills", chat.keryx.app.data.remote.HubJson::skills)
     val hubSkills: StateFlow<HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubSkill>>> =
         _hubSkills.asStateFlow()
-    private val _hubToolsets =
-        MutableStateFlow(HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubToolset>>())
+    private val _hubToolsets = seededPanel("/v1/toolsets", chat.keryx.app.data.remote.HubJson::toolsets)
     val hubToolsets: StateFlow<HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubToolset>>> =
         _hubToolsets.asStateFlow()
 
@@ -438,6 +452,20 @@ class ChatViewModel(
     ): Result<List<chat.keryx.app.data.remote.HermesStreamClient.HubMessage>> =
         gatewayClient()?.sessionMessages(sessionId)
             ?: Result.failure(IllegalStateException("Hermes Link is off"))
+
+    // --- Mission alerts -------------------------------------------------------------------------
+
+    private val _missionAlertsEnabled = MutableStateFlow(settingsRepository.missionAlertsEnabled)
+    val missionAlertsEnabled: StateFlow<Boolean> = _missionAlertsEnabled.asStateFlow()
+
+    /** Persist the toggle; the caller schedules/cancels the actual worker (it needs a Context).
+     *  Enabling resets the event cursor so the first check baselines quietly instead of dumping
+     *  every historical completion as a notification. */
+    fun setMissionAlertsEnabled(enabled: Boolean) {
+        settingsRepository.missionAlertsEnabled = enabled
+        if (enabled) settingsRepository.missionEventsCursor = -1L
+        _missionAlertsEnabled.value = enabled
+    }
 
     /** The transient live response overlay (null = nothing streaming over the side-channel). */
     private val _liveStream = MutableStateFlow<LiveStream?>(null)

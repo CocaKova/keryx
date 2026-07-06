@@ -36,6 +36,17 @@ interface SettingsRepository {
     /** Show automated telemetry blocks (runtime footer, cron check-ins) in the chat. */
     var showTelemetry: Boolean
 
+    // --- Mission alerts (background kanban-event watcher) ---
+    /** Opt-in 15-minute background check that notifies on completed/blocked/given-up missions. */
+    var missionAlertsEnabled: Boolean
+    /** Last task_events rowid the watcher has seen; -1 = baseline on next run without notifying. */
+    var missionEventsCursor: Long
+
+    // --- Agent Hub offline cache ---
+    /** Last raw JSON the gateway answered for [path], or null when uncached. */
+    fun hubSnapshot(path: String): String?
+    fun putHubSnapshot(path: String, json: String)
+
     // --- Composer drafts ---
     /** Unsent composer text for a room ("" when none). */
     fun getDraft(roomId: String): String

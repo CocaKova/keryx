@@ -89,16 +89,18 @@ fun AgentHubSheet(
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.tertiary
 
-    // Lazy per-tab fetch: first visit pulls, later visits reuse the panel snapshot until the
-    // refresh button. (Status re-probes caps too — the dot's onClick already did, this covers
-    // landing on Status by tab-switch.)
+    // Per-tab fetch on first visit per sheet-opening. Panels may already hold the offline-cache
+    // seed (or last opening's snapshot) — that renders instantly while this refresh runs behind
+    // it, so the sheet is never blank and never silently stale.
+    val fetchedTabs = remember { mutableSetOf<Int>() }
     LaunchedEffect(tab) {
+        if (!fetchedTabs.add(tab)) return@LaunchedEffect
         when (tab) {
-            0 -> if (viewModel.hubHealth.value.data == null) viewModel.refreshHubHealth()
-            1 -> if (viewModel.hubJobs.value.data == null) viewModel.refreshHubJobs()
-            2 -> if (viewModel.hubSessions.value.data == null) viewModel.refreshHubSessions()
-            3 -> if (viewModel.hubSkills.value.data == null) viewModel.refreshHubSkills()
-            4 -> if (viewModel.hubToolsets.value.data == null) viewModel.refreshHubToolsets()
+            0 -> viewModel.refreshHubHealth()
+            1 -> viewModel.refreshHubJobs()
+            2 -> viewModel.refreshHubSessions()
+            3 -> viewModel.refreshHubSkills()
+            4 -> viewModel.refreshHubToolsets()
         }
     }
 

@@ -68,6 +68,8 @@ fun SettingsScreen(
     onTestLink: () -> Unit,
     showTelemetry: Boolean,
     onShowTelemetryChanged: (Boolean) -> Unit,
+    missionAlertsEnabled: Boolean,
+    onMissionAlertsChanged: (Boolean) -> Unit,
     biometricLockEnabled: Boolean,
     onBiometricLockChanged: (Boolean) -> Unit,
     e2eeEnabled: Boolean,
@@ -294,6 +296,12 @@ fun SettingsScreen(
                             subtitle = "Automated check-ins and the runtime footer as quiet blocks",
                             checked = showTelemetry,
                             onCheckedChange = onShowTelemetryChanged,
+                        )
+                        SettingsSwitchRow(
+                            title = "Mission alerts",
+                            subtitle = "Notify when a mission completes, blocks, or gives up — checked in the background every 15 minutes",
+                            checked = missionAlertsEnabled,
+                            onCheckedChange = onMissionAlertsChanged,
                         )
                     }
 

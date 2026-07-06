@@ -93,6 +93,26 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getBoolean("show_telemetry", true)
         set(value) = prefs.edit().putBoolean("show_telemetry", value).apply()
 
+    override var missionAlertsEnabled: Boolean
+        get() = prefs.getBoolean("mission_alerts", false)
+        set(value) = prefs.edit().putBoolean("mission_alerts", value).apply()
+
+    override var missionEventsCursor: Long
+        get() = prefs.getLong("mission_events_cursor", -1L)
+        set(value) = prefs.edit().putLong("mission_events_cursor", value).apply()
+
+    // Hub snapshots live in their own prefs file: they're whole gateway responses (the sessions
+    // list runs tens of KB) and shouldn't bloat every hermes_settings load.
+    private val hubCache: SharedPreferences =
+        context.getSharedPreferences("keryx_hub_cache", Context.MODE_PRIVATE)
+
+    override fun hubSnapshot(path: String): String? =
+        hubCache.getString(path, null)
+
+    override fun putHubSnapshot(path: String, json: String) {
+        hubCache.edit().putString(path, json).apply()
+    }
+
     // Drafts are tiny strings keyed per room; empty text removes the key so prefs never
     // accumulate stale entries for rooms the user finished typing in.
     override fun getDraft(roomId: String): String =

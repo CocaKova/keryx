@@ -117,6 +117,22 @@ class HubJsonTest {
     }
 
     @Test
+    fun `event feed maps kinds and keeps the caller cursor when absent`() {
+        val page = HubJson.events(obj("""
+            {"events":[
+              {"id":143,"task_id":"t_93d2b1a4","kind":"completed","payload":{"by":"milo"},"created_at":1783370393},
+              {"id":144,"task_id":"t_2e47bdad","kind":"heartbeat","payload":{},"created_at":1783370468}],
+             "cursor":144}
+        """), since = 100L)
+        assertEquals(2, page.events.size)
+        assertEquals("completed", page.events[0].kind)
+        assertEquals("t_93d2b1a4", page.events[0].taskId)
+        assertEquals(144L, page.cursor)
+        // No cursor in the answer → keep the caller's, never rewind to 0.
+        assertEquals(100L, HubJson.events(obj("""{"events":[]}"""), since = 100L).cursor)
+    }
+
+    @Test
     fun `empty and alien payloads degrade instead of throwing`() {
         assertTrue(HubJson.jobs(obj("""{"weird":true}""")).isEmpty())
         assertTrue(HubJson.sessions(obj("""{"data":"not-a-list"}""")).isEmpty())

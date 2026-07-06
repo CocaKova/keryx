@@ -76,4 +76,50 @@ object KeryxNotifications {
     fun clear(context: Context, roomId: String) {
         runCatching { NotificationManagerCompat.from(context).cancel(roomId.hashCode()) }
     }
+
+    // --- Mission alerts (kanban watcher) --------------------------------------------------------
+
+    const val MISSIONS_CHANNEL_ID = "keryx_missions"
+
+    fun ensureMissionsChannel(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val mgr = context.getSystemService(NotificationManager::class.java) ?: return
+        if (mgr.getNotificationChannel(MISSIONS_CHANNEL_ID) != null) return
+        val channel = NotificationChannel(
+            MISSIONS_CHANNEL_ID,
+            "Missions",
+            // Default, not high: a finished background task is news, not an interruption.
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply {
+            description = "Missions completing, blocking, or giving up on the agent's board"
+        }
+        mgr.createNotificationChannel(channel)
+    }
+
+    /** Post a mission-transition alert; one per task, replaced as the task moves again. */
+    fun notifyMission(context: Context, taskId: String, title: String, body: String) {
+        ensureMissionsChannel(context)
+        val nm = NotificationManagerCompat.from(context)
+        if (!nm.areNotificationsEnabled()) return
+
+        val tapIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pending = PendingIntent.getActivity(
+            context,
+            taskId.hashCode(),
+            tapIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = NotificationCompat.Builder(context, MISSIONS_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_keryx)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setContentIntent(pending)
+            .build()
+        // Offset from the message-notification id space so a task never clobbers a room.
+        runCatching { nm.notify("mission:$taskId".hashCode(), notification) }
+    }
 }

@@ -73,7 +73,7 @@ Grow the 1.3.0 sheet into a tabbed hub (still reachable from the link-health dot
 | B | App: nav shell (drawer destinations Missions / Hub tabs), API client (`HermesGatewayClient` grows typed calls + JSON models) | ~1 session | ✅ shipped (v1.4.0) |
 | C | Missions board UI + task detail + create/comment | the big one | ✅ shipped (v1.4.0) |
 | D | Hub tabs: Status, Jobs, Sessions, Skills/Toolsets | ~1–2 sessions | ✅ shipped (v1.5.0) — tabbed AgentHubSheet.kt, HubJson parsers + unit tests; `/v1/toolsets` has no per-platform view, Tools tab shows the api_server surface and says so |
-| E | Notifications (task events), offline cache, polish, 1.6.0 release | ~1 session | next |
+| E | Notifications (task events), offline cache, polish, 1.6.0 release | ~1 session | ✅ shipped (v1.6.0) — MissionAlertsWorker (opt-in, 15-min, cursor-baselined so history never alert-storms), hub panels seed from a raw-JSON snapshot cache (`keryx_hub_cache` prefs; kanban board intentionally uncached — it polls live while open) |
 
 ## Risks / notes
 
