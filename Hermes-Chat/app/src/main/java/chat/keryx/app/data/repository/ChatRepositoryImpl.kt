@@ -4,6 +4,7 @@ import chat.keryx.app.data.remote.MatrixService
 import chat.keryx.app.domain.model.MediaKind
 import chat.keryx.app.domain.model.Message
 import chat.keryx.app.domain.model.MessageReaction
+import chat.keryx.app.domain.model.RoomInvite
 import chat.keryx.app.domain.model.RoomProfile
 import chat.keryx.app.domain.model.RoomType
 import chat.keryx.app.domain.model.SenderType
@@ -327,6 +328,58 @@ class ChatRepositoryImpl(
 
     override suspend fun logout() {
         runCatching { matrix.logout() }
+    }
+
+    override fun getInvites(): Flow<List<RoomInvite>> =
+        matrix.client.flatMapLatest { client ->
+            if (client == null) flowOf(emptyList())
+            else client.room.getAll().flatMapLatest { roomMap ->
+                val roomFlows = roomMap.values.toList()
+                if (roomFlows.isEmpty()) flowOf(emptyList())
+                else combine(roomFlows) { rooms ->
+                    rooms.filterNotNull()
+                        .filter { it.membership == Membership.INVITE }
+                        .map { room ->
+                            RoomInvite(
+                                id = room.roomId.full,
+                                name = room.name?.explicitName
+                                    ?: room.name?.heroes?.firstOrNull()?.full
+                                    ?: room.roomId.full,
+                            )
+                        }
+                }
+            }
+        }
+
+    override suspend fun acceptInvite(roomId: String): Result<Unit> = runCatching {
+        val client = matrix.client.value ?: error("not logged in")
+        client.api.room.joinRoom(RoomId(roomId)).getOrThrow()
+        Unit
+    }
+
+    override suspend fun leaveRoom(roomId: String): Result<Unit> = runCatching {
+        val client = matrix.client.value ?: error("not logged in")
+        client.api.room.leaveRoom(RoomId(roomId)).getOrThrow()
+    }
+
+    override suspend fun setTyping(roomId: String, typing: Boolean) {
+        val client = matrix.client.value ?: return
+        // 30s server-side timeout: refreshed by the caller's throttle while composing continues,
+        // expires on its own if the app dies mid-thought. Best-effort — never raises.
+        runCatching {
+            client.api.room.setTyping(
+                roomId = RoomId(roomId),
+                userId = client.userId,
+                typing = typing,
+                timeout = if (typing) 30_000 else null,
+            ).getOrThrow()
+        }
+    }
+
+    override suspend fun redactMessage(sessionId: String, eventId: String): Result<Unit> = runCatching {
+        val client = matrix.client.value ?: error("not logged in")
+        client.api.room.redactEvent(RoomId(sessionId), EventId(eventId)).getOrThrow()
+        Unit
     }
 
     // --- mapping helpers ---

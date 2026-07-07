@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -401,6 +402,10 @@ fun ChatScreen(
                                 onReply = { viewModel.setReplyTarget(message) },
                                 onReact = { emoji -> viewModel.sendReaction(message.id, emoji) },
                                 onQuoteClick = quotedId?.let { target -> { jumpToMessage(target) } },
+                                // Redaction: own messages only — the agent's power level owns the rest.
+                                onDelete = if (message.sender == SenderType.ME) {
+                                    { viewModel.deleteMessage(message.sessionId, message.id) }
+                                } else null,
                                 modifier = Modifier.background(flashColor, RoundedCornerShape(18.dp)),
                             )
                         }
@@ -777,11 +782,13 @@ fun MessageBubble(
     onReply: () -> Unit,
     onReact: (String) -> Unit,
     onQuoteClick: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val isMine = message.sender == SenderType.ME
     val isAgent = message.sender == SenderType.HERMES
     var showReactionPicker by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
 
     val reactions by reactionsFlow.collectAsState(initial = emptyList())
 
@@ -958,7 +965,24 @@ fun MessageBubble(
                     clipboard.setText(androidx.compose.ui.text.AnnotatedString(message.content))
                     android.widget.Toast.makeText(copyContext, "Copied", android.widget.Toast.LENGTH_SHORT).show()
                 },
+                onDelete = onDelete?.let { { showReactionPicker = false; confirmDelete = true } },
                 onDismiss = { showReactionPicker = false },
+            )
+        }
+
+        if (confirmDelete) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { confirmDelete = false },
+                title = { Text("Delete message?", fontSize = 16.sp) },
+                text = { Text("It's removed for everyone — this can't be undone.", fontSize = 13.sp) },
+                confirmButton = {
+                    TextButton(onClick = { confirmDelete = false; onDelete?.invoke() }) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+                },
             )
         }
 
@@ -1042,7 +1066,13 @@ private fun ReactionChips(reactions: List<MessageReaction>, isMine: Boolean, onR
 }
 
 @Composable
-private fun ReactionPickerRow(onPick: (String) -> Unit, onReply: () -> Unit, onCopy: () -> Unit, onDismiss: () -> Unit) {
+private fun ReactionPickerRow(
+    onPick: (String) -> Unit,
+    onReply: () -> Unit,
+    onCopy: () -> Unit,
+    onDismiss: () -> Unit,
+    onDelete: (() -> Unit)? = null,
+) {
     // A focusable Popup so a tap anywhere outside (or the back gesture) reliably dismisses it —
     // the inline version was hard to get rid of once it was up.
     androidx.compose.ui.window.Popup(
@@ -1109,6 +1139,15 @@ private fun ReactionPickerRow(onPick: (String) -> Unit, onReply: () -> Unit, onC
                     }
                     IconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
                         Icon(Icons.Default.ContentCopy, contentDescription = "Copy text", tint = MaterialTheme.colorScheme.primary)
+                    }
+                    if (onDelete != null) {
+                        IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                Icons.Outlined.Delete,
+                                contentDescription = "Delete message",
+                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
+                            )
+                        }
                     }
                 }
             }

@@ -2,6 +2,7 @@ package chat.keryx.app.domain.repository
 
 import chat.keryx.app.domain.model.Message
 import chat.keryx.app.domain.model.MessageReaction
+import chat.keryx.app.domain.model.RoomInvite
 import chat.keryx.app.domain.model.RoomProfile
 import chat.keryx.app.domain.model.Session
 import kotlinx.coroutines.flow.Flow
@@ -51,6 +52,21 @@ interface ChatRepository {
 
     /** Upload [bytes] and set it as the room's avatar (server-side m.room.avatar state event). */
     suspend fun setRoomAvatar(roomId: String, bytes: ByteArray, contentType: String): Result<Unit>
+
+    /** Rooms this account is invited to but hasn't joined (live — updates on sync). */
+    fun getInvites(): Flow<List<RoomInvite>>
+
+    /** Accept an invite: join the room. It enters [getRooms] on the next sync. */
+    suspend fun acceptInvite(roomId: String): Result<Unit>
+
+    /** Leave a room — also how an invite is declined (same Matrix call). */
+    suspend fun leaveRoom(roomId: String): Result<Unit>
+
+    /** Broadcast our own m.typing state into [roomId] so other clients see us composing. */
+    suspend fun setTyping(roomId: String, typing: Boolean)
+
+    /** Redact (delete) a message. Own messages always work; others need room power. */
+    suspend fun redactMessage(sessionId: String, eventId: String): Result<Unit>
 
     /** Password login against the configured homeserver. Url + insecure flag come from settings. */
     suspend fun login(username: String, password: String): Result<Unit>

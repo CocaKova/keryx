@@ -14,3 +14,9 @@ enum class RoomType {
     SHARED_GROUP,
     THREAD
 }
+
+/** A room this account is invited to but hasn't joined — surfaced for accept/decline. */
+data class RoomInvite(
+    val id: String,
+    val name: String,
+)
