@@ -301,6 +301,26 @@ class ChatViewModel(
         }
     }
 
+    /** The gateway's active petdex mascot for the drawer header (null until fetched, or when the
+     *  gateway has no pet configured). Spritesheet payload is ~2MB, so it's fetched once per app
+     *  session — the drawer triggers this on open. */
+    private val _petInfo = MutableStateFlow<chat.keryx.app.data.remote.HermesStreamClient.PetInfo?>(null)
+    val petInfo: StateFlow<chat.keryx.app.data.remote.HermesStreamClient.PetInfo?> = _petInfo.asStateFlow()
+    private var petFetchDone = false
+
+    fun refreshPet() {
+        val url = _gatewayUrl.value.trim()
+        if (!_sideChannelEnabled.value || url.isBlank() || petFetchDone) return
+        petFetchDone = true
+        viewModelScope.launch {
+            chat.keryx.app.data.remote.HermesStreamClient(url, _gatewayApiKey.value, settingsRepository.allowInsecure)
+                .pet()
+                .onSuccess { if (it.enabled && it.spritesheetBase64.isNotEmpty()) _petInfo.value = it }
+                // Transient failure (gateway restarting, phone off WiFi) → retry on next drawer open.
+                .onFailure { petFetchDone = false }
+        }
+    }
+
     private val _showTelemetry = MutableStateFlow(settingsRepository.showTelemetry)
     val showTelemetry: StateFlow<Boolean> = _showTelemetry.asStateFlow()
 

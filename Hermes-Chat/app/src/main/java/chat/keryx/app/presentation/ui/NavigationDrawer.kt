@@ -192,7 +192,38 @@ fun NavigationDrawerContent(
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    chat.keryx.app.presentation.ui.components.KeryxWordmark(fontSize = 22.sp)
+                    // The petdex mascot (Hermes desktop's floating pet, drawer-header sized).
+                    // Fetched lazily on first drawer open; absent entirely when the gateway has
+                    // no pet configured, so the header stays exactly as before for those setups.
+                    val petInfo by viewModel.petInfo.collectAsState()
+                    val awaitingReply by viewModel.awaitingReply.collectAsState()
+                    var petGreeting by remember { mutableStateOf(false) }
+                    LaunchedEffect(drawerVisible) {
+                        if (drawerVisible) {
+                            viewModel.refreshPet()
+                            // Wave hello when the drawer opens, then settle into the idle loop.
+                            petGreeting = true
+                            kotlinx.coroutines.delay(2200)
+                            petGreeting = false
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        chat.keryx.app.presentation.ui.components.KeryxWordmark(fontSize = 22.sp)
+                        petInfo?.let { pet ->
+                            Spacer(modifier = Modifier.width(10.dp))
+                            chat.keryx.app.presentation.ui.components.PetSprite(
+                                info = pet,
+                                pose = when {
+                                    awaitingReply -> chat.keryx.app.presentation.ui.components.PetPose.RUN
+                                    petGreeting -> chat.keryx.app.presentation.ui.components.PetPose.WAVE
+                                    else -> chat.keryx.app.presentation.ui.components.PetPose.IDLE
+                                },
+                                running = drawerVisible,
+                                // Native frames are 192×208 — keep the aspect so the pet isn't squashed.
+                                modifier = Modifier.size(width = 26.dp, height = 28.dp),
+                            )
+                        }
+                    }
                     currentUserId?.let {
                         Text(
                             text = it,

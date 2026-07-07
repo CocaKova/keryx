@@ -1132,6 +1132,125 @@ def sessions_prune(
             db.close()
 
 
+# ---------------------------------------------------------------------------
+# Pet (Keryx 1.10) — the petdex mascot for the drawer header. Mirrors the
+# desktop/TUI `pet.info` payload built in tui_gateway/server.py, but reuses
+# only the engine (`agent.pet`): the phone renders the spritesheet itself.
+# Pets stay configured server-side (`display.pet.enabled` / `.slug`), so the
+# phone shows exactly the pet the desktop and TUI show.
+# ---------------------------------------------------------------------------
+
+
+def _pet_sheet_revision(spritesheet: Path) -> str:
+    """Stable revision id (`mtime_ns:size`) so clients can cache the sheet."""
+    try:
+        stat = spritesheet.stat()
+        return f"{stat.st_mtime_ns}:{stat.st_size}"
+    except Exception:  # noqa: BLE001 - cosmetic, never break the surface
+        return "0:0"
+
+
+def pet_info(meta_only: bool = False) -> dict:
+    """Active-pet payload for `GET /keryx/pet`.
+
+    `meta_only` returns just enabled/slug/revision — a cheap probe the client
+    uses to skip re-downloading an unchanged ~2MB spritesheet payload.
+    Fail-open: any engine/config hiccup reports `{"enabled": False}` rather
+    than erroring — the pet is cosmetic.
+    """
+    try:
+        from agent.pet import constants, store
+        from hermes_cli.config import load_config
+
+        try:
+            cfg = load_config()
+            display = cfg.get("display", {}) if isinstance(cfg.get("display"), dict) else {}
+            pet_cfg = display.get("pet", {}) if isinstance(display.get("pet"), dict) else {}
+        except Exception:  # noqa: BLE001
+            pet_cfg = {}
+
+        if not bool(pet_cfg.get("enabled")):
+            return {"enabled": False}
+        pet = store.resolve_active_pet(str(pet_cfg.get("slug", "") or ""))
+        if pet is None or not pet.exists:
+            return {"enabled": False}
+
+        revision = _pet_sheet_revision(pet.spritesheet)
+        out: Dict[str, Any] = {
+            "enabled": True,
+            "slug": pet.slug,
+            "displayName": pet.display_name,
+            "spritesheetRevision": revision,
+        }
+        if meta_only:
+            return out
+
+        import base64
+
+        raw = pet.spritesheet.read_bytes()
+        out.update({
+            "mime": "image/png" if pet.spritesheet.suffix.lower() == ".png" else "image/webp",
+            "spritesheetBase64": base64.standard_b64encode(raw).decode("ascii"),
+            "frameW": constants.FRAME_W,
+            "frameH": constants.FRAME_H,
+            "framesPerState": constants.FRAMES_PER_STATE,
+            "loopMs": constants.LOOP_MS,
+            "stateRows": _pet_state_rows(pet.spritesheet),
+            "framesByRow": _pet_row_frame_counts(pet.spritesheet),
+        })
+        return out
+    except Exception:  # noqa: BLE001 - cosmetic, never break the surface
+        logger.debug("keryx: pet info unavailable", exc_info=True)
+        return {"enabled": False}
+
+
+def _pet_state_rows(spritesheet: Path) -> List[str]:
+    """Row taxonomy for the concrete sheet (legacy 8-row vs Codex 9-row)."""
+    from agent.pet import constants
+
+    try:
+        from PIL import Image
+
+        with Image.open(spritesheet) as image:
+            row_count = max(1, image.height // constants.FRAME_H)
+        return list(constants.state_rows_for_grid(row_count))
+    except Exception:  # noqa: BLE001 - cosmetic, never break the surface
+        return list(constants.STATE_ROWS)
+
+
+def _pet_row_frame_counts(spritesheet: Path) -> Dict[str, int]:
+    """Real (padding-trimmed) frame count per concrete row name.
+
+    Ragged sheets pad short rows with transparent frames; animating into the
+    padding reads as the pet blinking out. Fail-open to `{}` — the client
+    falls back to its static `framesPerState`.
+    """
+    try:
+        from PIL import Image
+
+        from agent.pet import constants, render
+
+        with Image.open(spritesheet) as opened:
+            image = opened.convert("RGBA")
+        cols = max(1, image.width // constants.FRAME_W)
+        row_count = max(1, image.height // constants.FRAME_H)
+        rows = constants.state_rows_for_grid(row_count)
+        out: Dict[str, int] = {}
+        for row_idx, name in enumerate(rows[:row_count]):
+            top = row_idx * constants.FRAME_H
+            count = 0
+            for col in range(cols):
+                left = col * constants.FRAME_W
+                frame = image.crop((left, top, left + constants.FRAME_W, top + constants.FRAME_H))
+                if render._frame_is_blank(frame):
+                    break
+                count += 1
+            out[name] = count
+        return out
+    except Exception:  # noqa: BLE001 - cosmetic, never break the surface
+        return {}
+
+
 def register_keryx_routes(router: Any, check_auth) -> None:
     """Single registrar for every /keryx/* route — api_server.py calls only
     this, so future routes ship in this module (copied wholesale by
@@ -1139,6 +1258,12 @@ def register_keryx_routes(router: Any, check_auth) -> None:
     router.add_get("/keryx/stream", make_stream_handler(check_auth))
     router.add_get("/keryx/capabilities", make_capabilities_handler(check_auth))
     router.add_get("/keryx/commands", make_commands_handler(check_auth))
+
+    def _pet(request, body):
+        meta = str(request.query.get("meta", "")).lower() in ("1", "true")
+        return 200, pet_info(meta_only=meta)
+
+    router.add_get("/keryx/pet", _make_json_handler(check_auth, _pet))
 
     def _board(kb, conn, request, body):
         return 200, kanban_board_snapshot(kb, conn)
