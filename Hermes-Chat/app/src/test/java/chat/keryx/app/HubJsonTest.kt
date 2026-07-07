@@ -133,6 +133,25 @@ class HubJsonTest {
     }
 
     @Test
+    fun `notify subs map pinned fields and tolerate gaps`() {
+        val subs = HubJson.subs(obj("""
+            {"subs":[
+              {"task_id":"t-1","platform":"matrix","chat_id":"!room:silas.local","thread_id":"","created_at":1751830000},
+              {"task_id":"t-2","chat_id":"!other:silas.local"}
+            ]}
+        """))
+        assertEquals(2, subs.size)
+        assertEquals("t-1", subs[0].taskId)
+        assertEquals("!room:silas.local", subs[0].chatId)
+        assertEquals("matrix", subs[0].platform)
+        // Missing platform/thread degrade to blanks, never throw.
+        assertEquals("", subs[1].platform)
+        assertEquals("", subs[1].threadId)
+        assertTrue(HubJson.subs(obj("""{"subs":[]}""")).isEmpty())
+        assertTrue(HubJson.subs(obj("""{}""")).isEmpty())
+    }
+
+    @Test
     fun `empty and alien payloads degrade instead of throwing`() {
         assertTrue(HubJson.jobs(obj("""{"weird":true}""")).isEmpty())
         assertTrue(HubJson.sessions(obj("""{"data":"not-a-list"}""")).isEmpty())

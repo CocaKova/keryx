@@ -17,6 +17,12 @@ import java.util.concurrent.TimeUnit
  * (`GET /keryx/kanban/events?since=<cursor>`) that notifies when a mission completes, blocks, or
  * gives up — "hand SILAS a mission from the couch" only pays off if the couch hears back.
  *
+ * Since 1.7 this is the COARSE FALLBACK, not the primary path: per-mission notify subscriptions
+ * (the detail sheet's "Alert when this ends" toggle) make the gateway push a real Matrix message
+ * into the subscribed room the moment a task ends — instant, no polling. This worker stays for
+ * what subscriptions don't cover: missions nobody subscribed, non-terminal events, and gateways
+ * with the kanban notifier loop disabled.
+ *
  * WorkManager at its 15-minute floor, network-constrained: survives process death and reboots,
  * defers through Doze, and does nothing while disabled (the toggle cancels the work; the guard
  * here covers a stale enqueue racing the toggle).
