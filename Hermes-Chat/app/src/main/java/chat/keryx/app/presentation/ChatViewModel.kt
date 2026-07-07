@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withPermit
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 
@@ -318,6 +319,86 @@ class ChatViewModel(
                 .onSuccess { if (it.enabled && it.spritesheetBase64.isNotEmpty()) _petInfo.value = it }
                 // Transient failure (gateway restarting, phone off WiFi) → retry on next drawer open.
                 .onFailure { petFetchDone = false }
+        }
+    }
+
+    // --- Pet picker (tap the drawer mascot) -----------------------------------------------------
+
+    /** Adoptable pets: installed merged with the petdex catalog (~3.4k entries). */
+    private val _petGallery = MutableStateFlow<chat.keryx.app.data.remote.HermesStreamClient.PetGallery?>(null)
+    val petGallery: StateFlow<chat.keryx.app.data.remote.HermesStreamClient.PetGallery?> = _petGallery.asStateFlow()
+    private val _petGalleryLoading = MutableStateFlow(false)
+    val petGalleryLoading: StateFlow<Boolean> = _petGalleryLoading.asStateFlow()
+
+    /** Slug currently being adopted (spinner on that row), or null. */
+    private val _petSelecting = MutableStateFlow<String?>(null)
+    val petSelecting: StateFlow<String?> = _petSelecting.asStateFlow()
+    private val _petSelectError = MutableStateFlow<String?>(null)
+    val petSelectError: StateFlow<String?> = _petSelectError.asStateFlow()
+
+    /** Row-preview thumbs by slug, decoded and cached for the session. */
+    private val _petThumbs = MutableStateFlow<Map<String, android.graphics.Bitmap>>(emptyMap())
+    val petThumbs: StateFlow<Map<String, android.graphics.Bitmap>> = _petThumbs.asStateFlow()
+    private val petThumbRequested = java.util.Collections.synchronizedSet(mutableSetOf<String>())
+    // Uninstalled previews make the gateway download that pet's sheet from the petdex CDN —
+    // a fast scroll through the catalog must not turn into dozens of parallel downloads.
+    private val petThumbGate = kotlinx.coroutines.sync.Semaphore(3)
+
+    fun refreshPetGallery() {
+        val client = gatewayClient() ?: return
+        if (_petGalleryLoading.value) return
+        _petGalleryLoading.value = true
+        viewModelScope.launch {
+            // Two-phase like the desktop picker: installed pets render instantly,
+            // the full catalog (a remote manifest fetch) follows.
+            if (_petGallery.value == null) {
+                client.petGallery(localOnly = true).onSuccess { _petGallery.value = it }
+            }
+            client.petGallery(localOnly = false).onSuccess { full ->
+                if (full.pets.isNotEmpty()) _petGallery.value = full
+            }
+            _petGalleryLoading.value = false
+        }
+    }
+
+    fun requestPetThumb(slug: String, url: String) {
+        if (_petThumbs.value.containsKey(slug) || !petThumbRequested.add(slug)) return
+        val client = gatewayClient() ?: run { petThumbRequested.remove(slug); return }
+        viewModelScope.launch {
+            petThumbGate.withPermit {
+                client.petThumb(slug, url)
+                    .onSuccess { bytes ->
+                        android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.let {
+                            _petThumbs.value = _petThumbs.value + (slug to it)
+                        }
+                    }
+                    // Transient (offline, CDN hiccup) — allow a retry when the row shows again.
+                    .onFailure { petThumbRequested.remove(slug) }
+            }
+        }
+    }
+
+    fun selectPet(slug: String) {
+        val client = gatewayClient() ?: return
+        if (_petSelecting.value != null) return
+        _petSelecting.value = slug
+        _petSelectError.value = null
+        viewModelScope.launch {
+            client.petSelect(slug)
+                .onSuccess {
+                    // New active pet — refetch the drawer sprite and mirror the state locally.
+                    petFetchDone = false
+                    refreshPet()
+                    _petGallery.value = _petGallery.value?.let { g ->
+                        g.copy(
+                            enabled = true,
+                            active = slug,
+                            pets = g.pets.map { p -> if (p.slug == slug) p.copy(installed = true) else p },
+                        )
+                    }
+                }
+                .onFailure { _petSelectError.value = it.message ?: "could not adopt $slug" }
+            _petSelecting.value = null
         }
     }
 
