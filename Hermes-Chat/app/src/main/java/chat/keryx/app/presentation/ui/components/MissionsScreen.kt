@@ -112,13 +112,14 @@ fun MissionsScreen(
                     TopAppBar(
                         title = {
                             Column {
-                                Text("Missions", fontWeight = FontWeight.Bold)
+                                Text("Missions", fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
                                 board?.board?.let {
                                     Text(
                                         "board: $it",
                                         fontSize = 11.sp,
                                         fontFamily = FontFamily.Monospace,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
                                     )
                                 }
                             }
@@ -511,6 +512,7 @@ private fun MissionDetailSheet(
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun MissionCreateDialog(
     profiles: List<String>,
@@ -550,12 +552,19 @@ private fun MissionCreateDialog(
                 Spacer(Modifier.height(10.dp))
                 Text("Assignee", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(4.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                // FlowRow, not Row: five profiles overflow a phone-width dialog, and a plain Row
+                // squeezes the last chip to letter-per-line confetti instead of wrapping.
+                androidx.compose.foundation.layout.FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                     profiles.forEach { p ->
                         val selected = p == assignee
                         Text(
                             p.replaceFirstChar { it.uppercase() },
                             fontSize = 12.sp,
+                            maxLines = 1,
+                            softWrap = false,
                             color = if (selected) MaterialTheme.colorScheme.onPrimary
                                     else MaterialTheme.colorScheme.primary,
                             modifier = Modifier

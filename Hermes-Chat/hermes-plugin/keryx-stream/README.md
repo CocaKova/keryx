@@ -131,8 +131,8 @@ kept at `SKILL.md.bak` beside the skill.
 
 ## Session prune endpoint (1.8)
 
-Thin wrapper over hermes-agent's `hermes sessions prune` (the dashboard server that exposes it
-upstream is disabled on this box). Deletes **ended** sessions only.
+Thin wrapper over hermes-agent's `hermes sessions prune` (upstream only exposes it on the
+dashboard web server, which many installs keep disabled). Deletes **ended** sessions only.
 
 ```
 POST /keryx/sessions/prune   body mirrors the dashboard SessionPrune model:
