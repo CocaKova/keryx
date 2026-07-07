@@ -207,6 +207,13 @@ fun NavigationDrawerContent(
                             petGreeting = false
                         }
                     }
+                    var showPetPicker by remember { mutableStateOf(false) }
+                    if (showPetPicker) {
+                        chat.keryx.app.presentation.ui.components.PetPickerSheet(
+                            viewModel = viewModel,
+                            onDismiss = { showPetPicker = false },
+                        )
+                    }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         chat.keryx.app.presentation.ui.components.KeryxWordmark(fontSize = 22.sp)
                         petInfo?.let { pet ->
@@ -220,7 +227,10 @@ fun NavigationDrawerContent(
                                 },
                                 running = drawerVisible,
                                 // Native frames are 192×208 — keep the aspect so the pet isn't squashed.
-                                modifier = Modifier.size(width = 26.dp, height = 28.dp),
+                                modifier = Modifier
+                                    .size(width = 26.dp, height = 28.dp)
+                                    // Tap your pet to adopt a different one.
+                                    .clickable { viewModel.refreshPetGallery(); showPetPicker = true },
                             )
                         }
                     }

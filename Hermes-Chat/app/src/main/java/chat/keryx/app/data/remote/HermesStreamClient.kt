@@ -300,6 +300,113 @@ class HermesStreamClient(
         }
     }
 
+    /** One adoptable pet in the picker (installed pets merged with the petdex catalog). */
+    data class PetGalleryEntry(
+        val slug: String,
+        val displayName: String,
+        val installed: Boolean,
+        /** petdex's hand-picked set — the picker surfaces these first. */
+        val curated: Boolean,
+        /** Hatched locally on the desktop (AI-generated), not from the catalog. */
+        val generated: Boolean,
+        /** petdex CDN sheet URL — passed to the thumb endpoint for uninstalled previews. */
+        val spritesheetUrl: String,
+    )
+
+    data class PetGallery(
+        val enabled: Boolean,
+        /** Currently active slug ("" when none). */
+        val active: String,
+        val pets: List<PetGalleryEntry>,
+    )
+
+    /**
+     * Fetch the adoptable-pets list (`GET /keryx/pets`). `localOnly = true` skips the petdex
+     * manifest so installed pets render instantly; callers follow up with a full fetch — the
+     * same two-phase load the desktop picker does.
+     */
+    suspend fun petGallery(localOnly: Boolean = false): Result<PetGallery> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            val request = Request.Builder()
+                .url(baseUrl.trimEnd('/') + "/keryx/pets" + if (localOnly) "?localOnly=1" else "")
+                .apply { if (apiKey.isNotBlank()) header("Authorization", "Bearer $apiKey") }
+                .build()
+            // The full list rides on a remote manifest fetch server-side — allow for a slow first hit.
+            val probe = client.newBuilder().readTimeout(if (localOnly) 5 else 20, TimeUnit.SECONDS).build()
+            probe.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) error("HTTP ${resp.code}")
+                val obj = json.parseToJsonElement(resp.body?.string().orEmpty()).jsonObject
+                PetGallery(
+                    enabled = (obj["enabled"] as? JsonPrimitive)?.content == "true",
+                    active = (obj["active"] as? JsonPrimitive)?.content.orEmpty(),
+                    pets = (obj["pets"] as? kotlinx.serialization.json.JsonArray)?.mapNotNull { el ->
+                        val p = el as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
+                        val slug = (p["slug"] as? JsonPrimitive)?.content ?: return@mapNotNull null
+                        PetGalleryEntry(
+                            slug = slug,
+                            displayName = (p["displayName"] as? JsonPrimitive)?.content ?: slug,
+                            installed = (p["installed"] as? JsonPrimitive)?.content == "true",
+                            curated = (p["curated"] as? JsonPrimitive)?.content == "true",
+                            generated = (p["generated"] as? JsonPrimitive)?.content == "true",
+                            spritesheetUrl = (p["spritesheetUrl"] as? JsonPrimitive)?.content.orEmpty(),
+                        )
+                    }.orEmpty(),
+                )
+            }
+        }
+    }
+
+    /**
+     * Adopt a pet (`POST /keryx/pet/select`): the gateway installs it from petdex if needed and
+     * persists `display.pet.*` — the same path the desktop picker takes. Success returns the
+     * display name. Generous timeout: a first adopt downloads the sheet from the CDN server-side.
+     */
+    suspend fun petSelect(slug: String): Result<String> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            val payload = "{\"slug\":" + kotlinx.serialization.json.JsonPrimitive(slug).toString() + "}"
+            val request = Request.Builder()
+                .url(baseUrl.trimEnd('/') + "/keryx/pet/select")
+                .post(payload.toRequestBody("application/json".toMediaType()))
+                .apply { if (apiKey.isNotBlank()) header("Authorization", "Bearer $apiKey") }
+                .build()
+            val probe = client.newBuilder().readTimeout(90, TimeUnit.SECONDS).build()
+            probe.newCall(request).execute().use { resp ->
+                val obj = json.parseToJsonElement(resp.body?.string().orEmpty()).jsonObject
+                if (!resp.isSuccessful) {
+                    val msg = (obj["error"] as? kotlinx.serialization.json.JsonObject)
+                        ?.get("message")?.let { (it as? JsonPrimitive)?.content }
+                    error(msg ?: "HTTP ${resp.code}")
+                }
+                (obj["displayName"] as? JsonPrimitive)?.content ?: slug
+            }
+        }
+    }
+
+    /**
+     * Small idle-frame PNG for one pet (`GET /keryx/pet/thumb`) — the picker's row preview.
+     * [url] is the petdex sheet URL for not-yet-installed pets (the gateway crops + caches
+     * server-side). Failure or `ok: false` → Result failure; callers draw a placeholder.
+     */
+    suspend fun petThumb(slug: String, url: String = ""): Result<ByteArray> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            val q = "slug=" + java.net.URLEncoder.encode(slug, "UTF-8") +
+                (if (url.isNotBlank()) "&url=" + java.net.URLEncoder.encode(url, "UTF-8") else "")
+            val request = Request.Builder()
+                .url(baseUrl.trimEnd('/') + "/keryx/pet/thumb?" + q)
+                .apply { if (apiKey.isNotBlank()) header("Authorization", "Bearer $apiKey") }
+                .build()
+            // Uninstalled previews make the gateway pull the sheet from the CDN first.
+            val probe = client.newBuilder().readTimeout(30, TimeUnit.SECONDS).build()
+            probe.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) error("HTTP ${resp.code}")
+                val obj = json.parseToJsonElement(resp.body?.string().orEmpty()).jsonObject
+                if ((obj["ok"] as? JsonPrimitive)?.content != "true") error("no thumb for $slug")
+                val b64 = (obj["thumbBase64"] as? JsonPrimitive)?.content ?: error("no thumb payload")
+                android.util.Base64.decode(b64, android.util.Base64.DEFAULT)
+            }
+        }
+    }
+
     /**
      * One-shot gateway health probe (`GET /health`) for the Settings "Test link" button. Success
      * returns a short human line ("ok · hermes-agent 0.18.0"); every failure mode comes back as a
