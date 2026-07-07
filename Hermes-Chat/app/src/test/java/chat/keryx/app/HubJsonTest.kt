@@ -170,6 +170,30 @@ class HubJsonTest {
     }
 
     @Test
+    fun `prune dry-run and wet answers parse with the sessions-key discriminator`() {
+        val dry = HubJson.pruneResult(obj("""
+            {"ok":true,"removed":0,"matched":227,
+             "oldest_started_at":1747699200.5,"newest_started_at":1749081600.0,
+             "sessions":[
+               {"id":"abc123","source":"gateway","title":"morning check","model":"silas-brain","started_at":1747699200.5,"message_count":14},
+               {"id":"def456","source":"gateway","title":null,"model":"silas-brain","started_at":1747785600.0,"message_count":2}
+             ]}
+        """))
+        assertEquals(0, dry.removed)
+        assertNotNull(dry.preview)
+        assertEquals(227, dry.preview!!.matched)
+        assertEquals(2, dry.preview!!.sample.size)
+        assertEquals("morning check", dry.preview!!.sample[0].title)
+        assertNull(dry.preview!!.sample[1].title)
+        assertEquals(1747699200.5, dry.preview!!.oldestStartedAt!!, 0.001)
+
+        // Wet answer has no "sessions" key → no preview, just the count.
+        val wet = HubJson.pruneResult(obj("""{"ok":true,"removed":227}"""))
+        assertEquals(227, wet.removed)
+        assertNull(wet.preview)
+    }
+
+    @Test
     fun `empty and alien payloads degrade instead of throwing`() {
         assertTrue(HubJson.jobs(obj("""{"weird":true}""")).isEmpty())
         assertTrue(HubJson.sessions(obj("""{"data":"not-a-list"}""")).isEmpty())
