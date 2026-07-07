@@ -75,6 +75,9 @@ fun NavigationDrawerContent(
     val gatewayUrl by viewModel.gatewayUrl.collectAsState()
     val gatewayApiKey by viewModel.gatewayApiKey.collectAsState()
     val sideChannelEnabled by viewModel.sideChannelEnabled.collectAsState()
+    val sttUrl by viewModel.sttUrl.collectAsState()
+    val sttApiKey by viewModel.sttApiKey.collectAsState()
+    val sttModel by viewModel.sttModel.collectAsState()
     val showTelemetry by viewModel.showTelemetry.collectAsState()
     val missionAlertsEnabled by viewModel.missionAlertsEnabled.collectAsState()
 
@@ -124,6 +127,12 @@ fun NavigationDrawerContent(
             onGatewayApiKeyChanged = { viewModel.setGatewayApiKey(it) },
             sideChannelEnabled = sideChannelEnabled,
             onSideChannelEnabledChanged = { viewModel.setSideChannelEnabled(it) },
+            sttUrl = sttUrl,
+            onSttUrlChanged = { viewModel.setSttUrl(it) },
+            sttApiKey = sttApiKey,
+            onSttApiKeyChanged = { viewModel.setSttApiKey(it) },
+            sttModel = sttModel,
+            onSttModelChanged = { viewModel.setSttModel(it) },
             onTestLink = { viewModel.testGatewayLink() },
             showTelemetry = showTelemetry,
             onShowTelemetryChanged = { viewModel.setShowTelemetry(it) },

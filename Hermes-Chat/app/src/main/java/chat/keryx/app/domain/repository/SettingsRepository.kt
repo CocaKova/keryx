@@ -36,6 +36,15 @@ interface SettingsRepository {
     /** Show automated telemetry blocks (runtime footer, cron check-ins) in the chat. */
     var showTelemetry: Boolean
 
+    // --- Voice dictation (universal OpenAI-compatible STT) ---
+    /** Base URL of any OpenAI-compatible `/v1/audio/transcriptions` server (self-hosted, OpenAI,
+     *  Groq…). Bare host, `/v1` base, or full path all accepted. Blank = mic hidden. */
+    var sttUrl: String
+    /** Optional bearer key for the STT endpoint. */
+    var sttApiKey: String
+    /** Optional model name; only needed when the provider requires one (e.g. "whisper-1"). */
+    var sttModel: String
+
     // --- Mission alerts (background kanban-event watcher) ---
     /** Opt-in 15-minute background check that notifies on completed/blocked/given-up missions. */
     var missionAlertsEnabled: Boolean

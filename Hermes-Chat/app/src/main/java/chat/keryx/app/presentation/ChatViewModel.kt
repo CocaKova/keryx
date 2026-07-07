@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 
@@ -242,6 +243,16 @@ class ChatViewModel(
 
     private val _sideChannelEnabled = MutableStateFlow(settingsRepository.sideChannelEnabled)
     val sideChannelEnabled: StateFlow<Boolean> = _sideChannelEnabled.asStateFlow()
+
+    // --- Voice dictation (universal OpenAI-compatible STT) ---
+    private val _sttUrl = MutableStateFlow(settingsRepository.sttUrl)
+    val sttUrl: StateFlow<String> = _sttUrl.asStateFlow()
+
+    private val _sttApiKey = MutableStateFlow(settingsRepository.sttApiKey)
+    val sttApiKey: StateFlow<String> = _sttApiKey.asStateFlow()
+
+    private val _sttModel = MutableStateFlow(settingsRepository.sttModel)
+    val sttModel: StateFlow<String> = _sttModel.asStateFlow()
 
     /** An optimistic own-message bubble shown the instant Send is tapped, retired when the
      *  homeserver echo appears in the timeline (or after a safety timeout). */
@@ -1506,6 +1517,42 @@ class ChatViewModel(
         _gatewayApiKey.value = key
         settingsRepository.gatewayApiKey = key
         if (_linkHealth.value != LinkHealth.OFF) _linkHealth.value = LinkHealth.UNKNOWN
+    }
+
+    fun setSttUrl(url: String) {
+        _sttUrl.value = url
+        settingsRepository.sttUrl = url
+    }
+
+    fun setSttApiKey(key: String) {
+        _sttApiKey.value = key
+        settingsRepository.sttApiKey = key
+    }
+
+    fun setSttModel(model: String) {
+        _sttModel.value = model
+        settingsRepository.sttModel = model
+    }
+
+    /** Uploads a finished dictation take to the configured STT endpoint. The recording is
+     *  deleted afterwards either way; [onResult] fires on the main thread. */
+    fun transcribe(audio: java.io.File, onResult: (Result<String>) -> Unit) {
+        val url = _sttUrl.value.trim()
+        if (url.isBlank()) {
+            audio.delete()
+            onResult(Result.failure(IllegalStateException("No STT endpoint configured")))
+            return
+        }
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    chat.keryx.app.data.remote.SttClient(url, _sttApiKey.value.trim(), settingsRepository.allowInsecure)
+                        .transcribe(audio, _sttModel.value.trim())
+                }
+            }
+            audio.delete()
+            onResult(result)
+        }
     }
 
     fun setSideChannelEnabled(enabled: Boolean) {

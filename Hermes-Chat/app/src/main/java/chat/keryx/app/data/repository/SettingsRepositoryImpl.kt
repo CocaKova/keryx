@@ -93,6 +93,18 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getBoolean("show_telemetry", true)
         set(value) = prefs.edit().putBoolean("show_telemetry", value).apply()
 
+    override var sttUrl: String
+        get() = prefs.getString("stt_url", "") ?: ""
+        set(value) = prefs.edit().putString("stt_url", value).apply()
+
+    override var sttApiKey: String
+        get() = prefs.getString("stt_api_key", "") ?: ""
+        set(value) = prefs.edit().putString("stt_api_key", value).apply()
+
+    override var sttModel: String
+        get() = prefs.getString("stt_model", "") ?: ""
+        set(value) = prefs.edit().putString("stt_model", value).apply()
+
     override var missionAlertsEnabled: Boolean
         get() = prefs.getBoolean("mission_alerts", false)
         set(value) = prefs.edit().putBoolean("mission_alerts", value).apply()
