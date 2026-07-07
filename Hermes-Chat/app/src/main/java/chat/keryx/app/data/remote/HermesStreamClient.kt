@@ -439,6 +439,45 @@ class HermesStreamClient(
         HubJson.events(kanbanCall("/keryx/kanban/events?since=$since"), since)
     }
 
+    /** One notify subscription — a chat the gateway pushes a native message into when the task
+     *  hits a terminal state. The gateway deletes rows itself once the task is genuinely done,
+     *  so a subscription vanishing between refreshes means "it fired", not an error. */
+    data class KanbanSub(
+        val taskId: String,
+        val platform: String,
+        val chatId: String,
+        val threadId: String,
+    )
+
+    /** All notify subscriptions on the board (`GET /keryx/kanban/subs`). */
+    suspend fun kanbanSubs(): Result<List<KanbanSub>> = runCatching {
+        HubJson.subs(kanbanCall("/keryx/kanban/subs"))
+    }
+
+    /** Subscribe [roomId] to [taskId]'s terminal events: the gateway notifier then delivers a
+     *  real Matrix message into that room when the mission ends — no polling involved. */
+    suspend fun kanbanSubscribe(taskId: String, roomId: String): Result<Unit> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("platform", kotlinx.serialization.json.JsonPrimitive("matrix"))
+            put("chat_id", kotlinx.serialization.json.JsonPrimitive(roomId))
+        }
+        kanbanCall("/keryx/kanban/task/$taskId/subscribe", post = payload)
+        Unit
+    }
+
+    suspend fun kanbanUnsubscribe(
+        taskId: String,
+        chatId: String,
+        platform: String = "matrix",
+    ): Result<Unit> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("platform", kotlinx.serialization.json.JsonPrimitive(platform))
+            put("chat_id", kotlinx.serialization.json.JsonPrimitive(chatId))
+        }
+        kanbanCall("/keryx/kanban/task/$taskId/unsubscribe", post = payload)
+        Unit
+    }
+
     // --- Agent Hub — gateway console (/health/detailed, /api/jobs, /api/sessions, /v1/*) -------
 
     /** One platform adapter's connection state from `GET /health/detailed`. */
@@ -663,6 +702,16 @@ internal object HubJson {
             },
             cursor = obj.dbl("cursor")?.toLong() ?: since,
         )
+
+    fun subs(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.KanbanSub> =
+        obj.objs("subs").map { s ->
+            HermesStreamClient.KanbanSub(
+                taskId = s.str("task_id"),
+                platform = s.str("platform"),
+                chatId = s.str("chat_id"),
+                threadId = s.str("thread_id"),
+            )
+        }
 
     fun toolsets(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.HubToolset> =
         obj.objs("data").map { t ->

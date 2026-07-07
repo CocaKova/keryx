@@ -330,18 +330,68 @@ class ChatViewModel(
                 .onFailure { _kanbanError.value = it.message?.take(120) ?: "board unavailable" }
             _kanbanRefreshing.value = false
         }
+        refreshKanbanSubs()
+    }
+
+    /** task_id → its notify subscriptions. Bell state on cards + the detail-sheet toggle. The
+     *  gateway notifier deletes rows itself once a task genuinely ends, so a subscription
+     *  vanishing between refreshes means "it fired", never an error. */
+    private val _kanbanSubs =
+        MutableStateFlow<Map<String, List<chat.keryx.app.data.remote.HermesStreamClient.KanbanSub>>>(emptyMap())
+    val kanbanSubs: StateFlow<Map<String, List<chat.keryx.app.data.remote.HermesStreamClient.KanbanSub>>> =
+        _kanbanSubs.asStateFlow()
+
+    private fun refreshKanbanSubs() {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            // Failure keeps the last known map: stale bells beat a board-wide flicker-off.
+            client.kanbanSubs().onSuccess { subs -> _kanbanSubs.value = subs.groupBy { it.taskId } }
+        }
+    }
+
+    /** The room mission alerts land in: whichever the user has (last) open. */
+    fun missionAlertRoom(): String? = settingsRepository.lastRoomId
+
+    fun missionAlertRoomName(): String? =
+        missionAlertRoom()?.let { id -> _rooms.value.firstOrNull { it.id == id }?.name ?: id }
+
+    /** Toggle "alert when this ends". On subscribes the current alert room; off removes every
+     *  subscription the app can see for the task — they may point at rooms opened earlier. */
+    fun kanbanSetAlert(taskId: String, enabled: Boolean) {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            if (enabled) {
+                val room = missionAlertRoom() ?: run {
+                    _toasts.tryEmit("Open a room first — alerts land in a Matrix room")
+                    return@launch
+                }
+                client.kanbanSubscribe(taskId, room)
+                    .onFailure { _toasts.tryEmit("Alert failed: ${it.message?.take(80)}") }
+            } else {
+                _kanbanSubs.value[taskId].orEmpty().forEach { sub ->
+                    client.kanbanUnsubscribe(taskId, sub.chatId, sub.platform.ifBlank { "matrix" })
+                }
+            }
+            refreshKanbanSubs()
+        }
     }
 
     suspend fun kanbanTaskDetail(taskId: String): Result<chat.keryx.app.data.remote.HermesStreamClient.KanbanDetail> =
         gatewayClient()?.kanbanTask(taskId)
             ?: Result.failure(IllegalStateException("Hermes Link is off"))
 
-    /** Create a mission and refresh the board; toasts the outcome either way. */
-    fun kanbanCreate(title: String, assignee: String, body: String, triage: Boolean) {
+    /** Create a mission and refresh the board; toasts the outcome either way. [notify] chains a
+     *  terminal-event subscription for the current alert room onto the fresh task. */
+    fun kanbanCreate(title: String, assignee: String, body: String, triage: Boolean, notify: Boolean = false) {
         val client = gatewayClient() ?: return
         viewModelScope.launch {
             client.kanbanCreate(title, assignee, body, triage)
-                .onSuccess { _toasts.tryEmit("Mission created${if (triage) " (triage)" else ""}"); refreshKanban() }
+                .onSuccess { taskId ->
+                    _toasts.tryEmit("Mission created${if (triage) " (triage)" else ""}")
+                    val room = missionAlertRoom()
+                    if (notify && room != null) client.kanbanSubscribe(taskId, room)
+                    refreshKanban()
+                }
                 .onFailure { _toasts.tryEmit("Create failed: ${it.message?.take(80)}") }
         }
     }

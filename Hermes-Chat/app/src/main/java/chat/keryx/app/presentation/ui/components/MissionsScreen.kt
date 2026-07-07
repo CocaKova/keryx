@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -86,6 +87,7 @@ fun MissionsScreen(
     val refreshing by viewModel.kanbanRefreshing.collectAsState()
     val error by viewModel.kanbanError.collectAsState()
     val caps by viewModel.reasoningCaps.collectAsState()
+    val subs by viewModel.kanbanSubs.collectAsState()
     var createOpen by remember { mutableStateOf(false) }
     var openTaskId by remember { mutableStateOf<String?>(null) }
 
@@ -193,7 +195,11 @@ fun MissionsScreen(
                                 }
                             }
                             items(cards, key = { it.id }) { task ->
-                                MissionCard(task = task, onClick = { openTaskId = task.id })
+                                MissionCard(
+                                    task = task,
+                                    subscribed = subs[task.id]?.isNotEmpty() == true,
+                                    onClick = { openTaskId = task.id },
+                                )
                             }
                         }
                     }
@@ -205,8 +211,9 @@ fun MissionsScreen(
     if (createOpen) {
         MissionCreateDialog(
             profiles = missionAssignees(caps?.roomProfiles.orEmpty()),
-            onCreate = { title, assignee, body, triage ->
-                viewModel.kanbanCreate(title, assignee, body, triage)
+            canNotify = viewModel.missionAlertRoom() != null,
+            onCreate = { title, assignee, body, triage, notify ->
+                viewModel.kanbanCreate(title, assignee, body, triage, notify)
                 createOpen = false
             },
             onDismiss = { createOpen = false },
@@ -261,7 +268,7 @@ private fun statusColor(status: String): Color = when (status) {
 }
 
 @Composable
-private fun MissionCard(task: KanbanTask, onClick: () -> Unit) {
+private fun MissionCard(task: KanbanTask, subscribed: Boolean, onClick: () -> Unit) {
     val shape = RoundedCornerShape(12.dp)
     Column(
         modifier = Modifier
@@ -280,6 +287,15 @@ private fun MissionCard(task: KanbanTask, onClick: () -> Unit) {
                 modifier = Modifier.weight(1f),
                 maxLines = 2,
             )
+            if (subscribed) {
+                Icon(
+                    Icons.Outlined.Notifications,
+                    contentDescription = "Alerts on",
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(14.dp),
+                )
+                Spacer(Modifier.width(6.dp))
+            }
             if (task.priority > 0) {
                 Text(
                     "P${task.priority}",
@@ -391,7 +407,38 @@ private fun MissionDetailSheet(
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(d.task.title, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(6.dp))
+                    val subs by viewModel.kanbanSubs.collectAsState()
+                    val subscribed = subs[taskId]?.isNotEmpty() == true
+                    val roomName = viewModel.missionAlertRoomName()
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Outlined.Notifications,
+                            contentDescription = null,
+                            tint = if (subscribed) MaterialTheme.colorScheme.tertiary
+                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Alert when this ends", fontSize = 13.sp)
+                            Text(
+                                when {
+                                    subscribed -> "SILAS pushes a message the moment it completes or blocks"
+                                    roomName != null -> "Lands in $roomName as a real message — no polling"
+                                    else -> "Open a room first — alerts land in a Matrix room"
+                                },
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = subscribed,
+                            enabled = subscribed || roomName != null,
+                            onCheckedChange = { viewModel.kanbanSetAlert(taskId, it) },
+                        )
+                    }
+                    Spacer(Modifier.height(6.dp))
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -467,7 +514,8 @@ private fun MissionDetailSheet(
 @Composable
 private fun MissionCreateDialog(
     profiles: List<String>,
-    onCreate: (title: String, assignee: String, body: String, triage: Boolean) -> Unit,
+    canNotify: Boolean,
+    onCreate: (title: String, assignee: String, body: String, triage: Boolean, notify: Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var title by remember { mutableStateOf("") }
@@ -475,6 +523,7 @@ private fun MissionCreateDialog(
     var assignee by remember { mutableStateOf(profiles.firstOrNull() ?: "default") }
     // Default parked: a phone tap should not spawn a worker until the mission says it should.
     var triage by remember { mutableStateOf(true) }
+    var notify by remember { mutableStateOf(canNotify) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -533,12 +582,29 @@ private fun MissionCreateDialog(
                     }
                     Switch(checked = triage, onCheckedChange = { triage = it })
                 }
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Notify me when it ends", fontSize = 13.sp)
+                        Text(
+                            if (canNotify) "A real message lands in your room on completion"
+                            else "Open a room first — alerts land in a Matrix room",
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = notify && canNotify,
+                        enabled = canNotify,
+                        onCheckedChange = { notify = it },
+                    )
+                }
                 Spacer(Modifier.height(14.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onDismiss) { Text("Cancel") }
                     TextButton(
                         enabled = title.isNotBlank(),
-                        onClick = { onCreate(title.trim(), assignee, body.trim(), triage) },
+                        onClick = { onCreate(title.trim(), assignee, body.trim(), triage, notify && canNotify) },
                     ) { Text("Create") }
                 }
             }
