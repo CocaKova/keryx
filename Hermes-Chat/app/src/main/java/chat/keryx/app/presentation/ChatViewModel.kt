@@ -128,6 +128,13 @@ class ChatViewModel(
     private val _rooms = MutableStateFlow<List<RoomProfile>>(emptyList())
     val rooms: StateFlow<List<RoomProfile>> = _rooms.asStateFlow()
 
+    // MUST be declared above the init block that collects into it: viewModelScope is
+    // Main.immediate and matrix.client is a StateFlow, so the first emission lands
+    // SYNCHRONOUSLY inside init — a later declaration is still null at that moment
+    // (the v1.9.0 crash-on-open).
+    private val _invites = MutableStateFlow<List<chat.keryx.app.domain.model.RoomInvite>>(emptyList())
+    val invites: StateFlow<List<chat.keryx.app.domain.model.RoomInvite>> = _invites.asStateFlow()
+
     private val _currentSession = MutableStateFlow<Session?>(null)
     val currentSession: StateFlow<Session?> = _currentSession.asStateFlow()
 
@@ -1322,9 +1329,7 @@ class ChatViewModel(
     }
 
     // --- Room membership: invites, leaving ------------------------------------------------------
-
-    private val _invites = MutableStateFlow<List<chat.keryx.app.domain.model.RoomInvite>>(emptyList())
-    val invites: StateFlow<List<chat.keryx.app.domain.model.RoomInvite>> = _invites.asStateFlow()
+    // (_invites/invites live up top with _rooms — see the init-order note there.)
 
     fun acceptInvite(roomId: String) {
         viewModelScope.launch {
