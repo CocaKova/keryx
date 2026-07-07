@@ -147,6 +147,38 @@ POST /keryx/sessions/prune   body mirrors the dashboard SessionPrune model:
 Bare prune defaults to 90 days; any attribute filter suppresses the default unless
 `older_than_days` is sent explicitly (same rule as the CLI/dashboard).
 
+## Pet endpoints (1.10/1.11)
+
+The petdex mascot from the Hermes desktop app, served to the phone. Pets stay configured
+server-side (`display.pet.enabled` / `.slug` — the same config the desktop and TUI read), so every
+surface shows the same pet. All fail-open: no pet configured (or any engine hiccup) reports
+`{"enabled": false}` and the client simply draws nothing.
+
+```
+GET  /keryx/pet              active pet render payload: {"enabled", "slug", "displayName",
+                             "mime", "spritesheetBase64", "spritesheetRevision", "frameW/H",
+                             "framesPerState", "loopMs", "stateRows", "framesByRow"}
+                             ?meta=1 → just {"enabled", "slug", "displayName",
+                             "spritesheetRevision"} — cheap probe to skip an unchanged ~2MB sheet
+GET  /keryx/pets             adoptable list: installed pets merged with the petdex.dev catalog;
+                             {"enabled", "active", "pets": [{"slug", "displayName", "installed",
+                             "curated", "generated", "spritesheetUrl"}]}
+                             ?localOnly=1 skips the remote manifest (and warms it) so installed
+                             pets render instantly — two-phase load like the desktop picker
+POST /keryx/pet/select       {"slug"} → install from petdex if needed + persist display.pet.*
+                             (the desktop picker's exact path); 502 with the store's message on
+                             a failed adopt
+GET  /keryx/pet/thumb        ?slug=&url=  small idle-frame PNG {"ok", "slug", "thumbBase64"},
+                             cropped + disk-cached server-side; `url` (petdex CDN only — never an
+                             arbitrary host) lets not-yet-installed pets preview
+```
+
+Render notes for clients: rows are named in `stateRows` top→bottom (Codex 9-row and legacy 8-row
+taxonomies both appear in the wild; alias `wave`→`waving`, `run`→`running`, `jump`→`jumping`).
+Honor `framesByRow` over `framesPerState` — sheets are ragged, and stepping into a short row's
+transparent padding reads as the pet blinking out. One loop of `framesPerState` frames spans
+`loopMs`, whatever the row's real length.
+
 ## Tests
 
 ```bash
