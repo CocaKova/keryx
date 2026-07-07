@@ -630,6 +630,44 @@ class HermesStreamClient(
             apiCall("/keryx/skills", method = "POST", body = payload)
             Unit
         }
+
+    // --- Session pruner — POST /keryx/sessions/prune ---------------------------------------------
+
+    data class PruneSample(
+        val id: String,
+        val title: String?,
+        val model: String,
+        val startedAt: Double,
+        val messageCount: Int,
+    )
+
+    /** Dry-run answer: true [matched] count with a phone-sized [sample] (server caps it at 50). */
+    data class PrunePreview(
+        val matched: Int,
+        val oldestStartedAt: Double?,
+        val newestStartedAt: Double?,
+        val sample: List<PruneSample>,
+    )
+
+    /** Wet call → [removed] with null [preview]; dry-run → [preview] with removed = 0. */
+    data class PruneResult(val removed: Int, val preview: PrunePreview?)
+
+    /** Bulk-delete ENDED sessions (the gateway never touches an active one). Always preview with
+     *  [dryRun] first — the wet call is permanent, transcripts included. */
+    suspend fun sessionsPrune(
+        olderThanDays: Int,
+        maxMessages: Int?,
+        includeArchived: Boolean,
+        dryRun: Boolean,
+    ): Result<PruneResult> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("older_than_days", kotlinx.serialization.json.JsonPrimitive(olderThanDays))
+            if (maxMessages != null) put("max_messages", kotlinx.serialization.json.JsonPrimitive(maxMessages))
+            put("include_archived", kotlinx.serialization.json.JsonPrimitive(includeArchived))
+            put("dry_run", kotlinx.serialization.json.JsonPrimitive(dryRun))
+        }
+        HubJson.pruneResult(apiCall("/keryx/sessions/prune", method = "POST", body = payload))
+    }
 }
 
 /**
@@ -745,6 +783,26 @@ internal object HubJson {
                 )
             },
             cursor = obj.dbl("cursor")?.toLong() ?: since,
+        )
+
+    fun pruneResult(obj: kotlinx.serialization.json.JsonObject): HermesStreamClient.PruneResult =
+        HermesStreamClient.PruneResult(
+            removed = obj.long("removed").toInt(),
+            // "sessions" only appears on dry-run answers — its presence is the discriminator.
+            preview = if (obj["sessions"] != null) HermesStreamClient.PrunePreview(
+                matched = obj.long("matched").toInt(),
+                oldestStartedAt = obj.dbl("oldest_started_at"),
+                newestStartedAt = obj.dbl("newest_started_at"),
+                sample = obj.objs("sessions").map { s ->
+                    HermesStreamClient.PruneSample(
+                        id = s.str("id"),
+                        title = s.strOrNull("title"),
+                        model = s.str("model"),
+                        startedAt = s.dbl("started_at") ?: 0.0,
+                        messageCount = s.long("message_count").toInt(),
+                    )
+                },
+            ) else null,
         )
 
     fun skillDetail(obj: kotlinx.serialization.json.JsonObject): HermesStreamClient.SkillDetail =

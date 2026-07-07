@@ -469,6 +469,39 @@ class ChatViewModel(
     fun refreshHubSkills() = _hubSkills.refreshFrom { skills() }
     fun refreshHubToolsets() = _hubToolsets.refreshFrom { toolsets() }
 
+    // --- Session pruner --------------------------------------------------------------------------
+
+    suspend fun hubSessionsPrunePreview(
+        olderThanDays: Int,
+        maxMessages: Int?,
+        includeArchived: Boolean,
+    ): Result<chat.keryx.app.data.remote.HermesStreamClient.PruneResult> =
+        gatewayClient()?.sessionsPrune(olderThanDays, maxMessages, includeArchived, dryRun = true)
+            ?: Result.failure(IllegalStateException("Hermes Link is off"))
+
+    /** The wet prune — permanent, transcripts included. Callers are responsible for having shown
+     *  the dry-run count and the destructive confirm first. [onDone] gets the removed count. */
+    fun hubSessionsPrune(
+        olderThanDays: Int,
+        maxMessages: Int?,
+        includeArchived: Boolean,
+        onDone: (Int?) -> Unit,
+    ) {
+        val client = gatewayClient() ?: run { onDone(null); return }
+        viewModelScope.launch {
+            client.sessionsPrune(olderThanDays, maxMessages, includeArchived, dryRun = false)
+                .onSuccess { res ->
+                    _toasts.tryEmit("Pruned ${res.removed} session${if (res.removed == 1) "" else "s"}")
+                    refreshHubSessions()
+                    onDone(res.removed)
+                }
+                .onFailure {
+                    _toasts.tryEmit("Prune failed: ${it.message?.take(80)}")
+                    onDone(null)
+                }
+        }
+    }
+
     // --- Skill Forge -----------------------------------------------------------------------------
 
     /** The skill open in the Forge sheet (lookup name — dir basename or display name; the sheet

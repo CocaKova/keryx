@@ -582,13 +582,22 @@ private fun SessionsTab(viewModel: ChatViewModel) {
         return
     }
 
+    var pruneOpen by remember { mutableStateOf(false) }
+    if (pruneOpen) {
+        SessionPruneDialog(viewModel = viewModel, onDismiss = { pruneOpen = false })
+    }
+
     Column(Modifier.fillMaxSize()) {
         PanelErrorLine(panel.error)
-        Text(
-            "What the agent has been doing — every persisted session, newest first",
-            fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "What the agent has been doing — every persisted session, newest first",
+                fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f).padding(start = 20.dp, top = 4.dp, bottom = 4.dp),
+            )
+            // The 1.8 pruner: dry-run preview + count-restating confirm + app-lock gate.
+            TextButton(onClick = { pruneOpen = true }) { Text("Prune…", fontSize = 12.sp) }
+        }
         val sessions = panel.data
         when {
             sessions == null -> PanelLoading()
