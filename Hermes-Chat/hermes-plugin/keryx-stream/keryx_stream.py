@@ -234,8 +234,20 @@ def suppress_protocol_edits(adapter: Any, chat_id: Any, default_buffer_only: boo
     return default_buffer_only
 
 
+def _is_mistral_native(model: str) -> bool:
+    """True for models served via vLLM's ``--tokenizer-mode mistral``.
+
+    Those tokenizers hard-reject any request carrying ``chat_template`` or
+    ``chat_template_kwargs`` with HTTP 400 ("chat_template is not supported for
+    Mistral tokenizers"), so the enable_thinking switch must never be sent to them.
+    Same name heuristic as the graphiti memory plugin's thinking client.
+    """
+    normalized = (model or "").strip().lower()
+    return normalized.startswith("mistral") or "/mistral" in normalized
+
+
 def apply_thinking_kwargs(agent) -> None:
-    """Map Hermes' reasoning_config onto vLLM's ``chat_template_kwargs.enable_thinking``.
+    """Map Hermes' reasoning_config onto the local brain's thinking dial.
 
     Called from agent_init after ``_merge_custom_provider_extra_body`` (see install.py).
     Local OpenAI-compatible brains (provider ``custom``/``custom:*``) don't understand the
@@ -243,11 +255,15 @@ def apply_thinking_kwargs(agent) -> None:
     local chat templates additionally force-open the thought channel when enable_thinking is set
     (for tunes that never open it voluntarily), so with this mapping ``/reasoning none`` ⇄ any
     effort level becomes a real on/off for local-brain reasoning. Never raises.
+
+    Mistral-native exception: vLLM's ``--tokenizer-mode mistral`` rejects requests that
+    carry ``chat_template_kwargs`` outright (HTTP 400), and its thinking dial is the
+    standard top-level ``reasoning_effort`` param (only ``none``/``high`` accepted) —
+    so Mistral-named models get that mapping instead.
     """
     try:
         # Kill switch for setups whose "custom" endpoint rejects unknown request fields
-        # (vLLM, llama.cpp and Ollama's /v1 all accept or ignore chat_template_kwargs, but
-        # "custom" can point anywhere): KERYX_THINKING_KWARGS=off in ~/.hermes/.env.
+        # ("custom" can point anywhere): KERYX_THINKING_KWARGS=off in ~/.hermes/.env.
         if os.getenv("KERYX_THINKING_KWARGS", "").strip().lower() in {"0", "off", "false", "no"}:
             return
         provider = str(getattr(agent, "provider", "") or "").strip().lower()
@@ -261,6 +277,16 @@ def apply_thinking_kwargs(agent) -> None:
             return
         enabled = rc.get("enabled") is not False
         overrides = dict(getattr(agent, "request_overrides", {}) or {})
+        if _is_mistral_native(str(getattr(agent, "model", "") or "")):
+            extra = dict(overrides.get("extra_body") or {})
+            extra.pop("chat_template_kwargs", None)  # scrub any stale injection
+            if extra:
+                overrides["extra_body"] = extra
+            else:
+                overrides.pop("extra_body", None)
+            overrides["reasoning_effort"] = "high" if enabled else "none"
+            agent.request_overrides = overrides
+            return
         extra = dict(overrides.get("extra_body") or {})
         ctk = dict(extra.get("chat_template_kwargs") or {})
         ctk["enable_thinking"] = enabled
