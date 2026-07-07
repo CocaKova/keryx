@@ -235,12 +235,27 @@ fun HermesApp(viewModel: ChatViewModel) {
                 )
             }
         ) { paddingValues ->
-            ChatScreen(
-                viewModel = viewModel,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            )
+            // Skill Forge opens from two places — Agent Hub Skills rows (direct ViewModel call)
+            // and in-chat SkillDistilled pills (via this CompositionLocal, since the render chain
+            // doesn't carry the ViewModel). One shared target keeps a single hosted sheet.
+            androidx.compose.runtime.CompositionLocalProvider(
+                chat.keryx.app.presentation.ui.components.LocalSkillForgeOpener provides viewModel::openSkillForge,
+            ) {
+                ChatScreen(
+                    viewModel = viewModel,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                )
+            }
+            val skillForgeTarget by viewModel.skillForgeTarget.collectAsState()
+            skillForgeTarget?.let { name ->
+                chat.keryx.app.presentation.ui.components.SkillForgeSheet(
+                    skillName = name,
+                    viewModel = viewModel,
+                    onDismiss = viewModel::closeSkillForge,
+                )
+            }
         }
         }
     }

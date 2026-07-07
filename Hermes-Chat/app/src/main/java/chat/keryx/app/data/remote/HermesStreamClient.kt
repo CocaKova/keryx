@@ -340,6 +340,7 @@ class HermesStreamClient(
                 when (method) {
                     "GET" -> get()
                     "POST" -> post(payload ?: ByteArray(0).toRequestBody(null))
+                    "PUT" -> put(payload ?: ByteArray(0).toRequestBody(null))
                     "PATCH" -> patch(payload ?: ByteArray(0).toRequestBody(null))
                     "DELETE" -> if (payload != null) delete(payload) else delete()
                     else -> error("unsupported method $method")
@@ -586,6 +587,49 @@ class HermesStreamClient(
     /** The api_server platform's toolset surface — the gateway offers no per-platform view. */
     suspend fun toolsets(): Result<List<HubToolset>> =
         runCatching { HubJson.toolsets(apiCall("/v1/toolsets")) }
+
+    // --- Skill Forge — /keryx/skills/* ----------------------------------------------------------
+
+    /** One skill's full SKILL.md. [name] is the CANONICAL directory basename — always use it for
+     *  [skillPut], even when the lookup went through a frontmatter display name. [readonly] skills
+     *  live in external dirs the gateway refuses to write. */
+    data class SkillDetail(
+        val name: String,
+        val category: String?,
+        val content: String,
+        val files: List<String>,
+        val readonly: Boolean,
+    )
+
+    private fun skillPath(name: String): String =
+        "/keryx/skills/" + java.net.URLEncoder.encode(name, "UTF-8").replace("+", "%20")
+
+    suspend fun skillGet(name: String): Result<SkillDetail> =
+        runCatching { HubJson.skillDetail(apiCall(skillPath(name))) }
+
+    /** Full SKILL.md rewrite through the gateway's own validation + security scan. Returns the
+     *  server's note ("index refreshes for new sessions"); failures carry the gateway's own
+     *  validation message. */
+    suspend fun skillPut(name: String, content: String): Result<String> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("content", kotlinx.serialization.json.JsonPrimitive(content))
+        }
+        val obj = apiCall(skillPath(name), method = "PUT", body = payload)
+        (obj["note"] as? JsonPrimitive)?.contentOrNull ?: "saved"
+    }
+
+    suspend fun skillCreate(name: String, content: String, category: String? = null): Result<Unit> =
+        runCatching {
+            val payload = kotlinx.serialization.json.buildJsonObject {
+                put("name", kotlinx.serialization.json.JsonPrimitive(name))
+                put("content", kotlinx.serialization.json.JsonPrimitive(content))
+                if (!category.isNullOrBlank()) {
+                    put("category", kotlinx.serialization.json.JsonPrimitive(category))
+                }
+            }
+            apiCall("/keryx/skills", method = "POST", body = payload)
+            Unit
+        }
 }
 
 /**
@@ -701,6 +745,15 @@ internal object HubJson {
                 )
             },
             cursor = obj.dbl("cursor")?.toLong() ?: since,
+        )
+
+    fun skillDetail(obj: kotlinx.serialization.json.JsonObject): HermesStreamClient.SkillDetail =
+        HermesStreamClient.SkillDetail(
+            name = obj.str("name"),
+            category = obj.strOrNull("category"),
+            content = obj.str("content"),
+            files = obj.arr("files")?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.orEmpty(),
+            readonly = obj.bool("readonly"),
         )
 
     fun subs(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.KanbanSub> =

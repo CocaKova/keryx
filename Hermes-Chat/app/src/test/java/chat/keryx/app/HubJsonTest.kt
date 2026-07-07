@@ -133,6 +133,24 @@ class HubJsonTest {
     }
 
     @Test
+    fun `skill detail maps content files and readonly`() {
+        val d = HubJson.skillDetail(obj("""
+            {"name":"keryx-integration","category":null,
+             "content":"---\nname: keryx-integration\n---\n\nBody.",
+             "files":["references/protocol.md"],"readonly":false}
+        """))
+        assertEquals("keryx-integration", d.name)
+        assertNull(d.category)
+        assertTrue(d.content.startsWith("---"))
+        assertEquals(listOf("references/protocol.md"), d.files)
+        assertEquals(false, d.readonly)
+        // Sparse answer (external-dir skill without files) degrades, never throws.
+        val ext = HubJson.skillDetail(obj("""{"name":"vendored","content":"x","readonly":true}"""))
+        assertTrue(ext.readonly)
+        assertTrue(ext.files.isEmpty())
+    }
+
+    @Test
     fun `notify subs map pinned fields and tolerate gaps`() {
         val subs = HubJson.subs(obj("""
             {"subs":[
