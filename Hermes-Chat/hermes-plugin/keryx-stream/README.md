@@ -92,6 +92,9 @@ POST /keryx/kanban/task                      {"title", "assignee", "body"?, "pri
                                               "triage"?: bool, "goal_mode"?: bool}
 POST /keryx/kanban/task/{id}/comment         {"body"}
 GET  /keryx/kanban/events?since=<cursor>     incremental event poll; returns {"events", "cursor"}
+GET  /keryx/kanban/subs                      notify subscriptions; returns {"subs": [...]}
+POST /keryx/kanban/task/{id}/subscribe       {"platform"?: "matrix", "chat_id", "thread_id"?}
+POST /keryx/kanban/task/{id}/unsubscribe     same body; returns {"subscribed": false, "removed"}
 ```
 
 All accept `?board=<slug>` to target a non-default board. `assignee` is required on create (the
@@ -101,6 +104,48 @@ caller-supplied authors are rejected by design (a forged author reads as a syste
 future worker context). Gateways without a kanban board return errors the app treats as
 "missions unavailable"; route registration is centralized in `register_keryx_routes`, so new
 routes ship with the module copy and never need a fresh api_server patch.
+
+**Subscriptions (1.8 real-time alerts):** a subscribed `(platform, chat_id)` receives the
+gateway kanban-notifier's native push message when the task hits a terminal state
+(completed/blocked/gave_up/crashed/timed_out/…) — for Matrix that's a real room message, so the
+app needs no polling. The notifier deletes subs itself once a task is genuinely done; treat a
+vanished sub as "task ended". Requires the gateway notifier loop
+(`kanban.dispatch_in_gateway`) to be enabled. The 15-min `MissionAlertsWorker` poll remains the
+fallback for comments/non-terminal events.
+
+## Skill Forge endpoints (1.8)
+
+Read/write `SKILL.md` over the gateway's own `skill_manager_tool` machinery — same frontmatter
+validation, atomic write, and security-scan-with-rollback as the agent's `skill_manage` tool.
+
+```
+GET  /keryx/skills/{name}    {"name", "category", "content", "files": [...], "readonly"}
+PUT  /keryx/skills/{name}    {"content"} → {"ok", "message", "note"}; 400 = validation/scan
+                             message verbatim; 403 = skill lives in a read-only external dir
+POST /keryx/skills           {"name", "content", "category"?} → {"ok", "path"}
+```
+
+Every successful write drops the gateway's skills-prompt LRU, so **new** sessions see the edit
+immediately (running sessions keep their cached prompt — no restart needed). A one-deep undo is
+kept at `SKILL.md.bak` beside the skill.
+
+## Session prune endpoint (1.8)
+
+Thin wrapper over hermes-agent's `hermes sessions prune` (the dashboard server that exposes it
+upstream is disabled on this box). Deletes **ended** sessions only.
+
+```
+POST /keryx/sessions/prune   body mirrors the dashboard SessionPrune model:
+                             {"older_than_days"?: 90, "started_before/after"?, "title_like"?,
+                              "min/max_messages|tokens|cost"?, "source"?, "include_archived"?: false,
+                              "dry_run"?: false}
+                             dry-run → {"ok", "removed": 0, "matched", "oldest_started_at",
+                                        "newest_started_at", "sessions": [≤50 sample]}
+                             wet     → {"ok", "removed"}
+```
+
+Bare prune defaults to 90 days; any attribute filter suppresses the default unless
+`older_than_days` is sent explicitly (same rule as the CLI/dashboard).
 
 ## Tests
 

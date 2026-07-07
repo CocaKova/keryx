@@ -75,6 +75,34 @@ def test_detail_carries_comments_and_unknown_task_is_none(board):
     assert ks.kanban_task_detail(kb, board, "no-such-task") is None
 
 
+def test_subscribe_list_unsubscribe_roundtrip(board):
+    tid = ks.kanban_create(kb, board, {"title": "alertable", "assignee": "milo"})["task_id"]
+    out = ks.kanban_subscribe(kb, board, tid, {"platform": "matrix", "chat_id": "!room:x"})
+    assert out == {"task_id": tid, "subscribed": True}
+    # Idempotent: upstream is INSERT OR IGNORE on (task, platform, chat, thread).
+    ks.kanban_subscribe(kb, board, tid, {"platform": "matrix", "chat_id": "!room:x"})
+    subs = ks.kanban_subs_list(kb, board)["subs"]
+    assert len(subs) == 1
+    assert subs[0]["task_id"] == tid
+    assert subs[0]["chat_id"] == "!room:x"
+    assert set(subs[0]) == set(ks._SUB_FIELDS)  # pinned columns only
+
+    gone = ks.kanban_unsubscribe(kb, board, tid, {"chat_id": "!room:x"})
+    assert gone == {"task_id": tid, "subscribed": False, "removed": True}
+    # Second unsubscribe reports removed=False instead of erroring.
+    assert ks.kanban_unsubscribe(kb, board, tid, {"chat_id": "!room:x"})["removed"] is False
+    assert ks.kanban_subs_list(kb, board)["subs"] == []
+
+
+def test_subscribe_validates_task_and_chat(board):
+    assert ks.kanban_subscribe(kb, board, "no-such-task", {"chat_id": "!r:x"}) is None
+    tid = ks.kanban_create(kb, board, {"title": "t", "assignee": "milo"})["task_id"]
+    with pytest.raises(ValueError):
+        ks.kanban_subscribe(kb, board, tid, {})
+    with pytest.raises(ValueError):
+        ks.kanban_unsubscribe(kb, board, tid, {})
+
+
 def test_events_cursor_is_incremental(board):
     tid = ks.kanban_create(kb, board, {"title": "watched", "assignee": "milo"})["task_id"]
     first = ks.kanban_events_since(board, 0)
