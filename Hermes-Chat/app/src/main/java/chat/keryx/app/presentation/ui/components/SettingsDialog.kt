@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Tune
@@ -65,6 +66,12 @@ fun SettingsScreen(
     onGatewayApiKeyChanged: (String) -> Unit,
     sideChannelEnabled: Boolean,
     onSideChannelEnabledChanged: (Boolean) -> Unit,
+    sttUrl: String,
+    onSttUrlChanged: (String) -> Unit,
+    sttApiKey: String,
+    onSttApiKeyChanged: (String) -> Unit,
+    sttModel: String,
+    onSttModelChanged: (String) -> Unit,
     onTestLink: () -> Unit,
     showTelemetry: Boolean,
     onShowTelemetryChanged: (Boolean) -> Unit,
@@ -133,6 +140,8 @@ fun SettingsScreen(
                             matrixUrl.ifBlank { "Homeserver & agent" }) { section = "Connection" }
                         SettingsHubRow(Icons.Default.Bolt, "Hermes Link",
                             if (sideChannelEnabled) "Live token streaming on" else "Live token streaming off") { section = "Hermes Link" }
+                        SettingsHubRow(Icons.Default.Mic, "Voice",
+                            if (sttUrl.isBlank()) "Dictation off" else "Composer dictation on") { section = "Voice" }
                         SettingsHubRow(Icons.Default.Palette, "Appearance",
                             "Bubbles, text size, accent colors") { section = "Appearance" }
                         SettingsHubRow(Icons.Default.Lock, "Privacy & Security",
@@ -302,6 +311,51 @@ fun SettingsScreen(
                             subtitle = "Notify when a mission completes, blocks, or gives up — checked in the background every 15 minutes",
                             checked = missionAlertsEnabled,
                             onCheckedChange = onMissionAlertsChanged,
+                        )
+                    }
+
+                    // --- Voice dictation ---
+                    if (section == "Voice") SettingsCard("Voice Dictation") {
+                        Text(
+                            "Adds a mic to the composer: record, transcribe, and the text lands in the " +
+                                "input field. Works with any OpenAI-compatible transcription endpoint — " +
+                                "a self-hosted server on your own network, OpenAI, Groq…",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 12.sp,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = sttUrl,
+                            onValueChange = onSttUrlChanged,
+                            label = { Text("STT server URL") },
+                            placeholder = { Text("http://your-stt-host:8123") },
+                            supportingText = { Text("Blank hides the mic. Bare host, /v1, or full /v1/audio/transcriptions path all work.", fontSize = 11.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        var sttKeyVisible by remember { mutableStateOf(false) }
+                        OutlinedTextField(
+                            value = sttApiKey,
+                            onValueChange = onSttApiKeyChanged,
+                            label = { Text("API key (optional)") },
+                            visualTransformation = if (sttKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                TextButton(onClick = { sttKeyVisible = !sttKeyVisible }) {
+                                    Text(if (sttKeyVisible) "Hide" else "Show", fontSize = 12.sp)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = sttModel,
+                            onValueChange = onSttModelChanged,
+                            label = { Text("Model (optional)") },
+                            placeholder = { Text("only if your provider requires one, e.g. whisper-1") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
                         )
                     }
 

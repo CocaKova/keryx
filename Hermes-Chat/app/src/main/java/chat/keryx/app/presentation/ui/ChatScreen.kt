@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -76,6 +77,9 @@ import chat.keryx.app.presentation.ui.components.bubbleAppearance
 import chat.keryx.app.presentation.ui.components.groupChatItems
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+
+/** Where the composer's voice dictation currently is. */
+private enum class DictationPhase { IDLE, RECORDING, TRANSCRIBING }
 
 /** An attachment the user has picked but not yet sent. */
 private data class PendingAttachment(
@@ -204,6 +208,66 @@ fun ChatScreen(
             viewModel.onComposerTextChanged(prefill)
             runCatching { focusRequester.requestFocus() }
             viewModel.consumeComposerPrefill()
+        }
+    }
+
+    // Voice dictation: mic tap → record m4a → POST to the configured STT endpoint → transcript
+    // appends to whatever's already typed. The mic only appears once an endpoint is configured.
+    val sttUrl by viewModel.sttUrl.collectAsState()
+    val voiceRecorder = remember { chat.keryx.app.audio.VoiceRecorder(context) }
+    var dictation by remember { mutableStateOf(DictationPhase.IDLE) }
+    DisposableEffect(Unit) { onDispose { voiceRecorder.cancel() } }
+
+    fun insertTranscript(transcript: String) {
+        val t = transcript.trim()
+        if (t.isEmpty()) return
+        val base = textState.text
+        val sep = if (base.isEmpty() || base.endsWith(" ") || base.endsWith("\n")) "" else " "
+        val merged = base + sep + t
+        textState = TextFieldValue(merged, selection = TextRange(merged.length))
+        viewModel.onComposerTextChanged(merged)
+    }
+
+    fun startDictation() {
+        runCatching { voiceRecorder.start() }
+            .onSuccess { dictation = DictationPhase.RECORDING }
+            .onFailure {
+                dictation = DictationPhase.IDLE
+                android.widget.Toast.makeText(context, "Mic unavailable", android.widget.Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    fun finishDictation() {
+        val take = voiceRecorder.stop()
+        if (take == null) {
+            dictation = DictationPhase.IDLE
+            return
+        }
+        dictation = DictationPhase.TRANSCRIBING
+        viewModel.transcribe(take) { result ->
+            dictation = DictationPhase.IDLE
+            result.onSuccess(::insertTranscript).onFailure {
+                android.widget.Toast.makeText(context, "Transcription failed: ${it.message}", android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) startDictation()
+        else android.widget.Toast.makeText(context, "Keryx needs mic access to dictate", android.widget.Toast.LENGTH_SHORT).show()
+    }
+
+    fun onMicTap() {
+        when (dictation) {
+            DictationPhase.RECORDING -> finishDictation()
+            DictationPhase.TRANSCRIBING -> {} // hands off; the callback resets us
+            DictationPhase.IDLE -> {
+                val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.RECORD_AUDIO
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                if (granted) startDictation()
+                else micPermission.launch(android.Manifest.permission.RECORD_AUDIO)
+            }
         }
     }
 
@@ -539,6 +603,9 @@ fun ChatScreen(
                 hasMessages = messages.isNotEmpty(),
                 onFocusedAtBottom = { scope.launch { listState.animateScrollToItem(0) } },
                 focusRequester = focusRequester,
+                sttEnabled = sttUrl.isNotBlank(),
+                dictation = dictation,
+                onMicTap = ::onMicTap,
             )
         }
 
@@ -624,6 +691,9 @@ private fun Composer(
     hasMessages: Boolean,
     onFocusedAtBottom: () -> Unit,
     focusRequester: FocusRequester,
+    sttEnabled: Boolean = false,
+    dictation: DictationPhase = DictationPhase.IDLE,
+    onMicTap: () -> Unit = {},
 ) {
     var attachMenu by remember { mutableStateOf(false) }
     // The dream attach options bloom in just above the composer pill (rendered inline rather than in
@@ -680,6 +750,34 @@ private fun Composer(
                 unfocusedTextColor = MaterialTheme.colorScheme.onSurface
             )
         )
+        if (sttEnabled) {
+            val recording = dictation == DictationPhase.RECORDING
+            // A slow breathing pulse while the mic is hot — unmistakable "it's listening".
+            val pulseTransition = rememberInfiniteTransition(label = "mic_pulse")
+            val pulse by pulseTransition.animateFloat(
+                initialValue = 1f,
+                targetValue = if (recording) 1.3f else 1f,
+                animationSpec = infiniteRepeatable(tween(480), RepeatMode.Reverse),
+                label = "mic_pulse_scale",
+            )
+            IconButton(onClick = onMicTap, modifier = Modifier.size(44.dp)) {
+                if (dictation == DictationPhase.TRANSCRIBING) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.Mic,
+                        contentDescription = if (recording) "Stop dictation" else "Dictate",
+                        tint = if (recording) MaterialTheme.colorScheme.error
+                               else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.graphicsLayer { scaleX = pulse; scaleY = pulse },
+                    )
+                }
+            }
+        }
         Spacer(modifier = Modifier.width(6.dp))
         FloatingActionButton(
             onClick = onSend,
