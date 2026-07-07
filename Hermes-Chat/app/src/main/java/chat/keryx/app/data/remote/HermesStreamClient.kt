@@ -236,6 +236,70 @@ class HermesStreamClient(
         }
     }
 
+    /** The active petdex mascot (from `GET /keryx/pet`) — spritesheet plus render geometry.
+     *  Pets are configured server-side (`display.pet.*`), so the phone shows exactly the pet the
+     *  desktop and TUI show. */
+    data class PetInfo(
+        val enabled: Boolean,
+        val slug: String,
+        val displayName: String,
+        /** `mtime_ns:size` of the sheet on the gateway — cache key for the payload. */
+        val revision: String,
+        /** Base64 spritesheet (webp/png); empty on `meta=true` probes. */
+        val spritesheetBase64: String,
+        val frameW: Int,
+        val frameH: Int,
+        /** Frames one full animation loop steps through (petdex `steps(6)`). */
+        val framesPerState: Int,
+        /** Duration of one full loop, ms. */
+        val loopMs: Int,
+        /** Sheet row taxonomy top→bottom (legacy 8-row or Codex 9-row names). */
+        val stateRows: List<String>,
+        /** Real (padding-trimmed) frame count per concrete row name — ragged sheets pad short
+         *  rows with blank frames, and stepping into the padding reads as the pet blinking out. */
+        val framesByRow: Map<String, Int>,
+    )
+
+    /**
+     * Fetch the gateway's active pet. `meta = true` asks for just enabled/slug/revision — a cheap
+     * probe so callers can skip re-downloading an unchanged ~2MB spritesheet payload. Gateways
+     * without the keryx-stream plugin (or with the pet disabled) come back as failure/enabled=false;
+     * callers simply don't show a mascot.
+     */
+    suspend fun pet(meta: Boolean = false): Result<PetInfo> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            val request = Request.Builder()
+                .url(baseUrl.trimEnd('/') + "/keryx/pet" + if (meta) "?meta=1" else "")
+                .apply { if (apiKey.isNotBlank()) header("Authorization", "Bearer $apiKey") }
+                .build()
+            // The full payload carries the whole spritesheet — give it more room than the
+            // 5s metadata probes get.
+            val probe = client.newBuilder().readTimeout(if (meta) 5 else 20, TimeUnit.SECONDS).build()
+            probe.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) error("HTTP ${resp.code}")
+                val obj = json.parseToJsonElement(resp.body?.string().orEmpty()).jsonObject
+                fun str(key: String) = (obj[key] as? JsonPrimitive)?.content.orEmpty()
+                fun int(key: String, dflt: Int) = (obj[key] as? JsonPrimitive)?.content?.toIntOrNull() ?: dflt
+                PetInfo(
+                    enabled = (obj["enabled"] as? JsonPrimitive)?.content == "true",
+                    slug = str("slug"),
+                    displayName = str("displayName"),
+                    revision = str("spritesheetRevision"),
+                    spritesheetBase64 = str("spritesheetBase64"),
+                    frameW = int("frameW", 192),
+                    frameH = int("frameH", 208),
+                    framesPerState = int("framesPerState", 6),
+                    loopMs = int("loopMs", 1100),
+                    stateRows = (obj["stateRows"] as? kotlinx.serialization.json.JsonArray)
+                        ?.mapNotNull { (it as? JsonPrimitive)?.content }.orEmpty(),
+                    framesByRow = (obj["framesByRow"] as? kotlinx.serialization.json.JsonObject)
+                        ?.mapNotNull { (k, v) -> (v as? JsonPrimitive)?.content?.toIntOrNull()?.let { k to it } }
+                        ?.toMap().orEmpty(),
+                )
+            }
+        }
+    }
+
     /**
      * One-shot gateway health probe (`GET /health`) for the Settings "Test link" button. Success
      * returns a short human line ("ok · hermes-agent 0.18.0"); every failure mode comes back as a
