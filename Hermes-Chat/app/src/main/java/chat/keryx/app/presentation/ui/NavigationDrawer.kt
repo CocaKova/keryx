@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.keryx.app.domain.model.RoomInvite
 import chat.keryx.app.domain.model.RoomProfile
 import chat.keryx.app.domain.model.RoomType
 import chat.keryx.app.domain.model.Session
@@ -222,7 +223,22 @@ fun NavigationDrawerContent(
             // (While searching, show everything that matches.)
             val listRooms = if (query.isBlank()) filtered.filter { it.id !in pinnedRoomIds } else filtered
 
+            val invites by viewModel.invites.collectAsState()
+
             LazyColumn(modifier = Modifier.weight(1f)) {
+                // Pending invitations first — they need a decision, not a scroll hunt.
+                if (invites.isNotEmpty() && query.isBlank()) {
+                    item { DrawerSectionHeader("Invites") }
+                    items(invites, key = { "invite-${it.id}" }) { invite ->
+                        InviteRow(
+                            invite = invite,
+                            onAccept = { viewModel.acceptInvite(invite.id) },
+                            onDecline = { viewModel.declineInvite(invite.id) },
+                        )
+                    }
+                    item { Spacer(modifier = Modifier.height(14.dp)) }
+                }
+
                 if (pinned.isNotEmpty() && query.isBlank()) {
                     item { DrawerSectionHeader("Quick Rooms") }
                     item {
@@ -266,6 +282,7 @@ fun NavigationDrawerContent(
                             pendingAvatarRoomId = room.id
                             avatarPicker.launch("image/*")
                         },
+                        onLeave = { viewModel.leaveRoom(room.id) },
                         avatarLoader = { viewModel.loadAvatar(it) },
                         previewLoader = { viewModel.roomPreview(room.id, room.timestamp) },
                     )
@@ -380,15 +397,21 @@ fun RoomRow(
     onClick: () -> Unit,
     onTogglePin: () -> Unit,
     onSetAvatar: () -> Unit,
+    onLeave: (() -> Unit)? = null,
     avatarLoader: suspend (String) -> ByteArray?,
     previewLoader: (suspend () -> String?)? = null,
 ) {
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    // Long-press menu (pin/unpin + leave). Replaced the instant pin toggle once leaving rooms
+    // became possible — two destructive-adjacent actions can't share one blind gesture.
+    var menuOpen by remember { mutableStateOf(false) }
+    var confirmLeave by remember { mutableStateOf(false) }
     // Last-message snippet, resolved lazily per row (cached in the VM keyed on room.timestamp so
     // it only refetches after new activity). Keyed on the timestamp so a new message refreshes it.
     val preview by produceState<String?>(initialValue = null, room.id, room.timestamp) {
         value = previewLoader?.invoke()
     }
+    Box {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -396,13 +419,11 @@ fun RoomRow(
             .padding(vertical = 2.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent)
-            // Long-press anywhere on the row to pin/unpin — replaces the
-            // always-visible star button that cluttered every row.
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = {
                     haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                    onTogglePin()
+                    if (onLeave != null) menuOpen = true else onTogglePin()
                 },
             )
             .padding(start = 8.dp, end = 10.dp, top = 10.dp, bottom = 10.dp)
@@ -479,6 +500,72 @@ fun RoomRow(
                         fontWeight = FontWeight.Bold,
                     )
                 }
+            }
+        }
+    }
+    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+        DropdownMenuItem(
+            text = { Text(if (isPinned) "Unpin from Quick Rooms" else "Pin to Quick Rooms") },
+            onClick = { menuOpen = false; onTogglePin() },
+        )
+        DropdownMenuItem(
+            text = { Text("Leave room", color = MaterialTheme.colorScheme.error) },
+            onClick = { menuOpen = false; confirmLeave = true },
+        )
+    }
+    } // end anchor Box
+    if (confirmLeave) {
+        AlertDialog(
+            onDismissRequest = { confirmLeave = false },
+            title = { Text("Leave ${room.name}?", fontSize = 16.sp) },
+            text = { Text("You'll stop receiving its messages; rejoining needs a new invite.", fontSize = 13.sp) },
+            confirmButton = {
+                TextButton(onClick = { confirmLeave = false; onLeave?.invoke() }) {
+                    Text("Leave", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmLeave = false }) { Text("Cancel") }
+            },
+        )
+    }
+}
+
+/** One pending invitation: room name + the accept/decline decision, right in the drawer. */
+@Composable
+private fun InviteRow(
+    invite: RoomInvite,
+    onAccept: () -> Unit,
+    onDecline: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = invite.name,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            "You've been invited to this room",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 11.sp,
+        )
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = onDecline) {
+                Text("Decline", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+            }
+            TextButton(onClick = onAccept) {
+                Text("Accept", color = MaterialTheme.colorScheme.primary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
             }
         }
     }

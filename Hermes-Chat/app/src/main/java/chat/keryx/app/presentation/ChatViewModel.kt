@@ -699,6 +699,9 @@ class ChatViewModel(
             }
         }
         viewModelScope.launch {
+            repository.getInvites().collectLatest { _invites.value = it }
+        }
+        viewModelScope.launch {
             messages.collect { msgs ->
                 val last = msgs.lastOrNull()
                 android.util.Log.i(
@@ -1208,6 +1211,7 @@ class ChatViewModel(
         if (text.startsWith("/")) _commandFilter.value = text.removePrefix("/").substringBefore(' ')
         // Keep the per-room draft current so an app kill / room switch never loses typed text.
         _currentSession.value?.id?.let { settingsRepository.setDraft(it, text) }
+        broadcastTyping(text)
     }
 
     /** The saved (unsent) composer text for [roomId] — restored when the room opens. */
@@ -1288,6 +1292,79 @@ class ChatViewModel(
         }
         _replyTarget.value = null
         settingsRepository.setDraft(session.id, "")
+        stopTypingBroadcast(session.id)
+    }
+
+    // --- Outgoing typing (m.typing) — so other clients see us composing ------------------------
+
+    private var typingSentAt = 0L
+    private var typingRoomId: String? = null
+
+    /** Throttled m.typing broadcast driven by composer text changes. A refresh every ~4s keeps the
+     *  30s server-side timeout alive while composing; clearing the composer stops it eagerly. */
+    private fun broadcastTyping(text: String) {
+        val room = _currentSession.value?.id ?: return
+        val now = System.currentTimeMillis()
+        if (text.isBlank()) {
+            stopTypingBroadcast(room)
+        } else if (now - typingSentAt > 4_000L || typingRoomId != room) {
+            typingSentAt = now
+            typingRoomId = room
+            viewModelScope.launch { repository.setTyping(room, true) }
+        }
+    }
+
+    private fun stopTypingBroadcast(roomId: String) {
+        if (typingRoomId == null) return
+        typingSentAt = 0L
+        typingRoomId = null
+        viewModelScope.launch { repository.setTyping(roomId, false) }
+    }
+
+    // --- Room membership: invites, leaving ------------------------------------------------------
+
+    private val _invites = MutableStateFlow<List<chat.keryx.app.domain.model.RoomInvite>>(emptyList())
+    val invites: StateFlow<List<chat.keryx.app.domain.model.RoomInvite>> = _invites.asStateFlow()
+
+    fun acceptInvite(roomId: String) {
+        viewModelScope.launch {
+            repository.acceptInvite(roomId)
+                .onSuccess { _toasts.tryEmit("Joined — the room appears on the next sync") }
+                .onFailure { _toasts.tryEmit("Join failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    fun declineInvite(roomId: String) {
+        viewModelScope.launch {
+            repository.leaveRoom(roomId)
+                .onSuccess { _toasts.tryEmit("Invite declined") }
+                .onFailure { _toasts.tryEmit("Decline failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    fun leaveRoom(roomId: String) {
+        viewModelScope.launch {
+            repository.leaveRoom(roomId)
+                .onSuccess {
+                    _toasts.tryEmit("Left room")
+                    if (settingsRepository.lastRoomId == roomId) settingsRepository.lastRoomId = null
+                    // Move off the dead room so the chat pane never points at a membership we lost.
+                    if (_currentSession.value?.id == roomId) {
+                        val next = _rooms.value.firstOrNull { it.id != roomId }
+                        if (next != null) selectSession(Session(next.id, next.id, next.name, 0L))
+                        else _currentSession.value = null
+                    }
+                }
+                .onFailure { _toasts.tryEmit("Leave failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    /** Delete (redact) a message. The event body vanishes for everyone on sync. */
+    fun deleteMessage(sessionId: String, eventId: String) {
+        viewModelScope.launch {
+            repository.redactMessage(sessionId, eventId)
+                .onFailure { _toasts.tryEmit("Delete failed: ${it.message?.take(80)}") }
+        }
     }
 
     fun loginToMatrix(username: String, password: String, onResult: (Boolean, String?) -> Unit) {
