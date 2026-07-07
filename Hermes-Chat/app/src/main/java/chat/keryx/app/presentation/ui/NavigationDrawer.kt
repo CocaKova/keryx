@@ -314,8 +314,11 @@ fun NavigationDrawerContent(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp),
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(themeText, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    // maxLines + softWrap=false: the three equal-width cells get tight at large
+                    // font scales, and a borderline fit must never wrap the label's last letter.
+                    Text(themeText, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp,
+                        maxLines = 1, softWrap = false)
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -331,8 +334,9 @@ fun NavigationDrawerContent(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp),
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Missions", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Missions", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp,
+                        maxLines = 1, softWrap = false)
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -348,8 +352,9 @@ fun NavigationDrawerContent(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp),
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Settings", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Settings", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp,
+                        maxLines = 1, softWrap = false)
                 }
             }
         }
