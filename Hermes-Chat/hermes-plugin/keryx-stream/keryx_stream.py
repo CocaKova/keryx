@@ -879,13 +879,51 @@ def _bust_skills_prompt_cache() -> None:
         logger.debug("skills prompt cache bust failed", exc_info=True)
 
 
+_FRONTMATTER_NAME = re.compile(r"^name:\s*(.+?)\s*$", re.MULTILINE)
+
+
+def _frontmatter_name(skill_md: Path) -> Optional[str]:
+    try:
+        head = skill_md.read_text(encoding="utf-8", errors="replace")[:2048]
+    except OSError:
+        return None
+    if not head.startswith("---"):
+        return None
+    m = _FRONTMATTER_NAME.search(head.split("\n---", 1)[0])
+    return m.group(1).strip().strip("\"'").lower() if m else None
+
+
+def _find_skill_dir(name: str) -> Optional[Path]:
+    """Directory-basename match first (canonical, what _edit_skill uses), then
+    a frontmatter-name fallback: /v1/skills lists frontmatter display names,
+    which may differ from the dir name (spaces, capitals). Callers get the
+    canonical basename back via the response's "name" field."""
+    sm = _skill_manager()
+    found = sm._find_skill(name)
+    if found:
+        return found["path"]
+    try:
+        from agent.skill_utils import get_all_skills_dirs, is_excluded_skill_path
+    except Exception:
+        return None
+    want = name.strip().lower()
+    for skills_dir in get_all_skills_dirs():
+        if not skills_dir.exists():
+            continue
+        for skill_md in skills_dir.rglob("SKILL.md"):
+            if is_excluded_skill_path(skill_md):
+                continue
+            if _frontmatter_name(skill_md) == want:
+                return skill_md.parent
+    return None
+
+
 def skill_read(name: str) -> Optional[Dict[str, Any]]:
     """Full SKILL.md + sidecar-file listing, or None when unknown."""
     sm = _skill_manager()
-    found = sm._find_skill(name)
-    if not found:
+    skill_dir = _find_skill_dir(name)
+    if skill_dir is None:
         return None
-    skill_dir: Path = found["path"]
     try:
         content = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
     except OSError:
@@ -906,7 +944,9 @@ def skill_read(name: str) -> Optional[Dict[str, Any]]:
         and not p.name.startswith(".")
     )
     return {
-        "name": name,
+        # Canonical directory basename — PUT /keryx/skills/{name} wants THIS,
+        # even when the caller looked the skill up by its display name.
+        "name": skill_dir.name,
         "category": category,
         "content": content,
         "files": files,

@@ -68,6 +68,23 @@ def test_read_flat_and_nested_layouts(roots):
     assert ks.skill_read("no-such-skill") is None
 
 
+def test_read_resolves_frontmatter_display_names(roots):
+    """/v1/skills lists frontmatter names ("Financial Dashboard Implementation")
+    that can differ from the dir basename — GET must resolve both and hand back
+    the canonical basename for the PUT that follows."""
+    local, _ = roots
+    skill_dir = local / "fancy-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text(
+        "---\nname: Fancy Skill Display Name\ndescription: test\n---\n\nBody.\n",
+        encoding="utf-8",
+    )
+    got = ks.skill_read("Fancy Skill Display Name")
+    assert got is not None
+    assert got["name"] == "fancy-skill"  # canonical, PUT-able
+    assert ks.skill_read("fancy-skill")["name"] == "fancy-skill"
+
+
 def test_write_updates_disk_and_keeps_bak(roots):
     local, _ = roots
     skill_dir = _seed(local, "scratch-skill")
