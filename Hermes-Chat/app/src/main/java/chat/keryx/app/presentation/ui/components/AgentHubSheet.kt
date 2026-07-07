@@ -769,7 +769,8 @@ private fun SkillsTab(viewModel: ChatViewModel) {
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     items(shown, key = { it.name }) { s ->
-                        Column {
+                        // Tap opens the Skill Forge (1.8): full SKILL.md, edit, save.
+                        Column(Modifier.fillMaxWidth().clickable { viewModel.openSkillForge(s.name) }) {
                             Text(s.name, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                             if (s.description.isNotBlank()) {
                                 Text(s.description, fontSize = 11.sp,

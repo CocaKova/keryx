@@ -122,8 +122,8 @@ private fun kindEmoji(kind: String) = when (kind.lowercase()) {
 
 /**
  * "Skill Distilled" pill shown when SILAS closes its learning loop and saves a new procedural skill.
- * Tap to peek at what it learned. Full editing (the Skill Forge) lands once the keryx plugin's
- * read/write commands are wired; for now this surfaces the distillation so it isn't invisible.
+ * Tap to peek at what it learned; "Open in Skill Forge" (1.8) jumps to the full viewer/editor via
+ * [LocalSkillForgeOpener] — the render chain doesn't carry the ViewModel, the CompositionLocal does.
  */
 @Composable
 fun SkillDistilledPill(skill: MessageParser.Segment.SkillDistilled, baseColor: Color) {
@@ -167,10 +167,16 @@ fun SkillDistilledPill(skill: MessageParser.Segment.SkillDistilled, baseColor: C
                     Text(skill.summary, color = baseColor.copy(alpha = 0.85f), fontSize = 13.sp)
                 }
                 Spacer(modifier = Modifier.padding(top = 4.dp))
+                val openForge = LocalSkillForgeOpener.current
                 Text(
-                    "Editing this skill (the Skill Forge) unlocks when the keryx plugin is enabled.",
-                    color = baseColor.copy(alpha = 0.5f),
+                    "Open in Skill Forge →",
+                    color = accent.copy(alpha = 0.9f),
                     fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { openForge(skill.id.ifBlank { skill.name }) }
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
                 )
             }
         }

@@ -469,6 +469,38 @@ class ChatViewModel(
     fun refreshHubSkills() = _hubSkills.refreshFrom { skills() }
     fun refreshHubToolsets() = _hubToolsets.refreshFrom { toolsets() }
 
+    // --- Skill Forge -----------------------------------------------------------------------------
+
+    /** The skill open in the Forge sheet (lookup name — dir basename or display name; the sheet
+     *  switches to the canonical name the gateway hands back). Null = closed. One StateFlow so the
+     *  Skills tab and in-chat SkillDistilled pills share a single hosted sheet. */
+    private val _skillForgeTarget = MutableStateFlow<String?>(null)
+    val skillForgeTarget: StateFlow<String?> = _skillForgeTarget.asStateFlow()
+
+    fun openSkillForge(name: String) {
+        if (name.isBlank()) return
+        _skillForgeTarget.value = name
+    }
+
+    fun closeSkillForge() {
+        _skillForgeTarget.value = null
+    }
+
+    suspend fun skillDetail(name: String): Result<chat.keryx.app.data.remote.HermesStreamClient.SkillDetail> =
+        gatewayClient()?.skillGet(name)
+            ?: Result.failure(IllegalStateException("Hermes Link is off"))
+
+    /** Save a SKILL.md rewrite. [onDone] gets (success, message) — the gateway's own note on
+     *  success ("index refreshes for new sessions") or its validation/scan error verbatim. */
+    fun skillSave(name: String, content: String, onDone: (Boolean, String) -> Unit) {
+        val client = gatewayClient() ?: run { onDone(false, "Hermes Link is off"); return }
+        viewModelScope.launch {
+            client.skillPut(name, content)
+                .onSuccess { note -> refreshHubSkills(); onDone(true, note) }
+                .onFailure { onDone(false, it.message ?: "save failed") }
+        }
+    }
+
     /** Pause/resume/run a scheduled job, then re-pull the list so the card reflects reality. */
     fun hubJobAction(jobId: String, action: String) {
         val client = gatewayClient() ?: return
