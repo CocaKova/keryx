@@ -33,7 +33,9 @@ import json
 import logging
 import os
 import re
+import shutil
 import threading
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("gateway.keryx_stream")
@@ -699,6 +701,67 @@ def kanban_events_since(conn: Any, since: int, limit: int = 200) -> Dict[str, An
     return {"events": events, "cursor": cursor}
 
 
+# --- Notify subscriptions (Keryx 1.8 real-time mission alerts) -------------
+# The gateway's kanban-notifier watcher tails task_events every ~5s and pushes
+# terminal transitions (completed/blocked/...) as a NATIVE message to every
+# (platform, chat_id, thread_id) row in kanban_notify_subs. These helpers just
+# manage those rows — delivery is entirely the watcher's job, so a subscribed
+# Matrix room gets a real push message and the app needs no new plumbing.
+# The watcher deletes subs itself once a task is genuinely done/archived;
+# clients must treat a vanished sub as "task ended", not an error.
+
+# Columns the app renders. Pinned by name (schema-drift armor, 1.6 rule).
+_SUB_FIELDS = ("task_id", "platform", "chat_id", "thread_id", "created_at")
+
+
+def kanban_subs_list(kb: Any, conn: Any) -> Dict[str, Any]:
+    return {
+        "subs": [
+            {f: row.get(f) for f in _SUB_FIELDS}
+            for row in kb.list_notify_subs(conn)
+        ]
+    }
+
+
+def kanban_subscribe(
+    kb: Any, conn: Any, task_id: str, payload: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """Subscribe a chat to a task's terminal events. None = unknown task."""
+    chat_id = str(payload.get("chat_id") or "").strip()
+    if not chat_id:
+        raise ValueError("chat_id is required (which room receives the alert)")
+    if kb.get_task(conn, task_id) is None:
+        return None
+    kb.add_notify_sub(
+        conn,
+        task_id=task_id,
+        platform=str(payload.get("platform") or "matrix").strip(),
+        chat_id=chat_id,
+        thread_id=str(payload.get("thread_id") or "") or None,
+        user_id=KANBAN_ACTOR,
+        # None on purpose: an unowned sub is adopted by whichever notifier
+        # profile runs the watcher, so alerts keep flowing after profile swaps.
+        notifier_profile=None,
+    )
+    return {"task_id": task_id, "subscribed": True}
+
+
+def kanban_unsubscribe(
+    kb: Any, conn: Any, task_id: str, payload: Dict[str, Any]
+) -> Dict[str, Any]:
+    chat_id = str(payload.get("chat_id") or "").strip()
+    if not chat_id:
+        raise ValueError("chat_id is required")
+    removed = kb.remove_notify_sub(
+        conn,
+        task_id=task_id,
+        platform=str(payload.get("platform") or "matrix").strip(),
+        chat_id=chat_id,
+        thread_id=str(payload.get("thread_id") or "") or None,
+    )
+    return {"task_id": task_id, "subscribed": False, "removed": bool(removed)}
+
+
 def _make_kanban_handler(check_auth, work):
     """Shared shell: auth → run [work] (sync sqlite) off the event loop →
     JSON. [work] gets (kb, conn, request-ish dict) and returns (status, body)."""
@@ -739,6 +802,270 @@ def _make_kanban_handler(check_auth, work):
     return handler
 
 
+def _make_json_handler(check_auth, work):
+    """Generic shell for non-kanban routes: auth → JSON body (POST/PUT) →
+    run [work] (sync filesystem/sqlite) off the event loop → JSON response.
+    [work] gets (request, body) and returns (status, payload)."""
+    from aiohttp import web
+
+    async def handler(request: "web.Request") -> "web.Response":
+        auth_err = check_auth(request)
+        if auth_err is not None:
+            return auth_err
+        try:
+            body: Dict[str, Any] = {}
+            if request.method in ("POST", "PUT"):
+                try:
+                    body = await request.json()
+                except Exception:
+                    return web.json_response(
+                        {"error": {"message": "invalid JSON body"}}, status=400
+                    )
+                if not isinstance(body, dict):
+                    return web.json_response(
+                        {"error": {"message": "JSON object body required"}}, status=400
+                    )
+            status, payload = await asyncio.to_thread(work, request, body)
+            return web.json_response(payload, status=status)
+        except ValueError as e:
+            return web.json_response({"error": {"message": str(e)}}, status=400)
+        except Exception:
+            logger.exception("keryx handler failed: %s", request.path)
+            return web.json_response({"error": {"message": "unavailable"}}, status=500)
+
+    return handler
+
+
+# ---------------------------------------------------------------------------
+# Skill Forge (Keryx 1.8) — read/write SKILL.md over the gateway's own skill
+# machinery. Writes go through tools.skill_manager_tool._edit_skill /
+# _create_skill so the phone gets the same frontmatter validation, atomic
+# write, and security-scan-with-rollback the agent's skill_manage tool has.
+# Skills found outside ~/.hermes/skills (skills.external_dirs) are read-only:
+# _edit_skill would happily write there, so the refusal lives HERE.
+# ---------------------------------------------------------------------------
+
+# Skill names are directory basenames; anything path-shaped is hostile.
+_SKILL_NAME_BAD = re.compile(r"[/\\]|\.\.")
+
+# One-deep undo written next to SKILL.md before every edit; hidden from the
+# app's file listing. rglob("SKILL.md") in the loader can't match it.
+_SKILL_BAK = "SKILL.md.bak"
+
+
+def _skill_manager():
+    from tools import skill_manager_tool as sm
+
+    return sm
+
+
+def _is_under(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(root.resolve())
+        return True
+    except (ValueError, OSError):
+        return False
+
+
+def _bust_skills_prompt_cache() -> None:
+    """Drop the never-revalidating skills-prompt LRU so NEW sessions see the
+    edit immediately. Running sessions keep their cached system prompt —
+    that's per-session state, not ours to invalidate."""
+    try:
+        from agent.prompt_builder import clear_skills_system_prompt_cache
+
+        clear_skills_system_prompt_cache()
+    except Exception:
+        logger.debug("skills prompt cache bust failed", exc_info=True)
+
+
+def skill_read(name: str) -> Optional[Dict[str, Any]]:
+    """Full SKILL.md + sidecar-file listing, or None when unknown."""
+    sm = _skill_manager()
+    found = sm._find_skill(name)
+    if not found:
+        return None
+    skill_dir: Path = found["path"]
+    try:
+        content = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+    except OSError:
+        return None
+    category = None
+    if _is_under(skill_dir, sm.SKILLS_DIR):
+        rel = skill_dir.resolve().relative_to(sm.SKILLS_DIR.resolve())
+        if len(rel.parts) > 1:
+            category = rel.parts[0]
+        readonly = False
+    else:
+        readonly = True
+    files = sorted(
+        str(p.relative_to(skill_dir))
+        for p in skill_dir.rglob("*")
+        if p.is_file()
+        and p.name not in ("SKILL.md", _SKILL_BAK)
+        and not p.name.startswith(".")
+    )
+    return {
+        "name": name,
+        "category": category,
+        "content": content,
+        "files": files,
+        "readonly": readonly,
+    }
+
+
+def skill_write(name: str, content: str) -> Tuple[int, Dict[str, Any]]:
+    sm = _skill_manager()
+    found = sm._find_skill(name)
+    if not found:
+        return 404, {"error": {"message": f"unknown skill '{name}'"}}
+    skill_dir: Path = found["path"]
+    if not _is_under(skill_dir, sm.SKILLS_DIR):
+        return 403, {
+            "error": {"message": "skill lives in a read-only external directory"}
+        }
+    skill_md = skill_dir / "SKILL.md"
+    try:
+        if skill_md.exists():
+            shutil.copy2(skill_md, skill_dir / _SKILL_BAK)
+    except OSError:
+        logger.warning("skill backup failed for %s", name, exc_info=True)
+    result = sm._edit_skill(name, content)
+    if not result.get("success"):
+        # Validation / security-scan message verbatim — the app renders it.
+        return 400, {"error": {"message": str(result.get("error") or "edit failed")}}
+    _bust_skills_prompt_cache()
+    return 200, {
+        "ok": True,
+        "message": result.get("message"),
+        "note": "skill index refreshes for new sessions",
+    }
+
+
+def skill_create(payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+    name = str(payload.get("name") or "").strip()
+    content = payload.get("content")
+    if not name:
+        raise ValueError("name is required")
+    if _SKILL_NAME_BAD.search(name):
+        raise ValueError("invalid skill name")
+    if not isinstance(content, str) or not content.strip():
+        raise ValueError("content is required")
+    category = str(payload.get("category") or "").strip() or None
+    if category and _SKILL_NAME_BAD.search(category):
+        raise ValueError("invalid category")
+    sm = _skill_manager()
+    result = sm._create_skill(name, content, category)
+    if not result.get("success"):
+        return 400, {"error": {"message": str(result.get("error") or "create failed")}}
+    _bust_skills_prompt_cache()
+    return 200, {"ok": True, "path": result.get("path"), "message": result.get("message")}
+
+
+# ---------------------------------------------------------------------------
+# Session prune (Keryx 1.8) — thin wrapper over hermes_state's new bulk
+# pruner, mirroring the dashboard's POST /api/sessions/prune body/response
+# byte-for-byte where it matters (the dashboard server is disabled on this
+# box, so this is the phone's only door). Only ENDED sessions are ever
+# touched — that guarantee lives upstream in _prune_filter_where.
+# ---------------------------------------------------------------------------
+
+# Attribute filters that suppress the implicit 90-day default (same list as
+# web_server.SessionPrune; "explicit" here = key present in the JSON body,
+# the no-pydantic equivalent of model_fields_set).
+_PRUNE_ATTR_FILTERS = (
+    "source", "title_like", "end_reason", "cwd_prefix",
+    "min_messages", "max_messages", "model_like", "provider",
+    "user_id", "chat_id", "chat_type", "branch_like",
+    "min_tokens", "max_tokens", "min_cost", "max_cost",
+    "min_tool_calls", "max_tool_calls",
+)
+
+# Dry-run sample cap: `matched` carries the true count, the row sample stays
+# phone-sized. Deliberate deviation from the dashboard (which returns all).
+_PRUNE_SAMPLE_CAP = 50
+
+
+def sessions_prune(
+    body: Dict[str, Any], db: Any = None, sessions_dir: Optional[Path] = None
+) -> Dict[str, Any]:
+    """Run (or dry-run) a filtered session prune. [db] injectable for tests."""
+    older = body.get("older_than_days", 90)
+    if older is not None:
+        older = float(older)
+    has_window = (
+        body.get("started_before") is not None
+        or body.get("started_after") is not None
+    )
+    if older is not None and older < 1 and not has_window:
+        raise ValueError("older_than_days must be >= 1")
+    attr_set = any(body.get(f) is not None for f in _PRUNE_ATTR_FILTERS)
+    effective_older = older
+    if has_window or (attr_set and "older_than_days" not in body):
+        effective_older = None
+    filters = dict(
+        older_than_days=effective_older,
+        source=(body.get("source") or None),
+        started_before=body.get("started_before"),
+        started_after=body.get("started_after"),
+        title_like=(body.get("title_like") or None),
+        end_reason=(body.get("end_reason") or None),
+        cwd_prefix=(body.get("cwd_prefix") or None),
+        min_messages=body.get("min_messages"),
+        max_messages=body.get("max_messages"),
+        model_like=(body.get("model_like") or None),
+        provider=(body.get("provider") or None),
+        user_id=(body.get("user_id") or None),
+        chat_id=(body.get("chat_id") or None),
+        chat_type=(body.get("chat_type") or None),
+        branch_like=(body.get("branch_like") or None),
+        min_tokens=body.get("min_tokens"),
+        max_tokens=body.get("max_tokens"),
+        min_cost=body.get("min_cost"),
+        max_cost=body.get("max_cost"),
+        min_tool_calls=body.get("min_tool_calls"),
+        max_tool_calls=body.get("max_tool_calls"),
+        archived=None if body.get("include_archived") else False,
+    )
+    own_db = db is None
+    if own_db:
+        from hermes_state import SessionDB
+
+        db = SessionDB()
+    try:
+        if body.get("dry_run"):
+            rows = db.list_prune_candidates(**filters)
+            return {
+                "ok": True,
+                "removed": 0,
+                "matched": len(rows),
+                # Rows are ordered oldest-first upstream.
+                "oldest_started_at": rows[0]["started_at"] if rows else None,
+                "newest_started_at": rows[-1]["started_at"] if rows else None,
+                "sessions": [
+                    {
+                        "id": r["id"],
+                        "source": r["source"],
+                        "title": r.get("title"),
+                        "model": r.get("model"),
+                        "started_at": r["started_at"],
+                        "message_count": r["message_count"],
+                    }
+                    for r in rows[:_PRUNE_SAMPLE_CAP]
+                ],
+            }
+        if own_db and sessions_dir is None:
+            from hermes_constants import get_hermes_home
+
+            candidate = get_hermes_home() / "sessions"
+            sessions_dir = candidate if candidate.exists() else None
+        removed = db.prune_sessions(sessions_dir=sessions_dir, **filters)
+        return {"ok": True, "removed": removed}
+    finally:
+        if own_db:
+            db.close()
+
+
 def register_keryx_routes(router: Any, check_auth) -> None:
     """Single registrar for every /keryx/* route — api_server.py calls only
     this, so future routes ship in this module (copied wholesale by
@@ -769,8 +1096,53 @@ def register_keryx_routes(router: Any, check_auth) -> None:
         since = int(request.query.get("since", 0) or 0)
         return 200, kanban_events_since(conn, since)
 
+    def _subs(kb, conn, request, body):
+        return 200, kanban_subs_list(kb, conn)
+
+    def _subscribe(kb, conn, request, body):
+        out = kanban_subscribe(kb, conn, request.match_info["task_id"], body)
+        if out is None:
+            return 404, {"error": {"message": "unknown task"}}
+        return 200, out
+
+    def _unsubscribe(kb, conn, request, body):
+        return 200, kanban_unsubscribe(kb, conn, request.match_info["task_id"], body)
+
     router.add_get("/keryx/kanban/board", _make_kanban_handler(check_auth, _board))
     router.add_get("/keryx/kanban/task/{task_id}", _make_kanban_handler(check_auth, _detail))
     router.add_post("/keryx/kanban/task", _make_kanban_handler(check_auth, _create))
     router.add_post("/keryx/kanban/task/{task_id}/comment", _make_kanban_handler(check_auth, _comment))
     router.add_get("/keryx/kanban/events", _make_kanban_handler(check_auth, _events))
+    router.add_get("/keryx/kanban/subs", _make_kanban_handler(check_auth, _subs))
+    router.add_post("/keryx/kanban/task/{task_id}/subscribe", _make_kanban_handler(check_auth, _subscribe))
+    router.add_post("/keryx/kanban/task/{task_id}/unsubscribe", _make_kanban_handler(check_auth, _unsubscribe))
+
+    def _skill_get(request, body):
+        name = request.match_info["name"]
+        if _SKILL_NAME_BAD.search(name):
+            return 400, {"error": {"message": "invalid skill name"}}
+        detail = skill_read(name)
+        if detail is None:
+            return 404, {"error": {"message": f"unknown skill '{name}'"}}
+        return 200, detail
+
+    def _skill_put(request, body):
+        name = request.match_info["name"]
+        if _SKILL_NAME_BAD.search(name):
+            return 400, {"error": {"message": "invalid skill name"}}
+        content = body.get("content")
+        if not isinstance(content, str) or not content.strip():
+            raise ValueError("content is required")
+        return skill_write(name, content)
+
+    def _skill_post(request, body):
+        return skill_create(body)
+
+    router.add_get("/keryx/skills/{name}", _make_json_handler(check_auth, _skill_get))
+    router.add_put("/keryx/skills/{name}", _make_json_handler(check_auth, _skill_put))
+    router.add_post("/keryx/skills", _make_json_handler(check_auth, _skill_post))
+
+    def _prune(request, body):
+        return 200, sessions_prune(body)
+
+    router.add_post("/keryx/sessions/prune", _make_json_handler(check_auth, _prune))

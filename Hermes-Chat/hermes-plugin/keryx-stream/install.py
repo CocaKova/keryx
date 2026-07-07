@@ -8,10 +8,14 @@ Usage:
     python3 install.py [--hermes-root ~/.hermes/hermes-agent]
 
 What it changes:
-  1. Copies keryx_stream.py  → <root>/gateway/keryx_stream.py       (new module, the hub + SSE handler)
+  1. Copies keryx_stream.py  → <root>/gateway/keryx_stream.py       (new module: the hub + SSE
+     handler, plus every /keryx/* HTTP route — capabilities, commands, kanban board/task/comment/
+     events, notify subscriptions (1.8), skill forge read/write (1.8), sessions prune (1.8)).
+     New routes ship via this copy alone; the api_server patch never changes.
   2. gateway/stream_consumer.py — mirrors deltas/segment-breaks/stop to the hub, and routes the
      "suppress homeserver edits?" decision through keryx_stream.suppress_protocol_edits().
-  3. gateway/platforms/api_server.py — registers GET /keryx/stream on the existing API server.
+  3. gateway/platforms/api_server.py — calls keryx_stream.register_keryx_routes() on the existing
+     API server.
 
 After installing, enable streaming in ~/.hermes/config.yaml (the fallback tier's throttle):
     streaming:
