@@ -144,22 +144,24 @@ fun ChatScreen(
     var pendingAttachment by remember { mutableStateOf<PendingAttachment?>(null) }
     var composerHeightPx by remember { mutableStateOf(0) }
 
-    fun stageFromUri(uri: android.net.Uri?, forceImage: Boolean) {
+    fun stageFromUri(uri: android.net.Uri?, fallbackType: String) {
         if (uri == null) return
         val rawBytes = runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
             ?: return
-        val rawType = context.contentResolver.getType(uri) ?: if (forceImage) "image/jpeg" else "application/octet-stream"
-        val isImage = forceImage || rawType.startsWith("image")
+        // Trust the resolver's mime: the gallery hands out videos too now, and a video forced
+        // through the image normalizer would come out corrupted.
+        val rawType = context.contentResolver.getType(uri) ?: fallbackType
+        val isImage = rawType.startsWith("image")
         val (bytes, type) = if (isImage) normalizeImageBytes(rawBytes, rawType) else rawBytes to rawType
         val name = queryDisplayName(context, uri)
         pendingAttachment = PendingAttachment(bytes, name, type, isImage = isImage)
     }
 
     val galleryPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        stageFromUri(uri, forceImage = true)
+        stageFromUri(uri, fallbackType = "image/jpeg")
     }
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        stageFromUri(uri, forceImage = false)
+        stageFromUri(uri, fallbackType = "application/octet-stream")
     }
 
     // Composer state
@@ -602,7 +604,7 @@ fun ChatScreen(
                 textState = textState,
                 onTextChange = { textState = it; viewModel.onComposerTextChanged(it.text) },
                 onSend = ::doSend,
-                onPickGallery = { galleryPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                onPickGallery = { galleryPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) },
                 onPickFile = { filePicker.launch("*/*") },
                 atBottom = atBottom,
                 hasMessages = messages.isNotEmpty(),

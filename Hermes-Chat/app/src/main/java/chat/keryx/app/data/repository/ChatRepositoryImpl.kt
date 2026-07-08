@@ -31,6 +31,7 @@ import net.folivo.trixnity.client.media
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.message.file
 import net.folivo.trixnity.client.room.message.image
+import net.folivo.trixnity.client.room.message.video
 import net.folivo.trixnity.client.room.message.react
 import net.folivo.trixnity.client.room.message.reply
 import net.folivo.trixnity.client.room.message.text
@@ -268,10 +269,10 @@ class ChatRepositoryImpl(
         // describing the image first and answering from memory after.
         val body = caption?.takeIf { it.isNotBlank() } ?: fileName
         client.room.sendMessage(RoomId(sessionId)) {
-            if (ct.contentType == "image") {
-                image(body = body, image = flowOf(bytes), fileName = fileName, type = ct, size = bytes.size.toLong())
-            } else {
-                file(body = body, file = flowOf(bytes), fileName = fileName, type = ct, size = bytes.size.toLong())
+            when (ct.contentType) {
+                "image" -> image(body = body, image = flowOf(bytes), fileName = fileName, type = ct, size = bytes.size.toLong())
+                "video" -> video(body = body, video = flowOf(bytes), fileName = fileName, type = ct, size = bytes.size.toLong())
+                else -> file(body = body, file = flowOf(bytes), fileName = fileName, type = ct, size = bytes.size.toLong())
             }
         }
     }

@@ -20,6 +20,7 @@ trixnity = "4.16.8"
 ktor = "3.1.3"
 sqliteBundled = "2.5.1"
 markdownRenderer = "0.26.0"
+media3 = "1.8.0"
 
 
 [libraries]
@@ -55,6 +56,8 @@ trixnity-client-media-okio = { module = "net.folivo:trixnity-client-media-okio",
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqliteBundled" }
 markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
+androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
+androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
