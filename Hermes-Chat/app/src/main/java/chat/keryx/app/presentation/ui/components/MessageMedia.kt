@@ -108,8 +108,10 @@ fun MessageMedia(
                 Text("🖼  loading…", color = textColor.copy(alpha = 0.6f), fontSize = 12.sp)
             }
         }
+    } else if (kind == MediaKind.VIDEO) {
+        InlineVideo(loadKey, fileName, textColor, loader)
     } else {
-        // Videos / audio / files: tap to download (once) and hand off to the system viewer/player.
+        // Audio / files: tap to download (once) and hand off to the system viewer/player.
         val context = androidx.compose.ui.platform.LocalContext.current
         val scope = androidx.compose.runtime.rememberCoroutineScope()
         var opening by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
@@ -121,6 +123,148 @@ fun MessageMedia(
                 if (bytes != null) openExternally(context, bytes, fileName.ifBlank { "file" }, kind)
                 else android.widget.Toast.makeText(context, "Couldn't load attachment", android.widget.Toast.LENGTH_SHORT).show()
                 opening = false
+            }
+        }
+    }
+}
+
+/** A downloaded, file-backed video ready to render: poster frame + duration for the card. */
+private data class ReadyVideo(val file: java.io.File, val poster: ImageBitmap?, val durationMs: Long)
+
+/**
+ * Built-in video renderer: the bubble shows a poster card (first frame + ▶ + duration) and tapping
+ * it plays the video in a fullscreen in-app ExoPlayer with transport controls — no more punting to
+ * an external app. Bytes are fetched once and cached as a file (ExoPlayer needs a seekable source);
+ * re-entering the chat reuses the file and the poster comes from [KeryxBitmapCache].
+ */
+@Composable
+private fun InlineVideo(
+    loadKey: String,
+    fileName: String,
+    textColor: Color,
+    loader: suspend () -> ByteArray?,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val ready by produceState<ReadyVideo?>(initialValue = null, loadKey) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                val dir = java.io.File(context.cacheDir, "media").apply { mkdirs() }
+                val safeKey = loadKey.replace(Regex("[^A-Za-z0-9._-]"), "_")
+                val ext = fileName.substringAfterLast('.', "mp4").take(5).ifBlank { "mp4" }
+                val file = java.io.File(dir, "video_$safeKey.$ext")
+                if (!file.exists() || file.length() == 0L) {
+                    val bytes = loader() ?: return@runCatching null
+                    file.writeBytes(bytes)
+                }
+                var durationMs = 0L
+                val poster = KeryxBitmapCache.get("$loadKey#vposter") ?: runCatching {
+                    val mmr = android.media.MediaMetadataRetriever()
+                    try {
+                        mmr.setDataSource(file.path)
+                        durationMs = mmr.extractMetadata(
+                            android.media.MediaMetadataRetriever.METADATA_KEY_DURATION
+                        )?.toLongOrNull() ?: 0L
+                        mmr.frameAtTime?.asImageBitmap()
+                            ?.also { KeryxBitmapCache.put("$loadKey#vposter", it) }
+                    } finally { mmr.release() }
+                }.getOrNull()
+                ReadyVideo(file, poster, durationMs)
+            }.getOrNull()
+        }
+    }
+
+    var playing by remember { mutableStateOf(false) }
+    val video = ready
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .widthIn(max = 260.dp)
+            .heightIn(min = 120.dp, max = 180.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color.Black.copy(alpha = 0.35f))
+            .then(if (video != null) Modifier.clickable { playing = true } else Modifier),
+    ) {
+        val poster = video?.poster
+        if (poster != null) {
+            Image(
+                bitmap = poster,
+                contentDescription = fileName.ifBlank { "video" },
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+        if (video == null) {
+            Text("🎬  loading…", color = textColor.copy(alpha = 0.6f), fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 40.dp, vertical = 50.dp))
+        } else {
+            // Play affordance + duration badge over the poster.
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(Color.Black.copy(alpha = 0.55f)),
+            ) {
+                Text("▶", color = Color.White, fontSize = 18.sp)
+            }
+            if (video.durationMs > 0) {
+                Text(
+                    formatDuration(video.durationMs),
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(6.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                )
+            }
+        }
+    }
+    if (playing && video != null) {
+        FullscreenVideoPlayer(video.file) { playing = false }
+    }
+}
+
+private fun formatDuration(ms: Long): String {
+    val totalSec = ms / 1000
+    val m = totalSec / 60
+    val s = totalSec % 60
+    return "%d:%02d".format(m, s)
+}
+
+/** Fullscreen in-app player: ExoPlayer + standard transport controls, ✕ or back to dismiss. */
+@Composable
+private fun FullscreenVideoPlayer(file: java.io.File, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val player = remember {
+            androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
+                setMediaItem(androidx.media3.common.MediaItem.fromUri(android.net.Uri.fromFile(file)))
+                prepare()
+                playWhenReady = true
+            }
+        }
+        androidx.compose.runtime.DisposableEffect(Unit) {
+            onDispose { player.release() }
+        }
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+            androidx.compose.ui.viewinterop.AndroidView(
+                factory = { ctx ->
+                    androidx.media3.ui.PlayerView(ctx).apply {
+                        this.player = player
+                        setShowNextButton(false)
+                        setShowPreviousButton(false)
+                    }
+                },
+                modifier = Modifier.fillMaxSize(),
+            )
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
+            ) {
+                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
             }
         }
     }
