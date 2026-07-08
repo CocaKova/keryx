@@ -106,6 +106,8 @@ class ChatViewModel(
                 m.mediaKind == chat.keryx.app.domain.model.MediaKind.IMAGE ->
                     "🖼 " + (m.content.takeIf { it.isNotBlank() && it != m.fileName } ?: "Photo")
                 m.mediaKind != null -> "📎 ${m.fileName.ifBlank { "Attachment" }}"
+                MessageParser.isSelfImprovementReview(m.content) -> "💾 self-improvement review"
+                m.content.trimStart().startsWith("🗜") -> "🗜 compacting context"
                 MessageParser.isTelemetryMessage(m.content) -> "⏳ status check-in"
                 else -> {
                     val prose = StreamHandoff.normalize(m.content)
@@ -790,6 +792,10 @@ class ChatViewModel(
             hasReasoning && !hasAnswer -> "Reasoning"
             else -> "Working"
         }
+        // The background review's post-turn "💾 Self-improvement review" is telemetry that
+        // arrives AFTER the answer — it must settle immediately, not hold the working banner
+        // through the full mid-run quiet window.
+        if (isTelemetry && MessageParser.isSelfImprovementReview(last.content)) return QUIET_SHORT_MS
         return if (tools.isNotEmpty() || !hasAnswer) QUIET_LONG_MS else QUIET_SHORT_MS
     }
 

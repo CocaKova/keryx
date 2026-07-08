@@ -118,6 +118,12 @@ object MessageParser {
         // heartbeats are plumbing, not dialogue — rendering them as telemetry keeps them from
         // ending a live tool run (or masquerading as tool calls).
         "⏩", "⏳",
+        // Context compaction ("🗜️ Compacting context — summarizing earlier conversation…") and
+        // the post-turn self-improvement review ("💾 Self-improvement review: …") are gateway
+        // plumbing too: without these prefixes the compactor line parses as a phantom
+        // "Compacting" tool call and the review message reads as a fresh answer (re-lighting
+        // the working banner for the full QUIET_LONG window).
+        "🗜", "💾",
         "[cron]", "[telemetry]", "[sync]", "[heartbeat]", "[status]", "[background]",
     )
     private val CHECKIN_PATTERNS = listOf(
@@ -135,6 +141,48 @@ object MessageParser {
         // A message that is nothing but subtext/footer lines is pure telemetry.
         val lines = body.lines().filter { it.isNotBlank() }
         return lines.isNotEmpty() && lines.all { isSubtextLine(it) || isFooterLine(it) }
+    }
+
+    // --- Self-improvement review ------------------------------------------------------------
+    // The gateway's background memory/skill review posts ONE post-turn summary message, its
+    // actions joined with " · " (agent/background_review.py). Verbose-mode item shapes:
+    //   📝 Skill 'name' patched: "old…" → "new…"  /  created: description  /  rewritten: …
+    //   Memory ➕ preview  ·  Memory ✏️ preview  ·  User profile ➖ preview
+    // Generic ("on") mode items are raw tool messages ("Skill 'x' updated", "Memory entry
+    // created"). Skill items surface as SkillDistilled pills (tap → Skill Forge); the rest
+    // renders as a quiet telemetry block, one action per line instead of one " · " mega-line.
+    private val REVIEW_PREFIX = Regex("""^💾\s*Self-improvement review:\s*""")
+    private val REVIEW_SKILL_ITEM =
+        Regex("""^(?:📝\s*)?Skill\s+['"“]?(.+?)['"”]?\s+(patched|created|rewritten|updated)\b[:.]?\s*(.*)$""")
+
+    /** True when a message is the background review's post-turn summary. */
+    fun isSelfImprovementReview(content: String): Boolean =
+        REVIEW_PREFIX.containsMatchIn(extractKeryx(content).text.trim())
+
+    /** Segments for a review summary, or null when [body] isn't one. */
+    private fun parseSelfImprovementReview(body: String): List<Segment>? {
+        val t = body.trim()
+        val m = REVIEW_PREFIX.find(t) ?: return null
+        val items = t.substring(m.range.last + 1).split(" · ").map { it.trim() }.filter { it.isNotEmpty() }
+        val skills = mutableListOf<Segment.SkillDistilled>()
+        val quiet = mutableListOf<String>()
+        for (item in items) {
+            val sm = REVIEW_SKILL_ITEM.matchEntire(item)
+            if (sm != null) {
+                val (name, verb, detail) = sm.destructured
+                val summary = if (detail.isBlank()) verb else "$verb: $detail"
+                skills += Segment.SkillDistilled("", name.trim(), summary.trim())
+            } else {
+                quiet += item
+            }
+        }
+        val segments = mutableListOf<Segment>()
+        segments += Segment.Telemetry(
+            (listOf("💾 Self-improvement review") + quiet).joinToString("\n"),
+            TelemetryKind.SUBTEXT,
+        )
+        segments += skills
+        return segments
     }
 
     /** True for a standalone runtime footer event (`model · 42% · ~/dir`), not cron/status telemetry. */
@@ -364,6 +412,16 @@ object MessageParser {
         // reasoning from the raw body made the whole block leak into the answer as prose.
         val keryx = extractKeryx(content)
         val (reasoning, body) = extractReasoning(keryx.text)
+        // A self-improvement review summary is fully structured — skip the line walker (whose
+        // tool/telemetry heuristics would mangle the " · "-joined action list).
+        parseSelfImprovementReview(body)?.let { review ->
+            val segs = mutableListOf<Segment>()
+            if (reasoning != null) segs.add(Segment.Thinking(reasoning))
+            segs.addAll(review)
+            keryx.skill?.let { segs.add(it) }
+            if (keryx.citations.isNotEmpty()) segs.add(Segment.Citations(keryx.citations))
+            return segs
+        }
         val segments = mutableListOf<Segment>()
         if (reasoning != null) segments.add(Segment.Thinking(reasoning))
         val lines = body.lines()

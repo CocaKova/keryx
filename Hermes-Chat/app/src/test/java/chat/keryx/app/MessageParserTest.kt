@@ -388,4 +388,53 @@ class MessageParserTest {
         assertTrue(!thinking.text.contains('⟦'))
         assertTrue(segs.filterIsInstance<MessageParser.Segment.Citations>().isNotEmpty())
     }
+
+    // --- Compaction status + self-improvement review (gateway plumbing messages) ------------
+
+    @Test
+    fun compactionStatus_isTelemetryNotPhantomTool() {
+        val msg = "🗜️ Compacting context — summarizing earlier conversation so I can continue..."
+        assertTrue(MessageParser.isTelemetryMessage(msg))
+        // Without the 🗜 telemetry prefix this line matched the gerund tool shape
+        // ("Compacting" + args) and inflated tool runs with a phantom call.
+        assertTrue(MessageParser.parse(msg).none { it is MessageParser.Segment.Tools })
+    }
+
+    @Test
+    fun selfImprovementReview_verboseSkillAndMemoryActions() {
+        val msg = "💾 Self-improvement review: " +
+            "📝 Skill 'android-builds' patched: \"old step\" → \"new step\" · " +
+            "Memory ➕ Jonny prefers verbose review summaries"
+        assertTrue(MessageParser.isTelemetryMessage(msg))
+        assertTrue(MessageParser.isSelfImprovementReview(msg))
+
+        val segs = MessageParser.parse(msg)
+        val skill = segs.filterIsInstance<MessageParser.Segment.SkillDistilled>().single()
+        assertEquals("android-builds", skill.name)
+        assertTrue(skill.summary.startsWith("patched:"))
+        assertTrue(skill.summary.contains("new step"))
+
+        val telemetry = segs.filterIsInstance<MessageParser.Segment.Telemetry>().single()
+        assertTrue(telemetry.text.startsWith("💾 Self-improvement review"))
+        // One action per line, not one " · " mega-line; skill items live in the pill instead.
+        assertTrue(telemetry.text.contains("\nMemory ➕ Jonny prefers verbose review summaries"))
+        assertTrue(!telemetry.text.contains("android-builds"))
+    }
+
+    @Test
+    fun selfImprovementReview_genericModeStillStructured() {
+        val msg = "💾 Self-improvement review: Skill 'wiki-hygiene' updated · Memory entry created"
+        val segs = MessageParser.parse(msg)
+        val skill = segs.filterIsInstance<MessageParser.Segment.SkillDistilled>().single()
+        assertEquals("wiki-hygiene", skill.name)
+        val telemetry = segs.filterIsInstance<MessageParser.Segment.Telemetry>().single()
+        assertTrue(telemetry.text.contains("Memory entry created"))
+    }
+
+    @Test
+    fun ordinaryProseMentioningSkills_notAReview() {
+        assertTrue(!MessageParser.isSelfImprovementReview("I patched the Skill 'foo' for you today."))
+        val segs = MessageParser.parse("Here's a plan: Skill 'foo' updated · then we ship.")
+        assertTrue(segs.filterIsInstance<MessageParser.Segment.SkillDistilled>().isEmpty())
+    }
 }
