@@ -260,14 +260,18 @@ class ChatRepositoryImpl(
         }.onFailure { android.util.Log.w("KeryxMedia", "load failed for $eventId: ${it.message}") }.getOrNull()
     }
 
-    override suspend fun sendAttachment(sessionId: String, bytes: ByteArray, fileName: String, contentType: String) {
+    override suspend fun sendAttachment(sessionId: String, bytes: ByteArray, fileName: String, contentType: String, caption: String?) {
         val client = matrix.client.value ?: return
         val ct = ContentType.parse(contentType)
+        // MSC2530: with a caption, body carries the user's words and fileName keeps the real name —
+        // one event, so Hermes sees the question and the image as a single turn instead of
+        // describing the image first and answering from memory after.
+        val body = caption?.takeIf { it.isNotBlank() } ?: fileName
         client.room.sendMessage(RoomId(sessionId)) {
             if (ct.contentType == "image") {
-                image(body = fileName, image = flowOf(bytes), fileName = fileName, type = ct, size = bytes.size.toLong())
+                image(body = body, image = flowOf(bytes), fileName = fileName, type = ct, size = bytes.size.toLong())
             } else {
-                file(body = fileName, file = flowOf(bytes), fileName = fileName, type = ct, size = bytes.size.toLong())
+                file(body = body, file = flowOf(bytes), fileName = fileName, type = ct, size = bytes.size.toLong())
             }
         }
     }

@@ -103,7 +103,8 @@ class ChatViewModel(
         fun previewOf(m: Message): String {
             val who = if (m.sender == SenderType.ME) "You: " else ""
             val body = when {
-                m.mediaKind == chat.keryx.app.domain.model.MediaKind.IMAGE -> "🖼 Photo"
+                m.mediaKind == chat.keryx.app.domain.model.MediaKind.IMAGE ->
+                    "🖼 " + (m.content.takeIf { it.isNotBlank() && it != m.fileName } ?: "Photo")
                 m.mediaKind != null -> "📎 ${m.fileName.ifBlank { "Attachment" }}"
                 MessageParser.isTelemetryMessage(m.content) -> "⏳ status check-in"
                 else -> {
@@ -1345,9 +1346,9 @@ class ChatViewModel(
         settingsRepository.recentCommands = updated
     }
 
-    fun sendAttachment(bytes: ByteArray, fileName: String, contentType: String) {
+    fun sendAttachment(bytes: ByteArray, fileName: String, contentType: String, caption: String? = null) {
         val session = _currentSession.value ?: return
-        viewModelScope.launch { repository.sendAttachment(session.id, bytes, fileName, contentType) }
+        viewModelScope.launch { repository.sendAttachment(session.id, bytes, fileName, contentType, caption) }
     }
 
     fun markRoomRead(roomId: String, eventId: String) {
