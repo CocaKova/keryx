@@ -37,8 +37,9 @@ interface ChatRepository {
     /** Download bytes for a media message (handles both plaintext mxc and E2EE-encrypted files). */
     suspend fun mediaBytes(sessionId: String, eventId: String): ByteArray?
 
-    /** Upload and send a media attachment (image -> m.image, otherwise m.file). */
-    suspend fun sendAttachment(sessionId: String, bytes: ByteArray, fileName: String, contentType: String)
+    /** Upload and send a media attachment (image -> m.image, otherwise m.file). A non-null
+     *  [caption] rides in the event body (MSC2530) so text + media land as one turn. */
+    suspend fun sendAttachment(sessionId: String, bytes: ByteArray, fileName: String, contentType: String, caption: String? = null)
 
     /** Mark the room read up to [eventId] (sends read receipt + fully-read marker). */
     suspend fun markRead(roomId: String, eventId: String)

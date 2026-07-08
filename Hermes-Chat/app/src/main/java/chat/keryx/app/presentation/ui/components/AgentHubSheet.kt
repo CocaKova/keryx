@@ -54,7 +54,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -69,6 +74,19 @@ import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.LinkHealth
 
 private val TABS = listOf("Status", "Jobs", "Sessions", "Skills", "Tools")
+
+/**
+ * A hard fling that runs a tab's LazyColumn into its edge used to spill the leftover velocity into
+ * the ModalBottomSheet's own nested-scroll handling — the sheet dragged a few px and sprang back,
+ * over and over (the "scroll down hard and the UI glitches up and down" stutter). Swallow
+ * everything a fling leaves unconsumed before it reaches the sheet; real finger drags
+ * (UserInput) pass through untouched, so swipe-down-to-dismiss still works.
+ */
+private val FlingTamer = object : NestedScrollConnection {
+    override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset =
+        if (source == NestedScrollSource.SideEffect) available else Offset.Zero
+    override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity = available
+}
 
 /**
  * The Agent Hub, grown into the gateway console (1.6 Phase D): the hermes-agent-desktop "at a
@@ -183,7 +201,7 @@ fun AgentHubSheet(
                 }
             }
 
-            Box(modifier = Modifier.weight(1f)) {
+            Box(modifier = Modifier.weight(1f).nestedScroll(FlingTamer)) {
                 when (tab) {
                     0 -> StatusTab(viewModel, health, onDismiss)
                     1 -> JobsTab(viewModel)

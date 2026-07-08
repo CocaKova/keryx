@@ -108,6 +108,7 @@ fun NavigationDrawerContent(
 
     if (showSettings) {
         chat.keryx.app.presentation.ui.components.SettingsScreen(
+            viewModel = viewModel,
             currentAccentColor = currentAccent,
             onAccentColorChanged = { viewModel.setAccentColor(it) },
             currentAccentColor2 = currentAccent2,

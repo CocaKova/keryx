@@ -331,13 +331,18 @@ fun ChatScreen(
     fun doSend() {
         val attachment = pendingAttachment
         val text = textState.text
+        // Text sent alongside an attachment rides in the same event as its caption (one Matrix
+        // event, one agent turn) — except slash commands, which must reach the gateway as text.
+        val caption = text.takeIf { attachment != null && it.isNotBlank() && !it.startsWith("/") }
         if (attachment != null) {
-            viewModel.sendAttachment(attachment.bytes, attachment.name, attachment.contentType)
+            viewModel.sendAttachment(attachment.bytes, attachment.name, attachment.contentType, caption)
             pendingAttachment = null
         }
         if (text.isNotBlank()) {
-            if (text.startsWith("/")) viewModel.recordCommandUse(text)
-            viewModel.sendMessage(text)
+            if (caption == null) {
+                if (text.startsWith("/")) viewModel.recordCommandUse(text)
+                viewModel.sendMessage(text)
+            }
             textState = TextFieldValue("")
         }
     }
@@ -1017,6 +1022,21 @@ fun MessageBubble(
                             textColor = appearance.textColor,
                             loader = mediaLoader,
                         )
+                        // MSC2530 caption: the body carries the sender's words (a bare filename
+                        // body is just the upload name — not worth a text block).
+                        val caption = message.content.takeIf { it.isNotBlank() && it != message.fileName }
+                        if (caption != null) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            CompositionLocalProvider(
+                                LocalDensity provides Density(baseDensity.density, baseDensity.fontScale * textScale)
+                            ) {
+                                MessageContent(
+                                    content = caption,
+                                    textColor = appearance.textColor,
+                                    isStreaming = message.isStreaming,
+                                )
+                            }
+                        }
                     } else {
                         CompositionLocalProvider(
                             LocalDensity provides Density(baseDensity.density, baseDensity.fontScale * textScale)

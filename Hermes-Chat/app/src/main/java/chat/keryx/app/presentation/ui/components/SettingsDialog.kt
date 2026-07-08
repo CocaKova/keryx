@@ -19,9 +19,11 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.*
@@ -42,11 +44,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import chat.keryx.app.presentation.ChatViewModel
 import kotlin.math.atan2
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    viewModel: ChatViewModel,
     currentAccentColor: Color,
     onAccentColorChanged: (Color) -> Unit,
     currentAccentColor2: Color,
@@ -132,10 +136,21 @@ fun SettingsScreen(
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 16.dp)
                 ) {
+                    // Gateway-backed state for the Agent and Companion sections (and their hub
+                    // subtitles). Cheap to collect here — both flows are already hot for the
+                    // Agent Hub and the drawer mascot.
+                    val caps by viewModel.reasoningCaps.collectAsState()
+                    val hubHealth by viewModel.hubHealth.collectAsState()
+                    val petInfo by viewModel.petInfo.collectAsState()
+
                     if (section == null) {
                         Spacer(Modifier.height(4.dp))
                         SettingsHubRow(Icons.Default.Person, "Account",
                             currentUserId ?: "Not signed in") { section = "Account" }
+                        SettingsHubRow(Icons.Default.Memory, "Agent",
+                            caps?.model?.takeIf { it.isNotBlank() } ?: "Brain, telemetry & alerts") { section = "Agent" }
+                        SettingsHubRow(Icons.Default.Pets, "Companion",
+                            petInfo?.displayName?.takeIf { it.isNotBlank() } ?: "The drawer mascot") { section = "Companion" }
                         SettingsHubRow(Icons.Default.Dns, "Connection",
                             matrixUrl.ifBlank { "Homeserver & agent" }) { section = "Connection" }
                         SettingsHubRow(Icons.Default.Bolt, "Hermes Link",
@@ -176,6 +191,96 @@ fun SettingsScreen(
                             Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
                             Text("Sign out")
+                        }
+                    }
+
+                    // --- Agent (gateway-backed: what's running, and how it speaks up) ---
+                    if (section == "Agent") {
+                        LaunchedEffect(Unit) {
+                            viewModel.refreshReasoningCaps()
+                            viewModel.refreshHubHealth()
+                        }
+                        SettingsCard("Brain") {
+                            val rows = listOfNotNull(
+                                caps?.model?.takeIf { it.isNotBlank() }?.let { "Model" to it },
+                                caps?.let {
+                                    "Reasoning" to (it.labels[it.current] ?: it.current.ifBlank { "—" })
+                                },
+                                hubHealth.data?.version?.takeIf { it.isNotBlank() }?.let { "Gateway" to "hermes-agent $it" },
+                                hubHealth.data?.gatewayState?.takeIf { it.isNotBlank() }?.let { "State" to it },
+                            )
+                            if (rows.isEmpty()) {
+                                Text(
+                                    hubHealth.error ?: "Probing the gateway…",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 12.sp,
+                                )
+                            } else rows.forEach { (k, v) ->
+                                Row(modifier = Modifier.padding(vertical = 3.dp)) {
+                                    Text(k, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.width(86.dp))
+                                    Text(v, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface)
+                                }
+                            }
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                "Live console — jobs, sessions, skills, tools — lives in the Agent Hub.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                fontSize = 11.sp,
+                            )
+                        }
+                        SettingsCard("Presence") {
+                            SettingsSwitchRow(
+                                title = "Show telemetry",
+                                subtitle = "Automated check-ins and the runtime footer as quiet blocks",
+                                checked = showTelemetry,
+                                onCheckedChange = onShowTelemetryChanged,
+                            )
+                            SettingsSwitchRow(
+                                title = "Mission alerts",
+                                subtitle = "Notify when a mission completes, blocks, or gives up — checked in the background every 15 minutes",
+                                checked = missionAlertsEnabled,
+                                onCheckedChange = onMissionAlertsChanged,
+                            )
+                        }
+                    }
+
+                    // --- Companion (the petdex mascot) ---
+                    if (section == "Companion") SettingsCard("Companion") {
+                        LaunchedEffect(Unit) { viewModel.refreshPet() }
+                        var showPetPicker by remember { mutableStateOf(false) }
+                        if (showPetPicker) {
+                            PetPickerSheet(viewModel = viewModel, onDismiss = { showPetPicker = false })
+                        }
+                        val pet = petInfo
+                        if (pet != null) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                PetSprite(
+                                    info = pet,
+                                    pose = PetPose.IDLE,
+                                    running = true,
+                                    modifier = Modifier.height(52.dp).width(48.dp),
+                                )
+                                Spacer(Modifier.width(12.dp))
+                                Column {
+                                    Text(pet.displayName.ifBlank { pet.slug },
+                                        fontWeight = FontWeight.SemiBold, fontSize = 15.sp,
+                                        color = MaterialTheme.colorScheme.onSurface)
+                                    Text("Lives in the drawer header — runs while the agent works",
+                                        fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        } else {
+                            Text(
+                                "No companion adopted yet — pick one from the gateway's petdex.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 12.sp,
+                            )
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        OutlinedButton(onClick = { showPetPicker = true }) {
+                            Text(if (petInfo != null) "Choose a different companion" else "Choose a companion")
                         }
                     }
 
@@ -299,19 +404,6 @@ fun SettingsScreen(
                         ) {
                             Text("Test link", fontSize = 13.sp)
                         }
-                        Spacer(Modifier.height(8.dp))
-                        SettingsSwitchRow(
-                            title = "Show telemetry",
-                            subtitle = "Automated check-ins and the runtime footer as quiet blocks",
-                            checked = showTelemetry,
-                            onCheckedChange = onShowTelemetryChanged,
-                        )
-                        SettingsSwitchRow(
-                            title = "Mission alerts",
-                            subtitle = "Notify when a mission completes, blocks, or gives up — checked in the background every 15 minutes",
-                            checked = missionAlertsEnabled,
-                            onCheckedChange = onMissionAlertsChanged,
-                        )
                     }
 
                     // --- Voice dictation ---
