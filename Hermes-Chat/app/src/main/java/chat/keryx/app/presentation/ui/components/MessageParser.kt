@@ -69,8 +69,15 @@ object MessageParser {
      * `vision_analyze`, `graphiti_forget`, but also single-word ones like `terminal`, `patch`,
      * `bash` — without misfiring on ordinary prose like "Note: …" (no leading glyph) or
      * "✨ Session reset!" (the leading glyph isn't followed by `lowercase_word:`).
+     *
+     * The colon must be followed by whitespace (or end the line — an argless call). Hermes always
+     * puts a space there (`name: "args"`), while a URI never does (`https://…`, `mailto:me@x.y`) —
+     * that one grammar fact is what keeps a glyph-prefixed link (`🔗 https://github.com/…`) from
+     * parsing as a tool named "https" and dragging its whole message into the tool-run log
+     * (live-caught on the v1.15 release post, 2026-07-08). Tools taking URL *args* are unaffected:
+     * `🌐 web_extract: https://…` has the space.
      */
-    private val TOOL_LINE = Regex("""^(\S+)\s+([a-z][a-z0-9]*(?:_[a-z0-9]+)*):\s*(.*)$""")
+    private val TOOL_LINE = Regex("""^(\S+)\s+([a-z][a-z0-9]*(?:_[a-z0-9]+)*):(?:\s+(.*))?$""")
 
     // Fallback for when Hermes drops the leading glyph (notably repeated `terminal` calls): a bare
     // `name: "args"` line where the WHOLE argument is quote-wrapped. The full-line quoting is the
@@ -599,7 +606,13 @@ object MessageParser {
             // The glyph must be a real emoji/symbol — ASCII markdown markers must not match, or
             // a heading like `## Enduring Legacy` becomes a phantom tool (live-caught 2026-07-03).
             val emojiGlyph = emoji.any { it.code >= 0x2000 }
-            if (emojiGlyph && !emoji.first().isLetterOrDigit() && line.length <= 120 && !sentenceEnd && !telemetryGlyph) {
+            // A spaced em/en dash is prose typography ("🚀 Introducing Keryx — a native client…"):
+            // tool progress targets are paths/ranges and never contain one. Same family of signal
+            // as the sentence-end check above.
+            val proseDash = tail.contains(" — ") || tail.contains(" – ")
+            if (emojiGlyph && !emoji.first().isLetterOrDigit() && line.length <= 120 &&
+                !sentenceEnd && !telemetryGlyph && !proseDash
+            ) {
                 val glyph = emoji.trimEnd('️')
                 val ok = when {
                     glyph in FAIL_GLYPHS -> false
