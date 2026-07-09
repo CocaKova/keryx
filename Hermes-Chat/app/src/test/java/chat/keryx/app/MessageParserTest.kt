@@ -48,6 +48,43 @@ class MessageParserTest {
     }
 
     @Test
+    fun glyphPrefixedUrl_isNotAToolCall() {
+        // `🔗 https://…` matched the tool-line shape (glyph + "https" + colon) and dragged a whole
+        // release post into the tool-run log (live-caught on the v1.15 X post, 2026-07-08). The
+        // grammar rule: a tool line's colon is followed by whitespace, a URI's scheme colon never is.
+        val post = "🚀 Keryx v1.15 is out!\n" +
+            "Native Android client for your self-hosted AI agent over Matrix.\n" +
+            "🔗 https://github.com/CocaKova/keryx\n" +
+            "👉 mailto:jonathan.kovacs999@gmail.com"
+        assertTrue(MessageParser.parse(post).none { it is MessageParser.Segment.Tools })
+
+        // A real tool taking a URL ARGUMENT still parses — the colon-space is present.
+        val call = MessageParser.parse("🌐 web_extract: https://github.com/CocaKova/keryx")
+            .filterIsInstance<MessageParser.Segment.Tools>().single().calls.single()
+        assertEquals("web_extract", call.name)
+        assertEquals("https://github.com/CocaKova/keryx", call.args)
+
+        // An argless call (colon ends the line) still parses too.
+        val argless = MessageParser.parse("⚙️ session_reset:")
+            .filterIsInstance<MessageParser.Segment.Tools>().single().calls.single()
+        assertEquals("session_reset", argless.name)
+    }
+
+    @Test
+    fun proseHeadline_isNotAGerundToolCall() {
+        // A spaced em dash is prose typography — progress-line targets (paths, line ranges)
+        // never contain one, so headlines like a release post's opener stay text.
+        assertTrue(
+            MessageParser.parse("🚀 Introducing Keryx — a native Android client for local AI")
+                .none { it is MessageParser.Segment.Tools },
+        )
+        // Genuine progress lines keep parsing.
+        val call = MessageParser.parse("📖 Reading consolidate.py L80-89")
+            .filterIsInstance<MessageParser.Segment.Tools>().single().calls.single()
+        assertEquals("Reading", call.name)
+    }
+
+    @Test
     fun glyphlessTerminal_stillParsedAsTool() {
         // Hermes sometimes drops the leading emoji on repeated terminal calls; the fully-quoted arg
         // is the signal that lets us still treat it as a tool.
