@@ -19,18 +19,18 @@ of raw model output.
 
 ## Highlights
 
-- **Dual-tier live streaming** — a transient SSE side-channel from the Hermes gateway renders
-  tokens live; the Matrix room receives exactly one final committed message (no `m.replace`
-  homeserver bloat). No side-channel? Falls back to plain Matrix sync transparently.
-- **A parsing engine for agent output** — `<think>` blocks fold into collapsible reasoning
-  canvases; tool calls group into expandable run cards with success/failure verdicts;
-  structured JSON becomes "Action Output" cards; runtime footers and cron check-ins render as
+- **Dual-tier live streaming** — A transient SSE side-channel from the Hermes gateway renders
+  tokens live. The Matrix room receives exactly one final committed message (no `m.replace`
+  homeserver bloat). If no side-channel? Falls back to plain Matrix sync transparently.
+- **A parsing engine for agent output** — `$$` blocks fold into collapsible reasoning
+  canvases. Tool calls group into expandable run cards with success/failure verdicts.
+  Structured JSON becomes "Action Output" cards. Runtime footers and cron check-ins render as
   low-contrast telemetry, never as chat.
-- **Markdown that holds up** — GFM tables as real grids, horizontally-scrollable code blocks
-  with copy buttons, unclosed fences healed mid-stream.
-- **Hermes-native controls** — reasoning-effort menu (persists via `/reasoning --global`),
+- **Markdown that holds up** — GFM tables as real grids. Horizontally-scrollable code blocks
+  with copy buttons. Unclosed fences healed mid-stream.
+- **Hermes-native controls** — Reasoning-effort menu (persists via `/reasoning --global`),
   slash-command palette with recents, steer shortcut, link-health dot in the top bar.
-- **Local-first diagnostics** — crash log kept on-device only, shareable from Settings.
+- **Local-first diagnostics** — Crash log kept on-device only, shareable from Settings.
 
 ## Building
 
@@ -52,7 +52,7 @@ python3 Hermes-Chat/hermes-plugin/keryx-stream/install.py
 
 Then in Keryx → Settings → **Hermes Link**, set the gateway URL
 (`http://<gateway-host>:8642`), paste your `API_SERVER_KEY`, and hit **Test link**.
-Full details in [`hermes-plugin/keryx-stream/README.md`](Hermes-Chat/hermes-plugin/keryx-stream/README.md).
+Full details in [`Hermes-Chat/hermes-plugin/keryx-stream/README.md`](Hermes-Chat/hermes-plugin/keryx-stream/README.md).
 
 ## Status
 
