@@ -55,7 +55,7 @@ class MessageParserTest {
         val post = "🚀 Keryx v1.15 is out!\n" +
             "Native Android client for your self-hosted AI agent over Matrix.\n" +
             "🔗 https://github.com/CocaKova/keryx\n" +
-            "👉 mailto:jonathan.kovacs999@gmail.com"
+            "👉 mailto:hello@example.com"
         assertTrue(MessageParser.parse(post).none { it is MessageParser.Segment.Tools })
 
         // A real tool taking a URL ARGUMENT still parses — the colon-space is present.

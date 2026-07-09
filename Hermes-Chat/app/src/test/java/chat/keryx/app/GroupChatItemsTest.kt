@@ -101,7 +101,7 @@ class GroupChatItemsTest {
     fun `header-less fence continuation runs survive an interim-answer split`() {
         val items = group(
             me("trigger", "style my termux"),
-            agent("tool1", "💻 terminal\n```\nadb connect 192.168.50.182\n```"),
+            agent("tool1", "💻 terminal\n```\nadb connect 192.168.1.42\n```"),
             me("steer", "/steer look to verify where it goes first"),
             agent("interim", "Good findings so far. $longProse", replyTo = "trigger"),
             agent("fence1", "```\nadb shell \"ls /sdcard/\"\n```"),

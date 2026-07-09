@@ -194,7 +194,7 @@ class ToolGroupingTest {
         val items = group(
             msg(SenderType.ME, "task"),
             msg(SenderType.HERMES, "📖 Reading consolidate.py L80-89"),
-            msg(SenderType.HERMES, "🔧 Editing /home/cocakova/.hermes/hermes-agent/p... (×2)"),
+            msg(SenderType.HERMES, "🔧 Editing /home/user/.hermes/hermes-agent/p... (×2)"),
             msg(SenderType.HERMES, "Fixed."),
         )
         assertEquals(2, runOf(items).callCount)
