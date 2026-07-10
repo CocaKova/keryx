@@ -272,26 +272,50 @@ object MessageParser {
     private val REASON_QUOTE_HEADER = Regex("""^\s*>\s*💭\s*\*{0,2}Reasoning:?\*{0,2}\s*$""")
     private val REASON_SUBTEXT_HEADER = Regex("""^\s*-#\s*💭\s*\*{0,2}Reasoning:?\*{0,2}\s*$""")
 
+    /** A reasoning tag only OPENS a block at a block boundary: the start of the message, or
+     *  preceded by nothing but whitespace since the last newline. A tag quoted mid-prose
+     *  ("the adapter wraps <thought> and <reasoning> blocks…") is literal text — without this
+     *  rule one quoted tag hijacked the whole message tail into the reasoning canvas
+     *  (live-caught 2026-07-09 on a 💾 review quoting a stored memory entry). Same invariant
+     *  the gateway's stream think-filter applies, so both ends of the pipe agree on what
+     *  counts as reasoning. */
+    private fun atBlockBoundary(content: String, index: Int): Boolean {
+        var i = index - 1
+        while (i >= 0) {
+            val ch = content[i]
+            if (ch == '\n') return true
+            if (!ch.isWhitespace()) return false
+            i--
+        }
+        return true
+    }
+
+    private fun findOpenTagAtBoundary(content: String) =
+        THINK_TAG_OPEN.findAll(content).firstOrNull { atBlockBoundary(content, it.range.first) }
+
     /** Pull any leading/embedded reasoning out of [content]; returns (reasoning?, remainingBody). */
     fun extractReasoning(content: String): Pair<String?, String> {
-        // 1) Raw <think> tags anywhere → concatenate, strip from body. A SECOND tag that is still
-        //    open (mid-stream: one thought finished, the next being written) is also reasoning —
-        //    without this the unclosed tail leaked into the answer as raw tag text.
-        if (THINK_TAG.containsMatchIn(content)) {
-            val parts = THINK_TAG.findAll(content).map {
+        // 1) Raw <think> tags at a block boundary → concatenate, strip from body. A SECOND tag
+        //    that is still open (mid-stream: one thought finished, the next being written) is also
+        //    reasoning — without this the unclosed tail leaked into the answer as raw tag text.
+        val paired = THINK_TAG.findAll(content).filter { atBlockBoundary(content, it.range.first) }.toList()
+        if (paired.isNotEmpty()) {
+            val parts = paired.map {
                 // Group 2 = <tag> body, group 3 = ◁think▷ body (whichever alternative matched).
                 it.groupValues[2].ifEmpty { it.groupValues[3] }.trim()
             }.toMutableList()
-            var body = THINK_TAG.replace(content, "").trim()
-            THINK_TAG_OPEN.find(body)?.let { m ->
+            val sb = StringBuilder(content)
+            for (m in paired.asReversed()) sb.delete(m.range.first, m.range.last + 1)
+            var body = sb.toString().trim()
+            findOpenTagAtBoundary(body)?.let { m ->
                 parts.add(body.substring(m.range.last + 1).trim())
                 body = body.substring(0, m.range.first).trim()
             }
             val reasoning = parts.filter { it.isNotBlank() }.joinToString("\n\n")
             return reasoning.ifBlank { null } to body
         }
-        // 1b) An unclosed tag (mid-stream): the tail is reasoning-in-progress.
-        THINK_TAG_OPEN.find(content)?.let { m ->
+        // 1b) An unclosed tag at a block boundary (mid-stream): the tail is reasoning-in-progress.
+        findOpenTagAtBoundary(content)?.let { m ->
             val before = content.substring(0, m.range.first).trim()
             val inside = content.substring(m.range.last + 1).trim()
             return inside.ifBlank { null } to before
@@ -418,17 +442,20 @@ object MessageParser {
         // markers into the reasoning), and the 💭 prelude patterns are start-anchored — extracting
         // reasoning from the raw body made the whole block leak into the answer as prose.
         val keryx = extractKeryx(content)
-        val (reasoning, body) = extractReasoning(keryx.text)
-        // A self-improvement review summary is fully structured — skip the line walker (whose
-        // tool/telemetry heuristics would mangle the " · "-joined action list).
-        parseSelfImprovementReview(body)?.let { review ->
+        // A self-improvement review summary is fully structured — and its " · "-joined item
+        // previews quote arbitrary stored text (fences, glyphs, even literal <think> tags), so it
+        // must be recognized BEFORE any free-text heuristic runs: reasoning extraction on a review
+        // that quoted a "<thought>" mention folded half the item list into the reasoning canvas
+        // (live-caught 2026-07-09), and the line walker would mangle the action list into
+        // tool/telemetry segments. Review messages never carry a reasoning prelude.
+        parseSelfImprovementReview(keryx.text)?.let { review ->
             val segs = mutableListOf<Segment>()
-            if (reasoning != null) segs.add(Segment.Thinking(reasoning))
             segs.addAll(review)
             keryx.skill?.let { segs.add(it) }
             if (keryx.citations.isNotEmpty()) segs.add(Segment.Citations(keryx.citations))
             return segs
         }
+        val (reasoning, body) = extractReasoning(keryx.text)
         val segments = mutableListOf<Segment>()
         if (reasoning != null) segments.add(Segment.Thinking(reasoning))
         val lines = body.lines()
