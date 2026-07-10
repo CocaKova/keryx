@@ -265,6 +265,53 @@ class MessageParserTest {
         assertEquals("prefix", body)
     }
 
+    // --- Reasoning tags only open a block at a block boundary. A tag QUOTED mid-prose is
+    // --- literal text — one quoted "<thought>" hijacked a whole message tail into the
+    // --- reasoning canvas (live-caught 2026-07-09 on a 💾 review quoting a memory entry).
+
+    @Test
+    fun quotedUnclosedTagMidProse_staysLiteralText() {
+        val content = "The Matrix gateway adapter now wraps <thought> and <reasoning> blocks for display."
+        val (reasoning, body) = MessageParser.extractReasoning(content)
+        assertEquals(null, reasoning)
+        assertEquals(content, body)
+        val segs = MessageParser.parse(content)
+        assertTrue(segs.none { it is MessageParser.Segment.Thinking })
+    }
+
+    @Test
+    fun quotedPairedTagMidProse_staysLiteralText() {
+        val content = "Wrap it like <think>this</think> when quoting reasoning."
+        val (reasoning, body) = MessageParser.extractReasoning(content)
+        assertEquals(null, reasoning)
+        assertEquals(content, body)
+    }
+
+    @Test
+    fun pairedTagAtLineStart_stillExtracts() {
+        val (reasoning, body) = MessageParser.extractReasoning("<think>\nplan the answer\n</think>\n\nThe answer.")
+        assertEquals("plan the answer", reasoning)
+        assertEquals("The answer.", body)
+    }
+
+    @Test
+    fun reviewQuotingReasoningTag_parsesAsReviewNotReasoning() {
+        // Shaped like the real 2026-07-09 message: a deleted memory entry's preview quotes a
+        // literal <thought>/<reasoning> mention; the tail (more memory items + a skill pill)
+        // must stay in the review, not fold into a Thinking canvas.
+        val content = "💾 Self-improvement review: Memory ➕ Himalaya: two Gmail accounts configured… · " +
+            "Memory ➖ Matrix gateway adapter now wraps <thought> and <reasoning> b… · " +
+            "Memory ➖ Trixnity SDK version 4.16.8 resolves from Maven Central; avo… · " +
+            "📝 Skill 'delegation-patterns' created: How to use delegate_task effectively"
+        val segs = MessageParser.parse(content)
+        assertTrue(segs.none { it is MessageParser.Segment.Thinking })
+        val telem = segs.filterIsInstance<MessageParser.Segment.Telemetry>().single()
+        assertTrue(telem.text.contains("Trixnity SDK"))
+        assertTrue(telem.text.contains("<thought>"))
+        val skill = segs.filterIsInstance<MessageParser.Segment.SkillDistilled>().single()
+        assertEquals("delegation-patterns", skill.name)
+    }
+
     // --- Gateway reasoning preludes: all three display.reasoning_style variants must fold into
     // --- a Thinking segment, never render as plain prose (the "Qwen reasoning not parsed" bug).
 
