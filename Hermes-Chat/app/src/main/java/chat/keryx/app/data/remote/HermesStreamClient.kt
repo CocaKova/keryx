@@ -502,6 +502,7 @@ class HermesStreamClient(
         path: String,
         method: String = "GET",
         body: kotlinx.serialization.json.JsonObject? = null,
+        snapshotAs: String? = null,
     ): kotlinx.serialization.json.JsonObject = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         val request = Request.Builder()
             .url(baseUrl.trimEnd('/') + path)
@@ -533,8 +534,10 @@ class HermesStreamClient(
                 error(msg ?: "HTTP ${resp.code}")
             }
             // Snapshot plain GETs only: parameterized paths (event cursors, per-id lookups) would
-            // grow the cache without ever being re-read.
-            if (method == "GET" && '?' !in path) snapshotStore?.invoke(path, text)
+            // grow the cache without ever being re-read. A caller whose query is fixed rather than
+            // a cursor opts in via [snapshotAs], which pins the cache key the seeded panels read.
+            val snapshotKey = snapshotAs ?: path.takeIf { '?' !in it }
+            if (method == "GET" && snapshotKey != null) snapshotStore?.invoke(snapshotKey, text)
             json.parseToJsonElement(text).jsonObject
         }
     }
@@ -723,8 +726,10 @@ class HermesStreamClient(
     suspend fun healthDetailed(): Result<HubHealth> =
         runCatching { HubJson.health(apiCall("/health/detailed")) }
 
+    /** The gateway omits paused jobs by default; the hub is a management console, so it always
+     *  requests the full list and lets [HubJob.enabled] drive the UI. */
     suspend fun jobs(): Result<List<HubJob>> =
-        runCatching { HubJson.jobs(apiCall("/api/jobs")) }
+        runCatching { HubJson.jobs(apiCall("/api/jobs?include_disabled=true", snapshotAs = "/api/jobs")) }
 
     /** [action] is one of the gateway's job verbs: "pause", "resume", "run". */
     suspend fun jobAction(jobId: String, action: String): Result<Unit> =
