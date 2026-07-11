@@ -720,7 +720,15 @@ class HermesStreamClient(
         val description: String,
         val enabled: Boolean,
         val configured: Boolean,
+        /** Pinned by the gateway operator (can't be flipped from the app) — render disabled. */
+        val locked: Boolean = false,
         val tools: List<String>,
+    )
+
+    /** The toolset surface plus whether this gateway persists toggles (keryx-stream 1.16+). */
+    data class HubToolsets(
+        val canToggle: Boolean,
+        val toolsets: List<HubToolset>,
     )
 
     suspend fun healthDetailed(): Result<HubHealth> =
@@ -760,9 +768,31 @@ class HermesStreamClient(
     suspend fun skills(): Result<List<HubSkill>> =
         runCatching { HubJson.skills(apiCall("/v1/skills")) }
 
-    /** The api_server platform's toolset surface — the gateway offers no per-platform view. */
-    suspend fun toolsets(): Result<List<HubToolset>> =
-        runCatching { HubJson.toolsets(apiCall("/v1/toolsets")) }
+    /** The toolset surface the agent actually chats with. `/keryx/toolsets` (plugin 1.16+) is
+     *  platform-aware (matrix by default) and accepts toggles; older gateways only offer the
+     *  read-only, api_server-scoped `/v1/toolsets` — still shown, minus the switches. */
+    suspend fun toolsets(): Result<HubToolsets> = runCatching {
+        val obj = try {
+            apiCall("/keryx/toolsets")
+        } catch (_: Exception) {
+            apiCall("/v1/toolsets")
+        }
+        HubJson.toolsets(obj)
+    }
+
+    /** Persist one toolset's enablement (PUT /keryx/toolsets/{name}). Failures carry the
+     *  gateway's own refusal wording (unknown / locked by the operator). */
+    suspend fun setToolsetEnabled(name: String, enabled: Boolean): Result<Unit> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("enabled", kotlinx.serialization.json.JsonPrimitive(enabled))
+        }
+        apiCall(
+            "/keryx/toolsets/" + java.net.URLEncoder.encode(name, "UTF-8").replace("+", "%20"),
+            method = "PUT",
+            body = payload,
+        )
+        Unit
+    }
 
     // --- Skill Forge — /keryx/skills/* ----------------------------------------------------------
 
@@ -1000,17 +1030,22 @@ internal object HubJson {
             )
         }
 
-    fun toolsets(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.HubToolset> =
-        obj.objs("data").map { t ->
-            HermesStreamClient.HubToolset(
-                name = t.str("name"),
-                label = t.str("label"),
-                description = t.str("description"),
-                enabled = t.bool("enabled"),
-                configured = t.bool("configured"),
-                tools = t.arr("tools")?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.orEmpty(),
-            )
-        }
+    fun toolsets(obj: kotlinx.serialization.json.JsonObject): HermesStreamClient.HubToolsets =
+        HermesStreamClient.HubToolsets(
+            // Absent on /v1/toolsets answers (and old cached snapshots) → read-only view.
+            canToggle = obj.bool("canToggle"),
+            toolsets = obj.objs("data").map { t ->
+                HermesStreamClient.HubToolset(
+                    name = t.str("name"),
+                    label = t.str("label"),
+                    description = t.str("description"),
+                    enabled = t.bool("enabled"),
+                    configured = t.bool("configured"),
+                    locked = t.bool("locked"),
+                    tools = t.arr("tools")?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.orEmpty(),
+                )
+            },
+        )
 
     /**
      * Parse the gateway's ISO-8601 offset timestamps ("2026-07-07T07:00:00-05:00", optionally with

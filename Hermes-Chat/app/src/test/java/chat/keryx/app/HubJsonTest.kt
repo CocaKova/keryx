@@ -94,13 +94,26 @@ class HubJsonTest {
         ))
         assertEquals("android-devops", skills.single().name)
 
-        val ts = HubJson.toolsets(obj("""
+        // Legacy /v1/toolsets shape: no canToggle/locked fields → read-only view.
+        val legacy = HubJson.toolsets(obj("""
             {"object":"list","platform":"api_server","data":[
               {"name":"web","label":"🔍 Web","description":"web_search, web_extract",
                "enabled":true,"configured":true,"tools":["web_extract","web_search"]}]}
-        """)).single()
+        """))
+        assertEquals(false, legacy.canToggle)
+        val ts = legacy.toolsets.single()
         assertTrue(ts.enabled)
+        assertEquals(false, ts.locked)
         assertEquals(listOf("web_extract", "web_search"), ts.tools)
+
+        // /keryx/toolsets shape (plugin 1.16+): toggles allowed, operator pins surface as locked.
+        val modern = HubJson.toolsets(obj("""
+            {"platform":"matrix","canToggle":true,"data":[
+              {"name":"terminal","label":"Terminal","description":"",
+               "enabled":true,"configured":true,"locked":true,"tools":["terminal"]}]}
+        """))
+        assertTrue(modern.canToggle)
+        assertTrue(modern.toolsets.single().locked)
     }
 
     @Test

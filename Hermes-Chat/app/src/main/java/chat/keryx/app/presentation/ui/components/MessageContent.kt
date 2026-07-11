@@ -73,11 +73,14 @@ fun MessageContent(
     textColor: Color,
     modifier: Modifier = Modifier,
     isStreaming: Boolean = false,
+    /** Agent messages get the full chrome parse (tools/reasoning/telemetry); a human sender's
+     *  text must render as plain markdown even when it pattern-matches agent output. */
+    isAgent: Boolean = true,
 ) {
     // The gateway splits turns at tool-call boundaries and can leave several blank lines at the
     // edges of each piece (e.g. a step header stranded after 3 empty lines) — trim so bubbles
     // never open with dead space.
-    val segments = remember(content) { MessageParser.parse(content.trim('\n')) }
+    val segments = remember(content, isAgent) { MessageParser.parse(content.trim('\n'), agentChrome = isAgent) }
     // Render **strong** spans heavier than the library's default (FontWeight.Bold looked too light).
     val annotator = markdownAnnotator { source, node ->
         // `this` is the AnnotatedString.Builder.

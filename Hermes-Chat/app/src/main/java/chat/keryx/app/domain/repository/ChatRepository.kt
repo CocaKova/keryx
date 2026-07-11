@@ -5,6 +5,7 @@ import chat.keryx.app.domain.model.MessageReaction
 import chat.keryx.app.domain.model.RoomInvite
 import chat.keryx.app.domain.model.RoomProfile
 import chat.keryx.app.domain.model.Session
+import chat.keryx.app.domain.model.TypingState
 import kotlinx.coroutines.flow.Flow
 
 interface ChatRepository {
@@ -44,9 +45,14 @@ interface ChatRepository {
     /** Mark the room read up to [eventId] (sends read receipt + fully-read marker). */
     suspend fun markRead(roomId: String, eventId: String)
 
-    /** Emits true while someone OTHER than me is typing in [sessionId]. Hermes sends typing while it
-     *  works, so this is a reliable "agent is busy" signal even through long single tool calls. */
-    fun othersTyping(sessionId: String): Flow<Boolean>
+    /** Who's typing in [sessionId], split agent vs humans. Hermes sends typing while it works, so
+     *  [TypingState.agentTyping] is a reliable "agent is busy" signal even through long single tool
+     *  calls; human typers surface separately (display names) for a plain typing indicator. */
+    fun typing(sessionId: String): Flow<TypingState>
+
+    /** Pull the full member list for [roomId] (Trixnity lazy-loads members; without this, display
+     *  names in cold group rooms stay raw MXIDs until each member happens to send something). */
+    suspend fun ensureMembersLoaded(roomId: String)
 
     /** Download bytes for a Matrix mxc:// content URI (e.g. a room avatar), or null on failure. */
     suspend fun avatarBytes(mxc: String): ByteArray?
@@ -59,6 +65,20 @@ interface ChatRepository {
 
     /** Accept an invite: join the room. It enters [getRooms] on the next sync. */
     suspend fun acceptInvite(roomId: String): Result<Unit>
+
+    /** Open (or create) a direct-message room with [userId]. Reuses an existing joined DM from
+     *  m.direct account data; otherwise creates a private room flagged is_direct. Returns the
+     *  room id — it appears in [getRooms] on the next sync. */
+    suspend fun startDirectMessage(userId: String): Result<String>
+
+    /** Create a private room named [name], optionally inviting [inviteUserIds]. Returns room id. */
+    suspend fun createRoom(name: String, inviteUserIds: List<String>): Result<String>
+
+    /** Join a room by `#alias:server` or `!roomid:server`. Returns the joined room id. */
+    suspend fun joinRoomByAddress(address: String): Result<String>
+
+    /** Invite [userId] into [roomId] (needs invite power in the room). */
+    suspend fun inviteUser(roomId: String, userId: String): Result<Unit>
 
     /** Leave a room — also how an invite is declined (same Matrix call). */
     suspend fun leaveRoom(roomId: String): Result<Unit>
