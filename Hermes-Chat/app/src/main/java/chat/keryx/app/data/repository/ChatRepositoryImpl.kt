@@ -155,6 +155,9 @@ class ChatRepositoryImpl(
             // name lookup never adds churn to the settled list. Names change rarely; unresolved
             // members keep the raw MXID (the UI's localpart fallback still applies).
             .flatMapLatest { msgs -> withSenderNames(roomId, msgs) }
+            // The name combine re-emits once per member flow as each resolves — identical lists
+            // downstream would re-log/re-diff every message; collapse them.
+            .distinctUntilChanged()
     }
 
     private fun withSenderNames(roomId: RoomId, msgs: List<Message>): Flow<List<Message>> {

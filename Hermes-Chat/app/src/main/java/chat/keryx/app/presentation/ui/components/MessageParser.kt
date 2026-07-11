@@ -143,8 +143,19 @@ object MessageParser {
         val body = extractKeryx(content).let { k -> if (k.telemetry) return true else k.text }.trim()
         if (body.isBlank()) return false
         val firstLine = body.lineSequence().first().trim()
-        if (CHECKIN_PREFIXES.any { firstLine.startsWith(it, ignoreCase = true) }) return true
-        if (CHECKIN_PATTERNS.any { it.containsMatchIn(firstLine) }) return true
+        val checkinStart = CHECKIN_PREFIXES.any { firstLine.startsWith(it, ignoreCase = true) } ||
+            CHECKIN_PATTERNS.any { it.containsMatchIn(firstLine) }
+        if (checkinStart) {
+            // A single line under a check-in prefix is the classic heartbeat/ack — always
+            // telemetry, even when it pattern-matches a tool shape ("⏳ Working — iteration 5/90").
+            if (body.lines().count { it.isNotBlank() } == 1) return true
+            // Multi-line: the gateway's accumulate-mode can anchor a whole tool run under a
+            // check-in-shaped first line (the cronjob tool's "⏰ Scheduling list" + 💻 terminal +
+            // fences, live-caught 2026-07-10 — the run demoted to a quiet row and every
+            // follow-up message stranded outside it). Genuine tool content outranks the prefix;
+            // with none, the block is plumbing (a multi-line cron brief) and stays telemetry.
+            return parse(content).none { it is Segment.Tools || it is Segment.ActionOutput }
+        }
         // A message that is nothing but subtext/footer lines is pure telemetry.
         val lines = body.lines().filter { it.isNotBlank() }
         return lines.isNotEmpty() && lines.all { isSubtextLine(it) || isFooterLine(it) }
