@@ -1,6 +1,13 @@
 package chat.keryx.app.presentation.ui.components
 
 import android.graphics.BitmapFactory
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -95,6 +102,10 @@ private fun QuickRoomAvatar(
                 ?.also { KeryxBitmapCache.put(avatarUrl, it) }
         }
     }
+    // Unread signal, deck-style: no badge — the avatar wears a slow breathing halo in the
+    // accent pair (same dream motif as the selected ring). Clears itself once the room's read
+    // marker advances; the open room never glows (you're already looking at it).
+    val unread = room.unreadCount > 0L && !selected
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -102,6 +113,28 @@ private fun QuickRoomAvatar(
             .combinedClickable(onClick = onClick, onLongClick = onLongPress),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(58.dp)) {
+            if (unread) {
+                val breath by rememberInfiniteTransition(label = "unreadBreath").animateFloat(
+                    initialValue = 0.22f,
+                    targetValue = 0.60f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(2200, easing = FastOutSlowInEasing),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                    label = "unreadBreathAlpha",
+                )
+                val tertiary = MaterialTheme.colorScheme.tertiary
+                Canvas(Modifier.fillMaxSize()) {
+                    drawCircle(
+                        brush = androidx.compose.ui.graphics.Brush.radialGradient(
+                            0.45f to accent.copy(alpha = breath),
+                            0.75f to tertiary.copy(alpha = breath * 0.45f),
+                            1.0f to Color.Transparent,
+                        ),
+                        radius = size.minDimension / 2f,
+                    )
+                }
+            }
             if (selected) {
                 BrailleSnakeAnimation(
                     modifier = Modifier.fillMaxSize(),
@@ -128,9 +161,13 @@ private fun QuickRoomAvatar(
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = shortLabel(room.name),
-            color = if (selected) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+            color = when {
+                selected -> accent
+                unread -> MaterialTheme.colorScheme.onSurface
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            },
             fontSize = 11.sp,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            fontWeight = if (selected || unread) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
