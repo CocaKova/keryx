@@ -128,6 +128,7 @@ fun ChatScreen(
     val bubbleStyle by viewModel.bubbleStyle.collectAsState()
     val messageTextScale by viewModel.messageTextScale.collectAsState()
     val awaitingReply by viewModel.awaitingReply.collectAsState()
+    val typingHumans by viewModel.typingHumans.collectAsState()
     val liveStream by viewModel.liveStream.collectAsState()
     val pendingSend by viewModel.pendingSend.collectAsState()
     val showTelemetry by viewModel.showTelemetry.collectAsState()
@@ -397,6 +398,23 @@ fun ChatScreen(
                 }
             } else if (awaitingReply) {
                 item(key = "waiting") { Box(modifier = Modifier.animateItem()) { WaitingIndicator() } }
+            } else if (typingHumans.isNotEmpty()) {
+                // Humans typing get a plain low-contrast line in the same slot — never the
+                // agent's working cloud.
+                item(key = "humantyping") {
+                    Box(modifier = Modifier.animateItem()) {
+                        Text(
+                            text = when (typingHumans.size) {
+                                1 -> "${typingHumans[0]} is typing…"
+                                2 -> "${typingHumans[0]} and ${typingHumans[1]} are typing…"
+                                else -> "Several people are typing…"
+                            },
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp),
+                        )
+                    }
+                }
             }
             // Optimistic send: my message blooms into the chat the instant Send is tapped, instead
             // of waiting for the homeserver echo. Hidden the frame the real event is in the list.
@@ -1036,6 +1054,7 @@ fun MessageBubble(
                                     content = caption,
                                     textColor = appearance.textColor,
                                     isStreaming = message.isStreaming,
+                                    isAgent = message.sender == SenderType.HERMES,
                                 )
                             }
                         }
@@ -1047,6 +1066,7 @@ fun MessageBubble(
                                 content = message.content,
                                 textColor = appearance.textColor,
                                 isStreaming = message.isStreaming,
+                                isAgent = message.sender == SenderType.HERMES,
                             )
                         }
                     }
@@ -1402,7 +1422,10 @@ private fun replyPreviewText(m: Message): String = when {
     else -> "message"
 }
 
-private fun shortSender(id: String): String = id.trimStart('@').substringBefore(':')
+/** MXIDs compact to their localpart; a resolved display name passes through untouched
+ *  ("Anna K." must not truncate at some incidental colon). */
+private fun shortSender(id: String): String =
+    if (id.startsWith("@") && ':' in id) id.trimStart('@').substringBefore(':') else id
 
 private fun queryDisplayName(context: android.content.Context, uri: android.net.Uri): String {
     var name = "attachment"

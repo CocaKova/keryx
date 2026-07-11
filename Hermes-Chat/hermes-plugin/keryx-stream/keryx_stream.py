@@ -1133,6 +1133,122 @@ def sessions_prune(
 
 
 # ---------------------------------------------------------------------------
+# Toolset toggles (Keryx 1.16) — platform-aware toolset view + enable/disable.
+# The core `/v1/toolsets` reports the api_server platform's enablement, but
+# the agent Keryx chats with runs on platform_toolsets.<platform> (matrix by
+# default) — so the hub was showing state the agent doesn't actually have.
+# These routes read AND write the requested platform's list via the same
+# hermes helpers the desktop dashboard uses (`_get_platform_tools` /
+# `_save_platform_tools`), so all surfaces stay in lockstep. Edits are live
+# on the agent's next turn: the gateway re-resolves platform toolsets per
+# turn through the mtime-keyed config cache — no restart.
+#
+# Operators can pin the surface with two env vars (comma-separated toolset
+# names, read fresh per request so a .env change only needs the usual
+# gateway restart):
+#   KERYX_TOOLSETS_LOCKED     — cannot be DISABLED from the app
+#   KERYX_TOOLSETS_FORBIDDEN  — cannot be ENABLED from the app
+# Both surface as `locked: true` so the client greys the switch out instead
+# of offering a toggle that an external config guard would silently revert.
+# ---------------------------------------------------------------------------
+
+_TOOLSETS_DEFAULT_PLATFORM = "matrix"
+# config.yaml platform keys are simple identifiers; anything else is hostile.
+_PLATFORM_KEY_OK = re.compile(r"^[a-z0-9_]{1,32}$")
+
+
+def _toolsets_env_set(var: str) -> set:
+    return {t.strip() for t in (os.environ.get(var) or "").split(",") if t.strip()}
+
+
+def _toolsets_platform(raw: str) -> str:
+    platform = (raw or "").strip().lower() or _TOOLSETS_DEFAULT_PLATFORM
+    if not _PLATFORM_KEY_OK.match(platform):
+        raise ValueError(f"invalid platform '{raw}'")
+    return platform
+
+
+def toolsets_snapshot(platform: str) -> dict:
+    """Payload for `GET /keryx/toolsets` — same entry shape as `/v1/toolsets`
+    plus `locked`, keyed to the requested platform's enablement."""
+    from hermes_cli.config import load_config
+    from hermes_cli.tools_config import (
+        _get_effective_configurable_toolsets,
+        _get_platform_tools,
+        _toolset_has_keys,
+    )
+    from toolsets import resolve_toolset
+
+    locked = _toolsets_env_set("KERYX_TOOLSETS_LOCKED")
+    forbidden = _toolsets_env_set("KERYX_TOOLSETS_FORBIDDEN")
+    config = load_config()
+    enabled = set(
+        _get_platform_tools(config, platform, include_default_mcp_servers=False)
+    )
+    data = []
+    for name, label, desc in _get_effective_configurable_toolsets():
+        try:
+            tools = sorted(set(resolve_toolset(name)))
+        except Exception:
+            tools = []
+        data.append({
+            "name": name,
+            "label": label,
+            "description": desc,
+            "enabled": name in enabled,
+            "configured": _toolset_has_keys(name, config),
+            "locked": name in locked or name in forbidden,
+            "tools": tools,
+        })
+    return {"platform": platform, "canToggle": True, "data": data}
+
+
+def toolset_set_enabled(name: str, enabled: bool, platform: str) -> Tuple[int, dict]:
+    """`PUT /keryx/toolsets/{name}` — persist one toolset's enablement for a
+    platform. Refuses locked/forbidden changes so the app never makes an edit
+    that an operator guard (or hard rule) would revert behind the user's back."""
+    from hermes_cli.config import load_config
+    from hermes_cli.tools_config import (
+        _get_effective_configurable_toolsets,
+        _get_platform_tools,
+        _save_platform_tools,
+    )
+
+    valid = {key for key, _, _ in _get_effective_configurable_toolsets()}
+    if name not in valid:
+        return 400, {"error": {"message": f"unknown toolset '{name}'"}}
+    if not enabled and name in _toolsets_env_set("KERYX_TOOLSETS_LOCKED"):
+        return 403, {"error": {"message": f"'{name}' is locked on and cannot be disabled here"}}
+    if enabled and name in _toolsets_env_set("KERYX_TOOLSETS_FORBIDDEN"):
+        return 403, {"error": {"message": f"'{name}' is locked off and cannot be enabled here"}}
+
+    config = load_config()
+    current = set(
+        _get_platform_tools(config, platform, include_default_mcp_servers=False)
+    )
+    if enabled:
+        current.add(name)
+    else:
+        current.discard(name)
+
+    # _save_platform_tools drops the `no_mcp` sentinel by design (the desktop
+    # picker treats saving as consent to re-enable MCP servers). A phone
+    # toggle of one toolset is no such consent — losing the sentinel would
+    # resurrect every default MCP server on this platform. Put it back.
+    raw_before = config.get("platform_toolsets", {}).get(platform) or []
+    had_no_mcp = "no_mcp" in raw_before
+    _save_platform_tools(config, platform, current)
+    if had_no_mcp and "no_mcp" not in config["platform_toolsets"][platform]:
+        from hermes_cli.config import save_config
+
+        config["platform_toolsets"][platform] = sorted(
+            set(config["platform_toolsets"][platform]) | {"no_mcp"}
+        )
+        save_config(config)
+    return 200, {"ok": True, "name": name, "enabled": enabled, "platform": platform}
+
+
+# ---------------------------------------------------------------------------
 # Pet (Keryx 1.10) — the petdex mascot for the drawer header. Mirrors the
 # desktop/TUI `pet.info` payload built in tui_gateway/server.py, but reuses
 # only the engine (`agent.pet`): the phone renders the spritesheet itself.
@@ -1447,3 +1563,17 @@ def register_keryx_routes(router: Any, check_auth) -> None:
         return 200, sessions_prune(body)
 
     router.add_post("/keryx/sessions/prune", _make_json_handler(check_auth, _prune))
+
+    def _toolsets_get(request, body):
+        platform = _toolsets_platform(request.query.get("platform", ""))
+        return 200, toolsets_snapshot(platform)
+
+    def _toolset_put(request, body):
+        enabled = body.get("enabled")
+        if not isinstance(enabled, bool):
+            raise ValueError("boolean 'enabled' is required")
+        platform = _toolsets_platform(str(body.get("platform") or ""))
+        return toolset_set_enabled(request.match_info["name"], enabled, platform)
+
+    router.add_get("/keryx/toolsets", _make_json_handler(check_auth, _toolsets_get))
+    router.add_put("/keryx/toolsets/{name}", _make_json_handler(check_auth, _toolset_put))

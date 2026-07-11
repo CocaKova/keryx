@@ -33,6 +33,20 @@ interface SettingsRepository {
     var gatewayApiKey: String
     /** Master switch for the SSE side-channel; off = always use the Matrix fallback tier. */
     var sideChannelEnabled: Boolean
+    /** True when the user actually wired a Hermes gateway (explicit URL or API key) — the
+     *  structural "this install talks to an agent" signal. [gatewayUrl] can't serve: it
+     *  auto-derives from the homeserver host, so it's non-blank for pure-Matrix users too. */
+    val gatewayConfigured: Boolean
+
+    // --- Real push (UnifiedPush) ---
+    /** Master switch: register with a UnifiedPush distributor + a Matrix pusher. Default off —
+     *  the in-process sync notifications remain the fallback tier. */
+    var pushEnabled: Boolean
+    /** Base URL of the Matrix push gateway (e.g. a self-hosted ntfy server — it serves
+     *  /_matrix/push/v1/notify natively). Blank = pusher can't be registered. */
+    var pushGatewayUrl: String
+    /** The distributor-issued endpoint currently registered as our pushkey ("" = none). */
+    var pushEndpoint: String
     /** Show automated telemetry blocks (runtime footer, cron check-ins) in the chat. */
     var showTelemetry: Boolean
 

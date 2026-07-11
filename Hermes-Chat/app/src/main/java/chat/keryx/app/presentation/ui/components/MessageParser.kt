@@ -427,35 +427,43 @@ object MessageParser {
         override fun removeEldestEntry(eldest: Map.Entry<String, List<Segment>>) = size > PARSE_CACHE_MAX
     }
 
+    /**
+     * [agentChrome] gates every agent-output heuristic: reasoning folds, tool lines/cards,
+     * telemetry demotion, Action Output JSON, keryx markers, review summaries. A HUMAN sender's
+     * message must never be restyled as machine output just because its text trips a pattern —
+     * with the flag off, only universal markdown survives (text, tables, fences, mermaid).
+     */
     @Synchronized
-    fun parse(content: String): List<Segment> {
-        parseCache[content]?.let { return it }
-        val result = parseUncached(content)
-        parseCache[content] = result
+    fun parse(content: String, agentChrome: Boolean = true): List<Segment> {
+        // U+0000 can't occur in a Matrix message body, so the prefixed key never collides.
+        val key = if (agentChrome) content else "\u0000human:$content"
+        parseCache[key]?.let { return it }
+        val result = parseUncached(content, agentChrome)
+        parseCache[key] = result
         return result
     }
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
-    private fun parseUncached(content: String): List<Segment> {
+    private fun parseUncached(content: String, agentChrome: Boolean = true): List<Segment> {
         // Markers first: the keryx plugin may prepend its ⟦keryx:v1⟧ beacon (or scatter citation
         // markers into the reasoning), and the 💭 prelude patterns are start-anchored — extracting
         // reasoning from the raw body made the whole block leak into the answer as prose.
-        val keryx = extractKeryx(content)
+        val keryx = if (agentChrome) extractKeryx(content) else Keryx(content, emptyList(), null, false)
         // A self-improvement review summary is fully structured — and its " · "-joined item
         // previews quote arbitrary stored text (fences, glyphs, even literal <think> tags), so it
         // must be recognized BEFORE any free-text heuristic runs: reasoning extraction on a review
         // that quoted a "<thought>" mention folded half the item list into the reasoning canvas
         // (live-caught 2026-07-09), and the line walker would mangle the action list into
         // tool/telemetry segments. Review messages never carry a reasoning prelude.
-        parseSelfImprovementReview(keryx.text)?.let { review ->
+        if (agentChrome) parseSelfImprovementReview(keryx.text)?.let { review ->
             val segs = mutableListOf<Segment>()
             segs.addAll(review)
             keryx.skill?.let { segs.add(it) }
             if (keryx.citations.isNotEmpty()) segs.add(Segment.Citations(keryx.citations))
             return segs
         }
-        val (reasoning, body) = extractReasoning(keryx.text)
+        val (reasoning, body) = if (agentChrome) extractReasoning(keryx.text) else (null to keryx.text)
         val segments = mutableListOf<Segment>()
         if (reasoning != null) segments.add(Segment.Thinking(reasoning))
         val lines = body.lines()
@@ -469,7 +477,7 @@ object MessageParser {
             val t = textBuf.toString().trim('\n')
             if (t.isNotBlank()) {
                 // A text segment that is one whole JSON tool payload → an Action Output card.
-                val action = tryParseActionOutput(t)
+                val action = if (agentChrome) tryParseActionOutput(t) else null
                 if (action != null) segments.add(action) else segments.add(Segment.Text(t))
             }
             textBuf.setLength(0)
@@ -497,8 +505,8 @@ object MessageParser {
             val line = lines[i]
             val next = lines.getOrNull(i + 1)
             val trimmed = line.trimStart(' ', '\t', '*', '-', '•')
-            val tool = parseTool(trimmed)
-            val headerTool = parseHeaderTool(lines, i)
+            val tool = if (agentChrome) parseTool(trimmed) else null
+            val headerTool = if (agentChrome) parseHeaderTool(lines, i) else null
             // Only the message's LAST non-blank line can be the runtime footer.
             val isLastContentLine = lines.drop(i + 1).all { it.isBlank() }
             when {
@@ -516,7 +524,8 @@ object MessageParser {
                 }
                 // ```json fences get a structured-parse attempt (Action Output card); on any
                 // failure the raw fence flows into the text buffer and renders as a code block.
-                line.trimStart().lowercase().startsWith("```json") -> {
+                // Human senders: fall through to the opaque-fence branch — plain code block.
+                agentChrome && line.trimStart().lowercase().startsWith("```json") -> {
                     val fence = StringBuilder()
                     var j = i + 1
                     while (j < lines.size && lines[j].trimStart().trimEnd() != "```") {
@@ -559,18 +568,18 @@ object MessageParser {
                     segments.add(Segment.Table(header, rows))
                     continue
                 }
-                trimmed.startsWith(BRAIN) -> {
+                agentChrome && trimmed.startsWith(BRAIN) -> {
                     flushText(); flushTools(); flushTelemetry()
                     thinkBuf.append(trimmed.removePrefix(BRAIN).trim()).append('\n')
                     i++
                 }
-                isSubtextLine(line) -> {
+                agentChrome && isSubtextLine(line) -> {
                     flushText(); flushThink(); flushTools()
                     telemetryKind = TelemetryKind.SUBTEXT
                     telemetryBuf.append(line.trimStart().removePrefix("-#").trimStart()).append('\n')
                     i++
                 }
-                isLastContentLine && line.isNotBlank() && isFooterLine(line) -> {
+                agentChrome && isLastContentLine && line.isNotBlank() && isFooterLine(line) -> {
                     flushAll()
                     segments.add(Segment.Telemetry(line.trim(), TelemetryKind.FOOTER))
                     i++

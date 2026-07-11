@@ -820,21 +820,22 @@ private fun ToolsTab(viewModel: ChatViewModel) {
 
     Column(Modifier.fillMaxSize()) {
         PanelErrorLine(panel.error)
+        val hub = panel.data
         Text(
-            // The gateway only reports its own platform's surface; per-platform views don't exist.
-            "Tool groups as the API platform sees them",
+            if (hub?.canToggle == true) "Tool groups for the agent's chat platform — switches persist"
+            // Legacy gateway: read-only, and only its own (api_server) platform surface exists.
+            else "Tool groups as the API platform sees them",
             fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
         )
-        val toolsets = panel.data
         when {
-            toolsets == null -> PanelLoading()
+            hub == null -> PanelLoading()
             else -> LazyColumn(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
                     start = 14.dp, end = 14.dp, bottom = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(toolsets, key = { it.name }) { t ->
+                items(hub.toolsets, key = { it.name }) { t ->
                     val shape = RoundedCornerShape(12.dp)
                     Column(
                         modifier = Modifier
@@ -845,15 +846,26 @@ private fun ToolsTab(viewModel: ChatViewModel) {
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.size(7.dp).clip(CircleShape).background(
-                                if (t.enabled) Color(0xFF4CAF50)
-                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)))
-                            Spacer(Modifier.width(9.dp))
+                            if (!hub.canToggle) {
+                                Box(Modifier.size(7.dp).clip(CircleShape).background(
+                                    if (t.enabled) Color(0xFF4CAF50)
+                                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)))
+                                Spacer(Modifier.width(9.dp))
+                            }
                             Text(t.label.ifBlank { t.name }, fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                             if (!t.configured) {
                                 Text("needs keys", fontSize = 10.sp,
                                     color = MaterialTheme.colorScheme.error)
+                            }
+                            if (hub.canToggle) {
+                                Spacer(Modifier.width(8.dp))
+                                Switch(
+                                    checked = t.enabled,
+                                    onCheckedChange = { viewModel.hubToolsetToggle(t.name, it) },
+                                    // Operator-pinned (config-guard invariants): show state, refuse input.
+                                    enabled = !t.locked && !panel.refreshing,
+                                )
                             }
                         }
                         if (t.tools.isNotEmpty()) {

@@ -81,6 +81,10 @@ fun SettingsScreen(
     onShowTelemetryChanged: (Boolean) -> Unit,
     missionAlertsEnabled: Boolean,
     onMissionAlertsChanged: (Boolean) -> Unit,
+    pushEnabled: Boolean,
+    onPushEnabledChanged: (Boolean) -> Unit,
+    pushGatewayUrl: String,
+    onPushGatewayUrlChanged: (String) -> Unit,
     biometricLockEnabled: Boolean,
     onBiometricLockChanged: (Boolean) -> Unit,
     e2eeEnabled: Boolean,
@@ -299,6 +303,9 @@ fun SettingsScreen(
                             onValueChange = onAgentMatrixIdChanged,
                             label = { Text("Hermes Agent Matrix ID") },
                             placeholder = { Text("@hermes:example.com") },
+                            supportingText = {
+                                Text("Set this if you also chat with humans — it tells Keryx which sender gets agent rendering")
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
@@ -309,6 +316,28 @@ fun SettingsScreen(
                             checked = allowInsecure,
                             onCheckedChange = onAllowInsecureChanged,
                         )
+                        SettingsSwitchRow(
+                            title = "Push notifications",
+                            subtitle = if (pushEnabled) "Via your UnifiedPush distributor"
+                            else "Off — notifications rely on the in-app sync staying alive",
+                            checked = pushEnabled,
+                            onCheckedChange = onPushEnabledChanged,
+                        )
+                        // Progressive disclosure: the gateway URL only matters while push is on.
+                        if (pushEnabled) {
+                            Spacer(Modifier.height(4.dp))
+                            OutlinedTextField(
+                                value = pushGatewayUrl,
+                                onValueChange = onPushGatewayUrlChanged,
+                                label = { Text("Push gateway URL") },
+                                placeholder = { Text("https://ntfy.example.com") },
+                                supportingText = {
+                                    Text("A Matrix push gateway — a self-hosted ntfy server works out of the box", fontSize = 11.sp)
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                            )
+                        }
 
                         var reauth by remember { mutableStateOf(false) }
                         TextButton(onClick = { reauth = !reauth }) {

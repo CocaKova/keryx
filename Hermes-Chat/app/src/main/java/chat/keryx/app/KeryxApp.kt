@@ -56,6 +56,12 @@ class KeryxApp : Application() {
             runCatching { matrixService.restore(allowInsecure = settingsRepository.allowInsecure) }
         }
 
+        // Keep the UnifiedPush registration fresh across app updates / distributor restarts —
+        // idempotent, and a rotated endpoint comes back through onNewEndpoint → pusher update.
+        if (settingsRepository.pushEnabled) {
+            runCatching { chat.keryx.app.notify.PushManager.enable(this) }
+        }
+
         observeForNotifications()
     }
 

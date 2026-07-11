@@ -364,9 +364,11 @@ private fun segmentsToParts(segs: List<MessageParser.Segment>): MsgParts {
     return MsgParts(entries, reasoning.toString().ifBlank { null })
 }
 
-/** True for an agent message that contains at least one tool call (not mine, not a media message). */
+/** True for an agent message that contains at least one tool call (not a human's, not mine, not a
+ *  media message). The HERMES gate matters: a human whose text merely pattern-matches a tool line
+ *  must never be dragged into a tool-run accordion. */
 fun isToolMessage(m: Message): Boolean {
-    if (m.sender == SenderType.ME) return false
+    if (m.sender != SenderType.HERMES) return false
     if (m.mediaKind != null) return false
     if (m.content.isBlank()) return false
     return MessageParser.parse(m.content).any {
@@ -376,12 +378,12 @@ fun isToolMessage(m: Message): Boolean {
 
 /** True for an agent message that is pure automated telemetry (runtime footer, cron check-in…). */
 fun isTelemetryMessage(m: Message): Boolean {
-    if (m.sender == SenderType.ME || m.mediaKind != null || m.content.isBlank()) return false
+    if (m.sender != SenderType.HERMES || m.mediaKind != null || m.content.isBlank()) return false
     return MessageParser.isTelemetryMessage(m.content)
 }
 
 private fun isRuntimeFooterMessage(m: Message): Boolean {
-    if (m.sender == SenderType.ME || m.mediaKind != null || m.content.isBlank()) return false
+    if (m.sender != SenderType.HERMES || m.mediaKind != null || m.content.isBlank()) return false
     return MessageParser.isRuntimeFooterMessage(m.content)
 }
 
@@ -473,7 +475,10 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
     var i = 0
     while (i < chrono.size) {
         val start = chrono[i]
-        if (start.sender == SenderType.ME || start.mediaKind != null) {
+        // OTHER (human) senders are never part of an agent block: like media, they render as
+        // plain bubbles and break the run — a human interjection must not fold into a tool run's
+        // reasoning or get counted as a step.
+        if (start.sender != SenderType.HERMES || start.mediaKind != null) {
             if (start.sender == SenderType.ME) lastMineId = start.id
             out += ChatRenderItem.Single(start); i++; continue
         }
@@ -483,6 +488,7 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
         while (blockEnd < chrono.size) {
             val m = chrono[blockEnd]
             if (m.mediaKind != null) break
+            if (m.sender == SenderType.OTHER) break
             if (m.sender == SenderType.ME && !isCommandMessage(m)) break
             blockEnd++
         }

@@ -89,6 +89,22 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getBoolean("side_channel_enabled", true)
         set(value) = prefs.edit().putBoolean("side_channel_enabled", value).apply()
 
+    override val gatewayConfigured: Boolean
+        // Raw pref, not the [gatewayUrl] getter — that one falls back to a derived default.
+        get() = !(prefs.getString("gateway_url", "") ?: "").isBlank() || gatewayApiKey.isNotBlank()
+
+    override var pushEnabled: Boolean
+        get() = prefs.getBoolean("push_enabled", false)
+        set(value) = prefs.edit().putBoolean("push_enabled", value).apply()
+
+    override var pushGatewayUrl: String
+        get() = prefs.getString("push_gateway_url", "") ?: ""
+        set(value) = prefs.edit().putString("push_gateway_url", value).apply()
+
+    override var pushEndpoint: String
+        get() = prefs.getString("push_endpoint", "") ?: ""
+        set(value) = prefs.edit().putString("push_endpoint", value).apply()
+
     override var showTelemetry: Boolean
         get() = prefs.getBoolean("show_telemetry", true)
         set(value) = prefs.edit().putBoolean("show_telemetry", value).apply()

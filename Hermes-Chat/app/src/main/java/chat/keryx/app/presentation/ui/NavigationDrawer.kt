@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
@@ -80,6 +81,8 @@ fun NavigationDrawerContent(
     val sttModel by viewModel.sttModel.collectAsState()
     val showTelemetry by viewModel.showTelemetry.collectAsState()
     val missionAlertsEnabled by viewModel.missionAlertsEnabled.collectAsState()
+    val pushEnabled by viewModel.pushEnabled.collectAsState()
+    val pushGatewayUrl by viewModel.pushGatewayUrl.collectAsState()
 
     var showSettings by remember { mutableStateOf(false) }
     var showMissions by remember { mutableStateOf(false) }
@@ -142,6 +145,25 @@ fun NavigationDrawerContent(
                 viewModel.setMissionAlertsEnabled(it)
                 chat.keryx.app.notify.MissionAlertsWorker.setEnabled(context, it)
             },
+            pushEnabled = pushEnabled,
+            onPushEnabledChanged = { on ->
+                if (on) {
+                    when (chat.keryx.app.notify.PushManager.enable(context)) {
+                        chat.keryx.app.notify.PushManager.EnableResult.NoDistributor -> {
+                            // Don't latch a switch that can't deliver — say why instead.
+                            viewModel.setPushEnabled(false)
+                            viewModel.toast("No UnifiedPush distributor installed (e.g. the ntfy app) — staying on in-app sync")
+                        }
+                        chat.keryx.app.notify.PushManager.EnableResult.Requested ->
+                            viewModel.setPushEnabled(true)
+                    }
+                } else {
+                    viewModel.setPushEnabled(false)
+                    chat.keryx.app.notify.PushManager.disable(context)
+                }
+            },
+            pushGatewayUrl = pushGatewayUrl,
+            onPushGatewayUrlChanged = { viewModel.setPushGatewayUrl(it) },
             biometricLockEnabled = biometricLockEnabled,
             onBiometricLockChanged = { viewModel.setBiometricLock(it) },
             e2eeEnabled = e2eeEnabled,
@@ -158,7 +180,13 @@ fun NavigationDrawerContent(
             onLoginRequested = { user, pass, callback ->
                 viewModel.loginToMatrix(user, pass, callback)
             },
-            onLogout = { showSettings = false; viewModel.logout() },
+            onLogout = {
+                showSettings = false
+                // Remove the pusher while the session can still authenticate the request.
+                if (pushEnabled) chat.keryx.app.notify.PushManager.disable(context)
+                viewModel.setPushEnabled(false)
+                viewModel.logout()
+            },
             onDismissRequest = { showSettings = false }
         )
     }
@@ -254,6 +282,23 @@ fun NavigationDrawerContent(
                         )
                     }
                 }
+                Spacer(modifier = Modifier.weight(1f))
+                // The drawer's ONE new-conversation entry point: DM / create / join, in a sheet.
+                var showNewChat by remember { mutableStateOf(false) }
+                IconButton(onClick = { showNewChat = true }) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "New chat",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                if (showNewChat) {
+                    chat.keryx.app.presentation.ui.components.NewChatSheet(
+                        viewModel = viewModel,
+                        onDismiss = { showNewChat = false },
+                    )
+                }
             }
 
             var query by remember { mutableStateOf("") }
@@ -334,6 +379,7 @@ fun NavigationDrawerContent(
                             avatarPicker.launch("image/*")
                         },
                         onLeave = { viewModel.leaveRoom(room.id) },
+                        onInvite = { userId -> viewModel.inviteUser(room.id, userId) },
                         avatarLoader = { viewModel.loadAvatar(it) },
                         previewLoader = { viewModel.roomPreview(room.id, room.timestamp) },
                     )
@@ -449,14 +495,16 @@ fun RoomRow(
     onTogglePin: () -> Unit,
     onSetAvatar: () -> Unit,
     onLeave: (() -> Unit)? = null,
+    onInvite: ((String) -> Unit)? = null,
     avatarLoader: suspend (String) -> ByteArray?,
     previewLoader: (suspend () -> String?)? = null,
 ) {
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
-    // Long-press menu (pin/unpin + leave). Replaced the instant pin toggle once leaving rooms
-    // became possible — two destructive-adjacent actions can't share one blind gesture.
+    // Long-press menu (pin/unpin + invite + leave). Replaced the instant pin toggle once leaving
+    // rooms became possible — two destructive-adjacent actions can't share one blind gesture.
     var menuOpen by remember { mutableStateOf(false) }
     var confirmLeave by remember { mutableStateOf(false) }
+    var inviteOpen by remember { mutableStateOf(false) }
     // Last-message snippet, resolved lazily per row (cached in the VM keyed on room.timestamp so
     // it only refetches after new activity). Keyed on the timestamp so a new message refreshes it.
     val preview by produceState<String?>(initialValue = null, room.id, room.timestamp) {
@@ -559,12 +607,43 @@ fun RoomRow(
             text = { Text(if (isPinned) "Unpin from Quick Rooms" else "Pin to Quick Rooms") },
             onClick = { menuOpen = false; onTogglePin() },
         )
+        if (onInvite != null) {
+            DropdownMenuItem(
+                text = { Text("Invite user…") },
+                onClick = { menuOpen = false; inviteOpen = true },
+            )
+        }
         DropdownMenuItem(
             text = { Text("Leave room", color = MaterialTheme.colorScheme.error) },
             onClick = { menuOpen = false; confirmLeave = true },
         )
     }
     } // end anchor Box
+    if (inviteOpen && onInvite != null) {
+        var inviteId by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { inviteOpen = false },
+            title = { Text("Invite to ${room.name}", fontSize = 16.sp) },
+            text = {
+                OutlinedTextField(
+                    value = inviteId,
+                    onValueChange = { inviteId = it },
+                    placeholder = { Text("@user:server") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = inviteId.isNotBlank(),
+                    onClick = { inviteOpen = false; onInvite(inviteId.trim()) },
+                ) { Text("Invite") }
+            },
+            dismissButton = {
+                TextButton(onClick = { inviteOpen = false }) { Text("Cancel") }
+            },
+        )
+    }
     if (confirmLeave) {
         AlertDialog(
             onDismissRequest = { confirmLeave = false },

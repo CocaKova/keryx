@@ -147,6 +147,29 @@ POST /keryx/sessions/prune   body mirrors the dashboard SessionPrune model:
 Bare prune defaults to 90 days; any attribute filter suppresses the default unless
 `older_than_days` is sent explicitly (same rule as the CLI/dashboard).
 
+## Toolset toggle endpoints (1.16)
+
+Platform-aware replacement for the read-only core `/v1/toolsets`, which reports the
+**api_server** platform's enablement — not the platform the agent Keryx chats with actually
+runs on (`platform_toolsets.matrix` by default). Reads and writes go through the same hermes
+helpers as the desktop dashboard (`_get_platform_tools` / `_save_platform_tools`), and an edit
+is live on the agent's next turn — the gateway re-resolves platform toolsets per turn.
+
+```
+GET /keryx/toolsets           ?platform=matrix (default) → {"platform", "canToggle": true,
+                              "data": [{"name", "label", "description", "enabled",
+                              "configured", "locked", "tools": [...]}]}
+PUT /keryx/toolsets/{name}    {"enabled": bool, "platform"?: "matrix"} →
+                              {"ok", "name", "enabled", "platform"}
+                              400 = unknown toolset; 403 = locked/forbidden by the operator
+```
+
+Operator pins via env (comma-separated toolset names; read fresh per request):
+`KERYX_TOOLSETS_LOCKED` cannot be disabled from the app, `KERYX_TOOLSETS_FORBIDDEN` cannot be
+enabled. Both report `locked: true` in the GET so clients grey the switch out. The `no_mcp`
+sentinel survives writes (the desktop picker's save-clears-it consent rule doesn't apply to a
+phone toggle of one toolset).
+
 ## Pet endpoints (1.10/1.11)
 
 The petdex mascot from the Hermes desktop app, served to the phone. Pets stay configured

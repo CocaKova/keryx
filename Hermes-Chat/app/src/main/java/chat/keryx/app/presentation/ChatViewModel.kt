@@ -581,8 +581,8 @@ class ChatViewModel(
     private val _hubSkills = seededPanel("/v1/skills", chat.keryx.app.data.remote.HubJson::skills)
     val hubSkills: StateFlow<HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubSkill>>> =
         _hubSkills.asStateFlow()
-    private val _hubToolsets = seededPanel("/v1/toolsets", chat.keryx.app.data.remote.HubJson::toolsets)
-    val hubToolsets: StateFlow<HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubToolset>>> =
+    private val _hubToolsets = seededPanel("/keryx/toolsets", chat.keryx.app.data.remote.HubJson::toolsets)
+    val hubToolsets: StateFlow<HubPanel<chat.keryx.app.data.remote.HermesStreamClient.HubToolsets>> =
         _hubToolsets.asStateFlow()
 
     fun refreshHubHealth() = _hubHealth.refreshFrom { healthDetailed() }
@@ -656,6 +656,20 @@ class ChatViewModel(
         }
     }
 
+    /** Flip one toolset on/off for the agent's platform, then re-pull so the switch reflects
+     *  what the gateway actually persisted (locked refusals surface as the gateway's words). */
+    fun hubToolsetToggle(name: String, enabled: Boolean) {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.setToolsetEnabled(name, enabled)
+                .onSuccess { refreshHubToolsets() }
+                .onFailure {
+                    _toasts.tryEmit("Toolset change failed: ${it.message?.take(80)}")
+                    refreshHubToolsets()
+                }
+        }
+    }
+
     /** Pause/resume/run a scheduled job, then re-pull the list so the card reflects reality. */
     fun hubJobAction(jobId: String, action: String) {
         val client = gatewayClient() ?: return
@@ -704,6 +718,24 @@ class ChatViewModel(
         _missionAlertsEnabled.value = enabled
     }
 
+    // --- Real push (UnifiedPush) — the caller drives PushManager (it needs a Context). ---
+    private val _pushEnabled = MutableStateFlow(settingsRepository.pushEnabled)
+    val pushEnabled: StateFlow<Boolean> = _pushEnabled.asStateFlow()
+    private val _pushGatewayUrl = MutableStateFlow(settingsRepository.pushGatewayUrl)
+    val pushGatewayUrl: StateFlow<String> = _pushGatewayUrl.asStateFlow()
+
+    fun setPushEnabled(enabled: Boolean) {
+        settingsRepository.pushEnabled = enabled
+        _pushEnabled.value = enabled
+    }
+
+    fun setPushGatewayUrl(url: String) {
+        settingsRepository.pushGatewayUrl = url
+        _pushGatewayUrl.value = url
+    }
+
+    fun toast(message: String) { _toasts.tryEmit(message) }
+
     /** The transient live response overlay (null = nothing streaming over the side-channel). */
     private val _liveStream = MutableStateFlow<LiveStream?>(null)
     val liveStream: StateFlow<LiveStream?> = _liveStream.asStateFlow()
@@ -720,6 +752,11 @@ class ChatViewModel(
     // thinking / tool-call / streaming phases and only clears after activity goes quiet.
     private val _awaitingReply = MutableStateFlow(false)
     val awaitingReply: StateFlow<Boolean> = _awaitingReply.asStateFlow()
+
+    /** Display names of HUMAN typers in the open room — the plain "X is typing…" line.
+     *  (The agent's typing drives [awaitingReply]/the working banner instead.) */
+    private val _typingHumans = MutableStateFlow<List<String>>(emptyList())
+    val typingHumans: StateFlow<List<String>> = _typingHumans.asStateFlow()
     private var quietJob: Job? = null
 
     // Tracks the last message we evaluated, so we can tell genuine live activity (a new message, or a
@@ -869,6 +906,12 @@ class ChatViewModel(
                     ) clearPendingSend()
                     return@collect
                 }
+                if (last.sender == SenderType.OTHER) {
+                    // A human's message is dialogue, not agent work — it must never light (or
+                    // relabel) the working banner. If the agent is still busy through a human
+                    // interjection, its typing signal keeps the banner alive on its own.
+                    return@collect
+                }
 
                 // updateWorkStateFrom both sets the "what it's doing" label and returns the adaptive
                 // quiet window; QUIET_LONG_MS means the agent is mid-run (a tool call, or reasoning
@@ -906,15 +949,16 @@ class ChatViewModel(
 
     private fun workStateMessage(messages: List<Message>, latest: Message): Message {
         // Judge the work state from the real answer, not from a runtime footer or a blank
-        // placeholder that landed after it. Sender filter is "not mine" (rather than HERMES) so a
-        // misclassified agent id can never blind this again.
+        // placeholder that landed after it. HERMES-only: the blank-agent-id blindness this filter
+        // once hedged against is now solved structurally in senderTypeOf (legacy agent-room
+        // fallback), and "not mine" would let a HUMAN's group-room message relabel the banner.
         if (!MessageParser.isRuntimeFooterMessage(latest.content) && latest.content.isNotBlank()) return latest
         return messages.asReversed()
             .asSequence()
             .dropWhile { it.id == latest.id }
             .firstOrNull {
                 it.sessionId == latest.sessionId &&
-                    it.sender != SenderType.ME &&
+                    it.sender == SenderType.HERMES &&
                     it.content.isNotBlank() &&
                     !MessageParser.isTelemetryMessage(it.content)
             }
@@ -923,14 +967,20 @@ class ChatViewModel(
 
     /** Drive the working banner from Hermes' Matrix typing indicator — the authoritative "busy"
      *  signal. It stays true (Hermes refreshes it) through long single tool calls that emit nothing,
-     *  fixing the "banner vanished while it was still working on a curl" case. */
+     *  fixing the "banner vanished while it was still working on a curl" case. Human typers are a
+     *  separate lane: they surface as a plain "X is typing…" line, never as the working banner. */
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeTyping() {
         viewModelScope.launch {
             _currentSession
-                .flatMapLatest { s -> if (s == null) flowOf(false) else repository.othersTyping(s.id) }
-                .collect { typing ->
-                    android.util.Log.i("KeryxTyping", "typing=$typing awaiting=${_awaitingReply.value} answerLanded=$answerLanded")
+                .flatMapLatest { s ->
+                    if (s == null) flowOf(chat.keryx.app.domain.model.TypingState())
+                    else repository.typing(s.id)
+                }
+                .collect { state ->
+                    _typingHumans.value = state.humanNames
+                    val typing = state.agentTyping
+                    android.util.Log.i("KeryxTyping", "typing=$typing humans=${state.humanNames.size} awaiting=${_awaitingReply.value} answerLanded=$answerLanded")
                     agentTyping = typing
                     if (typing) {
                         quietJob?.cancel() // never time out while it's actively typing/working
@@ -1190,6 +1240,9 @@ class ChatViewModel(
         lastSeenId = null
         lastSeenLen = -1
         settingsRepository.lastRoomId = session.id
+        _typingHumans.value = emptyList()
+        // Warm the member store so sender display names resolve in cold group rooms.
+        viewModelScope.launch { repository.ensureMembersLoaded(session.id) }
     }
 
     /** Load an older page of history (called when the user scrolls to the top of the timeline). */
@@ -1463,6 +1516,42 @@ class ChatViewModel(
             repository.leaveRoom(roomId)
                 .onSuccess { _toasts.tryEmit("Invite declined") }
                 .onFailure { _toasts.tryEmit("Decline failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    // --- Starting conversations (NewChatSheet) --------------------------------------------------
+    // Each [onDone] gets null on success (the sheet closes; the room opens via openRoomById as
+    // soon as sync surfaces it) or the gateway/homeserver's own error text to show inline.
+
+    fun startDirectMessage(userId: String, onDone: (String?) -> Unit) {
+        viewModelScope.launch {
+            repository.startDirectMessage(userId)
+                .onSuccess { roomId -> openRoomById(roomId); onDone(null) }
+                .onFailure { onDone(it.message?.take(120) ?: "couldn't start the chat") }
+        }
+    }
+
+    fun createRoom(name: String, invitee: String, onDone: (String?) -> Unit) {
+        viewModelScope.launch {
+            repository.createRoom(name, listOf(invitee))
+                .onSuccess { roomId -> openRoomById(roomId); onDone(null) }
+                .onFailure { onDone(it.message?.take(120) ?: "couldn't create the room") }
+        }
+    }
+
+    fun joinRoomByAddress(address: String, onDone: (String?) -> Unit) {
+        viewModelScope.launch {
+            repository.joinRoomByAddress(address)
+                .onSuccess { roomId -> openRoomById(roomId); onDone(null) }
+                .onFailure { onDone(it.message?.take(120) ?: "couldn't join") }
+        }
+    }
+
+    fun inviteUser(roomId: String, userId: String) {
+        viewModelScope.launch {
+            repository.inviteUser(roomId, userId)
+                .onSuccess { _toasts.tryEmit("Invite sent") }
+                .onFailure { _toasts.tryEmit("Invite failed: ${it.message?.take(80)}") }
         }
     }
 
