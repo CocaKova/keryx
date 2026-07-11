@@ -79,6 +79,11 @@ fun NavigationDrawerContent(
     val sttUrl by viewModel.sttUrl.collectAsState()
     val sttApiKey by viewModel.sttApiKey.collectAsState()
     val sttModel by viewModel.sttModel.collectAsState()
+    val ttsAutoSpeak by viewModel.ttsAutoSpeak.collectAsState()
+    val ttsUrl by viewModel.ttsUrl.collectAsState()
+    val ttsApiKey by viewModel.ttsApiKey.collectAsState()
+    val ttsVoice by viewModel.ttsVoice.collectAsState()
+    val ttsModel by viewModel.ttsModel.collectAsState()
     val showTelemetry by viewModel.showTelemetry.collectAsState()
     val missionAlertsEnabled by viewModel.missionAlertsEnabled.collectAsState()
     val pushEnabled by viewModel.pushEnabled.collectAsState()
@@ -137,6 +142,16 @@ fun NavigationDrawerContent(
             onSttApiKeyChanged = { viewModel.setSttApiKey(it) },
             sttModel = sttModel,
             onSttModelChanged = { viewModel.setSttModel(it) },
+            ttsAutoSpeak = ttsAutoSpeak,
+            onTtsAutoSpeakChanged = { viewModel.setTtsAutoSpeak(it) },
+            ttsUrl = ttsUrl,
+            onTtsUrlChanged = { viewModel.setTtsUrl(it) },
+            ttsApiKey = ttsApiKey,
+            onTtsApiKeyChanged = { viewModel.setTtsApiKey(it) },
+            ttsVoice = ttsVoice,
+            onTtsVoiceChanged = { viewModel.setTtsVoice(it) },
+            ttsModel = ttsModel,
+            onTtsModelChanged = { viewModel.setTtsModel(it) },
             onTestLink = { viewModel.testGatewayLink() },
             showTelemetry = showTelemetry,
             onShowTelemetryChanged = { viewModel.setShowTelemetry(it) },

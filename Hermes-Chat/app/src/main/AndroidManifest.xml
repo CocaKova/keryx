@@ -10,6 +10,14 @@
          this is what keeps messages arriving without a persistent foreground-service notification. -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- Voice replies: package-visibility rule so the built-in TextToSpeech engine is bindable
+         under targetSdk 30+ filtering. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+
     <application
         android:name=".KeryxApp"
         android:usesCleartextTraffic="true"

@@ -257,6 +257,28 @@ class ChatViewModel(
     private val _sttModel = MutableStateFlow(settingsRepository.sttModel)
     val sttModel: StateFlow<String> = _sttModel.asStateFlow()
 
+    // --- Voice replies (TTS) ---
+    private val _ttsAutoSpeak = MutableStateFlow(settingsRepository.ttsAutoSpeak)
+    val ttsAutoSpeak: StateFlow<Boolean> = _ttsAutoSpeak.asStateFlow()
+
+    private val _ttsUrl = MutableStateFlow(settingsRepository.ttsUrl)
+    val ttsUrl: StateFlow<String> = _ttsUrl.asStateFlow()
+
+    private val _ttsApiKey = MutableStateFlow(settingsRepository.ttsApiKey)
+    val ttsApiKey: StateFlow<String> = _ttsApiKey.asStateFlow()
+
+    private val _ttsVoice = MutableStateFlow(settingsRepository.ttsVoice)
+    val ttsVoice: StateFlow<String> = _ttsVoice.asStateFlow()
+
+    private val _ttsModel = MutableStateFlow(settingsRepository.ttsModel)
+    val ttsModel: StateFlow<String> = _ttsModel.asStateFlow()
+
+    /** Auto-speak: completed agent replies in the open room, emitted once each for the UI to
+     *  voice. One-shot like [toasts]; nothing replays on resubscribe. */
+    private val _speakRequests = kotlinx.coroutines.flow.MutableSharedFlow<Message>(extraBufferCapacity = 4)
+    val speakRequests: kotlinx.coroutines.flow.SharedFlow<Message> = _speakRequests
+    private var lastAutoSpokenId: String? = null
+
     /** An optimistic own-message bubble shown the instant Send is tapped, retired when the
      *  homeserver echo appears in the timeline (or after a safety timeout). */
     data class PendingSend(val roomId: String, val text: String, val sentAt: Long)
@@ -921,6 +943,21 @@ class ChatViewModel(
                 val window = updateWorkStateFrom(stateMessage)
                 val midRun = window == QUIET_LONG_MS
                 answerLanded = !midRun
+
+                // Auto-speak: exactly the settled-answer moment, for both delivery tiers (the
+                // committed Matrix event always lands here). ME/OTHER senders returned above, so
+                // this is agent output; !midRun reuses updateWorkStateFrom's classification —
+                // mid-turn tool commits and reasoning-only chunks never speak, telemetry is
+                // filtered explicitly, and background rooms stay silent.
+                if (_ttsAutoSpeak.value && isNewMsg && !midRun && !last.isStreaming &&
+                    last.sender == SenderType.HERMES &&
+                    last.sessionId == _currentSession.value?.id &&
+                    last.id != lastAutoSpokenId &&
+                    !chat.keryx.app.presentation.ui.components.MessageParser.isTelemetryMessage(last.content)
+                ) {
+                    lastAutoSpokenId = last.id
+                    _speakRequests.tryEmit(last)
+                }
                 // Live activity = a brand-new message or a streamed edit growing the current one.
                 val liveActivity = isNewMsg || grew
                 // On first open, fall back to recency so opening the app mid-run still lights up,
@@ -1647,6 +1684,50 @@ class ChatViewModel(
                 }
             }
             audio.delete()
+            onResult(result)
+        }
+    }
+
+    fun setTtsAutoSpeak(enabled: Boolean) {
+        _ttsAutoSpeak.value = enabled
+        settingsRepository.ttsAutoSpeak = enabled
+    }
+
+    fun setTtsUrl(url: String) {
+        _ttsUrl.value = url
+        settingsRepository.ttsUrl = url
+    }
+
+    fun setTtsApiKey(key: String) {
+        _ttsApiKey.value = key
+        settingsRepository.ttsApiKey = key
+    }
+
+    fun setTtsVoice(voice: String) {
+        _ttsVoice.value = voice
+        settingsRepository.ttsVoice = voice
+    }
+
+    fun setTtsModel(model: String) {
+        _ttsModel.value = model
+        settingsRepository.ttsModel = model
+    }
+
+    /** Synthesizes [text] on the configured `/v1/audio/speech` endpoint into [into]. The caller
+     *  owns the file (and plays/deletes it); [onResult] fires on the main thread. */
+    fun synthesizeSpeech(text: String, into: java.io.File, onResult: (Result<java.io.File>) -> Unit) {
+        val url = _ttsUrl.value.trim()
+        if (url.isBlank()) {
+            onResult(Result.failure(IllegalStateException("No TTS endpoint configured")))
+            return
+        }
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    chat.keryx.app.data.remote.TtsClient(url, _ttsApiKey.value.trim(), settingsRepository.allowInsecure)
+                        .synthesize(text, _ttsVoice.value.trim(), _ttsModel.value.trim(), into)
+                }
+            }
             onResult(result)
         }
     }

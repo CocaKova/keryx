@@ -59,6 +59,20 @@ interface SettingsRepository {
     /** Optional model name; only needed when the provider requires one (e.g. "whisper-1"). */
     var sttModel: String
 
+    // --- Voice replies (TTS) ---
+    /** Speak each finished agent reply in the open chat automatically. Off by default. */
+    var ttsAutoSpeak: Boolean
+    /** Base URL of any OpenAI-compatible `/v1/audio/speech` server (Kokoro, openedai-speech,
+     *  LocalAI, OpenAI…). Bare host, `/v1` base, or full path all accepted. Blank = the
+     *  device's built-in voice — spoken replies never require a server. */
+    var ttsUrl: String
+    /** Optional bearer key for the TTS endpoint. */
+    var ttsApiKey: String
+    /** Optional voice name (e.g. "alloy", "af_sky"); sent only when non-blank. */
+    var ttsVoice: String
+    /** Optional model name (e.g. "tts-1", "kokoro"); sent only when non-blank. */
+    var ttsModel: String
+
     // --- Mission alerts (background kanban-event watcher) ---
     /** Opt-in 15-minute background check that notifies on completed/blocked/given-up missions. */
     var missionAlertsEnabled: Boolean
