@@ -33,6 +33,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
@@ -40,6 +41,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -274,6 +276,54 @@ fun ChatScreen(
         }
     }
 
+    // Voice replies: agent messages read aloud — the device's built-in voice when no TTS server
+    // is configured, otherwise the user's /v1/audio/speech endpoint. One voice at a time; leaving
+    // the screen, switching rooms, or sending all silence it.
+    val ttsUrl by viewModel.ttsUrl.collectAsState()
+    val tts = remember {
+        chat.keryx.app.audio.TtsController(context) { error ->
+            android.widget.Toast.makeText(context, error, android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+    val ttsState by tts.state.collectAsState()
+    DisposableEffect(Unit) { onDispose { tts.shutdown() } }
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) tts.stop()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(currentSession?.id) { tts.stop() }
+
+    fun speakMessage(message: Message) {
+        val text = chat.keryx.app.presentation.TtsText.speakable(message.content)
+        if (text.isBlank()) {
+            android.widget.Toast.makeText(context, "Nothing to read aloud", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (ttsUrl.isBlank()) {
+            tts.speakSystem(message.id, text)
+        } else {
+            val gen = tts.prepare(message.id)
+            val out = java.io.File(context.cacheDir, "tts_reply_${System.currentTimeMillis()}.mp3")
+            viewModel.synthesizeSpeech(text, out) { result ->
+                result.onSuccess { tts.playFile(message.id, gen, it) }
+                    .onFailure { err ->
+                        out.delete()
+                        // Only reset if this fetch is still the active one — a failure arriving
+                        // after the user already started another message must not silence it.
+                        if (tts.state.value.messageId == message.id) tts.stop()
+                        android.widget.Toast.makeText(context, "Speech failed: ${err.message}", android.widget.Toast.LENGTH_LONG).show()
+                    }
+            }
+        }
+    }
+
+    // Auto-speak: the ViewModel emits each settled agent reply in the open room (opt-in setting).
+    LaunchedEffect(Unit) { viewModel.speakRequests.collect { speakMessage(it) } }
+
     // Follow new messages / edits ONLY while the user is actually at the bottom. Two past bugs
     // live here: (1) "at bottom" must be index 0 with a small pixel offset — `index <= 1` stayed
     // true a full screen up inside the tall growing stream bubble; (2) the old "or the last
@@ -332,6 +382,7 @@ fun ChatScreen(
     }
 
     fun doSend() {
+        tts.stop()
         val attachment = pendingAttachment
         val text = textState.text
         // Text sent alongside an attachment rides in the same event as its caption (one Matrix
@@ -494,6 +545,15 @@ fun ChatScreen(
                                 // Redaction: own messages only — the agent's power level owns the rest.
                                 onDelete = if (message.sender == SenderType.ME) {
                                     { viewModel.deleteMessage(message.sessionId, message.id) }
+                                } else null,
+                                speaking = ttsState.messageId == message.id &&
+                                    ttsState.phase != chat.keryx.app.audio.TtsController.Phase.IDLE,
+                                onSpeak = if (message.sender == SenderType.HERMES) {
+                                    {
+                                        val active = ttsState.messageId == message.id &&
+                                            ttsState.phase != chat.keryx.app.audio.TtsController.Phase.IDLE
+                                        if (active) tts.stop() else speakMessage(message)
+                                    }
                                 } else null,
                                 modifier = Modifier.background(flashColor, RoundedCornerShape(18.dp)),
                             )
@@ -906,6 +966,10 @@ fun MessageBubble(
     onReact: (String) -> Unit,
     onQuoteClick: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
+    /** True while this message is being read aloud (or its speech is being fetched). */
+    speaking: Boolean = false,
+    /** Read this message aloud / stop reading it. Null hides the affordance (non-agent senders). */
+    onSpeak: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val isMine = message.sender == SenderType.ME
@@ -1106,6 +1170,8 @@ fun MessageBubble(
                     android.widget.Toast.makeText(copyContext, "Copied", android.widget.Toast.LENGTH_SHORT).show()
                 },
                 onDelete = onDelete?.let { { showReactionPicker = false; confirmDelete = true } },
+                onSpeak = onSpeak?.let { speak -> { showReactionPicker = false; speak() } },
+                speaking = speaking,
                 onDismiss = { showReactionPicker = false },
             )
         }
@@ -1142,6 +1208,26 @@ fun MessageBubble(
                 Spacer(modifier = Modifier.width(4.dp))
                 // Sent indicator (Element-style). The message is a real timeline event, so it's delivered.
                 Text("✓", color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f), fontSize = 11.sp)
+            }
+            if (speaking && onSpeak != null) {
+                Spacer(modifier = Modifier.width(6.dp))
+                // Breathing speaker while the voice is live (dimmer while speech is being fetched);
+                // tapping it stops playback without reopening the long-press bar.
+                val pulse by rememberInfiniteTransition(label = "ttsPulse").animateFloat(
+                    initialValue = 0.45f,
+                    targetValue = 1f,
+                    animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
+                    label = "ttsPulseAlpha",
+                )
+                Icon(
+                    Icons.AutoMirrored.Filled.VolumeUp,
+                    contentDescription = "Stop speaking",
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = pulse),
+                    modifier = Modifier
+                        .size(15.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onSpeak() },
+                )
             }
         }
     }
@@ -1212,6 +1298,8 @@ private fun ReactionPickerRow(
     onCopy: () -> Unit,
     onDismiss: () -> Unit,
     onDelete: (() -> Unit)? = null,
+    onSpeak: (() -> Unit)? = null,
+    speaking: Boolean = false,
 ) {
     // A focusable Popup so a tap anywhere outside (or the back gesture) reliably dismisses it —
     // the inline version was hard to get rid of once it was up.
@@ -1279,6 +1367,15 @@ private fun ReactionPickerRow(
                     }
                     IconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
                         Icon(Icons.Default.ContentCopy, contentDescription = "Copy text", tint = MaterialTheme.colorScheme.primary)
+                    }
+                    if (onSpeak != null) {
+                        IconButton(onClick = onSpeak, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                if (speaking) Icons.Default.Stop else Icons.AutoMirrored.Filled.VolumeUp,
+                                contentDescription = if (speaking) "Stop speaking" else "Read aloud",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     }
                     if (onDelete != null) {
                         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {

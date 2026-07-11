@@ -121,6 +121,26 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getString("stt_model", "") ?: ""
         set(value) = prefs.edit().putString("stt_model", value).apply()
 
+    override var ttsAutoSpeak: Boolean
+        get() = prefs.getBoolean("tts_auto_speak", false)
+        set(value) = prefs.edit().putBoolean("tts_auto_speak", value).apply()
+
+    override var ttsUrl: String
+        get() = prefs.getString("tts_url", "") ?: ""
+        set(value) = prefs.edit().putString("tts_url", value).apply()
+
+    override var ttsApiKey: String
+        get() = prefs.getString("tts_api_key", "") ?: ""
+        set(value) = prefs.edit().putString("tts_api_key", value).apply()
+
+    override var ttsVoice: String
+        get() = prefs.getString("tts_voice", "") ?: ""
+        set(value) = prefs.edit().putString("tts_voice", value).apply()
+
+    override var ttsModel: String
+        get() = prefs.getString("tts_model", "") ?: ""
+        set(value) = prefs.edit().putString("tts_model", value).apply()
+
     override var missionAlertsEnabled: Boolean
         get() = prefs.getBoolean("mission_alerts", false)
         set(value) = prefs.edit().putBoolean("mission_alerts", value).apply()

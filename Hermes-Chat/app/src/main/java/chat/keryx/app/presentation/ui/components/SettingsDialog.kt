@@ -76,6 +76,16 @@ fun SettingsScreen(
     onSttApiKeyChanged: (String) -> Unit,
     sttModel: String,
     onSttModelChanged: (String) -> Unit,
+    ttsAutoSpeak: Boolean,
+    onTtsAutoSpeakChanged: (Boolean) -> Unit,
+    ttsUrl: String,
+    onTtsUrlChanged: (String) -> Unit,
+    ttsApiKey: String,
+    onTtsApiKeyChanged: (String) -> Unit,
+    ttsVoice: String,
+    onTtsVoiceChanged: (String) -> Unit,
+    ttsModel: String,
+    onTtsModelChanged: (String) -> Unit,
     onTestLink: () -> Unit,
     showTelemetry: Boolean,
     onShowTelemetryChanged: (Boolean) -> Unit,
@@ -160,7 +170,10 @@ fun SettingsScreen(
                         SettingsHubRow(Icons.Default.Bolt, "Hermes Link",
                             if (sideChannelEnabled) "Live token streaming on" else "Live token streaming off") { section = "Hermes Link" }
                         SettingsHubRow(Icons.Default.Mic, "Voice",
-                            if (sttUrl.isBlank()) "Dictation off" else "Composer dictation on") { section = "Voice" }
+                            listOfNotNull(
+                                if (sttUrl.isNotBlank()) "Dictation" else null,
+                                if (ttsAutoSpeak) "Auto-speak" else null,
+                            ).ifEmpty { listOf("Dictation & spoken replies") }.joinToString(" · ")) { section = "Voice" }
                         SettingsHubRow(Icons.Default.Palette, "Appearance",
                             "Bubbles, text size, accent colors") { section = "Appearance" }
                         SettingsHubRow(Icons.Default.Lock, "Privacy & Security",
@@ -475,6 +488,67 @@ fun SettingsScreen(
                             onValueChange = onSttModelChanged,
                             label = { Text("Model (optional)") },
                             placeholder = { Text("only if your provider requires one, e.g. whisper-1") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                        )
+                    }
+
+                    if (section == "Voice") SettingsCard("Voice Replies") {
+                        Text(
+                            "Reads agent replies aloud — long-press a message and tap the speaker. " +
+                                "Works out of the box with this device's voice; point it at any " +
+                                "OpenAI-compatible speech endpoint (Kokoro, openedai-speech, LocalAI…) " +
+                                "for a custom voice.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 12.sp,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        SettingsSwitchRow(
+                            title = "Auto-speak replies",
+                            subtitle = "Speak each finished reply in the open chat — tap the message's speaker to stop",
+                            checked = ttsAutoSpeak,
+                            onCheckedChange = onTtsAutoSpeakChanged,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = ttsUrl,
+                            onValueChange = onTtsUrlChanged,
+                            label = { Text("TTS server URL (optional)") },
+                            placeholder = { Text("http://your-tts-host:8880") },
+                            supportingText = { Text("Blank uses Android's built-in voice. Bare host, /v1, or full /v1/audio/speech path all work.", fontSize = 11.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        var ttsKeyVisible by remember { mutableStateOf(false) }
+                        OutlinedTextField(
+                            value = ttsApiKey,
+                            onValueChange = onTtsApiKeyChanged,
+                            label = { Text("API key (optional)") },
+                            visualTransformation = if (ttsKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                TextButton(onClick = { ttsKeyVisible = !ttsKeyVisible }) {
+                                    Text(if (ttsKeyVisible) "Hide" else "Show", fontSize = 12.sp)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = ttsVoice,
+                            onValueChange = onTtsVoiceChanged,
+                            label = { Text("Voice (optional)") },
+                            placeholder = { Text("e.g. alloy / af_sky") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = ttsModel,
+                            onValueChange = onTtsModelChanged,
+                            label = { Text("Model (optional)") },
+                            placeholder = { Text("only if your provider requires one, e.g. tts-1") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                         )
