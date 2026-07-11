@@ -32,6 +32,11 @@ of raw model output.
   slash-command palette with recents, steer shortcut, link-health dot in the top bar.
 - **Local-first diagnostics** — Crash log kept on-device only, shareable from Settings.
 
+## Installing
+
+Grab the latest APK from [Releases](https://github.com/CocaKova/keryx/releases) and sideload
+it. Every release ships a signed APK.
+
 ## Building
 
 ```bash
@@ -56,5 +61,7 @@ Full details in [`Hermes-Chat/hermes-plugin/keryx-stream/README.md`](Hermes-Chat
 
 ## Status
 
-Pre-release. The streaming plugin is submitted upstream as
-[NousResearch/hermes-agent#57091](https://github.com/NousResearch/hermes-agent/pull/57091).
+Actively developed and released — see [Releases](https://github.com/CocaKova/keryx/releases)
+for the changelog. The streaming plugin is submitted upstream as
+[NousResearch/hermes-agent#57091](https://github.com/NousResearch/hermes-agent/pull/57091);
+until it lands there, install it from this repo as shown above.
