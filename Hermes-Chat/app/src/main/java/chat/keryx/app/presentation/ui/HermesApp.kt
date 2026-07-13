@@ -240,6 +240,8 @@ fun HermesApp(viewModel: ChatViewModel) {
             // doesn't carry the ViewModel). One shared target keeps a single hosted sheet.
             androidx.compose.runtime.CompositionLocalProvider(
                 chat.keryx.app.presentation.ui.components.LocalSkillForgeOpener provides viewModel::openSkillForge,
+                // Quick-action chips (⟦keryx:ask⟧) send their option text as a normal message.
+                chat.keryx.app.presentation.ui.components.LocalQuickActionSender provides viewModel::sendMessage,
             ) {
                 ChatScreen(
                     viewModel = viewModel,

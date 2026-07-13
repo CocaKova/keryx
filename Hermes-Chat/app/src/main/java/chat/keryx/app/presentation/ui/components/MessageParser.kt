@@ -37,6 +37,10 @@ object MessageParser {
         data class Citations(val items: List<Citation>) : Segment
         data class SkillDistilled(val id: String, val name: String, val summary: String) : Segment
 
+        /** Decision options the agent attached via ⟦keryx:ask|…⟧ — rendered as one-tap reply
+         *  chips (and as notification action buttons on the notification path). */
+        data class QuickActions(val options: List<String>) : Segment
+
         /** Automated agent output that is not dialogue: the runtime footer (`model · 42% · ~/dir`),
          *  cron/heartbeat check-ins, background-completion notices. Rendered low-contrast. */
         data class Telemetry(val text: String, val kind: TelemetryKind) : Segment
@@ -387,7 +391,16 @@ object MessageParser {
     private val CITE_INLINE = Regex("""⟦c(\d+)⟧""")
     private val SKILL_MARK = Regex("""⟦keryx:skill\s*\|([^|]*)\|([^|]*)\|([^⟧]*)⟧""")
     private val TELEM_MARK = Regex("""⟦keryx:telemetry⟧""")
+    // ⟦keryx:ask|Approve|Deny⟧ — the agent explicitly requests a decision; each option becomes a
+    // one-tap reply (in-app chip + notification action button) that sends its literal text back.
+    // Unlike the other markers this one is emitted by the AGENT in its message text, not by the
+    // plugin: only the model knows when it's blocking on a choice. Same degrade contract: no
+    // marker, no chips — and the marker never survives into the displayed message.
+    private val ASK_MARK = Regex("""⟦keryx:ask\|([^⟧]*)⟧""")
     private val BEACON = Regex("""⟦keryx:v\d+⟧""")
+
+    /** Chip cap: enough for a real decision set, few enough to never wrap into a wall. */
+    private const val MAX_QUICK_ACTIONS = 4
     private val SUPERSCRIPT = mapOf(
         '0' to '⁰', '1' to '¹', '2' to '²', '3' to '³', '4' to '⁴',
         '5' to '⁵', '6' to '⁶', '7' to '⁷', '8' to '⁸', '9' to '⁹',
@@ -402,6 +415,8 @@ object MessageParser {
         val present: Boolean,
         /** ⟦keryx:telemetry⟧ marker — the emitter explicitly flags this message as automated. */
         val telemetry: Boolean = false,
+        /** ⟦keryx:ask|…⟧ options — the agent is waiting on a decision ([] = none requested). */
+        val actions: List<String> = emptyList(),
     )
 
     /** Strip Keryx markers from [text]; collect citations + a skill signal; rewrite inline cite refs
@@ -421,13 +436,22 @@ object MessageParser {
             Segment.SkillDistilled(it.groupValues[1].trim(), it.groupValues[2].trim(), it.groupValues[3].trim())
         }
         val telemetry = TELEM_MARK.containsMatchIn(text)
+        val actions = ASK_MARK.find(text)?.groupValues?.get(1)
+            ?.split('|')?.map { it.trim() }?.filter { it.isNotEmpty() }
+            ?.distinct()?.take(MAX_QUICK_ACTIONS)
+            ?: emptyList()
         var out = CITE_SOURCE.replace(text, "")
         out = SKILL_MARK.replace(out, "")
         out = TELEM_MARK.replace(out, "")
+        out = ASK_MARK.replace(out, "")
         out = BEACON.replace(out, "")
         out = CITE_INLINE.replace(out) { "⁽${superscript(it.groupValues[1].toIntOrNull() ?: 0)}⁾" }
-        return Keryx(out.trim('\n', ' '), citations, skill, true, telemetry)
+        return Keryx(out.trim('\n', ' '), citations, skill, true, telemetry, actions)
     }
+
+    /** The ⟦keryx:ask⟧ options in [content] ([] = none) — for the notification builders, which
+     *  need the actions without paying for a full segment parse. */
+    fun quickActions(content: String): List<String> = extractKeryx(content).actions
 
     // Parsing is pure on [content] and runs on the UI thread for both grouping (ChatScreen) and
     // rendering (MessageContent) — i.e. each message was parsed at least twice and re-parsed on every
@@ -472,6 +496,7 @@ object MessageParser {
             segs.addAll(review)
             keryx.skill?.let { segs.add(it) }
             if (keryx.citations.isNotEmpty()) segs.add(Segment.Citations(keryx.citations))
+            if (keryx.actions.isNotEmpty()) segs.add(Segment.QuickActions(keryx.actions))
             return segs
         }
         val (reasoning, body) = if (agentChrome) extractReasoning(keryx.text) else (null to keryx.text)
@@ -615,6 +640,7 @@ object MessageParser {
         flushAll()
         keryx.skill?.let { segments.add(it) }
         if (keryx.citations.isNotEmpty()) segments.add(Segment.Citations(keryx.citations))
+        if (keryx.actions.isNotEmpty()) segments.add(Segment.QuickActions(keryx.actions))
         return segments
     }
 

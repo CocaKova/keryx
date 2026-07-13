@@ -30,6 +30,14 @@ of raw model output.
   with copy buttons. Unclosed fences healed mid-stream.
 - **Hermes-native controls** — Reasoning-effort menu (persists via `/reasoning --global`),
   slash-command palette with recents, steer shortcut, link-health dot in the top bar.
+- **Actionable notifications** — Reply inline from the lock screen; when the agent is blocking
+  on a decision it can attach one-tap option buttons (`⟦keryx:ask|Approve|Deny⟧` — a structural
+  marker, not keyword sniffing) that also render as reply chips in chat.
+- **Self-contained push** — No distributor app required: point Keryx at any ntfy server and it
+  holds its own WebSocket subscription (a UnifiedPush distributor, if installed, is
+  auto-detected and preferred). Payloads stay `event_id_only` — content never rides the push.
+- **Share-sheet target** — Send any text, link, image, video, or file from any app straight
+  into a room with an optional note; attachments + note land as one MSC2530-captioned turn.
 - **Local-first diagnostics** — Crash log kept on-device only, shareable from Settings.
 
 ## Installing

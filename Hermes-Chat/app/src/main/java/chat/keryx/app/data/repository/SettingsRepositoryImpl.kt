@@ -105,6 +105,10 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getString("push_endpoint", "") ?: ""
         set(value) = prefs.edit().putString("push_endpoint", value).apply()
 
+    override var builtinPushTopic: String
+        get() = prefs.getString("builtin_push_topic", "") ?: ""
+        set(value) = prefs.edit().putString("builtin_push_topic", value).apply()
+
     override var showTelemetry: Boolean
         get() = prefs.getBoolean("show_telemetry", true)
         set(value) = prefs.edit().putBoolean("show_telemetry", value).apply()

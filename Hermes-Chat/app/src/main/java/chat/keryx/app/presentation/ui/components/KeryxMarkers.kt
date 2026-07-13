@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -118,6 +119,47 @@ private fun kindEmoji(kind: String) = when (kind.lowercase()) {
     "web", "url", "search" -> "🌐"
     "session", "chat", "conversation" -> "💬"
     else -> "🔗"
+}
+
+/** Sends a quick-action option's text as a normal message in the open room. Provided at app level
+ *  (HermesApp) because the render chain doesn't carry the ViewModel — same pattern as
+ *  [LocalSkillForgeOpener]. */
+val LocalQuickActionSender = staticCompositionLocalOf<(String) -> Unit> { {} }
+
+/**
+ * One-tap decision chips for a ⟦keryx:ask|…⟧ marker: the agent is blocking on a choice, each chip
+ * sends its literal text back as a reply. The sent message echoes into the chat instantly
+ * (optimistic send), which is the tap feedback — chips themselves stay, like an inline keyboard.
+ */
+@Composable
+fun QuickActionChips(options: List<String>, baseColor: Color) {
+    val accent = MaterialTheme.colorScheme.primary
+    val send = LocalQuickActionSender.current
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier
+            .padding(top = 7.dp)
+            .horizontalScroll(rememberScrollState()),
+    ) {
+        options.forEach { option ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(
+                        Brush.linearGradient(listOf(accent.copy(alpha = 0.30f), accent.copy(alpha = 0.10f)))
+                    )
+                    .border(1.dp, accent.copy(alpha = 0.4f), RoundedCornerShape(percent = 50))
+                    .clickable { send(option) }
+                    .padding(horizontal = 13.dp, vertical = 7.dp),
+            ) {
+                Text("↩", color = accent.copy(alpha = 0.9f), fontSize = 11.sp)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(option, color = baseColor, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            }
+        }
+    }
 }
 
 /**
