@@ -11,6 +11,7 @@ import androidx.work.workDataOf
 import chat.keryx.app.KeryxApp
 import chat.keryx.app.domain.model.MediaKind
 import chat.keryx.app.domain.model.SenderType
+import chat.keryx.app.presentation.ui.components.MessageParser
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
@@ -35,21 +36,9 @@ class KeryxPushService : PushService() {
     }
 
     override fun onMessage(message: PushMessage, instance: String) {
-        // ntfy's Matrix gateway forwards Synapse's HTTP-pusher body verbatim:
-        // {"notification": {"event_id": "...", "room_id": "...", "counts": {...}, ...}}
-        val roomId = runCatching {
-            val obj = Json.parseToJsonElement(message.content.decodeToString()).jsonObject
-            ((obj["notification"] ?: obj).jsonObject["room_id"] as? JsonPrimitive)?.content
-        }.getOrNull()
+        val roomId = pushedRoomId(message.content.decodeToString())
         android.util.Log.i("KeryxPush", "push received (room=${roomId?.take(12)})")
-        val work = OneTimeWorkRequestBuilder<PushSyncWorker>()
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-            .setInputData(workDataOf(PushSyncWorker.KEY_ROOM_ID to roomId))
-            .build()
-        // One queue per room so a burst of pushes coalesces instead of stacking workers.
-        WorkManager.getInstance(applicationContext).enqueueUniqueWork(
-            "keryx-push-sync-${roomId ?: "any"}", ExistingWorkPolicy.REPLACE, work,
-        )
+        enqueuePushSync(applicationContext, roomId)
     }
 
     override fun onRegistrationFailed(reason: FailedReason, instance: String) {
@@ -61,6 +50,27 @@ class KeryxPushService : PushService() {
         android.util.Log.i("KeryxPush", "distributor unregistered us")
         PushManager.onRegistrationGone(applicationContext)
     }
+}
+
+/**
+ * room_id from a pushed Synapse HTTP-pusher body — ntfy's Matrix gateway forwards it verbatim:
+ * `{"notification": {"event_id": "...", "room_id": "...", "counts": {...}, ...}}`. Shared by both
+ * transports (distributor message / built-in WebSocket frame).
+ */
+internal fun pushedRoomId(body: String): String? = runCatching {
+    val obj = Json.parseToJsonElement(body).jsonObject
+    ((obj["notification"] ?: obj).jsonObject["room_id"] as? JsonPrimitive)?.content
+}.getOrNull()
+
+/** Wake the sync for a pushed room. One queue per room so a burst coalesces instead of stacking. */
+internal fun enqueuePushSync(context: Context, roomId: String?) {
+    val work = OneTimeWorkRequestBuilder<PushSyncWorker>()
+        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+        .setInputData(workDataOf(PushSyncWorker.KEY_ROOM_ID to roomId))
+        .build()
+    WorkManager.getInstance(context).enqueueUniqueWork(
+        "keryx-push-sync-${roomId ?: "any"}", ExistingWorkPolicy.REPLACE, work,
+    )
 }
 
 /**
@@ -97,10 +107,17 @@ class PushSyncWorker(
             body = when {
                 message.mediaKind == MediaKind.IMAGE -> "🖼 Photo"
                 message.mediaKind != null -> "📎 ${message.fileName.ifBlank { "Attachment" }}"
+                // extractKeryx: ⟦…⟧ markers must never leak into the banner text.
                 message.content.isNotBlank() ->
-                    message.content.lineSequence().firstOrNull { it.isNotBlank() }?.trim()?.take(160)
+                    MessageParser.extractKeryx(message.content).text
+                        .lineSequence().firstOrNull { it.isNotBlank() }?.trim()?.take(160)
                         ?: "New message"
                 else -> "New message"
+            },
+            quickActions = if (message.sender == SenderType.HERMES) {
+                MessageParser.quickActions(message.content)
+            } else {
+                emptyList()
             },
         )
         return Result.success()

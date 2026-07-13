@@ -10,6 +10,7 @@ import chat.keryx.app.domain.model.MediaKind
 import chat.keryx.app.domain.model.Message
 import chat.keryx.app.domain.model.SenderType
 import chat.keryx.app.notify.KeryxNotifications
+import chat.keryx.app.presentation.ui.components.MessageParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -116,6 +117,7 @@ class KeryxApp : Application() {
                         roomId = room.id,
                         title = room.name,
                         body = notificationSnippet(last),
+                        quickActions = quickActionsFor(last),
                     )
                 }
                 baseline = current
@@ -126,10 +128,17 @@ class KeryxApp : Application() {
     private fun notificationSnippet(m: Message): String = when {
         m.mediaKind == MediaKind.IMAGE -> "🖼 Photo"
         m.mediaKind != null -> "📎 ${m.fileName.ifBlank { "Attachment" }}"
+        // extractKeryx first: raw ⟦…⟧ markers (ask options, citations) must never show in a banner.
         m.content.isNotBlank() ->
-            m.content.lineSequence().firstOrNull { it.isNotBlank() }?.trim()?.take(160) ?: "New message"
+            MessageParser.extractKeryx(m.content).text
+                .lineSequence().firstOrNull { it.isNotBlank() }?.trim()?.take(160) ?: "New message"
         else -> "New message"
     }
+
+    /** ⟦keryx:ask⟧ decision options for a notification — agent messages only: a human quoting the
+     *  marker must not sprout buttons (same sender gate the chat render applies via agentChrome). */
+    private fun quickActionsFor(m: Message): List<String> =
+        if (m.sender == SenderType.HERMES) MessageParser.quickActions(m.content) else emptyList()
 
     /** Counts started activities so [isForeground] reflects whether Keryx is on screen. */
     private inner class ForegroundTracker : ActivityLifecycleCallbacks {

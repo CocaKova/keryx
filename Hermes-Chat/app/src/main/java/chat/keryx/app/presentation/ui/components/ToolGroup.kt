@@ -359,6 +359,8 @@ private fun segmentsToParts(segs: List<MessageParser.Segment>): MsgParts {
             is MessageParser.Segment.Telemetry -> if (seg.text.isNotBlank()) entries += ToolRunEntry.Telemetry(seg.text)
             is MessageParser.Segment.Citations -> Unit
             is MessageParser.Segment.SkillDistilled -> Unit
+            // Decision chips belong to the dialogue bubble, never to a tool-run accordion.
+            is MessageParser.Segment.QuickActions -> Unit
         }
     }
     return MsgParts(entries, reasoning.toString().ifBlank { null })

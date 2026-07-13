@@ -10,6 +10,13 @@
          this is what keeps messages arriving without a persistent foreground-service notification. -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- Built-in push (no distributor app): a foreground service holds Keryx's own WebSocket to
+         the user's ntfy server. specialUse because none of the enumerated types fit "self-hosted
+         push transport" — and unlike dataSync it may restart straight from BOOT_COMPLETED. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <!-- Voice replies: package-visibility rule so the built-in TextToSpeech engine is bindable
          under targetSdk 30+ filtering. -->
     <queries>
@@ -38,6 +45,29 @@
             </intent-filter>
         </activity>
 
+        <!-- System share-sheet target: text/links and any file type Matrix can carry. Its own
+             activity (not MainActivity) so a share never disturbs the main task stack. -->
+        <activity
+            android:name=".share.ShareActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:excludeFromRecents="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="application/*" />
+            </intent-filter>
+        </activity>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -56,6 +86,33 @@
                 <action android:name="org.unifiedpush.android.connector.PUSH_EVENT" />
             </intent-filter>
         </service>
+
+        <!-- Built-in push: Keryx's own subscription to the user's ntfy server when no
+             UnifiedPush distributor app is installed. -->
+        <service
+            android:name=".notify.BuiltinPushService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Maintains the WebSocket that delivers self-hosted push notifications when no UnifiedPush distributor app is installed" />
+        </service>
+
+        <!-- Restarts built-in push after reboot / app update (a distributor app would have
+             survived those on its own; without one that job is ours). -->
+        <receiver
+            android:name=".notify.BuiltinPushBootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Notification action buttons (inline reply + ⟦keryx:ask⟧ options) land here. -->
+        <receiver
+            android:name=".notify.NotificationActionReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

@@ -331,8 +331,13 @@ fun SettingsScreen(
                         )
                         SettingsSwitchRow(
                             title = "Push notifications",
-                            subtitle = if (pushEnabled) "Via your UnifiedPush distributor"
-                            else "Off — notifications rely on the in-app sync staying alive",
+                            subtitle = when {
+                                !pushEnabled -> "Off — notifications rely on the in-app sync staying alive"
+                                org.unifiedpush.android.connector.UnifiedPush
+                                    .getDistributors(androidx.compose.ui.platform.LocalContext.current)
+                                    .isNotEmpty() -> "Via your UnifiedPush distributor"
+                                else -> "Built-in — Keryx holds its own connection to your push server"
+                            },
                             checked = pushEnabled,
                             onCheckedChange = onPushEnabledChanged,
                         )

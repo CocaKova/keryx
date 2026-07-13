@@ -47,6 +47,9 @@ interface SettingsRepository {
     var pushGatewayUrl: String
     /** The distributor-issued endpoint currently registered as our pushkey ("" = none). */
     var pushEndpoint: String
+    /** Private ntfy topic for built-in (distributor-less) push; minted once by PushManager.
+     *  Random because a default ntfy server's only auth is topic-name secrecy. */
+    var builtinPushTopic: String
     /** Show automated telemetry blocks (runtime footer, cron check-ins) in the chat. */
     var showTelemetry: Boolean
 

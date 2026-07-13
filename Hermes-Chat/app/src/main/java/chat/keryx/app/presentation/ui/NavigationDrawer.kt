@@ -163,14 +163,18 @@ fun NavigationDrawerContent(
             pushEnabled = pushEnabled,
             onPushEnabledChanged = { on ->
                 if (on) {
+                    // Enable BEFORE latching: built-in mode needs pushEnabled=true when the
+                    // endpoint registration flows back through onNewEndpoint.
+                    viewModel.setPushEnabled(true)
                     when (chat.keryx.app.notify.PushManager.enable(context)) {
-                        chat.keryx.app.notify.PushManager.EnableResult.NoDistributor -> {
+                        chat.keryx.app.notify.PushManager.EnableResult.NoGateway -> {
                             // Don't latch a switch that can't deliver — say why instead.
                             viewModel.setPushEnabled(false)
-                            viewModel.toast("No UnifiedPush distributor installed (e.g. the ntfy app) — staying on in-app sync")
+                            viewModel.toast("Set the push gateway URL first (your ntfy server) — staying on in-app sync")
                         }
-                        chat.keryx.app.notify.PushManager.EnableResult.Requested ->
-                            viewModel.setPushEnabled(true)
+                        chat.keryx.app.notify.PushManager.EnableResult.BuiltinActive ->
+                            viewModel.toast("Push active — Keryx holds its own connection, no distributor app needed")
+                        chat.keryx.app.notify.PushManager.EnableResult.Requested -> Unit
                     }
                 } else {
                     viewModel.setPushEnabled(false)
