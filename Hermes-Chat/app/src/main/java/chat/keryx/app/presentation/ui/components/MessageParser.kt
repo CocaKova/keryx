@@ -681,8 +681,12 @@ object MessageParser {
             val emojiGlyph = emoji.any { it.code >= 0x2000 }
             // A spaced em/en dash is prose typography ("🚀 Introducing Keryx — a native client…"):
             // tool progress targets are paths/ranges and never contain one. Same family of signal
-            // as the sentence-end check above.
-            val proseDash = tail.contains(" — ") || tail.contains(" – ")
+            // as the sentence-end check above. Tested on the WHOLE line, not the captured tail:
+            // when the dash directly follows the verb ("✅ Working — returns results…") the
+            // regex's whitespace has already eaten the space before it, so the tail starts "— …"
+            // and a tail-only check misses the pattern (live-caught 2026-07-14 on a status
+            // report whose ✅-bullet summary lines compacted into a phantom "Working" tool run).
+            val proseDash = line.contains(" — ") || line.contains(" – ")
             if (emojiGlyph && !emoji.first().isLetterOrDigit() && line.length <= 120 &&
                 !sentenceEnd && !telemetryGlyph && !proseDash
             ) {

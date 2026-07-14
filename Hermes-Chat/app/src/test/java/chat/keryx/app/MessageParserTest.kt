@@ -85,6 +85,29 @@ class MessageParserTest {
     }
 
     @Test
+    fun verdictBulletWithLeadingDash_isNotAGerundToolCall() {
+        // Live-caught 2026-07-14: a status report's ✅-bullet summary lines parsed as a tool named
+        // "Working" and compacted the whole answer into a tool card. The dash here directly
+        // follows the gerund, so the regex's whitespace eats the space before it — the prose-dash
+        // guard must see the whole line, not just the captured tail.
+        val report = "**FlareSolverr is working.** Here's the full picture:\n" +
+            "\n" +
+            "**FlareSolverr (localhost:8191)**\n" +
+            "- Status: ✅ Healthy, running\n" +
+            "- Cloudflare test: Solved, HTTP 200, 1.5MB response, no active challenge detected\n" +
+            "- Version: 3.5.0\n" +
+            "\n" +
+            "**Web Search (searxng, localhost:8092)**\n" +
+            "- ✅ Working — returns results from 70+ engines (Bing, Google, etc.)\n" +
+            "- **NOT** wired to FlareSolverr — SearXNG hits search engine APIs directly\n" +
+            "\n" +
+            "**Web Extract (flaresolverr, localhost:8191)**\n" +
+            "- ✅ Working — bypasses Cloudflare via headless Chrome\n" +
+            "- That's where your `web_extract` goes"
+        assertTrue(MessageParser.parse(report).none { it is MessageParser.Segment.Tools })
+    }
+
+    @Test
     fun glyphlessTerminal_stillParsedAsTool() {
         // Hermes sometimes drops the leading emoji on repeated terminal calls; the fully-quoted arg
         // is the signal that lets us still treat it as a tool.
