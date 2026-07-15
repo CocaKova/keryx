@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -127,36 +128,62 @@ private fun kindEmoji(kind: String) = when (kind.lowercase()) {
 val LocalQuickActionSender = staticCompositionLocalOf<(String) -> Unit> { {} }
 
 /**
- * One-tap decision chips for a ⟦keryx:ask|…⟧ marker: the agent is blocking on a choice, each chip
- * sends its literal text back as a reply. The sent message echoes into the chat instantly
- * (optimistic send), which is the tap feedback — chips themselves stay, like an inline keyboard.
+ * On-theme decision TILES for a ⟦keryx:ask|…⟧ marker: the agent is blocking on a choice, and each
+ * tile sends its literal text back as a reply. Full-width and stacked (so any option length reads
+ * cleanly, unlike a scrolling pill row), painted in the app's amber→dusk sunset gradient
+ * (primary→tertiary, honoring the user's custom accents) so they land as first-class Keryx chrome
+ * rather than plain buttons. A leading gradient badge + trailing chevron signal "tap to reply".
+ * Tiles persist after a tap, like an inline keyboard; the optimistic send echoing into the chat is
+ * the feedback.
  */
 @Composable
-fun QuickActionChips(options: List<String>, baseColor: Color) {
+fun QuickActionTiles(options: List<String>, baseColor: Color) {
     val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.tertiary
     val send = LocalQuickActionSender.current
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    val shape = RoundedCornerShape(14.dp)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
-            .padding(top = 7.dp)
-            .horizontalScroll(rememberScrollState()),
+            .padding(top = 9.dp)
+            .fillMaxWidth(),
     ) {
         options.forEach { option ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(percent = 50))
+                    .fillMaxWidth()
+                    .clip(shape)
                     .background(
-                        Brush.linearGradient(listOf(accent.copy(alpha = 0.30f), accent.copy(alpha = 0.10f)))
+                        Brush.linearGradient(listOf(accent.copy(alpha = 0.16f), accent2.copy(alpha = 0.16f)))
                     )
-                    .border(1.dp, accent.copy(alpha = 0.4f), RoundedCornerShape(percent = 50))
+                    .border(
+                        1.dp,
+                        Brush.linearGradient(listOf(accent.copy(alpha = 0.55f), accent2.copy(alpha = 0.55f))),
+                        shape,
+                    )
                     .clickable { send(option) }
-                    .padding(horizontal = 13.dp, vertical = 7.dp),
+                    .padding(horizontal = 14.dp, vertical = 13.dp),
             ) {
-                Text("↩", color = accent.copy(alpha = 0.9f), fontSize = 11.sp)
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(option, color = baseColor, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(Brush.linearGradient(listOf(accent, accent2))),
+                ) {
+                    Text("↩", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.width(11.dp))
+                Text(
+                    option,
+                    color = baseColor,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("›", color = accent.copy(alpha = 0.85f), fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
