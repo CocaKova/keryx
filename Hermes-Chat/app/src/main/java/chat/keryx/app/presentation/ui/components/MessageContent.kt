@@ -148,7 +148,7 @@ fun MessageContent(
                 is MessageParser.Segment.Tools -> ToolCalls(segment.calls, textColor)
                 is MessageParser.Segment.Mermaid -> MermaidDiagram(segment.code, textColor)
                 is MessageParser.Segment.Citations -> CitationsBar(segment.items, textColor)
-                is MessageParser.Segment.QuickActions -> QuickActionChips(segment.options, textColor)
+                is MessageParser.Segment.QuickActions -> QuickActionTiles(segment.options, textColor)
                 is MessageParser.Segment.SkillDistilled -> SkillDistilledPill(segment, textColor)
                 is MessageParser.Segment.Telemetry -> TelemetryBlock(segment, textColor)
                 is MessageParser.Segment.ActionOutput ->
