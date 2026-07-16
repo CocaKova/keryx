@@ -146,7 +146,12 @@ class MatrixService(private val appContext: Context) {
             mediaStoreModule = mediaStoreModule(),
         ) {
             httpClientEngine = engine(allowInsecure)
-        }.getOrNull() ?: return null
+        }
+            // A FAILED restore must never masquerade as "nothing stored": that renders as a
+            // silent logout with settings intact and is undiagnosable (Log.e survives release
+            // stripping). success(null) = genuinely no session — that stays quiet.
+            .onFailure { android.util.Log.e("KeryxAuth", "session restore (fromStore) failed", it) }
+            .getOrNull() ?: return null
         // Lost a race: another caller already installed a client — drop this one.
         if (_client.value != null) { teardown(mc); return _client.value }
         _client.value = mc
