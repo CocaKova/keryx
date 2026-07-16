@@ -41,9 +41,29 @@ class QuickActionsTest {
 
     @Test
     fun options_trimmedDedupedAndCapped() {
-        val k = MessageParser.extractKeryx("q ⟦keryx:ask| Approve |Approve|Deny|Later|Escalate|Sixth⟧")
-        // Trimmed, "Approve" deduped, capped at 4.
-        assertEquals(listOf("Approve", "Deny", "Later", "Escalate"), k.actions)
+        val k = MessageParser.extractKeryx("q ⟦keryx:ask| Approve |Approve|Deny|Later|Escalate|Sixth|Seventh|Eighth⟧")
+        // Trimmed, "Approve" deduped, capped at 6.
+        assertEquals(listOf("Approve", "Deny", "Later", "Escalate", "Sixth", "Seventh"), k.actions)
+    }
+
+    @Test
+    fun unterminatedFinalMarker_recovered() {
+        // Brains stop generating without writing ⟧ (finish_reason=stop mid-marker). A marker that
+        // opens on the message's final line is unambiguous — recover it instead of leaking raw
+        // text (or worse: rendering a question with no way to answer it).
+        val k = MessageParser.extractKeryx("What do you want to do? ⟦keryx:ask|Skip for now|Check others|I'll confirm myself|")
+        assertEquals(listOf("Skip for now", "Check others", "I'll confirm myself"), k.actions)
+        assertFalse(k.text.contains('⟦'))
+        assertEquals("What do you want to do?", k.text)
+    }
+
+    @Test
+    fun unterminatedMidMessageMarker_staysRawText() {
+        // Only a message-FINAL unterminated marker is recoverable; one followed by more lines has
+        // no defensible boundary and must stay inert (never swallow trailing prose into options).
+        val k = MessageParser.extractKeryx("q ⟦keryx:ask|A|B\nmore prose after")
+        assertTrue(k.actions.isEmpty())
+        assertTrue(k.text.contains("⟦keryx:ask|A|B"))
     }
 
     @Test

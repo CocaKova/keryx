@@ -70,6 +70,11 @@ class ChatViewModel(
         // even at high token rates, while still reading as a live stream.
         private const val STREAM_DISPATCH_MS = 100L
         private const val STREAM_DISPATCH_CHARS = 240
+        // The overlay renders (and markdown-parses) on every dispatch, so what it shows must stay
+        // bounded no matter how long a marathon turn grows — only the tail is live anyway; the
+        // committed Matrix message renders the whole thing. See MessageParser.streamTailWindow.
+        private const val STREAM_WINDOW_CHARS = 8_000
+        private const val STREAM_REASONING_WINDOW_CHARS = 6_000
         // tok/s readout smoothing: an EMA of the *instantaneous* per-frame rate, not a cumulative
         // average — the cumulative form was diluted by think-latency and tool-call gaps, so a
         // 150 tok/s brain read ~32. Frames closer than MIN or farther than MAX apart are skipped
@@ -1068,12 +1073,16 @@ class ChatViewModel(
             var emaCps = 0f
             fun dispatch(status: LiveStreamStatus, finalText: String? = null) {
                 val cur = _liveStream.value ?: LiveStream(roomId, "", status, System.currentTimeMillis())
+                val full = MessageParser.sanitizeStreamingTail(buf.toString())
                 _liveStream.value = cur.copy(
-                    text = MessageParser.sanitizeStreamingTail(buf.toString()),
+                    text = MessageParser.streamTailWindow(full, STREAM_WINDOW_CHARS),
+                    matchText = full,
                     status = status,
                     finalText = finalText ?: cur.finalText,
                     charsPerSec = emaCps,
-                    reasoning = reasoningBuf.toString(),
+                    reasoning = MessageParser.streamTailWindow(
+                        reasoningBuf.toString(), STREAM_REASONING_WINDOW_CHARS,
+                    ),
                 )
                 lastDispatch = System.currentTimeMillis()
                 charsSinceDispatch = 0
@@ -1197,12 +1206,12 @@ class ChatViewModel(
         android.util.Log.i(
             "KeryxHandoff",
             "check status=${s.status} room=${last.sessionId == s.roomId} new=$isNewMsg " +
-                "target=${(s.finalText ?: s.text).length}ch last=${last.sender}/${last.content.length}ch"
+                "target=${(s.finalText ?: s.matchText).length}ch last=${last.sender}/${last.content.length}ch"
         )
         if (last.sessionId != s.roomId) return
         when (s.status) {
             LiveStreamStatus.STREAMING -> {
-                val target = s.finalText ?: s.text
+                val target = s.finalText ?: s.matchText
                 if (target.isNotBlank()) {
                     val matched = messages.asReversed()
                         .asSequence()
@@ -1223,7 +1232,7 @@ class ChatViewModel(
                     .filter { it.sessionId == s.roomId && it.sender != SenderType.ME }
                     .take(8)
                     .toList()
-                val target = s.finalText ?: s.text
+                val target = s.finalText ?: s.matchText
                 val matched = target.isNotBlank() && recentHermes
                     .asSequence()
                     .filterNot { MessageParser.isTelemetryMessage(it.content) }

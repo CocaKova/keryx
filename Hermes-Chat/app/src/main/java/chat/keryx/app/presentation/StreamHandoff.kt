@@ -16,9 +16,10 @@ import chat.keryx.app.presentation.ui.components.MessageParser
 object StreamHandoff {
 
     /** Reduce a message body to its dialogue prose: no reasoning, no tool lines, no telemetry,
-     *  no markers, whitespace collapsed. */
-    fun normalize(body: String): String =
-        MessageParser.parse(body)
+     *  no markers, whitespace collapsed. [cacheable]=false for transient streamed text, which is
+     *  never parsed twice and shouldn't evict committed messages from the parse LRU. */
+    fun normalize(body: String, cacheable: Boolean = true): String =
+        MessageParser.parse(body, cacheable = cacheable)
             .filterIsInstance<MessageParser.Segment.Text>()
             .joinToString(" ") { it.text }
             .replace(Regex("""\s+"""), " ")
@@ -32,7 +33,7 @@ object StreamHandoff {
      */
     fun matches(matrixBody: String, streamedFinal: String): Boolean {
         val a = normalize(matrixBody)
-        val b = normalize(streamedFinal)
+        val b = normalize(streamedFinal, cacheable = false)
         if (a.isEmpty() || b.isEmpty()) return false
         if (a == b) return true
         if (a.length >= 24 && b.length >= 24 && (a.startsWith(b) || b.startsWith(a))) return true
@@ -71,6 +72,8 @@ enum class LinkHealth {
 /** The transient, room-scoped live response being streamed over the side-channel. */
 data class LiveStream(
     val roomId: String,
+    /** What the overlay RENDERS — tail-windowed on long turns (MessageParser.streamTailWindow)
+     *  so the per-dispatch markdown re-parse stays bounded. Never used for handoff matching. */
     val text: String,
     val status: LiveStreamStatus,
     val startedAt: Long,
@@ -82,4 +85,7 @@ data class LiveStream(
      *  its own 💭 canvas above the answer; never partakes in handoff matching — the committed
      *  message carries its own folded reasoning block. */
     val reasoning: String = "",
+    /** The full sanitized streamed text — what handoff matching compares against the committed
+     *  Matrix body. [text] can't serve: its window prefix (…) breaks prefix matching. */
+    val matchText: String = "",
 )
