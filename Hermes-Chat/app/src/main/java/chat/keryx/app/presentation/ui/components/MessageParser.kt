@@ -429,12 +429,25 @@ object MessageParser {
     // one-tap reply (in-app chip + notification action button) that sends its literal text back.
     // Unlike the other markers this one is emitted by the AGENT in its message text, not by the
     // plugin: only the model knows when it's blocking on a choice. Same degrade contract: no
-    // marker, no chips — and the marker never survives into the displayed message.
-    // The closer is optional at end-of-message: brains stop generating without writing ⟧ often
-    // enough that a message-final unterminated marker is unambiguous (the protocol pins the marker
-    // to the last line, and ⟦ never occurs in prose). Options can't span lines, so the fallback
-    // never swallows trailing text: mid-message unterminated markers still stay raw.
-    private val ASK_MARK = Regex("""⟦keryx:ask\|([^⟧\n]*)(?:⟧|$)""")
+    // marker, no chips — and the live marker never survives into the displayed message.
+    //
+    // Use vs. mention: only a marker that ENDS the dialogue — outside any code span, with nothing
+    // after it but gateway chrome (runtime footer, subtext, other markers, blanks) — is a live
+    // decision request; that's where the protocol pins it. A match followed by more prose is the
+    // marker being TALKED ABOUT (an explainer's example, a quoted message) and stays literal text:
+    // an agent message explaining this very protocol had its first example hijack the decision
+    // tiles and every example stripped from the prose (live-caught 2026-07-16). "Chrome, not
+    // prose" rather than "last non-blank line" because the gateway appends its runtime footer
+    // BELOW the marker on the committed message (gateway/runtime_footer.py) — the line-based rule
+    // let tiles render mid-stream, then demoted the real ask to a mention the moment the footer
+    // landed (also live-caught 2026-07-16, hours later).
+    //
+    // The closer is optional at end-of-LINE (MULTILINE $): brains stop generating without writing
+    // ⟧ often enough that recovery matters, and the gateway may append its footer below the
+    // now-unterminated marker — so "end of message" is too strict. Options can't span lines, so
+    // the fallback never swallows trailing text; the chrome gate above is what keeps a mid-message
+    // unterminated marker (prose after it) inert.
+    private val ASK_MARK = Regex("""⟦keryx:ask\|([^⟧\n]*)(?:⟧|$)""", RegexOption.MULTILINE)
     private val BEACON = Regex("""⟦keryx:v\d+⟧""")
 
     /** Tile cap: the protocol asks brains for 2–4 options, but a brain that offers 5–6 real
@@ -459,11 +472,43 @@ object MessageParser {
         val actions: List<String> = emptyList(),
     )
 
+    // A markdown inline-code span within one line: a backtick run closed by a matching run.
+    private val INLINE_CODE = Regex("""(`+)(.*?)\1""")
+
+    /** Same-length copy of [text] with fenced-block and inline-code contents blanked (newlines
+     *  kept), so marker regexes only match markers in prose position — a marker inside code is a
+     *  mention, never a live marker. Same-length means every match range maps 1:1 onto [text]. */
+    private fun maskCodeSpans(text: String): String {
+        if ('`' !in text) return text
+        val lines = text.split("\n")
+        val out = StringBuilder(text.length)
+        var inFence = false
+        lines.forEachIndexed { i, line ->
+            val fenceDelim = line.trimStart().startsWith("```")
+            when {
+                fenceDelim || inFence -> repeat(line.length) { out.append(' ') }
+                else -> out.append(INLINE_CODE.replace(line) { " ".repeat(it.value.length) })
+            }
+            if (fenceDelim) inFence = !inFence
+            if (i < lines.lastIndex) out.append('\n')
+        }
+        return out.toString()
+    }
+
     /** Strip Keryx markers from [text]; collect citations + a skill signal; rewrite inline cite refs
-     *  to superscripts. No markers → returns the text unchanged with empty extras. */
+     *  to superscripts. No markers → returns the text unchanged with empty extras.
+     *
+     *  All matching runs against a code-masked copy of the text ([maskCodeSpans]): a marker quoted
+     *  in code is a mention and renders literally. The ask marker is stricter still — see
+     *  [ASK_MARK] — only the match on the last non-blank line is live; mentions are never
+     *  activated OR stripped, so a message documenting the protocol keeps its examples. */
     fun extractKeryx(text: String): Keryx {
         if (!text.contains('⟦')) return Keryx(text, emptyList(), null, false)
-        val citations = CITE_SOURCE.findAll(text).map {
+        val masked = maskCodeSpans(text)
+        // Marker matches found on the mask; each carries its range in [text] plus its replacement.
+        val edits = mutableListOf<Pair<IntRange, String>>()
+        val citations = CITE_SOURCE.findAll(masked).map {
+            edits += it.range to ""
             Citation(
                 n = it.groupValues[1].toIntOrNull() ?: 0,
                 kind = it.groupValues[2].trim(),
@@ -471,22 +516,50 @@ object MessageParser {
                 detail = it.groupValues[4].trim(),
             )
         }.toList()
-        val skillMatch = SKILL_MARK.find(text)
-        val skill = skillMatch?.let {
-            Segment.SkillDistilled(it.groupValues[1].trim(), it.groupValues[2].trim(), it.groupValues[3].trim())
+        var skill: Segment.SkillDistilled? = null
+        SKILL_MARK.findAll(masked).forEach {
+            if (skill == null) {
+                skill = Segment.SkillDistilled(it.groupValues[1].trim(), it.groupValues[2].trim(), it.groupValues[3].trim())
+            }
+            edits += it.range to ""
         }
-        val telemetry = TELEM_MARK.containsMatchIn(text)
-        val actions = ASK_MARK.find(text)?.groupValues?.get(1)
+        var telemetry = false
+        TELEM_MARK.findAll(masked).forEach { telemetry = true; edits += it.range to "" }
+        BEACON.findAll(masked).forEach { edits += it.range to "" }
+        CITE_INLINE.findAll(masked).forEach {
+            edits += it.range to "⁽${superscript(it.groupValues[1].toIntOrNull() ?: 0)}⁾"
+        }
+        // Live ask = the LAST match followed only by gateway chrome: other markers (already in
+        // [edits]), runtime-footer lines, subtext lines, blanks. A match with prose after it is a
+        // mention and stays in the text untouched. See the [ASK_MARK] contract for why this is
+        // end-of-dialogue, not last-line.
+        val sortedEdits = edits.sortedBy { it.first.first }
+        fun onlyChromeAfter(end: Int): Boolean {
+            val tail = StringBuilder()
+            var p = end
+            for ((range, _) in sortedEdits) {
+                if (range.last < p) continue
+                if (range.first > p) tail.append(text, p, range.first)
+                p = maxOf(p, range.last + 1)
+            }
+            if (p < text.length) tail.append(text, p, text.length)
+            return tail.lines().all { it.isBlank() || isFooterLine(it) || isSubtextLine(it) }
+        }
+        val liveAsk = ASK_MARK.findAll(masked).lastOrNull { onlyChromeAfter(it.range.last + 1) }
+        val actions = liveAsk?.groupValues?.get(1)
             ?.split('|')?.map { it.trim() }?.filter { it.isNotEmpty() }
             ?.distinct()?.take(MAX_QUICK_ACTIONS)
             ?: emptyList()
-        var out = CITE_SOURCE.replace(text, "")
-        out = SKILL_MARK.replace(out, "")
-        out = TELEM_MARK.replace(out, "")
-        out = ASK_MARK.replace(out, "")
-        out = BEACON.replace(out, "")
-        out = CITE_INLINE.replace(out) { "⁽${superscript(it.groupValues[1].toIntOrNull() ?: 0)}⁾" }
-        return Keryx(out.trim('\n', ' '), citations, skill, true, telemetry, actions)
+        liveAsk?.let { edits += it.range to "" }
+        val out = StringBuilder(text.length)
+        var pos = 0
+        for ((range, replacement) in edits.sortedBy { it.first.first }) {
+            if (range.first < pos) continue // malformed-marker overlap: first match wins
+            out.append(text, pos, range.first).append(replacement)
+            pos = range.last + 1
+        }
+        out.append(text, pos, text.length)
+        return Keryx(out.toString().trim('\n', ' '), citations, skill, true, telemetry, actions)
     }
 
     /** The ⟦keryx:ask⟧ options in [content] ([] = none) — for the notification builders, which
