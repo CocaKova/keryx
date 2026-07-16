@@ -544,4 +544,33 @@ class MessageParserTest {
         val segs = MessageParser.parse("Here's a plan: Skill 'foo' updated · then we ship.")
         assertTrue(segs.filterIsInstance<MessageParser.Segment.SkillDistilled>().isEmpty())
     }
+
+    @Test
+    fun streamTailWindow_shortTextUntouched() {
+        assertEquals("short", MessageParser.streamTailWindow("short", 100))
+    }
+
+    @Test
+    fun streamTailWindow_cutsAtBlankLineWithEllipsis() {
+        val text = "para one is long\n\npara two\n\npara three tail"
+        val windowed = MessageParser.streamTailWindow(text, 20)
+        assertTrue(windowed.startsWith("…\n"))
+        assertTrue(windowed.endsWith("para three tail"))
+        assertTrue(windowed.length < text.length)
+    }
+
+    @Test
+    fun streamTailWindow_neverOpensInsideAFence() {
+        // Blank lines INSIDE the code fence are not valid cut points — a window opened there
+        // would re-render the fence body as prose. The only safe blank line is after the close.
+        val text = "intro\n\n```\ncode a\n\ncode b\n\ncode c\n```\n\ntail prose"
+        val windowed = MessageParser.streamTailWindow(text, 24)
+        assertEquals("…\ntail prose", windowed)
+    }
+
+    @Test
+    fun streamTailWindow_giantUnclosedFence_returnedWhole() {
+        val text = "```\n" + "x\n\n".repeat(50)
+        assertEquals(text, MessageParser.streamTailWindow(text, 30))
+    }
 }

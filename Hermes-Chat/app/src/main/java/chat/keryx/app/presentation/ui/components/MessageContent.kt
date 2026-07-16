@@ -80,7 +80,11 @@ fun MessageContent(
     // The gateway splits turns at tool-call boundaries and can leave several blank lines at the
     // edges of each piece (e.g. a step header stranded after 3 empty lines) — trim so bubbles
     // never open with dead space.
-    val segments = remember(content, isAgent) { MessageParser.parse(content.trim('\n'), agentChrome = isAgent) }
+    // Streaming bodies change on every dispatch tick — parse them cache-free so the LRU keeps
+    // serving the committed messages around them.
+    val segments = remember(content, isAgent) {
+        MessageParser.parse(content.trim('\n'), agentChrome = isAgent, cacheable = !isStreaming)
+    }
     // Render **strong** spans heavier than the library's default (FontWeight.Bold looked too light).
     val annotator = markdownAnnotator { source, node ->
         // `this` is the AnnotatedString.Builder.

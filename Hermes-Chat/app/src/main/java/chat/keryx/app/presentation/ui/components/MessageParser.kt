@@ -260,6 +260,32 @@ object MessageParser {
         return s.trimEnd()
     }
 
+    /**
+     * Bound what the live-stream overlay renders to the tail of a long turn. The overlay is a
+     * live *view*, not the record — the committed Matrix message renders the full text — but it
+     * re-parses markdown on every dispatch tick, so its cost must stay O(window) no matter how
+     * long the turn runs (a 41 KB answer at ~10 dispatches/s used to jam the main thread until
+     * the app had to be killed). The cut lands on a blank line OUTSIDE any code fence so the
+     * window never opens mid-fence and re-renders code as prose; a message that is one giant
+     * unterminated fence past [max] has no safe boundary and is returned whole (rare, and the
+     * fence path renders cheaply as plain monospace anyway).
+     */
+    fun streamTailWindow(text: String, max: Int): String {
+        if (text.length <= max) return text
+        val minStart = text.length - max
+        var offset = 0
+        var inFence = false
+        for (line in text.lineSequence()) {
+            val trimmed = line.trimStart()
+            if (trimmed.startsWith("```") || trimmed.startsWith("~~~")) inFence = !inFence
+            else if (!inFence && offset >= minStart && trimmed.isEmpty()) {
+                return "…\n" + text.substring(offset).trimStart('\n')
+            }
+            offset += line.length + 1 // +1 for the \n lineSequence stripped
+        }
+        return text
+    }
+
     // --- Reasoning extraction ----------------------------------------------------------------
     // Hermes surfaces model reasoning (when display.show_reasoning is on) by *prepending* it to the
     // answer in one of three styles; we also accept raw <think>/<thinking>/<reasoning> tags that
@@ -396,11 +422,17 @@ object MessageParser {
     // Unlike the other markers this one is emitted by the AGENT in its message text, not by the
     // plugin: only the model knows when it's blocking on a choice. Same degrade contract: no
     // marker, no chips — and the marker never survives into the displayed message.
-    private val ASK_MARK = Regex("""⟦keryx:ask\|([^⟧]*)⟧""")
+    // The closer is optional at end-of-message: brains stop generating without writing ⟧ often
+    // enough that a message-final unterminated marker is unambiguous (the protocol pins the marker
+    // to the last line, and ⟦ never occurs in prose). Options can't span lines, so the fallback
+    // never swallows trailing text: mid-message unterminated markers still stay raw.
+    private val ASK_MARK = Regex("""⟦keryx:ask\|([^⟧\n]*)(?:⟧|$)""")
     private val BEACON = Regex("""⟦keryx:v\d+⟧""")
 
-    /** Chip cap: enough for a real decision set, few enough to never wrap into a wall. */
-    private const val MAX_QUICK_ACTIONS = 4
+    /** Tile cap: the protocol asks brains for 2–4 options, but a brain that offers 5–6 real
+     *  choices shouldn't have them silently dropped — tiles stack full-width, so a slightly
+     *  taller decision block beats hiding options the model considered live. */
+    private const val MAX_QUICK_ACTIONS = 6
     private val SUPERSCRIPT = mapOf(
         '0' to '⁰', '1' to '¹', '2' to '²', '3' to '³', '4' to '⁴',
         '5' to '⁵', '6' to '⁶', '7' to '⁷', '8' to '⁸', '9' to '⁹',
@@ -469,7 +501,11 @@ object MessageParser {
      * with the flag off, only universal markdown survives (text, tables, fences, mermaid).
      */
     @Synchronized
-    fun parse(content: String, agentChrome: Boolean = true): List<Segment> {
+    fun parse(content: String, agentChrome: Boolean = true, cacheable: Boolean = true): List<Segment> {
+        // cacheable=false: a streaming intermediate is parsed exactly once and never seen again,
+        // so caching it only evicts the committed messages the LRU exists for (and pins each
+        // revision's full text + segments until 256 later parses age it out).
+        if (!cacheable) return parseUncached(content, agentChrome)
         // U+0000 can't occur in a Matrix message body, so the prefixed key never collides.
         val key = if (agentChrome) content else "\u0000human:$content"
         parseCache[key]?.let { return it }

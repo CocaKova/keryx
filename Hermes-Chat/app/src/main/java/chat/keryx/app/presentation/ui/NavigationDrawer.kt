@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.ViewKanban
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.BrightnessAuto
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
@@ -448,9 +449,11 @@ fun NavigationDrawerContent(
                         modifier = Modifier.size(20.dp),
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    // maxLines + softWrap=false: the three equal-width cells get tight at large
-                    // font scales, and a borderline fit must never wrap the label's last letter.
-                    Text(themeText, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp,
+                    // The three equal-width cells get tight at large font scales, and the cell's
+                    // clip() cuts anything that doesn't fit ("Mission" losing its s). Auto-size
+                    // steps the label down until it fits instead of wrapping or clipping.
+                    Text(themeText, color = MaterialTheme.colorScheme.onSurface,
+                        autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 14.sp, stepSize = 0.25.sp),
                         maxLines = 1, softWrap = false)
                 }
                 Row(
@@ -468,7 +471,8 @@ fun NavigationDrawerContent(
                         modifier = Modifier.size(20.dp),
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Missions", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp,
+                    Text("Missions", color = MaterialTheme.colorScheme.onSurface,
+                        autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 14.sp, stepSize = 0.25.sp),
                         maxLines = 1, softWrap = false)
                 }
                 Row(
@@ -486,7 +490,8 @@ fun NavigationDrawerContent(
                         modifier = Modifier.size(20.dp),
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Settings", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp,
+                    Text("Settings", color = MaterialTheme.colorScheme.onSurface,
+                        autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 14.sp, stepSize = 0.25.sp),
                         maxLines = 1, softWrap = false)
                 }
             }
