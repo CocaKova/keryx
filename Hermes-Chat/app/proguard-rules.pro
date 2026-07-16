@@ -38,6 +38,13 @@
     public static int i(...);
 }
 
+# --- JNA (Trixnity olm/E2EE binds libolm through it): libjnidispatch.so resolves JNA's Java
+# --- classes and fields BY NAME over JNI (e.g. com.sun.jna.Pointer.peer), so nothing in JNA may
+# --- be renamed or stripped. Caught live on the first minified install: session restore died in
+# --- OlmAccount.unpickle with "Can't obtain peer field ID for class com.sun.jna.Pointer". ---
+-keep class com.sun.jna.** { *; }
+-dontwarn com.sun.jna.**
+
 # --- Bundled SQLite (Trixnity room repository JNI) ---
 -keep class androidx.sqlite.driver.bundled.** { *; }
 -dontwarn androidx.sqlite.driver.bundled.**

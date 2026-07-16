@@ -55,6 +55,10 @@ class KeryxApp : Application() {
         // Restore an existing Matrix session exactly once for the whole process.
         appScope.launch {
             runCatching { matrixService.restore(allowInsecure = settingsRepository.allowInsecure) }
+                // Log.e survives release stripping ON PURPOSE: a swallowed restore failure
+                // renders as a silent logout (the login screen with settings intact) and is
+                // undiagnosable without this line — exactly how the first minified build failed.
+                .onFailure { android.util.Log.e("KeryxAuth", "session restore failed", it) }
         }
 
         // Keep the UnifiedPush registration fresh across app updates / distributor restarts —
