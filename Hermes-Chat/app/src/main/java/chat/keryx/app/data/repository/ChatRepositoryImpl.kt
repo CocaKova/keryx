@@ -90,6 +90,10 @@ class ChatRepositoryImpl(
     override fun getMessages(sessionId: String, limit: Int): Flow<List<Message>> {
         val roomId = RoomId(sessionId)
         val agentId = settingsRepository.agentMatrixId
+        // Re-learn this room's display names on each (re)build of the pipeline (room open,
+        // pagination limit change) — bounds how stale a rename can get while keeping the
+        // steady-state name pass subscription-free (see withSenderNames).
+        senderNames.keys.removeAll { it.startsWith("$sessionId|") }
         return matrix.client.flatMapLatest { client ->
             if (client == null) flowOf(emptyList())
             else {
@@ -160,10 +164,26 @@ class ChatRepositoryImpl(
             .distinctUntilChanged()
     }
 
+    // Resolved display names, "roomId|senderId" → name. withSenderNames is rebuilt by
+    // flatMapLatest on EVERY settled emission; without this memo it re-subscribed one member
+    // flow per sender each time just to re-learn names that never change. Cleared per room in
+    // getMessages so renames catch up on the next room open.
+    private val senderNames = java.util.concurrent.ConcurrentHashMap<String, String>()
+
     private fun withSenderNames(roomId: RoomId, msgs: List<Message>): Flow<List<Message>> {
         val client = matrix.client.value ?: return flowOf(msgs)
         val senderIds = msgs.asSequence().map { it.senderId }.filter { it.startsWith("@") }.distinct().toList()
         if (senderIds.isEmpty()) return flowOf(msgs)
+        fun cached(sid: String) = senderNames["${roomId.full}|$sid"]
+        // Steady state: every sender already resolved → a pure map, no member subscriptions.
+        if (senderIds.all { cached(it) != null }) {
+            return flowOf(
+                msgs.map { m ->
+                    val resolved = cached(m.senderId)
+                    if (resolved.isNullOrBlank() || resolved == m.senderName) m else m.copy(senderName = resolved)
+                }
+            )
+        }
         return combine(
             senderIds.map { sid ->
                 client.user.getById(roomId, UserId(sid))
@@ -171,9 +191,15 @@ class ChatRepositoryImpl(
                     .onStart { emit(null) } // emit immediately; the raw list must never stall on a lookup
             }
         ) { names ->
+            senderIds.indices.forEach { i ->
+                val n = names[i]
+                if (!n.isNullOrBlank()) senderNames["${roomId.full}|${senderIds[i]}"] = n
+            }
             val nameById = senderIds.indices.associate { senderIds[it] to names[it] }
             msgs.map { m ->
-                val resolved = nameById[m.senderId]
+                // Prefer the live lookup, fall back to the memo (a flow that resolved on an
+                // earlier emission may still be null in THIS combine frame).
+                val resolved = nameById[m.senderId] ?: cached(m.senderId)
                 if (resolved.isNullOrBlank() || resolved == m.senderName) m else m.copy(senderName = resolved)
             }
         }

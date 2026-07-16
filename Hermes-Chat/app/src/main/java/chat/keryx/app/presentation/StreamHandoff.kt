@@ -31,9 +31,15 @@ object StreamHandoff {
      * never saw, or the stream may have a tail the commit trimmed); finally a long-shared-prefix
      * heuristic for bodies that diverge only in trailing punctuation/cursor artifacts.
      */
-    fun matches(matrixBody: String, streamedFinal: String): Boolean {
+    fun matches(matrixBody: String, streamedFinal: String): Boolean =
+        matchesNormalized(matrixBody, normalize(streamedFinal, cacheable = false))
+
+    /** [matches] with the streamed side pre-normalized: the handoff check compares up to 8
+     *  candidate messages per evaluation and normalizing the streamed target is a full uncached
+     *  parse, so callers normalize it once and compare many. */
+    fun matchesNormalized(matrixBody: String, normalizedTarget: String): Boolean {
         val a = normalize(matrixBody)
-        val b = normalize(streamedFinal, cacheable = false)
+        val b = normalizedTarget
         if (a.isEmpty() || b.isEmpty()) return false
         if (a == b) return true
         if (a.length >= 24 && b.length >= 24 && (a.startsWith(b) || b.startsWith(a))) return true
@@ -86,6 +92,9 @@ data class LiveStream(
      *  message carries its own folded reasoning block. */
     val reasoning: String = "",
     /** The full sanitized streamed text — what handoff matching compares against the committed
-     *  Matrix body. [text] can't serve: its window prefix (…) breaks prefix matching. */
+     *  Matrix body. [text] can't serve: its window prefix (…) breaks prefix matching. Only
+     *  materialized when the turn ends (AWAITING_SYNC); while STREAMING it stays "" and matching
+     *  pulls the full text on demand (ChatViewModel.currentStreamFullText) — copying the whole
+     *  buffer into every ~100 ms dispatch was O(turn length) per tick. */
     val matchText: String = "",
 )

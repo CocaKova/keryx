@@ -81,9 +81,17 @@ fun MessageContent(
     // edges of each piece (e.g. a step header stranded after 3 empty lines) — trim so bubbles
     // never open with dead space.
     // Streaming bodies change on every dispatch tick — parse them cache-free so the LRU keeps
-    // serving the committed messages around them.
-    val segments = remember(content, isAgent) {
-        MessageParser.parse(content.trim('\n'), agentChrome = isAgent, cacheable = !isStreaming)
+    // serving the committed messages around them, and TAIL-WINDOWED so the per-tick re-parse
+    // stays O(window) no matter how long the turn grows. Without the window, a tier-2
+    // (m.replace-edited) marathon answer re-parsed its full body every sync tick — the same
+    // freeze class the tier-1 overlay was cured of in 1.18.3. The full body renders the moment
+    // isStreaming flips false.
+    val segments = remember(content, isAgent, isStreaming) {
+        val body = content.trim('\n')
+        val bounded =
+            if (isStreaming) MessageParser.streamTailWindow(body, MessageParser.STREAM_RENDER_WINDOW)
+            else body
+        MessageParser.parse(bounded, agentChrome = isAgent, cacheable = !isStreaming)
     }
     // Render **strong** spans heavier than the library's default (FontWeight.Bold looked too light).
     val annotator = markdownAnnotator { source, node ->

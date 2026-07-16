@@ -26,8 +26,8 @@ android {
         applicationId = "chat.keryx.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 35
-        versionName = "1.18.3"
+        versionCode = 36
+        versionName = "1.19.0"
     }
 
     signingConfigs {
@@ -82,6 +82,9 @@ dependencies {
   // Core Android dependencies
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.lifecycle.runtime.ktx)
+  // Installs library-shipped baseline profiles (Compose ships one) so cold-start/first-scroll
+  // hot paths are AOT-compiled instead of interpreted until JIT catches up.
+  implementation("androidx.profileinstaller:profileinstaller:1.4.1")
   implementation(libs.androidx.activity.compose)
   implementation("androidx.biometric:biometric:1.1.0")
   implementation("androidx.fragment:fragment-ktx:1.8.5")  // biometric 1.1.0 pins 1.2.x; ActivityResult needs ≥1.3

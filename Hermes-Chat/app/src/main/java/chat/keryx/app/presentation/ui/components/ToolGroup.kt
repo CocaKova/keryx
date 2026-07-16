@@ -465,11 +465,23 @@ private const val ANSWER_PROSE_MIN = 240
  * tidy "Ran 1 tool" group. Works chronologically, returns newest-first for the reverseLayout list.
  */
 fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
-    val chrono = mergeRuntimeFooters(orderedNewestFirst.asReversed())
+    val walk = walkRange(orderedNewestFirst.asReversed(), lastMineIdInit = null)
+    insertDayHeaders(walk.items, lastDayInit = null)
+    return walk.items.asReversed()
+}
+
+/** The chronological grouping walk over one message range, with the carried state injected so a
+ *  range can be resumed mid-timeline: [lastMineIdInit] is the id of the user's most recent
+ *  message BEFORE this range (quote suppression must see across the split). Returns the items in
+ *  chronological order plus the carried state at the range's end. */
+private class RangeWalk(val items: MutableList<ChatRenderItem>, val lastMineId: String?)
+
+private fun walkRange(chronoRange: List<Message>, lastMineIdInit: String?): RangeWalk {
+    val chrono = mergeRuntimeFooters(chronoRange)
     val out = mutableListOf<ChatRenderItem>()
     // The user's most recent message so far in the walk. An agent quote pointing at it is the
     // gateway's per-chunk reply-threading, not a meaningful reference — those quotes are hidden.
-    var lastMineId: String? = null
+    var lastMineId: String? = lastMineIdInit
     fun agentSingle(m: Message) = ChatRenderItem.Single(
         m,
         suppressQuote = m.replyToId != null && m.replyToId == lastMineId,
@@ -615,13 +627,19 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
         closeRun()
         i = blockEnd
     }
-    // Day boundaries: [out] is chronological here, so a single walk inserts one quiet header
-    // before the first item of each new local-calendar day. Items without a real timestamp
-    // (synthetic ts=0 placeholders) never trigger a boundary.
-    var lastDay: String? = null
+    return RangeWalk(out, lastMineId)
+}
+
+/** Day boundaries: [items] is chronological here, so a single walk inserts one quiet header
+ *  before the first item of each new local-calendar day. Items without a real timestamp
+ *  (synthetic ts=0 placeholders) never trigger a boundary. [lastDayInit] carries the last day
+ *  seen before this range so a resumed suffix doesn't repeat its prefix's header; returns the
+ *  last day seen, for the next resume. */
+private fun insertDayHeaders(items: MutableList<ChatRenderItem>, lastDayInit: String?): String? {
+    var lastDay: String? = lastDayInit
     var j = 0
-    while (j < out.size) {
-        val ts = when (val item = out[j]) {
+    while (j < items.size) {
+        val ts = when (val item = items[j]) {
             is ChatRenderItem.Single -> item.message.timestamp
             is ChatRenderItem.ToolRun -> item.ts
             is ChatRenderItem.DayHeader -> 0L
@@ -629,12 +647,95 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
         if (ts > 0L) {
             val day = dayKeyOf(ts)
             if (day != lastDay) {
-                out.add(j, ChatRenderItem.DayHeader(ts, day))
+                items.add(j, ChatRenderItem.DayHeader(ts, day))
                 j++
             }
             lastDay = day
         }
         j++
     }
-    return out.asReversed()
+    return lastDay
+}
+
+/**
+ * A grouped timeline plus the state needed to regroup the next emission incrementally: the
+ * rendered [items] (newest-first), and internally the input fingerprint, the prefix/suffix split
+ * point, and the carried walk state at the split.
+ */
+class GroupedTimeline internal constructor(
+    /** The rendered items, newest-first — what the LazyColumn consumes. */
+    val items: List<ChatRenderItem>,
+    /** (id, content-length) fingerprint of the CHRONOLOGICAL input this grouping was built from. */
+    internal val ids: Array<String>,
+    internal val lens: IntArray,
+    /** Chrono index where the trailing (mutable) region begins — just past the last hard boundary. */
+    internal val suffixStart: Int,
+    /** Grouped items for chrono[0, suffixStart), chronological, day headers included. */
+    internal val prefixItems: List<ChatRenderItem>,
+    internal val prefixLastMineId: String?,
+    internal val prefixLastDay: String?,
+)
+
+/** A message no run, footer-merge, or agent block can span: the safe splice point. Mirrors the
+ *  block-extent scan in [walkRange] — a human message (not a slash command), any OTHER sender, or
+ *  any media message breaks the walk there, so everything before it groups independently of
+ *  everything after. */
+private fun isHardBoundary(m: Message): Boolean =
+    m.mediaKind != null || m.sender == SenderType.OTHER ||
+        (m.sender == SenderType.ME && !isCommandMessage(m))
+
+/**
+ * [groupChatItems], but O(changed block) per emission instead of O(timeline): during a streamed
+ * or multi-message agent turn only the trailing agent block changes, so the grouped prefix up to
+ * the last hard boundary is spliced from [previous] and only the tail is re-walked. Any other
+ * change (older history loaded, room switch, edits behind the boundary, the boundary itself
+ * moving) falls back to the full walk — the fast path is an optimization, never a semantic:
+ * `groupChatItemsIncremental(msgs, anything).items == groupChatItems(msgs)` always.
+ */
+fun groupChatItemsIncremental(
+    orderedNewestFirst: List<Message>,
+    previous: GroupedTimeline?,
+): GroupedTimeline {
+    val chrono = orderedNewestFirst.asReversed()
+    val n = chrono.size
+    var suffixStart = 0
+    for (i in n - 1 downTo 0) {
+        if (isHardBoundary(chrono[i])) { suffixStart = i + 1; break }
+    }
+    // The cached prefix is reusable only when it was split at the SAME boundary and every
+    // message before it is unchanged (id + length; edits behind the boundary are rare and a
+    // length change is how m.replace edits manifest).
+    val prefixReusable = previous != null &&
+        previous.suffixStart == suffixStart &&
+        previous.ids.size >= suffixStart &&
+        (0 until suffixStart).all { i ->
+            previous.ids[i] == chrono[i].id && previous.lens[i] == chrono[i].content.length
+        }
+    val prefixItems: List<ChatRenderItem>
+    val prefixLastMineId: String?
+    val prefixLastDay: String?
+    if (prefixReusable) {
+        prefixItems = previous!!.prefixItems
+        prefixLastMineId = previous.prefixLastMineId
+        prefixLastDay = previous.prefixLastDay
+    } else {
+        val walk = walkRange(chrono.subList(0, suffixStart), lastMineIdInit = null)
+        prefixLastDay = insertDayHeaders(walk.items, lastDayInit = null)
+        prefixItems = walk.items
+        prefixLastMineId = walk.lastMineId
+    }
+    val suffix = walkRange(chrono.subList(suffixStart, n), lastMineIdInit = prefixLastMineId)
+    insertDayHeaders(suffix.items, lastDayInit = prefixLastDay)
+    val combined = ArrayList<ChatRenderItem>(prefixItems.size + suffix.items.size)
+    combined.addAll(prefixItems)
+    combined.addAll(suffix.items)
+    return GroupedTimeline(
+        items = combined.asReversed(),
+        ids = Array(n) { chrono[it].id },
+        lens = IntArray(n) { chrono[it].content.length },
+        suffixStart = suffixStart,
+        prefixItems = prefixItems,
+        prefixLastMineId = prefixLastMineId,
+        prefixLastDay = prefixLastDay,
+    )
 }

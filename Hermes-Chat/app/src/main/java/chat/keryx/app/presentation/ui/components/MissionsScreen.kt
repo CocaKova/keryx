@@ -38,6 +38,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -91,13 +92,19 @@ fun MissionsScreen(
     var createOpen by remember { mutableStateOf(false) }
     var openTaskId by remember { mutableStateOf<String?>(null) }
 
-    // Fresh on open, then a gentle poll while (and only while) this screen is composed — the
-    // dispatcher moves cards without us, and 20s is plenty for a board humans look at.
-    LaunchedEffect(Unit) {
-        viewModel.refreshKanban()
-        while (true) {
-            delay(20_000L)
+    // Fresh on open, then a gentle poll while (and only while) this screen is composed AND the
+    // app is actually on screen — the dispatcher moves cards without us, and 20s is plenty for a
+    // board humans look at. repeatOnLifecycle suspends the loop while backgrounded (the board
+    // used to keep hitting the gateway every 20s with the phone in a pocket) and refreshes
+    // immediately on return.
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
             viewModel.refreshKanban()
+            while (true) {
+                delay(20_000L)
+                viewModel.refreshKanban()
+            }
         }
     }
 

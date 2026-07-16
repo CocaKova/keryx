@@ -46,7 +46,34 @@ private fun rowIndexFor(pose: PetPose, stateRows: List<String>): Int {
     return 0 // idle row tops both taxonomies
 }
 
-private class PetSheet(val image: ImageBitmap, val frameW: Int, val frameH: Int)
+internal class PetSheet(val image: ImageBitmap, val frameW: Int, val frameH: Int)
+
+/**
+ * One decoded spritesheet process-wide. The ViewModel [prime]s this at fetch time and then drops
+ * the ~2 MB base64 payload from its PetInfo StateFlow — previously that string was pinned for the
+ * whole session AND each composition site (drawer, settings, picker) decoded its own copy of the
+ * sheet. Not trimmed under memory pressure: the source string is gone, and one half-res sheet is
+ * the drawer mascot's whole existence.
+ */
+object PetSheetMemo {
+    private var revision: String? = null
+    private var sheet: PetSheet? = null
+
+    @Synchronized
+    fun prime(info: PetInfo) {
+        if (info.revision != revision || sheet == null) {
+            sheet = decodeSheet(info)
+            revision = info.revision
+        }
+    }
+
+    @Synchronized
+    internal fun sheetFor(info: PetInfo): PetSheet? {
+        // Fallback: an info that still carries its sheet (never primed) decodes on demand.
+        if (info.revision != revision && info.spritesheetBase64.isNotEmpty()) prime(info)
+        return if (info.revision == revision) sheet else null
+    }
+}
 
 /** Decode the base64 sheet at half resolution: the full Codex atlas is ~11MB as ARGB and the
  *  drawer draws a ~28dp sprite — half-res frames (96×104) are still ≥1:1 at that size. */
@@ -78,7 +105,7 @@ fun PetSprite(
     running: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val sheet = remember(info.revision) { decodeSheet(info) } ?: return
+    val sheet = remember(info.revision) { PetSheetMemo.sheetFor(info) } ?: return
     val row = rowIndexFor(pose, info.stateRows)
     val rowName = info.stateRows.getOrNull(row) ?: "idle"
     // Real frame count for this row (ragged sheets pad short rows with blanks — stepping into
