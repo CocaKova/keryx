@@ -228,12 +228,15 @@ object MessageParser {
     }
 
     // Every reasoning-tag spelling we accept; a half-typed prefix of one of these at the very end
-    // of a live stream must be held back, not rendered as literal text.
-    private val TAIL_TAG_CANDIDATES = listOf(
+    // of a live stream must be held back, not rendered as literal text. Internal so
+    // StreamTailTracker's incremental sanitize stays byte-identical to sanitizeStreamingTail.
+    internal val TAIL_TAG_CANDIDATES = listOf(
         "<think>", "<thinking>", "<reasoning>", "<thought>",
         "</think>", "</thinking>", "</reasoning>", "</thought>",
         "◁think▷", "◁/think▷",
     )
+
+    private val PARTIAL_FENCE_LINE = Regex("^`{1,2}$")
 
     /** Trim artifacts a live token stream leaves at the tail: a half-written ⟦marker⟧, a lone
      *  partial fence opener, or dangling inline-marker garbage. Only touches the very end. */
@@ -244,7 +247,7 @@ object MessageParser {
         if (lastOpen >= 0 && s.indexOf('⟧', lastOpen) < 0) s = s.substring(0, lastOpen)
         // A trailing line that is just 1–2 backticks (a fence being typed).
         val lines = s.lines()
-        if (lines.isNotEmpty() && lines.last().trim().matches(Regex("^`{1,2}$"))) {
+        if (lines.isNotEmpty() && lines.last().trim().matches(PARTIAL_FENCE_LINE)) {
             s = lines.dropLast(1).joinToString("\n")
         }
         s = s.trimEnd()
@@ -259,6 +262,11 @@ object MessageParser {
         }
         return s.trimEnd()
     }
+
+    /** How much of a still-streaming body ANY surface renders: the tier-1 SSE overlay and a
+     *  tier-2 (m.replace-edited) bubble share this bound — one invariant, one constant. A body
+     *  past this is windowed via [streamTailWindow] until streaming ends. */
+    const val STREAM_RENDER_WINDOW = 8_000
 
     /**
      * Bound what the live-stream overlay renders to the tail of a long turn. The overlay is a
@@ -489,7 +497,10 @@ object MessageParser {
     // rendering (MessageContent) — i.e. each message was parsed at least twice and re-parsed on every
     // list change. An access-ordered LRU memoizes results so unchanged messages cost ~nothing,
     // keeping scrolling smooth. Plain LinkedHashMap (no Android dep) so the parser stays JVM-testable.
-    private const val PARSE_CACHE_MAX = 256
+    // Capacity must exceed the largest renderable timeline (ChatViewModel's ~1000-message ceiling,
+    // ×1.2 headroom): the 07-15 marathon had 409 messages against a 256-entry cache, so every
+    // timeline pass was a full re-parse of everything — memoization defeated exactly when needed.
+    private const val PARSE_CACHE_MAX = 1_200
     private val parseCache = object : LinkedHashMap<String, List<Segment>>(64, 0.75f, true) {
         override fun removeEldestEntry(eldest: Map.Entry<String, List<Segment>>) = size > PARSE_CACHE_MAX
     }
@@ -500,23 +511,30 @@ object MessageParser {
      * message must never be restyled as machine output just because its text trips a pattern —
      * with the flag off, only universal markdown survives (text, tables, fences, mermaid).
      */
-    @Synchronized
     fun parse(content: String, agentChrome: Boolean = true, cacheable: Boolean = true): List<Segment> {
         // cacheable=false: a streaming intermediate is parsed exactly once and never seen again,
         // so caching it only evicts the committed messages the LRU exists for (and pins each
-        // revision's full text + segments until 256 later parses age it out).
+        // revision's full text + segments until enough later parses age it out).
         if (!cacheable) return parseUncached(content, agentChrome)
         // U+0000 can't occur in a Matrix message body, so the prefixed key never collides.
         val key = if (agentChrome) content else "\u0000human:$content"
-        parseCache[key]?.let { return it }
+        // Lock the cache, not the parse: a method-wide @Synchronized serialized every parse behind
+        // one global lock, so any off-thread normalize stalled UI-thread bubble renders during
+        // streaming. Worst case now is a rare duplicate parse of the same body — harmless.
+        synchronized(parseCache) { parseCache[key] }?.let { return it }
         val result = parseUncached(content, agentChrome)
-        parseCache[key] = result
+        synchronized(parseCache) { parseCache[key] = result }
         return result
     }
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
+    /** Test hook: raw parse invocations (cache misses + uncacheable). The perf invariant "O(1)
+     *  parses per streaming tick on a long timeline" is asserted against this from JVM tests. */
+    internal var parseUncachedCount = 0L
+
     private fun parseUncached(content: String, agentChrome: Boolean = true): List<Segment> {
+        parseUncachedCount++
         // Markers first: the keryx plugin may prepend its ⟦keryx:v1⟧ beacon (or scatter citation
         // markers into the reasoning), and the 💭 prelude patterns are start-anchored — extracting
         // reasoning from the raw body made the whole block leak into the answer as prose.
@@ -754,11 +772,13 @@ object MessageParser {
      * marks around a quoted arg. We only peel a *wrapping* layer, so backticks/quotes that are part
      * of the command itself (e.g. shell `$(…)` substitution, an inner quoted word) are preserved.
      */
+    private val WRAPPING_FENCE = Regex("""(?s)^```[a-zA-Z0-9]*\n?(.*?)\n?```$""")
+
     private fun cleanArgs(raw: String): String {
         var s = raw.trim()
         // Strip a wrapping triple-backtick fence (optionally with a language tag), then collapse a
         // single wrapping backtick pair; finally peel surrounding straight/smart quotes.
-        Regex("""(?s)^```[a-zA-Z0-9]*\n?(.*?)\n?```$""").matchEntire(s)?.let { s = it.groupValues[1].trim() }
+        WRAPPING_FENCE.matchEntire(s)?.let { s = it.groupValues[1].trim() }
         if (s.length >= 2 && s.startsWith("`") && s.endsWith("`")) s = s.trim('`').trim()
         s = s.trim('"', '“', '”').trim()
         return s

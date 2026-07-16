@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -47,15 +48,50 @@ import androidx.compose.runtime.remember
 import chat.keryx.app.domain.model.MediaKind
 
 /**
- * Tiny process-wide cache of decoded bitmaps keyed by media id / mxc URL. The chat list re-enters
+ * Process-wide cache of decoded bitmaps keyed by media id / mxc URL. The chat list re-enters
  * composition often, so without this the same image re-downloads/re-decodes and flickers between the
- * placeholder and the picture. Keeps the most-recent images steady and instant on return.
+ * placeholder and the picture. Sized by BYTES, not count: 40 full-resolution photos (the old
+ * count-bound) could dwarf the whole heap budget. Registered with CacheRegistry so memory
+ * pressure sheds decoded pixels first — they re-decode from the byte cache on demand.
  */
 object KeryxBitmapCache {
-    private val cache = android.util.LruCache<String, ImageBitmap>(40)
+    private val cache = object : android.util.LruCache<String, ImageBitmap>(
+        (Runtime.getRuntime().maxMemory() / 8).coerceAtMost(48L shl 20).toInt(),
+    ) {
+        override fun sizeOf(key: String, value: ImageBitmap) =
+            value.asAndroidBitmap().allocationByteCount
+    }
+
+    init {
+        chat.keryx.app.util.CacheRegistry.register { aggressive ->
+            if (aggressive) cache.evictAll() else cache.trimToSize(cache.maxSize() / 2)
+        }
+    }
+
     fun get(key: String): ImageBitmap? = cache.get(key)
     fun put(key: String, bitmap: ImageBitmap) { cache.put(key, bitmap) }
 }
+
+/**
+ * Decode [bytes] sampled down toward [targetPx] — the two-pass bounds-then-inSampleSize pattern.
+ * The display path used to decode at source resolution for a ≤260×320dp bubble: one 12 MP photo
+ * is ~48 MB of ARGB the bubble then scales away. [longEdge] picks which edge honors the target:
+ * true for Fit-rendered bubbles (the long edge is what the layout bounds), false when the SHORT
+ * edge must stay sharp (fullscreen zoom, cropped square thumbs) — a 1080×12000 terminal
+ * screenshot must keep its width readable under pinch-zoom even though its long edge is huge.
+ */
+fun decodeSampled(bytes: ByteArray, targetPx: Int, longEdge: Boolean = true): ImageBitmap? = runCatching {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return@runCatching null
+    val edge =
+        if (longEdge) maxOf(bounds.outWidth, bounds.outHeight)
+        else minOf(bounds.outWidth, bounds.outHeight)
+    var sample = 1
+    while (edge / (sample * 2) >= targetPx) sample *= 2
+    val opts = BitmapFactory.Options().apply { inSampleSize = sample }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)?.asImageBitmap()
+}.getOrNull()
 
 /**
  * Renders a media message: images inline, everything else as a labeled chip.
@@ -76,7 +112,9 @@ fun MessageMedia(
         val bitmap by produceState<ImageBitmap?>(initialValue = cached, loadKey) {
             if (cached != null) return@produceState
             value = loader()?.let { bytes ->
-                val decoded = runCatching { BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap() }.getOrNull()
+                // Bubble-sized decode: the render box is ≤260×320dp, so ~1024px on the long edge
+                // covers the densest screens; full-resolution pixels only exist for fullscreen.
+                val decoded = decodeSampled(bytes, targetPx = 1_024)
                 if (decoded != null) KeryxBitmapCache.put(loadKey, decoded)
                 decoded
             }
@@ -95,7 +133,13 @@ fun MessageMedia(
                     .clickable { showFullscreen = true },
             )
             if (showFullscreen) {
-                FullscreenImageViewer(bmp, fileName.ifBlank { "image" }) { showFullscreen = false }
+                // Fullscreen gets its own sharper decode (short edge ≈ screen width, uncached,
+                // transient) so pinch-zoom doesn't inherit the bubble's downsample; the bubble
+                // bitmap shows until it lands.
+                val fullRes by produceState<ImageBitmap?>(initialValue = null, loadKey) {
+                    value = loader()?.let { decodeSampled(it, targetPx = 1_080, longEdge = false) }
+                }
+                FullscreenImageViewer(fullRes ?: bmp, fileName.ifBlank { "image" }) { showFullscreen = false }
             }
         } else {
             Box(

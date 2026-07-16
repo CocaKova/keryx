@@ -66,6 +66,14 @@ class KeryxApp : Application() {
         observeForNotifications()
     }
 
+    /** Memory pressure → every registered session cache sheds weight (media bytes, decoded
+     *  bitmaps, pet thumbs — all re-fetchable). Backgrounded or worse drops everything; milder
+     *  levels shed roughly half. */
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        chat.keryx.app.util.CacheRegistry.trimAll(aggressive = level >= TRIM_MEMORY_BACKGROUND)
+    }
+
     /**
      * Watch the room list and raise a notification when a room gains a newer message than we last
      * saw — unless the user is already looking at that room in the foreground. The room list carries

@@ -43,6 +43,10 @@ class ChatViewModel(
     companion object {
         private const val INITIAL_LIMIT = 50
         private const val PAGE = 50
+        // Soft ceiling + decay for the loaded window (see loadOlderMessages/onViewportAtBottom):
+        // the limit used to grow +50 per scroll-back forever and never shrink until room switch.
+        private const val MAX_LIMIT = 1_000
+        private const val LIMIT_DECAY_DWELL_MS = 10_000L
         // How long after the agent's last activity to keep the "working" animation up. Adaptive:
         // while the agent is mid-run (last thing we saw was a tool call or pure reasoning, so more is
         // coming) we wait LONG — deliberately generous, because a local brain can go quiet for
@@ -72,8 +76,9 @@ class ChatViewModel(
         private const val STREAM_DISPATCH_CHARS = 240
         // The overlay renders (and markdown-parses) on every dispatch, so what it shows must stay
         // bounded no matter how long a marathon turn grows — only the tail is live anyway; the
-        // committed Matrix message renders the whole thing. See MessageParser.streamTailWindow.
-        private const val STREAM_WINDOW_CHARS = 8_000
+        // committed Matrix message renders the whole thing. The answer window is shared with the
+        // tier-2 streaming render (MessageParser.STREAM_RENDER_WINDOW): one invariant, one bound.
+        private const val STREAM_WINDOW_CHARS = MessageParser.STREAM_RENDER_WINDOW
         private const val STREAM_REASONING_WINDOW_CHARS = 6_000
         // tok/s readout smoothing: an EMA of the *instantaneous* per-frame rate, not a cumulative
         // average — the cumulative form was diluted by think-latency and tool-call gaps, so a
@@ -89,6 +94,10 @@ class ChatViewModel(
         // Optimistic send bubble safety timeout: if the echo never matches (edited en route,
         // network hiccup), stop double-rendering after this long — the real event wins.
         private const val PENDING_SEND_TIMEOUT_MS = 12_000L
+        // Session-cache bounds (see the cache fields): retained reaction StateFlows and decoded
+        // pet-picker thumbnails were unbounded before 1.19.0.
+        private const val REACTION_FLOW_MAX = 200
+        private const val PET_THUMB_MAX = 120
         // How long to keep partial text + the alert after a mid-stream drop before giving the
         // timeline back to plain Matrix rendering.
         private const val STREAM_INTERRUPT_HOLD_MS = 60_000L
@@ -357,7 +366,14 @@ class ChatViewModel(
         viewModelScope.launch {
             chat.keryx.app.data.remote.HermesStreamClient(url, _gatewayApiKey.value, settingsRepository.allowInsecure)
                 .pet()
-                .onSuccess { if (it.enabled && it.spritesheetBase64.isNotEmpty()) _petInfo.value = it }
+                .onSuccess {
+                    if (it.enabled && it.spritesheetBase64.isNotEmpty()) {
+                        // Decode the sheet once, process-wide, and DROP the ~2 MB base64 string
+                        // instead of pinning it in this StateFlow for the whole session.
+                        chat.keryx.app.presentation.ui.components.PetSheetMemo.prime(it)
+                        _petInfo.value = it.copy(spritesheetBase64 = "")
+                    }
+                }
                 // Transient failure (gateway restarting, phone off WiFi) → retry on next drawer open.
                 .onFailure { petFetchDone = false }
         }
@@ -377,10 +393,20 @@ class ChatViewModel(
     private val _petSelectError = MutableStateFlow<String?>(null)
     val petSelectError: StateFlow<String?> = _petSelectError.asStateFlow()
 
-    /** Row-preview thumbs by slug, decoded and cached for the session. */
+    /** Row-preview thumbs by slug. LRU-bounded (the catalog is ~3.4k pets — a fast scroll used to
+     *  retain a Bitmap for every row ever composed, with no eviction); an evicted slug leaves
+     *  [petThumbRequested] too so re-scrolling it refetches. The published StateFlow map is an
+     *  immutable snapshot rebuilt on change (≤ [PET_THUMB_MAX] entries — cheap). */
     private val _petThumbs = MutableStateFlow<Map<String, android.graphics.Bitmap>>(emptyMap())
     val petThumbs: StateFlow<Map<String, android.graphics.Bitmap>> = _petThumbs.asStateFlow()
     private val petThumbRequested = java.util.Collections.synchronizedSet(mutableSetOf<String>())
+    private val petThumbLru = object : LinkedHashMap<String, android.graphics.Bitmap>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, android.graphics.Bitmap>): Boolean {
+            val evict = size > PET_THUMB_MAX
+            if (evict) petThumbRequested.remove(eldest.key)
+            return evict
+        }
+    }
     // Uninstalled previews make the gateway download that pet's sheet from the petdex CDN —
     // a fast scroll through the catalog must not turn into dozens of parallel downloads.
     private val petThumbGate = kotlinx.coroutines.sync.Semaphore(3)
@@ -410,7 +436,10 @@ class ChatViewModel(
                 client.petThumb(slug, url)
                     .onSuccess { bytes ->
                         android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.let {
-                            _petThumbs.value = _petThumbs.value + (slug to it)
+                            synchronized(petThumbLru) {
+                                petThumbLru[slug] = it
+                                _petThumbs.value = petThumbLru.toMap()
+                            }
                         }
                     }
                     // Transient (offline, CDN hiccup) — allow a retry when the row shows again.
@@ -768,12 +797,24 @@ class ChatViewModel(
     val liveStream: StateFlow<LiveStream?> = _liveStream.asStateFlow()
     private var streamJob: Job? = null
     private var streamClearJob: Job? = null
+    private var limitDecayJob: Job? = null
 
     // Set by openSideChannel for the lifetime of one SSE turn. Hermes commits each text segment
     // of a multi-segment turn (text → tool → text) as its OWN Matrix message mid-run; when one of
     // those lands, the overlay must shed the already-committed part and KEEP STREAMING — killing
     // the whole SSE job there is what made every post-tool reasoning phase invisible until commit.
     private var consumeStreamedSegment: (() -> Unit)? = null
+
+    // Materializes the full sanitized stream text ON DEMAND for handoff matching while the turn
+    // is still STREAMING. LiveStream.matchText used to carry a fresh full-buffer copy on every
+    // ~100 ms dispatch tick; now it's only set once at `stop`, and mid-turn segment matching pulls
+    // the full text here — i.e. per messages emission, not per token dispatch.
+    private var currentStreamFullText: (() -> String)? = null
+
+    // Fingerprint of the last handoff evaluation (stream status + the recent candidate window).
+    // maybeHandOffStream runs on EVERY messages emission during a turn and normalizing the
+    // streamed target is a full uncached parse — skip when nothing it looks at has changed.
+    private var lastHandoffFingerprint: Int = 0
 
     // True while the agent is working (drives the waiting animation). Stays up through the agent's
     // thinking / tool-call / streaming phases and only clears after activity goes quiet.
@@ -894,11 +935,10 @@ class ChatViewModel(
         viewModelScope.launch {
             messages.collect { msgs ->
                 val last = msgs.lastOrNull()
-                android.util.Log.i(
-                    "KeryxFlow",
+                chat.keryx.app.util.KLog.i("KeryxFlow") {
                     "emission n=${msgs.size} last=${last?.id?.take(12)} sender=${last?.sender} len=${last?.content?.length} " +
                         "stream=${_liveStream.value?.status} awaiting=${_awaitingReply.value}"
-                )
+                }
                 // An empty emission (room switch reset, transient flow restart) must NOT touch the
                 // classification state: nulling lastSeenId made the NEXT emission look like a first
                 // open, and the openedMidRun recency check re-lit the working banner for a message
@@ -1022,7 +1062,7 @@ class ChatViewModel(
                 .collect { state ->
                     _typingHumans.value = state.humanNames
                     val typing = state.agentTyping
-                    android.util.Log.i("KeryxTyping", "typing=$typing humans=${state.humanNames.size} awaiting=${_awaitingReply.value} answerLanded=$answerLanded")
+                    chat.keryx.app.util.KLog.i("KeryxTyping") { "typing=$typing humans=${state.humanNames.size} awaiting=${_awaitingReply.value} answerLanded=$answerLanded" }
                     agentTyping = typing
                     if (typing) {
                         quietJob?.cancel() // never time out while it's actively typing/working
@@ -1063,8 +1103,11 @@ class ChatViewModel(
             allowInsecure = settingsRepository.allowInsecure,
         )
         streamJob = viewModelScope.launch {
-            val buf = StringBuilder()
-            val reasoningBuf = StringBuilder()
+            // Incremental trackers: every dispatch tick reads O(window) off these no matter how
+            // long the turn grows — the old StringBuilder + full sanitize/window pass copied and
+            // re-scanned the whole buffer 10×/s (the marathon-freeze class v1.18.3 chased).
+            val buf = StreamTailTracker(STREAM_WINDOW_CHARS, sanitize = true)
+            val reasoningBuf = StreamTailTracker(STREAM_REASONING_WINDOW_CHARS, sanitize = false)
             var lastDispatch = 0L
             var charsSinceDispatch = 0
             var firstDeltaAt = 0L
@@ -1073,33 +1116,35 @@ class ChatViewModel(
             var emaCps = 0f
             fun dispatch(status: LiveStreamStatus, finalText: String? = null) {
                 val cur = _liveStream.value ?: LiveStream(roomId, "", status, System.currentTimeMillis())
-                val full = MessageParser.sanitizeStreamingTail(buf.toString())
                 _liveStream.value = cur.copy(
-                    text = MessageParser.streamTailWindow(full, STREAM_WINDOW_CHARS),
-                    matchText = full,
+                    text = buf.windowText(),
+                    // Full-text copy only when the turn ends; STREAMING-phase matching pulls it
+                    // on demand through currentStreamFullText instead of paying O(n) per tick.
+                    matchText = if (status == LiveStreamStatus.AWAITING_SYNC) buf.sanitizedFullText()
+                                else cur.matchText,
                     status = status,
                     finalText = finalText ?: cur.finalText,
                     charsPerSec = emaCps,
-                    reasoning = MessageParser.streamTailWindow(
-                        reasoningBuf.toString(), STREAM_REASONING_WINDOW_CHARS,
-                    ),
+                    reasoning = reasoningBuf.windowText(),
                 )
                 lastDispatch = System.currentTimeMillis()
                 charsSinceDispatch = 0
             }
+            currentStreamFullText = { buf.sanitizedFullText() }
+            lastHandoffFingerprint = 0
             _liveStream.value = LiveStream(roomId, "", LiveStreamStatus.CONNECTING, System.currentTimeMillis())
             // Mid-turn segment commit: everything streamed so far is now a committed Matrix
             // message. Shed it from the overlay (text AND its reasoning — the commit carries its
             // own folded 💭 block) but leave the SSE subscription running for the next phase.
             consumeStreamedSegment = {
-                android.util.Log.i("KeryxHandoff", "consume segment (${buf.length}ch text, ${reasoningBuf.length}ch reasoning) — stream stays live")
-                buf.setLength(0)
-                reasoningBuf.setLength(0)
+                chat.keryx.app.util.KLog.i("KeryxHandoff") { "consume segment (${buf.length}ch text, ${reasoningBuf.length}ch reasoning) — stream stays live" }
+                buf.clear()
+                reasoningBuf.clear()
                 if (_liveStream.value != null) dispatch(LiveStreamStatus.STREAMING)
             }
             client.stream(roomId).collect { ev ->
                 if (ev !is chat.keryx.app.data.remote.HermesStreamClient.Event.Delta)
-                    android.util.Log.i("KeryxSSE", "event=$ev bufLen=${buf.length}")
+                    chat.keryx.app.util.KLog.i("KeryxSSE") { "event=$ev bufLen=${buf.length}" }
                 when (ev) {
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Opened -> {
                         _linkHealth.value = LinkHealth.LIVE
@@ -1147,7 +1192,7 @@ class ChatViewModel(
                             clearStream(); settleTurn()
                             return@collect
                         }
-                        dispatch(LiveStreamStatus.AWAITING_SYNC, finalText = ev.finalText ?: buf.toString())
+                        dispatch(LiveStreamStatus.AWAITING_SYNC, finalText = ev.finalText ?: buf.rawText())
                         // The committed event may have synced BEFORE stop arrived; nothing else
                         // re-triggers the handoff check (the messages flow won't emit again), so
                         // evaluate against the current timeline right now — otherwise the overlay
@@ -1193,32 +1238,48 @@ class ChatViewModel(
     }
 
     private fun clearStream() {
-        android.util.Log.i("KeryxHandoff", "clearStream (was ${_liveStream.value?.status})")
+        chat.keryx.app.util.KLog.i("KeryxHandoff") { "clearStream (was ${_liveStream.value?.status})" }
         streamClearJob?.cancel()
         streamJob?.cancel()
         consumeStreamedSegment = null
+        currentStreamFullText = null
         _liveStream.value = null
     }
 
     /** Drop the overlay when its committed Matrix counterpart is in the timeline. */
     private fun maybeHandOffStream(messages: List<Message>, last: Message, isNewMsg: Boolean) {
         val s = _liveStream.value ?: return
-        android.util.Log.i(
-            "KeryxHandoff",
-            "check status=${s.status} room=${last.sessionId == s.roomId} new=$isNewMsg " +
-                "target=${(s.finalText ?: s.matchText).length}ch last=${last.sender}/${last.content.length}ch"
-        )
         if (last.sessionId != s.roomId) return
+        // Runs on every messages emission during a turn, and normalizing the streamed target is a
+        // full uncached parse — skip when neither the stream phase nor the candidate window (last
+        // 8 non-ME messages in this room, by id + length) has changed since the last evaluation.
+        var fingerprint = s.status.ordinal * 31 + if (isNewMsg) 1 else 0
+        var seen = 0
+        for (i in messages.indices.reversed()) {
+            val m = messages[i]
+            if (m.sessionId != s.roomId || m.sender == SenderType.ME) continue
+            fingerprint = fingerprint * 31 + m.id.hashCode()
+            fingerprint = fingerprint * 31 + m.content.length
+            if (++seen == 8) break
+        }
+        if (fingerprint == lastHandoffFingerprint) return
+        lastHandoffFingerprint = fingerprint
+        chat.keryx.app.util.KLog.i("KeryxHandoff") {
+            "check status=${s.status} new=$isNewMsg last=${last.sender}/${last.content.length}ch"
+        }
         when (s.status) {
             LiveStreamStatus.STREAMING -> {
-                val target = s.finalText ?: s.matchText
+                // matchText is only materialized at `stop`; while streaming, pull the full
+                // sanitized text on demand (once per evaluation, not per dispatch tick).
+                val target = s.finalText ?: currentStreamFullText?.invoke() ?: s.matchText
                 if (target.isNotBlank()) {
-                    val matched = messages.asReversed()
+                    val normalizedTarget = StreamHandoff.normalize(target, cacheable = false)
+                    val matched = normalizedTarget.isNotEmpty() && messages.asReversed()
                         .asSequence()
                         .filter { it.sessionId == s.roomId && it.sender != SenderType.ME }
                         .filterNot { MessageParser.isTelemetryMessage(it.content) }
                         .take(8)
-                        .any { StreamHandoff.matches(it.content, target) }
+                        .any { StreamHandoff.matchesNormalized(it.content, normalizedTarget) }
                     // A match while still STREAMING is a MID-TURN segment commit (tool call coming
                     // up — Hermes committed the text so far as its own message). Shed the committed
                     // part but keep the SSE channel: the post-tool reasoning + answer are still on
@@ -1233,15 +1294,17 @@ class ChatViewModel(
                     .take(8)
                     .toList()
                 val target = s.finalText ?: s.matchText
-                val matched = target.isNotBlank() && recentHermes
+                val normalizedTarget =
+                    if (target.isBlank()) "" else StreamHandoff.normalize(target, cacheable = false)
+                val matched = normalizedTarget.isNotEmpty() && recentHermes
                     .asSequence()
                     .filterNot { MessageParser.isTelemetryMessage(it.content) }
-                    .any { StreamHandoff.matches(it.content, target) }
+                    .any { StreamHandoff.matchesNormalized(it.content, normalizedTarget) }
                 val hasCommittedAnswer = recentHermes.any {
                     !MessageParser.isTelemetryMessage(it.content) &&
                         StreamHandoff.normalize(it.content).isNotBlank()
                 }
-                android.util.Log.i("KeryxHandoff", "awaitSync matched=$matched newMsg=$isNewMsg committed=$hasCommittedAnswer recent=${recentHermes.size}")
+                chat.keryx.app.util.KLog.i("KeryxHandoff") { "awaitSync matched=$matched newMsg=$isNewMsg committed=$hasCommittedAnswer recent=${recentHermes.size}" }
                 if (matched || (isNewMsg && hasCommittedAnswer)) { clearStream(); settleTurn() }
             }
             LiveStreamStatus.INTERRUPTED -> {
@@ -1267,6 +1330,8 @@ class ChatViewModel(
 
     fun selectSession(session: Session) {
         _currentSession.value = session
+        limitDecayJob?.cancel()
+        limitDecayJob = null
         _timelineLimit.value = INITIAL_LIMIT
         _hasMoreHistory.value = true
         _isLoadingMore.value = false
@@ -1285,6 +1350,9 @@ class ChatViewModel(
         // treated as "new activity" just because its last message differs from the previous room's.
         lastSeenId = null
         lastSeenLen = -1
+        // The old room's reaction flows are all unsubscribed now — drop them rather than letting
+        // them age out of the LRU while the new room fills it.
+        synchronized(reactionFlows) { reactionFlows.clear() }
         settingsRepository.lastRoomId = session.id
         _typingHumans.value = emptyList()
         // Warm the member store so sender display names resolve in cold group rooms.
@@ -1294,6 +1362,13 @@ class ChatViewModel(
     /** Load an older page of history (called when the user scrolls to the top of the timeline). */
     fun loadOlderMessages() {
         if (_isLoadingMore.value || !_hasMoreHistory.value) return
+        if (_timelineLimit.value >= MAX_LIMIT) {
+            // Memory backstop: past this the loaded window stops growing (every loaded event is a
+            // resolved Message + a live store flow in the repository combine). Deeper archaeology
+            // is what session search / the desktop is for.
+            _hasMoreHistory.value = false
+            return
+        }
         _isLoadingMore.value = true
         val before = messages.value.size
         _timelineLimit.value += PAGE
@@ -1309,23 +1384,80 @@ class ChatViewModel(
         }
     }
 
+    /** Timeline-window decay: after the user has sat at the BOTTOM of the list for a dwell, a
+     *  deep-scrolled window shrinks back to [INITIAL_LIMIT] — a long back-read must not pin
+     *  hundreds of resolved events (and their per-event store flows) for the rest of the session.
+     *  Never fires while the user is actually reading history (not at bottom cancels the timer),
+     *  and scrolling up again just refetches from the local store. */
+    fun onViewportAtBottom(atBottom: Boolean) {
+        if (!atBottom) {
+            limitDecayJob?.cancel()
+            limitDecayJob = null
+            return
+        }
+        // Only worth decaying when the window actually holds more than the initial page — a tiny
+        // room whose auto-pagination bumped the limit past its total must not enter a
+        // decay→re-paginate cycle (nothing would be freed anyway).
+        if (_timelineLimit.value <= INITIAL_LIMIT || messages.value.size <= INITIAL_LIMIT ||
+            limitDecayJob?.isActive == true
+        ) return
+        limitDecayJob = viewModelScope.launch {
+            delay(LIMIT_DECAY_DWELL_MS)
+            _timelineLimit.value = INITIAL_LIMIT
+            _hasMoreHistory.value = true
+        }
+    }
+
     fun setReplyTarget(message: Message?) { _replyTarget.value = message }
     fun clearReplyTarget() { _replyTarget.value = null }
 
     // Media/avatar downloads are owned by viewModelScope (NOT the Compose produceState coroutine),
     // so a recomposition or a brief scroll-off no longer cancels an in-flight fetch ("The coroutine
-    // scope left the composition"). Results are cached so returning to a chat is instant; failed
-    // (null) loads are evicted so they can be retried.
-    private val mediaCache = java.util.concurrent.ConcurrentHashMap<String, Deferred<ByteArray?>>()
-    private val avatarCache = java.util.concurrent.ConcurrentHashMap<String, Deferred<ByteArray?>>()
+    // scope left the composition"). In-flight maps exist only to dedup concurrent requests — an
+    // entry is removed the moment its download completes; completed bytes live in BYTE-BUDGETED
+    // LRUs. The old unbounded Deferred maps kept every image/avatar ever viewed for the whole
+    // session — a direct driver of the 514 MB marathon RSS.
+    private val mediaInFlight = java.util.concurrent.ConcurrentHashMap<String, Deferred<ByteArray?>>()
+    private val avatarInFlight = java.util.concurrent.ConcurrentHashMap<String, Deferred<ByteArray?>>()
+    private val mediaBytesCache =
+        chat.keryx.app.util.BoundedByteCache((Runtime.getRuntime().maxMemory() / 8).coerceAtMost(64L shl 20))
+    private val avatarBytesCache = chat.keryx.app.util.BoundedByteCache(2L shl 20)
+
+    // Registered with CacheRegistry (driven by KeryxApp.onTrimMemory): under memory pressure the
+    // session caches shed weight — everything here re-fetches/re-decodes on demand. Unregistered
+    // in onCleared so a dead ViewModel isn't pinned by the process-wide registry.
+    private val cacheTrimmer: (Boolean) -> Unit = { aggressive ->
+        if (aggressive) {
+            mediaBytesCache.clear()
+            avatarBytesCache.clear()
+            synchronized(petThumbLru) {
+                petThumbLru.clear()
+                petThumbRequested.clear()
+                _petThumbs.value = emptyMap()
+            }
+        } else {
+            mediaBytesCache.trimToBytes(mediaBytesCache.sizeBytes / 2)
+            avatarBytesCache.trimToBytes(avatarBytesCache.sizeBytes / 2)
+        }
+    }
+
+    init {
+        chat.keryx.app.util.CacheRegistry.register(cacheTrimmer)
+    }
+
+    override fun onCleared() {
+        chat.keryx.app.util.CacheRegistry.unregister(cacheTrimmer)
+        super.onCleared()
+    }
 
     suspend fun loadMessageMedia(sessionId: String, eventId: String): ByteArray? {
-        val deferred = mediaCache.getOrPut(eventId) {
-            viewModelScope.async(Dispatchers.IO) { repository.mediaBytes(sessionId, eventId) }
+        mediaBytesCache.get(eventId)?.let { return it }
+        val deferred = mediaInFlight.getOrPut(eventId) {
+            viewModelScope.async(Dispatchers.IO) {
+                repository.mediaBytes(sessionId, eventId)?.also { mediaBytesCache.put(eventId, it) }
+            }.also { d -> d.invokeOnCompletion { mediaInFlight.remove(eventId, d) } }
         }
-        val result = deferred.await() // cancellation propagates to the caller, not the download
-        if (result == null) mediaCache.remove(eventId)
-        return result
+        return deferred.await() // cancellation propagates to the caller, not the download
     }
 
     // Drawer previews: the latest meaningful message per room, fetched lazily (only when a drawer
@@ -1349,12 +1481,20 @@ class ChatViewModel(
     // Live reactions: a cold flow per event that updates the instant a reaction is added/redacted by
     // anyone. Cached by event id so re-subscribing the same bubble during scroll reuses the running
     // flow (shareIn keeps it hot briefly) instead of spinning up a fresh Matrix subscription.
-    private val reactionFlows = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.flow.Flow<List<MessageReaction>>>()
+    // LRU-bounded: scrolling a marathon room used to leave one retained StateFlow per event id
+    // for the ViewModel's whole life. Eviction is safe — WhileSubscribed(5s) has already stopped
+    // an off-screen flow's upstream, and a re-scrolled bubble simply recreates it.
+    private val reactionFlows = object : LinkedHashMap<String, kotlinx.coroutines.flow.Flow<List<MessageReaction>>>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, kotlinx.coroutines.flow.Flow<List<MessageReaction>>>) =
+            size > REACTION_FLOW_MAX
+    }
 
     fun reactionsFlow(sessionId: String, eventId: String): kotlinx.coroutines.flow.Flow<List<MessageReaction>> =
-        reactionFlows.getOrPut(eventId) {
-            repository.reactionsFlow(sessionId, eventId)
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        synchronized(reactionFlows) {
+            reactionFlows.getOrPut(eventId) {
+                repository.reactionsFlow(sessionId, eventId)
+                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+            }
         }
 
     fun sendReaction(eventId: String, emoji: String) {
@@ -1461,12 +1601,13 @@ class ChatViewModel(
     }
 
     suspend fun loadAvatar(mxc: String): ByteArray? {
-        val deferred = avatarCache.getOrPut(mxc) {
-            viewModelScope.async(Dispatchers.IO) { repository.avatarBytes(mxc) }
+        avatarBytesCache.get(mxc)?.let { return it }
+        val deferred = avatarInFlight.getOrPut(mxc) {
+            viewModelScope.async(Dispatchers.IO) {
+                repository.avatarBytes(mxc)?.also { avatarBytesCache.put(mxc, it) }
+            }.also { d -> d.invokeOnCompletion { avatarInFlight.remove(mxc, d) } }
         }
-        val result = deferred.await()
-        if (result == null) avatarCache.remove(mxc)
-        return result
+        return deferred.await()
     }
 
     // One-shot user-facing messages (e.g. avatar set result) — collected once at the app root.

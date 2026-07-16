@@ -76,7 +76,8 @@ import chat.keryx.app.presentation.ui.components.MessageMedia
 import chat.keryx.app.presentation.ui.components.ToolActivityCard
 import chat.keryx.app.presentation.ui.components.ToolGroupCard
 import chat.keryx.app.presentation.ui.components.bubbleAppearance
-import chat.keryx.app.presentation.ui.components.groupChatItems
+import chat.keryx.app.presentation.ui.components.GroupedTimeline
+import chat.keryx.app.presentation.ui.components.groupChatItemsIncremental
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
@@ -176,9 +177,24 @@ fun ChatScreen(
     val isGroupRoom = rooms.firstOrNull { it.id == currentSession?.id }?.type == RoomType.SHARED_GROUP
     // reverseLayout: index 0 is the newest message, pinned to the bottom.
     val ordered = messages.asReversed()
-    val byId = remember(messages) { messages.associateBy { it.id } }
+    // Quote lookups only: the old full id→message map was rebuilt on every emission and held
+    // every message for the rare quoted-reply render; only actual reply targets are needed.
+    val byId = remember(messages) {
+        val targets = messages.mapNotNullTo(HashSet()) { it.replyToId }
+        if (targets.isEmpty()) emptyMap()
+        else messages.filter { it.id in targets }.associateBy { it.id }
+    }
     // Collapse runs of consecutive tool-only messages into one expandable "Ran N tools" group.
-    val renderItems = remember(messages) { groupChatItems(ordered) }
+    // Incremental: during a streamed turn every sync tick re-emits the list with only the tail
+    // changed, so the grouped prefix is spliced from the previous pass and only the trailing
+    // agent block is re-walked (O(changed block), not O(timeline)). Plain holder, not snapshot
+    // state — renderItems is already keyed on [messages].
+    val groupCache = remember { arrayOfNulls<GroupedTimeline>(1) }
+    val renderItems = remember(messages) {
+        val grouped = groupChatItemsIncremental(ordered, groupCache[0])
+        groupCache[0] = grouped
+        grouped.items
+    }
 
     // Restore this room's unsent draft when it opens (and swap drafts when switching rooms) so
     // half-typed thoughts survive room hops and app restarts.
@@ -350,6 +366,11 @@ fun ChatScreen(
         if (pendingSend != null || lastMineId != null) listState.animateScrollToItem(0)
     }
 
+    // Timeline-window decay: tell the ViewModel when the viewport is (and stays) at the bottom so
+    // a deep-scrolled history window can shrink back after a dwell instead of pinning hundreds of
+    // resolved events for the rest of the session.
+    LaunchedEffect(atBottom) { viewModel.onViewportAtBottom(atBottom) }
+
     // Pagination: when the oldest loaded item scrolls into view, request more history.
     LaunchedEffect(listState, renderItems.size) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
@@ -486,7 +507,16 @@ fun ChatScreen(
             }
             itemsIndexed(
                 items = renderItems,
-                key = { _, item -> item.key }
+                key = { _, item -> item.key },
+                // Heterogeneous rows: telling Lazy layout which kind each item is lets it reuse
+                // compositions within a kind during scroll instead of across unrelated shapes.
+                contentType = { _, item ->
+                    when (item) {
+                        is ChatRenderItem.DayHeader -> "day"
+                        is ChatRenderItem.ToolRun -> "run"
+                        is ChatRenderItem.Single -> "single"
+                    }
+                },
             ) { index, item ->
                 Box(modifier = Modifier.animateItem()) {
                     when (item) {
@@ -917,15 +947,7 @@ private fun AttachmentPreview(att: PendingAttachment, onRemove: () -> Unit) {
     ) {
         // A real thumbnail of the staged image (downsampled), not a stand-in emoji.
         val thumb = if (att.isImage) remember(att.bytes) {
-            runCatching {
-                val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                android.graphics.BitmapFactory.decodeByteArray(att.bytes, 0, att.bytes.size, bounds)
-                var sample = 1
-                while (bounds.outWidth / (sample * 2) >= 128 && bounds.outHeight / (sample * 2) >= 128) sample *= 2
-                val opts = android.graphics.BitmapFactory.Options().apply { inSampleSize = sample }
-                android.graphics.BitmapFactory.decodeByteArray(att.bytes, 0, att.bytes.size, opts)
-                    ?.asImageBitmap()
-            }.getOrNull()
+            chat.keryx.app.presentation.ui.components.decodeSampled(att.bytes, targetPx = 128, longEdge = false)
         } else null
         if (thumb != null) {
             androidx.compose.foundation.Image(

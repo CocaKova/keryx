@@ -58,6 +58,31 @@ class StreamHandoffTest {
         assertFalse(StreamHandoff.matches("", "anything"))
     }
 
+    @Test
+    fun matchesNormalized_agreesWithMatches() {
+        val streamed = "The deploy finished cleanly with all checks green across every stage."
+        val committed = "<think>summarize</think>$streamed"
+        val normalized = StreamHandoff.normalize(streamed, cacheable = false)
+        assertTrue(StreamHandoff.matchesNormalized(committed, normalized))
+        assertFalse(StreamHandoff.matchesNormalized("A different reply about the weather.", normalized))
+    }
+
+    // --- Contract guard: handoff matching must always see the FULL streamed text. The overlay's
+    // --- rendered text is tail-windowed past 8 KB (its "…\n" prefix + missing head break prefix
+    // --- matching), which is exactly why LiveStream.matchText / currentStreamFullText exist.
+
+    @Test
+    fun windowedOverlayText_mustNeverBeUsedForMatching() {
+        val paragraph = "This marathon answer keeps going with plenty of prose in every paragraph block.\n\n"
+        val full = paragraph.repeat(200) // ~16 KB — well past the 8 KB overlay window
+        val windowed = chat.keryx.app.presentation.ui.components.MessageParser.streamTailWindow(full, 8_000)
+        check(windowed.length < full.length && windowed.startsWith("…")) { "window did not cut" }
+        // The committed Matrix body is the full text: matching against the full streamed text
+        // works, matching against the windowed view must NOT be relied on.
+        assertTrue(StreamHandoff.matches(full, full))
+        assertFalse(StreamHandoff.matches(full, windowed))
+    }
+
     // --- Live-tested 2026-07-02: the committed Matrix copy carried a beacon + blockquote
     // --- reasoning (with a blank line inside) and the handoff match failed → duplicate bubble.
 
