@@ -43,10 +43,11 @@ android {
 
     buildTypes {
         release {
-            // Minification stays OFF until the R8 keeps in proguard-rules.pro have been verified
-            // on-device (Trixnity + kotlinx-serialization are reflection-heavy; an untested
-            // minified build is worse than a slightly larger honest one).
-            isMinifyEnabled = false
+            // R8 ON as of 1.19.0 — an isolated commit so it reverts alone if the on-device smoke
+            // checklist (login/sync/media/streaming/notifications/hub) finds a keep-rule gap.
+            // Keep build/outputs/mapping/release/mapping.txt per release to deobfuscate CrashLog.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = if (releaseKeystorePath != null) signingConfigs.getByName("release")
                 else signingConfigs.getByName("debug")
