@@ -1422,6 +1422,24 @@ class ChatViewModel(
         }
     }
 
+    // --- The Call (1.22) ------------------------------------------------------------------------
+
+    /** Live-call tap: while non-null, the tier-1 stream mirrors this turn's assistant text here —
+     *  raw deltas while streaming, then the terminal signal. The Call layers sentence-chunking
+     *  and TTS on top; a null tap costs the stream path nothing. Reasoning is deliberately NOT
+     *  mirrored: the agent thinks silently, like anyone worth talking to. */
+    interface CallTurnTap {
+        fun onDelta(text: String)
+        fun onTurnEnd(finalText: String?)
+        fun onTurnFailed()
+    }
+
+    @Volatile
+    var callTurnTap: CallTurnTap? = null
+
+    /** Both voice endpoints are configured — the Call has ears and a mouth. */
+    fun voiceCallReady(): Boolean = _sttUrl.value.isNotBlank() && _ttsUrl.value.isNotBlank()
+
     // --- Side-channel stream orchestration (tier-1) -------------------------------------------
 
     /**
@@ -1506,6 +1524,7 @@ class ChatViewModel(
                         }
                         lastDeltaAt = now
                         buf.append(ev.text)
+                        callTurnTap?.onDelta(ev.text)
                         charsSinceDispatch += ev.text.length
                         if (now - lastDispatch >= STREAM_DISPATCH_MS || charsSinceDispatch >= STREAM_DISPATCH_CHARS) {
                             dispatch(LiveStreamStatus.STREAMING)
@@ -1524,9 +1543,11 @@ class ChatViewModel(
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.SegmentBreak -> {
                         if (buf.isNotEmpty() && !buf.endsWith("\n\n")) buf.append("\n\n")
+                        callTurnTap?.onDelta("\n")
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Stop -> {
                         _linkHealth.value = LinkHealth.OK
+                        callTurnTap?.onTurnEnd(ev.finalText)
                         if (ev.finalText.isNullOrBlank() && buf.isBlank() && reasoningBuf.isBlank()) {
                             // Everything this turn produced was already consumed by mid-turn
                             // segment commits — nothing left to hand off; don't hold an invisible
@@ -1543,6 +1564,7 @@ class ChatViewModel(
                         if (_liveStream.value != null) scheduleStreamClear(STREAM_SYNC_GRACE_MS)
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Failed -> {
+                        callTurnTap?.onTurnFailed()
                         if (!ev.connected) _linkHealth.value = LinkHealth.UNREACHABLE
                         else if (_linkHealth.value == LinkHealth.LIVE) _linkHealth.value = LinkHealth.OK
                         if (!ev.connected || buf.isBlank()) {

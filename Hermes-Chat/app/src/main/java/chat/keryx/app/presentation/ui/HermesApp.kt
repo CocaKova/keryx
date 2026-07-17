@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Psychology
@@ -225,6 +226,23 @@ fun HermesApp(viewModel: ChatViewModel) {
                             // Steer: quick-prefill the composer with "/steer " to redirect the agent mid-task.
                             IconButton(onClick = { viewModel.prefillComposer("/steer ") }) {
                                 Icon(Icons.Default.Explore, contentDescription = "Steer", tint = MaterialTheme.colorScheme.primary)
+                            }
+                            // The Call (1.22): a voice conversation with this room's agent. Needs
+                            // both voice endpoints; a missing one gets a pointer, not a dead mic.
+                            var showCall by remember { mutableStateOf(false) }
+                            IconButton(onClick = {
+                                if (viewModel.voiceCallReady()) showCall = true
+                                else viewModel.toast("Set the STT and TTS endpoints in Settings → Voice first")
+                            }) {
+                                Icon(Icons.Default.Call, contentDescription = "Call",
+                                    tint = MaterialTheme.colorScheme.primary)
+                            }
+                            if (showCall) {
+                                chat.keryx.app.presentation.ui.components.CallScreen(
+                                    viewModel = viewModel,
+                                    roomName = currentSession?.title ?: "Keryx",
+                                    onDismiss = { showCall = false },
+                                )
                             }
                         }
                     },
