@@ -50,17 +50,30 @@ class NoiseFloorTest {
         val floor = NoiseFloor()
         floor.feed(100.0, 50)
         val gateBefore = floor.startGate
-        floor.feed(180.0, 300)         // dishwasher starts: ~9 s below the rise ceiling
+        floor.feed(300.0, 300)         // dishwasher starts: ~9 s of 3× ambience, below the gate
         assertTrue(floor.startGate > gateBefore)
-        assertEquals(180.0 * 3.5, floor.startGate, 40.0)
+        assertEquals(300.0 * 3.5, floor.startGate, 80.0)
+    }
+
+    /** The v1.22.1 no-turns-at-all bug: AudioRecord's first frame is often near-zero DSP
+     *  ramp-in. A floor-relative rise ceiling could never climb out of that seed, pinning the
+     *  end gate below the room's ambience — no utterance ever ended. Sub-gate ambience must
+     *  always be able to lift the floor, from any seed. */
+    @Test
+    fun `near-zero seed climbs back to the room's real ambience`() {
+        val floor = NoiseFloor()
+        floor.update(0.0)              // DSP ramp-in frame seeds the floor
+        floor.feed(120.0, 200)         // 6 s of ordinary room noise
+        assertEquals(120.0 * 1.8, floor.endGate, 15.0)
+        assertEquals(120.0 * 3.5, floor.startGate, 30.0)
     }
 
     @Test
-    fun `ambiguous mid-band frames teach the floor nothing`() {
+    fun `confirmed utterance frames teach the floor nothing`() {
         val floor = NoiseFloor()
         floor.feed(100.0, 50)
         val gateBefore = floor.startGate
-        floor.feed(250.0, 300)         // 2.5× floor: soft speech / breath territory
+        repeat(300) { floor.update(300.0, inSpeech = true) }   // 9 s of mid-level speech body
         assertEquals(gateBefore, floor.startGate, 1.0)
     }
 }
