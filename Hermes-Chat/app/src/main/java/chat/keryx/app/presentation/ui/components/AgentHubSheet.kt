@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,7 +20,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
@@ -31,7 +32,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ScrollableTabRow
@@ -42,7 +42,6 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -55,7 +54,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -74,7 +78,7 @@ import chat.keryx.app.data.remote.HubJson
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.LinkHealth
 
-private val TABS = listOf("Status", "Console", "Jobs", "Sessions", "Skills", "Tools")
+private val TABS = listOf("Status", "Controls", "Jobs", "Sessions", "Skills", "Tools")
 
 /** Tabs whose data moves under you (gateway state, job runs, session activity) — these re-poll
  *  every 10 s while their tab is visible AND the app is resumed. Skills/Tools stay fetch-once:
@@ -96,11 +100,12 @@ private val FlingTamer = object : NestedScrollConnection {
 }
 
 /**
- * The Agent Hub, grown into the gateway console (1.6 Phase D): the hermes-agent-desktop "at a
- * glance" panel, phone-sized and tabbed. Status keeps the 1.3.0 identity view (brain, reasoning,
- * quick actions) and adds per-platform connection state; Jobs / Sessions / Skills / Tools ride the
- * gateway's admin API. Everything fetches on first open of its tab plus the explicit refresh
- * button — no background polling, this sheet is a place you look, not a service.
+ * The Agent Hub, grown from a bottom sheet into Keryx's own full-screen gateway space (1.21):
+ * Status keeps the identity view (brain, reasoning, quick actions) plus platform states and
+ * models; Controls is the write side (reasoning dial, brains, curated config knobs, log tail);
+ * Jobs / Sessions / Skills / Tools ride the gateway's admin API — Sessions can stream a live
+ * turn into a past session in place. Tabs fetch on first visit, and the volatile ones re-poll
+ * gently while visible ([LIVE_TABS]); the whole space degrades to cached snapshots offline.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -122,7 +127,7 @@ fun AgentHubSheet(
         if (!fetchedTabs.add(tab)) return@LaunchedEffect
         when (tab) {
             0 -> { viewModel.refreshHubHealth(); viewModel.refreshHubModels() }
-            1 -> viewModel.consoleReconcile()
+            1 -> { viewModel.refreshHubConfig(); viewModel.refreshHubBrains(); viewModel.refreshReasoningCaps() }
             2 -> viewModel.refreshHubJobs()
             3 -> viewModel.refreshHubSessions()
             4 -> viewModel.refreshHubSkills()
@@ -149,48 +154,66 @@ fun AgentHubSheet(
         }
     }
 
-    ModalBottomSheet(
+    // 1.21: the Hub graduates from a bottom sheet to its own full-screen space (the Missions
+    // board pattern) — a place you go, not a panel that pops up. The dusk gradient + braille
+    // snake + breathing link dot keep it unmistakably Keryx.
+    Dialog(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
     ) {
+        val dusk = androidx.compose.ui.graphics.Brush.verticalGradient(
+            0f to MaterialTheme.colorScheme.surface,
+            0.55f to MaterialTheme.colorScheme.surface,
+            1f to accent2.copy(alpha = 0.10f).compositeOver(MaterialTheme.colorScheme.surface),
+        )
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.92f)
-                .padding(bottom = 12.dp),
+                .fillMaxSize()
+                .background(dusk)
+                .padding(bottom = 12.dp)
+                .windowInsetsPadding(WindowInsets.systemBars),
         ) {
-            // Header: emblem + title + health line + refresh-current-tab.
+            // Header: emblem + wordmark + breathing link dot + refresh + close.
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 20.dp),
+                modifier = Modifier.padding(start = 20.dp, end = 8.dp, top = 6.dp),
             ) {
-                Box(modifier = Modifier.size(38.dp)) {
+                Box(modifier = Modifier.size(44.dp)) {
                     BrailleSnakeAnimation(
                         modifier = Modifier.fillMaxSize(),
                         color = accent,
                         color2 = accent2,
                         snakeLength = 12,
                         periodMillis = 3600,
-                        glyphSize = 7f,
+                        glyphSize = 8f,
                     )
                 }
-                Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
-                    Text("Agent Hub", fontSize = 17.sp, fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface)
+                Column(modifier = Modifier.padding(start = 14.dp).weight(1f)) {
                     Text(
-                        text = linkHealthLabel(health) +
-                            (gatewayUrl.takeIf { it.isNotBlank() }?.let { url ->
-                                " · " + url.removePrefix("https://").removePrefix("http://").trimEnd('/')
-                            } ?: ""),
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        "AGENT HUB",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 5.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        BreathingDot(health)
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = linkHealthLabel(health) +
+                                (gatewayUrl.takeIf { it.isNotBlank() }?.let { url ->
+                                    " · " + url.removePrefix("https://").removePrefix("http://").trimEnd('/')
+                                } ?: ""),
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
                 IconButton(onClick = {
                     when (tab) {
                         0 -> { viewModel.refreshHubHealth(); viewModel.refreshHubModels(); viewModel.refreshReasoningCaps() }
-                        1 -> viewModel.consoleReconcile()
+                        1 -> { viewModel.refreshHubConfig(); viewModel.refreshHubBrains(); viewModel.refreshReasoningCaps() }
                         2 -> viewModel.refreshHubJobs()
                         3 -> viewModel.refreshHubSessions()
                         4 -> viewModel.refreshHubSkills()
@@ -199,6 +222,10 @@ fun AgentHubSheet(
                 }) {
                     Icon(Icons.Default.Refresh, contentDescription = "Refresh",
                         tint = MaterialTheme.colorScheme.primary)
+                }
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Default.Close, contentDescription = "Close the Hub",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Spacer(Modifier.height(6.dp))
@@ -231,19 +258,45 @@ fun AgentHubSheet(
 
             Box(modifier = Modifier.weight(1f).nestedScroll(FlingTamer)) {
                 when (tab) {
-                    0 -> StatusTab(viewModel, health, onDismiss, onOpenConsole = { tab = 1 })
-                    1 -> RunConsoleTab(viewModel)
+                    0 -> StatusTab(viewModel, health, onDismiss)
+                    1 -> ControlsTab(viewModel)
                     2 -> JobsTab(viewModel)
-                    3 -> SessionsTab(viewModel, onResume = { session ->
-                        viewModel.consoleSetSessionTarget(session)
-                        tab = 1
-                    })
+                    3 -> SessionsTab(viewModel)
                     4 -> SkillsTab(viewModel)
                     5 -> ToolsTab(viewModel)
                 }
             }
         }
     }
+}
+
+/** The header's link-state dot, breathing while things are alive: a slow alpha pulse when
+ *  connected/streaming (the Hub's heartbeat), solid and still when the link is down or off. */
+@Composable
+private fun BreathingDot(health: LinkHealth) {
+    val alive = health == LinkHealth.LIVE || health == LinkHealth.OK
+    val pulse by androidx.compose.animation.core.rememberInfiniteTransition(label = "hubPulse")
+        .animateFloat(
+            initialValue = 0.35f,
+            targetValue = 1f,
+            animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                animation = androidx.compose.animation.core.tween(1600),
+                repeatMode = androidx.compose.animation.core.RepeatMode.Reverse,
+            ),
+            label = "hubPulseAlpha",
+        )
+    val color = when (health) {
+        LinkHealth.LIVE, LinkHealth.OK -> Color(0xFF4CAF50)
+        LinkHealth.UNKNOWN -> Color(0xFFE8A33D)
+        LinkHealth.OFF -> Color(0x66FFFFFF)
+        else -> Color(0xFFE0524D)
+    }
+    Box(
+        Modifier
+            .size(7.dp)
+            .clip(CircleShape)
+            .background(color.copy(alpha = if (alive) pulse else 1f)),
+    )
 }
 
 /** One-line description of a link-health state, shared by the header and the Status tab. */
@@ -257,7 +310,7 @@ private fun linkHealthLabel(health: LinkHealth): String = when (health) {
 
 /** The panel-degradation row every tab shares: stale data stays visible, the error rides on top. */
 @Composable
-private fun PanelErrorLine(error: String?) {
+internal fun PanelErrorLine(error: String?) {
     if (error == null) return
     Text(
         "⚠ $error",
@@ -278,7 +331,7 @@ private fun PanelLoading() {
 }
 
 @Composable
-private fun SectionLabel(text: String) {
+internal fun SectionLabel(text: String) {
     Text(
         text.uppercase(),
         fontSize = 10.sp,
@@ -302,7 +355,6 @@ private fun StatusTab(
     viewModel: ChatViewModel,
     health: LinkHealth,
     onDismiss: () -> Unit,
-    onOpenConsole: () -> Unit,
 ) {
     val panel by viewModel.hubHealth.collectAsState()
     val models by viewModel.hubModels.collectAsState()
@@ -315,7 +367,7 @@ private fun StatusTab(
         start = 20.dp, end = 20.dp, bottom = 20.dp)) {
         item { PanelErrorLine(panel.error) }
 
-        // An app-launched run is live — surface it wherever the user lands first.
+        // A phone-launched turn is streaming (a Sessions-tab Resume) — surface it here too.
         if (console.live) {
             item {
                 Row(
@@ -325,18 +377,16 @@ private fun StatusTab(
                         .padding(top = 8.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(accent.copy(alpha = 0.12f))
-                        .clickable(onClick = onOpenConsole)
                         .padding(horizontal = 10.dp, vertical = 8.dp),
                 ) {
                     Text("▶", fontSize = 12.sp, color = accent)
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "run live — " + console.prompt.take(60),
+                        "turn live — " + console.prompt.take(60),
                         fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f),
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
-                    Text("open ›", fontSize = 11.sp, color = accent)
                 }
             }
         }
@@ -755,17 +805,12 @@ private fun JobEditDialog(
 // --- Sessions ----------------------------------------------------------------------------------
 
 @Composable
-private fun SessionsTab(viewModel: ChatViewModel, onResume: (HubSession) -> Unit) {
+private fun SessionsTab(viewModel: ChatViewModel) {
     val panel by viewModel.hubSessions.collectAsState()
     var open by remember { mutableStateOf<HubSession?>(null) }
 
     open?.let { session ->
-        SessionTranscript(
-            session = session,
-            viewModel = viewModel,
-            onBack = { open = null },
-            onResume = onResume,
-        )
+        SessionTranscript(session = session, viewModel = viewModel, onBack = { open = null })
         return
     }
 
@@ -860,16 +905,23 @@ private fun SessionTranscript(
     session: HubSession,
     viewModel: ChatViewModel,
     onBack: () -> Unit,
-    onResume: (HubSession) -> Unit,
 ) {
     var messages by remember { mutableStateOf<List<HubMessage>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var renameOpen by remember { mutableStateOf(false) }
     var deleteOpen by remember { mutableStateOf(false) }
-    LaunchedEffect(session.id) {
+    var reloads by remember { mutableStateOf(0) }
+    val console by viewModel.console.collectAsState()
+    // The live-turn panel belongs to THIS transcript only when the streaming turn targets it.
+    val liveHere = console.runId == "session:${session.id}" && console.status != "idle"
+    LaunchedEffect(session.id, reloads) {
         viewModel.hubSessionMessages(session.id)
             .onSuccess { messages = it }
             .onFailure { error = it.message }
+    }
+    // A resumed turn just finished — pull the transcript again so the new exchange shows.
+    LaunchedEffect(console.status, liveHere) {
+        if (liveHere && console.status == "completed") reloads++
     }
 
     if (renameOpen) {
@@ -928,11 +980,11 @@ private fun SessionTranscript(
             }
         }
         // The 1.20 verbs: this console can now DO things to a session, not just read it.
+        // (Resume is the composer at the bottom — type into the past session directly.)
         Row(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.padding(horizontal = 16.dp),
         ) {
-            TextButton(onClick = { onResume(session) }) { Text("Resume", fontSize = 12.sp) }
             TextButton(onClick = { viewModel.hubSessionFork(session.id) }) { Text("Fork", fontSize = 12.sp) }
             TextButton(onClick = { renameOpen = true }) { Text("Rename", fontSize = 12.sp) }
             TextButton(onClick = { deleteOpen = true }) {
@@ -946,6 +998,7 @@ private fun SessionTranscript(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
                     start = 20.dp, end = 20.dp, bottom = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.weight(1f),
             ) {
                 items(messages.orEmpty()) { m ->
                     Column {
@@ -973,6 +1026,43 @@ private fun SessionTranscript(
                         }
                     }
                 }
+            }
+        }
+
+        // Resume, in place: the live turn streams right under the transcript it extends.
+        if (liveHere) {
+            SessionLiveTurn(viewModel)
+        }
+        var resumePrompt by remember { mutableStateOf("") }
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+        ) {
+            OutlinedTextField(
+                value = resumePrompt,
+                onValueChange = { resumePrompt = it },
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("Continue this session…", fontSize = 13.sp) },
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
+                enabled = !console.live,
+                maxLines = 4,
+            )
+            Spacer(Modifier.width(8.dp))
+            IconButton(
+                enabled = resumePrompt.isNotBlank() && !console.live,
+                onClick = {
+                    viewModel.consoleReset()
+                    viewModel.consoleSetSessionTarget(session)
+                    viewModel.consoleLaunch(resumePrompt.trim())
+                    resumePrompt = ""
+                },
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.Send,
+                    contentDescription = "Send into this session",
+                    tint = if (resumePrompt.isNotBlank() && !console.live) MaterialTheme.colorScheme.primary
+                           else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                )
             }
         }
     }
