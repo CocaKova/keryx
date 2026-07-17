@@ -66,6 +66,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.repeatOnLifecycle
 import chat.keryx.app.data.remote.HermesStreamClient.HubJob
 import chat.keryx.app.data.remote.HermesStreamClient.HubMessage
 import chat.keryx.app.data.remote.HermesStreamClient.HubSession
@@ -73,7 +74,13 @@ import chat.keryx.app.data.remote.HubJson
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.LinkHealth
 
-private val TABS = listOf("Status", "Jobs", "Sessions", "Skills", "Tools")
+private val TABS = listOf("Status", "Console", "Jobs", "Sessions", "Skills", "Tools")
+
+/** Tabs whose data moves under you (gateway state, job runs, session activity) — these re-poll
+ *  every 10 s while their tab is visible AND the app is resumed. Skills/Tools stay fetch-once:
+ *  they change on operator action, not on their own. */
+private val LIVE_TABS = setOf(0, 2, 3)
+private const val HUB_POLL_MS = 10_000L
 
 /**
  * A hard fling that runs a tab's LazyColumn into its edge used to spill the leftover velocity into
@@ -114,11 +121,31 @@ fun AgentHubSheet(
     LaunchedEffect(tab) {
         if (!fetchedTabs.add(tab)) return@LaunchedEffect
         when (tab) {
-            0 -> viewModel.refreshHubHealth()
-            1 -> viewModel.refreshHubJobs()
-            2 -> viewModel.refreshHubSessions()
-            3 -> viewModel.refreshHubSkills()
-            4 -> viewModel.refreshHubToolsets()
+            0 -> { viewModel.refreshHubHealth(); viewModel.refreshHubModels() }
+            1 -> viewModel.consoleReconcile()
+            2 -> viewModel.refreshHubJobs()
+            3 -> viewModel.refreshHubSessions()
+            4 -> viewModel.refreshHubSkills()
+            5 -> viewModel.refreshHubToolsets()
+        }
+    }
+
+    // Live refresh (1.20): the visible tab re-polls while the sheet is open — gateway state,
+    // job runs and session activity move without us. repeatOnLifecycle suspends the loop when
+    // the app backgrounds (same discipline as the Missions board poll); switching tabs restarts
+    // the effect, so only the tab actually on screen polls.
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    LaunchedEffect(tab, lifecycleOwner) {
+        if (tab !in LIVE_TABS) return@LaunchedEffect
+        lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            while (true) {
+                kotlinx.coroutines.delay(HUB_POLL_MS)
+                when (tab) {
+                    0 -> { viewModel.refreshHubHealth(); viewModel.refreshHubModels() }
+                    2 -> viewModel.refreshHubJobs()
+                    3 -> viewModel.refreshHubSessions()
+                }
+            }
         }
     }
 
@@ -162,11 +189,12 @@ fun AgentHubSheet(
                 }
                 IconButton(onClick = {
                     when (tab) {
-                        0 -> { viewModel.refreshHubHealth(); viewModel.refreshReasoningCaps() }
-                        1 -> viewModel.refreshHubJobs()
-                        2 -> viewModel.refreshHubSessions()
-                        3 -> viewModel.refreshHubSkills()
-                        4 -> viewModel.refreshHubToolsets()
+                        0 -> { viewModel.refreshHubHealth(); viewModel.refreshHubModels(); viewModel.refreshReasoningCaps() }
+                        1 -> viewModel.consoleReconcile()
+                        2 -> viewModel.refreshHubJobs()
+                        3 -> viewModel.refreshHubSessions()
+                        4 -> viewModel.refreshHubSkills()
+                        5 -> viewModel.refreshHubToolsets()
                     }
                 }) {
                     Icon(Icons.Default.Refresh, contentDescription = "Refresh",
@@ -203,11 +231,15 @@ fun AgentHubSheet(
 
             Box(modifier = Modifier.weight(1f).nestedScroll(FlingTamer)) {
                 when (tab) {
-                    0 -> StatusTab(viewModel, health, onDismiss)
-                    1 -> JobsTab(viewModel)
-                    2 -> SessionsTab(viewModel)
-                    3 -> SkillsTab(viewModel)
-                    4 -> ToolsTab(viewModel)
+                    0 -> StatusTab(viewModel, health, onDismiss, onOpenConsole = { tab = 1 })
+                    1 -> RunConsoleTab(viewModel)
+                    2 -> JobsTab(viewModel)
+                    3 -> SessionsTab(viewModel, onResume = { session ->
+                        viewModel.consoleSetSessionTarget(session)
+                        tab = 1
+                    })
+                    4 -> SkillsTab(viewModel)
+                    5 -> ToolsTab(viewModel)
                 }
             }
         }
@@ -266,8 +298,15 @@ private fun connStateColor(state: String): Color = when (state) {
 // --- Status ------------------------------------------------------------------------------------
 
 @Composable
-private fun StatusTab(viewModel: ChatViewModel, health: LinkHealth, onDismiss: () -> Unit) {
+private fun StatusTab(
+    viewModel: ChatViewModel,
+    health: LinkHealth,
+    onDismiss: () -> Unit,
+    onOpenConsole: () -> Unit,
+) {
     val panel by viewModel.hubHealth.collectAsState()
+    val models by viewModel.hubModels.collectAsState()
+    val console by viewModel.console.collectAsState()
     val caps by viewModel.reasoningCaps.collectAsState()
     val currentSession by viewModel.currentSession.collectAsState()
     val accent = MaterialTheme.colorScheme.primary
@@ -275,6 +314,32 @@ private fun StatusTab(viewModel: ChatViewModel, health: LinkHealth, onDismiss: (
     LazyColumn(contentPadding = androidx.compose.foundation.layout.PaddingValues(
         start = 20.dp, end = 20.dp, bottom = 20.dp)) {
         item { PanelErrorLine(panel.error) }
+
+        // An app-launched run is live — surface it wherever the user lands first.
+        if (console.live) {
+            item {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(accent.copy(alpha = 0.12f))
+                        .clickable(onClick = onOpenConsole)
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                ) {
+                    Text("▶", fontSize = 12.sp, color = accent)
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "run live — " + console.prompt.take(60),
+                        fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                    Text("open ›", fontSize = 11.sp, color = accent)
+                }
+            }
+        }
 
         // The live brain, from the capabilities probe.
         item {
@@ -287,6 +352,9 @@ private fun StatusTab(viewModel: ChatViewModel, health: LinkHealth, onDismiss: (
                 },
                 panel.data?.version?.takeIf { it.isNotBlank() }?.let { "Gateway" to "hermes-agent $it" },
                 panel.data?.gatewayState?.takeIf { it.isNotBlank() }?.let { "State" to it },
+                panel.data?.takeIf { it.activeAgents > 0 || it.busy }?.let {
+                    "Activity" to "${it.activeAgents} agent turn${if (it.activeAgents == 1) "" else "s"} in flight"
+                },
             )
             if (rows.isEmpty()) {
                 Text(
@@ -323,6 +391,25 @@ private fun StatusTab(viewModel: ChatViewModel, health: LinkHealth, onDismiss: (
                                 else MaterialTheme.colorScheme.error,
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
+                }
+            }
+        }
+
+        // Models the gateway serves (`/v1/models`): its own name plus configured route aliases.
+        val modelRows = models.data.orEmpty()
+        if (modelRows.isNotEmpty()) {
+            item { SectionLabel("Models") }
+            items(modelRows, key = { "model:" + it.id }) { m ->
+                Row(modifier = Modifier.padding(vertical = 3.dp)) {
+                    Text(m.id, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f))
+                    if (m.resolvesTo.isNotBlank() && m.resolvesTo != m.id) {
+                        Text("→ ${m.resolvesTo}", fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                 }
             }
         }
@@ -382,6 +469,7 @@ private fun JobsTab(viewModel: ChatViewModel) {
     val currentSession by viewModel.currentSession.collectAsState()
     var createOpen by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<HubJob?>(null) }
+    var editTarget by remember { mutableStateOf<HubJob?>(null) }
 
     Column(Modifier.fillMaxSize()) {
         PanelErrorLine(panel.error)
@@ -419,6 +507,7 @@ private fun JobsTab(viewModel: ChatViewModel) {
                         onToggle = { viewModel.hubJobAction(job.id, if (job.enabled) "pause" else "resume") },
                         onRunNow = { viewModel.hubJobAction(job.id, "run") },
                         onDelete = { deleteTarget = job },
+                        onEdit = { editTarget = job },
                     )
                 }
             }
@@ -433,6 +522,16 @@ private fun JobsTab(viewModel: ChatViewModel) {
                 createOpen = false
             },
             onDismiss = { createOpen = false },
+        )
+    }
+    editTarget?.let { job ->
+        JobEditDialog(
+            job = job,
+            onSave = { name, schedule, prompt, deliver ->
+                viewModel.hubJobEdit(job.id, name, schedule, prompt, deliver)
+                editTarget = null
+            },
+            onDismiss = { editTarget = null },
         )
     }
     deleteTarget?.let { job ->
@@ -452,7 +551,13 @@ private fun JobsTab(viewModel: ChatViewModel) {
 }
 
 @Composable
-private fun JobCard(job: HubJob, onToggle: () -> Unit, onRunNow: () -> Unit, onDelete: () -> Unit) {
+private fun JobCard(
+    job: HubJob,
+    onToggle: () -> Unit,
+    onRunNow: () -> Unit,
+    onDelete: () -> Unit,
+    onEdit: () -> Unit,
+) {
     val shape = RoundedCornerShape(12.dp)
     Column(
         modifier = Modifier
@@ -463,7 +568,8 @@ private fun JobCard(job: HubJob, onToggle: () -> Unit, onRunNow: () -> Unit, onD
             .padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
+            // Tap the job's identity to edit it (PATCH — the 1.20 verb); the icons keep their jobs.
+            Column(Modifier.weight(1f).clickable(onClick = onEdit)) {
                 Text(job.name, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 2)
                 Spacer(Modifier.height(3.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -588,15 +694,78 @@ private fun JobCreateDialog(
     }
 }
 
+/** Edit an existing job (1.20): prefilled from the list row (the gateway sends `prompt` there),
+ *  saved via PATCH. Deliver stays a raw string field — it can point anywhere ("local",
+ *  "matrix:<room>"), and second-guessing an operator's target helps nobody. */
+@Composable
+private fun JobEditDialog(
+    job: HubJob,
+    onSave: (name: String, schedule: String, prompt: String, deliver: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by remember { mutableStateOf(job.name) }
+    var schedule by remember { mutableStateOf(job.scheduleDisplay) }
+    var prompt by remember { mutableStateOf(job.prompt) }
+    var deliver by remember { mutableStateOf(job.deliver.ifBlank { "local" }) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text("Edit job", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = name, onValueChange = { name = it },
+                    modifier = Modifier.fillMaxWidth(), label = { Text("Name") }, singleLine = true,
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = schedule, onValueChange = { schedule = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Schedule (cron)") },
+                    singleLine = true,
+                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = 13.sp),
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = prompt, onValueChange = { prompt = it },
+                    modifier = Modifier.fillMaxWidth().height(110.dp),
+                    label = { Text("Prompt") },
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = deliver, onValueChange = { deliver = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Deliver to (\"local\" or \"matrix:<room>\")") },
+                    singleLine = true,
+                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp),
+                )
+                Spacer(Modifier.height(14.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    TextButton(
+                        enabled = name.isNotBlank() && schedule.isNotBlank() && prompt.isNotBlank(),
+                        onClick = { onSave(name.trim(), schedule.trim(), prompt.trim(), deliver.trim()) },
+                    ) { Text("Save") }
+                }
+            }
+        }
+    }
+}
+
 // --- Sessions ----------------------------------------------------------------------------------
 
 @Composable
-private fun SessionsTab(viewModel: ChatViewModel) {
+private fun SessionsTab(viewModel: ChatViewModel, onResume: (HubSession) -> Unit) {
     val panel by viewModel.hubSessions.collectAsState()
     var open by remember { mutableStateOf<HubSession?>(null) }
 
     open?.let { session ->
-        SessionTranscript(session = session, viewModel = viewModel, onBack = { open = null })
+        SessionTranscript(
+            session = session,
+            viewModel = viewModel,
+            onBack = { open = null },
+            onResume = onResume,
+        )
         return
     }
 
@@ -687,13 +856,61 @@ private fun SessionCard(s: HubSession, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SessionTranscript(session: HubSession, viewModel: ChatViewModel, onBack: () -> Unit) {
+private fun SessionTranscript(
+    session: HubSession,
+    viewModel: ChatViewModel,
+    onBack: () -> Unit,
+    onResume: (HubSession) -> Unit,
+) {
     var messages by remember { mutableStateOf<List<HubMessage>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    var renameOpen by remember { mutableStateOf(false) }
+    var deleteOpen by remember { mutableStateOf(false) }
     LaunchedEffect(session.id) {
         viewModel.hubSessionMessages(session.id)
             .onSuccess { messages = it }
             .onFailure { error = it.message }
+    }
+
+    if (renameOpen) {
+        var title by remember { mutableStateOf(session.title.orEmpty()) }
+        AlertDialog(
+            onDismissRequest = { renameOpen = false },
+            title = { Text("Rename session", fontSize = 16.sp) },
+            text = {
+                OutlinedTextField(
+                    value = title, onValueChange = { title = it },
+                    modifier = Modifier.fillMaxWidth(), singleLine = true,
+                    label = { Text("Title") },
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = title.isNotBlank(),
+                    onClick = {
+                        viewModel.hubSessionRename(session.id, title.trim())
+                        renameOpen = false
+                    },
+                ) { Text("Rename") }
+            },
+            dismissButton = { TextButton(onClick = { renameOpen = false }) { Text("Cancel") } },
+        )
+    }
+    if (deleteOpen) {
+        AlertDialog(
+            onDismissRequest = { deleteOpen = false },
+            title = { Text("Delete this session?", fontSize = 16.sp) },
+            text = { Text(
+                "The transcript (${session.messageCount} messages) goes with it. This can't be undone.",
+                fontSize = 13.sp) },
+            confirmButton = {
+                TextButton(onClick = {
+                    deleteOpen = false
+                    viewModel.hubSessionDelete(session.id) { ok -> if (ok) onBack() }
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { deleteOpen = false }) { Text("Keep") } },
+        )
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -708,6 +925,18 @@ private fun SessionTranscript(session: HubSession, viewModel: ChatViewModel, onB
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(session.id, fontSize = 10.sp, fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        // The 1.20 verbs: this console can now DO things to a session, not just read it.
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(horizontal = 16.dp),
+        ) {
+            TextButton(onClick = { onResume(session) }) { Text("Resume", fontSize = 12.sp) }
+            TextButton(onClick = { viewModel.hubSessionFork(session.id) }) { Text("Fork", fontSize = 12.sp) }
+            TextButton(onClick = { renameOpen = true }) { Text("Rename", fontSize = 12.sp) }
+            TextButton(onClick = { deleteOpen = true }) {
+                Text("Delete", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
             }
         }
         when {

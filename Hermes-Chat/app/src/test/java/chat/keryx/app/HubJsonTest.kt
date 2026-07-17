@@ -1,5 +1,6 @@
 package chat.keryx.app
 
+import chat.keryx.app.data.remote.HermesStreamClient
 import chat.keryx.app.data.remote.HubJson
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -213,5 +214,136 @@ class HubJsonTest {
         val h = HubJson.health(obj("""{}"""))
         assertEquals("", h.version)
         assertTrue(h.platforms.isEmpty())
+    }
+
+    // --- Run Console (1.20) -----------------------------------------------------------------
+    // Fixture shapes match gateway/platforms/api_server.py verbatim: _make_run_event_callback +
+    // _handle_runs for the /v1/runs dialect, _handle_session_chat_stream for the session dialect.
+
+    @Test
+    fun `run events map every lifecycle type`() {
+        val delta = HubJson.runEvent(obj("""{"event":"message.delta","run_id":"run_1","timestamp":1.0,"delta":"Hel"}"""))
+        assertEquals("Hel", (delta as HermesStreamClient.RunEvent.Delta).text)
+
+        val think = HubJson.runEvent(obj("""{"event":"reasoning.available","run_id":"run_1","timestamp":1.0,"text":"weigh"}"""))
+        assertEquals("weigh", (think as HermesStreamClient.RunEvent.Reasoning).text)
+
+        val started = HubJson.runEvent(obj("""{"event":"tool.started","run_id":"run_1","timestamp":1.0,"tool":"terminal","preview":"ls"}"""))
+        assertEquals("terminal", (started as HermesStreamClient.RunEvent.ToolStarted).tool)
+
+        val done = HubJson.runEvent(obj("""{"event":"tool.completed","run_id":"run_1","timestamp":1.0,"tool":"terminal","duration":0.21,"error":false}"""))
+        assertTrue(done is HermesStreamClient.RunEvent.ToolCompleted && !done.failed)
+        val failedTool = HubJson.runEvent(obj("""{"event":"tool.completed","run_id":"run_1","timestamp":1.0,"tool":"terminal","duration":0.2,"error":true}"""))
+        assertTrue(failedTool is HermesStreamClient.RunEvent.ToolCompleted && failedTool.failed)
+
+        val completed = HubJson.runEvent(obj("""{"event":"run.completed","run_id":"run_1","timestamp":1.0,"output":"All done.","usage":{"input_tokens":10,"output_tokens":5,"total_tokens":15}}"""))
+        assertEquals("All done.", (completed as HermesStreamClient.RunEvent.Completed).output)
+
+        val failed = HubJson.runEvent(obj("""{"event":"run.failed","run_id":"run_1","timestamp":1.0,"error":"boom"}"""))
+        assertEquals("boom", (failed as HermesStreamClient.RunEvent.Failed).error)
+
+        assertTrue(HubJson.runEvent(obj("""{"event":"run.cancelled","run_id":"run_1","timestamp":1.0}"""))
+            is HermesStreamClient.RunEvent.Cancelled)
+
+        // Unknown event names skip cleanly (forward-compatible), never throw.
+        assertNull(HubJson.runEvent(obj("""{"event":"telemetry.future","run_id":"run_1"}""")))
+        assertNull(HubJson.runEvent(obj("""{}""")))
+    }
+
+    @Test
+    fun `approval request carries redacted command and gateway choice verbs`() {
+        val ev = HubJson.runEvent(obj("""
+            {"event":"approval.request","run_id":"run_1","timestamp":1.0,
+             "tool":"terminal","command":"rm -rf build/","choices":["once","session","always","deny"]}
+        """)) as HermesStreamClient.RunEvent.ApprovalRequest
+        assertEquals("rm -rf build/", ev.command)
+        assertEquals("terminal", ev.tool)
+        assertEquals(listOf("once", "session", "always", "deny"), ev.choices)
+
+        // A gateway that omits choices still yields an answerable gate.
+        val bare = HubJson.runEvent(obj("""{"event":"approval.request","run_id":"run_1"}"""))
+            as HermesStreamClient.RunEvent.ApprovalRequest
+        assertEquals(listOf("once", "deny"), bare.choices)
+
+        val responded = HubJson.runEvent(obj("""{"event":"approval.responded","run_id":"run_1","timestamp":1.0,"choice":"once","resolved":1}"""))
+        assertEquals("once", (responded as HermesStreamClient.RunEvent.ApprovalResponded).choice)
+    }
+
+    @Test
+    fun `session stream dialect normalizes into the same run events`() {
+        val delta = HubJson.sessionEvent("assistant.delta",
+            obj("""{"message_id":"msg_1","delta":"to","session_id":"s","run_id":"r","seq":3,"ts":1.0}"""))
+        assertEquals("to", (delta as HermesStreamClient.RunEvent.Delta).text)
+
+        val think = HubJson.sessionEvent("tool.progress",
+            obj("""{"message_id":"msg_1","tool_name":"_thinking","delta":"hmm"}"""))
+        assertEquals("hmm", (think as HermesStreamClient.RunEvent.Reasoning).text)
+
+        val started = HubJson.sessionEvent("tool.started",
+            obj("""{"message_id":"msg_1","tool_name":"web_search","preview":"cats","args":null}"""))
+        assertEquals("web_search", (started as HermesStreamClient.RunEvent.ToolStarted).tool)
+
+        val failed = HubJson.sessionEvent("tool.failed", obj("""{"tool_name":"patch"}"""))
+        assertTrue(failed is HermesStreamClient.RunEvent.ToolCompleted && failed.failed)
+
+        val completed = HubJson.sessionEvent("assistant.completed",
+            obj("""{"session_id":"s","message_id":"msg_1","content":"Final answer.","completed":true,"partial":false,"interrupted":false}"""))
+        assertEquals("Final answer.", (completed as HermesStreamClient.RunEvent.Completed).output)
+
+        val error = HubJson.sessionEvent("error", obj("""{"message":"agent exploded"}"""))
+        assertEquals("agent exploded", (error as HermesStreamClient.RunEvent.Failed).error)
+
+        // Structural framing events carry nothing renderable — skipped, not errored.
+        assertNull(HubJson.sessionEvent("run.started", obj("""{"user_message":{"role":"user","content":"q"}}""")))
+        assertNull(HubJson.sessionEvent("message.started", obj("""{"message":{"id":"msg_1","role":"assistant"}}""")))
+        assertNull(HubJson.sessionEvent("run.completed", obj("""{"usage":{}}""")))
+        assertNull(HubJson.sessionEvent("done", obj("""{}""")))
+        assertNull(HubJson.sessionEvent(null, obj("""{}""")))
+    }
+
+    @Test
+    fun `run status maps the pollable shape`() {
+        val s = HubJson.runStatus(obj("""
+            {"object":"hermes.run","run_id":"run_abc","status":"waiting_for_approval",
+             "created_at":1.0,"updated_at":2.0,"session_id":"run_abc","model":"hermes-agent",
+             "last_event":"approval.request"}
+        """))
+        assertEquals("run_abc", s.runId)
+        assertEquals("waiting_for_approval", s.status)
+        assertEquals("approval.request", s.lastEvent)
+        assertEquals("", s.output) // absent until completed — blank, not a crash
+    }
+
+    @Test
+    fun `models list maps id and alias resolution`() {
+        val models = HubJson.models(obj("""
+            {"object":"list","data":[
+              {"id":"hermes-agent","object":"model","created":1,"owned_by":"hermes","permission":[],"root":"hermes-agent","parent":null},
+              {"id":"fast","object":"model","created":1,"owned_by":"hermes","permission":[],"root":"qwen-flash","parent":"hermes-agent"}]}
+        """))
+        assertEquals(2, models.size)
+        assertEquals("hermes-agent", models[0].id)
+        assertEquals("qwen-flash", models[1].resolvesTo)
+    }
+
+    @Test
+    fun `console run registry round-trips through its snapshot json`() {
+        val runs = listOf(
+            HermesStreamClient.ConsoleRun("run_1", "run", "check the deploy", 1000L, "completed", "done ✓", ""),
+            HermesStreamClient.ConsoleRun("session:api_2", "session", "resume q", 2000L, "lost", "", "connection failed"),
+        )
+        assertEquals(runs, HubJson.consoleRuns(HubJson.buildConsoleRuns(runs)))
+        assertTrue(HubJson.consoleRuns(obj("""{}""")).isEmpty())
+    }
+
+    @Test
+    fun `health carries activity fields and jobs carry prompt`() {
+        val h = HubJson.health(obj("""{"status":"ok","active_agents":2,"gateway_busy":true,"pid":4242}"""))
+        assertEquals(2, h.activeAgents)
+        assertTrue(h.busy)
+        assertEquals(4242L, h.pid)
+
+        val jobs = HubJson.jobs(obj("""{"jobs":[{"id":"j","name":"n","prompt":"do the thing"}]}"""))
+        assertEquals("do the thing", jobs.single().prompt)
     }
 }

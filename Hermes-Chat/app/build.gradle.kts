@@ -26,8 +26,8 @@ android {
         applicationId = "chat.keryx.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 36
-        versionName = "1.19.0"
+        versionCode = 37
+        versionName = "1.20.0"
     }
 
     signingConfigs {
