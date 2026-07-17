@@ -47,6 +47,7 @@ class CallAudio {
             max(minBuf, FRAME_SAMPLES * 8),
         )
         if (recorder.state != AudioRecord.STATE_INITIALIZED) {
+            chat.keryx.app.util.KLog.i("KeryxCallVad") { "AudioRecord init FAILED (state=${recorder.state}) — mic unavailable or permission revoked" }
             runCatching { recorder.release() }
             return@withContext null
         }
@@ -67,7 +68,7 @@ class CallAudio {
                 val rms = rms(frame, n)
                 _level.value = smoothLevel(_level.value, rms)
 
-                noiseFloor.update(rms, inSpeech = speechStarted)
+                noiseFloor.update(rms)
                 val startGate = noiseFloor.startGate
                 val endGate = noiseFloor.endGate
 

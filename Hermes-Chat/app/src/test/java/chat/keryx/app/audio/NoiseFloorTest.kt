@@ -12,68 +12,62 @@ class NoiseFloorTest {
     fun `quiet room settles to a low start gate`() {
         val floor = NoiseFloor()
         floor.feed(100.0, 50)
-        // floor ≈ 100 → gate = max(350, 250)
-        assertEquals(350.0, floor.startGate, 10.0)
+        assertEquals(350.0, floor.startGate, 1.0)
+        assertEquals(180.0, floor.endGate, 1.0)
     }
 
     @Test
-    fun `absolute minimum gate holds in a silent room`() {
+    fun `absolute minimum gates hold in a silent room`() {
         val floor = NoiseFloor()
         floor.feed(10.0, 50)
         assertEquals(250.0, floor.startGate, 0.0)
         assertEquals(140.0, floor.endGate, 0.0)
     }
 
-    /** The v1.22.0 silent-second-turn bug: the mic reopens the moment the agent stops talking,
-     *  while the user is already mid-reply. Their speech must not become the "noise floor" —
-     *  the gate has to stay where the quiet room put it, so the reply itself opens it. */
+    /** The v1.22.0 deaf-high bug: the mic reopens the moment the agent stops talking, while the
+     *  user is already mid-reply. Their speech must not become the "noise floor" — the quiet
+     *  frames still in the window keep the gate where the room put it. */
     @Test
     fun `speech at capture start never raises its own gate`() {
         val floor = NoiseFloor()
-        floor.feed(100.0, 50)          // capture 1: quiet room learned
+        floor.feed(100.0, 50)          // room learned before the agent's turn
         val gateBefore = floor.startGate
-        floor.feed(3000.0, 40)         // capture 2 opens onto 1.2 s of ongoing reply
+        floor.feed(3000.0, 40)         // capture reopens onto 1.2 s of ongoing reply
         assertEquals(gateBefore, floor.startGate, 1.0)
         assertTrue("reply must clear the gate", 3000.0 > floor.startGate)
     }
 
+    /** The v1.22.1/2 deaf-low bug: near-zero DSP ramp-in frames must not pin the floor under
+     *  the room's real ambience forever — they age out of the window and the gates recover,
+     *  so an utterance that opened on ambience can still reach its end-silence. */
     @Test
-    fun `loud seed frame recovers fast once the room goes quiet`() {
+    fun `ramp-in zeros age out and the end gate rises above real ambience`() {
         val floor = NoiseFloor()
-        floor.update(3000.0)           // call opened on a tap thud / first syllable
-        floor.feed(100.0, 12)
-        assertTrue("gate should be usable again, was ${floor.startGate}", floor.startGate < 500.0)
+        floor.feed(0.0, 3)             // hardware ramp-in
+        floor.feed(400.0, 100)         // fan-loud room for one window length
+        assertEquals(400.0 * 1.8, floor.endGate, 1.0)
+        assertTrue("ambience must read as trailing silence", 400.0 < floor.endGate)
     }
 
     @Test
-    fun `sustained louder ambience raises the floor slowly`() {
+    fun `floor seeded entirely on speech recovers as soon as quiet returns`() {
         val floor = NoiseFloor()
-        floor.feed(100.0, 50)
-        val gateBefore = floor.startGate
-        floor.feed(300.0, 300)         // dishwasher starts: ~9 s of 3× ambience, below the gate
-        assertTrue(floor.startGate > gateBefore)
-        assertEquals(300.0 * 3.5, floor.startGate, 80.0)
+        floor.feed(3000.0, 50)         // call opened mid-sentence
+        floor.update(100.0)            // first quiet frame
+        assertEquals(350.0, floor.startGate, 1.0)
     }
 
-    /** The v1.22.1 no-turns-at-all bug: AudioRecord's first frame is often near-zero DSP
-     *  ramp-in. A floor-relative rise ceiling could never climb out of that seed, pinning the
-     *  end gate below the room's ambience — no utterance ever ended. Sub-gate ambience must
-     *  always be able to lift the floor, from any seed. */
+    /** A long reply only lifts the floor as high as its own inter-word dips, so the gate stays
+     *  under speech peaks even after the pre-speech quiet has left the window. */
     @Test
-    fun `near-zero seed climbs back to the room's real ambience`() {
+    fun `long speech with word gaps keeps the gate below speech peaks`() {
         val floor = NoiseFloor()
-        floor.update(0.0)              // DSP ramp-in frame seeds the floor
-        floor.feed(120.0, 200)         // 6 s of ordinary room noise
-        assertEquals(120.0 * 1.8, floor.endGate, 15.0)
-        assertEquals(120.0 * 3.5, floor.startGate, 30.0)
-    }
-
-    @Test
-    fun `confirmed utterance frames teach the floor nothing`() {
-        val floor = NoiseFloor()
-        floor.feed(100.0, 50)
-        val gateBefore = floor.startGate
-        repeat(300) { floor.update(300.0, inSpeech = true) }   // 9 s of mid-level speech body
-        assertEquals(gateBefore, floor.startGate, 1.0)
+        floor.feed(100.0, 100)
+        repeat(40) {                   // ~6 s of words with 3×-room inter-word dips
+            floor.feed(3000.0, 4)
+            floor.update(300.0)
+        }
+        assertTrue("gate ${floor.startGate} must stay below speech", floor.startGate < 3000.0)
+        assertEquals(300.0 * 3.5, floor.startGate, 1.0)
     }
 }
