@@ -67,7 +67,7 @@ class CallAudio {
                 val rms = rms(frame, n)
                 _level.value = smoothLevel(_level.value, rms)
 
-                noiseFloor.update(rms)
+                noiseFloor.update(rms, inSpeech = speechStarted)
                 val startGate = noiseFloor.startGate
                 val endGate = noiseFloor.endGate
 
@@ -80,6 +80,9 @@ class CallAudio {
                             speechStarted = true
                             voiced += preroll
                             preroll.clear()
+                            chat.keryx.app.util.KLog.i("KeryxCallVad") {
+                                "speech open: rms=${rms.toInt()} startGate=${startGate.toInt()} endGate=${endGate.toInt()} at=${totalFrames * 30}ms"
+                            }
                         }
                     } else {
                         speechFrames = 0
@@ -101,6 +104,10 @@ class CallAudio {
             _level.value = 0f
         }
         // A take is real speech only if the voiced stretch outlasts a door slam.
+        chat.keryx.app.util.KLog.i("KeryxCallVad") {
+            "capture end: started=$speechStarted speechFrames=$speechFrames trailingSilence=$trailingSilence " +
+                "frames=$totalFrames startGate=${noiseFloor.startGate.toInt()} endGate=${noiseFloor.endGate.toInt()}"
+        }
         if (!speechStarted || speechFrames < MIN_SPEECH_FRAMES) return@withContext null
         val wav = File(context.cacheDir, "call_${System.currentTimeMillis()}.wav")
         writeWav(wav, voiced)
