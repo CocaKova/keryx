@@ -14,7 +14,6 @@ import java.io.File
 import java.io.RandomAccessFile
 import kotlin.math.log10
 import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.sqrt
 
 /**
@@ -26,15 +25,18 @@ import kotlin.math.sqrt
  * A small pre-roll ring keeps the first syllable: the gate opens *because* of it, so without
  * the ring every utterance would start clipped.
  *
- * The gate is adaptive: the first frames of each listen measure the room's noise floor and the
- * thresholds ride above it, so a quiet bedroom and a running dishwasher both work without a
- * sensitivity setting. [level] publishes a smoothed 0..1 mic level for the UI orb.
+ * The gate is adaptive: a call-long [NoiseFloor] tracks the room and the thresholds ride above
+ * it, so a quiet bedroom and a running dishwasher both work without a sensitivity setting.
+ * [level] publishes a smoothed 0..1 mic level for the UI orb.
  */
 class CallAudio {
 
     /** Smoothed mic level (0..1, log-scaled) — drives the listening orb's pulse. */
     private val _level = MutableStateFlow(0f)
     val level: StateFlow<Float> = _level
+
+    /** Call-long room-noise estimate; see [NoiseFloor] for why it must outlive one capture. */
+    private val noiseFloor = NoiseFloor()
 
     @SuppressLint("MissingPermission") // callers gate on RECORD_AUDIO before starting the call
     suspend fun captureUtterance(context: Context): File? = withContext(Dispatchers.IO) {
@@ -51,8 +53,6 @@ class CallAudio {
         val frame = ShortArray(FRAME_SAMPLES)
         val preroll = ArrayDeque<ShortArray>()
         val voiced = ArrayList<ShortArray>()
-        var noiseFloor = 0.0
-        var floorFrames = 0
         var speechStarted = false
         var speechFrames = 0
         var trailingSilence = 0
@@ -67,14 +67,9 @@ class CallAudio {
                 val rms = rms(frame, n)
                 _level.value = smoothLevel(_level.value, rms)
 
-                if (floorFrames < FLOOR_CALIBRATION_FRAMES) {
-                    // Calibrate on the quietest early frames; a cough during calibration
-                    // shouldn't set an absurd floor, so take a running minimum-ish blend.
-                    noiseFloor = if (floorFrames == 0) rms else min(noiseFloor, rms) * 0.7 + rms * 0.3
-                    floorFrames++
-                }
-                val startGate = max(noiseFloor * START_OVER_FLOOR, MIN_START_RMS)
-                val endGate = max(noiseFloor * END_OVER_FLOOR, MIN_END_RMS)
+                noiseFloor.update(rms)
+                val startGate = noiseFloor.startGate
+                val endGate = noiseFloor.endGate
 
                 if (!speechStarted) {
                     preroll.addLast(frame.copyOf(n))
@@ -172,14 +167,9 @@ class CallAudio {
         const val ENCODING = AudioFormat.ENCODING_PCM_16BIT
         const val FRAME_SAMPLES = 480               // 30 ms
         const val PREROLL_FRAMES = 10               // 300 ms kept from before the gate opened
-        const val FLOOR_CALIBRATION_FRAMES = 10
         const val START_CONFIRM_FRAMES = 3          // 90 ms above gate = speech, not a click
         const val END_SILENCE_FRAMES = 30           // 900 ms of quiet ends the utterance
         const val MIN_SPEECH_FRAMES = 12            // < 360 ms voiced = noise, discard
         const val MAX_FRAMES = 45 * 1000 / 30       // hard cap: 45 s per utterance
-        const val START_OVER_FLOOR = 3.5
-        const val END_OVER_FLOOR = 1.8
-        const val MIN_START_RMS = 250.0
-        const val MIN_END_RMS = 140.0
     }
 }
