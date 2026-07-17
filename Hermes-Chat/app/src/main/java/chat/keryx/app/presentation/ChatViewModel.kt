@@ -652,9 +652,52 @@ class ChatViewModel(
     private val _hubModels = seededPanel("/v1/models", chat.keryx.app.data.remote.HubJson::models)
     val hubModels: StateFlow<HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.HubModel>>> =
         _hubModels.asStateFlow()
+    private val _hubConfig = seededPanel("/keryx/config", chat.keryx.app.data.remote.HubJson::configKnobs)
+    val hubConfig: StateFlow<HubPanel<List<chat.keryx.app.data.remote.HermesStreamClient.ConfigKnob>>> =
+        _hubConfig.asStateFlow()
+    private val _hubBrains = seededPanel("/keryx/brains", chat.keryx.app.data.remote.HubJson::brains)
+    val hubBrains: StateFlow<HubPanel<chat.keryx.app.data.remote.HermesStreamClient.Brains>> =
+        _hubBrains.asStateFlow()
 
     fun refreshHubHealth() = _hubHealth.refreshFrom { healthDetailed() }
     fun refreshHubModels() = _hubModels.refreshFrom { models() }
+    fun refreshHubConfig() = _hubConfig.refreshFrom { configKnobs() }
+    fun refreshHubBrains() = _hubBrains.refreshFrom { brains() }
+
+    // --- Gateway Controls (1.21) ------------------------------------------------------------------
+
+    /** Persist one whitelisted knob, then re-pull so the control reflects what the gateway
+     *  actually stored. The toast carries the knob's own effect scope ("next turn", …). */
+    fun hubConfigSet(key: String, value: kotlinx.serialization.json.JsonPrimitive) {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.configSet(key, value)
+                .onSuccess { applies -> _toasts.tryEmit("Saved — applies $applies"); refreshHubConfig() }
+                .onFailure { _toasts.tryEmit("Change refused: ${it.message?.take(80)}"); refreshHubConfig() }
+        }
+    }
+
+    fun hubReasoningSet(level: String) {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.reasoningSet(level)
+                .onSuccess { _toasts.tryEmit("Reasoning → $level (next session)"); refreshReasoningCaps() }
+                .onFailure { _toasts.tryEmit("Change refused: ${it.message?.take(80)}") }
+        }
+    }
+
+    suspend fun hubLogs(lines: Int = 120): Result<chat.keryx.app.data.remote.HermesStreamClient.LogsTail> =
+        gatewayClient()?.logsTail(lines)
+            ?: Result.failure(IllegalStateException("Hermes Link is off"))
+
+    fun hubBrainSelect(name: String) {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.brainSelect(name)
+                .onSuccess { _toasts.tryEmit("Swap started — watch the active brain") }
+                .onFailure { _toasts.tryEmit("Swap refused: ${it.message?.take(80)}") }
+        }
+    }
     fun refreshHubJobs() = _hubJobs.refreshFrom { jobs() }
     fun refreshHubSessions() = _hubSessions.refreshFrom { sessions() }
     fun refreshHubSkills() = _hubSkills.refreshFrom { skills() }

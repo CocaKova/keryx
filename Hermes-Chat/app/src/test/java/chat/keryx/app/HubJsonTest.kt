@@ -337,6 +337,44 @@ class HubJsonTest {
     }
 
     @Test
+    fun `config knobs map every kind with lock and applies`() {
+        val knobs = HubJson.configKnobs(obj("""
+            {"knobs":[
+              {"key":"busy_input_mode","label":"Busy input","description":"…","kind":"enum",
+               "value":"queue","choices":["queue","steer","interrupt"],"min":null,"max":null,
+               "applies":"gateway restart","locked":false},
+              {"key":"show_reasoning","label":"Reasoning blocks","description":"…","kind":"bool",
+               "value":true,"choices":[],"min":null,"max":null,"applies":"next turn","locked":true},
+              {"key":"max_turns","label":"Max turns","description":"…","kind":"int",
+               "value":90,"choices":[],"min":1,"max":500,"applies":"next session","locked":false}]}
+        """))
+        assertEquals(3, knobs.size)
+        assertEquals(listOf("queue", "steer", "interrupt"), knobs[0].choices)
+        assertTrue(knobs[1].boolValue)
+        assertTrue(knobs[1].locked)
+        assertEquals(90, knobs[2].intValue)
+        assertEquals(1, knobs[2].min)
+        assertEquals(500, knobs[2].max)
+        assertNull(knobs[0].min) // JSON null → absent bound, not zero
+        // Fail-soft on an empty payload.
+        assertTrue(HubJson.configKnobs(obj("""{}""")).isEmpty())
+    }
+
+    @Test
+    fun `brains map active model and picker entries`() {
+        val b = HubJson.brains(obj("""
+            {"active":"qwen3.6-35b-nvfp4","brains":[
+              {"name":"qwen 35b","description":"daily driver"},
+              {"name":"mistral 4","description":""}]}
+        """))
+        assertEquals("qwen3.6-35b-nvfp4", b.active)
+        assertEquals(2, b.brains.size)
+        assertEquals("daily driver", b.brains[0].description)
+        // Unconfigured gateway → empty list, clients hide the panel.
+        assertTrue(HubJson.brains(obj("""{"active":"x","brains":[]}""")).brains.isEmpty())
+    }
+
+    @Test
     fun `health carries activity fields and jobs carry prompt`() {
         val h = HubJson.health(obj("""{"status":"ok","active_agents":2,"gateway_busy":true,"pid":4242}"""))
         assertEquals(2, h.activeAgents)

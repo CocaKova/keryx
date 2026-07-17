@@ -1045,6 +1045,83 @@ class HermesStreamClient(
     suspend fun models(): Result<List<HubModel>> =
         runCatching { HubJson.models(apiCall("/v1/models")) }
 
+    // --- Gateway Controls — /keryx/config, /keryx/reasoning, /keryx/logs, /keryx/brains (1.21) --
+    // The plugin's curated config surface: whitelisted non-secret knobs, validated server-side.
+    // Gateways without the keryx-stream plugin 404 all of these — panels hide, nothing breaks.
+
+    /** One whitelisted config knob. [kind] is "enum" | "bool" | "int"; [value] arrives as the
+     *  raw JSON text ("true", "queue", "90") — [boolValue]/[intValue] read it typed. */
+    data class ConfigKnob(
+        val key: String,
+        val label: String,
+        val description: String,
+        val kind: String,
+        val value: String,
+        val choices: List<String>,
+        val min: Int?,
+        val max: Int?,
+        /** When a change lands: "next turn" / "next session" / "gateway restart". */
+        val applies: String,
+        /** Operator-pinned (KERYX_CONFIG_LOCKED) — render read-only. */
+        val locked: Boolean,
+    ) {
+        val boolValue: Boolean get() = value.toBooleanStrictOrNull() ?: false
+        val intValue: Int? get() = value.toIntOrNull()
+    }
+
+    suspend fun configKnobs(): Result<List<ConfigKnob>> =
+        runCatching { HubJson.configKnobs(apiCall("/keryx/config")) }
+
+    /** Persist one knob. [value] must already be the right JSON type for the knob's kind. */
+    suspend fun configSet(key: String, value: JsonPrimitive): Result<String> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("key", JsonPrimitive(key))
+            put("value", value)
+        }
+        val obj = apiCall("/keryx/config", method = "PUT", body = payload)
+        (obj["applies"] as? JsonPrimitive)?.contentOrNull ?: "saved"
+    }
+
+    /** Set the reasoning dial (write side of [capabilities]); the plugin validates against
+     *  what the ACTIVE brain accepts. */
+    suspend fun reasoningSet(level: String): Result<Unit> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("level", JsonPrimitive(level))
+        }
+        apiCall("/keryx/reasoning", method = "PUT", body = payload)
+        Unit
+    }
+
+    /** A redacted tail of the gateway's own log. [source] = "journal" | "file". */
+    data class LogsTail(val source: String, val text: String)
+
+    suspend fun logsTail(lines: Int = 120): Result<LogsTail> = runCatching {
+        val obj = apiCall("/keryx/logs?lines=$lines", snapshot = false)
+        LogsTail(
+            source = (obj["source"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+            text = (obj["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+        )
+    }
+
+    /** The operator-configured brain picker ([] = unconfigured, hide the panel) plus what's
+     *  actually serving right now (live-probed, so a finished swap shows up here). */
+    data class Brains(val active: String, val brains: List<BrainEntry>)
+
+    data class BrainEntry(val name: String, val description: String)
+
+    suspend fun brains(): Result<Brains> =
+        runCatching { HubJson.brains(apiCall("/keryx/brains")) }
+
+    /** Launch the operator's swap command for [name] (202 — the swap runs detached; watch
+     *  [brains].active land on the new model). The gateway enforces a cooldown. */
+    suspend fun brainSelect(name: String): Result<Unit> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("name", JsonPrimitive(name))
+        }
+        apiCall("/keryx/brain", method = "POST", body = payload)
+        Unit
+    }
+
     // --- Skill Forge — /keryx/skills/* ----------------------------------------------------------
 
     /** One skill's full SKILL.md. [name] is the CANONICAL directory basename — always use it for
@@ -1358,6 +1435,30 @@ internal object HubJson {
         obj.objs("data").map { m ->
             HermesStreamClient.HubModel(id = m.str("id"), resolvesTo = m.str("root"))
         }
+
+    fun configKnobs(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.ConfigKnob> =
+        obj.objs("knobs").map { k ->
+            HermesStreamClient.ConfigKnob(
+                key = k.str("key"),
+                label = k.str("label"),
+                description = k.str("description"),
+                kind = k.str("kind"),
+                value = k.str("value"),
+                choices = k.arr("choices")?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.orEmpty(),
+                min = k.long("min").toInt().takeIf { k["min"] != null && k["min"] !is kotlinx.serialization.json.JsonNull },
+                max = k.long("max").toInt().takeIf { k["max"] != null && k["max"] !is kotlinx.serialization.json.JsonNull },
+                applies = k.str("applies"),
+                locked = k.bool("locked"),
+            )
+        }
+
+    fun brains(obj: kotlinx.serialization.json.JsonObject): HermesStreamClient.Brains =
+        HermesStreamClient.Brains(
+            active = obj.str("active"),
+            brains = obj.objs("brains").map { b ->
+                HermesStreamClient.BrainEntry(name = b.str("name"), description = b.str("description"))
+            },
+        )
 
     /** The console's persisted run registry (app-local, rides the hub snapshot store). */
     fun consoleRuns(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.ConsoleRun> =
