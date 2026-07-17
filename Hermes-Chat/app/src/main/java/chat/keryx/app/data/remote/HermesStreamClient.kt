@@ -503,6 +503,8 @@ class HermesStreamClient(
         method: String = "GET",
         body: kotlinx.serialization.json.JsonObject? = null,
         snapshotAs: String? = null,
+        /** false = never cache this GET (per-run status polls would grow the store forever). */
+        snapshot: Boolean = true,
     ): kotlinx.serialization.json.JsonObject = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         val request = Request.Builder()
             .url(baseUrl.trimEnd('/') + path)
@@ -537,7 +539,7 @@ class HermesStreamClient(
             // grow the cache without ever being re-read. A caller whose query is fixed rather than
             // a cursor opts in via [snapshotAs], which pins the cache key the seeded panels read.
             val snapshotKey = snapshotAs ?: path.takeIf { '?' !in it }
-            if (method == "GET" && snapshotKey != null) snapshotStore?.invoke(snapshotKey, text)
+            if (snapshot && method == "GET" && snapshotKey != null) snapshotStore?.invoke(snapshotKey, text)
             json.parseToJsonElement(text).jsonObject
         }
     }
@@ -669,6 +671,12 @@ class HermesStreamClient(
         val version: String,
         val gatewayState: String,
         val platforms: List<PlatformHealth>,
+        /** In-flight agent turns across all platforms (0 = idle). */
+        val activeAgents: Int = 0,
+        /** The gateway's own busy verdict (same contract its dashboard uses). */
+        val busy: Boolean = false,
+        /** Gateway process id — a restart shows as a pid change between refreshes. */
+        val pid: Long = 0,
     )
 
     /** One scheduled job from `GET /api/jobs`. Timestamps stay the gateway's ISO strings — the UI
@@ -685,6 +693,8 @@ class HermesStreamClient(
         val lastError: String?,
         val deliver: String,
         val repeatCompleted: Int,
+        /** What the agent is told each run — carried so the edit dialog can prefill. */
+        val prompt: String = "",
     )
 
     /** One persisted Hermes session from `GET /api/sessions` (epoch-seconds timestamps). */
@@ -793,6 +803,247 @@ class HermesStreamClient(
         )
         Unit
     }
+
+    // --- Run Console — vanilla /v1/runs + session resume (1.20) --------------------------------
+    // Everything here speaks the STOCK hermes-agent api_server: no /keryx/* plugin routes, so the
+    // console works against any gateway the app can reach. Two SSE dialects exist upstream:
+    // /v1/runs/{id}/events sends unnamed events (the JSON's own "event" field discriminates),
+    // /api/sessions/{id}/chat/stream sends NAMED events with a different vocabulary. Both are
+    // normalized into [RunEvent] here so the console renders one stream shape.
+
+    /** One normalized live-run event, from either run-events or session-chat-stream. */
+    sealed interface RunEvent {
+        /** The SSE channel is connected and live. */
+        data object Opened : RunEvent
+        /** Incremental assistant text. */
+        data class Delta(val text: String) : RunEvent
+        /** Reasoning text (arrives in chunks before/between answer tokens). */
+        data class Reasoning(val text: String) : RunEvent
+        data class ToolStarted(val tool: String, val preview: String) : RunEvent
+        data class ToolCompleted(val tool: String, val failed: Boolean) : RunEvent
+        /** The agent is blocked on a tool approval; [choices] are the gateway's own verbs
+         *  (once/session/always/deny) — answer via [runApproval]. */
+        data class ApprovalRequest(val command: String, val tool: String, val choices: List<String>) : RunEvent
+        /** Someone (this app or another client) resolved the pending approval. */
+        data class ApprovalResponded(val choice: String) : RunEvent
+        /** Terminal: the run finished; [output] is the full final response. */
+        data class Completed(val output: String) : RunEvent
+        /** Terminal: the run failed; [error] is the gateway's redacted message. */
+        data class Failed(val error: String) : RunEvent
+        /** Terminal: the run was stopped. */
+        data object Cancelled : RunEvent
+        /** The transport dropped without a terminal event — the run itself may still be going
+         *  (poll [runStatus]). [connected] = whether the channel ever opened. */
+        data class StreamLost(val reason: String, val connected: Boolean) : RunEvent
+    }
+
+    /** Pollable run state (`GET /v1/runs/{id}`) — the fallback surface when SSE is gone. */
+    data class RunStatus(
+        val runId: String,
+        /** queued | running | waiting_for_approval | completed | failed | cancelled */
+        val status: String,
+        val model: String,
+        val sessionId: String,
+        val lastEvent: String,
+        /** Final response — populated once completed. */
+        val output: String,
+        val error: String,
+    )
+
+    /** One model row from `GET /v1/models` (the gateway's own name + configured route aliases). */
+    data class HubModel(val id: String, val resolvesTo: String)
+
+    /** One remembered console run. The gateway has no list-runs route, so the app keeps its own
+     *  registry of what it launched (persisted via the hub snapshot store, transcripts capped to
+     *  the final output). [kind] "run" = /v1/runs; "session" = a resumed session turn. */
+    data class ConsoleRun(
+        val id: String,
+        val kind: String,
+        val prompt: String,
+        val startedAt: Long,
+        /** running | completed | failed | cancelled | lost */
+        val status: String,
+        val output: String = "",
+        val error: String = "",
+    )
+
+    /** Start an agent run (`POST /v1/runs`, answers 202 immediately). Returns the run_id;
+     *  subscribe [runEvents] with it right away — the gateway holds an event queue per run, but
+     *  only one subscriber may drain it. */
+    suspend fun runCreate(prompt: String, model: String? = null): Result<String> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("input", kotlinx.serialization.json.JsonPrimitive(prompt))
+            if (!model.isNullOrBlank()) put("model", kotlinx.serialization.json.JsonPrimitive(model))
+        }
+        val obj = apiCall("/v1/runs", method = "POST", body = payload)
+        (obj["run_id"] as? JsonPrimitive)?.contentOrNull ?: error("no run_id in response")
+    }
+
+    suspend fun runStatus(runId: String): Result<RunStatus> =
+        runCatching { HubJson.runStatus(apiCall("/v1/runs/$runId", snapshot = false)) }
+
+    /** Resolve a pending approval. [choice] is one of the event's `choices` verbs. */
+    suspend fun runApproval(runId: String, choice: String): Result<Unit> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("choice", kotlinx.serialization.json.JsonPrimitive(choice))
+        }
+        apiCall("/v1/runs/$runId/approval", method = "POST", body = payload)
+        Unit
+    }
+
+    /** Interrupt a running agent (`POST /v1/runs/{id}/stop`). The cancel confirmation arrives as
+     *  [RunEvent.Cancelled] on the event stream, not in this response. */
+    suspend fun runStop(runId: String): Result<Unit> =
+        runCatching { apiCall("/v1/runs/$runId/stop", method = "POST"); Unit }
+
+    /**
+     * Live events for a run this app started (`GET /v1/runs/{id}/events`, SSE). Cold flow — the
+     * subscription lives exactly as long as the collector. Terminal events close the flow; a
+     * transport drop surfaces as [RunEvent.StreamLost] (the run may still be going server-side).
+     * NOTE: the gateway pops the run's queue when the subscriber disconnects — re-subscribing
+     * after a drop misses everything in between; recover via [runStatus] instead.
+     */
+    fun runEvents(runId: String): Flow<RunEvent> = callbackFlow {
+        val request = Request.Builder()
+            .url(baseUrl.trimEnd('/') + "/v1/runs/$runId/events")
+            .header("Accept", "text/event-stream")
+            .apply { if (apiKey.isNotBlank()) header("Authorization", "Bearer $apiKey") }
+            .build()
+        var connected = false
+        var terminal = false
+        val source = EventSources.createFactory(client).newEventSource(
+            request,
+            object : EventSourceListener() {
+                override fun onOpen(eventSource: EventSource, response: Response) {
+                    connected = true
+                    trySendBlocking(RunEvent.Opened)
+                }
+
+                override fun onEvent(eventSource: EventSource, id: String?, type: String?, data: String) {
+                    val obj = runCatching { json.parseToJsonElement(data).jsonObject }.getOrNull() ?: return
+                    val ev = HubJson.runEvent(obj) ?: return
+                    if (ev is RunEvent.Completed || ev is RunEvent.Failed || ev is RunEvent.Cancelled) terminal = true
+                    trySendBlocking(ev)
+                    if (terminal) close()
+                }
+
+                override fun onClosed(eventSource: EventSource) {
+                    if (!terminal) trySendBlocking(RunEvent.StreamLost("closed by server", connected))
+                    close()
+                }
+
+                override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
+                    if (!terminal) {
+                        val reason = t?.message ?: response?.let { "HTTP ${it.code}" } ?: "connection failed"
+                        trySendBlocking(RunEvent.StreamLost(reason, connected))
+                    }
+                    close()
+                }
+            },
+        )
+        awaitClose { source.cancel() }
+    }
+
+    /**
+     * One live agent turn INTO an existing session (`POST /api/sessions/{id}/chat/stream`, SSE) —
+     * the Sessions tab's Resume. Same normalized [RunEvent] stream as [runEvents]. No stop route
+     * exists for this dialect; cancelling the collector closes the connection, which cancels the
+     * turn server-side. Approvals never surface here (the vanilla session path has no approval
+     * transport) — gateway approval policy decides alone.
+     */
+    fun sessionChatStream(sessionId: String, message: String): Flow<RunEvent> = callbackFlow {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("message", kotlinx.serialization.json.JsonPrimitive(message))
+        }
+        val request = Request.Builder()
+            .url(baseUrl.trimEnd('/') + sessionPath(sessionId) + "/chat/stream")
+            .header("Accept", "text/event-stream")
+            .post(payload.toString().toRequestBody("application/json".toMediaType()))
+            .apply { if (apiKey.isNotBlank()) header("Authorization", "Bearer $apiKey") }
+            .build()
+        var connected = false
+        var terminal = false
+        val source = EventSources.createFactory(client).newEventSource(
+            request,
+            object : EventSourceListener() {
+                override fun onOpen(eventSource: EventSource, response: Response) {
+                    connected = true
+                    trySendBlocking(RunEvent.Opened)
+                }
+
+                override fun onEvent(eventSource: EventSource, id: String?, type: String?, data: String) {
+                    if (type == "done") { close(); return }
+                    val obj = runCatching { json.parseToJsonElement(data).jsonObject }.getOrNull() ?: return
+                    val ev = HubJson.sessionEvent(type, obj) ?: return
+                    if (ev is RunEvent.Completed || ev is RunEvent.Failed) terminal = true
+                    trySendBlocking(ev)
+                }
+
+                override fun onClosed(eventSource: EventSource) {
+                    if (!terminal) trySendBlocking(RunEvent.StreamLost("closed by server", connected))
+                    close()
+                }
+
+                override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
+                    if (!terminal) {
+                        val reason = t?.message ?: response?.let { "HTTP ${it.code}" } ?: "connection failed"
+                        trySendBlocking(RunEvent.StreamLost(reason, connected))
+                    }
+                    close()
+                }
+            },
+        )
+        awaitClose { source.cancel() }
+    }
+
+    private fun sessionPath(sessionId: String): String =
+        "/api/sessions/" + java.net.URLEncoder.encode(sessionId, "UTF-8").replace("+", "%20")
+
+    /** Rename a session (`PATCH`, title only — the gateway whitelists its fields). */
+    suspend fun sessionRename(sessionId: String, title: String): Result<Unit> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("title", kotlinx.serialization.json.JsonPrimitive(title))
+        }
+        apiCall(sessionPath(sessionId), method = "PATCH", body = payload)
+        Unit
+    }
+
+    /** Delete a session and its transcript — permanent; callers gate with a destructive confirm. */
+    suspend fun sessionDelete(sessionId: String): Result<Unit> =
+        runCatching { apiCall(sessionPath(sessionId), method = "DELETE"); Unit }
+
+    /** Branch a session (CLI /branch semantics: source is marked branched, the fork carries the
+     *  transcript forward). Returns the new session id. */
+    suspend fun sessionFork(sessionId: String, title: String? = null): Result<String> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            if (!title.isNullOrBlank()) put("title", kotlinx.serialization.json.JsonPrimitive(title))
+        }
+        val obj = apiCall(sessionPath(sessionId) + "/fork", method = "POST", body = payload)
+        ((obj["session"] as? kotlinx.serialization.json.JsonObject)
+            ?.get("id") as? JsonPrimitive)?.contentOrNull ?: error("no session id in response")
+    }
+
+    /** Edit a scheduled job (`PATCH /api/jobs/{id}`) — the missing verb next to the existing
+     *  create/pause/run/delete. Only the gateway-whitelisted fields are sent. */
+    suspend fun jobUpdate(
+        jobId: String,
+        name: String,
+        schedule: String,
+        prompt: String,
+        deliver: String,
+    ): Result<Unit> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("name", kotlinx.serialization.json.JsonPrimitive(name))
+            put("schedule", kotlinx.serialization.json.JsonPrimitive(schedule))
+            put("prompt", kotlinx.serialization.json.JsonPrimitive(prompt))
+            put("deliver", kotlinx.serialization.json.JsonPrimitive(deliver))
+        }
+        apiCall("/api/jobs/$jobId", method = "PATCH", body = payload)
+        Unit
+    }
+
+    suspend fun models(): Result<List<HubModel>> =
+        runCatching { HubJson.models(apiCall("/v1/models")) }
 
     // --- Skill Forge — /keryx/skills/* ----------------------------------------------------------
 
@@ -920,6 +1171,9 @@ internal object HubJson {
                 }
                 ?.sortedBy { it.name }
                 .orEmpty(),
+            activeAgents = obj.long("active_agents").toInt(),
+            busy = obj.bool("gateway_busy"),
+            pid = obj.long("pid"),
         )
 
     fun jobs(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.HubJob> =
@@ -939,6 +1193,7 @@ internal object HubJson {
                 deliver = j.str("deliver"),
                 repeatCompleted = (j["repeat"] as? kotlinx.serialization.json.JsonObject)
                     ?.long("completed")?.toInt() ?: 0,
+                prompt = j.str("prompt"),
             )
         }
 
@@ -1046,6 +1301,94 @@ internal object HubJson {
                 )
             },
         )
+
+    // --- Run Console (1.20) -----------------------------------------------------------------
+
+    /** One `/v1/runs/{id}/events` SSE payload (unnamed events; the JSON's "event" field is the
+     *  discriminator) → normalized [HermesStreamClient.RunEvent]. Null = structural/unknown event,
+     *  skipped (forward-compatible). */
+    fun runEvent(obj: kotlinx.serialization.json.JsonObject): HermesStreamClient.RunEvent? =
+        when (obj.str("event")) {
+            "message.delta" -> HermesStreamClient.RunEvent.Delta(obj.str("delta"))
+            "reasoning.available" -> HermesStreamClient.RunEvent.Reasoning(obj.str("text"))
+            "tool.started" -> HermesStreamClient.RunEvent.ToolStarted(obj.str("tool"), obj.str("preview"))
+            "tool.completed" -> HermesStreamClient.RunEvent.ToolCompleted(obj.str("tool"), obj.bool("error"))
+            "approval.request" -> HermesStreamClient.RunEvent.ApprovalRequest(
+                command = obj.str("command"),
+                tool = obj.str("tool"),
+                choices = obj.arr("choices")?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+                    .orEmpty().ifEmpty { listOf("once", "deny") },
+            )
+            "approval.responded" -> HermesStreamClient.RunEvent.ApprovalResponded(obj.str("choice"))
+            "run.completed" -> HermesStreamClient.RunEvent.Completed(obj.str("output"))
+            "run.failed" -> HermesStreamClient.RunEvent.Failed(obj.str("error").ifBlank { "run failed" })
+            "run.cancelled" -> HermesStreamClient.RunEvent.Cancelled
+            else -> null
+        }
+
+    /** One `/api/sessions/{id}/chat/stream` SSE payload (NAMED events — [name] is the SSE event
+     *  line) → the same normalized [HermesStreamClient.RunEvent]. The session dialect signals
+     *  reasoning as `tool.progress` with tool_name "_thinking", and the final text rides on
+     *  `assistant.completed` rather than run.completed. Null = structural/unknown, skipped. */
+    fun sessionEvent(name: String?, obj: kotlinx.serialization.json.JsonObject): HermesStreamClient.RunEvent? =
+        when (name) {
+            "assistant.delta" -> HermesStreamClient.RunEvent.Delta(obj.str("delta"))
+            "tool.progress" -> HermesStreamClient.RunEvent.Reasoning(obj.str("delta"))
+            "tool.started" -> HermesStreamClient.RunEvent.ToolStarted(obj.str("tool_name"), obj.str("preview"))
+            "tool.completed" -> HermesStreamClient.RunEvent.ToolCompleted(obj.str("tool_name"), false)
+            "tool.failed" -> HermesStreamClient.RunEvent.ToolCompleted(obj.str("tool_name"), true)
+            "assistant.completed" -> HermesStreamClient.RunEvent.Completed(obj.str("content"))
+            "error" -> HermesStreamClient.RunEvent.Failed(obj.str("message").ifBlank { "run failed" })
+            // run.started / message.started / run.completed / done are structural framing.
+            else -> null
+        }
+
+    fun runStatus(obj: kotlinx.serialization.json.JsonObject): HermesStreamClient.RunStatus =
+        HermesStreamClient.RunStatus(
+            runId = obj.str("run_id"),
+            status = obj.str("status"),
+            model = obj.str("model"),
+            sessionId = obj.str("session_id"),
+            lastEvent = obj.str("last_event"),
+            output = obj.str("output"),
+            error = obj.str("error"),
+        )
+
+    fun models(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.HubModel> =
+        obj.objs("data").map { m ->
+            HermesStreamClient.HubModel(id = m.str("id"), resolvesTo = m.str("root"))
+        }
+
+    /** The console's persisted run registry (app-local, rides the hub snapshot store). */
+    fun consoleRuns(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.ConsoleRun> =
+        obj.objs("runs").map { r ->
+            HermesStreamClient.ConsoleRun(
+                id = r.str("id"),
+                kind = r.str("kind").ifBlank { "run" },
+                prompt = r.str("prompt"),
+                startedAt = r.long("started_at"),
+                status = r.str("status").ifBlank { "lost" },
+                output = r.str("output"),
+                error = r.str("error"),
+            )
+        }
+
+    fun buildConsoleRuns(runs: List<HermesStreamClient.ConsoleRun>): kotlinx.serialization.json.JsonObject =
+        kotlinx.serialization.json.buildJsonObject {
+            put("runs", kotlinx.serialization.json.buildJsonArray {
+                runs.forEach { r ->
+                    add(kotlinx.serialization.json.buildJsonObject {
+                        put("id", JsonPrimitive(r.id))
+                        put("kind", JsonPrimitive(r.kind))
+                        put("prompt", JsonPrimitive(r.prompt))
+                        put("started_at", JsonPrimitive(r.startedAt))
+                        put("status", JsonPrimitive(r.status))
+                        put("output", JsonPrimitive(r.output))
+                        put("error", JsonPrimitive(r.error))
+                    })
+                }
+            })
+        }
 
     /**
      * Parse the gateway's ISO-8601 offset timestamps ("2026-07-07T07:00:00-05:00", optionally with
