@@ -110,7 +110,13 @@ class CallController(
                 continue
             }
             _ui.update { it.copy(phase = Phase.LISTENING) }
-            val take = audio.captureUtterance(context) ?: continue
+            val take = audio.captureUtterance(context)
+            if (take == null) {
+                // Non-take (noise-only window, cancelled listen, or a failed mic open). The
+                // failed-open case would otherwise re-enter capture as a hot spin.
+                delay(150)
+                continue
+            }
             if (muted || !scope.isActive) { take.delete(); continue }
             _ui.update { it.copy(phase = Phase.TRANSCRIBING) }
             val heard = runCatching { transcribe(take) }
