@@ -356,8 +356,32 @@ class HubJsonTest {
         assertEquals(1, knobs[2].min)
         assertEquals(500, knobs[2].max)
         assertNull(knobs[0].min) // JSON null → absent bound, not zero
+        // Pre-1.23 gateway: no "group" field → the legacy Gateway cluster.
+        assertEquals("Gateway", knobs[0].group)
         // Fail-soft on an empty payload.
         assertTrue(HubJson.configKnobs(obj("""{}""")).isEmpty())
+    }
+
+    @Test
+    fun `config knobs map float kind with fractional bounds and group`() {
+        val knobs = HubJson.configKnobs(obj("""
+            {"knobs":[
+              {"key":"compression_threshold","label":"Compress at","description":"…","kind":"float",
+               "value":0.7,"choices":[],"min":0.3,"max":0.9,
+               "applies":"next turn","locked":false,"group":"Compression"},
+              {"key":"missions_default_assignee","label":"Default assignee","description":"…","kind":"enum",
+               "value":"","choices":["","default","sy"],"min":null,"max":null,
+               "applies":"next dispatch tick","locked":false,"group":"Missions"}]}
+        """))
+        assertEquals("Compression", knobs[0].group)
+        assertEquals(0.7, knobs[0].floatValue!!, 1e-9)
+        // Int accessors round-trip the same JSON fields; float bounds keep the fraction.
+        assertEquals(0.3, knobs[0].minF!!, 1e-9)
+        assertEquals(0.9, knobs[0].maxF!!, 1e-9)
+        // A blank enum choice is a real value (profile knobs: unset).
+        assertTrue("" in knobs[1].choices)
+        assertEquals("Missions", knobs[1].group)
+        assertEquals("", knobs[1].value)
     }
 
     @Test
