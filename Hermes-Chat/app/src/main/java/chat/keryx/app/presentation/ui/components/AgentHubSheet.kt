@@ -154,80 +154,46 @@ fun AgentHubSheet(
         }
     }
 
-    // 1.21: the Hub graduates from a bottom sheet to its own full-screen space (the Missions
-    // board pattern) — a place you go, not a panel that pops up. The dusk gradient + braille
-    // snake + breathing link dot keep it unmistakably Keryx.
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        val dusk = androidx.compose.ui.graphics.Brush.verticalGradient(
-            0f to MaterialTheme.colorScheme.surface,
-            0.55f to MaterialTheme.colorScheme.surface,
-            1f to accent2.copy(alpha = 0.10f).compositeOver(MaterialTheme.colorScheme.surface),
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(dusk)
-                .padding(bottom = 12.dp)
-                .windowInsetsPadding(WindowInsets.systemBars),
-        ) {
-            // Header: emblem + wordmark + breathing link dot + refresh + close.
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(start = 20.dp, end = 8.dp, top = 6.dp),
-            ) {
-                Box(modifier = Modifier.size(44.dp)) {
-                    BrailleSnakeAnimation(
-                        modifier = Modifier.fillMaxSize(),
-                        color = accent,
-                        color2 = accent2,
-                        snakeLength = 12,
-                        periodMillis = 3600,
-                        glyphSize = 8f,
-                    )
-                }
-                Column(modifier = Modifier.padding(start = 14.dp).weight(1f)) {
-                    Text(
-                        "AGENT HUB",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 5.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        BreathingDot(health)
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            text = linkHealthLabel(health) +
-                                (gatewayUrl.takeIf { it.isNotBlank() }?.let { url ->
-                                    " · " + url.removePrefix("https://").removePrefix("http://").trimEnd('/')
-                                } ?: ""),
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-                IconButton(onClick = {
-                    when (tab) {
-                        0 -> { viewModel.refreshHubHealth(); viewModel.refreshHubModels(); viewModel.refreshReasoningCaps() }
-                        1 -> { viewModel.refreshHubConfig(); viewModel.refreshHubBrains(); viewModel.refreshReasoningCaps() }
-                        2 -> viewModel.refreshHubJobs()
-                        3 -> viewModel.refreshHubSessions()
-                        4 -> viewModel.refreshHubSkills()
-                        5 -> viewModel.refreshHubToolsets()
-                    }
-                }) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Refresh",
-                        tint = MaterialTheme.colorScheme.primary)
-                }
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = "Close the Hub",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+    // 1.21: the Hub graduated from a bottom sheet to its own full-screen space; 1.23: that space
+    // scaffold (dusk gradient, emblem, letter-spaced title, breathing live line, close X) is now
+    // the shared KeryxSpace — the Hub just supplies its link-health line and refresh action.
+    KeryxSpace(
+        title = "Agent Hub",
+        onClose = onDismiss,
+        liveSlot = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                KeryxBreathingDot(
+                    color = linkHealthColor(health),
+                    alive = health == LinkHealth.LIVE || health == LinkHealth.OK,
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = linkHealthLabel(health) +
+                        (gatewayUrl.takeIf { it.isNotBlank() }?.let { url ->
+                            " · " + url.removePrefix("https://").removePrefix("http://").trimEnd('/')
+                        } ?: ""),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
             }
+        },
+        actions = {
+            IconButton(onClick = {
+                when (tab) {
+                    0 -> { viewModel.refreshHubHealth(); viewModel.refreshHubModels(); viewModel.refreshReasoningCaps() }
+                    1 -> { viewModel.refreshHubConfig(); viewModel.refreshHubBrains(); viewModel.refreshReasoningCaps() }
+                    2 -> viewModel.refreshHubJobs()
+                    3 -> viewModel.refreshHubSessions()
+                    4 -> viewModel.refreshHubSkills()
+                    5 -> viewModel.refreshHubToolsets()
+                }
+            }) {
+                Icon(Icons.Default.Refresh, contentDescription = "Refresh",
+                    tint = MaterialTheme.colorScheme.primary)
+            }
+        },
+    ) {
             Spacer(Modifier.height(6.dp))
 
             ScrollableTabRow(
@@ -266,37 +232,15 @@ fun AgentHubSheet(
                     5 -> ToolsTab(viewModel)
                 }
             }
-        }
     }
 }
 
-/** The header's link-state dot, breathing while things are alive: a slow alpha pulse when
- *  connected/streaming (the Hub's heartbeat), solid and still when the link is down or off. */
-@Composable
-private fun BreathingDot(health: LinkHealth) {
-    val alive = health == LinkHealth.LIVE || health == LinkHealth.OK
-    val pulse by androidx.compose.animation.core.rememberInfiniteTransition(label = "hubPulse")
-        .animateFloat(
-            initialValue = 0.35f,
-            targetValue = 1f,
-            animationSpec = androidx.compose.animation.core.infiniteRepeatable(
-                animation = androidx.compose.animation.core.tween(1600),
-                repeatMode = androidx.compose.animation.core.RepeatMode.Reverse,
-            ),
-            label = "hubPulseAlpha",
-        )
-    val color = when (health) {
-        LinkHealth.LIVE, LinkHealth.OK -> Color(0xFF4CAF50)
-        LinkHealth.UNKNOWN -> Color(0xFFE8A33D)
-        LinkHealth.OFF -> Color(0x66FFFFFF)
-        else -> Color(0xFFE0524D)
-    }
-    Box(
-        Modifier
-            .size(7.dp)
-            .clip(CircleShape)
-            .background(color.copy(alpha = if (alive) pulse else 1f)),
-    )
+/** Link-health → status color, in the shared semantic palette. */
+private fun linkHealthColor(health: LinkHealth): Color = when (health) {
+    LinkHealth.LIVE, LinkHealth.OK -> KeryxStatus.good
+    LinkHealth.UNKNOWN -> KeryxStatus.warn
+    LinkHealth.OFF -> KeryxStatus.idle
+    else -> KeryxStatus.bad
 }
 
 /** One-line description of a link-health state, shared by the header and the Status tab. */
@@ -332,20 +276,14 @@ private fun PanelLoading() {
 
 @Composable
 internal fun SectionLabel(text: String) {
-    Text(
-        text.uppercase(),
-        fontSize = 10.sp,
-        letterSpacing = 2.0.sp,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
-    )
+    KeryxSectionHeader(text, modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
 }
 
 private fun connStateColor(state: String): Color = when (state) {
-    "connected" -> Color(0xFF4CAF50)
-    "retrying", "connecting" -> Color(0xFFE8A33D)
-    "disconnected" -> Color(0x66FFFFFF)
-    else -> Color(0xFFE0524D)
+    "connected" -> KeryxStatus.good
+    "retrying", "connecting" -> KeryxStatus.warn
+    "disconnected" -> KeryxStatus.idle
+    else -> KeryxStatus.bad
 }
 
 // --- Status ------------------------------------------------------------------------------------
