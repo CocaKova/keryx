@@ -85,68 +85,53 @@ fun SkillForgeSheet(
     val dirty = editing && draft != detail?.content
     val requestClose = { if (dirty) confirmDiscard = true else onDismiss() }
 
-    Dialog(
-        onDismissRequest = requestClose,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            Scaffold(
-                containerColor = Color.Transparent,
-                topBar = {
-                    TopAppBar(
-                        title = {
-                            Column {
-                                Text("Skill Forge", fontWeight = FontWeight.Bold)
-                                Text(
-                                    detail?.let { d ->
-                                        (d.category?.let { "$it/" } ?: "") + d.name +
-                                            if (d.readonly) " · read-only" else ""
-                                    } ?: skillName,
-                                    fontSize = 11.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = requestClose) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                            }
-                        },
-                        actions = {
-                            val d = detail
-                            if (d != null && !d.readonly && !editing) {
-                                IconButton(onClick = { draft = d.content; editing = true; statusLine = null }) {
-                                    Icon(
-                                        Icons.Default.Edit,
-                                        contentDescription = "Edit",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                            }
-                            if (editing) {
-                                TextButton(
-                                    enabled = !saving && draft.isNotBlank(),
-                                    onClick = {
-                                        saving = true
-                                        statusLine = null
-                                        viewModel.skillSave(d!!.name, draft) { ok, message ->
-                                            saving = false
-                                            statusLine = message
-                                            if (ok) {
-                                                detail = d.copy(content = draft)
-                                                editing = false
-                                            }
-                                        }
-                                    },
-                                ) { Text(if (saving) "Saving…" else "Save") }
-                            }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+    // 1.23: the Forge joins the KeryxSpace family — same dusk chrome as the Hub and Missions,
+    // its skill path riding the live slot, edit/save as space actions.
+    KeryxSpace(
+        title = "Skill Forge",
+        onClose = requestClose,
+        liveSlot = {
+            Text(
+                detail?.let { d ->
+                    (d.category?.let { "$it/" } ?: "") + d.name +
+                        if (d.readonly) " · read-only" else ""
+                } ?: skillName,
+                fontSize = 11.sp,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        actions = {
+            val d = detail
+            if (d != null && !d.readonly && !editing) {
+                IconButton(onClick = { draft = d.content; editing = true; statusLine = null }) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "Edit",
+                        tint = MaterialTheme.colorScheme.primary,
                     )
-                },
-            ) { padding ->
-                Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
+                }
+            }
+            if (editing) {
+                TextButton(
+                    enabled = !saving && draft.isNotBlank(),
+                    onClick = {
+                        saving = true
+                        statusLine = null
+                        viewModel.skillSave(d!!.name, draft) { ok, message ->
+                            saving = false
+                            statusLine = message
+                            if (ok) {
+                                detail = d.copy(content = draft)
+                                editing = false
+                            }
+                        }
+                    },
+                ) { Text(if (saving) "Saving…" else "Save") }
+            }
+        },
+    ) {
+                Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
                     statusLine?.let {
                         Text(
                             it,
@@ -213,8 +198,6 @@ fun SkillForgeSheet(
                         }
                     }
                 }
-            }
-        }
     }
 
     if (confirmDiscard) {
