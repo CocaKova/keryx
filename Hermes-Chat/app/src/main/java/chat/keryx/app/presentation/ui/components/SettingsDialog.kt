@@ -120,6 +120,7 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
+          Box(Modifier.fillMaxSize().background(duskBrush())) {
             // Hub-and-spoke: null = the section list; a name = that section's page.
             // One long scroll of seven dense cards was the old layout — cluttered.
             var section by remember { mutableStateOf<String?>(null) }
@@ -127,7 +128,14 @@ fun SettingsScreen(
 
             Column(modifier = Modifier.fillMaxSize()) {
                 TopAppBar(
-                    title = { Text(section ?: "Settings", fontWeight = FontWeight.Bold) },
+                    title = {
+                        Text(
+                            (section ?: "Settings").uppercase(),
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 5.sp,
+                        )
+                    },
                     navigationIcon = {
                         if (section != null) {
                             IconButton(onClick = { section = null }) {
@@ -140,7 +148,7 @@ fun SettingsScreen(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background
+                        containerColor = Color.Transparent
                     )
                 )
 
@@ -447,7 +455,7 @@ fun SettingsScreen(
                         OutlinedButton(
                             onClick = onTestLink,
                             enabled = sideChannelEnabled,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(KeryxRadius.field),
                         ) {
                             Text("Test link", fontSize = 13.sp)
                         }
@@ -611,7 +619,7 @@ fun SettingsScreen(
                         // Live gradient preview: how Accent → Accent 2 will actually blend.
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(KeryxRadius.chip))
                                 .background(
                                     androidx.compose.ui.graphics.Brush.horizontalGradient(
                                         listOf(currentAccentColor.copy(alpha = 0.25f), currentAccentColor2.copy(alpha = 0.25f))
@@ -690,7 +698,7 @@ fun SettingsScreen(
                             OutlinedButton(
                                 onClick = { chat.keryx.app.CrashLog.share(diagContext) },
                                 enabled = crashText.isNotBlank(),
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(KeryxRadius.field),
                             ) { Text("Share", fontSize = 13.sp) }
                             OutlinedButton(
                                 onClick = {
@@ -698,7 +706,7 @@ fun SettingsScreen(
                                     crashText = ""
                                 },
                                 enabled = crashText.isNotBlank(),
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(KeryxRadius.field),
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
                             ) { Text("Clear", fontSize = 13.sp) }
                         }
@@ -713,6 +721,7 @@ fun SettingsScreen(
                     Spacer(Modifier.height(40.dp))
                 }
             }
+          }
         }
     }
 }
@@ -720,16 +729,12 @@ fun SettingsScreen(
 /** A titled, rounded settings group card. */
 @Composable
 private fun SettingsCard(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Text(
-        text = title.uppercase(),
-        color = MaterialTheme.colorScheme.primary,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(start = 4.dp, top = 18.dp, bottom = 8.dp)
-    )
+    KeryxSectionHeader(title, modifier = Modifier.padding(start = 4.dp, top = 18.dp, bottom = 8.dp))
     Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(KeryxRadius.card),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp), content = content)
@@ -738,13 +743,7 @@ private fun SettingsCard(title: String, content: @Composable ColumnScope.() -> U
 
 @Composable
 fun SettingsSectionHeader(title: String) {
-    Text(
-        text = title.uppercase(),
-        color = MaterialTheme.colorScheme.primary,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(bottom = 16.dp)
-    )
+    KeryxSectionHeader(title, modifier = Modifier.padding(bottom = 16.dp))
 }
 
 /** One row of the settings hub: icon, title, live subtitle, chevron. */
@@ -760,7 +759,7 @@ private fun SettingsHubRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(KeryxRadius.card))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 14.dp),
@@ -924,7 +923,7 @@ fun ColorPickerPanel(
                 Box(
                     modifier = Modifier
                         .size(24.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(KeryxRadius.field))
                         .background(swatch)
                         .pointerInput(swatch) { detectTapGestures { apply(swatch, rederive = true) } },
                 )
