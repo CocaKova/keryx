@@ -118,9 +118,9 @@ fun SessionPruneDialog(
     }
 
     Dialog(onDismissRequest = { if (!working) onDismiss() }) {
-        Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
+        Surface(shape = RoundedCornerShape(KeryxRadius.sheet), color = MaterialTheme.colorScheme.surface) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text("Prune sessions", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                KeryxSectionHeader("Prune sessions")
                 Text(
                     "Deletes ended sessions from the gateway's record — permanently, transcripts included. Active sessions are never touched.",
                     fontSize = 11.sp,
@@ -140,7 +140,7 @@ fun SessionPruneDialog(
                             color = if (selected) MaterialTheme.colorScheme.onPrimary
                                     else MaterialTheme.colorScheme.primary,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(KeryxRadius.chip))
                                 .background(
                                     if (selected) MaterialTheme.colorScheme.primary
                                     else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
@@ -230,6 +230,7 @@ fun SessionPruneDialog(
     if (confirmOpen) {
         val matched = preview?.matched ?: 0
         AlertDialog(
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmOpen = false },
             title = { Text("Delete $matched sessions permanently?", fontSize = 16.sp) },
             text = {

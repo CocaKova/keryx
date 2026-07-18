@@ -46,6 +46,7 @@ import chat.keryx.app.domain.model.RoomProfile
 import chat.keryx.app.domain.model.RoomType
 import chat.keryx.app.domain.model.Session
 import chat.keryx.app.presentation.ChatViewModel
+import chat.keryx.app.presentation.ui.components.KeryxRadius
 import chat.keryx.app.theme.*
 
 @Composable
@@ -646,6 +647,7 @@ fun RoomRow(
     if (inviteOpen && onInvite != null) {
         var inviteId by remember { mutableStateOf("") }
         AlertDialog(
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { inviteOpen = false },
             title = { Text("Invite to ${room.name}", fontSize = 16.sp) },
             text = {
@@ -670,6 +672,7 @@ fun RoomRow(
     }
     if (confirmLeave) {
         AlertDialog(
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmLeave = false },
             title = { Text("Leave ${room.name}?", fontSize = 16.sp) },
             text = { Text("You'll stop receiving its messages; rejoining needs a new invite.", fontSize = 13.sp) },
