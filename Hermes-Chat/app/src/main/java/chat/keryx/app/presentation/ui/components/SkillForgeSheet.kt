@@ -219,6 +219,7 @@ fun SkillForgeSheet(
 
     if (confirmDiscard) {
         AlertDialog(
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmDiscard = false },
             title = { Text("Discard changes?", fontSize = 16.sp) },
             text = { Text("The edit hasn't been saved to the gateway.", fontSize = 13.sp) },

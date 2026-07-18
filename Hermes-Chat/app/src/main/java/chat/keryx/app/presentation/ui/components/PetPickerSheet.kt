@@ -70,8 +70,8 @@ fun PetPickerSheet(
 
     var query by remember { mutableStateOf("") }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
+    KeryxSheet(
+        onDismiss = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {
         Column(
@@ -111,7 +111,7 @@ fun PetPickerSheet(
                 placeholder = { Text("Search ${gallery?.pets?.size ?: 0} pets…") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(KeryxRadius.field),
                 modifier = Modifier.fillMaxWidth(),
             )
 

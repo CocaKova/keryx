@@ -61,10 +61,9 @@ fun NewChatSheet(
         if (err == null) onDismiss()
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    KeryxSheet(onDismiss = onDismiss, title = "New conversation", sheetState = sheetState) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
-            Text("New conversation", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(4.dp))
 
             NewChatRow(
                 icon = Icons.Default.Person,
@@ -80,6 +79,7 @@ fun NewChatSheet(
                     placeholder = { Text("@user:server") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.field),
                 )
                 SheetActionRow(busy = busy, enabled = userId.isNotBlank(), label = "Start") {
                     busy = true; error = null
@@ -102,6 +102,7 @@ fun NewChatSheet(
                     placeholder = { Text("Room name") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.field),
                 )
                 Spacer(Modifier.height(6.dp))
                 OutlinedTextField(
@@ -110,6 +111,7 @@ fun NewChatSheet(
                     placeholder = { Text("Invite @user:server (optional)") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.field),
                 )
                 SheetActionRow(busy = busy, enabled = name.isNotBlank(), label = "Create") {
                     busy = true; error = null
@@ -131,6 +133,7 @@ fun NewChatSheet(
                     placeholder = { Text("#alias:server") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.field),
                 )
                 SheetActionRow(busy = busy, enabled = address.isNotBlank(), label = "Join") {
                     busy = true; error = null
