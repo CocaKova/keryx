@@ -152,16 +152,22 @@ fun ControlsTab(viewModel: ChatViewModel) {
             }
         }
 
-        // --- Config knobs (whitelisted, validated server-side) ------------------------------
+        // --- Config knobs (whitelisted, validated server-side), clustered by group (1.23) ---
         val knobs = config.data.orEmpty()
         if (knobs.isNotEmpty()) {
-            item { SectionLabel("Gateway") }
-            items(knobs, key = { "knob:" + it.key }) { knob ->
-                KnobRow(
-                    knob = knob,
-                    busy = config.refreshing,
-                    onSet = { value -> viewModel.hubConfigSet(knob.key, value) },
-                )
+            val groups = knobs.groupBy { it.group }
+            val groupOrder = listOf("Behavior", "Display", "Missions", "Compression", "Gateway")
+            val ordered = groupOrder.filter { it in groups.keys } +
+                groups.keys.filterNot { it in groupOrder }.sorted()
+            ordered.forEach { group ->
+                item(key = "knobhdr:$group") { SectionLabel(group) }
+                items(groups[group].orEmpty(), key = { "knob:" + it.key }) { knob ->
+                    KnobRow(
+                        knob = knob,
+                        busy = config.refreshing,
+                        onSet = { value -> viewModel.hubConfigSet(knob.key, value) },
+                    )
+                }
             }
         } else if (config.error == null && !config.refreshing) {
             item {
@@ -214,7 +220,9 @@ private fun KnobRow(knob: ConfigKnob, busy: Boolean, onSet: (JsonPrimitive) -> U
         when (knob.kind) {
             "enum" -> ChoiceChips(
                 choices = knob.choices,
-                labels = emptyMap(),
+                // A blank choice is a real value (profile knobs: "the dispatcher decides") —
+                // it needs a visible chip.
+                labels = if ("" in knob.choices) mapOf("" to "unset") else emptyMap(),
                 selected = knob.value,
                 enabled = !knob.locked && !busy,
                 onSelect = { onSet(JsonPrimitive(it)) },
@@ -240,6 +248,35 @@ private fun KnobRow(knob: ConfigKnob, busy: Boolean, onSet: (JsonPrimitive) -> U
                     val bounds = listOfNotNull(knob.min, knob.max)
                     if (bounds.size == 2) {
                         Text("${knob.min}–${knob.max}", fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            "float" -> {
+                var text by remember(knob.key, knob.value) { mutableStateOf(knob.value) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = text,
+                        onValueChange = { raw ->
+                            // Digits and at most one dot — a phone keyboard's worth of float.
+                            val filtered = raw.filter { ch -> ch.isDigit() || ch == '.' }
+                            if (filtered.count { it == '.' } <= 1) text = filtered
+                        },
+                        modifier = Modifier.width(110.dp),
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            fontSize = 13.sp, fontFamily = FontFamily.Monospace),
+                        singleLine = true,
+                        enabled = !knob.locked,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    TextButton(
+                        enabled = !knob.locked && !busy &&
+                            text.toDoubleOrNull() != null && text != knob.value,
+                        onClick = { text.toDoubleOrNull()?.let { onSet(JsonPrimitive(it)) } },
+                    ) { Text("Save", fontSize = 12.sp) }
+                    val bounds = listOfNotNull(knob.minF, knob.maxF)
+                    if (bounds.size == 2) {
+                        Text("${knob.minF}–${knob.maxF}", fontSize = 10.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
