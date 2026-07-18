@@ -1049,17 +1049,22 @@ class HermesStreamClient(
     // The plugin's curated config surface: whitelisted non-secret knobs, validated server-side.
     // Gateways without the keryx-stream plugin 404 all of these — panels hide, nothing breaks.
 
-    /** One whitelisted config knob. [kind] is "enum" | "bool" | "int"; [value] arrives as the
-     *  raw JSON text ("true", "queue", "90") — [boolValue]/[intValue] read it typed. */
+    /** One whitelisted config knob. [kind] is "enum" | "bool" | "int" | "float"; [value] arrives
+     *  as the raw JSON text ("true", "queue", "90", "0.7") — [boolValue]/[intValue]/[floatValue]
+     *  read it typed. [group] clusters knobs into titled sections (1.23). */
     data class ConfigKnob(
         val key: String,
         val label: String,
         val description: String,
         val kind: String,
+        val group: String,
         val value: String,
         val choices: List<String>,
         val min: Int?,
         val max: Int?,
+        /** Float-kind bounds — same JSON fields as [min]/[max], kept unrounded. */
+        val minF: Double?,
+        val maxF: Double?,
         /** When a change lands: "next turn" / "next session" / "gateway restart". */
         val applies: String,
         /** Operator-pinned (KERYX_CONFIG_LOCKED) — render read-only. */
@@ -1067,6 +1072,7 @@ class HermesStreamClient(
     ) {
         val boolValue: Boolean get() = value.toBooleanStrictOrNull() ?: false
         val intValue: Int? get() = value.toIntOrNull()
+        val floatValue: Double? get() = value.toDoubleOrNull()
     }
 
     suspend fun configKnobs(): Result<List<ConfigKnob>> =
@@ -1443,10 +1449,13 @@ internal object HubJson {
                 label = k.str("label"),
                 description = k.str("description"),
                 kind = k.str("kind"),
+                group = k.str("group").ifBlank { "Gateway" },
                 value = k.str("value"),
                 choices = k.arr("choices")?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.orEmpty(),
                 min = k.long("min").toInt().takeIf { k["min"] != null && k["min"] !is kotlinx.serialization.json.JsonNull },
                 max = k.long("max").toInt().takeIf { k["max"] != null && k["max"] !is kotlinx.serialization.json.JsonNull },
+                minF = k.dbl("min"),
+                maxF = k.dbl("max"),
                 applies = k.str("applies"),
                 locked = k.bool("locked"),
             )
