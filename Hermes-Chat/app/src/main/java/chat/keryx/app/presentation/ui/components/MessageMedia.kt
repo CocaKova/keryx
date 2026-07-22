@@ -4,11 +4,19 @@ import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.ui.input.pointer.pointerInput
+import chat.keryx.app.util.mediaMimeFor
+import chat.keryx.app.util.saveMediaToDevice
+import chat.keryx.app.util.shareMedia
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.mutableStateOf
@@ -139,7 +147,11 @@ fun MessageMedia(
                 val fullRes by produceState<ImageBitmap?>(initialValue = null, loadKey) {
                     value = loader()?.let { decodeSampled(it, targetPx = 1_080, longEdge = false) }
                 }
-                FullscreenImageViewer(fullRes ?: bmp, fileName.ifBlank { "image" }) { showFullscreen = false }
+                FullscreenImageViewer(
+                    image = fullRes ?: bmp,
+                    fileName = fileName.ifBlank { "image" },
+                    bytesProvider = loader,
+                ) { showFullscreen = false }
             }
         } else {
             Box(
@@ -155,11 +167,28 @@ fun MessageMedia(
     } else if (kind == MediaKind.VIDEO) {
         InlineVideo(loadKey, fileName, textColor, loader)
     } else {
-        // Audio / files: tap to download (once) and hand off to the system viewer/player.
+        // Audio / files: tap to download (once) and hand off to the system viewer/player;
+        // long-press saves a copy into Music/Download so it outlives the cache.
         val context = androidx.compose.ui.platform.LocalContext.current
         val scope = androidx.compose.runtime.rememberCoroutineScope()
         var opening by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-        FileChip(kind, fileName.ifBlank { "attachment" }, textColor, opening) {
+        FileChip(
+            kind, fileName.ifBlank { "attachment" }, textColor, opening,
+            onLongClick = {
+                if (opening) return@FileChip
+                opening = true
+                scope.launch {
+                    val bytes = loader()
+                    val where = bytes?.let { saveMediaToDevice(context, it, fileName.ifBlank { "file" }, kind) }
+                    android.widget.Toast.makeText(
+                        context,
+                        if (where != null) "Saved to $where" else "Couldn't save",
+                        android.widget.Toast.LENGTH_SHORT,
+                    ).show()
+                    opening = false
+                }
+            },
+        ) {
             if (opening) return@FileChip
             opening = true
             scope.launch {
@@ -267,7 +296,7 @@ private fun InlineVideo(
         }
     }
     if (playing && video != null) {
-        FullscreenVideoPlayer(video.file) { playing = false }
+        FullscreenVideoPlayer(video.file, fileName.ifBlank { "video" }) { playing = false }
     }
 }
 
@@ -278,9 +307,9 @@ private fun formatDuration(ms: Long): String {
     return "%d:%02d".format(m, s)
 }
 
-/** Fullscreen in-app player: ExoPlayer + standard transport controls, ✕ or back to dismiss. */
+/** Fullscreen in-app player: ExoPlayer + standard transport controls, save/share/✕ up top. */
 @Composable
-private fun FullscreenVideoPlayer(file: java.io.File, onDismiss: () -> Unit) {
+private fun FullscreenVideoPlayer(file: java.io.File, fileName: String, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         val context = androidx.compose.ui.platform.LocalContext.current
         val player = remember {
@@ -304,22 +333,33 @@ private fun FullscreenVideoPlayer(file: java.io.File, onDismiss: () -> Unit) {
                 },
                 modifier = Modifier.fillMaxSize(),
             )
-            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
-            ) {
-                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
-            }
+            MediaActionBar(
+                fileName = fileName,
+                kind = MediaKind.VIDEO,
+                bytesProvider = {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        runCatching { file.readBytes() }.getOrNull()
+                    }
+                },
+                onDismiss = onDismiss,
+                modifier = Modifier.align(Alignment.TopEnd),
+            )
         }
     }
 }
 
 /**
- * A full-screen image viewer: tap (or the ✕) to dismiss, pinch to zoom, drag to pan. Reuses the
- * already-decoded bitmap so it opens instantly.
+ * A full-screen image viewer: tap (or the ✕) to dismiss, pinch or double-tap to zoom, drag to
+ * pan. Save/share act on the ORIGINAL bytes via [bytesProvider] — never a re-encoded bitmap —
+ * so the file that lands in Pictures is exactly what was sent.
  */
 @Composable
-private fun FullscreenImageViewer(image: ImageBitmap, fileName: String, onDismiss: () -> Unit) {
+private fun FullscreenImageViewer(
+    image: ImageBitmap,
+    fileName: String,
+    bytesProvider: suspend () -> ByteArray?,
+    onDismiss: () -> Unit,
+) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         var scale by androidx.compose.runtime.remember { mutableStateOf(1f) }
         var offset by androidx.compose.runtime.remember { mutableStateOf(Offset.Zero) }
@@ -331,10 +371,14 @@ private fun FullscreenImageViewer(image: ImageBitmap, fileName: String, onDismis
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.96f))
-                .clickable(
-                    indication = null,
-                    interactionSource = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                ) { onDismiss() },
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { onDismiss() },
+                        onDoubleTap = {
+                            if (scale > 1f) { scale = 1f; offset = Offset.Zero } else scale = 2.5f
+                        },
+                    )
+                },
             contentAlignment = Alignment.Center,
         ) {
             Image(
@@ -351,12 +395,77 @@ private fun FullscreenImageViewer(image: ImageBitmap, fileName: String, onDismis
                     )
                     .transformable(transformState),
             )
-            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
-            ) {
-                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+            MediaActionBar(
+                fileName = fileName,
+                kind = MediaKind.IMAGE,
+                bytesProvider = bytesProvider,
+                onDismiss = onDismiss,
+                modifier = Modifier.align(Alignment.TopEnd),
+            )
+        }
+    }
+}
+
+/**
+ * The viewer chrome shared by images and videos: ⬇ save, share, ✕ — on a scrim pill so the
+ * icons survive light content behind them.
+ */
+@Composable
+private fun MediaActionBar(
+    fileName: String,
+    kind: MediaKind,
+    bytesProvider: suspend () -> ByteArray?,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .padding(12.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.Black.copy(alpha = 0.45f)),
+    ) {
+        IconButton(onClick = {
+            if (busy) return@IconButton
+            busy = true
+            scope.launch {
+                val bytes = bytesProvider()
+                val where = bytes?.let { saveMediaToDevice(context, it, fileName, kind) }
+                android.widget.Toast.makeText(
+                    context,
+                    if (where != null) "Saved to $where" else "Couldn't save",
+                    android.widget.Toast.LENGTH_SHORT,
+                ).show()
+                busy = false
             }
+        }) {
+            Icon(
+                androidx.compose.material.icons.Icons.Default.Download,
+                contentDescription = "Save to device",
+                tint = if (busy) Color.White.copy(alpha = 0.4f) else Color.White,
+            )
+        }
+        IconButton(onClick = {
+            if (busy) return@IconButton
+            busy = true
+            scope.launch {
+                val bytes = bytesProvider()
+                val ok = bytes != null && shareMedia(context, bytes, fileName, kind)
+                if (!ok) android.widget.Toast.makeText(context, "Couldn't share", android.widget.Toast.LENGTH_SHORT).show()
+                busy = false
+            }
+        }) {
+            Icon(
+                androidx.compose.material.icons.Icons.Default.Share,
+                contentDescription = "Share",
+                tint = if (busy) Color.White.copy(alpha = 0.4f) else Color.White,
+            )
+        }
+        IconButton(onClick = onDismiss) {
+            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
         }
     }
 }
@@ -374,7 +483,7 @@ private suspend fun openExternally(
             java.io.File(dir, safe).apply { writeBytes(bytes) }
         }
         val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-        val mime = mimeFor(fileName, kind)
+        val mime = mediaMimeFor(fileName, kind)
         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
             setDataAndType(uri, mime)
             addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -385,20 +494,16 @@ private suspend fun openExternally(
     }
 }
 
-private fun mimeFor(fileName: String, kind: MediaKind): String {
-    val ext = fileName.substringAfterLast('.', "").lowercase()
-    val fromExt = if (ext.isNotBlank())
-        android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) else null
-    return fromExt ?: when (kind) {
-        MediaKind.VIDEO -> "video/*"
-        MediaKind.AUDIO -> "audio/*"
-        MediaKind.IMAGE -> "image/*"
-        MediaKind.FILE -> "*/*"
-    }
-}
-
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun FileChip(kind: MediaKind, label: String, textColor: Color, busy: Boolean = false, onClick: (() -> Unit)? = null) {
+private fun FileChip(
+    kind: MediaKind,
+    label: String,
+    textColor: Color,
+    busy: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+    onClick: (() -> Unit)? = null,
+) {
     val icon = when (kind) {
         MediaKind.AUDIO -> "🎵"
         MediaKind.VIDEO -> "🎬"
@@ -410,7 +515,12 @@ private fun FileChip(kind: MediaKind, label: String, textColor: Color, busy: Boo
         modifier = Modifier
             .clip(RoundedCornerShape(10.dp))
             .background(textColor.copy(alpha = 0.08f))
-            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+            .then(
+                if (onClick != null) Modifier.combinedClickable(
+                    onClick = { onClick() },
+                    onLongClick = onLongClick,
+                ) else Modifier
+            )
             .padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
         Text(if (busy) "⏳" else icon, fontSize = 18.sp)
