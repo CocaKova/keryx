@@ -131,6 +131,55 @@ class GroupChatItemsTest {
         )
     }
 
+    /**
+     * Pinned against the live 2026-07-24 X-post turn: the user asked for the answer "inside a
+     * code block for easy copy and paste", so the turn's final message legitimately started with
+     * ``` — and the fence-continuation rule swallowed the whole answer into the tool run as a
+     * Note step (it rendered inside the ✍️ write_file card). A fence-starting message that is
+     * the block's last substantive agent message is the ANSWER; stdout continuations are always
+     * followed by more of the turn.
+     */
+    @Test
+    fun `a final answer wrapped in a code block stays a visible bubble, not a run Note`() {
+        val items = group(
+            me("trigger", "Give me a post for X, in a code block please"),
+            agent("tool1", "📖 Reading post-log.md"),
+            agent("tool2", "✍️ Writing /home/u/.hermes/skills/the-local-peer/references/post-log.md"),
+            agent("aside", "Now I can see what the news was yesterday. Let me write the post.", replyTo = "trigger"),
+            agent("answer", "```\nA fintech just cut AI spend from \$47K to \$8K/month. $longProse\n```", replyTo = "trigger"),
+        )
+        // The fenced answer is its own bubble…
+        val answer = items.single("answer")
+        assertTrue(answer.message.content.startsWith("```"))
+        // …and never a Note step inside the run.
+        val run = items.filterIsInstance<ChatRenderItem.ToolRun>().single()
+        assertTrue(
+            run.entries.none { it is chat.keryx.app.presentation.ui.components.ToolRunEntry.Note },
+        )
+        assertEquals(2, run.callCount)
+        // The short aside still folds into the run, not a visible bubble.
+        assertTrue(items.filterIsInstance<ChatRenderItem.Single>().none { it.message.id == "aside" })
+    }
+
+    /** The runtime footer merges into the fenced answer before grouping (mergeRuntimeFooters), so
+     *  the answer's content is fence + footer — it must still classify as the answer. */
+    @Test
+    fun `a fenced answer with a merged runtime footer stays a visible bubble`() {
+        val items = group(
+            me("trigger", "post please, in a code block"),
+            agent("tool1", "✍️ Writing /tmp/post-log.md"),
+            agent("answer", "```\nThe post body. $longProse\n```", replyTo = "trigger"),
+            agent("footer", "laguna-s-2.1 · 48% · ~"),
+        )
+        // Footer merged into the answer, which stays a bubble outside the run.
+        val answer = items.filterIsInstance<ChatRenderItem.Single>().first { it.message.id == "answer" }
+        assertTrue(answer.message.content.contains("The post body"))
+        val run = items.filterIsInstance<ChatRenderItem.ToolRun>().single()
+        assertTrue(
+            run.entries.none { it is chat.keryx.app.presentation.ui.components.ToolRunEntry.Note },
+        )
+    }
+
     @Test
     fun `day headers appear once per local day, before that day's first item`() {
         val day = 86_400_000L
