@@ -526,6 +526,8 @@ private fun walkRange(chronoRange: List<Message>, lastMineIdInit: String?): Rang
         // Once a real tool has run in this block, a message that is nothing but ``` fences is that
         // tool's continued output (Hermes drops the glyph header on follow-up progress sends) —
         // NOT an answer. Without this, mid-run fences broke the run and floated as code bubbles.
+        // The one exception is the block's LAST substantive agent message (see
+        // moreAgentContentAhead below): a turn ends on its answer, never on raw stdout.
         var toolSeen = false
         fun fenceOnly(m: Message) = m.content.trimStart().startsWith("```")
         fun addReasoning(t: String) {
@@ -570,6 +572,16 @@ private fun walkRange(chronoRange: List<Message>, lastMineIdInit: String?): Rang
                         proseLength(MessageParser.parse(n.content)) < ANSWER_PROSE_MIN
                 }
                 .any { q -> isToolMessage(chrono[q]) || (toolSeen && fenceOnly(chrono[q])) }
+            // A fence-starting message is only a stdout CONTINUATION while more of the turn is
+            // still coming — a real turn always ends on its answer, so stdout is never the last
+            // substantive agent message of the block (telemetry heartbeats and embedded slash
+            // commands don't count). An answer the user asked for "in a code block" also starts
+            // with ``` and used to be swallowed into the run as a Note step — live-caught
+            // 2026-07-24 when an X-post draft rendered inside its turn's ✍️ write_file run.
+            val moreAgentContentAhead = (p + 1 until blockEnd).any { q ->
+                val n = chrono[q]
+                n.sender == SenderType.HERMES && !isTelemetryMessage(n)
+            }
             when {
                 // Telemetry FIRST: a "⏳ Working…" heartbeat can also match the tool-line shapes,
                 // and it must stay a quiet aside, not inflate the "Ran N tools" count.
@@ -587,7 +599,8 @@ private fun walkRange(chronoRange: List<Message>, lastMineIdInit: String?): Rang
                 }
                 // Header-less tool output mid-run: a machine-output step inside the run, however
                 // long the fences are — never an answer boundary, never a loose code bubble.
-                toolSeen && fenceOnly(m) -> {
+                // Requires more of the turn ahead: a fence-starting FINAL message is the answer.
+                toolSeen && fenceOnly(m) && moreAgentContentAhead -> {
                     openRun(m)
                     entries += ToolRunEntry.Note(m.content.trim())
                 }
