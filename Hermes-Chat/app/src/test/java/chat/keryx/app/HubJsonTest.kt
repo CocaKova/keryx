@@ -5,6 +5,7 @@ import chat.keryx.app.data.remote.HubJson
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -407,5 +408,55 @@ class HubJsonTest {
 
         val jobs = HubJson.jobs(obj("""{"jobs":[{"id":"j","name":"n","prompt":"do the thing"}]}"""))
         assertEquals("do the thing", jobs.single().prompt)
+    }
+
+    // --- 1.25: skill trash + raw config (fixtures captured from the live gateway 2026-07-31) ----
+
+    @Test
+    fun `skill trash entries map id name category and restorable`() {
+        val t = HubJson.trashedSkills(obj("""
+            {"entries":[
+              {"name":"doomed-skill","category":"ops","origin":"/home/u/.hermes/skills/ops/doomed-skill",
+               "deleted_at":"2026-07-31T16-47-43Z","id":"doomed-skill-2026-07-31T16-47-43Z","restorable":true},
+              {"name":"returning-skill","category":null,"origin":"/home/u/.hermes/skills/returning-skill",
+               "deleted_at":"2026-07-30T09-00-00Z","id":"returning-skill-2026-07-30T09-00-00Z","restorable":false}]}
+        """))
+        assertEquals(2, t.size)
+        assertEquals("doomed-skill-2026-07-31T16-47-43Z", t[0].id)
+        assertEquals("ops", t[0].category)
+        assertTrue(t[0].restorable)
+        // A skill by that name exists again — the app offers Purge only.
+        assertNull(t[1].category)
+        assertFalse(t[1].restorable)
+    }
+
+    @Test
+    fun `empty trash parses to an empty list`() {
+        assertTrue(HubJson.trashedSkills(obj("""{"entries":[]}""")).isEmpty())
+        // Older gateway with no trash route answer at all → still no throw.
+        assertTrue(HubJson.trashedSkills(obj("""{}""")).isEmpty())
+    }
+
+    @Test
+    fun `trash entry from a gateway without the restorable flag defaults to restorable`() {
+        // Fail-soft: assume it can be restored and let the server be the one to refuse,
+        // rather than hiding the only recovery affordance the user has.
+        val t = HubJson.trashedSkills(obj("""
+            {"entries":[{"name":"old","deleted_at":"2026-07-01T00-00-00Z","id":"old-2026-07-01T00-00-00Z"}]}
+        """))
+        assertTrue(t.single().restorable)
+        assertNull(t.single().category)
+    }
+
+    @Test
+    fun `raw config maps content hash path and size`() {
+        val c = HubJson.rawConfig(obj("""
+            {"content":"model:\n  default: test\n","hash":"29d96c80a9ad57cc",
+             "path":"/home/u/.hermes/config.yaml","bytes":26}
+        """))
+        assertEquals("model:\n  default: test\n", c.content)
+        assertEquals("29d96c80a9ad57cc", c.hash)
+        assertEquals("/home/u/.hermes/config.yaml", c.path)
+        assertEquals(26, c.bytes)
     }
 }

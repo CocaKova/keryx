@@ -60,9 +60,13 @@ fun ControlsTab(viewModel: ChatViewModel) {
     val config by viewModel.hubConfig.collectAsState()
     var swapTarget by remember { mutableStateOf<String?>(null) }
     var logsOpen by remember { mutableStateOf(false) }
+    var rawOpen by remember { mutableStateOf(false) }
 
     if (logsOpen) {
         GatewayLogViewer(viewModel = viewModel, onDismiss = { logsOpen = false })
+    }
+    if (rawOpen) {
+        RawConfigEditor(viewModel = viewModel, onDismiss = { rawOpen = false })
     }
     swapTarget?.let { target ->
         AlertDialog(
@@ -156,7 +160,13 @@ fun ControlsTab(viewModel: ChatViewModel) {
         val knobs = config.data.orEmpty()
         if (knobs.isNotEmpty()) {
             val groups = knobs.groupBy { it.group }
-            val groupOrder = listOf("Behavior", "Display", "Missions", "Compression", "Gateway")
+            // Deliberate order: what you touch often first, what you touch rarely last.
+            // Groups the gateway invents that aren't listed here still render, alphabetically.
+            val groupOrder = listOf(
+                "Behavior", "Display", "Missions", "Compression",
+                "Agent", "Memory", "Skills", "Tools",
+                "Terminal", "Browser", "Delegation", "Voice", "Safety", "Gateway",
+            )
             val ordered = groupOrder.filter { it in groups.keys } +
                 groups.keys.filterNot { it in groupOrder }.sorted()
             ordered.forEach { group ->
@@ -179,12 +189,22 @@ fun ControlsTab(viewModel: ChatViewModel) {
             }
         }
 
-        // --- Logs ----------------------------------------------------------------------------
+        // --- Logs + the raw editor under them (1.25) ------------------------------------------
         item {
             Spacer(Modifier.height(14.dp))
             OutlinedButton(onClick = { logsOpen = true }, modifier = Modifier.fillMaxWidth()) {
                 Text("Gateway log")
             }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(onClick = { rawOpen = true }, modifier = Modifier.fillMaxWidth()) {
+                Text("Edit config.yaml")
+            }
+            Text(
+                "Everything above, plus every setting no knob covers. Backed up before each save.",
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
     }
 }
