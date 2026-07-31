@@ -775,6 +775,103 @@ class ChatViewModel(
         }
     }
 
+    /** Create a skill from the phone. [onDone] gets (success, message); the gateway runs the same
+     *  frontmatter validation and security scan the agent's own skill_manage tool does. */
+    fun skillCreate(name: String, content: String, category: String?, onDone: (Boolean, String) -> Unit) {
+        val client = gatewayClient() ?: run { onDone(false, "Hermes Link is off"); return }
+        viewModelScope.launch {
+            client.skillCreate(name, content, category)
+                .onSuccess { refreshHubSkills(); onDone(true, "created — index refreshes for new sessions") }
+                .onFailure { onDone(false, it.message ?: "create failed") }
+        }
+    }
+
+    // --- Skill trash (1.25) ----------------------------------------------------------------------
+
+    private val _skillTrash =
+        MutableStateFlow<List<chat.keryx.app.data.remote.HermesStreamClient.TrashedSkill>>(emptyList())
+    val skillTrash: StateFlow<List<chat.keryx.app.data.remote.HermesStreamClient.TrashedSkill>> =
+        _skillTrash.asStateFlow()
+
+    fun refreshSkillTrash() {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.skillTrash().onSuccess { _skillTrash.value = it }
+        }
+    }
+
+    /** Move a skill to the trash. The toast carries the undo affordance's whole reason for
+     *  existing — nothing is actually gone until it's purged. */
+    fun skillDelete(name: String, onDone: (Boolean, String) -> Unit) {
+        val client = gatewayClient() ?: run { onDone(false, "Hermes Link is off"); return }
+        viewModelScope.launch {
+            client.skillDelete(name)
+                .onSuccess {
+                    refreshHubSkills()
+                    refreshSkillTrash()
+                    _toasts.tryEmit("Moved “$name” to trash — restore it from Skills ▸ Trash")
+                    onDone(true, "moved to trash")
+                }
+                .onFailure {
+                    _toasts.tryEmit("Delete refused: ${it.message?.take(80)}")
+                    onDone(false, it.message ?: "delete failed")
+                }
+        }
+    }
+
+    fun skillRestore(id: String, name: String) {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.skillRestore(id)
+                .onSuccess {
+                    refreshHubSkills()
+                    refreshSkillTrash()
+                    _toasts.tryEmit("Restored “$name”")
+                }
+                .onFailure { _toasts.tryEmit("Restore failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    fun skillPurge(id: String, name: String) {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.skillPurge(id)
+                .onSuccess { refreshSkillTrash(); _toasts.tryEmit("Purged “$name” for good") }
+                .onFailure { _toasts.tryEmit("Purge failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    // --- Raw config editor (1.25) ----------------------------------------------------------------
+
+    suspend fun configRaw(): Result<chat.keryx.app.data.remote.HermesStreamClient.RawConfig> =
+        gatewayClient()?.configRawGet()
+            ?: Result.failure(IllegalStateException("Hermes Link is off"))
+
+    /** Save config.yaml wholesale. [onDone] gets (success, message, needsForce) — needsForce means
+     *  the gateway thinks this is a truncated paste and wants an explicit confirmation. */
+    fun configRawSave(
+        content: String,
+        baseHash: String?,
+        force: Boolean,
+        onDone: (Boolean, String, Boolean) -> Unit,
+    ) {
+        val client = gatewayClient() ?: run { onDone(false, "Hermes Link is off", false); return }
+        viewModelScope.launch {
+            client.configRawPut(content, baseHash, force)
+                .onSuccess { res ->
+                    // The curated knobs read the same file — re-pull so they don't show stale values.
+                    refreshHubConfig()
+                    onDone(true, res.backup?.let { "Saved. Backup: ${it.substringAfterLast('/')}" }
+                        ?: "Saved.", false)
+                }
+                .onFailure { e ->
+                    val needsForce =
+                        (e as? chat.keryx.app.data.remote.HermesStreamClient.GatewayError)?.needsForce == true
+                    onDone(false, e.message ?: "save failed", needsForce)
+                }
+        }
+    }
+
     /** Flip one toolset on/off for the agent's platform, then re-pull so the switch reflects
      *  what the gateway actually persisted (locked refusals surface as the gateway's words). */
     fun hubToolsetToggle(name: String, enabled: Boolean) {

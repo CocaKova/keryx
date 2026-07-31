@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -75,6 +76,7 @@ fun SkillForgeSheet(
     var saving by remember { mutableStateOf(false) }
     var statusLine by remember { mutableStateOf<String?>(null) }
     var confirmDiscard by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
 
     LaunchedEffect(skillName) {
         viewModel.skillDetail(skillName)
@@ -104,6 +106,13 @@ fun SkillForgeSheet(
         actions = {
             val d = detail
             if (d != null && !d.readonly && !editing) {
+                IconButton(onClick = { confirmDelete = true }) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete skill",
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                }
                 IconButton(onClick = { draft = d.content; editing = true; statusLine = null }) {
                     Icon(
                         Icons.Default.Edit,
@@ -198,6 +207,33 @@ fun SkillForgeSheet(
                         }
                     }
                 }
+    }
+
+    if (confirmDelete) {
+        val d = detail
+        AlertDialog(
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Delete this skill?", fontSize = 16.sp) },
+            text = {
+                Text(
+                    "“${d?.name ?: skillName}” moves to the trash and stops loading into the " +
+                        "agent. You can restore it from Skills ▸ Trash until you purge it.",
+                    fontSize = 13.sp,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    viewModel.skillDelete(d?.name ?: skillName) { ok, message ->
+                        if (ok) onDismiss() else statusLine = message
+                    }
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) { Text("Keep it") }
+            },
+        )
     }
 
     if (confirmDiscard) {

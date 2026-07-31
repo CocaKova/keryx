@@ -1028,7 +1028,14 @@ private fun epochAgo(epochSec: Double): String? {
 @Composable
 private fun SkillsTab(viewModel: ChatViewModel) {
     val panel by viewModel.hubSkills.collectAsState()
+    val trash by viewModel.skillTrash.collectAsState()
     var filter by remember { mutableStateOf("") }
+    // 1.25: the library and its trash are one tab — deleting somewhere you can't see the
+    // undo would make "recoverable" a claim rather than an affordance.
+    var showTrash by remember { mutableStateOf(false) }
+    var creating by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) { viewModel.refreshSkillTrash() }
 
     Column(Modifier.fillMaxSize()) {
         PanelErrorLine(panel.error)
@@ -1036,30 +1043,59 @@ private fun SkillsTab(viewModel: ChatViewModel) {
         when {
             skills == null -> PanelLoading()
             else -> {
-                OutlinedTextField(
-                    value = filter, onValueChange = { filter = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                    placeholder = { Text("Filter ${skills.size} skills…", fontSize = 12.sp) },
-                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
-                    singleLine = true,
-                )
-                val shown = skills.filter {
-                    filter.isBlank() || it.name.contains(filter, ignoreCase = true) ||
-                        it.description.contains(filter, ignoreCase = true)
-                }
-                LazyColumn(
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                        start = 20.dp, end = 20.dp, top = 8.dp, bottom = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(shown, key = { it.name }) { s ->
-                        // Tap opens the Skill Forge (1.8): full SKILL.md, edit, save.
-                        Column(Modifier.fillMaxWidth().clickable { viewModel.openSkillForge(s.name) }) {
-                            Text(s.name, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                            if (s.description.isNotBlank()) {
-                                Text(s.description, fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 3, overflow = TextOverflow.Ellipsis)
+                    OutlinedTextField(
+                        value = filter, onValueChange = { filter = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Filter ${skills.size} skills…", fontSize = 12.sp) },
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
+                        singleLine = true,
+                    )
+                    IconButton(onClick = { creating = true }) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "New skill",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+                if (trash.isNotEmpty()) {
+                    TextButton(
+                        onClick = { showTrash = !showTrash },
+                        modifier = Modifier.padding(start = 12.dp),
+                    ) {
+                        Text(
+                            if (showTrash) "← Back to ${skills.size} skills"
+                            else "Trash (${trash.size})",
+                            fontSize = 12.sp,
+                        )
+                    }
+                }
+                if (showTrash) {
+                    SkillTrashList(trash, viewModel)
+                } else {
+                    val shown = skills.filter {
+                        filter.isBlank() || it.name.contains(filter, ignoreCase = true) ||
+                            it.description.contains(filter, ignoreCase = true)
+                    }
+                    LazyColumn(
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            start = 20.dp, end = 20.dp, top = 8.dp, bottom = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        items(shown, key = { it.name }) { s ->
+                            // Tap opens the Skill Forge (1.8): full SKILL.md, edit, save, delete.
+                            Column(Modifier.fillMaxWidth().clickable { viewModel.openSkillForge(s.name) }) {
+                                Text(s.name, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                if (s.description.isNotBlank()) {
+                                    Text(s.description, fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                }
                             }
                         }
                     }
@@ -1067,6 +1103,125 @@ private fun SkillsTab(viewModel: ChatViewModel) {
             }
         }
     }
+
+    if (creating) NewSkillDialog(viewModel) { creating = false }
+}
+
+/** Trashed skills, newest first. A skill whose name was taken again since can't be restored
+ *  onto its old path, so it offers Purge only — the gateway would refuse the restore anyway. */
+@Composable
+private fun SkillTrashList(
+    trash: List<chat.keryx.app.data.remote.HermesStreamClient.TrashedSkill>,
+    viewModel: ChatViewModel,
+) {
+    LazyColumn(
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            start = 20.dp, end = 20.dp, top = 8.dp, bottom = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        items(trash, key = { it.id }) { t ->
+            var confirmPurge by remember(t.id) { mutableStateOf(false) }
+            Column(Modifier.fillMaxWidth()) {
+                Text(t.name, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text(
+                    listOfNotNull(t.category, "deleted ${t.deletedAt}").joinToString(" · "),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (t.restorable) {
+                        TextButton(onClick = { viewModel.skillRestore(t.id, t.name) }) {
+                            Text("Restore", fontSize = 12.sp)
+                        }
+                    } else {
+                        Text(
+                            "a skill by that name exists again",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 14.dp),
+                        )
+                    }
+                    TextButton(onClick = { confirmPurge = true }) {
+                        Text("Purge", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+            if (confirmPurge) {
+                AlertDialog(
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
+                    onDismissRequest = { confirmPurge = false },
+                    title = { Text("Purge “${t.name}”?", fontSize = 16.sp) },
+                    text = { Text("This deletes it from disk for good. There is no undo.", fontSize = 13.sp) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            confirmPurge = false
+                            viewModel.skillPurge(t.id, t.name)
+                        }) { Text("Purge", color = MaterialTheme.colorScheme.error) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { confirmPurge = false }) { Text("Keep it") }
+                    },
+                )
+            }
+        }
+    }
+}
+
+/** Create a skill from the phone. The body is pre-filled with valid frontmatter because the
+ *  gateway rejects anything without it — an empty box would just produce an error on save. */
+@Composable
+private fun NewSkillDialog(viewModel: ChatViewModel, onClose: () -> Unit) {
+    var name by remember { mutableStateOf("") }
+    var content by remember { mutableStateOf("") }
+    var status by remember { mutableStateOf<String?>(null) }
+    var saving by remember { mutableStateOf(false) }
+
+    val slug = name.trim().lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
+    LaunchedEffect(slug) {
+        if (content.isBlank() && slug.isNotBlank()) {
+            content = "---\nname: $slug\ndescription: \n---\n\n"
+        }
+    }
+
+    AlertDialog(
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
+        onDismissRequest = { if (!saving) onClose() },
+        title = { Text("New skill", fontSize = 16.sp) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = name, onValueChange = { name = it },
+                    label = { Text("Name", fontSize = 12.sp) },
+                    singleLine = true,
+                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
+                )
+                OutlinedTextField(
+                    value = content, onValueChange = { content = it },
+                    label = { Text("SKILL.md", fontSize = 12.sp) },
+                    modifier = Modifier.height(200.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        fontSize = 12.sp, fontFamily = FontFamily.Monospace),
+                )
+                status?.let {
+                    Text(it, fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !saving && slug.isNotBlank() && content.isNotBlank(),
+                onClick = {
+                    saving = true
+                    status = null
+                    viewModel.skillCreate(slug, content, null) { ok, message ->
+                        saving = false
+                        if (ok) onClose() else status = message
+                    }
+                },
+            ) { Text(if (saving) "Creating…" else "Create") }
+        },
+        dismissButton = { TextButton(onClick = onClose, enabled = !saving) { Text("Cancel") } },
+    )
 }
 
 // --- Tools -------------------------------------------------------------------------------------

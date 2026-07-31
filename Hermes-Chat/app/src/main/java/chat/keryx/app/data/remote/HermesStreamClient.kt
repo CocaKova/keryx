@@ -498,6 +498,14 @@ class HermesStreamClient(
      * `{"error":"…"}` string — both surface here as the exception message so every caller's
      * `Result.onFailure` shows the gateway's own words instead of an HTTP code.
      */
+    /** A refusal from the gateway, carrying whatever structured extras the route attached.
+     *  Subclasses IllegalStateException so existing `error(...)`-shaped handling still works. */
+    class GatewayError(
+        message: String,
+        /** The raw-config editor's "this looks like a truncated paste" confirmation gate. */
+        val needsForce: Boolean = false,
+    ) : IllegalStateException(message)
+
     private suspend fun apiCall(
         path: String,
         method: String = "GET",
@@ -525,15 +533,21 @@ class HermesStreamClient(
         probe.newCall(request).execute().use { resp ->
             val text = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) {
-                val msg = runCatching {
-                    when (val err = json.parseToJsonElement(text).jsonObject["error"]) {
-                        is kotlinx.serialization.json.JsonObject ->
-                            (err["message"] as? JsonPrimitive)?.content
-                        is JsonPrimitive -> err.contentOrNull
-                        else -> null
-                    }
+                val err = runCatching {
+                    json.parseToJsonElement(text).jsonObject["error"]
                 }.getOrNull()
-                error(msg ?: "HTTP ${resp.code}")
+                val msg = when (err) {
+                    is kotlinx.serialization.json.JsonObject ->
+                        (err["message"] as? JsonPrimitive)?.content
+                    is JsonPrimitive -> err.contentOrNull
+                    else -> null
+                }
+                // Structured extras travel with the exception so callers branch on a flag
+                // instead of sniffing the message text.
+                val needsForce = (err as? kotlinx.serialization.json.JsonObject)
+                    ?.get("needs_force")
+                    ?.let { (it as? JsonPrimitive)?.contentOrNull == "true" } == true
+                throw GatewayError(msg ?: "HTTP ${resp.code}", needsForce)
             }
             // Snapshot plain GETs only: parameterized paths (event cursors, per-id lookups) would
             // grow the cache without ever being re-read. A caller whose query is fixed rather than
@@ -1171,6 +1185,90 @@ class HermesStreamClient(
             Unit
         }
 
+    // --- Skill trash (1.25) — DELETE /keryx/skills/{name} + /keryx/skill-trash/* -----------------
+
+    /** A skill sitting in the trash. [restorable] is false when a skill of the same name has been
+     *  created again since — restoring would collide, so the app offers only Purge. */
+    data class TrashedSkill(
+        val id: String,
+        val name: String,
+        val category: String?,
+        val deletedAt: String,
+        val restorable: Boolean,
+    )
+
+    private fun trashPath(id: String): String =
+        "/keryx/skill-trash/" + java.net.URLEncoder.encode(id, "UTF-8").replace("+", "%20")
+
+    /** Moves the skill out of the agent's scanned tree. Recoverable via [skillRestore] until
+     *  purged. Returns the trash id so the caller can offer an immediate undo. */
+    suspend fun skillDelete(name: String): Result<String> = runCatching {
+        val obj = apiCall(skillPath(name), method = "DELETE")
+        (obj["id"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+    }
+
+    suspend fun skillTrash(): Result<List<TrashedSkill>> =
+        runCatching { HubJson.trashedSkills(apiCall("/keryx/skill-trash", snapshot = false)) }
+
+    /** The gateway's shared JSON handler requires an object body on POST, so this sends `{}`
+     *  rather than an empty payload — a bodyless POST comes back 400 "invalid JSON body". */
+    suspend fun skillRestore(id: String): Result<Unit> = runCatching {
+        apiCall(
+            trashPath(id) + "/restore",
+            method = "POST",
+            body = kotlinx.serialization.json.buildJsonObject { },
+        )
+        Unit
+    }
+
+    suspend fun skillPurge(id: String): Result<Unit> = runCatching {
+        apiCall(trashPath(id), method = "DELETE")
+        Unit
+    }
+
+    // --- Raw config editor (1.25) — /keryx/config/raw --------------------------------------------
+
+    /** config.yaml as text. [hash] must be echoed back on save so a change made elsewhere in the
+     *  meantime is a visible conflict instead of a silent overwrite. */
+    data class RawConfig(
+        val content: String,
+        val hash: String,
+        val path: String,
+        val bytes: Int,
+    )
+
+    /** Outcome of a save. [needsForce] means the gateway thinks this looks like a truncated
+     *  paste — most top-level sections would disappear — and wants explicit confirmation. */
+    data class RawConfigSave(
+        val ok: Boolean,
+        val message: String,
+        val backup: String? = null,
+        val hash: String? = null,
+        val needsForce: Boolean = false,
+    )
+
+    suspend fun configRawGet(): Result<RawConfig> =
+        runCatching { HubJson.rawConfig(apiCall("/keryx/config/raw", snapshot = false)) }
+
+    suspend fun configRawPut(
+        content: String,
+        baseHash: String?,
+        force: Boolean = false,
+    ): Result<RawConfigSave> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("content", JsonPrimitive(content))
+            if (!baseHash.isNullOrBlank()) put("base_hash", JsonPrimitive(baseHash))
+            if (force) put("force", JsonPrimitive(true))
+        }
+        val obj = apiCall("/keryx/config/raw", method = "PUT", body = payload)
+        RawConfigSave(
+            ok = true,
+            message = (obj["applies"] as? JsonPrimitive)?.contentOrNull ?: "saved",
+            backup = (obj["backup"] as? JsonPrimitive)?.contentOrNull,
+            hash = (obj["hash"] as? JsonPrimitive)?.contentOrNull,
+        )
+    }
+
     // --- Session pruner — POST /keryx/sessions/prune ---------------------------------------------
 
     data class PruneSample(
@@ -1347,6 +1445,26 @@ internal object HubJson {
                     )
                 },
             ) else null,
+        )
+
+    fun trashedSkills(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.TrashedSkill> =
+        obj.objs("entries").map { e ->
+            HermesStreamClient.TrashedSkill(
+                id = e.str("id"),
+                name = e.str("name"),
+                category = e.strOrNull("category"),
+                deletedAt = e.str("deleted_at"),
+                // Absent on an older gateway → assume restorable and let the server refuse.
+                restorable = e["restorable"]?.let { (it as? JsonPrimitive)?.contentOrNull != "false" } ?: true,
+            )
+        }
+
+    fun rawConfig(obj: kotlinx.serialization.json.JsonObject): HermesStreamClient.RawConfig =
+        HermesStreamClient.RawConfig(
+            content = obj.str("content"),
+            hash = obj.str("hash"),
+            path = obj.str("path"),
+            bytes = obj.long("bytes").toInt(),
         )
 
     fun skillDetail(obj: kotlinx.serialization.json.JsonObject): HermesStreamClient.SkillDetail =
