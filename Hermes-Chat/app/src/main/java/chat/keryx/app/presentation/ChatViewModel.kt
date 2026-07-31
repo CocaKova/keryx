@@ -68,6 +68,13 @@ class ChatViewModel(
         private const val TYPING_STOP_GRACE_MS = 5_000L
         // Typing stopped and the answer is already rendered: the turn is over — settle fast.
         private const val ANSWER_SETTLED_MS = 350L
+        // How long a typing=true flag keeps its veto with NO other sign of life. Matrix typing is
+        // ephemeral state: a stop EDU that lands in a sync gap (app backgrounded mid-turn) is
+        // simply never re-delivered, and the flag then reads true forever — the cloud and the
+        // newest card's working shimmer never die. Fresh evidence (a typing emission, a new or
+        // growing agent message) renews the trust; when it runs out, the banner settles even if
+        // the flag still says typing.
+        private const val TYPING_TRUST_MS = QUIET_LONG_MS
 
         // --- Side-channel stream tuning ---
         // UI dispatch throttle for the live token buffer: flush to state when either trips.
@@ -1178,6 +1185,10 @@ class ChatViewModel(
     // True while Hermes' typing indicator is up. Authoritative: a pending quiet-timeout will NOT
     // clear the banner while this is set, so a long silent tool call (curl) can't make it vanish.
     @Volatile private var agentTyping = false
+    // Last wall-clock moment the agent showed a verifiable sign of life (a typing emission, a new
+    // or growing message). The typing veto in scheduleClearAwaiting trusts the flag only within
+    // TYPING_TRUST_MS of this — the bound that keeps a stale EDU from holding the cloud forever.
+    @Volatile private var agentEvidenceAt = 0L
     // True once the latest agent message reads as a real answer (not mid-run); used to shorten the
     // typing-stop grace so the working animation dies WITH the delivery, not seconds after it.
     @Volatile private var answerLanded = false
@@ -1211,8 +1222,18 @@ class ChatViewModel(
             delay(delayMs)
             // Typing owns the lifecycle — except when the caller KNOWS the turn ended (the
             // streamed answer's committed copy just handed off), where lingering typing EDUs
-            // must not keep the cloud up.
-            if (!force && agentTyping) return@launch
+            // must not keep the cloud up. The veto is not a permanent excusal, though: it
+            // only holds while the trust window since the last sign of life is open. Wait it
+            // out — a genuine typing-stop or fresh activity reschedules (cancelling this job),
+            // and a flag nothing ever renews stops being believed.
+            if (!force) {
+                while (agentTyping) {
+                    val remaining =
+                        TYPING_TRUST_MS - (System.currentTimeMillis() - agentEvidenceAt)
+                    if (remaining <= 0) break
+                    delay(remaining)
+                }
+            }
             _awaitingReply.value = false
             _workStartedAt.value = null
             // This message's working stretch is over; don't let a room re-entry resurrect it.
@@ -1229,13 +1250,26 @@ class ChatViewModel(
         val tools = segs.filterIsInstance<MessageParser.Segment.Tools>().flatMap { it.calls }
         val hasReasoning = segs.any { it is MessageParser.Segment.Thinking }
         val isTelemetry = MessageParser.isTelemetryMessage(last.content)
-        val hasAnswer = !isTelemetry &&
-            segs.any { it is MessageParser.Segment.Text && (it as MessageParser.Segment.Text).text.isNotBlank() }
+        // Judge the turn by how the message ENDS, not by what it contains: a message that runs
+        // tools and then delivers the answer is a finished turn, but "any tool call anywhere"
+        // used to force the long mid-run window — the cloud (and the newest card's working
+        // shimmer) outstayed an answer already on screen by minutes, and re-opening the room
+        // re-lit it via the openedMidRun recency check. Mid-run is a trailing tool call, bare
+        // reasoning, or a structured tool payload; any visible content after those (prose, a
+        // table, a diagram, ask-chips) is the answer having landed.
+        val tail = segs.lastOrNull {
+            !(it is MessageParser.Segment.Telemetry) &&
+                !(it is MessageParser.Segment.Text && it.text.isBlank())
+        }
+        val hasAnswer = !isTelemetry && tail != null &&
+            tail !is MessageParser.Segment.Tools &&
+            tail !is MessageParser.Segment.Thinking &&
+            tail !is MessageParser.Segment.ActionOutput
         _workLabel.value = when {
             // Telemetry first: a "⏳ Working…" heartbeat parses as a tool-shaped line too, and
             // "Running Working" is not a label.
             isTelemetry -> "Working"
-            tools.isNotEmpty() -> "Running ${tools.last().name}"
+            !hasAnswer && tools.isNotEmpty() -> "Running ${tools.last().name}"
             hasReasoning && !hasAnswer -> "Reasoning"
             else -> "Working"
         }
@@ -1243,7 +1277,7 @@ class ChatViewModel(
         // arrives AFTER the answer — it must settle immediately, not hold the working banner
         // through the full mid-run quiet window.
         if (isTelemetry && MessageParser.isSelfImprovementReview(last.content)) return QUIET_SHORT_MS
-        return if (tools.isNotEmpty() || !hasAnswer) QUIET_LONG_MS else QUIET_SHORT_MS
+        return if (hasAnswer) QUIET_SHORT_MS else QUIET_LONG_MS
     }
 
     // A room the user asked to open (e.g. by tapping a notification) before the room list loaded.
@@ -1347,6 +1381,7 @@ class ChatViewModel(
                 }
                 // Live activity = a brand-new message or a streamed edit growing the current one.
                 val liveActivity = isNewMsg || grew
+                if (liveActivity) agentEvidenceAt = System.currentTimeMillis()
                 // On first open, fall back to recency so opening the app mid-run still lights up,
                 // without falsely firing for an old conversation that merely ended on a tool call —
                 // and never for a message whose banner already lit and settled once.
@@ -1407,7 +1442,11 @@ class ChatViewModel(
                     chat.keryx.app.util.KLog.i("KeryxTyping") { "typing=$typing humans=${state.humanNames.size} awaiting=${_awaitingReply.value} answerLanded=$answerLanded" }
                     agentTyping = typing
                     if (typing) {
-                        quietJob?.cancel() // never time out while it's actively typing/working
+                        agentEvidenceAt = System.currentTimeMillis()
+                        // Not a bare cancel: typing holds the banner, but only on a leash.
+                        // This reschedule is the watchdog that fires if nothing — no stop
+                        // EDU, no message — ever renews the evidence again.
+                        scheduleClearAwaiting(TYPING_TRUST_MS)
                         if (!_awaitingReply.value) {
                             _awaitingReply.value = true
                             if (_workStartedAt.value == null) _workStartedAt.value = System.currentTimeMillis()
