@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -17,26 +18,30 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.platform.LocalDensity
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 /**
- * Magic dust (2.0): grains of enchanted sand rising off a shape's edge — the streaming reply's
- * "still being dreamed" mark, in the user's own two accents with the odd starlight glint. Each
- * grain lifts from a random point on the outline, drifts on a small arc (a breath of gravity
- * pulls it back down, which is what makes it read as *sand* and not confetti), and sifts away.
+ * Magic sand streams (2.0, third iteration — Jonny: "think magic/sand STREAMS"): not scattered
+ * grains but coherent rivulets. A few emitters wander slowly along the shape's outline, each
+ * exhaling a dense trail of *fine* motes that share one smoothly-swaying flow direction — the
+ * eye reads ribbons of sand pouring off the bubble, not confetti. Motes are velocity-stretched
+ * into sub-dp streaks (that stretch is what makes flowing sand look like flowing sand), washed
+ * with starlight so they read as light-shot dust rather than solid paint, and a breath of
+ * gravity arcs every stream downward at its end.
  *
- * Battery contract: a fixed pool (no allocation per grain), physics stepped only while [active]
- * or while the last grains finish falling, nothing at all under reduced motion. Place BEFORE
- * `clip()` in the modifier chain — the dust must live *outside* the shape; grains crossing the
- * fill vanish behind it, which reads as emerging from behind the bubble.
+ * Battery contract unchanged: fixed pool, zero allocation per mote, physics stepped only while
+ * [active] or while the last motes finish falling, nothing at all under reduced motion. Place
+ * BEFORE `clip()` — the sand lives outside the shape.
  */
 @Composable
 fun Modifier.keryxMagicDust(
     active: Boolean,
     shape: Shape,
-    grains: Int = 42,
+    grains: Int = 96,
 ): Modifier {
     val reduced by rememberReducedMotion()
     val enabled = active && !reduced
@@ -44,17 +49,35 @@ fun Modifier.keryxMagicDust(
     val accent2 = MaterialTheme.colorScheme.tertiary
     val density = LocalDensity.current.density
     val pool = remember(grains) { Array(grains) { Grain() } }
+    val emitters = remember { Array(3) { Emitter() } }
+    // Outline geometry, published by the draw cache (it owns the PathMeasure) and read by the
+    // physics loop to spawn ON the edge with a true outward normal. Both run on the UI thread.
+    val geo = remember { DustGeo() }
     var tick by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(enabled) {
         if (!enabled && pool.none { it.alive }) return@LaunchedEffect
         val rnd = Random(SystemClock.uptimeMillis())
+        val pos = FloatArray(2)
+        val tan = FloatArray(2)
         var last = 0L
+        var simT = 0f
+        emitters.forEachIndexed { i, e ->
+            if (!e.inited) {
+                e.inited = true
+                e.t = i / 3f + rnd.nextFloat() * 0.15f
+                e.drift = (0.015f + rnd.nextFloat() * 0.02f) * (if (i % 2 == 0) 1f else -1f)
+                e.omega = 0.8f + rnd.nextFloat() * 0.6f
+                e.phase = rnd.nextFloat() * 6.28f
+                e.flowing = i == 0 // one stream leads, the others join staggered
+                e.stateUntil = rnd.nextFloat() * 1.2f
+            }
+        }
         while (true) {
             withFrameNanos { now ->
                 val dt = if (last == 0L) 0f else ((now - last) / 1e9f).coerceAtMost(0.05f)
                 last = now
-                var aliveCount = 0
+                simT += dt
                 for (g in pool) {
                     if (!g.alive) continue
                     g.life += dt
@@ -62,34 +85,54 @@ fun Modifier.keryxMagicDust(
                         g.alive = false
                         continue
                     }
-                    g.vy += 26f * density * dt
+                    g.vy += 18f * density * dt
                     g.ox += g.vx * dt
                     g.oy += g.vy * dt
-                    aliveCount++
                 }
-                if (enabled) {
-                    // Keep roughly two thirds of the pool aloft, a couple of grains per frame.
-                    var toSpawn = minOf(2, (grains * 2 / 3) - aliveCount)
-                    for (g in pool) {
-                        if (toSpawn <= 0) break
-                        if (g.alive) continue
-                        g.alive = true
-                        g.anchor = rnd.nextFloat()
-                        g.ox = 0f
-                        g.oy = 0f
-                        g.vx = (rnd.nextFloat() * 30f - 15f) * density
-                        g.vy = -(8f + rnd.nextFloat() * 26f) * density
-                        g.life = 0f
-                        g.maxLife = 0.8f + rnd.nextFloat() * 0.9f
-                        g.sizePx = (0.8f + rnd.nextFloat() * 1.5f) * density
-                        g.mix = rnd.nextFloat()
-                        g.glint = rnd.nextFloat() < 0.16f
-                        toSpawn--
+                val measure = geo.measure
+                if (enabled && measure != null && geo.length > 0f) {
+                    for (e in emitters) {
+                        e.t = ((e.t + e.drift * dt) % 1f + 1f) % 1f
+                        if (simT >= e.stateUntil) {
+                            e.flowing = !e.flowing
+                            e.stateUntil = simT +
+                                if (e.flowing) 1.8f + rnd.nextFloat() * 1.4f
+                                else 0.4f + rnd.nextFloat() * 0.8f
+                        }
+                        if (!e.flowing) continue
+                        // The stream's shared direction: the outline's outward normal at the
+                        // emitter, swaying like a slow pendulum — coherence is the whole trick.
+                        measure.getPosTan(e.t * geo.length, pos, tan)
+                        var nx = tan[1]
+                        var ny = -tan[0]
+                        if (nx * (pos[0] - geo.cx) + ny * (pos[1] - geo.cy) < 0f) {
+                            nx = -nx
+                            ny = -ny
+                        }
+                        val sway = sin(simT * e.omega + e.phase) * 0.45f
+                        val dx = nx * cos(sway) - ny * sin(sway)
+                        val dy = nx * sin(sway) + ny * cos(sway)
+                        e.carry += 22f * dt
+                        while (e.carry >= 1f) {
+                            e.carry -= 1f
+                            val g = pool.firstOrNull { !it.alive } ?: break
+                            val speed = (22f + rnd.nextFloat() * 16f) * density
+                            g.alive = true
+                            g.anchor = e.t
+                            g.ox = 0f
+                            g.oy = 0f
+                            g.vx = dx * speed + (rnd.nextFloat() - 0.5f) * 8f * density
+                            g.vy = dy * speed + (rnd.nextFloat() - 0.5f) * 8f * density
+                            g.life = 0f
+                            g.maxLife = 0.55f + rnd.nextFloat() * 0.3f
+                            g.sizePx = (0.45f + rnd.nextFloat() * 0.5f) * density
+                            g.mix = rnd.nextFloat()
+                            g.glint = rnd.nextFloat() < 0.12f
+                        }
                     }
                 }
                 tick = now
             }
-            // Streaming over: let the airborne grains finish their fall, then go quiet.
             if (!enabled && pool.none { it.alive }) break
         }
     }
@@ -97,25 +140,49 @@ fun Modifier.keryxMagicDust(
     return drawWithCache {
         val outline = shape.createOutline(size, layoutDirection, this)
         val edgePath = Path().apply { addOutline(outline) }
-        val measure = android.graphics.PathMeasure(edgePath.asAndroidPath(), false)
-        val length = measure.length
+        geo.measure = android.graphics.PathMeasure(edgePath.asAndroidPath(), false)
+        geo.length = geo.measure?.length ?: 0f
+        geo.cx = size.width / 2f
+        geo.cy = size.height / 2f
         val pos = FloatArray(2)
+        val maxStreak = 4.5f * density
         onDrawWithContent {
             drawContent()
             tick // frame-clock read: each physics step invalidates only this draw
+            val measure = geo.measure ?: return@onDrawWithContent
             for (g in pool) {
                 if (!g.alive) continue
-                val fadeIn = (g.life / (0.12f * g.maxLife)).coerceAtMost(1f)
-                val fadeOut = ((1f - g.life / g.maxLife) / 0.45f).coerceAtMost(1f)
-                val a = (0.9f * fadeIn * fadeOut).coerceIn(0f, 1f)
+                val fadeIn = (g.life / (0.1f * g.maxLife)).coerceAtMost(1f)
+                val fadeOut = ((1f - g.life / g.maxLife) / 0.5f).coerceAtMost(1f)
+                val a = (0.5f * fadeIn * fadeOut).coerceIn(0f, 1f)
                 if (a <= 0.01f) continue
-                measure.getPosTan(g.anchor * length, pos, null)
-                val center = Offset(pos[0] + g.ox, pos[1] + g.oy)
-                // Accent-tinted but starlight-washed: sand shot through with light, not paint.
-                val base = lerp(lerp(accent, accent2, g.mix), Starlight, 0.3f)
-                val color = if (g.glint) lerp(base, Starlight, 0.75f) else base
-                drawCircle(color.copy(alpha = a * 0.28f), radius = g.sizePx * 2.4f, center = center)
-                drawCircle(color.copy(alpha = a), radius = g.sizePx, center = center)
+                measure.getPosTan(g.anchor * geo.length, pos, null)
+                val hx = pos[0] + g.ox
+                val hy = pos[1] + g.oy
+                // Accent-tinted, starlight-washed: sand shot through with light, not paint.
+                val base = lerp(lerp(accent, accent2, g.mix), Starlight, 0.35f)
+                // Velocity-stretched streak: the mote's last ~50ms of travel, capped short.
+                var tx = g.vx * 0.05f
+                var ty = g.vy * 0.05f
+                val len = sqrt(tx * tx + ty * ty)
+                if (len > maxStreak) {
+                    val s = maxStreak / len
+                    tx *= s
+                    ty *= s
+                }
+                drawLine(
+                    color = base.copy(alpha = a),
+                    start = Offset(hx, hy),
+                    end = Offset(hx - tx, hy - ty),
+                    strokeWidth = g.sizePx,
+                )
+                if (g.glint) {
+                    drawCircle(
+                        lerp(base, Color.White, 0.6f).copy(alpha = a),
+                        radius = g.sizePx * 1.4f,
+                        center = Offset(hx, hy),
+                    )
+                }
             }
         }
     }
@@ -150,10 +217,10 @@ fun KeryxPuffBurst(tick: Int, modifier: Modifier = Modifier, grains: Int = 18) {
             val rim = 21f * density
             val speed = (14f + rnd.nextFloat() * 26f) * density
             g.alive = true
-            g.ox = kotlin.math.cos(angle) * rim
-            g.oy = kotlin.math.sin(angle) * rim
-            g.vx = kotlin.math.cos(angle) * speed
-            g.vy = kotlin.math.sin(angle) * speed - 10f * density
+            g.ox = cos(angle) * rim
+            g.oy = sin(angle) * rim
+            g.vx = cos(angle) * speed
+            g.vy = sin(angle) * speed - 10f * density
             g.life = 0f
             g.maxLife = 0.35f + rnd.nextFloat() * 0.35f
             g.sizePx = (0.5f + rnd.nextFloat() * 0.8f) * density
@@ -225,7 +292,7 @@ fun KeryxPuffBurst(tick: Int, modifier: Modifier = Modifier, grains: Int = 18) {
     }
 }
 
-/** One grain of the pool. Offsets are pixels relative to its anchor point on the outline. */
+/** One mote of the pool. Offsets are pixels relative to its anchor point on the outline. */
 private class Grain {
     var anchor = 0f
     var ox = 0f
@@ -238,6 +305,26 @@ private class Grain {
     var mix = 0f
     var glint = false
     var alive = false
+}
+
+/** One wandering stream mouth on the outline. */
+private class Emitter {
+    var t = 0f
+    var drift = 0f
+    var omega = 1f
+    var phase = 0f
+    var stateUntil = 0f
+    var flowing = false
+    var carry = 0f
+    var inited = false
+}
+
+/** Outline geometry bridge: written by the draw cache, read by the spawn loop. UI thread only. */
+private class DustGeo {
+    var measure: android.graphics.PathMeasure? = null
+    var length = 0f
+    var cx = 0f
+    var cy = 0f
 }
 
 /** The glint tint — pale violet starlight, one step off white. */
