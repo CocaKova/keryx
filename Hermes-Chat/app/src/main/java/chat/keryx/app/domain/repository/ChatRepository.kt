@@ -20,6 +20,13 @@ interface ChatRepository {
 
     /** Materialize up to [limit] recent timeline events. Increasing [limit] backfills older history. */
     fun getMessages(sessionId: String, limit: Int): Flow<List<Message>>
+
+    /**
+     * A one-shot window of history around [eventId] (the Archive's context view): up to [before]
+     * events older and [after] newer, anchor included, oldest-first. Timeline gaps are fetched
+     * from the server as needed; the call is time-bounded and returns what resolved.
+     */
+    suspend fun messagesAround(sessionId: String, eventId: String, before: Int, after: Int): List<Message>
     suspend fun sendMessage(sessionId: String, content: String)
 
     /** Send a text message that quote-replies to [replyToEventId]. */

@@ -19,6 +19,7 @@ import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ViewKanban
+import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.BrightnessAuto
@@ -93,6 +94,7 @@ fun NavigationDrawerContent(
 
     var showSettings by remember { mutableStateOf(false) }
     var showMissions by remember { mutableStateOf(false) }
+    var showArchive by remember { mutableStateOf(false) }
 
     // Image picker for setting a Quick Room's avatar (server-side m.room.avatar).
     val context = LocalContext.current
@@ -113,6 +115,13 @@ fun NavigationDrawerContent(
         chat.keryx.app.presentation.ui.components.MissionsScreen(
             viewModel = viewModel,
             onDismissRequest = { showMissions = false },
+        )
+    }
+
+    if (showArchive) {
+        chat.keryx.app.presentation.ui.components.ArchiveScreen(
+            viewModel = viewModel,
+            onDismissRequest = { showArchive = false },
         )
     }
 
@@ -473,6 +482,25 @@ fun NavigationDrawerContent(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text("Missions", color = MaterialTheme.colorScheme.onSurface,
+                        autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 14.sp, stepSize = 0.25.sp),
+                        maxLines = 1, softWrap = false)
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { showArchive = true }
+                        .padding(vertical = 12.dp),
+                ) {
+                    Icon(
+                        Icons.Default.AutoStories, contentDescription = "Archive",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Archive", color = MaterialTheme.colorScheme.onSurface,
                         autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 14.sp, stepSize = 0.25.sp),
                         maxLines = 1, softWrap = false)
                 }

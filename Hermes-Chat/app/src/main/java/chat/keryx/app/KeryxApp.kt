@@ -32,6 +32,10 @@ class KeryxApp : Application() {
         private set
     lateinit var repository: ChatRepositoryImpl
         private set
+    lateinit var archiveStore: chat.keryx.app.data.archive.ArchiveStore
+        private set
+    lateinit var archiveIndexer: chat.keryx.app.data.archive.ArchiveIndexer
+        private set
 
     private val appScope = CoroutineScope(Dispatchers.IO)
 
@@ -48,6 +52,8 @@ class KeryxApp : Application() {
         settingsRepository = SettingsRepositoryImpl(applicationContext)
         matrixService = MatrixService(applicationContext)
         repository = ChatRepositoryImpl(matrixService, settingsRepository)
+        archiveStore = chat.keryx.app.data.archive.ArchiveStore(applicationContext)
+        archiveIndexer = chat.keryx.app.data.archive.ArchiveIndexer(matrixService, archiveStore)
 
         KeryxNotifications.ensureChannel(applicationContext)
         registerActivityLifecycleCallbacks(ForegroundTracker())
