@@ -305,6 +305,10 @@ fun HermesApp(viewModel: ChatViewModel) {
                     health = linkHealth,
                     onDismiss = nav::back,
                 )
+                KeryxDest.Settings -> chat.keryx.app.presentation.ui.components.SettingsPlace(
+                    viewModel = viewModel,
+                    onClose = nav::back,
+                )
             }
         },
     )
