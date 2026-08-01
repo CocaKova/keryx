@@ -2512,7 +2512,12 @@ class ChatViewModel(
                         timestamp = message.timestamp,
                         mediaKind = message.mediaKind?.name,
                         fileName = message.fileName,
-                        body = MessageParser.extractKeryx(message.content).text.trim(),
+                        // Agent messages keep their prose, not their tool-call machinery — the
+                        // same rule the index applies.
+                        body = chat.keryx.app.data.archive.ArchiveIndexer.searchableText(
+                            message.content,
+                            fromMe = message.sender == SenderType.ME,
+                        ),
                     )
                 )
             }
