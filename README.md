@@ -43,6 +43,13 @@ of raw model output.
   only place the plaintext exists). Jump to any date, keep messages in a Saved list from the
   long-press menu, browse every photo and file in a gallery; tapping anything opens a live
   context window around that moment.
+- **The dream look (2.0)** — A living dark: ambient glows drifting at minutes per pass, streams
+  of magic sand pouring off the reply while it's still being written, spring-physics navigation
+  where the back gesture scrubs the page transition under your finger, and one attention budget
+  governing it all — one focal effect at a time, everything else a whisper. Battery Saver
+  stills every ornament.
+- **Assistant doorway (2.0)** — Set Keryx as the device assist app and the long-press gesture
+  summons your agent from any screen, composer ready.
 - **Local-first diagnostics** — Crash log kept on-device only, shareable from Settings.
 
 ## Installing
