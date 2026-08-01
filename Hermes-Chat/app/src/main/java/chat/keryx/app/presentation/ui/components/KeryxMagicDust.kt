@@ -111,7 +111,8 @@ fun Modifier.keryxMagicDust(
                 if (a <= 0.01f) continue
                 measure.getPosTan(g.anchor * length, pos, null)
                 val center = Offset(pos[0] + g.ox, pos[1] + g.oy)
-                val base = lerp(accent, accent2, g.mix)
+                // Accent-tinted but starlight-washed: sand shot through with light, not paint.
+                val base = lerp(lerp(accent, accent2, g.mix), Starlight, 0.3f)
                 val color = if (g.glint) lerp(base, Starlight, 0.75f) else base
                 drawCircle(color.copy(alpha = a * 0.28f), radius = g.sizePx * 2.4f, center = center)
                 drawCircle(color.copy(alpha = a), radius = g.sizePx, center = center)
@@ -121,19 +122,21 @@ fun Modifier.keryxMagicDust(
 }
 
 /**
- * A one-shot puff of magic sand (2.0): every increment of [tick] flings a handful of grains
- * outward-and-up from the center of whatever this fills, and they arc back down and fade — the
- * composer's send button releasing the message. Draws nothing and costs nothing between puffs.
- * Fill the parent (e.g. `Modifier.matchParentSize()`) over the thing that puffs.
+ * A one-shot sigh of magic sand (2.0): every increment of [tick] releases a soft mist bloom and
+ * a scatter of *fine* grains from the rim of whatever this fills — the send button exhaling the
+ * message. Tuned to whisper, not pop: grains are sub-dp starlight-washed motes that barely clear
+ * the button before sifting out, and the mist is a translucent accent breath, not a splash.
+ * Draws nothing and costs nothing between puffs. Fill the parent (`Modifier.matchParentSize()`).
  */
 @Composable
-fun KeryxPuffBurst(tick: Int, modifier: Modifier = Modifier, grains: Int = 14) {
+fun KeryxPuffBurst(tick: Int, modifier: Modifier = Modifier, grains: Int = 18) {
     val reduced by rememberReducedMotion()
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.tertiary
     val density = LocalDensity.current.density
     val pool = remember { Array(grains * 2) { Grain() } }
     var frame by remember { mutableLongStateOf(0L) }
+    var mistBorn by remember { mutableLongStateOf(-1L) }
 
     LaunchedEffect(tick) {
         if (tick == 0 || reduced) return@LaunchedEffect
@@ -142,23 +145,27 @@ fun KeryxPuffBurst(tick: Int, modifier: Modifier = Modifier, grains: Int = 14) {
         for (g in pool) {
             if (spawned >= grains) break
             if (g.alive) continue
+            // Born ON the button's rim, leaving along its own radius with a soft upward lean.
             val angle = rnd.nextFloat() * (Math.PI * 2).toFloat()
-            val speed = (36f + rnd.nextFloat() * 54f) * density
+            val rim = 21f * density
+            val speed = (14f + rnd.nextFloat() * 26f) * density
             g.alive = true
-            g.ox = 0f
-            g.oy = 0f
+            g.ox = kotlin.math.cos(angle) * rim
+            g.oy = kotlin.math.sin(angle) * rim
             g.vx = kotlin.math.cos(angle) * speed
-            g.vy = kotlin.math.sin(angle) * speed - 24f * density // upward bias
+            g.vy = kotlin.math.sin(angle) * speed - 10f * density
             g.life = 0f
-            g.maxLife = 0.45f + rnd.nextFloat() * 0.4f
-            g.sizePx = (0.9f + rnd.nextFloat() * 1.4f) * density
+            g.maxLife = 0.35f + rnd.nextFloat() * 0.35f
+            g.sizePx = (0.5f + rnd.nextFloat() * 0.8f) * density
             g.mix = rnd.nextFloat()
-            g.glint = rnd.nextFloat() < 0.2f
+            g.glint = rnd.nextFloat() < 0.3f
             spawned++
         }
+        mistBorn = -2L // sentinel: stamp with the first frame time below
         var last = 0L
         while (pool.any { it.alive }) {
             withFrameNanos { now ->
+                if (mistBorn == -2L) mistBorn = now
                 val dt = if (last == 0L) 0f else ((now - last) / 1e9f).coerceAtMost(0.05f)
                 last = now
                 for (g in pool) {
@@ -168,7 +175,7 @@ fun KeryxPuffBurst(tick: Int, modifier: Modifier = Modifier, grains: Int = 14) {
                         g.alive = false
                         continue
                     }
-                    g.vy += 90f * density * dt
+                    g.vy += 42f * density * dt
                     g.ox += g.vx * dt
                     g.oy += g.vy * dt
                 }
@@ -181,14 +188,38 @@ fun KeryxPuffBurst(tick: Int, modifier: Modifier = Modifier, grains: Int = 14) {
         frame // frame-clock read
         val cx = size.width / 2f
         val cy = size.height / 2f
+        // The mist: one translucent breath swelling just past the rim and dissolving.
+        if (mistBorn > 0L) {
+            val mistAge = ((frame - mistBorn) / 1e9f)
+            val mistLife = 0.55f
+            if (mistAge in 0f..mistLife) {
+                val p = mistAge / mistLife
+                val mistAlpha = (1f - p) * (1f - p) * 0.16f
+                val mistRadius = (22f + 16f * p) * density
+                drawCircle(
+                    androidx.compose.ui.graphics.Brush.radialGradient(
+                        listOf(
+                            lerp(accent, accent2, 0.4f).copy(alpha = mistAlpha),
+                            lerp(accent, accent2, 0.4f).copy(alpha = mistAlpha * 0.4f),
+                            Color.Transparent,
+                        ),
+                        center = Offset(cx, cy),
+                        radius = mistRadius,
+                    ),
+                    radius = mistRadius,
+                    center = Offset(cx, cy),
+                )
+            }
+        }
+        // The motes: fine, starlight-washed, gone in a breath.
         for (g in pool) {
             if (!g.alive) continue
-            val fadeOut = ((1f - g.life / g.maxLife) / 0.6f).coerceAtMost(1f)
-            val a = (0.95f * fadeOut).coerceIn(0f, 1f)
+            val fadeOut = ((1f - g.life / g.maxLife) / 0.65f).coerceAtMost(1f)
+            val a = (0.55f * fadeOut).coerceIn(0f, 1f)
             val center = Offset(cx + g.ox, cy + g.oy)
-            val base = lerp(accent, accent2, g.mix)
-            val color = if (g.glint) lerp(base, Starlight, 0.75f) else base
-            drawCircle(color.copy(alpha = a * 0.28f), radius = g.sizePx * 2.2f, center = center)
+            val base = lerp(lerp(accent, accent2, g.mix), Starlight, 0.55f)
+            val color = if (g.glint) lerp(base, Color.White, 0.6f) else base
+            drawCircle(color.copy(alpha = a * 0.22f), radius = g.sizePx * 2f, center = center)
             drawCircle(color.copy(alpha = a), radius = g.sizePx, center = center)
         }
     }
