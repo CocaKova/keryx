@@ -54,6 +54,9 @@ import chat.keryx.app.theme.*
 fun NavigationDrawerContent(
     viewModel: ChatViewModel,
     onSessionSelected: (Session) -> Unit,
+    // Full-screen places (Missions, Archive) open on the nav stack owned by the host — the
+    // drawer only asks; it never composes a space itself (2.0 Phase 1).
+    onOpenSpace: (chat.keryx.app.presentation.ui.nav.KeryxDest) -> Unit,
     // ModalNavigationDrawer composes its drawer content even while closed (just translated
     // offscreen), so anything permanently animated in here would burn frames invisibly. The host
     // passes the drawer's real visibility so ornament only runs while it can be seen.
@@ -93,8 +96,6 @@ fun NavigationDrawerContent(
     val pushGatewayUrl by viewModel.pushGatewayUrl.collectAsState()
 
     var showSettings by remember { mutableStateOf(false) }
-    var showMissions by remember { mutableStateOf(false) }
-    var showArchive by remember { mutableStateOf(false) }
 
     // Image picker for setting a Quick Room's avatar (server-side m.room.avatar).
     val context = LocalContext.current
@@ -111,20 +112,6 @@ fun NavigationDrawerContent(
         pendingAvatarRoomId = null
     }
     
-    if (showMissions) {
-        chat.keryx.app.presentation.ui.components.MissionsScreen(
-            viewModel = viewModel,
-            onDismissRequest = { showMissions = false },
-        )
-    }
-
-    if (showArchive) {
-        chat.keryx.app.presentation.ui.components.ArchiveScreen(
-            viewModel = viewModel,
-            onDismissRequest = { showArchive = false },
-        )
-    }
-
     if (showSettings) {
         chat.keryx.app.presentation.ui.components.SettingsScreen(
             viewModel = viewModel,
@@ -472,7 +459,7 @@ fun NavigationDrawerContent(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(12.dp))
-                        .clickable { showMissions = true }
+                        .clickable { onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Missions) }
                         .padding(vertical = 12.dp),
                 ) {
                     Icon(
@@ -491,7 +478,7 @@ fun NavigationDrawerContent(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(12.dp))
-                        .clickable { showArchive = true }
+                        .clickable { onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Archive) }
                         .padding(vertical = 12.dp),
                 ) {
                     Icon(

@@ -160,6 +160,7 @@ fun AgentHubSheet(
     KeryxSpace(
         title = "Agent Hub",
         onClose = onDismiss,
+        standalone = false,
         liveSlot = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 KeryxBreathingDot(

@@ -134,6 +134,7 @@ fun MissionsScreen(
     KeryxSpace(
         title = "Missions",
         onClose = onDismissRequest,
+        standalone = false,
         liveSlot = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 KeryxBreathingDot(

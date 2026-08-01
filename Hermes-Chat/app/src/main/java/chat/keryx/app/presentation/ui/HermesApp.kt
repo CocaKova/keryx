@@ -37,6 +37,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalFocusManager
 import chat.keryx.app.presentation.ChatViewModel
+import chat.keryx.app.presentation.ui.nav.KeryxDest
+import chat.keryx.app.presentation.ui.nav.KeryxNavHost
+import chat.keryx.app.presentation.ui.nav.rememberKeryxNav
 import kotlinx.coroutines.launch
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -55,6 +58,16 @@ fun HermesApp(viewModel: ChatViewModel) {
     val focusManager = LocalFocusManager.current
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     val currentSession by viewModel.currentSession.collectAsState()
+    val linkHealth by viewModel.linkHealth.collectAsState()
+
+    // The navigation spine (2.0): full-screen places live on this stack above the chat floor.
+    val nav = rememberKeryxNav()
+    val openSpace: (KeryxDest) -> Unit = { dest ->
+        focusManager.clearFocus()
+        keyboard?.hide()
+        scope.launch { drawerState.close() }
+        nav.open(dest)
+    }
 
     // The drawer can be opened by swipe, not just the menu button — the moment the gesture commits
     // (targetValue flips to Open) drop focus and hide the IME so the keyboard never sits on top of
@@ -109,6 +122,9 @@ fun HermesApp(viewModel: ChatViewModel) {
         }
     }
 
+    KeryxNavHost(
+        nav = nav,
+        root = {
     ModalNavigationDrawer(
         modifier = Modifier.nestedScroll(drawerAssist),
         drawerState = drawerState,
@@ -120,6 +136,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                         viewModel.selectSession(session)
                         scope.launch { drawerState.close() }
                     },
+                    onOpenSpace = openSpace,
                     // Visible while open OR mid-swing, so the emblem is alive as it slides in.
                     drawerVisible = drawerState.currentValue == DrawerValue.Open ||
                         drawerState.targetValue == DrawerValue.Open,
@@ -189,19 +206,10 @@ fun HermesApp(viewModel: ChatViewModel) {
                         // Hermes Link health, whispered: a tiny dot that breathes while tokens flow,
                         // dims when idle, warms red when the gateway is unreachable. Tap opens the
                         // Agent Hub — the live who/what/how of the system Keryx is pointed at.
-                        val linkHealth by viewModel.linkHealth.collectAsState()
-                        var showAgentHub by remember { mutableStateOf(false) }
                         LinkHealthDot(health = linkHealth, onClick = {
-                            showAgentHub = true
                             viewModel.refreshReasoningCaps()
+                            openSpace(KeryxDest.Hub)
                         })
-                        if (showAgentHub) {
-                            chat.keryx.app.presentation.ui.components.AgentHubSheet(
-                                viewModel = viewModel,
-                                health = linkHealth,
-                                onDismiss = { showAgentHub = false },
-                            )
-                        }
                         if (currentSession != null) {
                             // Dynamic reasoning control via Hermes' native /reasoning command.
                             // Effort levels persist with --global; show/hide persists per-platform
@@ -279,6 +287,25 @@ fun HermesApp(viewModel: ChatViewModel) {
         }
         }
     }
+        },
+        content = { dest ->
+            when (dest) {
+                KeryxDest.Archive -> chat.keryx.app.presentation.ui.components.ArchiveScreen(
+                    viewModel = viewModel,
+                    onDismissRequest = nav::back,
+                )
+                KeryxDest.Missions -> chat.keryx.app.presentation.ui.components.MissionsScreen(
+                    viewModel = viewModel,
+                    onDismissRequest = nav::back,
+                )
+                KeryxDest.Hub -> chat.keryx.app.presentation.ui.components.AgentHubSheet(
+                    viewModel = viewModel,
+                    health = linkHealth,
+                    onDismiss = nav::back,
+                )
+            }
+        },
+    )
 }
 
 /**
