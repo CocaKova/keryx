@@ -78,7 +78,7 @@ import chat.keryx.app.presentation.ui.components.MessageMedia
 import chat.keryx.app.presentation.ui.components.ToolActivityCard
 import chat.keryx.app.presentation.ui.components.ToolGroupCard
 import chat.keryx.app.presentation.ui.components.bubbleAppearance
-import chat.keryx.app.presentation.ui.components.keryxShimmerBorder
+import chat.keryx.app.presentation.ui.components.keryxMagicDust
 import chat.keryx.app.presentation.ui.components.GroupedTimeline
 import chat.keryx.app.presentation.ui.components.groupChatItemsIncremental
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -902,14 +902,25 @@ private fun Composer(
             }
         }
         Spacer(modifier = Modifier.width(6.dp))
-        FloatingActionButton(
-            onClick = onSend,
-            containerColor = MaterialTheme.colorScheme.primary,
-            elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp),
-            modifier = Modifier.size(48.dp),
-            shape = RoundedCornerShape(50)
-        ) {
-            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Color.White)
+        // The message lifts off with a puff of magic sand (2.0) — only when something real leaves.
+        var sendPuffTick by remember { mutableStateOf(0) }
+        Box {
+            FloatingActionButton(
+                onClick = {
+                    if (textState.text.isNotBlank()) sendPuffTick++
+                    onSend()
+                },
+                containerColor = MaterialTheme.colorScheme.primary,
+                elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp),
+                modifier = Modifier.size(48.dp),
+                shape = RoundedCornerShape(50)
+            ) {
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Color.White)
+            }
+            chat.keryx.app.presentation.ui.components.KeryxPuffBurst(
+                tick = sendPuffTick,
+                modifier = Modifier.matchParentSize(),
+            )
         }
     }
     } // end Column (attach bloom + composer row)
@@ -1115,16 +1126,17 @@ fun MessageBubble(
             Box(
                 modifier = Modifier
                     .widthIn(max = 340.dp)
+                    // While the agent's reply is still growing, magic sand rises off the bubble's
+                    // edge and sifts back down — the dreaming made visible, in the user's own
+                    // accents. Sits BEFORE clip() so the dust lives outside the shape; the last
+                    // grains finish falling after the words land (2.0, Jonny's call: real sand
+                    // over a border gleam).
+                    .keryxMagicDust(active = isAgent && message.isStreaming, shape = shape)
                     .clip(shape)
                     .background(appearance.brush)
-                    // While the agent's reply is still growing, an aurora gleam circles the
-                    // bubble's edge — the dreaming made visible. It settles to the style's plain
-                    // border (or to nothing) the moment the words finish landing (2.0).
-                    .keryxShimmerBorder(
-                        active = isAgent && message.isStreaming,
-                        baseColor = appearance.border ?: Color.Transparent,
-                        shape = shape,
-                        periodMillis = 3400,
+                    .then(
+                        if (appearance.border != null) Modifier.border(1.dp, appearance.border, shape)
+                        else Modifier
                     )
                     .combinedClickable(
                         onClick = {},

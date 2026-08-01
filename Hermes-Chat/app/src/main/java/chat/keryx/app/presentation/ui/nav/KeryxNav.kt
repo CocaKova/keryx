@@ -126,6 +126,7 @@ fun KeryxNavHost(
 
     // Registered BEFORE the layers compose, so any BackHandler *inside* a place (a viewer, an
     // unsaved-edits guard) is registered later and wins the dispatch.
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
     val top = layers.lastOrNull { !it.exiting }
     PredictiveBackHandler(enabled = top != null) { events ->
         val layer = top ?: return@PredictiveBackHandler
@@ -133,6 +134,8 @@ fun KeryxNavHost(
             events.collect { event ->
                 layer.progress.snapTo(1f - (1f - NavMotion.GESTURE_FLOOR) * event.progress)
             }
+            // One light tick as the place lets go — the gesture's full stop (2.0 haptic grammar).
+            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.GestureEnd)
             nav.back() // the exit animation picks up from wherever the finger left off
         } catch (e: CancellationException) {
             layer.progress.animateTo(1f, NavMotion.settle)
