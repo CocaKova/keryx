@@ -77,7 +77,8 @@ class ArchiveIndexer(
 
     private suspend fun runSweep(roomId: String) {
         val client = matrix.client.value ?: return
-        store.ensureAccount(client.userId.full)
+        val myId = client.userId.full
+        store.ensureAccount(myId)
         val rid = RoomId(roomId)
         val wasComplete = store.backfillComplete(roomId)
         var fresh = 0
@@ -112,7 +113,7 @@ class ArchiveIndexer(
             if (!continueWalk) stoppedEarly = true
             continueWalk
         }.collect { ev ->
-            toEntry(ev)?.let { batch += it }
+            toEntry(ev, myId)?.let { batch += it }
             if (batch.size >= 50) {
                 fresh += store.insertAll(batch)
                 batch.clear()
@@ -127,7 +128,7 @@ class ArchiveIndexer(
         publish(running = false, complete = complete)
     }
 
-    private fun toEntry(ev: TimelineEvent): ArchiveStore.Entry? {
+    private fun toEntry(ev: TimelineEvent, myId: String): ArchiveStore.Entry? {
         val rc = ev.content?.getOrNull() as? RoomMessageEventContent ?: return null
         // m.replace edit events: Trixnity folds the edit into the original — the carrier is noise.
         if (rc.relatesTo is RelatesTo.Replace) return null
@@ -141,8 +142,7 @@ class ArchiveIndexer(
         val fileName = (rc as? RoomMessageEventContent.FileBased)?.fileName ?: ""
         var body = rc.body
         if (rc.relatesTo?.replyTo != null) body = stripReplyFallback(body)
-        // Index what the user actually sees: ⟦keryx⟧ markers stripped, telemetry spam dropped.
-        body = MessageParser.extractKeryx(body).text.trim()
+        body = searchableText(body, fromMe = ev.event.sender.full == myId)
         if (mediaKind == null && (body.isBlank() || MessageParser.isTelemetryMessage(rc.body))) {
             return null
         }
@@ -168,7 +168,35 @@ class ArchiveIndexer(
         return rest.ifBlank { body.trim() }
     }
 
-    private companion object {
-        const val KNOWN_STREAK_STOP = 25
+    companion object {
+        private const val KNOWN_STREAK_STOP = 25
+
+        /**
+         * What of a message body belongs in the search index: the answer, not the machinery.
+         * The user's own messages are always all answer. For everyone else, a body carrying
+         * agent chrome (tool calls, reasoning, telemetry, action-output payloads) is reduced to
+         * its prose and table segments — searching should surface what was *said*, never the
+         * innards of a tool invocation. A chrome-free body (any normal human or agent message)
+         * passes through whole.
+         */
+        fun searchableText(body: String, fromMe: Boolean): String {
+            if (fromMe) return body.trim()
+            // cacheable=false: historical bodies are parsed once at index time — letting them
+            // churn the render LRU would evict the live chat's committed messages.
+            val segments = MessageParser.parse(body, cacheable = false)
+            val chrome = segments.any {
+                it is MessageParser.Segment.Tools || it is MessageParser.Segment.Thinking ||
+                    it is MessageParser.Segment.Telemetry || it is MessageParser.Segment.ActionOutput
+            }
+            if (!chrome) return MessageParser.extractKeryx(body).text.trim()
+            return segments.mapNotNull { seg ->
+                when (seg) {
+                    is MessageParser.Segment.Text -> MessageParser.extractKeryx(seg.text).text
+                    is MessageParser.Segment.Table ->
+                        (seg.header + seg.rows.flatten()).joinToString(" ")
+                    else -> null
+                }
+            }.joinToString("\n").trim()
+        }
     }
 }

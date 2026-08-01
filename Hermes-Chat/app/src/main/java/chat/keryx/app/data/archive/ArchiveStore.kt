@@ -19,7 +19,7 @@ import android.database.sqlite.SQLiteOpenHelper
  * into them. The phone is the only place the plaintext exists — so the phone carries the index.
  */
 class ArchiveStore(context: Context) :
-    SQLiteOpenHelper(context.applicationContext, "keryx_archive.db", null, 1) {
+    SQLiteOpenHelper(context.applicationContext, "keryx_archive.db", null, 2) {
 
     /** One indexed message. [mediaKind] uses the MediaKind enum name, null for plain text. */
     data class Entry(
@@ -66,7 +66,16 @@ class ArchiveStore(context: Context) :
         db.execSQL("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
     }
 
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        // v2 (1.26.1): tool-call innards no longer belong in the index — wipe and let the next
+        // sweep re-walk with the prose-only extraction. The index is a cache, never precious;
+        // `saved` is user data and survives every version.
+        if (oldVersion < 2) {
+            db.execSQL("DELETE FROM msg")
+            db.execSQL("DELETE FROM msg_fts")
+            db.execSQL("DELETE FROM meta WHERE key LIKE 'complete|%'")
+        }
+    }
 
     /** The index belongs to one Matrix account. A different login gets a fresh archive. */
     @Synchronized
