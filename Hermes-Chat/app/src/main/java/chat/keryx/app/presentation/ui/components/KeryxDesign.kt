@@ -37,10 +37,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.addOutline
@@ -323,13 +325,24 @@ private fun KeryxSpaceBody(
     floating: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    // Arrival breath (2.0): the space's contents rise the last few dp into place just behind the
+    // nav transition — a trailing second layer of the same motion, so arriving reads as depth.
+    val reduced by rememberReducedMotion()
+    val arrival = remember { androidx.compose.animation.core.Animatable(0f) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        if (reduced) arrival.snapTo(1f) else arrival.animateTo(1f, KeryxMotion.settle)
+    }
     Box(Modifier.fillMaxSize().background(duskBrush())) {
         AmbientVoid()
         Column(
             modifier = modifier
                 .fillMaxSize()
                 .padding(bottom = 12.dp)
-                .windowInsetsPadding(WindowInsets.systemBars),
+                .windowInsetsPadding(WindowInsets.systemBars)
+                .graphicsLayer {
+                    alpha = 0.4f + 0.6f * arrival.value
+                    translationY = (1f - arrival.value) * 10.dp.toPx()
+                },
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
