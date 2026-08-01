@@ -1,5 +1,6 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -39,9 +40,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -92,6 +98,26 @@ fun duskBrush(): Brush {
 // --- Motion ------------------------------------------------------------------------------------
 
 /**
+ * The app's motion vocabulary (2.0): three springs and one curve. Anything that moves picks from
+ * here — ad-hoc `tween(300)`s are the radius-scatter of animation, and this object is their
+ * KeryxRadius. Springs over tweens because interrupted motion should redirect with momentum,
+ * never restart.
+ */
+object KeryxMotion {
+    /** Arrivals and gesture releases: soft, with just enough overshoot to feel like mass. */
+    val settle = androidx.compose.animation.core.spring<Float>(dampingRatio = 0.85f, stiffness = 380f)
+
+    /** Departures: quick and sure — leaving must never feel slower than arriving. */
+    val leave = androidx.compose.animation.core.spring<Float>(dampingRatio = 1f, stiffness = 1200f)
+
+    /** Layout drift (things making room for other things): critically damped, no bounce. */
+    val glide = androidx.compose.animation.core.spring<Float>(dampingRatio = 1f, stiffness = 550f)
+
+    /** The arcane curve, for the rare fade a spring can't carry (color, alpha-only). */
+    val arcane = androidx.compose.animation.core.CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
+}
+
+/**
  * The app's one breathing rhythm: a slow alpha pulse between [low] and 1f. Returns 1f (still,
  * fully lit) when [active] is false or the device asked for reduced motion — callers never need
  * their own battery-saver check.
@@ -107,6 +133,72 @@ fun breathingAlpha(active: Boolean, low: Float = 0.35f, periodMillis: Int = 1600
         label = "keryxBreathAlpha",
     )
     return pulse
+}
+
+/**
+ * The shimmer ring (2.0): a slow conic gleam of accent→accent-2 traveling a hairline border —
+ * the "something alive is happening here" mark for running missions and live turns. Sits over a
+ * faint base ring in [baseColor]; stills to that plain ring when [active] is false or motion is
+ * reduced. Native SweepGradient + local matrix because Compose's sweep brush can't rotate.
+ */
+@Composable
+fun Modifier.keryxShimmerBorder(
+    active: Boolean,
+    baseColor: Color,
+    cornerRadius: Dp = KeryxRadius.card,
+    baseAlpha: Float = 0.25f,
+): Modifier {
+    val reduced by rememberReducedMotion()
+    if (!active || reduced) {
+        return border(1.dp, baseColor.copy(alpha = baseAlpha), RoundedCornerShape(cornerRadius))
+    }
+    val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.tertiary
+    val angle by rememberInfiniteTransition(label = "keryxShimmer").animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(5200, easing = LinearEasing)),
+        label = "keryxShimmerAngle",
+    )
+    return drawWithCache {
+        val strokePx = 1.dp.toPx()
+        val radiusPx = cornerRadius.toPx()
+        val shader = android.graphics.SweepGradient(
+            size.width / 2f,
+            size.height / 2f,
+            intArrayOf(
+                android.graphics.Color.TRANSPARENT,
+                accent.copy(alpha = 0.95f).toArgb(),
+                accent2.copy(alpha = 0.85f).toArgb(),
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT,
+            ),
+            floatArrayOf(0f, 0.09f, 0.17f, 0.27f, 1f),
+        )
+        val matrix = android.graphics.Matrix()
+        val paint = android.graphics.Paint().apply {
+            isAntiAlias = true
+            style = android.graphics.Paint.Style.STROKE
+            strokeWidth = strokePx
+        }
+        onDrawWithContent {
+            drawContent()
+            // The faint base ring the gleam travels over.
+            drawRoundRect(
+                color = baseColor.copy(alpha = baseAlpha),
+                cornerRadius = CornerRadius(radiusPx),
+                style = Stroke(strokePx),
+            )
+            matrix.setRotate(angle, size.width / 2f, size.height / 2f)
+            shader.setLocalMatrix(matrix)
+            paint.shader = shader
+            val inset = strokePx / 2f
+            drawContext.canvas.nativeCanvas.drawRoundRect(
+                inset, inset, size.width - inset, size.height - inset,
+                radiusPx, radiusPx, paint,
+            )
+        }
+    }
 }
 
 /** A small status dot that breathes while [alive]; solid and still otherwise. */
@@ -140,6 +232,7 @@ fun KeryxSectionHeader(
             fontSize = 10.sp,
             letterSpacing = 2.0.sp,
             fontWeight = FontWeight.SemiBold,
+            fontFamily = chat.keryx.app.theme.CinzelFamily,
             color = color,
         )
         if (count != null) {
@@ -173,13 +266,13 @@ fun KeryxCard(
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
     ) ?: MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
     val borderBase = tint ?: MaterialTheme.colorScheme.outline
-    val borderAlpha = if (breathing) 0.25f + 0.35f * breathingAlpha(active = true) else 0.25f
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
             .background(fill)
-            .border(1.dp, borderBase.copy(alpha = borderAlpha), shape)
+            // Running things used to pulse; now the shimmer gleam travels their border (2.0).
+            .keryxShimmerBorder(active = breathing, baseColor = borderBase)
             .let { if (onClick != null) it.clickable(onClick = onClick) else it }
             .padding(horizontal = 12.dp, vertical = 10.dp),
         content = content,
@@ -230,11 +323,11 @@ private fun KeryxSpaceBody(
     floating: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().background(duskBrush())) {
+        AmbientVoid()
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .background(duskBrush())
                 .padding(bottom = 12.dp)
                 .windowInsetsPadding(WindowInsets.systemBars),
         ) {
@@ -258,6 +351,7 @@ private fun KeryxSpaceBody(
                         fontSize = 17.sp,
                         fontWeight = FontWeight.SemiBold,
                         letterSpacing = 5.sp,
+                        fontFamily = chat.keryx.app.theme.CinzelFamily,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     liveSlot()

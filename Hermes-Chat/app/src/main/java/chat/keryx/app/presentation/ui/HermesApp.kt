@@ -156,6 +156,8 @@ fun HermesApp(viewModel: ChatViewModel) {
             1.0f to lerp(bg, accent, 0.12f),
         )
         Box(modifier = Modifier.fillMaxSize().background(appGradient)) {
+        // The ambient void: vast accent glows adrift behind the chat, minutes per pass.
+        chat.keryx.app.presentation.ui.components.AmbientVoid()
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {

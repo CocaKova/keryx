@@ -2,8 +2,6 @@ package chat.keryx.app.presentation.ui.nav
 
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -88,11 +86,9 @@ private class NavLayer(val dest: KeryxDest) {
 }
 
 private object NavMotion {
-    /** Arrival and gesture-release settle: soft, with just enough bounce to feel like mass. */
-    val settle = spring<Float>(dampingRatio = 0.85f, stiffness = 380f)
-
-    /** Departure: quick and sure — leaving should never feel slower than arriving. */
-    val leave = spring<Float>(dampingRatio = 1f, stiffness = 1200f)
+    /** Arrival and gesture-release settle; departure. Both from the app's motion vocabulary. */
+    val settle = chat.keryx.app.presentation.ui.components.KeryxMotion.settle
+    val leave = chat.keryx.app.presentation.ui.components.KeryxMotion.leave
 
     /** How far a fully backed-out gesture scrubs arrival down before commit finishes it. */
     const val GESTURE_FLOOR = 0.45f
@@ -166,6 +162,14 @@ fun KeryxNavHost(
                             val depth = 0.985f + 0.015f * p
                             scaleX = depth
                             scaleY = depth
+                            // Mid-transition the place is still *of the void*: unfocused, rising
+                            // into clarity (or sinking out of it). RenderEffect needs Android 12.
+                            renderEffect = if (android.os.Build.VERSION.SDK_INT >= 31 && p < 0.999f) {
+                                val blurPx = ((1f - p) * 14.dp.toPx()).coerceAtLeast(0.05f)
+                                androidx.compose.ui.graphics.BlurEffect(
+                                    blurPx, blurPx, androidx.compose.ui.graphics.TileMode.Decal,
+                                )
+                            } else null
                         }
                         // The chat floor stays composed underneath; a place mid-arrival must
                         // not let stray taps fall through to the composer below it.
