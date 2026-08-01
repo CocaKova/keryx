@@ -48,16 +48,18 @@ fun AmbientVoid(modifier: Modifier = Modifier) {
     Canvas(modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
+        // Whisper-level on purpose (2.0 attention budget): the void is felt, never watched —
+        // anything brighter stacks visibly on the amber aurora and crowds the focal effects.
         drawRect(
             Brush.radialGradient(
-                listOf(accent.copy(alpha = 0.07f), Color.Transparent),
+                listOf(accent.copy(alpha = 0.04f), Color.Transparent),
                 center = Offset(w * (0.16f + 0.10f * phase), h * (0.10f + 0.07f * phase)),
                 radius = (w * 0.95f).coerceAtLeast(1f),
             ),
         )
         drawRect(
             Brush.radialGradient(
-                listOf(accent2.copy(alpha = 0.06f), Color.Transparent),
+                listOf(accent2.copy(alpha = 0.03f), Color.Transparent),
                 center = Offset(w * (0.86f - 0.14f * phase), h * (0.80f - 0.06f * phase)),
                 radius = (w * 0.90f).coerceAtLeast(1f),
             ),
