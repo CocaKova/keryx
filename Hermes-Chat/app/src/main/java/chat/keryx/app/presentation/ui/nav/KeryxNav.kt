@@ -70,6 +70,11 @@ class KeryxNavState internal constructor(initial: List<KeryxDest>) {
     fun back() {
         if (stack.isNotEmpty()) stack.removeAt(stack.lastIndex)
     }
+
+    /** Straight to the chat floor — the assist gesture's landing. */
+    fun home() {
+        stack.clear()
+    }
 }
 
 @Composable

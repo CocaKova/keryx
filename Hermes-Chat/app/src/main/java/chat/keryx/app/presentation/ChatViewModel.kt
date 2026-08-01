@@ -1316,6 +1316,14 @@ class ChatViewModel(
     private val _composerPrefill = MutableStateFlow<String?>(null)
     val composerPrefill: StateFlow<String?> = _composerPrefill.asStateFlow()
 
+    // The assistant doorway (2.0 Phase 5): each ACTION_ASSIST bumps the counter; the UI walks
+    // home and focuses the composer. [assistConsumed] keeps a config-change replay from
+    // re-summoning the keyboard.
+    private val _assistSummon = MutableStateFlow(0)
+    val assistSummon: StateFlow<Int> = _assistSummon.asStateFlow()
+    var assistConsumed = 0
+    fun summonAssist() { _assistSummon.value += 1 }
+
     private fun scheduleClearAwaiting(delayMs: Long, force: Boolean = false) {
         quietJob?.cancel()
         quietJob = viewModelScope.launch {

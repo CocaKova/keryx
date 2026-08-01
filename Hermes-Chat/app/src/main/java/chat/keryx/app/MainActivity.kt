@@ -143,6 +143,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
 
         // A notification tap delivers the room id; open it.
         handleNotificationIntent(intent)
+        handleAssistIntent(intent)
 
         enableEdgeToEdge()
         setContent {
@@ -175,6 +176,15 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleNotificationIntent(intent)
+        handleAssistIntent(intent)
+    }
+
+    /** The assist gesture (long-press home/power with Keryx as the assist app) summons the
+     *  agent: land on the chat floor with the composer focused, ready to be asked. */
+    private fun handleAssistIntent(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_ASSIST && ::viewModel.isInitialized) {
+            viewModel.summonAssist()
+        }
     }
 
     /** If launched/resumed from a message notification, open the room it points at. */

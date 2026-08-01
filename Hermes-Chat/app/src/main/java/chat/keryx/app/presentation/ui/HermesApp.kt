@@ -62,6 +62,19 @@ fun HermesApp(viewModel: ChatViewModel) {
 
     // The navigation spine (2.0): full-screen places live on this stack above the chat floor.
     val nav = rememberKeryxNav()
+
+    // An assist summon walks the app home: whatever place was open sinks away, the drawer
+    // closes, and ChatScreen's own collector focuses the composer.
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        var seen = viewModel.assistSummon.value
+        viewModel.assistSummon.collect { n ->
+            if (n > seen) {
+                seen = n
+                nav.home()
+                drawerState.close()
+            }
+        }
+    }
     val openSpace: (KeryxDest) -> Unit = { dest ->
         focusManager.clearFocus()
         keyboard?.hide()
