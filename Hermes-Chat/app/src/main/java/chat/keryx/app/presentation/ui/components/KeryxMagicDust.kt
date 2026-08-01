@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalDensity
 import kotlin.math.cos
 import kotlin.math.sin
@@ -54,6 +55,13 @@ fun Modifier.keryxMagicDust(
     val enabled = active && !reduced
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.tertiary
+    // Sand must contrast with the room, not the night: in dark rooms it's starlight-washed and
+    // glints toward white; in light rooms it's ink-washed, glints deepen, and it carries a bit
+    // more alpha (sub-dp streaks lose contrast on bright ground).
+    val darkRoom = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val wash = if (darkRoom) Starlight else Inkfall
+    val glintTint = if (darkRoom) Color.White else Inkfall
+    val baseAlpha = if (darkRoom) 0.5f else 0.72f
     val density = LocalDensity.current.density
     val pool = remember(grains) { Array(grains) { Grain() } }
     val emitters = remember { Array(3) { Emitter() } }
@@ -200,12 +208,12 @@ fun Modifier.keryxMagicDust(
                 if (!g.alive) continue
                 val fadeIn = (g.life / (0.1f * g.maxLife)).coerceAtMost(1f)
                 val fadeOut = ((1f - g.life / g.maxLife) / 0.5f).coerceAtMost(1f)
-                val a = (0.5f * fadeIn * fadeOut).coerceIn(0f, 1f)
+                val a = (baseAlpha * fadeIn * fadeOut).coerceIn(0f, 1f)
                 if (a <= 0.01f) continue
                 val hx = g.px + g.ox
                 val hy = g.py + g.oy
-                // Accent-tinted, starlight-washed: sand shot through with light, not paint.
-                val base = lerp(lerp(accent, accent2, g.mix), Starlight, 0.35f)
+                // Accent-tinted, washed toward the room's counter-tone: light-shot dust, not paint.
+                val base = lerp(lerp(accent, accent2, g.mix), wash, 0.35f)
                 // Velocity-stretched streak: the mote's last ~50ms of travel, capped short.
                 var tx = g.vx * 0.05f
                 var ty = g.vy * 0.05f
@@ -223,7 +231,7 @@ fun Modifier.keryxMagicDust(
                 )
                 if (g.glint) {
                     drawCircle(
-                        lerp(base, Color.White, 0.6f).copy(alpha = a),
+                        lerp(base, glintTint, 0.6f).copy(alpha = a),
                         radius = g.sizePx * 1.4f,
                         center = Offset(hx, hy),
                     )
@@ -245,6 +253,11 @@ fun KeryxPuffBurst(tick: Int, modifier: Modifier = Modifier, grains: Int = 18) {
     val reduced by rememberReducedMotion()
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.tertiary
+    // Same room-contrast rule as the streams: starlight in the dark, ink in the light.
+    val darkRoom = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val wash = if (darkRoom) Starlight else Inkfall
+    val glintTint = if (darkRoom) Color.White else Inkfall
+    val baseAlpha = if (darkRoom) 0.55f else 0.75f
     val density = LocalDensity.current.density
     val pool = remember { Array(grains * 2) { Grain() } }
     var frame by remember { mutableLongStateOf(0L) }
@@ -327,10 +340,10 @@ fun KeryxPuffBurst(tick: Int, modifier: Modifier = Modifier, grains: Int = 18) {
         for (g in pool) {
             if (!g.alive) continue
             val fadeOut = ((1f - g.life / g.maxLife) / 0.65f).coerceAtMost(1f)
-            val a = (0.55f * fadeOut).coerceIn(0f, 1f)
+            val a = (baseAlpha * fadeOut).coerceIn(0f, 1f)
             val center = Offset(cx + g.ox, cy + g.oy)
-            val base = lerp(lerp(accent, accent2, g.mix), Starlight, 0.55f)
-            val color = if (g.glint) lerp(base, Color.White, 0.6f) else base
+            val base = lerp(lerp(accent, accent2, g.mix), wash, 0.55f)
+            val color = if (g.glint) lerp(base, glintTint, 0.6f) else base
             drawCircle(color.copy(alpha = a * 0.22f), radius = g.sizePx * 2f, center = center)
             drawCircle(color.copy(alpha = a), radius = g.sizePx, center = center)
         }
@@ -375,5 +388,8 @@ private class DustGeo {
     var h = 0f
 }
 
-/** The glint tint — pale violet starlight, one step off white. */
+/** The dark-room wash — pale violet starlight, one step off white. */
 private val Starlight = Color(0xFFE2D9F3)
+
+/** The light-room wash — deep violet ink; sand must darken, not glow, on bright ground. */
+private val Inkfall = Color(0xFF43356B)
