@@ -52,6 +52,7 @@ import net.folivo.trixnity.core.model.events.m.room.AvatarEventContent
 import net.folivo.trixnity.core.model.events.m.room.ImageInfo
 import net.folivo.trixnity.core.model.events.m.room.Membership
 import net.folivo.trixnity.core.model.events.m.room.RoomMessageEventContent
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Bridges the app's domain layer onto the Trixnity Matrix SDK (via [MatrixService]).
@@ -162,6 +163,51 @@ class ChatRepositoryImpl(
             // The name combine re-emits once per member flow as each resolves — identical lists
             // downstream would re-log/re-diff every message; collapse them.
             .distinctUntilChanged()
+    }
+
+    /** Thrown inside a timeline collect to stop cleanly at the live edge (FORWARDS never
+     *  completes on its own — it waits for future events). */
+    private class EndOfTimeline : Exception()
+
+    override suspend fun messagesAround(sessionId: String, eventId: String, before: Int, after: Int): List<Message> {
+        val client = matrix.client.value ?: return emptyList()
+        val roomId = RoomId(sessionId)
+        val myId = client.userId.full
+        val agentId = settingsRepository.agentMatrixId
+        val legacyAgentRoom = legacyAgentRoomOf(
+            runCatching { client.room.getById(roomId).first() }.getOrNull()
+        )
+
+        // Walks [count] events (anchor included) in [direction], waiting bounded per event for
+        // decryption and overall for gap fetches; whatever resolved in time is returned.
+        suspend fun walk(direction: net.folivo.trixnity.clientserverapi.model.rooms.GetEvents.Direction, count: Int): List<Message> {
+            val out = mutableListOf<Message>()
+            runCatching {
+                withTimeoutOrNull(20_000) {
+                    client.room.getTimelineEvents(roomId, EventId(eventId), direction) {
+                        fetchTimeout = 8.seconds
+                    }
+                        .take(count)
+                        .collect { eventFlow ->
+                            val ev = withTimeoutOrNull(6_000) { eventFlow.first { it.content != null } }
+                                ?: return@collect
+                            ev.toMessage(myId, agentId, legacyAgentRoom)?.let { out += it }
+                            // At the live edge there is no next event yet — stop instead of
+                            // waiting out the full timeout for messages that haven't been sent.
+                            if (direction == net.folivo.trixnity.clientserverapi.model.rooms.GetEvents.Direction.FORWARDS &&
+                                ev.nextEventId == null
+                            ) throw EndOfTimeline()
+                        }
+                }
+            }.onFailure { if (it !is EndOfTimeline) throw it }
+            return out
+        }
+
+        val older = walk(net.folivo.trixnity.clientserverapi.model.rooms.GetEvents.Direction.BACKWARDS, before + 1)
+        val newer = walk(net.folivo.trixnity.clientserverapi.model.rooms.GetEvents.Direction.FORWARDS, after + 1)
+        // BACKWARDS emits anchor→older; reverse to oldest-first, then append the newer half
+        // (its own anchor copy dropped by the distinct pass).
+        return (older.asReversed() + newer).distinctBy { it.id }
     }
 
     // Resolved display names, "roomId|senderId" → name. withSenderNames is rebuilt by

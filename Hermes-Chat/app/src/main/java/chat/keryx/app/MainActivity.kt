@@ -127,7 +127,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
 
         val factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return ChatViewModel(repository, settingsRepository) as T
+                return ChatViewModel(repository, settingsRepository, app.archiveStore, app.archiveIndexer) as T
             }
         }
         viewModel = ViewModelProvider(this, factory)[ChatViewModel::class.java]

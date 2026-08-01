@@ -38,6 +38,11 @@ of raw model output.
   auto-detected and preferred). Payloads stay `event_id_only` — content never rides the push.
 - **Share-sheet target** — Send any text, link, image, video, or file from any app straight
   into a room with an optional note; attachments + note land as one MSC2530-captioned turn.
+- **The Archive** — Full-text search over the room's entire history, powered by a local FTS
+  index the app builds itself (E2EE rooms can't be searched server-side — the phone is the
+  only place the plaintext exists). Jump to any date, keep messages in a Saved list from the
+  long-press menu, browse every photo and file in a gallery; tapping anything opens a live
+  context window around that moment.
 - **Local-first diagnostics** — Crash log kept on-device only, shareable from Settings.
 
 ## Installing

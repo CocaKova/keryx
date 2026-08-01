@@ -43,6 +43,8 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -138,6 +140,7 @@ fun ChatScreen(
     val workStartedAt by viewModel.workStartedAt.collectAsState()
     val workLabel by viewModel.workLabel.collectAsState()
     val replyTarget by viewModel.replyTarget.collectAsState()
+    val savedIds by viewModel.savedIds.collectAsState()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -576,6 +579,10 @@ fun ChatScreen(
                                 onDelete = if (message.sender == SenderType.ME) {
                                     { viewModel.deleteMessage(message.sessionId, message.id) }
                                 } else null,
+                                kept = savedIds.contains(message.id),
+                                onToggleKeep = if (viewModel.archiveAvailable) {
+                                    { viewModel.toggleSaved(message) }
+                                } else null,
                                 speaking = ttsState.messageId == message.id &&
                                     ttsState.phase != chat.keryx.app.audio.TtsController.Phase.IDLE,
                                 onSpeak = if (message.sender == SenderType.HERMES) {
@@ -992,6 +999,9 @@ fun MessageBubble(
     speaking: Boolean = false,
     /** Read this message aloud / stop reading it. Null hides the affordance (non-agent senders). */
     onSpeak: (() -> Unit)? = null,
+    /** Whether this message is kept in the Archive's Saved list; null hides the affordance. */
+    kept: Boolean? = null,
+    onToggleKeep: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val isMine = message.sender == SenderType.ME
@@ -1194,6 +1204,8 @@ fun MessageBubble(
                 onDelete = onDelete?.let { { showReactionPicker = false; confirmDelete = true } },
                 onSpeak = onSpeak?.let { speak -> { showReactionPicker = false; speak() } },
                 speaking = speaking,
+                kept = kept,
+                onToggleKeep = onToggleKeep?.let { toggle -> { showReactionPicker = false; toggle() } },
                 onDismiss = { showReactionPicker = false },
             )
         }
@@ -1322,6 +1334,8 @@ private fun ReactionPickerRow(
     onDelete: (() -> Unit)? = null,
     onSpeak: (() -> Unit)? = null,
     speaking: Boolean = false,
+    kept: Boolean? = null,
+    onToggleKeep: (() -> Unit)? = null,
 ) {
     // A focusable Popup so a tap anywhere outside (or the back gesture) reliably dismisses it —
     // the inline version was hard to get rid of once it was up.
@@ -1389,6 +1403,15 @@ private fun ReactionPickerRow(
                     }
                     IconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
                         Icon(Icons.Default.ContentCopy, contentDescription = "Copy text", tint = MaterialTheme.colorScheme.primary)
+                    }
+                    if (onToggleKeep != null) {
+                        IconButton(onClick = onToggleKeep, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                if (kept == true) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                                contentDescription = if (kept == true) "Remove from Saved" else "Keep in Archive",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     }
                     if (onSpeak != null) {
                         IconButton(onClick = onSpeak, modifier = Modifier.size(32.dp)) {
