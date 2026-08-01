@@ -192,6 +192,10 @@ fun KeryxCard(
  * KeryxSpace — the full-screen "a place you go" scaffold the Agent Hub pioneered (1.21), now
  * shared: dusk gradient, braille-snake emblem, letter-spaced title, a live slot under the title
  * (breathing dot + status line), optional action icons, close X, optional floating action.
+ *
+ * [standalone] spaces host their own Dialog window (nested viewers that overlay another space).
+ * Spaces that live on the navigation stack pass false — KeryxNavHost owns their window, their
+ * transition, and their back gesture (2.0 Phase 1).
  */
 @Composable
 fun KeryxSpace(
@@ -201,63 +205,81 @@ fun KeryxSpace(
     liveSlot: @Composable () -> Unit = {},
     actions: @Composable () -> Unit = {},
     floating: (@Composable () -> Unit)? = null,
+    standalone: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Dialog(
-        onDismissRequest = onClose,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        Box(Modifier.fillMaxSize()) {
-            Column(
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(duskBrush())
-                    .padding(bottom = 12.dp)
-                    .windowInsetsPadding(WindowInsets.systemBars),
+    if (standalone) {
+        Dialog(
+            onDismissRequest = onClose,
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            KeryxSpaceBody(title, onClose, modifier, liveSlot, actions, floating, content)
+        }
+    } else {
+        KeryxSpaceBody(title, onClose, modifier, liveSlot, actions, floating, content)
+    }
+}
+
+@Composable
+private fun KeryxSpaceBody(
+    title: String,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+    liveSlot: @Composable () -> Unit = {},
+    actions: @Composable () -> Unit = {},
+    floating: (@Composable () -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Box(Modifier.fillMaxSize()) {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(duskBrush())
+                .padding(bottom = 12.dp)
+                .windowInsetsPadding(WindowInsets.systemBars),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(start = 20.dp, end = 8.dp, top = 6.dp),
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(start = 20.dp, end = 8.dp, top = 6.dp),
-                ) {
-                    Box(modifier = Modifier.size(44.dp)) {
-                        BrailleSnakeAnimation(
-                            modifier = Modifier.fillMaxSize(),
-                            color = MaterialTheme.colorScheme.primary,
-                            color2 = MaterialTheme.colorScheme.tertiary,
-                            snakeLength = 12,
-                            periodMillis = 3600,
-                            glyphSize = 8f,
-                        )
-                    }
-                    Column(modifier = Modifier.padding(start = 14.dp).weight(1f)) {
-                        Text(
-                            title.uppercase(),
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 5.sp,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        liveSlot()
-                    }
-                    actions()
-                    IconButton(onClick = onClose) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = "Close $title",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                Box(modifier = Modifier.size(44.dp)) {
+                    BrailleSnakeAnimation(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.primary,
+                        color2 = MaterialTheme.colorScheme.tertiary,
+                        snakeLength = 12,
+                        periodMillis = 3600,
+                        glyphSize = 8f,
+                    )
                 }
-                content()
+                Column(modifier = Modifier.padding(start = 14.dp).weight(1f)) {
+                    Text(
+                        title.uppercase(),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 5.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    liveSlot()
+                }
+                actions()
+                IconButton(onClick = onClose) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Close $title",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-            if (floating != null) {
-                Box(
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .windowInsetsPadding(WindowInsets.systemBars)
-                        .padding(20.dp),
-                ) { floating() }
-            }
+            content()
+        }
+        if (floating != null) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .windowInsetsPadding(WindowInsets.systemBars)
+                    .padding(20.dp),
+            ) { floating() }
         }
     }
 }

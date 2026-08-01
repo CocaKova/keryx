@@ -100,6 +100,7 @@ fun ArchiveScreen(
     KeryxSpace(
         title = "Archive",
         onClose = onDismissRequest,
+        standalone = false,
         liveSlot = {
             val p = progress
             Row(verticalAlignment = Alignment.CenterVertically) {
