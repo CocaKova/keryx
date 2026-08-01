@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddComment
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Menu
@@ -226,9 +227,22 @@ fun HermesApp(viewModel: ChatViewModel) {
                             openSpace(KeryxDest.Hub)
                         })
                         if (currentSession != null) {
+                            // New session: one tap sends /new — same auto-send the command palette
+                            // does, so the gateway's fresh-session reply lands in the chat itself.
+                            IconButton(onClick = {
+                                viewModel.recordCommandUse("/new")
+                                viewModel.sendMessage("/new")
+                            }) {
+                                Icon(
+                                    Icons.Default.AddComment,
+                                    contentDescription = "New session",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
                             // Dynamic reasoning control via Hermes' native /reasoning command.
                             // Effort levels persist with --global; show/hide persists per-platform
                             // on the server side already; reset clears this session's override.
+                            // Steer lives at the bottom of this menu, keeping the bar at four items.
                             var reasoningMenu by remember { mutableStateOf(false) }
                             val reasoningCaps by viewModel.reasoningCaps.collectAsState()
                             Box {
@@ -244,11 +258,8 @@ fun HermesApp(viewModel: ChatViewModel) {
                                     caps = reasoningCaps,
                                     onDismiss = { reasoningMenu = false },
                                     onCommand = { arg -> reasoningMenu = false; viewModel.sendReasoningCommand(arg) },
+                                    onSteer = { reasoningMenu = false; viewModel.prefillComposer("/steer ") },
                                 )
-                            }
-                            // Steer: quick-prefill the composer with "/steer " to redirect the agent mid-task.
-                            IconButton(onClick = { viewModel.prefillComposer("/steer ") }) {
-                                Icon(Icons.Default.Explore, contentDescription = "Steer", tint = MaterialTheme.colorScheme.primary)
                             }
                             // The Call (1.22): a voice conversation with this room's agent. Needs
                             // both voice endpoints; a missing one gets a pointer, not a dead mic.
@@ -395,6 +406,7 @@ private fun ReasoningMenu(
     caps: chat.keryx.app.data.remote.HermesStreamClient.ReasoningCaps?,
     onDismiss: () -> Unit,
     onCommand: (String) -> Unit,
+    onSteer: () -> Unit,
 ) {
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.tertiary
@@ -489,6 +501,25 @@ private fun ReasoningMenu(
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             },
             onClick = { onCommand("reset") },
+        )
+        HorizontalDivider(
+            color = accent.copy(alpha = 0.12f),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+        )
+        DropdownMenuItem(
+            text = {
+                androidx.compose.foundation.layout.Row(
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Default.Explore, contentDescription = null,
+                        tint = accent.copy(alpha = 0.75f),
+                        modifier = Modifier.padding(end = 10.dp).size(16.dp),
+                    )
+                    Text("Steer the agent…", fontSize = 14.sp)
+                }
+            },
+            onClick = onSteer,
         )
     }
 }
