@@ -74,6 +74,8 @@ class ArchiveStore(context: Context) :
             db.execSQL("DELETE FROM msg")
             db.execSQL("DELETE FROM msg_fts")
             db.execSQL("DELETE FROM meta WHERE key LIKE 'complete|%'")
+            db.execSQL("DELETE FROM meta WHERE key LIKE 'frontier|%'")
+            db.execSQL("DELETE FROM meta WHERE key LIKE 'ceiling|%'")
         }
     }
 
@@ -89,6 +91,8 @@ class ArchiveStore(context: Context) :
             metaPut(db, "account", userId)
             // Backfill flags belong to the wiped index — drop them with it.
             db.execSQL("DELETE FROM meta WHERE key LIKE 'complete|%'")
+            db.execSQL("DELETE FROM meta WHERE key LIKE 'frontier|%'")
+            db.execSQL("DELETE FROM meta WHERE key LIKE 'ceiling|%'")
             db.setTransactionSuccessful()
         } finally {
             db.endTransaction()
@@ -100,6 +104,26 @@ class ArchiveStore(context: Context) :
 
     fun setBackfillComplete(roomId: String) =
         metaPut(writableDatabase, "complete|$roomId", "1")
+
+    /** How deep the backfill walk has ever reached: the event id of the oldest visited event.
+     *  An interrupted backfill resumes here instead of re-walking all of history from the top. */
+    fun backfillFrontier(roomId: String): String? =
+        metaGet(readableDatabase, "frontier|$roomId")
+
+    fun setBackfillFrontier(roomId: String, eventId: String) =
+        metaPut(writableDatabase, "frontier|$roomId", eventId)
+
+    fun clearBackfillFrontier(roomId: String) {
+        writableDatabase.delete("meta", "key=?", arrayOf("frontier|$roomId"))
+    }
+
+    /** The newest event a finished sweep started from. Ground at-or-below it has been fully
+     *  processed, so the next catch-up walk stops there exactly — no heuristics. */
+    fun catchupCeiling(roomId: String): String? =
+        metaGet(readableDatabase, "ceiling|$roomId")
+
+    fun setCatchupCeiling(roomId: String, eventId: String) =
+        metaPut(writableDatabase, "ceiling|$roomId", eventId)
 
     fun hasEvent(eventId: String): Boolean =
         readableDatabase.rawQuery("SELECT 1 FROM msg WHERE event_id=? LIMIT 1", arrayOf(eventId))

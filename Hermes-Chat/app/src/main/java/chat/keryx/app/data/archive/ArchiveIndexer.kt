@@ -111,48 +111,120 @@ class ArchiveIndexer(
         // the chat's grouping whenever a block boundary lands — a human/media message, exactly
         // where the chat's own walk breaks blocks.
         val block = ArrayList<Message>(64)
+        var frontier: String? = store.backfillFrontier(roomId)
+        var frontierDirty = false
         fun flushBlock() {
-            if (block.isEmpty()) return
-            fresh += store.insertAll(indexableEntries(block))
-            block.clear()
+            if (block.isNotEmpty()) {
+                fresh += store.insertAll(indexableEntries(block))
+                block.clear()
+            }
+            if (frontierDirty) {
+                frontier?.let { store.setBackfillFrontier(roomId, it) }
+                frontierDirty = false
+            }
             publish(running = true)
         }
 
-        var knownStreak = 0
-        var stoppedEarly = false
-        client.room.getTimelineEvents(rid, anchor.event.id, GetEvents.Direction.BACKWARDS) {
-            fetchSize = 100
-            fetchTimeout = 30.seconds
-        }.transformWhile { eventFlow ->
-            // Wait (bounded) for decryption; an event that never resolves is skipped, not fatal.
-            val ev = withTimeoutOrNull(10_000) { eventFlow.first { it.content != null } }
-                ?: withTimeoutOrNull(2_000) { eventFlow.firstOrNull() }
-            if (ev != null) emit(ev)
-            // Once the room was fully backfilled, a long run of already-known events means the
-            // sweep has caught up to a previous one — stop instead of re-walking all of history.
-            // Stop only at a block boundary (a breaker message), so the last flushed block is
-            // never truncated mid-run — a cut-off block could misread a progress line as a
-            // bubble. A hard cap bounds the walk if the history has no breaker for ages.
-            knownStreak = if (ev != null && store.hasEvent(ev.event.id.full)) knownStreak + 1 else 0
-            val rc = ev?.content?.getOrNull() as? RoomMessageEventContent
-            val breaker = rc is RoomMessageEventContent.FileBased ||
-                (rc != null && ev.event.sender.full == myId && !rc.body.trimStart().startsWith("/"))
-            val continueWalk = !(wasComplete && knownStreak >= KNOWN_STREAK_STOP &&
-                (breaker || knownStreak >= KNOWN_STREAK_HARD_STOP))
-            if (!continueWalk) stoppedEarly = true
-            continueWalk
-        }.collect { ev ->
-            val m = toMessage(ev, myId) ?: return@collect
-            block += m
-            val breaksBlock = m.mediaKind != null ||
-                (m.sender == SenderType.ME && !m.content.trimStart().startsWith("/"))
-            if (breaksBlock) flushBlock()
+        /** One backwards walk from [fromEventId]. [ceiling] is an exact bound: ground at-or-below
+         *  that event was fully processed by an earlier sweep, so the walk ends at the first
+         *  block boundary past it (never mid-block — a cut-off block could misread a progress
+         *  line as a bubble; the boundary overshoot re-inserts a few known events, which dedupe).
+         *  [stopAtKnown] is the heuristic fallback for pre-ceiling installs: a long run of
+         *  already-indexed events. [trackFrontier] marks this walk as breaking new ground: it
+         *  records how deep it got (every visited event, message or not) so the next sweep
+         *  resumes there. Returns true when the walk ran out of history on its own — it reached
+         *  the start of the room. */
+        suspend fun walk(
+            fromEventId: net.folivo.trixnity.core.model.EventId,
+            ceiling: String?,
+            stopAtKnown: Boolean,
+            trackFrontier: Boolean,
+        ): Boolean {
+            var knownStreak = 0
+            var pastCeiling = 0
+            var stoppedEarly = false
+            client.room.getTimelineEvents(rid, fromEventId, GetEvents.Direction.BACKWARDS) {
+                fetchSize = 100
+                fetchTimeout = 30.seconds
+            }.transformWhile { eventFlow ->
+                // Wait (bounded) for decryption; an event that never resolves is skipped, not fatal.
+                val ev = withTimeoutOrNull(10_000) { eventFlow.first { it.content != null } }
+                    ?: withTimeoutOrNull(2_000) { eventFlow.firstOrNull() }
+                if (ev != null) emit(ev)
+                if (ev != null && (pastCeiling > 0 || ev.event.id.full == ceiling)) pastCeiling++
+                knownStreak = if (ev != null && store.hasEvent(ev.event.id.full)) knownStreak + 1 else 0
+                val rc = ev?.content?.getOrNull() as? RoomMessageEventContent
+                val breaker = rc is RoomMessageEventContent.FileBased ||
+                    (rc != null && ev.event.sender.full == myId && !rc.body.trimStart().startsWith("/"))
+                // The hard caps bound both stops if the history has no breaker for ages.
+                val ceilingStop = pastCeiling > 0 && (breaker || pastCeiling >= KNOWN_STREAK_HARD_STOP)
+                val knownStop = stopAtKnown && knownStreak >= KNOWN_STREAK_STOP &&
+                    (breaker || knownStreak >= KNOWN_STREAK_HARD_STOP)
+                val continueWalk = !(ceilingStop || knownStop)
+                if (!continueWalk) stoppedEarly = true
+                continueWalk
+            }.collect { ev ->
+                if (trackFrontier) {
+                    frontier = ev.event.id.full
+                    frontierDirty = true
+                }
+                val m = toMessage(ev, myId) ?: return@collect
+                block += m
+                val breaksBlock = m.mediaKind != null ||
+                    (m.sender == SenderType.ME && !m.content.trimStart().startsWith("/"))
+                if (breaksBlock) flushBlock()
+            }
+            flushBlock()
+            return !stoppedEarly
         }
-        flushBlock()
 
-        // The walk ending on its own means it reached the start of the room: backfill is whole.
-        val complete = wasComplete || !stoppedEarly
-        if (complete && !wasComplete) store.setBackfillComplete(roomId)
+        // Catch-up: from the newest event down to the last finished sweep's ceiling (or, on a
+        // pre-ceiling index, until the known-ground heuristic fires). The very first sweep has
+        // no walked ground at all — that walk IS the backfill, and it tracks its frontier so an
+        // interruption never costs the progress made.
+        val resumeFrom = frontier
+        val ceiling = store.catchupCeiling(roomId)
+        val firstEver = !wasComplete && resumeFrom == null && ceiling == null
+        var reachedStart = walk(
+            anchor.event.id,
+            ceiling = ceiling,
+            stopAtKnown = !firstEver,
+            trackFrontier = firstEver,
+        )
+        // The catch-up finished cleanly (early returns above throw on cancellation), so ground
+        // below this sweep's anchor is now covered: it is the next sweep's exact stop line.
+        store.setCatchupCeiling(roomId, anchor.event.id.full)
+
+        // Resume an unfinished backfill where it last left off — never from the top. Before the
+        // frontier existed, every sweep re-walked all of history and the Archive sat on
+        // "reaching back…" forever.
+        if (!wasComplete && !reachedStart && resumeFrom != null) {
+            try {
+                reachedStart = walk(
+                    net.folivo.trixnity.core.model.EventId(resumeFrom),
+                    ceiling = null,
+                    stopAtKnown = false,
+                    trackFrontier = true,
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // A frontier the timeline can no longer resolve (e.g. the client store was
+                // rebuilt) would fail every sweep from now on — drop it so the next sweep
+                // restarts the backfill cleanly from the top.
+                android.util.Log.e("KeryxArchive", "backfill resume failed for $roomId", e)
+                store.clearBackfillFrontier(roomId)
+                publish(running = false, error = "backfill resume failed — will restart")
+                return
+            }
+        }
+
+        // Running out of history means the backfill is whole; the frontier has done its job.
+        val complete = wasComplete || reachedStart
+        if (complete && !wasComplete) {
+            store.setBackfillComplete(roomId)
+            store.clearBackfillFrontier(roomId)
+        }
         publish(running = false, complete = complete)
     }
 
