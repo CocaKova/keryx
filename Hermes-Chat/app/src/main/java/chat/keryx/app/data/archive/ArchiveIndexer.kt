@@ -1,7 +1,11 @@
 package chat.keryx.app.data.archive
 
 import chat.keryx.app.data.remote.MatrixService
+import chat.keryx.app.domain.model.Message
+import chat.keryx.app.domain.model.SenderType
+import chat.keryx.app.presentation.ui.components.ChatRenderItem
 import chat.keryx.app.presentation.ui.components.MessageParser
+import chat.keryx.app.presentation.ui.components.groupChatItems
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +31,14 @@ import kotlin.time.Duration.Companion.seconds
  * [ArchiveStore]. Trixnity fills timeline gaps from the server as the walk crosses them, so the
  * first sweep of a room is the big backfill (it can run minutes for months of history); after
  * that the same walk stops within a few dozen events of the top and a sweep is near-instant.
+ *
+ * What gets indexed is decided by the SAME grouping the chat renders with ([groupChatItems]):
+ * messages are buffered into contiguous agent blocks and only what would render as a dialogue
+ * bubble ([ChatRenderItem.Single]) enters the index. Everything the chat folds into a tool-run
+ * accordion — tool calls, headerless progress sends, mid-run fences, edited progress messages
+ * that end as bare "⏰ Scheduling …" lines — is machinery, not dialogue, and stays out. This is
+ * the structural invariant, not a pattern blocklist: if the chat shows it as a bubble, search
+ * can find it; if the chat tucks it into a run card, search ignores it.
  *
  * E2EE: old events decrypt from the megolm keys already in the client's store — the walk waits
  * (bounded) for each event's decryption. An event whose keys are truly gone is indexed as absent
@@ -95,7 +107,17 @@ class ArchiveIndexer(
             return
         }
 
-        val batch = ArrayList<ArchiveStore.Entry>(64)
+        // The current contiguous agent block, newest-first (the walk direction). Flushed through
+        // the chat's grouping whenever a block boundary lands — a human/media message, exactly
+        // where the chat's own walk breaks blocks.
+        val block = ArrayList<Message>(64)
+        fun flushBlock() {
+            if (block.isEmpty()) return
+            fresh += store.insertAll(indexableEntries(block))
+            block.clear()
+            publish(running = true)
+        }
+
         var knownStreak = 0
         var stoppedEarly = false
         client.room.getTimelineEvents(rid, anchor.event.id, GetEvents.Direction.BACKWARDS) {
@@ -108,19 +130,25 @@ class ArchiveIndexer(
             if (ev != null) emit(ev)
             // Once the room was fully backfilled, a long run of already-known events means the
             // sweep has caught up to a previous one — stop instead of re-walking all of history.
+            // Stop only at a block boundary (a breaker message), so the last flushed block is
+            // never truncated mid-run — a cut-off block could misread a progress line as a
+            // bubble. A hard cap bounds the walk if the history has no breaker for ages.
             knownStreak = if (ev != null && store.hasEvent(ev.event.id.full)) knownStreak + 1 else 0
-            val continueWalk = !(wasComplete && knownStreak >= KNOWN_STREAK_STOP)
+            val rc = ev?.content?.getOrNull() as? RoomMessageEventContent
+            val breaker = rc is RoomMessageEventContent.FileBased ||
+                (rc != null && ev.event.sender.full == myId && !rc.body.trimStart().startsWith("/"))
+            val continueWalk = !(wasComplete && knownStreak >= KNOWN_STREAK_STOP &&
+                (breaker || knownStreak >= KNOWN_STREAK_HARD_STOP))
             if (!continueWalk) stoppedEarly = true
             continueWalk
         }.collect { ev ->
-            toEntry(ev, myId)?.let { batch += it }
-            if (batch.size >= 50) {
-                fresh += store.insertAll(batch)
-                batch.clear()
-                publish(running = true)
-            }
+            val m = toMessage(ev, myId) ?: return@collect
+            block += m
+            val breaksBlock = m.mediaKind != null ||
+                (m.sender == SenderType.ME && !m.content.trimStart().startsWith("/"))
+            if (breaksBlock) flushBlock()
         }
-        fresh += store.insertAll(batch)
+        flushBlock()
 
         // The walk ending on its own means it reached the start of the room: backfill is whole.
         val complete = wasComplete || !stoppedEarly
@@ -128,32 +156,32 @@ class ArchiveIndexer(
         publish(running = false, complete = complete)
     }
 
-    private fun toEntry(ev: TimelineEvent, myId: String): ArchiveStore.Entry? {
+    /** Minimal domain mapping for grouping: ME for the user's own events, HERMES for everyone
+     *  else. (The archive has no group-room rendering stakes — the grouping only needs to know
+     *  which side of the conversation a message is on.) */
+    private fun toMessage(ev: TimelineEvent, myId: String): Message? {
         val rc = ev.content?.getOrNull() as? RoomMessageEventContent ?: return null
         // m.replace edit events: Trixnity folds the edit into the original — the carrier is noise.
         if (rc.relatesTo is RelatesTo.Replace) return null
         val mediaKind = when (rc) {
-            is RoomMessageEventContent.FileBased.Image -> "IMAGE"
-            is RoomMessageEventContent.FileBased.Video -> "VIDEO"
-            is RoomMessageEventContent.FileBased.Audio -> "AUDIO"
-            is RoomMessageEventContent.FileBased.File -> "FILE"
+            is RoomMessageEventContent.FileBased.Image -> chat.keryx.app.domain.model.MediaKind.IMAGE
+            is RoomMessageEventContent.FileBased.Video -> chat.keryx.app.domain.model.MediaKind.VIDEO
+            is RoomMessageEventContent.FileBased.Audio -> chat.keryx.app.domain.model.MediaKind.AUDIO
+            is RoomMessageEventContent.FileBased.File -> chat.keryx.app.domain.model.MediaKind.FILE
             else -> null
         }
-        val fileName = (rc as? RoomMessageEventContent.FileBased)?.fileName ?: ""
         var body = rc.body
         if (rc.relatesTo?.replyTo != null) body = stripReplyFallback(body)
-        body = searchableText(body, fromMe = ev.event.sender.full == myId)
-        if (mediaKind == null && (body.isBlank() || MessageParser.isTelemetryMessage(rc.body))) {
-            return null
-        }
-        return ArchiveStore.Entry(
-            eventId = ev.event.id.full,
-            roomId = ev.event.roomId.full,
-            sender = ev.event.sender.full,
+        val sender = ev.event.sender.full
+        return Message(
+            id = ev.event.id.full,
+            sessionId = ev.event.roomId.full,
+            sender = if (sender == myId) SenderType.ME else SenderType.HERMES,
+            content = body,
             timestamp = ev.event.originTimestamp,
+            senderId = sender,
             mediaKind = mediaKind,
-            fileName = fileName,
-            body = body,
+            fileName = (rc as? RoomMessageEventContent.FileBased)?.fileName ?: "",
         )
     }
 
@@ -170,6 +198,33 @@ class ArchiveIndexer(
 
     companion object {
         private const val KNOWN_STREAK_STOP = 25
+        private const val KNOWN_STREAK_HARD_STOP = 500
+
+        /**
+         * The index-worthy entries of one contiguous block, [newestFirst] exactly as walked.
+         * Runs the chat's own grouping: dialogue bubbles in, tool-run internals out, telemetry
+         * out. Pure — this is the whole indexing policy, unit-testable without a device.
+         */
+        fun indexableEntries(newestFirst: List<Message>): List<ArchiveStore.Entry> =
+            groupChatItems(newestFirst)
+                .filterIsInstance<ChatRenderItem.Single>()
+                .mapNotNull { single -> entryFor(single.message) }
+
+        private fun entryFor(m: Message): ArchiveStore.Entry? {
+            if (m.content.isBlank() && m.mediaKind == null) return null
+            if (m.mediaKind == null && MessageParser.isTelemetryMessage(m.content)) return null
+            val body = searchableText(m.content, fromMe = m.sender == SenderType.ME)
+            if (m.mediaKind == null && body.isBlank()) return null
+            return ArchiveStore.Entry(
+                eventId = m.id,
+                roomId = m.sessionId,
+                sender = m.senderId,
+                timestamp = m.timestamp,
+                mediaKind = m.mediaKind?.name,
+                fileName = m.fileName,
+                body = body,
+            )
+        }
 
         /**
          * What of a message body belongs in the search index: the answer, not the machinery.

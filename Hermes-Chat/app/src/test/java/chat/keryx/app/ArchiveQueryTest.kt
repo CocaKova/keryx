@@ -2,6 +2,7 @@ package chat.keryx.app
 
 import chat.keryx.app.data.archive.ArchiveIndexer
 import chat.keryx.app.data.archive.ArchiveStore
+import chat.keryx.app.presentation.ui.components.MessageParser
 import chat.keryx.app.presentation.ui.components.snippetRanges
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -90,5 +91,74 @@ class ArchiveQueryTest {
         assert(indexed.contains("Palworld")) { "table cells should stay searchable: $indexed" }
         assert(indexed.contains("Two entries found."))
         assert(!indexed.contains("vault_list"))
+    }
+
+    // --- indexableEntries: the chat's grouping decides what search can find ---
+    // Regression fixtures are real leaked shapes pulled from the on-device index on 07-31:
+    // edited progress messages whose final body is a bare check-in/tool line that the strict
+    // tool regexes reject ("⚙️ computer_use...", "⏰ Scheduling create"), which therefore parsed
+    // as prose. Grouped with their tool-bearing neighbors they fold into the run — and stay out.
+
+    private fun msg(id: String, content: String, me: Boolean = false, ts: Long = 1L) =
+        chat.keryx.app.domain.model.Message(
+            id = id,
+            sessionId = "!room:x",
+            sender = if (me) chat.keryx.app.domain.model.SenderType.ME
+            else chat.keryx.app.domain.model.SenderType.HERMES,
+            content = content,
+            timestamp = ts,
+            senderId = if (me) "@jonny:x" else "@silas:x",
+        )
+
+    @Test
+    fun `progress lines inside a tool run stay out of the index`() {
+        // newest-first, as the backwards walk delivers them; the progress line sits BETWEEN
+        // tool messages, exactly as the leaked rows did in the real timeline.
+        val block = listOf(
+            msg("e4", "Done — the audit script is fixed and scheduled.", ts = 4),
+            msg("e3", "⚙️ brain_store: \"audit fixed\"", ts = 3),
+            msg("e2", "⚙️ computer_use...", ts = 2),
+            msg("e1", "⚙️ graphiti_forget: \"stale entry\"", ts = 1),
+        )
+        val bodies = ArchiveIndexer.indexableEntries(block).map { it.body }
+        assert(bodies.any { it.contains("audit script is fixed") }) { "answer must be indexed: $bodies" }
+        assert(bodies.none { it.contains("computer_use") }) { "progress line leaked: $bodies" }
+        assert(bodies.none { it.contains("graphiti_forget") }) { "tool call leaked: $bodies" }
+    }
+
+    @Test
+    fun `standalone checkin message stays out even without tool neighbors`() {
+        val block = listOf(msg("e1", "⏰ Scheduling create"))
+        assert(ArchiveIndexer.indexableEntries(block).isEmpty())
+    }
+
+    @Test
+    fun `truncated tool lines parse as tool calls and stay out`() {
+        // The gateway's edited progress message can settle on `⚙️ name...` — no colon, no args.
+        val call = MessageParser.parse("⚙️ brain_store...", cacheable = false)
+            .filterIsInstance<MessageParser.Segment.Tools>().single().calls.single()
+        assertEquals("brain_store", call.name)
+        // With a repeat marker too.
+        assert(
+            MessageParser.parse("⚙️ computer_use… (×2)", cacheable = false)
+                .any { it is MessageParser.Segment.Tools }
+        )
+        // Prose guard: trailing-off words are not tools.
+        assert(
+            MessageParser.parse("🔥 nice...", cacheable = false)
+                .none { it is MessageParser.Segment.Tools }
+        )
+        // Standalone in a block → a one-call run, not a bubble → not indexed.
+        assert(ArchiveIndexer.indexableEntries(listOf(msg("e1", "⚙️ brain_store..."))).isEmpty())
+    }
+
+    @Test
+    fun `plain conversation indexes both sides`() {
+        val block = listOf(
+            msg("e2", "The server is back up.", ts = 2),
+            msg("e1", "can you restart the palworld server", me = true, ts = 1),
+        )
+        val bodies = ArchiveIndexer.indexableEntries(block).map { it.body }
+        assertEquals(2, bodies.size)
     }
 }

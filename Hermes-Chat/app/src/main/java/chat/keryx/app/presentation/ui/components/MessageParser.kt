@@ -89,6 +89,14 @@ object MessageParser {
     private val TOOL_LINE_NOGLYPH =
         Regex("""^([a-z][a-z0-9]*(?:_[a-z0-9]+)*):\s*(["“`].*["”`])$""")
 
+    // The gateway's edited progress messages can settle on a TRUNCATED tool line — glyph, tool
+    // name, an ellipsis instead of the args, optionally a repeat marker: `⚙️ brain_store...`,
+    // `⚙️ computer_use… (×2)`. No colon, so TOOL_LINE misses it, and it used to fall through as
+    // prose (a stray bubble in chat, machinery in the search index). The underscore requirement
+    // is the prose guard: tool names are snake_case, trailing-off prose ("hmm...") isn't.
+    private val TOOL_LINE_TRUNCATED =
+        Regex("""^(\S+)\s+([a-z][a-z0-9]*(?:_[a-z0-9]+)+)(?:\.\.\.|…)(?:\s*\(×\d+\))?$""")
+
     // Hermes also emits human-readable progress lines for some tools: `📖 Reading consolidate.py
     // L80-89`, `🔧 Editing /path/to/file (×2)` — a leading glyph, a capitalized gerund, then the
     // target, no colon. Conservative guards keep prose out: the glyph must be a symbol, the verb
@@ -792,6 +800,13 @@ object MessageParser {
         TOOL_LINE_NOGLYPH.matchEntire(line)?.let { m ->
             val (args, verdict) = stripTrailingVerdict(cleanArgs(m.groupValues[2]))
             return ToolCall(emoji = "", name = m.groupValues[1], args = args, ok = verdict)
+        }
+        // Truncated progress form: `⚙️ brain_store...` — the tool's identity without its args.
+        TOOL_LINE_TRUNCATED.matchEntire(line)?.let { m ->
+            val (emoji, name) = m.destructured
+            if (!emoji.first().isLetterOrDigit()) {
+                return ToolCall(emoji = emoji.trimEnd('️'), name = name, args = "…", ok = null)
+            }
         }
         // Progress-style line (`📖 Reading consolidate.py L80-89`). Sentence-shaped lines are
         // rejected: the glyph must be a symbol and the line must not end like prose.
