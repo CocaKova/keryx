@@ -1645,16 +1645,11 @@ private fun StreamingBubble(
     val interrupted = stream.status == chat.keryx.app.presentation.LiveStreamStatus.INTERRUPTED
     val streaming = stream.status == chat.keryx.app.presentation.LiveStreamStatus.STREAMING
 
-    // Dreamy breathing border while tokens flow; settles once generation stops.
-    val glow = if (streaming) {
-        val t = rememberInfiniteTransition(label = "streamPulse")
-        t.animateFloat(
-            initialValue = 0.25f,
-            targetValue = 0.6f,
-            animationSpec = infiniteRepeatable(tween(1100), RepeatMode.Reverse),
-            label = "streamPulseAlpha",
-        ).value
-    } else 0.3f
+    // The live reply wears a quiet, steady border — the life is in the magic sand rising off
+    // its edge while tokens flow (2.0, Jonny's call: real sand over a breathing gleam). This is
+    // THE streaming bubble users actually see (the side-channel path); MessageBubble's
+    // isStreaming dust is the Matrix-sync fallback twin.
+    val glow = 0.3f
 
     val shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp)
     val baseDensity = LocalDensity.current
@@ -1662,6 +1657,7 @@ private fun StreamingBubble(
         Box(
             modifier = Modifier
                 .widthIn(max = 340.dp)
+                .keryxMagicDust(active = streaming, shape = shape)
                 .clip(shape)
                 .background(appearance.brush)
                 .border(
