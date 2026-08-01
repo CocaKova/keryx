@@ -236,6 +236,15 @@ fun ChatScreen(
         }
     }
 
+    // The assist gesture lands here: composer focused, draft untouched (2.0 Phase 5).
+    val assistSummon by viewModel.assistSummon.collectAsState()
+    LaunchedEffect(assistSummon) {
+        if (assistSummon > viewModel.assistConsumed) {
+            viewModel.assistConsumed = assistSummon
+            runCatching { focusRequester.requestFocus() }
+        }
+    }
+
     // Voice dictation: mic tap → record m4a → POST to the configured STT endpoint → transcript
     // appends to whatever's already typed. The mic only appears once an endpoint is configured.
     val sttUrl by viewModel.sttUrl.collectAsState()

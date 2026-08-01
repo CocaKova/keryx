@@ -48,6 +48,12 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- The assistant doorway (2.0): handling ASSIST makes Keryx selectable as the
+                 device's assist app — long-press home/power summons the agent from any screen. -->
+            <intent-filter>
+                <action android:name="android.intent.action.ASSIST" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
 
         <!-- System share-sheet target: text/links and any file type Matrix can carry. Its own
