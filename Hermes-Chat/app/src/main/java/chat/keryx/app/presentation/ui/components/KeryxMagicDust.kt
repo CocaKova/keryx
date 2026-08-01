@@ -36,6 +36,13 @@ import kotlin.random.Random
  * Battery contract unchanged: fixed pool, zero allocation per mote, physics stepped only while
  * [active] or while the last motes finish falling, nothing at all under reduced motion. Place
  * BEFORE `clip()` — the sand lives outside the shape.
+ *
+ * Long-message contract (the streaming bubble grows for minutes under an agent turn): motes
+ * anchor in PIXELS at spawn, so a reflow never moves sand already in the air; emitter wander is
+ * a physical dp/s speed, not a fraction of the outline; ribbon overlap and spawn rate scale with
+ * perimeter so a tall bubble keeps the same perceived density a short one has; and on bubbles
+ * taller than a screen, a mouth that starts flowing opens low on the outline, where the reader
+ * actually is while the reply streams.
  */
 @Composable
 fun Modifier.keryxMagicDust(
@@ -66,13 +73,17 @@ fun Modifier.keryxMagicDust(
             if (!e.inited) {
                 e.inited = true
                 e.t = i / 3f + rnd.nextFloat() * 0.15f
-                e.drift = (0.015f + rnd.nextFloat() * 0.02f) * (if (i % 2 == 0) 1f else -1f)
+                // Physical wander (dp/s): the mouth strolls at the same visible pace whether the
+                // bubble is a one-liner or a thousand-line agent turn.
+                e.driftPx = (10f + rnd.nextFloat() * 14f) * density * (if (i % 2 == 0) 1f else -1f)
                 e.omega = 0.8f + rnd.nextFloat() * 0.6f
                 e.phase = rnd.nextFloat() * 6.28f
                 e.side = if (i % 2 == 0) 1f else -1f
                 e.flowing = i == 0 // one stream leads, the others join staggered
-                e.stateUntil = rnd.nextFloat() * 1.6f
             }
+            // Cadence restarts with simT: a stale stateUntil from a previous run of this effect
+            // would pin flowing/resting for that many simulated seconds.
+            e.stateUntil = rnd.nextFloat() * 1.6f
         }
         while (true) {
             withFrameNanos { now ->
@@ -92,15 +103,34 @@ fun Modifier.keryxMagicDust(
                 }
                 val measure = geo.measure
                 if (enabled && measure != null && geo.length > 0f) {
+                    // Perimeter factor: 1 on a short bubble, up to 3 on a long agent turn. It
+                    // shortens rests (more ribbon overlap) and feeds the spawn rate below, so
+                    // perceived density stays constant instead of diluting as the reply grows.
+                    val scale = (geo.length / (900f * density)).coerceIn(1f, 3f)
                     for (e in emitters) {
-                        e.t = ((e.t + e.drift * dt) % 1f + 1f) % 1f
+                        e.t = ((e.t + (e.driftPx / geo.length) * dt) % 1f + 1f) % 1f
                         if (simT >= e.stateUntil) {
                             e.flowing = !e.flowing
+                            if (e.flowing && geo.h > 520f * density) {
+                                // Taller than a screen: the reader rides the bubble's bottom
+                                // while it streams — open the mouth low, where the eyes are.
+                                var bestT = e.t
+                                var bestY = -1f
+                                repeat(4) {
+                                    val ct = rnd.nextFloat()
+                                    measure.getPosTan(ct * geo.length, pos, tan)
+                                    if (pos[1] > bestY) {
+                                        bestY = pos[1]
+                                        bestT = ct
+                                    }
+                                }
+                                e.t = bestT
+                            }
                             // Longer rests than flows overlap allows: mostly ONE ribbon at a
-                            // time, occasionally two — the attention budget applies to sand too.
+                            // time on a short bubble — the attention budget applies to sand too.
                             e.stateUntil = simT +
                                 if (e.flowing) 1.6f + rnd.nextFloat() * 1.2f
-                                else 1.0f + rnd.nextFloat() * 1.4f
+                                else (1.0f + rnd.nextFloat() * 1.4f) / scale
                         }
                         if (!e.flowing) continue
                         // The stream's shared direction: mostly HORIZONTAL (wind-blown sand,
@@ -126,13 +156,16 @@ fun Modifier.keryxMagicDust(
                         val sway = sin(simT * e.omega + e.phase) * 0.3f
                         val sdx = dx * cos(sway) - dy * sin(sway)
                         val sdy = dx * sin(sway) + dy * cos(sway)
-                        e.carry += 16f * dt
+                        e.carry += 16f * (0.7f + 0.3f * scale) * dt
                         while (e.carry >= 1f) {
                             e.carry -= 1f
                             val g = pool.firstOrNull { !it.alive } ?: break
                             val speed = (24f + rnd.nextFloat() * 16f) * density
                             g.alive = true
-                            g.anchor = e.t
+                            // Pixel anchor, frozen at spawn: a reflow of the growing bubble
+                            // must never move sand already in the air.
+                            g.px = pos[0]
+                            g.py = pos[1]
                             g.ox = 0f
                             g.oy = 0f
                             g.vx = sdx * speed + (rnd.nextFloat() - 0.5f) * 8f * density
@@ -158,21 +191,19 @@ fun Modifier.keryxMagicDust(
         geo.length = geo.measure?.length ?: 0f
         geo.cx = size.width / 2f
         geo.cy = size.height / 2f
-        val pos = FloatArray(2)
+        geo.h = size.height
         val maxStreak = 4.5f * density
         onDrawWithContent {
             drawContent()
             tick // frame-clock read: each physics step invalidates only this draw
-            val measure = geo.measure ?: return@onDrawWithContent
             for (g in pool) {
                 if (!g.alive) continue
                 val fadeIn = (g.life / (0.1f * g.maxLife)).coerceAtMost(1f)
                 val fadeOut = ((1f - g.life / g.maxLife) / 0.5f).coerceAtMost(1f)
                 val a = (0.5f * fadeIn * fadeOut).coerceIn(0f, 1f)
                 if (a <= 0.01f) continue
-                measure.getPosTan(g.anchor * geo.length, pos, null)
-                val hx = pos[0] + g.ox
-                val hy = pos[1] + g.oy
+                val hx = g.px + g.ox
+                val hy = g.py + g.oy
                 // Accent-tinted, starlight-washed: sand shot through with light, not paint.
                 val base = lerp(lerp(accent, accent2, g.mix), Starlight, 0.35f)
                 // Velocity-stretched streak: the mote's last ~50ms of travel, capped short.
@@ -306,9 +337,10 @@ fun KeryxPuffBurst(tick: Int, modifier: Modifier = Modifier, grains: Int = 18) {
     }
 }
 
-/** One mote of the pool. Offsets are pixels relative to its anchor point on the outline. */
+/** One mote of the pool. Offsets are pixels relative to its spawn point ([px], [py]). */
 private class Grain {
-    var anchor = 0f
+    var px = 0f
+    var py = 0f
     var ox = 0f
     var oy = 0f
     var vx = 0f
@@ -324,7 +356,7 @@ private class Grain {
 /** One wandering stream mouth on the outline. [side] is its wind direction on flat edges. */
 private class Emitter {
     var t = 0f
-    var drift = 0f
+    var driftPx = 0f
     var omega = 1f
     var phase = 0f
     var side = 1f
@@ -340,6 +372,7 @@ private class DustGeo {
     var length = 0f
     var cx = 0f
     var cy = 0f
+    var h = 0f
 }
 
 /** The glint tint — pale violet starlight, one step off white. */
