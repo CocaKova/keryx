@@ -41,10 +41,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.addOutline
+import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
@@ -137,32 +139,37 @@ fun breathingAlpha(active: Boolean, low: Float = 0.35f, periodMillis: Int = 1600
 
 /**
  * The shimmer ring (2.0): a slow conic gleam of accent→accent-2 traveling a hairline border —
- * the "something alive is happening here" mark for running missions and live turns. Sits over a
- * faint base ring in [baseColor]; stills to that plain ring when [active] is false or motion is
- * reduced. Native SweepGradient + local matrix because Compose's sweep brush can't rotate.
+ * the "something alive is happening here" mark for running missions, live turns, and the reply
+ * still being dreamed up. Rides over a base ring in [baseColor] (pass it with its alpha already
+ * baked in; transparent means no ring, gleam only); stills to that plain ring — or to nothing —
+ * when [active] is false or motion is reduced. Takes any [shape] via its outline path. Native
+ * SweepGradient + local matrix because Compose's sweep brush can't rotate.
  */
 @Composable
 fun Modifier.keryxShimmerBorder(
     active: Boolean,
     baseColor: Color,
-    cornerRadius: Dp = KeryxRadius.card,
-    baseAlpha: Float = 0.25f,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(KeryxRadius.card),
+    strokeWidth: Dp = 1.dp,
+    periodMillis: Int = 5200,
 ): Modifier {
     val reduced by rememberReducedMotion()
     if (!active || reduced) {
-        return border(1.dp, baseColor.copy(alpha = baseAlpha), RoundedCornerShape(cornerRadius))
+        return if (baseColor.alpha > 0f) border(strokeWidth, baseColor, shape) else this
     }
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.tertiary
     val angle by rememberInfiniteTransition(label = "keryxShimmer").animateFloat(
         initialValue = 0f,
         targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(5200, easing = LinearEasing)),
+        animationSpec = infiniteRepeatable(tween(periodMillis, easing = LinearEasing)),
         label = "keryxShimmerAngle",
     )
     return drawWithCache {
-        val strokePx = 1.dp.toPx()
-        val radiusPx = cornerRadius.toPx()
+        val strokePx = strokeWidth.toPx()
+        val outline = shape.createOutline(size, layoutDirection, this)
+        val ringPath = androidx.compose.ui.graphics.Path().apply { addOutline(outline) }
+        val androidPath = ringPath.asAndroidPath()
         val shader = android.graphics.SweepGradient(
             size.width / 2f,
             size.height / 2f,
@@ -179,24 +186,17 @@ fun Modifier.keryxShimmerBorder(
         val paint = android.graphics.Paint().apply {
             isAntiAlias = true
             style = android.graphics.Paint.Style.STROKE
-            strokeWidth = strokePx
+            this.strokeWidth = strokePx
         }
         onDrawWithContent {
             drawContent()
-            // The faint base ring the gleam travels over.
-            drawRoundRect(
-                color = baseColor.copy(alpha = baseAlpha),
-                cornerRadius = CornerRadius(radiusPx),
-                style = Stroke(strokePx),
-            )
+            if (baseColor.alpha > 0f) {
+                drawOutline(outline, baseColor, style = Stroke(strokePx))
+            }
             matrix.setRotate(angle, size.width / 2f, size.height / 2f)
             shader.setLocalMatrix(matrix)
             paint.shader = shader
-            val inset = strokePx / 2f
-            drawContext.canvas.nativeCanvas.drawRoundRect(
-                inset, inset, size.width - inset, size.height - inset,
-                radiusPx, radiusPx, paint,
-            )
+            drawContext.canvas.nativeCanvas.drawPath(androidPath, paint)
         }
     }
 }
@@ -272,7 +272,7 @@ fun KeryxCard(
             .clip(shape)
             .background(fill)
             // Running things used to pulse; now the shimmer gleam travels their border (2.0).
-            .keryxShimmerBorder(active = breathing, baseColor = borderBase)
+            .keryxShimmerBorder(active = breathing, baseColor = borderBase.copy(alpha = 0.25f), shape = shape)
             .let { if (onClick != null) it.clickable(onClick = onClick) else it }
             .padding(horizontal = 12.dp, vertical = 10.dp),
         content = content,

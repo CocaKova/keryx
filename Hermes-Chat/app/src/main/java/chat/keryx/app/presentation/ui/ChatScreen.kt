@@ -78,6 +78,7 @@ import chat.keryx.app.presentation.ui.components.MessageMedia
 import chat.keryx.app.presentation.ui.components.ToolActivityCard
 import chat.keryx.app.presentation.ui.components.ToolGroupCard
 import chat.keryx.app.presentation.ui.components.bubbleAppearance
+import chat.keryx.app.presentation.ui.components.keryxShimmerBorder
 import chat.keryx.app.presentation.ui.components.GroupedTimeline
 import chat.keryx.app.presentation.ui.components.groupChatItemsIncremental
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -1116,9 +1117,14 @@ fun MessageBubble(
                     .widthIn(max = 340.dp)
                     .clip(shape)
                     .background(appearance.brush)
-                    .then(
-                        if (appearance.border != null) Modifier.border(1.dp, appearance.border, shape)
-                        else Modifier
+                    // While the agent's reply is still growing, an aurora gleam circles the
+                    // bubble's edge — the dreaming made visible. It settles to the style's plain
+                    // border (or to nothing) the moment the words finish landing (2.0).
+                    .keryxShimmerBorder(
+                        active = isAgent && message.isStreaming,
+                        baseColor = appearance.border ?: Color.Transparent,
+                        shape = shape,
+                        periodMillis = 3400,
                     )
                     .combinedClickable(
                         onClick = {},
