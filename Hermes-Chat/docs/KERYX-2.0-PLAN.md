@@ -16,10 +16,15 @@ makes the magic (and everything after it) possible.
    (amber × dusk-violet by default). 2.0 turns that identity up to dreamlike; it does not
    replace it with the website's palette.
 3. **Small magic × big magic.** Headline moves (page transitions, ambient depth) carry the
-   first impression; micro-enchantments carry the daily feel: the streaming bubble growing
-   with a soft aurora shimmer while tokens arrive, the send button releasing a puff, a
-   space settling into place with a glow-breath. Every enchantment respects reduced motion
+   first impression; micro-enchantments carry the daily feel: the streaming bubble shedding
+   streams of magic sand while tokens arrive, the send button exhaling a puff, a space
+   settling into place with an arrival breath. Every enchantment respects reduced motion
    and battery saver (`rememberReducedMotion` is already the app-wide gate).
+4. **The attention budget** (added after Jonny's overwhelm report, 07-31). Magic competes
+   with itself: at any moment a view gets ONE focal live enchantment; everything else is
+   either transient (finishes in under a second), ambient at whisper level (≤4% alpha,
+   felt-not-watched), or still. When adding an effect, ask what it displaces — if two
+   things would visibly animate side by side for more than a beat, one of them yields.
 4. **Every commit shippable.** No big-bang branch. Each phase lands as a series of commits
    where the app builds, tests pass, and the phone could take the APK that night.
 

@@ -69,8 +69,9 @@ fun Modifier.keryxMagicDust(
                 e.drift = (0.015f + rnd.nextFloat() * 0.02f) * (if (i % 2 == 0) 1f else -1f)
                 e.omega = 0.8f + rnd.nextFloat() * 0.6f
                 e.phase = rnd.nextFloat() * 6.28f
+                e.side = if (i % 2 == 0) 1f else -1f
                 e.flowing = i == 0 // one stream leads, the others join staggered
-                e.stateUntil = rnd.nextFloat() * 1.2f
+                e.stateUntil = rnd.nextFloat() * 1.6f
             }
         }
         while (true) {
@@ -85,7 +86,7 @@ fun Modifier.keryxMagicDust(
                         g.alive = false
                         continue
                     }
-                    g.vy += 18f * density * dt
+                    g.vy += 12f * density * dt // gentle: horizontal ribbons sag, never nosedive
                     g.ox += g.vx * dt
                     g.oy += g.vy * dt
                 }
@@ -95,13 +96,16 @@ fun Modifier.keryxMagicDust(
                         e.t = ((e.t + e.drift * dt) % 1f + 1f) % 1f
                         if (simT >= e.stateUntil) {
                             e.flowing = !e.flowing
+                            // Longer rests than flows overlap allows: mostly ONE ribbon at a
+                            // time, occasionally two — the attention budget applies to sand too.
                             e.stateUntil = simT +
-                                if (e.flowing) 1.8f + rnd.nextFloat() * 1.4f
-                                else 0.4f + rnd.nextFloat() * 0.8f
+                                if (e.flowing) 1.6f + rnd.nextFloat() * 1.2f
+                                else 1.0f + rnd.nextFloat() * 1.4f
                         }
                         if (!e.flowing) continue
-                        // The stream's shared direction: the outline's outward normal at the
-                        // emitter, swaying like a slow pendulum — coherence is the whole trick.
+                        // The stream's shared direction: mostly HORIZONTAL (wind-blown sand,
+                        // Jonny's call), leaning outward from whichever side of the bubble the
+                        // mouth sits on, with a slow pendulum sway. Coherence is the trick.
                         measure.getPosTan(e.t * geo.length, pos, tan)
                         var nx = tan[1]
                         var ny = -tan[0]
@@ -109,20 +113,30 @@ fun Modifier.keryxMagicDust(
                             nx = -nx
                             ny = -ny
                         }
-                        val sway = sin(simT * e.omega + e.phase) * 0.45f
-                        val dx = nx * cos(sway) - ny * sin(sway)
-                        val dy = nx * sin(sway) + ny * cos(sway)
-                        e.carry += 22f * dt
+                        val side = when {
+                            nx > 0.25f -> 1f
+                            nx < -0.25f -> -1f
+                            else -> e.side // top/bottom edges: keep the emitter's own wind
+                        }
+                        var dx = side * 0.9f + nx * 0.2f
+                        var dy = ny * 0.22f + 0.06f
+                        val dn = sqrt(dx * dx + dy * dy)
+                        dx /= dn
+                        dy /= dn
+                        val sway = sin(simT * e.omega + e.phase) * 0.3f
+                        val sdx = dx * cos(sway) - dy * sin(sway)
+                        val sdy = dx * sin(sway) + dy * cos(sway)
+                        e.carry += 16f * dt
                         while (e.carry >= 1f) {
                             e.carry -= 1f
                             val g = pool.firstOrNull { !it.alive } ?: break
-                            val speed = (22f + rnd.nextFloat() * 16f) * density
+                            val speed = (24f + rnd.nextFloat() * 16f) * density
                             g.alive = true
                             g.anchor = e.t
                             g.ox = 0f
                             g.oy = 0f
-                            g.vx = dx * speed + (rnd.nextFloat() - 0.5f) * 8f * density
-                            g.vy = dy * speed + (rnd.nextFloat() - 0.5f) * 8f * density
+                            g.vx = sdx * speed + (rnd.nextFloat() - 0.5f) * 8f * density
+                            g.vy = sdy * speed + (rnd.nextFloat() - 0.5f) * 5f * density
                             g.life = 0f
                             g.maxLife = 0.55f + rnd.nextFloat() * 0.3f
                             g.sizePx = (0.45f + rnd.nextFloat() * 0.5f) * density
@@ -307,12 +321,13 @@ private class Grain {
     var alive = false
 }
 
-/** One wandering stream mouth on the outline. */
+/** One wandering stream mouth on the outline. [side] is its wind direction on flat edges. */
 private class Emitter {
     var t = 0f
     var drift = 0f
     var omega = 1f
     var phase = 0f
+    var side = 1f
     var stateUntil = 0f
     var flowing = false
     var carry = 0f
