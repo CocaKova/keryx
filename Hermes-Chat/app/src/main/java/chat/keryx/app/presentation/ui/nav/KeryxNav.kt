@@ -46,10 +46,11 @@ sealed interface KeryxDest {
     data object Archive : KeryxDest { override val route = "archive" }
     data object Missions : KeryxDest { override val route = "missions" }
     data object Hub : KeryxDest { override val route = "hub" }
+    data object Settings : KeryxDest { override val route = "settings" }
 
     companion object {
         fun fromRoute(route: String): KeryxDest? =
-            listOf(Archive, Missions, Hub).firstOrNull { it.route == route }
+            listOf(Archive, Missions, Hub, Settings).firstOrNull { it.route == route }
     }
 }
 

@@ -67,35 +67,6 @@ fun NavigationDrawerContent(
     val currentUserId by viewModel.currentUserId.collectAsState()
     val currentSession by viewModel.currentSession.collectAsState()
     val isDarkTheme by viewModel.isDarkTheme.collectAsState()
-    val currentAccent by viewModel.accentColor.collectAsState()
-    val currentAccent2 by viewModel.accentColor2.collectAsState()
-    val matrixUrl by viewModel.matrixUrl.collectAsState()
-    val agentMatrixId by viewModel.agentMatrixId.collectAsState()
-    val matrixToken by viewModel.matrixToken.collectAsState()
-    val biometricLockEnabled by viewModel.biometricLock.collectAsState()
-    val e2eeEnabled by viewModel.e2eeEnabled.collectAsState()
-    val hapticsEnabled by viewModel.hapticsEnabled.collectAsState()
-    val animationStyle by viewModel.animationStyle.collectAsState()
-    val bubbleStyle by viewModel.bubbleStyle.collectAsState()
-    val messageTextScale by viewModel.messageTextScale.collectAsState()
-    val allowInsecure by viewModel.allowInsecure.collectAsState()
-    val gatewayUrl by viewModel.gatewayUrl.collectAsState()
-    val gatewayApiKey by viewModel.gatewayApiKey.collectAsState()
-    val sideChannelEnabled by viewModel.sideChannelEnabled.collectAsState()
-    val sttUrl by viewModel.sttUrl.collectAsState()
-    val sttApiKey by viewModel.sttApiKey.collectAsState()
-    val sttModel by viewModel.sttModel.collectAsState()
-    val ttsAutoSpeak by viewModel.ttsAutoSpeak.collectAsState()
-    val ttsUrl by viewModel.ttsUrl.collectAsState()
-    val ttsApiKey by viewModel.ttsApiKey.collectAsState()
-    val ttsVoice by viewModel.ttsVoice.collectAsState()
-    val ttsModel by viewModel.ttsModel.collectAsState()
-    val showTelemetry by viewModel.showTelemetry.collectAsState()
-    val missionAlertsEnabled by viewModel.missionAlertsEnabled.collectAsState()
-    val pushEnabled by viewModel.pushEnabled.collectAsState()
-    val pushGatewayUrl by viewModel.pushGatewayUrl.collectAsState()
-
-    var showSettings by remember { mutableStateOf(false) }
 
     // Image picker for setting a Quick Room's avatar (server-side m.room.avatar).
     val context = LocalContext.current
@@ -112,101 +83,7 @@ fun NavigationDrawerContent(
         pendingAvatarRoomId = null
     }
     
-    if (showSettings) {
-        chat.keryx.app.presentation.ui.components.SettingsScreen(
-            viewModel = viewModel,
-            currentAccentColor = currentAccent,
-            onAccentColorChanged = { viewModel.setAccentColor(it) },
-            currentAccentColor2 = currentAccent2,
-            onAccentColor2Changed = { viewModel.setAccentColor2(it) },
-            currentUserId = currentUserId,
-            matrixUrl = matrixUrl,
-            onMatrixUrlChanged = { viewModel.setMatrixUrl(it) },
-            agentMatrixId = agentMatrixId,
-            onAgentMatrixIdChanged = { viewModel.setAgentMatrixId(it) },
-            matrixToken = matrixToken,
-            onMatrixTokenChanged = { viewModel.setMatrixToken(it) },
-            allowInsecure = allowInsecure,
-            onAllowInsecureChanged = { viewModel.setAllowInsecure(it) },
-            gatewayUrl = gatewayUrl,
-            onGatewayUrlChanged = { viewModel.setGatewayUrl(it) },
-            gatewayApiKey = gatewayApiKey,
-            onGatewayApiKeyChanged = { viewModel.setGatewayApiKey(it) },
-            sideChannelEnabled = sideChannelEnabled,
-            onSideChannelEnabledChanged = { viewModel.setSideChannelEnabled(it) },
-            sttUrl = sttUrl,
-            onSttUrlChanged = { viewModel.setSttUrl(it) },
-            sttApiKey = sttApiKey,
-            onSttApiKeyChanged = { viewModel.setSttApiKey(it) },
-            sttModel = sttModel,
-            onSttModelChanged = { viewModel.setSttModel(it) },
-            ttsAutoSpeak = ttsAutoSpeak,
-            onTtsAutoSpeakChanged = { viewModel.setTtsAutoSpeak(it) },
-            ttsUrl = ttsUrl,
-            onTtsUrlChanged = { viewModel.setTtsUrl(it) },
-            ttsApiKey = ttsApiKey,
-            onTtsApiKeyChanged = { viewModel.setTtsApiKey(it) },
-            ttsVoice = ttsVoice,
-            onTtsVoiceChanged = { viewModel.setTtsVoice(it) },
-            ttsModel = ttsModel,
-            onTtsModelChanged = { viewModel.setTtsModel(it) },
-            onTestLink = { viewModel.testGatewayLink() },
-            showTelemetry = showTelemetry,
-            onShowTelemetryChanged = { viewModel.setShowTelemetry(it) },
-            missionAlertsEnabled = missionAlertsEnabled,
-            onMissionAlertsChanged = {
-                viewModel.setMissionAlertsEnabled(it)
-                chat.keryx.app.notify.MissionAlertsWorker.setEnabled(context, it)
-            },
-            pushEnabled = pushEnabled,
-            onPushEnabledChanged = { on ->
-                if (on) {
-                    // Enable BEFORE latching: built-in mode needs pushEnabled=true when the
-                    // endpoint registration flows back through onNewEndpoint.
-                    viewModel.setPushEnabled(true)
-                    when (chat.keryx.app.notify.PushManager.enable(context)) {
-                        chat.keryx.app.notify.PushManager.EnableResult.NoGateway -> {
-                            // Don't latch a switch that can't deliver — say why instead.
-                            viewModel.setPushEnabled(false)
-                            viewModel.toast("Set the push gateway URL first (your ntfy server) — staying on in-app sync")
-                        }
-                        chat.keryx.app.notify.PushManager.EnableResult.BuiltinActive ->
-                            viewModel.toast("Push active — Keryx holds its own connection, no distributor app needed")
-                        chat.keryx.app.notify.PushManager.EnableResult.Requested -> Unit
-                    }
-                } else {
-                    viewModel.setPushEnabled(false)
-                    chat.keryx.app.notify.PushManager.disable(context)
-                }
-            },
-            pushGatewayUrl = pushGatewayUrl,
-            onPushGatewayUrlChanged = { viewModel.setPushGatewayUrl(it) },
-            biometricLockEnabled = biometricLockEnabled,
-            onBiometricLockChanged = { viewModel.setBiometricLock(it) },
-            e2eeEnabled = e2eeEnabled,
-            onE2eeChanged = { viewModel.setE2eeEnabled(it) },
-            hapticsEnabled = hapticsEnabled,
-            onHapticsChanged = { viewModel.setHapticsEnabled(it) },
-            animationStyle = animationStyle,
-            onAnimationStyleChanged = { viewModel.setAnimationStyle(it) },
-            bubbleStyle = bubbleStyle,
-            onBubbleStyleChanged = { viewModel.setBubbleStyle(it) },
-            messageTextScale = messageTextScale,
-            onMessageTextScaleChanged = { viewModel.setMessageTextScale(it) },
-            onResetAppearance = { viewModel.resetMessageAppearance() },
-            onLoginRequested = { user, pass, callback ->
-                viewModel.loginToMatrix(user, pass, callback)
-            },
-            onLogout = {
-                showSettings = false
-                // Remove the pusher while the session can still authenticate the request.
-                if (pushEnabled) chat.keryx.app.notify.PushManager.disable(context)
-                viewModel.setPushEnabled(false)
-                viewModel.logout()
-            },
-            onDismissRequest = { showSettings = false }
-        )
-    }
+    // Settings is a nav destination now (2.0 Phase 4) — see SettingsPlace.
     
     // Each Matrix room is its own conversation -> one session per room.
     fun sessionFor(room: RoomProfile) = Session(room.id, room.id, room.name, 0L)
@@ -497,7 +374,7 @@ fun NavigationDrawerContent(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(12.dp))
-                        .clickable { showSettings = true }
+                        .clickable { onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Settings) }
                         .padding(vertical = 12.dp),
                 ) {
                     Icon(
