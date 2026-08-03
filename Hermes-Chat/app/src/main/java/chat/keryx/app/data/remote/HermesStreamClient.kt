@@ -450,6 +450,10 @@ class HermesStreamClient(
         val body: String = "",
         val result: String = "",
         val lastFailureError: String = "",
+        /** v0.20 per-task overrides (detail call only). Empty = inherit the profile's own. */
+        val modelOverride: String = "",
+        val providerOverride: String = "",
+        val reasoningEffort: String = "",
     )
 
     data class KanbanComment(val author: String, val body: String, val createdAt: Long)
@@ -483,6 +487,9 @@ class HermesStreamClient(
             body = s("body"),
             result = s("result"),
             lastFailureError = s("last_failure_error"),
+            modelOverride = s("model_override"),
+            providerOverride = s("provider_override"),
+            reasoningEffort = s("reasoning_effort"),
         )
     }
 
@@ -612,6 +619,25 @@ class HermesStreamClient(
         }
         val obj = kanbanCall("/keryx/kanban/task", post = payload)
         (obj["task_id"] as? JsonPrimitive)?.content ?: error("no task_id in response")
+    }
+
+    /** Pin (or with blank [model] clear) the task's model override; applies on next dispatch. */
+    suspend fun kanbanSetModel(taskId: String, model: String, provider: String = ""): Result<Unit> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("model", kotlinx.serialization.json.JsonPrimitive(model))
+            if (provider.isNotBlank()) put("provider", kotlinx.serialization.json.JsonPrimitive(provider))
+        }
+        kanbanCall("/keryx/kanban/task/$taskId/settings", post = payload)
+        Unit
+    }
+
+    /** Pin the task's thinking depth ("" inherits the profile; "none" is a real value = thinking off). */
+    suspend fun kanbanSetReasoning(taskId: String, effort: String): Result<Unit> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("reasoning_effort", kotlinx.serialization.json.JsonPrimitive(effort))
+        }
+        kanbanCall("/keryx/kanban/task/$taskId/settings", post = payload)
+        Unit
     }
 
     suspend fun kanbanComment(taskId: String, body: String): Result<Unit> = runCatching {
