@@ -621,6 +621,8 @@ _KANBAN_SUMMARY_FIELDS = (
 _KANBAN_DETAIL_FIELDS = _KANBAN_SUMMARY_FIELDS + (
     "body", "result", "last_failure_error", "goal_mode", "max_runtime_seconds",
     "last_heartbeat_at", "workspace_kind", "project_id",
+    # v0.20 per-task overrides — settable from the phone via /task/{id}/settings.
+    "model_override", "provider_override", "reasoning_effort",
 )
 
 
@@ -698,6 +700,30 @@ def kanban_create(kb: Any, conn: Any, payload: Dict[str, Any]) -> Dict[str, Any]
 def kanban_comment(kb: Any, conn: Any, task_id: str, body: str) -> Dict[str, Any]:
     cid = kb.add_comment(conn, task_id, author=KANBAN_ACTOR, body=body)
     return {"task_id": task_id, "comment_id": cid}
+
+
+def kanban_task_settings(kb: Any, conn: Any, task_id: str, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Per-task model + thinking depth (the v0.20 kanban override fields), the
+    phone's side of what the dashboard's PATCH does. Key-present semantics: a key
+    in the body is applied (empty/null clears that override — kanban_db treats
+    None as clear), an absent key is untouched. ``reasoning_effort: "none"`` is a
+    real value (thinking OFF for this task), not a clear."""
+    if kb.get_task(conn, task_id) is None:
+        return None
+    if "model" in payload:
+        model = str(payload.get("model") or "").strip() or None
+        provider = str(payload.get("provider") or "").strip() or None
+        kb.set_model_override(conn, task_id, model=model, provider=provider)
+    if "reasoning_effort" in payload:
+        effort = str(payload.get("reasoning_effort") or "").strip() or None
+        kb.set_reasoning_effort(conn, task_id, effort)
+    task = kb.get_task(conn, task_id)
+    return {
+        "task_id": task_id,
+        "model_override": getattr(task, "model_override", None),
+        "provider_override": getattr(task, "provider_override", None),
+        "reasoning_effort": getattr(task, "reasoning_effort", None),
+    }
 
 
 def kanban_events_since(conn: Any, since: int, limit: int = 200) -> Dict[str, Any]:
@@ -1451,7 +1477,7 @@ _CONFIG_KNOBS: Dict[str, Dict[str, Any]] = {
     "runtime_footer": {
         "section": "display", "path": ["runtime_footer", "enabled"], "kind": "bool", "default": False,
         "applies": "next turn", "label": "Runtime footer", "group": "Display",
-        "description": "The model · context% · cwd line under each answer.",
+        "description": "The model · context% · latency · cwd line under each answer.",
     },
     "timestamps": {
         "section": "display", "path": ["timestamps"], "kind": "bool", "default": False,
@@ -2492,6 +2518,12 @@ def register_keryx_routes(router: Any, check_auth) -> None:
             raise ValueError("body is required")
         return 200, kanban_comment(kb, conn, request.match_info["task_id"], text)
 
+    def _settings(kb, conn, request, body):
+        out = kanban_task_settings(kb, conn, request.match_info["task_id"], body)
+        if out is None:
+            return 404, {"error": {"message": "unknown task"}}
+        return 200, out
+
     def _events(kb, conn, request, body):
         since = int(request.query.get("since", 0) or 0)
         return 200, kanban_events_since(conn, since)
@@ -2512,6 +2544,7 @@ def register_keryx_routes(router: Any, check_auth) -> None:
     router.add_get("/keryx/kanban/task/{task_id}", _make_kanban_handler(check_auth, _detail))
     router.add_post("/keryx/kanban/task", _make_kanban_handler(check_auth, _create))
     router.add_post("/keryx/kanban/task/{task_id}/comment", _make_kanban_handler(check_auth, _comment))
+    router.add_post("/keryx/kanban/task/{task_id}/settings", _make_kanban_handler(check_auth, _settings))
     router.add_get("/keryx/kanban/events", _make_kanban_handler(check_auth, _events))
     router.add_get("/keryx/kanban/subs", _make_kanban_handler(check_auth, _subs))
     router.add_post("/keryx/kanban/task/{task_id}/subscribe", _make_kanban_handler(check_auth, _subscribe))

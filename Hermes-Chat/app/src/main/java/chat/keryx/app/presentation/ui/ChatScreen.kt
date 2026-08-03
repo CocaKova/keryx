@@ -1320,10 +1320,13 @@ private fun ReplyQuote(replyTo: Message, textColor: Color, onClick: (() -> Unit)
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun ReactionChips(reactions: List<MessageReaction>, isMine: Boolean, onReact: (String) -> Unit) {
-    Row(
+    // FlowRow, not Row: once SILAS starts reacting too, >5 distinct emoji overflow a bubble width.
+    androidx.compose.foundation.layout.FlowRow(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.padding(top = 4.dp),
     ) {
         reactions.forEach { r ->

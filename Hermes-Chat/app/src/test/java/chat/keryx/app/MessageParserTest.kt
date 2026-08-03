@@ -248,6 +248,49 @@ class MessageParserTest {
     }
 
     @Test
+    fun parseFooterLine_allFourFields() {
+        val f = MessageParser.parseFooterLine("qwen3.6-27b · 38% · 1m05s · ~/workspace/keryx")!!
+        assertEquals("qwen3.6-27b", f.model)
+        assertEquals(38, f.contextPct)
+        assertEquals("1m05s", f.latency)
+        assertEquals("~/workspace/keryx", f.cwd)
+    }
+
+    @Test
+    fun parseFooterLine_fieldsDropOutIndividually() {
+        // gateway/runtime_footer.py skips fields with no data — every subset must still parse.
+        val noLatency = MessageParser.parseFooterLine("qwen3.6-27b · 42% · ~/projects")!!
+        assertEquals(42, noLatency.contextPct)
+        assertEquals(null, noLatency.latency)
+        val pctAndLatency = MessageParser.parseFooterLine("22s · 7%")!!
+        assertEquals(7, pctAndLatency.contextPct)
+        assertEquals("22s", pctAndLatency.latency)
+        assertEquals(null, pctAndLatency.model)
+        val subSecond = MessageParser.parseFooterLine("gpt-5.4 · 3% · <1s · ~")!!
+        assertEquals("<1s", subSecond.latency)
+        assertEquals("~", subSecond.cwd)
+    }
+
+    @Test
+    fun parseFooterLine_proseRejected() {
+        assertEquals(null, MessageParser.parseFooterLine("I like tea · coffee · juice"))
+        assertEquals(null, MessageParser.parseFooterLine("just a sentence"))
+    }
+
+    @Test
+    fun parseRuntimeFooter_trailingLineAndStandalone() {
+        // Appended shape: reply text, blank line, footer as the last line.
+        val appended = MessageParser.parseRuntimeFooter("Here's your answer.\n\nqwen3.6-27b · 42% · 22s · ~/w")!!
+        assertEquals(42, appended.contextPct)
+        assertEquals("22s", appended.latency)
+        // Streaming shape: the footer arrives as its own trailing event.
+        val standalone = MessageParser.parseRuntimeFooter("qwen3.6-27b · 11% · <1s · ~/w")!!
+        assertEquals(11, standalone.contextPct)
+        // A plain answer has no footer.
+        assertEquals(null, MessageParser.parseRuntimeFooter("The cron job runs at 05:00."))
+    }
+
+    @Test
     fun middleDotProse_notFooter() {
         // A middle dot in prose must not trigger footer detection (not the last line + no %/path).
         val segments = MessageParser.parse("I like tea · coffee · juice\nmore text")

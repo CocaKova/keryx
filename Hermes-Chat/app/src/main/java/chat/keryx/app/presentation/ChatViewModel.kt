@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -183,6 +184,19 @@ class ChatViewModel(
         combine(_currentSession.filterNotNull(), _timelineLimit) { session, limit -> session.id to limit }
             .flatMapLatest { (sessionId, limit) -> repository.getMessages(sessionId, limit) }
             .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    /** Latest runtime-footer telemetry in the open room (`model · 42% · 22s · ~/dir`) — the data
+     *  behind the Hub's context meter. Newest-first scan, bounded so a footer-less room stays cheap;
+     *  the footer rides either the tail of an agent reply or its own trailing event (streaming). */
+    val runtimeFooter: StateFlow<MessageParser.RuntimeFooter?> = messages
+        .map { list ->
+            list.asSequence()
+                .filter { it.sender == SenderType.HERMES }
+                .take(60)
+                .mapNotNull { MessageParser.parseRuntimeFooter(it.content) }
+                .firstOrNull()
+        }
+        .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     /** Whether more history may exist (we keep paging until the loaded count stops growing). */
     private val _hasMoreHistory = MutableStateFlow(true)
@@ -598,6 +612,26 @@ class ChatViewModel(
             client.kanbanComment(taskId, body)
                 .onSuccess { onDone() }
                 .onFailure { _toasts.tryEmit("Comment failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    /** Pin (blank = clear) the mission's model override; takes effect on its next dispatch. */
+    fun kanbanSetModel(taskId: String, model: String, onDone: () -> Unit = {}) {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.kanbanSetModel(taskId, model)
+                .onSuccess { onDone() }
+                .onFailure { _toasts.tryEmit("Model pin failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    /** Pin the mission's thinking depth ("" inherits; "none" pins thinking OFF). */
+    fun kanbanSetReasoning(taskId: String, effort: String, onDone: () -> Unit = {}) {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.kanbanSetReasoning(taskId, effort)
+                .onSuccess { onDone() }
+                .onFailure { _toasts.tryEmit("Depth pin failed: ${it.message?.take(80)}") }
         }
     }
 

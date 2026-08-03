@@ -223,6 +223,40 @@ object MessageParser {
         return lines.isNotEmpty() && lines.all { isFooterLine(it) }
     }
 
+    /** Structured read of a runtime footer — the data behind the Hub's context meter. Fields can
+     *  drop out individually (gateway/runtime_footer.py skips fields with no data), so each part
+     *  is claimed by shape — percentage, latency (`<1s` / `22s` / `1m05s`), path — and the first
+     *  leftover is the model id. */
+    data class RuntimeFooter(val model: String?, val contextPct: Int?, val latency: String?, val cwd: String?)
+
+    private val FOOTER_PART_LATENCY = Regex("""^(?:<1s|\d+s|\d+m\d{2}s)$""")
+
+    fun parseFooterLine(line: String): RuntimeFooter? {
+        if (!isFooterLine(line)) return null
+        var model: String? = null
+        var pct: Int? = null
+        var latency: String? = null
+        var cwd: String? = null
+        for (p in line.trim().split(" · ")) {
+            when {
+                pct == null && FOOTER_PART_PCT.matches(p) -> pct = p.dropLast(1).toIntOrNull()
+                latency == null && FOOTER_PART_LATENCY.matches(p) -> latency = p
+                cwd == null && (p.startsWith("~") || p.startsWith("/")) -> cwd = p
+                model == null -> model = p
+            }
+        }
+        return RuntimeFooter(model, pct, latency, cwd)
+    }
+
+    /** The footer carried by a message: its trailing line for an appended footer, or the whole
+     *  body when the gateway sent the footer as its own event (the streaming path does). */
+    fun parseRuntimeFooter(content: String): RuntimeFooter? {
+        val body = extractKeryx(content).text.trim()
+        if (body.isBlank()) return null
+        val last = body.lines().lastOrNull { it.isNotBlank() } ?: return null
+        return parseFooterLine(last)
+    }
+
     // --- Streaming resilience ---------------------------------------------------------------
 
     /** Append a closing ``` when a message ends inside an open fence, so a half-streamed (or just

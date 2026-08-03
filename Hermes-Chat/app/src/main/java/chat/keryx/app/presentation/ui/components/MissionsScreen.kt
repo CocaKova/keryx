@@ -514,6 +514,71 @@ private fun MissionDetailSheet(
                         modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
+                        // v0.20 per-task steering: pin the thinking depth / model this mission
+                        // runs with. Applies on the NEXT dispatch, so it's settable mid-run —
+                        // repinning a rate-limited running task is the primary recovery flow.
+                        item {
+                            Column {
+                                KeryxSectionHeader(
+                                    label = "Steering",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text("Thinking depth", fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(Modifier.height(4.dp))
+                                androidx.compose.foundation.layout.FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    val current = d.task.reasoningEffort
+                                    (listOf("" to "inherit", "none" to "off") +
+                                        listOf("minimal", "low", "medium", "high", "xhigh", "max", "ultra")
+                                            .map { it to it }).forEach { (value, label) ->
+                                        val selected = value == current
+                                        Text(
+                                            label,
+                                            fontSize = 12.sp,
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            color = if (selected) MaterialTheme.colorScheme.onPrimary
+                                                    else MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(KeryxRadius.chip))
+                                                .background(
+                                                    if (selected) MaterialTheme.colorScheme.primary
+                                                    else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                                )
+                                                .clickable(enabled = !selected) {
+                                                    viewModel.kanbanSetReasoning(taskId, value) { reload++ }
+                                                }
+                                                .padding(horizontal = 10.dp, vertical = 5.dp),
+                                        )
+                                    }
+                                }
+                                Spacer(Modifier.height(8.dp))
+                                var modelDraft by remember(d.task.modelOverride) {
+                                    mutableStateOf(d.task.modelOverride)
+                                }
+                                OutlinedTextField(
+                                    value = modelDraft,
+                                    onValueChange = { modelDraft = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = { Text("Model pin (blank = profile's own)", fontSize = 12.sp) },
+                                    textStyle = androidx.compose.ui.text.TextStyle(
+                                        fontSize = 13.sp, fontFamily = FontFamily.Monospace),
+                                    shape = RoundedCornerShape(KeryxRadius.field),
+                                    singleLine = true,
+                                    trailingIcon = {
+                                        if (modelDraft.trim() != d.task.modelOverride) {
+                                            TextButton(onClick = {
+                                                viewModel.kanbanSetModel(taskId, modelDraft.trim()) { reload++ }
+                                            }) { Text(if (modelDraft.isBlank()) "Clear" else "Pin") }
+                                        }
+                                    },
+                                )
+                            }
+                        }
                         if (d.task.body.isNotBlank()) item {
                             Text(d.task.body, fontSize = 13.sp)
                         }

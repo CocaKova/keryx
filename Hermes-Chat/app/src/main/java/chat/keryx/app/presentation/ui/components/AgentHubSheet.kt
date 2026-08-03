@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,6 +17,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -46,9 +49,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -77,6 +80,7 @@ import chat.keryx.app.data.remote.HermesStreamClient.HubSession
 import chat.keryx.app.data.remote.HubJson
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.LinkHealth
+import kotlinx.coroutines.launch
 
 private val TABS = listOf("Status", "Controls", "Jobs", "Sessions", "Skills", "Tools")
 
@@ -115,7 +119,12 @@ fun AgentHubSheet(
     onDismiss: () -> Unit,
 ) {
     val gatewayUrl by viewModel.gatewayUrl.collectAsState()
-    var tab by remember { mutableIntStateOf(0) }
+    // 2.1: tabs became pager pages — swipe moves between them. currentPage drives the tab-row
+    // visuals live during a drag; settledPage is what the fetch/poll effects key on, so tabs
+    // skimmed past mid-swipe never fire their network refresh.
+    val pagerScope = rememberCoroutineScope()
+    val pagerState = rememberPagerState(pageCount = { TABS.size })
+    val tab = pagerState.settledPage
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.tertiary
 
@@ -197,13 +206,14 @@ fun AgentHubSheet(
     ) {
             Spacer(Modifier.height(6.dp))
 
+            val visibleTab = pagerState.currentPage
             ScrollableTabRow(
-                selectedTabIndex = tab,
+                selectedTabIndex = visibleTab,
                 edgePadding = 12.dp,
                 containerColor = Color.Transparent,
                 indicator = { positions ->
                     TabRowDefaults.SecondaryIndicator(
-                        Modifier.tabIndicatorOffset(positions[tab]),
+                        Modifier.tabIndicatorOffset(positions[visibleTab]),
                         color = accent,
                     )
                 },
@@ -211,11 +221,11 @@ fun AgentHubSheet(
             ) {
                 TABS.forEachIndexed { i, label ->
                     Tab(
-                        selected = tab == i,
-                        onClick = { tab = i },
+                        selected = visibleTab == i,
+                        onClick = { pagerScope.launch { pagerState.animateScrollToPage(i) } },
                         text = {
                             Text(label, fontSize = 12.sp,
-                                fontWeight = if (tab == i) FontWeight.SemiBold else FontWeight.Normal)
+                                fontWeight = if (visibleTab == i) FontWeight.SemiBold else FontWeight.Normal)
                         },
                         selectedContentColor = accent,
                         unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -223,14 +233,20 @@ fun AgentHubSheet(
                 }
             }
 
-            Box(modifier = Modifier.weight(1f).nestedScroll(FlingTamer)) {
-                when (tab) {
-                    0 -> StatusTab(viewModel, health, onDismiss)
-                    1 -> ControlsTab(viewModel)
-                    2 -> JobsTab(viewModel)
-                    3 -> SessionsTab(viewModel)
-                    4 -> SkillsTab(viewModel)
-                    5 -> ToolsTab(viewModel)
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.weight(1f).nestedScroll(FlingTamer),
+                verticalAlignment = Alignment.Top,
+            ) { page ->
+                Box(modifier = Modifier.fillMaxSize()) {
+                    when (page) {
+                        0 -> StatusTab(viewModel, health, onDismiss)
+                        1 -> ControlsTab(viewModel)
+                        2 -> JobsTab(viewModel)
+                        3 -> SessionsTab(viewModel)
+                        4 -> SkillsTab(viewModel)
+                        5 -> ToolsTab(viewModel)
+                    }
                 }
             }
     }
@@ -358,6 +374,57 @@ private fun StatusTab(
                     Text(v, fontSize = 13.sp, fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+
+        // The last turn's runtime-footer telemetry (2.1): a living context meter + latency, parsed
+        // from the `model · 42% · 22s · ~/dir` line the gateway appends per answer. No footer seen
+        // yet (or the knob is off — Controls → Display) → the section simply isn't there.
+        item {
+            val footer by viewModel.runtimeFooter.collectAsState()
+            footer?.let { f ->
+                if (f.contextPct != null || f.latency != null) {
+                    SectionLabel("Last turn")
+                    f.contextPct?.let { pct ->
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 3.dp)) {
+                            Text("Context", fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.width(86.dp))
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(8.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .fillMaxWidth(pct.coerceIn(0, 100) / 100f)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(when {
+                                            pct >= 80 -> KeryxStatus.bad
+                                            pct >= 50 -> KeryxStatus.warn
+                                            else -> KeryxStatus.good
+                                        }),
+                                )
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Text("$pct%", fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                    f.latency?.let { lat ->
+                        Row(modifier = Modifier.padding(vertical = 3.dp)) {
+                            Text("Latency", fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.width(86.dp))
+                            Text(lat, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
                 }
             }
         }
