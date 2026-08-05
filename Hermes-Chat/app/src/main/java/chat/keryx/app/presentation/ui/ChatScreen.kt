@@ -432,6 +432,7 @@ fun ChatScreen(
                 viewModel.sendMessage(text)
             }
             textState = TextFieldValue("")
+            viewModel.onComposerTextChanged("")
         }
     }
 
