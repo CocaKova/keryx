@@ -97,7 +97,8 @@ data class LiveStream(
      *  pulls the full text on demand (ChatViewModel.currentStreamFullText) — copying the whole
      *  buffer into every ~100 ms dispatch was O(turn length) per tick. */
     val matchText: String = "",
-    /** The tool theater (2.4): what the agent is DOING this turn, reduced from `event: tool`
-     *  frames. Empty on a gateway without the mirror, which is exactly the pre-2.4 overlay. */
-    val theater: List<chat.keryx.app.domain.model.ToolBeat> = emptyList(),
+    /** The tool theater (2.4): what the agent is DOING this turn — its tool calls and any
+     *  subagents it sent out — reduced from `event: tool` frames. Empty on a gateway without
+     *  the mirror, which is exactly the pre-2.4 overlay. */
+    val theater: chat.keryx.app.domain.model.TheaterState = chat.keryx.app.domain.model.TheaterState(),
 )

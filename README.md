@@ -60,9 +60,11 @@ of raw model output.
   agent relaying another renders as an attributed notice, never as the courier speaking, and a
   turn nobody asked for is marked as an *arrival* instead of an answer.
 - **The tool theater (2.4)** — While the agent works you see what it is *doing*, not a spinner:
-  each tool as it starts, how long it took, what failed and why, and a delegated subagent's own
-  calls indented under it. It is deliberately quiet — the committed reply renders the same calls
-  properly a moment later.
+  each tool as it starts, how long it took, what failed and why, and calls fired in one turn
+  grouped on a rail. Subagents get their own wings — goal, model, tool count, duration, token
+  cost, and the summary each one came back with. A delegated child is not a session you can open
+  and its relay is never stored, so this is the only window onto it. Deliberately quiet: the
+  committed reply renders the same calls properly a moment later.
 - **Local-first diagnostics** — Crash log kept on-device only, shareable from Settings.
 
 ## Installing
