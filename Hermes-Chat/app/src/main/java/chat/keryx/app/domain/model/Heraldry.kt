@@ -109,3 +109,46 @@ object Heralds {
         return Heraldry(key, name, a, a2, false)
     }
 }
+
+/**
+ * How a room's avatar should read in the drawer and the Quick Rooms deck.
+ *
+ * 2.2's rule was "color is light, light means life"; 2.3's is "each life has its own color". A
+ * room avatar is the one place where those two meet a list, so it answers a different question
+ * per shape:
+ *
+ * - [Stack] — several heralds sit here, so the room is a *council*: one staff per herald, each
+ *   in its own hue. Which lives are in the room is the interesting fact; the room is the venue.
+ * - [Single] — one herald, which is every ordinary agent room. Here the herald's hue is the
+ *   *wrong* colour to paint: every such room would come out identical, and a drawer of seven
+ *   identical circles says nothing. The room IS that life, so the staff wears the room's own
+ *   hue and the row stays readable.
+ * - [None] — no herald known, so nothing changes: the ordinary lettered monogram.
+ */
+sealed interface RoomSigil {
+    data object None : RoomSigil
+    data class Single(val heraldKey: String) : RoomSigil
+    data class Stack(val heraldKeys: List<String>) : RoomSigil
+}
+
+object RoomSigils {
+    /** Past this a stacked row stops being legible at avatar size. */
+    const val MAX_STACK = 3
+
+    /**
+     * @param heraldsInRoom configured heralds present, already filtered by [Heralds.isHerald]
+     */
+    fun of(heraldsInRoom: List<String>): RoomSigil {
+        val keys = heraldsInRoom.map(Heralds::localpart).filter { it.isNotEmpty() }.distinct()
+        return when {
+            keys.isEmpty() -> RoomSigil.None
+            keys.size == 1 -> RoomSigil.Single(keys[0])
+            else -> RoomSigil.Stack(keys.take(MAX_STACK))
+        }
+    }
+
+    /** The heralds among a room's members — the repository's half of the same decision. */
+    fun heraldsAmong(memberIds: Collection<String>, configuredIds: List<String>): List<String> =
+        if (configuredIds.isEmpty()) emptyList()
+        else memberIds.filter { Heralds.isHerald(it, configuredIds) }.distinct()
+}

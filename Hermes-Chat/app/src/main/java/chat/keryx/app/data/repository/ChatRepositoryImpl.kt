@@ -1,11 +1,13 @@
 package chat.keryx.app.data.repository
 
 import chat.keryx.app.data.remote.MatrixService
+import chat.keryx.app.domain.model.Heralds
 import chat.keryx.app.domain.model.MediaKind
 import chat.keryx.app.domain.model.Message
 import chat.keryx.app.domain.model.MessageReaction
 import chat.keryx.app.domain.model.RoomInvite
 import chat.keryx.app.domain.model.RoomProfile
+import chat.keryx.app.domain.model.RoomSigils
 import chat.keryx.app.domain.model.RoomType
 import chat.keryx.app.domain.model.SenderType
 import chat.keryx.app.domain.model.Session
@@ -29,6 +31,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
+import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.media
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.message.file
@@ -74,14 +77,49 @@ class ChatRepositoryImpl(
             else client.room.getAll().flatMapLatest { roomMap ->
                 val roomFlows = roomMap.values.toList()
                 if (roomFlows.isEmpty()) flowOf(emptyList())
-                else combine(roomFlows) { rooms ->
-                    rooms.filterNotNull()
-                        .filter { it.membership == Membership.JOIN }
-                        .sortedByDescending { it.lastRelevantEventTimestamp?.toEpochMilliseconds() ?: 0L }
-                        .map { it.toProfile() }
+                else {
+                    val joined = combine(roomFlows) { rooms ->
+                        rooms.filterNotNull()
+                            .filter { it.membership == Membership.JOIN }
+                            .sortedByDescending { it.lastRelevantEventTimestamp?.toEpochMilliseconds() ?: 0L }
+                    }
+                    // Keyed on roomMap, NOT on the sorted list: a room's timestamp churns on every
+                    // message, and rebuilding the member subscriptions on each one would thrash a
+                    // set of flows whose answer changes about once per room per install.
+                    combine(joined, heraldsByRoom(client, roomMap.keys)) { rooms, heraldsIn ->
+                        rooms.map { it.toProfile(heraldsIn[it.roomId.full].orEmpty()) }
+                    }
                 }
             }
         }
+
+    /**
+     * roomId -> the configured heralds among that room's members, for the drawer / deck sigils.
+     *
+     * `UserService.getAll` is a pure STORE read (it delegates straight to `RoomUserStore.getAll`
+     * — no `loadMembers`, no request), so this is safe to hold open for every room at once.
+     * Matrix lazy-loads members, so a room never opened on this install answers "none" and keeps
+     * its lettered monogram; opening it once triggers [ensureMembersLoaded] and the answer sticks,
+     * because members are persisted. The rejected alternative was forcing a member sync for every
+     * room in the drawer — a request per room, on a list that can be long, to decorate a circle.
+     */
+    private fun heraldsByRoom(client: MatrixClient, roomIds: Collection<RoomId>): Flow<Map<String, List<String>>> {
+        val configured = Heralds.parseIds(settingsRepository.agentMatrixId)
+        if (configured.isEmpty() || roomIds.isEmpty()) return flowOf(emptyMap())
+        val ids = roomIds.toList()
+        return combine(
+            ids.map { roomId ->
+                client.user.getAll(roomId)
+                    .map { members -> RoomSigils.heraldsAmong(members.keys.map { it.full }, configured) }
+                    // Emit before the store answers so the drawer paints immediately; a room whose
+                    // members are still resolving simply shows its monogram for that beat.
+                    .onStart { emit(emptyList()) }
+                    .distinctUntilChanged()
+            }
+        ) { perRoom ->
+            ids.indices.associate { ids[it].full to perRoom[it] }
+        }.catch { emit(emptyMap()) }
+    }
 
     override fun getSessions(roomId: String): Flow<List<Session>> =
         getRooms().map { rooms ->
@@ -595,7 +633,7 @@ class ChatRepositoryImpl(
 
     // --- mapping helpers ---
 
-    private fun Room.toProfile(): RoomProfile {
+    private fun Room.toProfile(heraldIds: List<String> = emptyList()): RoomProfile {
         val displayName = name?.explicitName
             ?: name?.heroes?.firstOrNull()?.full
             ?: roomId.full
@@ -609,6 +647,7 @@ class ChatRepositoryImpl(
             timestamp = lastRelevantEventTimestamp?.toEpochMilliseconds() ?: 0L,
             unreadCount = unreadMessageCount,
             avatarUrl = avatarUrl,
+            heraldIds = heraldIds,
         )
     }
 
