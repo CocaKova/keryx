@@ -347,6 +347,11 @@ class ChatViewModel(
     val linkHealth: StateFlow<LinkHealth> = _linkHealth.asStateFlow()
 
     /** Active brain's reasoning dial (null until fetched; refreshed when the menu opens). */
+    /** The last turn's context occupancy, from the side-channel's finish-line usage frame. */
+    data class ContextUsage(val roomId: String, val used: Long, val max: Long, val model: String)
+    private val _contextUsage = MutableStateFlow<ContextUsage?>(null)
+    val contextUsage: StateFlow<ContextUsage?> = _contextUsage.asStateFlow()
+
     private val _reasoningCaps = MutableStateFlow<chat.keryx.app.data.remote.HermesStreamClient.ReasoningCaps?>(null)
     val reasoningCaps: StateFlow<chat.keryx.app.data.remote.HermesStreamClient.ReasoningCaps?> = _reasoningCaps.asStateFlow()
 
@@ -1725,6 +1730,9 @@ class ChatViewModel(
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.SegmentBreak -> {
                         if (buf.isNotEmpty() && !buf.endsWith("\n\n")) buf.append("\n\n")
                         callTurnTap?.onDelta("\n")
+                    }
+                    is chat.keryx.app.data.remote.HermesStreamClient.Event.Usage -> {
+                        _contextUsage.value = ContextUsage(roomId, ev.used, ev.max, ev.model)
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Stop -> {
                         _linkHealth.value = LinkHealth.OK

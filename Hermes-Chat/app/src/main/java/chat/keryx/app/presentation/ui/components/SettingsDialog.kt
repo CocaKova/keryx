@@ -47,7 +47,7 @@ import androidx.compose.ui.window.DialogProperties
 import chat.keryx.app.presentation.ChatViewModel
 import kotlin.math.atan2
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
     viewModel: ChatViewModel,
@@ -119,7 +119,7 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-          Box(Modifier.fillMaxSize().background(duskBrush())) {
+          Box(Modifier.fillMaxSize().keryxDuskSky()) {
             // Hub-and-spoke: null = the section list; a name = that section's page.
             // One long scroll of seven dense cards was the old layout — cluttered.
             var section by remember { mutableStateOf<String?>(null) }
@@ -570,8 +570,10 @@ fun SettingsScreen(
                     if (section == "Appearance") SettingsCard("Message Appearance") {
                         Text("Bubble Style", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                         Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("Solid", "Gradient", "Glass").forEach { style ->
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            BubbleStyles.ALL.forEach { style ->
                                 FilterChip(
                                     selected = bubbleStyle == style,
                                     onClick = { onBubbleStyleChanged(style) },
@@ -663,8 +665,11 @@ fun SettingsScreen(
                         Spacer(Modifier.height(16.dp))
                         Text("Loading Animation", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                         Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
                             listOf(
+                                "Caduceus" to "☤ Caduceus",
                                 "Braille" to "⠋ Braille",
                                 "Dots" to "○ Dots",
                                 "ASCII Wave" to "▅ Wave"

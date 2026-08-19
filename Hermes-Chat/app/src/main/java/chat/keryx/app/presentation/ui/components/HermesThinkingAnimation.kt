@@ -33,7 +33,7 @@ import kotlin.math.sin
 
 @Composable
 fun HermesThinkingAnimation(
-    style: String = "Braille",
+    style: String = "Caduceus",
     modifier: Modifier = Modifier
 ) {
     // Subtle pulsing alpha on the whole component
@@ -88,7 +88,7 @@ fun HermesThinkingAnimation(
             "Braille" -> BrailleSpinner(primaryColor, accent2)
             "Dots" -> DotsSpinner(primaryColor, accent2, infiniteTransition)
             "ASCII Wave" -> AsciiWaveSpinner()
-            else -> BrailleSpinner(primaryColor, accent2)
+            else -> CaduceusSpinner(primaryColor, accent2)
         }
         
         Spacer(modifier = Modifier.width(12.dp))
@@ -225,6 +225,57 @@ fun DotsSpinner(primaryColor: Color, accent2: Color = primaryColor, infiniteTran
                     radius = dotRadius,
                     center = Offset(x, y)
                 )
+            }
+        }
+    }
+}
+
+/**
+ * The herald's mark: two serpents — one in each accent — winding around an invisible staff while
+ * the reply is dreamed up. Depth is faked honestly: whichever strand is on the near side of the
+ * staff at a given x is drawn last, thicker and at full strength; the far side thins and dims.
+ */
+@Composable
+fun CaduceusSpinner(primaryColor: Color, accent2: Color) {
+    val transition = rememberInfiniteTransition(label = "caduceus")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * PI).toFloat(),
+        animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing)),
+        label = "caduceus_phase"
+    )
+    Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.size(22.dp, 14.dp)) {
+            val mid = size.height / 2f
+            val amp = size.height * 0.36f
+            // One and a half crossings across the width reads as a braid, not a single X.
+            val k = (2f * PI.toFloat() * 1.5f) / size.width
+            val steps = 22
+            val stepW = size.width / steps
+            val strands = listOf(primaryColor to 0f, accent2 to PI.toFloat())
+            fun yOf(x: Float, off: Float) = mid + amp * sin(k * x - phase + off)
+            listOf(false, true).forEach { front ->
+                strands.forEach { (color, off) ->
+                    for (i in 0 until steps) {
+                        val x0 = i * stepW
+                        val x1 = (i + 1) * stepW
+                        // cos is the strand's z: positive = near side of the staff.
+                        val near = cos(k * (x0 + x1) / 2f - phase + off) >= 0f
+                        if (near == front) {
+                            drawLine(
+                                color = color.copy(alpha = if (front) 1f else 0.40f),
+                                start = Offset(x0, yOf(x0, off)),
+                                end = Offset(x1, yOf(x1, off)),
+                                strokeWidth = (if (front) 1.8.dp else 1.2.dp).toPx(),
+                                cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                            )
+                        }
+                    }
+                    // The serpent's head leads at the right edge, with a faint halo.
+                    val head = Offset(size.width, yOf(size.width, off))
+                    drawCircle(color.copy(alpha = 0.25f), radius = 3.2.dp.toPx(), center = head)
+                    drawCircle(color, radius = 1.7.dp.toPx(), center = head)
+                }
             }
         }
     }

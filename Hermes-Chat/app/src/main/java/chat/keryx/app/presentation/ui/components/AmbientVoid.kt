@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.delay
 
@@ -28,6 +29,9 @@ import kotlinx.coroutines.delay
  */
 @Composable
 fun AmbientVoid(modifier: Modifier = Modifier) {
+    // Daylight rule (2.2): glow means darkness. In light theme the room is paper-and-ink and the
+    // gilt bubble edge is the only light — accent pools on white read as stains, not depth.
+    if (MaterialTheme.colorScheme.background.luminance() > 0.5f) return
     val reduced by rememberReducedMotion()
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.tertiary
@@ -48,20 +52,22 @@ fun AmbientVoid(modifier: Modifier = Modifier) {
     Canvas(modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
-        // Whisper-level on purpose (2.0 attention budget): the void is felt, never watched —
-        // anything brighter stacks visibly on the amber aurora and crowds the focal effects.
+        // Visible pools, not a wash: the original 3–4% alphas at near-screen radius flattened
+        // into an imperceptible tint over the amber app gradient — nobody ever saw the void
+        // breathe. Tighter radii give each glow an actual silhouette; the alphas sit just above
+        // the aurora so the pools read as depth without crowding the focal effects.
         drawRect(
             Brush.radialGradient(
-                listOf(accent.copy(alpha = 0.04f), Color.Transparent),
-                center = Offset(w * (0.16f + 0.10f * phase), h * (0.10f + 0.07f * phase)),
-                radius = (w * 0.95f).coerceAtLeast(1f),
+                listOf(accent.copy(alpha = 0.11f), Color.Transparent),
+                center = Offset(w * (0.10f + 0.28f * phase), h * (0.08f + 0.10f * phase)),
+                radius = (w * 0.62f).coerceAtLeast(1f),
             ),
         )
         drawRect(
             Brush.radialGradient(
-                listOf(accent2.copy(alpha = 0.03f), Color.Transparent),
-                center = Offset(w * (0.86f - 0.14f * phase), h * (0.80f - 0.06f * phase)),
-                radius = (w * 0.90f).coerceAtLeast(1f),
+                listOf(accent2.copy(alpha = 0.09f), Color.Transparent),
+                center = Offset(w * (0.92f - 0.30f * phase), h * (0.85f - 0.12f * phase)),
+                radius = (w * 0.58f).coerceAtLeast(1f),
             ),
         )
     }

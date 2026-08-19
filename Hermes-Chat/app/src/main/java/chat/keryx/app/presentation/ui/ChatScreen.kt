@@ -78,6 +78,8 @@ import chat.keryx.app.presentation.ui.components.MessageMedia
 import chat.keryx.app.presentation.ui.components.ToolActivityCard
 import chat.keryx.app.presentation.ui.components.ToolGroupCard
 import chat.keryx.app.presentation.ui.components.bubbleAppearance
+import chat.keryx.app.presentation.ui.components.keryxLightSweep
+import androidx.compose.ui.text.font.FontFamily
 import chat.keryx.app.presentation.ui.components.keryxMagicDust
 import chat.keryx.app.presentation.ui.components.GroupedTimeline
 import chat.keryx.app.presentation.ui.components.groupChatItemsIncremental
@@ -132,6 +134,7 @@ fun ChatScreen(
     val rooms by viewModel.rooms.collectAsState()
     val currentSession by viewModel.currentSession.collectAsState()
     val bubbleStyle by viewModel.bubbleStyle.collectAsState()
+    val animationStyle by viewModel.animationStyle.collectAsState()
     val messageTextScale by viewModel.messageTextScale.collectAsState()
     val awaitingReply by viewModel.awaitingReply.collectAsState()
     val typingHumans by viewModel.typingHumans.collectAsState()
@@ -577,6 +580,7 @@ fun ChatScreen(
                                 message = message,
                                 replyTo = quotedId?.let { byId[it] },
                                 bubbleStyle = bubbleStyle,
+                                animationStyle = animationStyle,
                                 textScale = messageTextScale,
                                 showSender = isGroupRoom,
                                 reactionsFlow = reactionsFlow,
@@ -726,6 +730,9 @@ fun ChatScreen(
                     }
                 }
             }
+            val composerCaps by viewModel.reasoningCaps.collectAsState()
+            val composerUsage by viewModel.contextUsage.collectAsState()
+            val hubBrainsPanel by viewModel.hubBrains.collectAsState()
             Composer(
                 textState = textState,
                 onTextChange = { textState = it; viewModel.onComposerTextChanged(it.text) },
@@ -739,9 +746,28 @@ fun ChatScreen(
                 sttEnabled = sttUrl.isNotBlank(),
                 dictation = dictation,
                 onMicTap = ::onMicTap,
+                caps = composerCaps,
+                contextUsage = composerUsage,
+                roomId = currentSession?.id,
+                brains = hubBrainsPanel.data,
+                onReasoningCommand = { viewModel.sendReasoningCommand(it) },
+                onBrainSelect = { viewModel.hubBrainSelect(it) },
+                onRefreshCaps = { viewModel.refreshReasoningCaps(); viewModel.refreshHubBrains() },
+                onSteer = { viewModel.prefillComposer("/steer ") },
             )
         }
 
+        // Light travel (2.2): the accent band crosses the room with the dissolve — arriving
+        // somewhere reads as light moving with you. Under the braille wisps, over the content.
+        if (dissolve.value < 1f) {
+            Box(
+                Modifier.fillMaxSize().then(
+                    with(MaterialTheme.colorScheme) {
+                        Modifier.keryxLightSweep(primary, tertiary) { dissolve.value }
+                    }
+                )
+            )
+        }
         // The braille dream-field riding the room-switch dissolve: glyphs over the whole screen.
         if (dissolve.value < 1f) {
             BrailleWisp(
@@ -827,6 +853,17 @@ private fun Composer(
     sttEnabled: Boolean = false,
     dictation: DictationPhase = DictationPhase.IDLE,
     onMicTap: () -> Unit = {},
+    // The footer line (2.2, the Talaria treatment): model · reasoning · context ring, docked
+    // inside the composer surface. All null/empty when Hermes Link is off — pure-Matrix rooms
+    // keep the plain bar.
+    caps: chat.keryx.app.data.remote.HermesStreamClient.ReasoningCaps? = null,
+    contextUsage: ChatViewModel.ContextUsage? = null,
+    roomId: String? = null,
+    brains: chat.keryx.app.data.remote.HermesStreamClient.Brains? = null,
+    onReasoningCommand: (String) -> Unit = {},
+    onBrainSelect: (String) -> Unit = {},
+    onRefreshCaps: () -> Unit = {},
+    onSteer: () -> Unit = {},
 ) {
     var attachMenu by remember { mutableStateOf(false) }
     // The dream attach options bloom in just above the composer pill (rendered inline rather than in
@@ -837,12 +874,19 @@ private fun Composer(
             onPhoto = { attachMenu = false; onPickGallery() },
             onFile = { attachMenu = false; onPickFile() },
         )
-    Row(
+    // One hairline surface holds everything (the Talaria treatment): near-square, matte,
+    // gilt-adjacent border — the input row on top, the status footer beneath.
+    val composerShape = RoundedCornerShape(14.dp)
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(start = 2.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+            .clip(composerShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f))
+            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f), composerShape)
+            .padding(start = 2.dp, end = 6.dp, top = 2.dp, bottom = 3.dp),
+    ) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Bottom
     ) {
         Box {
@@ -912,17 +956,37 @@ private fun Composer(
             }
         }
         Spacer(modifier = Modifier.width(6.dp))
-        // The message lifts off with a puff of magic sand (2.0) — only when something real leaves.
+        // The send ritual (2.1): the message lifts off with a puff of magic sand and the button
+        // itself flicks like a wing — a snap back-and-under, then a spring home with mass — while
+        // a haptic tick marks the moment of departure. Only when something real leaves.
         var sendPuffTick by remember { mutableStateOf(0) }
+        val sendHaptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+        val wing = remember { androidx.compose.animation.core.Animatable(0f) }
+        LaunchedEffect(sendPuffTick) {
+            if (sendPuffTick > 0) {
+                wing.snapTo(1f)
+                wing.animateTo(0f, chat.keryx.app.presentation.ui.components.KeryxMotion.settle)
+            }
+        }
         Box {
             FloatingActionButton(
                 onClick = {
-                    if (textState.text.isNotBlank()) sendPuffTick++
+                    if (textState.text.isNotBlank()) {
+                        sendPuffTick++
+                        sendHaptics.performHapticFeedback(
+                            androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress
+                        )
+                    }
                     onSend()
                 },
                 containerColor = MaterialTheme.colorScheme.primary,
                 elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp),
-                modifier = Modifier.size(48.dp),
+                modifier = Modifier.size(48.dp).graphicsLayer {
+                    val p = wing.value
+                    scaleX = 1f + 0.12f * p
+                    scaleY = 1f + 0.12f * p
+                    rotationZ = -22f * p
+                },
                 shape = RoundedCornerShape(50)
             ) {
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Color.White)
@@ -933,7 +997,136 @@ private fun Composer(
             )
         }
     }
+    ComposerFooter(
+        caps = caps,
+        contextUsage = contextUsage,
+        roomId = roomId,
+        brains = brains,
+        onReasoningCommand = onReasoningCommand,
+        onBrainSelect = onBrainSelect,
+        onRefreshCaps = onRefreshCaps,
+        onSteer = onSteer,
+    )
+    } // end composer surface Column
     } // end Column (attach bloom + composer row)
+}
+
+/**
+ * The composer's own status line: model pill (tap = pick from the gateway's routes), reasoning
+ * pill (the full effort menu, gated by what the active brain declares), and the context ring.
+ * Mono and tiny on purpose — it's an instrument readout, not chrome. Renders nothing when the
+ * gateway link is absent.
+ */
+@Composable
+private fun ComposerFooter(
+    caps: chat.keryx.app.data.remote.HermesStreamClient.ReasoningCaps?,
+    contextUsage: ChatViewModel.ContextUsage?,
+    roomId: String?,
+    brains: chat.keryx.app.data.remote.HermesStreamClient.Brains?,
+    onReasoningCommand: (String) -> Unit,
+    onBrainSelect: (String) -> Unit,
+    onRefreshCaps: () -> Unit,
+    onSteer: () -> Unit,
+) {
+    val usage = contextUsage?.takeIf { roomId != null && it.roomId == roomId }
+    if (caps == null && usage == null) return
+    val meta = MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 6.dp, top = 1.dp),
+    ) {
+        // Model pill — the live brain by name, ▾ inside the same hit target.
+        var modelMenu by remember { mutableStateOf(false) }
+        val modelName = (usage?.model ?: "").ifBlank { caps?.model.orEmpty() }.ifBlank { "model" }
+        Box {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .clickable { modelMenu = true; onRefreshCaps() }
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
+            ) {
+                Text(
+                    modelName,
+                    fontSize = 10.5.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = meta,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 150.dp),
+                )
+                Text(" ▾", fontSize = 9.sp, color = meta.copy(alpha = 0.7f))
+            }
+            DropdownMenu(expanded = modelMenu, onDismissRequest = { modelMenu = false }) {
+                // The Spire brains roster — the machines that can actually answer here. The
+                // gateway's /v1/models only knows its own name ("hermes-agent"), so it was never
+                // the right source. Picking a brain starts a real swap (systemd + cooldown).
+                val roster = brains?.brains.orEmpty()
+                if (roster.isEmpty()) DropdownMenuItem(
+                    text = { Text("No brains roster from the gateway", fontSize = 13.sp, color = meta) },
+                    onClick = { modelMenu = false },
+                )
+                roster.forEach { b ->
+                    val isActive = b.name == brains?.active
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    if (isActive) "● " else "  ",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontFamily = FontFamily.Monospace,
+                                )
+                                Column {
+                                    Text(
+                                        b.name, fontSize = 13.sp, fontFamily = FontFamily.Monospace,
+                                        fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
+                                        color = if (isActive) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                                    )
+                                    if (b.description.isNotBlank()) Text(
+                                        b.description, fontSize = 10.sp, color = meta,
+                                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        },
+                        onClick = { modelMenu = false; if (!isActive) onBrainSelect(b.name) },
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        // Reasoning pill — the relocated top-bar menu, now living where the thinking happens.
+        var reasoningMenu by remember { mutableStateOf(false) }
+        val levelLabel = caps?.let { c -> (c.labels[c.current] ?: c.current).ifBlank { "reasoning" } } ?: "reasoning"
+        Box {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .clickable { reasoningMenu = true; onRefreshCaps() }
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
+            ) {
+                Text(
+                    levelLabel,
+                    fontSize = 10.5.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = meta,
+                    maxLines = 1,
+                )
+                Text(" ▾", fontSize = 9.sp, color = meta.copy(alpha = 0.7f))
+            }
+            chat.keryx.app.presentation.ui.ReasoningMenu(
+                expanded = reasoningMenu,
+                caps = caps,
+                onDismiss = { reasoningMenu = false },
+                onCommand = { arg -> reasoningMenu = false; onReasoningCommand(arg) },
+                onSteer = { reasoningMenu = false; onSteer() },
+            )
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        usage?.let { chat.keryx.app.presentation.ui.components.KeryxContextRing(it.used, it.max) }
+    }
 }
 
 @Composable
@@ -1009,6 +1202,7 @@ fun MessageBubble(
     message: Message,
     replyTo: Message?,
     bubbleStyle: String,
+    animationStyle: String = "Caduceus",
     textScale: Float,
     showSender: Boolean,
     reactionsFlow: kotlinx.coroutines.flow.Flow<List<MessageReaction>>,
@@ -1122,7 +1316,7 @@ fun MessageBubble(
         var heartBloomTick by remember { mutableStateOf(0) }
 
         if (message.isStreaming && message.content.isEmpty() && message.mediaKind == null) {
-            HermesThinkingAnimation(style = "Braille", modifier = Modifier.padding(8.dp))
+            HermesThinkingAnimation(style = animationStyle, modifier = Modifier.padding(8.dp))
         } else if (message.content.isNotEmpty() || message.mediaKind != null) {
             val appearance = bubbleAppearance(isMine, bubbleStyle)
             val shape = RoundedCornerShape(
@@ -1145,8 +1339,11 @@ fun MessageBubble(
                     .clip(shape)
                     .background(appearance.brush)
                     .then(
-                        if (appearance.border != null) Modifier.border(1.dp, appearance.border, shape)
-                        else Modifier
+                        when {
+                            appearance.edgeBrush != null -> Modifier.border(1.5.dp, appearance.edgeBrush, shape)
+                            appearance.border != null -> Modifier.border(1.dp, appearance.border, shape)
+                            else -> Modifier
+                        }
                     )
                     .combinedClickable(
                         onClick = {},
