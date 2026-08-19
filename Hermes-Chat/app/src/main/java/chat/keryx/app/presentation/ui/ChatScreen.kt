@@ -2025,6 +2025,12 @@ private fun StreamingBubble(
                             active = streaming && stream.text.isBlank(),
                         )
                     }
+                    // Between the thinking and the answer, because that is where it happened.
+                    chat.keryx.app.presentation.ui.components.TheaterStage(
+                        beats = stream.theater,
+                        live = streaming,
+                        baseColor = appearance.textColor,
+                    )
                     if (stream.text.isNotBlank()) chat.keryx.app.presentation.ui.components.MessageContent(
                         content = stream.text,
                         textColor = appearance.textColor,
