@@ -59,6 +59,10 @@ class HermesStreamClient(
         /** Turn finished. [finalText] is the exact body Hermes commits to Matrix (may be null if
          *  the server couldn't include it; match then falls back to accumulated text). */
         data class Stop(val finalText: String?) : Event
+        /** Context occupancy at the finish line: the last API call's prompt size against the
+         *  model's window. Published by the gateway just before stop (the channel is transient,
+         *  so anything after stop would never arrive). */
+        data class Usage(val used: Long, val max: Long, val model: String) : Event
         /** The SSE channel is connected and live. */
         data object Opened : Event
         /** The channel failed or dropped. [connected] tells whether any bytes ever flowed —
@@ -114,6 +118,7 @@ class HermesStreamClient(
                         "delta" -> parseText(data)?.let { trySendBlocking(Event.Delta(it)) }
                         "reasoning" -> parseText(data)?.let { trySendBlocking(Event.Reasoning(it)) }
                         "segment" -> trySendBlocking(Event.SegmentBreak)
+                        "usage" -> parseUsage(data)?.let { trySendBlocking(it) }
                         "stop" -> {
                             trySendBlocking(Event.Stop(parseText(data)))
                             close() // turn done — tear the transient channel down
@@ -140,6 +145,18 @@ class HermesStreamClient(
 
     private fun parseText(data: String): String? = try {
         (json.parseToJsonElement(data).jsonObject["text"] as? JsonPrimitive)?.content
+    } catch (e: Exception) {
+        null
+    }
+
+    /** The usage frame nests its JSON in the standard {"text": …} envelope. */
+    private fun parseUsage(data: String): Event.Usage? = try {
+        val inner = parseText(data) ?: return null
+        val obj = json.parseToJsonElement(inner).jsonObject
+        val used = (obj["used"] as? JsonPrimitive)?.content?.toLongOrNull() ?: 0L
+        val max = (obj["max"] as? JsonPrimitive)?.content?.toLongOrNull() ?: 0L
+        if (used <= 0L || max <= 0L) null
+        else Event.Usage(used, max, (obj["model"] as? JsonPrimitive)?.content.orEmpty())
     } catch (e: Exception) {
         null
     }

@@ -42,11 +42,11 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         set(value) = prefs.edit().putBoolean("haptics_enabled", value).apply()
 
     override var animationStyle: String
-        get() = prefs.getString("animation_style", "Braille") ?: "Braille"
+        get() = prefs.getString("animation_style", "Caduceus") ?: "Caduceus"
         set(value) = prefs.edit().putString("animation_style", value).apply()
 
     override var bubbleStyle: String
-        get() = prefs.getString("bubble_style", "Gradient") ?: "Gradient"
+        get() = prefs.getString("bubble_style", "Gilded") ?: "Gilded"
         set(value) = prefs.edit().putString("bubble_style", value).apply()
 
     override var messageTextScale: Float

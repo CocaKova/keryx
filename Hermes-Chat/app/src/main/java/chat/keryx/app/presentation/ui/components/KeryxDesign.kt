@@ -40,6 +40,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.graphicsLayer
@@ -203,6 +205,52 @@ fun Modifier.keryxShimmerBorder(
     }
 }
 
+/**
+ * Light travel (2.2): while a transition is mid-flight, a soft diagonal band of accent light
+ * crosses the surface with it — navigation reads as light moving with you, not screens swapping.
+ * [progress] is read in the draw phase only, so the sweep invalidates drawing, never layout.
+ * Peak alpha rides sin(pi*p): nothing at rest, brightest mid-journey.
+ */
+fun Modifier.keryxLightSweep(
+    accent: Color,
+    accent2: Color,
+    progress: () -> Float,
+): Modifier = drawWithContent {
+    drawContent()
+    val p = progress()
+    if (p > 0.02f && p < 0.98f) {
+        val glow = kotlin.math.sin(p * Math.PI).toFloat()
+        val cx = size.width * (p * 1.8f - 0.4f)
+        val half = size.width * 0.35f
+        // The soft body of the light, wide and diagonal.
+        drawRect(
+            Brush.linearGradient(
+                colorStops = arrayOf(
+                    0f to Color.Transparent,
+                    0.45f to accent.copy(alpha = 0.30f * glow),
+                    0.55f to accent2.copy(alpha = 0.22f * glow),
+                    1f to Color.Transparent,
+                ),
+                start = Offset(cx - half, size.height),
+                end = Offset(cx + half, 0f),
+            ),
+        )
+        // The blade: a thin bright leading edge, unmistakably *light*, not a tint.
+        val blade = size.width * 0.05f
+        drawRect(
+            Brush.linearGradient(
+                colorStops = arrayOf(
+                    0f to Color.Transparent,
+                    0.5f to accent.copy(alpha = 0.55f * glow),
+                    1f to Color.Transparent,
+                ),
+                start = Offset(cx + half * 0.5f - blade, size.height),
+                end = Offset(cx + half * 0.5f + blade, 0f),
+            ),
+        )
+    }
+}
+
 /** A small status dot that breathes while [alive]; solid and still otherwise. */
 @Composable
 fun KeryxBreathingDot(color: Color, alive: Boolean, size: Dp = 7.dp) {
@@ -332,7 +380,7 @@ private fun KeryxSpaceBody(
     androidx.compose.runtime.LaunchedEffect(Unit) {
         if (reduced) arrival.snapTo(1f) else arrival.animateTo(1f, KeryxMotion.settle)
     }
-    Box(Modifier.fillMaxSize().background(duskBrush())) {
+    Box(Modifier.fillMaxSize().keryxDuskSky()) {
         AmbientVoid()
         Column(
             modifier = modifier

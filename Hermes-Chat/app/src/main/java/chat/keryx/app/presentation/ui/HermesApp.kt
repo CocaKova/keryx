@@ -1,5 +1,6 @@
 package chat.keryx.app.presentation.ui
 
+import chat.keryx.app.presentation.ui.components.keryxDuskSky
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -158,18 +159,9 @@ fun HermesApp(viewModel: ChatViewModel) {
             }
         }
     ) {
-        // The whole-screen background gradient: a warm amber aurora at the top, deepening to OLED
-        // black, with a faint lift behind the composer. This is the *app* background — bubbles and
-        // bars sit on top of it (transparent), so the gradient reads as the actual backdrop.
-        val bg = MaterialTheme.colorScheme.background
-        val accent = MaterialTheme.colorScheme.primary
-        val appGradient = Brush.verticalGradient(
-            0.0f to lerp(bg, accent, 0.26f),
-            0.30f to bg,
-            0.82f to bg,
-            1.0f to lerp(bg, accent, 0.12f),
-        )
-        Box(modifier = Modifier.fillMaxSize().background(appGradient)) {
+        // The whole-screen backdrop: the living dusk sky (AGSL on 13+, static aurora before) —
+        // bubbles and bars sit on top of it (transparent), so the sky reads as the actual room.
+        Box(modifier = Modifier.fillMaxSize().keryxDuskSky()) {
         // The ambient void: vast accent glows adrift behind the chat, minutes per pass.
         chat.keryx.app.presentation.ui.components.AmbientVoid()
         Scaffold(
@@ -239,28 +231,8 @@ fun HermesApp(viewModel: ChatViewModel) {
                                     tint = MaterialTheme.colorScheme.primary,
                                 )
                             }
-                            // Dynamic reasoning control via Hermes' native /reasoning command.
-                            // Effort levels persist with --global; show/hide persists per-platform
-                            // on the server side already; reset clears this session's override.
-                            // Steer lives at the bottom of this menu, keeping the bar at four items.
-                            var reasoningMenu by remember { mutableStateOf(false) }
-                            val reasoningCaps by viewModel.reasoningCaps.collectAsState()
-                            Box {
-                                IconButton(onClick = { reasoningMenu = true; viewModel.refreshReasoningCaps() }) {
-                                    Icon(
-                                        Icons.Default.Psychology,
-                                        contentDescription = "Reasoning",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                                ReasoningMenu(
-                                    expanded = reasoningMenu,
-                                    caps = reasoningCaps,
-                                    onDismiss = { reasoningMenu = false },
-                                    onCommand = { arg -> reasoningMenu = false; viewModel.sendReasoningCommand(arg) },
-                                    onSteer = { reasoningMenu = false; viewModel.prefillComposer("/steer ") },
-                                )
-                            }
+                            // Reasoning moved to the composer footer (2.2, the Talaria
+                            // treatment) — the dial now lives where the thinking happens.
                             // The Call (1.22): a voice conversation with this room's agent. Needs
                             // both voice endpoints; a missing one gets a pointer, not a dead mic.
                             var showCall by remember { mutableStateOf(false) }
@@ -401,7 +373,7 @@ private fun LinkHealthDot(
  * display/override actions tucked below a hairline. Effort selections persist via `--global`.
  */
 @Composable
-private fun ReasoningMenu(
+internal fun ReasoningMenu(
     expanded: Boolean,
     caps: chat.keryx.app.data.remote.HermesStreamClient.ReasoningCaps?,
     onDismiss: () -> Unit,
@@ -443,10 +415,18 @@ private fun ReasoningMenu(
                 fontSize = 9.sp,
             )
         }
-        val entries: List<Triple<String, String, String>> = if (caps?.mode == "binary") {
-            caps.levels.map { arg ->
+        // Render exactly the levels the gateway declares for the active brain (it knows what
+        // the serving stack validates — e.g. the local qwen stack takes low/medium/xhigh, not
+        // the whole generic scale). The full generic ladder is only the no-caps fallback.
+        val glyphFor = mapOf(
+            "none" to "·", "minimal" to "▁", "low" to "▁▃", "medium" to "▁▃▅",
+            "high" to "▁▃▅▇", "xhigh" to "▁▃▅▇█", "max" to "█████", "ultra" to "█████",
+        )
+        val entries: List<Triple<String, String, String>> = if (!caps?.levels.isNullOrEmpty()) {
+            caps!!.levels.map { arg ->
                 val label = caps.labels[arg] ?: arg.replaceFirstChar { it.uppercase() }
-                Triple(arg, label, if (arg == "none") "·" else "▁▃▅▇")
+                val glyph = glyphFor[arg] ?: if (caps.mode == "binary" && arg != "none") "▁▃▅▇" else "·"
+                Triple(arg, label, glyph)
             }
         } else {
             listOf(
