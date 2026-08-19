@@ -249,6 +249,11 @@ class ChatViewModel(
     private val _agentMatrixId = MutableStateFlow(settingsRepository.agentMatrixId)
     val agentMatrixId: StateFlow<String> = _agentMatrixId.asStateFlow()
 
+    /** Per-herald accent overrides (localpart -> "#RRGGBB"). Empty entries fall back to the
+     *  derived council palette (2.3 §1). */
+    private val _heraldAccents = MutableStateFlow(settingsRepository.heraldAccents)
+    val heraldAccents: StateFlow<Map<String, String>> = _heraldAccents.asStateFlow()
+
     private val _matrixToken = MutableStateFlow(settingsRepository.matrixToken)
     val matrixToken: StateFlow<String> = _matrixToken.asStateFlow()
 
@@ -1313,6 +1318,10 @@ class ChatViewModel(
      *  (The agent's typing drives [awaitingReply]/the working banner instead.) */
     private val _typingHumans = MutableStateFlow<List<String>>(emptyList())
     val typingHumans: StateFlow<List<String>> = _typingHumans.asStateFlow()
+
+    /** MXIDs of the heralds typing right now — the working bar wears one sigil each (2.3 §1). */
+    private val _typingAgentIds = MutableStateFlow<List<String>>(emptyList())
+    val typingAgentIds: StateFlow<List<String>> = _typingAgentIds.asStateFlow()
     private var quietJob: Job? = null
 
     // Tracks the last message we evaluated, so we can tell genuine live activity (a new message, or a
@@ -1585,6 +1594,7 @@ class ChatViewModel(
                 }
                 .collect { state ->
                     _typingHumans.value = state.humanNames
+                    _typingAgentIds.value = state.agentIds
                     val typing = state.agentTyping
                     chat.keryx.app.util.KLog.i("KeryxTyping") { "typing=$typing humans=${state.humanNames.size} awaiting=${_awaitingReply.value} answerLanded=$answerLanded" }
                     agentTyping = typing
@@ -2082,6 +2092,16 @@ class ChatViewModel(
         settingsRepository.agentMatrixId = id
     }
 
+    /** Set (or, with a null [hex], clear) one herald's accent override. */
+    fun setHeraldAccent(localpart: String, hex: String?) {
+        val key = localpart.trim().lowercase()
+        if (key.isEmpty()) return
+        val next = _heraldAccents.value.toMutableMap()
+        if (hex.isNullOrBlank()) next.remove(key) else next[key] = hex
+        _heraldAccents.value = next
+        settingsRepository.heraldAccents = next
+    }
+
     fun setMatrixToken(token: String) {
         _matrixToken.value = token
         settingsRepository.matrixToken = token
@@ -2203,7 +2223,13 @@ class ChatViewModel(
         // homeserver round-trip. Retired by the echo match in the messages collector; the timeout
         // is only a safety net (the real event still renders normally if matching ever misses).
         pendingSendClearJob?.cancel()
-        _pendingSend.value = PendingSend(session.id, content, System.currentTimeMillis())
+        // The optimistic echo shows what I typed, not the sense marker riding along with it (2.3 §4);
+        // the committed event is stripped the same way, so the echo still matches it.
+        _pendingSend.value = PendingSend(
+            session.id,
+            chat.keryx.app.senses.KeryxSenses.stripMarker(content),
+            System.currentTimeMillis(),
+        )
         pendingSendClearJob = viewModelScope.launch {
             delay(PENDING_SEND_TIMEOUT_MS)
             _pendingSend.value = null

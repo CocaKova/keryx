@@ -1,6 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -321,13 +323,21 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = agentMatrixId,
                             onValueChange = onAgentMatrixIdChanged,
-                            label = { Text("Hermes Agent Matrix ID") },
-                            placeholder = { Text("@hermes:example.com") },
+                            label = { Text("Hermes Agent Matrix IDs") },
+                            placeholder = { Text("@hermes:example.com, @milo:example.com") },
                             supportingText = {
-                                Text("Set this if you also chat with humans — it tells Keryx which sender gets agent rendering")
+                                Text(
+                                    "Which senders get agent rendering. Separate several with commas " +
+                                        "to seat a council — the first one is your primary herald."
+                                )
                             },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
+                        )
+                        HeraldsList(
+                            agentMatrixId = agentMatrixId,
+                            overrides = viewModel.heraldAccents.collectAsState().value,
+                            onSetAccent = { key, hex -> viewModel.setHeraldAccent(key, hex) },
                         )
                         Spacer(Modifier.height(8.dp))
                         SettingsSwitchRow(
@@ -654,6 +664,10 @@ fun SettingsScreen(
                         )
                     }
 
+                    // Senses owns its own preferences file and needs nothing from this screen, so
+                    // it sits next to Privacy rather than taking thirty parameters of plumbing.
+                    if (section == "Privacy & Security") chat.keryx.app.senses.SensesSettingsCard()
+
                     // --- Interface ---
                     if (section == "Interface") SettingsCard("Interface") {
                         SettingsSwitchRow(
@@ -814,6 +828,86 @@ private val SWATCHES = listOf(
  * editable hex field + preset swatches. The old wheel only ever emitted `hsv(hue, 1, 1)` — pure
  * neon hues — which is why precise colors were unreachable.
  */
+/**
+ * Settings → Connection → "Heralds" (2.3 §1). One row per configured agent, each showing the light
+ * it will actually wear in a room. The primary herald is read-only — it borrows the user's own
+ * accents by design, so a 1:1 room looks exactly like 2.2 and there is nothing separate to pick.
+ */
+@Composable
+private fun HeraldsList(
+    agentMatrixId: String,
+    overrides: Map<String, String>,
+    onSetAccent: (String, String?) -> Unit,
+) {
+    val ids = chat.keryx.app.domain.model.Heralds.parseIds(agentMatrixId)
+    if (ids.size < 2) return // One agent is not a council; the row would say nothing.
+
+    var editing by remember { mutableStateOf<String?>(null) }
+
+    Spacer(Modifier.height(14.dp))
+    KeryxSectionHeader("Heralds", modifier = Modifier.padding(bottom = 6.dp))
+    Text(
+        "Each life has its own color. Tap a herald to choose its light, or reset it to the one " +
+            "Keryx derived from its name.",
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontSize = 11.sp,
+    )
+    Spacer(Modifier.height(8.dp))
+
+    ids.forEach { id ->
+        val key = chat.keryx.app.domain.model.Heralds.localpart(id)
+        val light = heraldLightFor(id, "")
+        val open = editing == key
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = !light.primary) { editing = if (open) null else key }
+                .padding(vertical = 8.dp),
+        ) {
+            HeraldSigil(light, fontSize = 16.sp)
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(key, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = light.accent)
+                Text(
+                    when {
+                        light.primary -> "Primary — wears your own accents"
+                        overrides.containsKey(key) -> "Your colour"
+                        else -> "Derived from the name"
+                    },
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(listOf(light.accent, light.accent2))
+                    )
+            )
+        }
+        if (open) {
+            ColorPickerPanel(
+                current = light.accent,
+                onColorSelected = { c ->
+                    onSetAccent(key, String.format("#%06X", 0xFFFFFF and c.toArgb()))
+                },
+                modifier = Modifier.fillMaxWidth(),
+                discSize = 150.dp,
+            )
+            if (overrides.containsKey(key)) {
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(onClick = { onSetAccent(key, null) }) {
+                    Text("Reset to derived colour")
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+        }
+    }
+}
+
 @Composable
 fun ColorPickerPanel(
     current: Color,

@@ -77,7 +77,11 @@ import chat.keryx.app.presentation.ui.components.MessageContent
 import chat.keryx.app.presentation.ui.components.MessageMedia
 import chat.keryx.app.presentation.ui.components.ToolActivityCard
 import chat.keryx.app.presentation.ui.components.ToolGroupCard
+import chat.keryx.app.presentation.ui.components.AgentDeliveryNotice
+import chat.keryx.app.presentation.ui.components.HeraldSigil
+import chat.keryx.app.presentation.ui.components.LocalHeraldConfig
 import chat.keryx.app.presentation.ui.components.bubbleAppearance
+import chat.keryx.app.presentation.ui.components.heraldLightFor
 import chat.keryx.app.presentation.ui.components.keryxLightSweep
 import androidx.compose.ui.text.font.FontFamily
 import chat.keryx.app.presentation.ui.components.keryxMagicDust
@@ -138,6 +142,7 @@ fun ChatScreen(
     val messageTextScale by viewModel.messageTextScale.collectAsState()
     val awaitingReply by viewModel.awaitingReply.collectAsState()
     val typingHumans by viewModel.typingHumans.collectAsState()
+    val typingAgentIds by viewModel.typingAgentIds.collectAsState()
     val liveStream by viewModel.liveStream.collectAsState()
     val pendingSend by viewModel.pendingSend.collectAsState()
     val showTelemetry by viewModel.showTelemetry.collectAsState()
@@ -201,6 +206,10 @@ fun ChatScreen(
         val grouped = groupChatItemsIncremental(ordered, groupCache[0])
         groupCache[0] = grouped
         grouped.items
+    }
+    // Which bubbles an arrival announced — they get the single light sweep as they first compose.
+    val arrivalIds = remember(renderItems) {
+        renderItems.filterIsInstance<ChatRenderItem.Arrival>().mapTo(HashSet()) { it.message.id }
     }
 
     // Restore this room's unsent draft when it opens (and swap drafts when switching rooms) so
@@ -432,7 +441,14 @@ fun ChatScreen(
         if (text.isNotBlank()) {
             if (caption == null) {
                 if (text.startsWith("/")) viewModel.recordCommandUse(text)
-                viewModel.sendMessage(text)
+                // 2.3 §4: the herald carries news back. Senses appends its marker here, on the way
+                // out and inside the message body, so it is E2EE-wrapped like everything else and
+                // the gateway needs no change. Self-guards: off by default, never on a slash
+                // command, at most once per room per half hour unless something actually changed.
+                val outgoing = currentSession
+                    ?.let { chat.keryx.app.senses.KeryxSenses.decorateOutgoing(context, it.id, text) }
+                    ?: text
+                viewModel.sendMessage(outgoing)
             }
             textState = TextFieldValue("")
             viewModel.onComposerTextChanged("")
@@ -532,12 +548,14 @@ fun ChatScreen(
                         is ChatRenderItem.DayHeader -> "day"
                         is ChatRenderItem.ToolRun -> "run"
                         is ChatRenderItem.Single -> "single"
+                        is ChatRenderItem.Arrival -> "arrival"
                     }
                 },
             ) { index, item ->
                 Box(modifier = Modifier.animateItem()) {
                     when (item) {
                         is ChatRenderItem.DayHeader -> DaySeparator(item.epochMillis)
+                        is ChatRenderItem.Arrival -> ArrivalMark(item.message)
                         is ChatRenderItem.ToolRun -> ToolGroupCard(
                             run = item,
                             // The newest item (index 0 under reverseLayout) is "running" while we
@@ -583,6 +601,7 @@ fun ChatScreen(
                                 animationStyle = animationStyle,
                                 textScale = messageTextScale,
                                 showSender = isGroupRoom,
+                                arrival = message.id in arrivalIds,
                                 reactionsFlow = reactionsFlow,
                                 // Resolve media by event id in the repo, which handles both plaintext
                                 // (mxc) and E2EE-encrypted files and falls back to the thumbnail.
@@ -790,6 +809,7 @@ fun ChatScreen(
             label = workLabel,
             startedAt = workStartedAt,
             tokPerSec = topTokPerSec,
+            typingAgentIds = typingAgentIds,
             modifier = Modifier.align(Alignment.TopCenter).padding(top = 6.dp),
         )
     }
@@ -801,6 +821,9 @@ private fun WorkingStatusBar(
     label: String,
     startedAt: Long?,
     tokPerSec: Float = 0f,
+    /** Heralds typing right now — in a council room the bar wears one sigil each, so you can see
+     *  *who* is working without waiting for the bubble (2.3 §1). */
+    typingAgentIds: List<String> = emptyList(),
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -816,6 +839,7 @@ private fun WorkingStatusBar(
         val elapsed = startedAt?.let { ((now - it).coerceAtLeast(0L)) / 1000 } ?: 0L
         val clock = "${elapsed / 60}:${"%02d".format(elapsed % 60)}"
         val accent = MaterialTheme.colorScheme.primary
+        val council = LocalHeraldConfig.current.council
         // The banner itself is the cloud: bumpy orbiting edges + a gentle bob, with the label inside.
         chat.keryx.app.presentation.ui.components.CloudBanner(
             // Opaque fill so the scalloped edge stays crisp (translucency made the bumps ghost
@@ -824,16 +848,25 @@ private fun WorkingStatusBar(
             border = accent.copy(alpha = 0.85f),
             border2 = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f),
         ) {
-            Text(
-                text = buildString {
-                    append("$label · $clock")
-                    // Live generation speed while tokens stream over the side-channel.
-                    if (tokPerSec > 2f) append(" · ≈${tokPerSec.toInt()} tok/s")
-                },
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (council && typingAgentIds.isNotEmpty()) {
+                    typingAgentIds.forEach { id ->
+                        HeraldSigil(heraldLightFor(id, ""), fontSize = 12.sp)
+                        Spacer(modifier = Modifier.width(3.dp))
+                    }
+                    Spacer(modifier = Modifier.width(3.dp))
+                }
+                Text(
+                    text = buildString {
+                        append("$label · $clock")
+                        // Live generation speed while tokens stream over the side-channel.
+                        if (tokPerSec > 2f) append(" · ≈${tokPerSec.toInt()} tok/s")
+                    },
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
         }
     }
 }
@@ -1196,6 +1229,47 @@ private fun AttachmentPreview(att: PendingAttachment, onRemove: () -> Unit) {
     }
 }
 
+/**
+ * The arrival mark (2.3 §3): a hairline in the herald's own light, its sigil, and the plain fact
+ * that nobody asked. Sits above the bubble it announces.
+ *
+ * Deliberately quiet — the *bubble* below carries the one focal effect (a single light sweep), and
+ * two competing attention-grabs in the same beat would spend the room's whole attention budget on
+ * one message.
+ */
+@Composable
+private fun ArrivalMark(message: Message) {
+    val light = heraldLightFor(message.senderId, message.senderName)
+    val clock = remember(message.timestamp) {
+        java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+            .format(java.util.Date(message.timestamp))
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 12.dp, top = 10.dp, bottom = 2.dp),
+    ) {
+        HeraldSigil(light, fontSize = 11.sp)
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = "${light.name} · unprompted · $clock",
+            color = light.accent.copy(alpha = 0.85f),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium,
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(light.accent.copy(alpha = 0.45f), Color.Transparent)
+                    )
+                )
+        )
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MessageBubble(
@@ -1205,6 +1279,9 @@ fun MessageBubble(
     animationStyle: String = "Caduceus",
     textScale: Float,
     showSender: Boolean,
+    /** This bubble was announced by an [ChatRenderItem.Arrival] — it gets one light sweep as it
+     *  first composes, the focal beat that says a herald just walked in (2.3 §3). */
+    arrival: Boolean = false,
     reactionsFlow: kotlinx.coroutines.flow.Flow<List<MessageReaction>>,
     mediaLoader: suspend () -> ByteArray?,
     onReply: () -> Unit,
@@ -1222,6 +1299,10 @@ fun MessageBubble(
 ) {
     val isMine = message.sender == SenderType.ME
     val isAgent = message.sender == SenderType.HERMES
+    // 2.3 §1: an agent bubble carries its herald's light. Humans and I keep the theme's own
+    // accents, and so does the primary herald — a 1:1 room looks exactly like 2.2.
+    val herald = if (isAgent) heraldLightFor(message.senderId, message.senderName) else null
+    val heraldRim = herald != null && !herald.primary
     var showReactionPicker by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
 
@@ -1297,14 +1378,41 @@ fun MessageBubble(
                 }
             }
     ) {
-        if (showSender && !isMine && message.senderName.isNotBlank()) {
-            Text(
-                text = shortSender(message.senderName),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(start = 4.dp, bottom = 2.dp),
+        // 2.3 §2: this account is relaying another agent — say so before the words, so a delivery
+        // is never mistaken for the courier speaking.
+        message.agentDelivery?.let { delivery ->
+            AgentDeliveryNotice(
+                delivery = delivery,
+                accent = herald?.accent,
             )
+        }
+
+        if (showSender && !isMine && message.senderName.isNotBlank()) {
+            if (herald != null && LocalHeraldConfig.current.council) {
+                // In a council room the name is the only thing that says *which* agent spoke, so
+                // it gets the sigil and the herald's own colour.
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 2.dp),
+                ) {
+                    HeraldSigil(herald, fontSize = 11.sp)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = shortSender(message.senderName),
+                        color = herald.accent,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            } else {
+                Text(
+                    text = shortSender(message.senderName),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 2.dp),
+                )
+            }
         }
 
         if (isAgent && message.toolActivity != null) {
@@ -1316,9 +1424,20 @@ fun MessageBubble(
         var heartBloomTick by remember { mutableStateOf(0) }
 
         if (message.isStreaming && message.content.isEmpty() && message.mediaKind == null) {
-            HermesThinkingAnimation(style = animationStyle, modifier = Modifier.padding(8.dp))
+            HermesThinkingAnimation(
+                style = animationStyle,
+                modifier = Modifier.padding(8.dp),
+                accent = herald?.accent,
+                accent2 = herald?.accent2,
+            )
         } else if (message.content.isNotEmpty() || message.mediaKind != null) {
-            val appearance = bubbleAppearance(isMine, bubbleStyle)
+            val appearance = bubbleAppearance(
+                isMine = isMine,
+                style = bubbleStyle,
+                accent = herald?.accent ?: MaterialTheme.colorScheme.primary,
+                accent2 = herald?.accent2 ?: MaterialTheme.colorScheme.tertiary,
+                heraldRim = heraldRim,
+            )
             val shape = RoundedCornerShape(
                 topStart = 16.dp,
                 topEnd = 16.dp,
@@ -1326,10 +1445,24 @@ fun MessageBubble(
                 bottomEnd = if (isMine) 4.dp else 16.dp
             )
             val baseDensity = LocalDensity.current
+            // The arrival's one focal beat: a single pass of light across the bubble as it first
+            // composes. One-shot by construction (the Animatable never resets), and skipped
+            // outright under reduced motion — an arrival still reads from the mark above it.
+            val reducedMotion by chat.keryx.app.presentation.ui.components.rememberReducedMotion()
+            val arrivalSweep = remember(message.id) { Animatable(0f) }
+            LaunchedEffect(message.id, arrival, reducedMotion) {
+                if (arrival && !reducedMotion && arrivalSweep.value == 0f) {
+                    arrivalSweep.animateTo(1f, tween(1100, easing = LinearEasing))
+                }
+            }
             Box {
             Box(
                 modifier = Modifier
                     .widthIn(max = 340.dp)
+                    .keryxLightSweep(
+                        herald?.accent ?: MaterialTheme.colorScheme.primary,
+                        herald?.accent2 ?: MaterialTheme.colorScheme.tertiary,
+                    ) { arrivalSweep.value }
                     // While the agent's reply is still growing, magic sand rises off the bubble's
                     // edge and sifts back down — the dreaming made visible, in the user's own
                     // accents. Sits BEFORE clip() so the dust lives outside the shape; the last

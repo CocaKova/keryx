@@ -50,6 +50,15 @@ of raw model output.
   stills every ornament.
 - **Assistant doorway (2.0)** — Set Keryx as the device assist app and the long-press gesture
   summons your agent from any screen, composer ready.
+- **The room is the truth** — The conversation lives in Matrix and on your phone, not in a
+  session. History survives a gateway restart, a reinstall, or the gateway being down entirely;
+  the same room reads the same from the phone, the desktop, or the Archive. A process can end.
+  The room does not.
+- **The Council (2.3)** — Several agents, one room, each its own light. Every agent account gets
+  a stable hue and the herald's sigil, carried by its bubble rim, its name and its spinner, so a
+  room full of agents reads as several lives rather than one voice with different words. One
+  agent relaying another renders as an attributed notice, never as the courier speaking, and a
+  turn nobody asked for is marked as an *arrival* instead of an answer.
 - **Local-first diagnostics** — Crash log kept on-device only, shareable from Settings.
 
 ## Installing
