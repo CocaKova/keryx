@@ -1670,7 +1670,7 @@ class ChatViewModel(
             var lastDeltaAt = 0L
             // EMA of the instantaneous delta rate (chars/s); see TPS_* constants.
             var emaCps = 0f
-            var theater = emptyList<chat.keryx.app.domain.model.ToolBeat>()
+            var theater = chat.keryx.app.domain.model.TheaterState()
             fun dispatch(status: LiveStreamStatus, finalText: String? = null) {
                 val cur = _liveStream.value ?: LiveStream(roomId, "", status, System.currentTimeMillis())
                 _liveStream.value = cur.copy(
@@ -1700,7 +1700,7 @@ class ChatViewModel(
                 reasoningBuf.clear()
                 // The committed segment carries its own parsed tool rows, so keeping the beats
                 // would show every call twice — once live, once in the transcript above.
-                theater = emptyList()
+                theater = chat.keryx.app.domain.model.TheaterState()
                 if (_liveStream.value != null) dispatch(LiveStreamStatus.STREAMING)
             }
             client.stream(roomId).collect { ev ->

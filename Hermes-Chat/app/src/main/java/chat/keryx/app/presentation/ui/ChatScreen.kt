@@ -2027,7 +2027,7 @@ private fun StreamingBubble(
                     }
                     // Between the thinking and the answer, because that is where it happened.
                     chat.keryx.app.presentation.ui.components.TheaterStage(
-                        beats = stream.theater,
+                        state = stream.theater,
                         live = streaming,
                         baseColor = appearance.textColor,
                     )

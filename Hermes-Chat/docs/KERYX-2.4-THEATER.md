@@ -23,8 +23,23 @@ inside the same `{"text": …}` envelope every other frame uses:
 {"phase":"start", "name":"read_file", "preview":"SOUL.md"}
 {"phase":"end",   "name":"read_file", "ok":true, "ms":113}
 {"phase":"end",   "name":"read_file", "ok":false, "ms":85, "result":"File not found: …"}
-{"phase":"sub",   "kind":"start|tool|text|complete|progress", "child":"k", "name":…, "preview":…}
+{"phase":"sub",   "kind":"start|tool|complete|thinking|progress|spawn_requested",
+                  "child":"sa-0-cf0971a4", "goal":…, "model":…, "task_index":0, "task_count":1,
+                  "tool_count":2, "status":"completed", "duration_seconds":38.15,
+                  "input_tokens":…, "output_tokens":…, "api_calls":…, "files_written_n":…,
+                  "summary":…}
 ```
+
+Every `subagent.*` frame carries the same identity block and adds what only it knows —
+deliberately **the same field set Talaria's `Delegation` model consumes**, so a delegation reads
+as the same thing on both clients instead of each inventing its own half-view. `subagent.text`
+(the child's assistant stream, relayed per delta) is dropped on both, for the same reason: a
+watch window can drink from that, a phone on a transient SSE socket cannot. The wing's activity
+line is fed by `tool` / `thinking` / `progress` instead.
+
+`files_read` / `files_written` are sent as **counts** (`_n`), not paths: the wing renders
+"2 written" and never the list, and a 40-path array per completion is a lot of socket for a
+number.
 
 One event type rather than five keeps the frame alphabet small, and an older app ignores unknown
 event types already — so this is backward compatible in both directions.
@@ -44,12 +59,17 @@ it emitted the starts, so an end closes the **oldest** open row — FIFO, not a 
 newest-first handed A's success to B and B's failure to A, which is worse than showing nothing.
 The tool name is a tiebreak, not a key.
 
-A subagent never reports when one of its own calls *ended*; the next one starting is the only
-signal, and `subagent.complete` closes whatever it left open. Two concurrent subagents are kept
-apart by their `child` key.
+Parallel is **observed, not announced**. A call still open when another opens marks both ends of
+that overlap. But that is an observation about when calls were *announced*, not how the runtime
+ran them — so the renderer says "**2 in one turn**", never "in parallel". Talaria can make the
+stronger claim because its gateway sends a `concurrent` flag; this channel doesn't, and the
+weaker claim is the one that survives.
 
-`subagent.text` / `.thinking` / `.progress` / `.spawn_requested` are dropped: a running commentary
-that would outpace the phone and drown the rows that say what actually happened.
+A delegation is not a tool row. `delegate_task` itself returns almost immediately (45 ms in the
+verified trace) while the child runs for another 38 seconds, so the wings are their own section
+with their own lifecycle, keyed by `subagent_id` (falling back to `task-<index>` for older
+emitters that omit it). An unknown `kind` still folds its identity in, so a later gateway adding
+one cannot blank a wing.
 
 ## The two halves
 
@@ -75,13 +95,34 @@ monospace, low alpha, one line per beat, tail-windowed to six with the remainder
 committed message renders the same calls properly a moment later; a theater that competed with
 the answer would be shouting about the means while the end arrives.
 
+The exception is a delegation, which gets Talaria's fuller treatment: a hairline rail, one wing
+per child with its goal (1-based index in a fan-out), a meta line of model · tools · duration ·
+tokens · files, and a tail that shows what it is doing while it flies and the summary it came
+back with once it lands — tappable, because for a fan-out reporting back that summary IS the
+work, and the only place the child's result exists on this screen. A delegated child is not a
+session you can open and its relay is never persisted, so this live view is the only window
+onto it.
+
 The beats clear on a mid-turn segment commit, since that commit carries its own parsed tool rows.
 
 ## Verified
 
-Live against the real gateway, room "The Study", 2026-08-19: start/end frames with correct name,
-preview, `ok`, and `ms`; `result` present on the failing call and absent on the succeeding one.
-The subagent path shares the same emit and is covered by unit tests, but has not been seen on a
-real delegation.
+Live against the real gateway, 2026-08-19.
 
-28 unit tests (`TheaterTest`). Not yet walked on device.
+**Tools** — start/end frames with correct name, preview, `ok` and `ms`; `result` present on a
+failing `read_file` and absent on the succeeding one. Also the batching trace that forced FIFO
+correlation.
+
+**Delegation** — a real `delegate_task` in a `default`-profile room. Every field arrived:
+`goal`, `model`, `task_index`/`task_count`, `depth`, `tool_count`, `status: "completed"`,
+`duration_seconds: 38.15`, the token rollup, `api_calls`, the file counts and the child's
+`summary`. The parent polled with `sleep` while the child worked, so the concurrent path ran too.
+
+⚠️ **Rooms are profiles.** `platforms.matrix.room_profile_map` routes each room to an agent
+profile, and profiles have different toolsets — The Study is **theo**, which has no delegation
+tool, so the first delegation attempts came back "I have no delegate_task" and read like a bug in
+this work. It was the wrong room. `default` (Sy) rooms are The Office, Clocktower and
+Jonny & SILAS.
+
+36 unit tests (`TheaterTest`). The app half is **not yet walked on device** — everything above is
+the wire, verified from the gateway side.

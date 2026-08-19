@@ -1,7 +1,9 @@
 package chat.keryx.app
 
+import chat.keryx.app.domain.model.DelegationState
 import chat.keryx.app.domain.model.Theater
 import chat.keryx.app.domain.model.TheaterEvent
+import chat.keryx.app.domain.model.TheaterState
 import chat.keryx.app.domain.model.ToolBeat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -25,60 +27,76 @@ class TheaterTest {
     private fun sub(kind: String, child: String = "c1", name: String = "", preview: String = "") =
         TheaterEvent(phase = "sub", kind = kind, child = child, name = name, preview = preview)
 
-    private fun run(vararg events: TheaterEvent): List<ToolBeat> =
-        events.fold(emptyList()) { acc, e -> Theater.reduce(acc, e) }
+    private fun run(vararg events: TheaterEvent): TheaterState =
+        events.fold(TheaterState()) { acc, e -> Theater.reduce(acc, e) }
+
+    private fun beats(vararg events: TheaterEvent): List<ToolBeat> = run(*events).beats
 
     // --- the ordinary shape --------------------------------------------------------------------
 
     @Test
     fun `a start opens a running row`() {
-        val beats = run(start("terminal", "ls -la"))
-        assertEquals(1, beats.size)
-        assertEquals("terminal", beats[0].name)
-        assertEquals("ls -la", beats[0].preview)
-        assertTrue(beats[0].running)
-        assertNull(beats[0].ok)
+        val b = beats(start("terminal", "ls -la"))
+        assertEquals(1, b.size)
+        assertEquals("terminal", b[0].name)
+        assertEquals("ls -la", b[0].preview)
+        assertTrue(b[0].running)
+        assertNull(b[0].ok)
     }
 
     @Test
     fun `an end closes it and carries the outcome`() {
-        val beats = run(start("terminal"), end("terminal", ok = true, ms = 412, result = "hi"))
-        assertEquals(1, beats.size)
-        assertFalse(beats[0].running)
-        assertEquals(true, beats[0].ok)
-        assertEquals(412L, beats[0].ms)
-        assertEquals("hi", beats[0].result)
+        val b = beats(start("terminal"), end("terminal", ok = true, ms = 412, result = "hi"))
+        assertEquals(1, b.size)
+        assertFalse(b[0].running)
+        assertEquals(true, b[0].ok)
+        assertEquals(412L, b[0].ms)
+        assertEquals("hi", b[0].result)
     }
 
     @Test
     fun `a failure is kept as a failure`() {
-        val beats = run(start("web_search"), end("web_search", ok = false))
-        assertEquals(false, beats[0].ok)
+        assertEquals(false, beats(start("web_search"), end("web_search", ok = false))[0].ok)
     }
 
     @Test
     fun `sequential calls stay in order and close independently`() {
-        val beats = run(start("read"), end("read"), start("write"), end("write"))
-        assertEquals(listOf("read", "write"), beats.map { it.name })
-        assertTrue(beats.none { it.running })
+        val b = beats(start("read"), end("read"), start("write"), end("write"))
+        assertEquals(listOf("read", "write"), b.map { it.name })
+        assertTrue(b.none { it.running })
     }
 
-    // --- the inference rules -------------------------------------------------------------------
+    @Test
+    fun `an end with nothing open is ignored rather than inventing a row`() {
+        assertEquals(emptyList<ToolBeat>(), beats(end("terminal")))
+    }
+
+    @Test
+    fun `an unknown phase changes nothing`() {
+        assertEquals(1, beats(start("read"), TheaterEvent(phase = "wat")).size)
+    }
+
+    @Test
+    fun `a blank tool name never renders as an empty row`() {
+        assertEquals("tool", beats(start(""))[0].name)
+    }
+
+    // --- correlation ---------------------------------------------------------------------------
 
     @Test
     fun `an end prefers the open row with the same name`() {
-        val beats = run(start("read"), start("terminal"), end("read"))
-        assertFalse(beats[0].running)
-        assertTrue(beats[1].running)
+        val b = beats(start("read"), start("terminal"), end("read"))
+        assertFalse(b[0].running)
+        assertTrue(b[1].running)
     }
 
     @Test
     fun `an end with an unknown name still closes the oldest open row`() {
         // Better to close something than to leave a row spinning forever, and completions
         // arrive in start order, so the oldest open row is the one that just finished.
-        val beats = run(start("read"), start("terminal"), end("something_else"))
-        assertFalse(beats[0].running)
-        assertTrue(beats[1].running)
+        val b = beats(start("read"), start("terminal"), end("something_else"))
+        assertFalse(b[0].running)
+        assertTrue(b[1].running)
     }
 
     @Test
@@ -86,128 +104,196 @@ class TheaterTest {
         // The trace that motivated FIFO closing, captured off the live side-channel: a model
         // opened two read_file calls before either finished, then they landed in start order.
         // Closing newest-first gave the successful read the failure and vice versa.
-        val beats = run(
+        val b = beats(
             start("read_file", "SOUL.md"),
             start("read_file", "nope.md"),
             end("read_file", ok = true, ms = 113),
             end("read_file", ok = false, ms = 85, result = "File not found"),
         )
-        assertEquals("SOUL.md", beats[0].preview)
-        assertEquals(true, beats[0].ok)
-        assertEquals(113L, beats[0].ms)
-        assertEquals("nope.md", beats[1].preview)
-        assertEquals(false, beats[1].ok)
-        assertEquals("File not found", beats[1].result)
+        assertEquals("SOUL.md", b[0].preview)
+        assertEquals(true, b[0].ok)
+        assertEquals(113L, b[0].ms)
+        assertEquals("nope.md", b[1].preview)
+        assertEquals(false, b[1].ok)
+        assertEquals("File not found", b[1].result)
+    }
+
+    // --- parallel batching ---------------------------------------------------------------------
+
+    @Test
+    fun `calls that never overlapped are not a batch`() {
+        val b = beats(start("read"), end("read"), start("write"), end("write"))
+        assertTrue(b.none { it.concurrent })
+        assertEquals(listOf(1, 1), Theater.batches(b).map { it.size })
     }
 
     @Test
-    fun `an end with nothing open is ignored rather than inventing a row`() {
-        assertEquals(emptyList<ToolBeat>(), run(end("terminal")))
+    fun `an overlap marks BOTH ends of it, not just the newcomer`() {
+        val b = beats(start("read"), start("write"))
+        assertTrue(b[0].concurrent)
+        assertTrue(b[1].concurrent)
+        assertEquals(listOf(2), Theater.batches(b).map { it.size })
     }
 
     @Test
-    fun `an unknown phase changes nothing`() {
-        val beats = run(start("read"), TheaterEvent(phase = "wat"))
-        assertEquals(1, beats.size)
-    }
-
-    // --- subagents -----------------------------------------------------------------------------
-
-    @Test
-    fun `a subagent is its own row, indented under the delegate call`() {
-        val beats = run(start("delegate"), sub("start", name = "researcher"))
-        assertEquals(2, beats.size)
-        assertEquals(0, beats[0].depth)
-        assertEquals(1, beats[1].depth)
-        assertTrue(beats[1].subagent)
-        assertEquals("researcher", beats[1].name)
+    fun `a batch does not swallow the solitary call that follows it`() {
+        val b = beats(
+            start("a"), start("b"), end("a"), end("b"),
+            start("c"), end("c"),
+        )
+        assertEquals(listOf(2, 1), Theater.batches(b).map { it.size })
     }
 
     @Test
-    fun `a nameless subagent falls back to its goal, then to a generic name`() {
-        assertEquals("dig through the logs", run(sub("start", preview = "dig through the logs"))[0].name)
-        assertEquals("subagent", run(sub("start"))[0].name)
+    fun `an empty beat list groups into nothing`() {
+        assertEquals(emptyList<List<ToolBeat>>(), Theater.batches(emptyList()))
+    }
+
+    // --- delegations ---------------------------------------------------------------------------
+
+    @Test
+    fun `a subagent is a wing, not a tool row`() {
+        val s = run(start("delegate"), sub("start", preview = "research the API"))
+        assertEquals(1, s.beats.size)
+        assertEquals(1, s.delegations.size)
+        assertTrue(s.delegations[0].running)
     }
 
     @Test
-    fun `a subagent's tools sit one level deeper again`() {
-        val beats = run(sub("start", name = "researcher"), sub("tool", name = "web_search"))
-        assertEquals(1, beats[0].depth)
-        assertEquals(2, beats[1].depth)
-        assertFalse(beats[1].subagent)
+    fun `identity folds in once and is kept when a later event omits it`() {
+        val s = run(
+            TheaterEvent(
+                phase = "sub", kind = "start", child = "s1",
+                goal = "audit the logs", model = "qwen3.8-27b",
+                taskIndex = 1, taskCount = 3, depth = 1,
+            ),
+            sub("tool", child = "s1", name = "read_file", preview = "app.log"),
+        )
+        val d = s.delegations.single()
+        assertEquals("audit the logs", d.goal)
+        assertEquals("qwen3.8-27b", d.model)
+        assertEquals(1, d.taskIndex)
+        assertEquals(3, d.taskCount)
+        assertEquals(1, d.depth)
+        assertEquals("read_file app.log", d.activity)
     }
 
     @Test
-    fun `a subagent's next tool closes its previous one — the only end signal there is`() {
-        val beats = run(
-            sub("start", name = "researcher"),
-            sub("tool", name = "web_search"),
+    fun `the wing's activity is its newest line`() {
+        val s = run(
+            sub("start", preview = "goal"),
+            sub("tool", name = "web_search", preview = "trixnity"),
+            sub("thinking", preview = "weighing the options"),
+        )
+        assertEquals("weighing the options", s.delegations[0].activity)
+    }
+
+    @Test
+    fun `a blank thinking line does not erase what the wing was last doing`() {
+        val s = run(sub("tool", name = "read_file", preview = "a.kt"), sub("thinking"))
+        assertEquals("read_file a.kt", s.delegations[0].activity)
+    }
+
+    @Test
+    fun `completion swaps the activity line for the rollup`() {
+        val s = run(
+            sub("start", preview = "goal"),
             sub("tool", name = "read_file"),
+            TheaterEvent(
+                phase = "sub", kind = "complete", child = "c1", status = "completed",
+                summary = "Found three offenders.", durationSeconds = 42.5,
+                inputTokens = 8000, outputTokens = 2000, reasoningTokens = 1000,
+                apiCalls = 4, filesRead = 6, filesWritten = 2, toolCount = 9,
+            ),
         )
-        assertFalse(beats[1].running)
-        assertTrue(beats[2].running)
+        val d = s.delegations.single()
+        assertEquals(DelegationState.DONE, d.state)
+        assertFalse(d.running)
+        assertEquals("", d.activity)
+        assertEquals("Found three offenders.", d.summary)
+        assertEquals(42.5, d.durationSeconds!!, 0.001)
+        assertEquals(11000, d.totalTokens)
+        assertEquals(9, d.toolCount)
+        assertEquals(2, d.filesWritten)
     }
 
     @Test
-    fun `completing a subagent closes it and everything it left open`() {
-        val beats = run(
-            sub("start", name = "researcher"),
-            sub("tool", name = "web_search"),
-            sub("complete"),
+    fun `a dead subagent is never marked successful`() {
+        listOf("failed", "error", "timeout").forEach { status ->
+            val s = run(sub("start"), TheaterEvent(phase = "sub", kind = "complete", child = "c1", status = status))
+            assertEquals(status, DelegationState.FAILED, s.delegations[0].state)
+        }
+        assertEquals(
+            DelegationState.INTERRUPTED,
+            run(TheaterEvent(phase = "sub", kind = "complete", child = "c1", status = "interrupted"))
+                .delegations[0].state,
         )
-        assertTrue(beats.none { it.running })
     }
 
     @Test
-    fun `two subagents do not close each other's rows`() {
-        val beats = run(
-            sub("start", child = "a", name = "alpha"),
-            sub("tool", child = "a", name = "read"),
-            sub("start", child = "b", name = "beta"),
-            sub("tool", child = "b", name = "write"),
-            sub("complete", child = "a"),
-        )
-        assertEquals(listOf("alpha", "read", "beta", "write"), beats.map { it.name })
-        assertFalse(beats[0].running)  // alpha closed
-        assertFalse(beats[1].running)  // alpha's read closed with it
-        assertTrue(beats[2].running)   // beta untouched
-        assertTrue(beats[3].running)
+    fun `an unknown completion status means it finished, not that it finished well or badly`() {
+        val s = run(TheaterEvent(phase = "sub", kind = "complete", child = "c1", status = "wat"))
+        assertEquals(DelegationState.DONE, s.delegations[0].state)
+        assertFalse(s.delegations[0].running)
     }
 
     @Test
-    fun `the parent's own end is not stolen by an open subagent row`() {
-        val beats = run(start("delegate"), sub("start", name = "researcher"), end("delegate"))
-        assertFalse(beats[0].running)
-        assertTrue(beats[1].running)
+    fun `a fan-out keeps its wings apart and in dispatch order`() {
+        val s = run(
+            sub("start", child = "a", preview = "alpha"),
+            sub("start", child = "b", preview = "beta"),
+            sub("tool", child = "b", name = "write_file"),
+            TheaterEvent(phase = "sub", kind = "complete", child = "a", status = "completed", summary = "done"),
+        )
+        assertEquals(listOf("a", "b"), s.delegations.map { it.key })
+        assertFalse(s.delegations[0].running)
+        assertTrue(s.delegations[1].running)
+        assertEquals("write_file", s.delegations[1].activity)
     }
 
     @Test
-    fun `a subagent's chatter is dropped — it would outpace the phone`() {
-        val beats = run(
-            sub("start", name = "researcher"),
-            sub("text", preview = "thinking out loud"),
-            sub("thinking", preview = "more"),
-            sub("progress", preview = "🔀 step 2"),
-            sub("spawn_requested", preview = "goal"),
+    fun `a wing with no subagent_id falls back to its task index`() {
+        val s = run(TheaterEvent(phase = "sub", kind = "start", taskIndex = 2))
+        assertEquals("task-2", s.delegations.single().key)
+    }
+
+    @Test
+    fun `a spawn request is a wing before it has started`() {
+        val s = run(sub("spawn_requested", preview = "go read the docs"))
+        assertEquals(DelegationState.SPAWNING, s.delegations[0].state)
+        assertTrue(s.delegations[0].running)
+    }
+
+    @Test
+    fun `a kind this client does not know still folds identity and cannot blank a wing`() {
+        val s = run(
+            TheaterEvent(phase = "sub", kind = "start", child = "c1", goal = "the goal"),
+            sub("tool", child = "c1", name = "read_file"),
+            TheaterEvent(phase = "sub", kind = "invented_later", child = "c1", model = "new-brain"),
         )
-        assertEquals(1, beats.size)
+        val d = s.delegations.single()
+        assertEquals("the goal", d.goal)
+        assertEquals("new-brain", d.model)
+        assertEquals("read_file", d.activity)
+        assertEquals(DelegationState.RUNNING, d.state)
     }
 
     // --- bounds --------------------------------------------------------------------------------
 
     @Test
-    fun `the list is capped at the tail, so a marathon turn cannot grow it forever`() {
-        var beats = emptyList<ToolBeat>()
+    fun `the beat list is capped at the tail, so a marathon turn cannot grow it forever`() {
+        var s = TheaterState()
         repeat(Theater.MAX_BEATS + 12) { i ->
-            beats = Theater.reduce(beats, start("tool$i"))
-            beats = Theater.reduce(beats, end("tool$i"))
+            s = Theater.reduce(s, start("tool$i"))
+            s = Theater.reduce(s, end("tool$i"))
         }
-        assertEquals(Theater.MAX_BEATS, beats.size)
-        assertEquals("tool${Theater.MAX_BEATS + 11}", beats.last().name)
+        assertEquals(Theater.MAX_BEATS, s.beats.size)
+        assertEquals("tool${Theater.MAX_BEATS + 11}", s.beats.last().name)
     }
 
     @Test
-    fun `a blank tool name never renders as an empty row`() {
-        assertEquals("tool", run(start(""))[0].name)
+    fun `a turn with nothing in it stays empty`() {
+        assertTrue(TheaterState().isEmpty)
+        assertFalse(run(sub("start")).isEmpty)
     }
 }

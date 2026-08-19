@@ -160,6 +160,7 @@ class HermesStreamClient(
     private fun parseTheater(data: String): chat.keryx.app.domain.model.TheaterEvent? = try {
         val obj = json.parseToJsonElement(parseText(data) ?: return null).jsonObject
         fun str(k: String) = (obj[k] as? JsonPrimitive)?.content.orEmpty()
+        fun int(k: String) = (obj[k] as? JsonPrimitive)?.content?.toDoubleOrNull()?.toInt()
         val phase = str("phase")
         if (phase.isBlank()) null
         else chat.keryx.app.domain.model.TheaterEvent(
@@ -171,6 +172,21 @@ class HermesStreamClient(
             ms = str("ms").toLongOrNull() ?: 0L,
             result = str("result"),
             child = str("child"),
+            goal = str("goal"),
+            model = str("model"),
+            status = str("status"),
+            summary = str("summary"),
+            taskIndex = int("task_index"),
+            taskCount = int("task_count"),
+            depth = int("depth"),
+            toolCount = int("tool_count"),
+            inputTokens = int("input_tokens"),
+            outputTokens = int("output_tokens"),
+            reasoningTokens = int("reasoning_tokens"),
+            apiCalls = int("api_calls"),
+            filesRead = int("files_read_n"),
+            filesWritten = int("files_written_n"),
+            durationSeconds = str("duration_seconds").toDoubleOrNull(),
         )
     } catch (e: Exception) {
         null
