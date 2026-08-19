@@ -57,7 +57,28 @@ import chat.keryx.app.domain.model.SenderType
  * inline renderer ([MessageContent]) and the collapsible [ToolGroupCard].
  */
 @Composable
-fun ToolCallCard(call: MessageParser.ToolCall, accent: Color, baseColor: Color) {
+fun ToolCallCard(
+    call: MessageParser.ToolCall,
+    accent: Color,
+    baseColor: Color,
+    /** The recipient's answer, when this call turned out to be an inter-agent delivery and the
+     *  run carried a reply back (2.3 §2). */
+    deliveryReply: String? = null,
+) {
+    // An inter-agent delivery is a `terminal` call by mechanism and a conversation by meaning.
+    // A FAILED one keeps the terminal row on purpose: when the mechanism breaks, the mechanism is
+    // exactly what you need to see.
+    val deliveryTarget = if (call.ok == false) null else deliveryTargetOf(call)
+    if (deliveryTarget != null) {
+        AgentDeliverySentNotice(
+            target = deliveryTarget,
+            pending = call.ok == null,
+            reply = deliveryReply.orEmpty(),
+            stateKey = "delivery:$deliveryTarget:${call.args.hashCode()}",
+            accent = accent,
+        )
+        return
+    }
     // `skill_manage` is SILAS saving/editing a reusable skill (its closed learning loop) — surface
     // it distinctly so "it just learned something" stands out from ordinary tool noise. This rides
     // genuine, universal Hermes output (the tool call itself) — no config or plugin to set up.
@@ -108,6 +129,10 @@ fun ToolCallCard(call: MessageParser.ToolCall, accent: Color, baseColor: Color) 
         }
     }
 }
+
+/** The profile an inter-agent delivery is addressed to, or null for an ordinary tool call. */
+internal fun deliveryTargetOf(call: MessageParser.ToolCall): String? =
+    chat.keryx.app.domain.model.AgentDeliveryCommand.targetOfCall(call.name, call.args)
 
 /**
  * A run of consecutive tool-only Hermes messages, collapsed into one compact bubble. While the
@@ -203,9 +228,28 @@ fun ToolGroupCard(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    run.entries.forEach { entry ->
+                    // Indexed, not forEach: a delivery call swallows the note that follows it —
+                    // that note is the recipient's answer, not a blob of stdout to stack below.
+                    // Keryx has no `call.result` the way Talaria does, so the adjacent Note IS the
+                    // result, cut at its documented `session_id:` boundary.
+                    val consumed = remember(run.entries) {
+                        run.entries.indices.filterTo(HashSet()) { i ->
+                            val call = run.entries[i] as? ToolRunEntry.Call
+                            call != null && call.call.ok != false && deliveryTargetOf(call.call) != null &&
+                                run.entries.getOrNull(i + 1) is ToolRunEntry.Note
+                        }.mapTo(HashSet()) { it + 1 }
+                    }
+                    run.entries.forEachIndexed { i, entry ->
+                        if (i in consumed) return@forEachIndexed
                         when (entry) {
-                            is ToolRunEntry.Call -> ToolCallCard(entry.call, accent, baseColor)
+                            is ToolRunEntry.Call -> ToolCallCard(
+                                entry.call,
+                                accent,
+                                baseColor,
+                                deliveryReply = (run.entries.getOrNull(i + 1) as? ToolRunEntry.Note)
+                                    ?.takeIf { i + 1 in consumed }
+                                    ?.let { chat.keryx.app.domain.model.AgentDeliveryCommand.replyText(it.text) },
+                            )
                             // A tool's own output (terminal stdout, vision result): monospace in a
                             // subtle code surface so it reads as machine output, not prose.
                             is ToolRunEntry.Note -> Text(
@@ -326,6 +370,35 @@ sealed interface ChatRenderItem {
     data class DayHeader(val epochMillis: Long, val dayKey: String) : ChatRenderItem {
         override val key get() = "day:$dayKey"
     }
+
+    /**
+     * An agent turn nobody asked for (2.3 §3). Sits immediately above the bubble it announces, so
+     * a herald that speaks on its own initiative reads as an *arrival* rather than as an answer to
+     * something you have long since forgotten saying.
+     */
+    data class Arrival(val message: Message) : ChatRenderItem {
+        override val key get() = "arrival:${message.id}"
+    }
+}
+
+/** How long the room must have been quiet before an agent turn counts as unprompted. */
+const val ARRIVAL_QUIET_MS: Long = 20L * 60L * 1000L
+
+/**
+ * True when [m] is a herald arriving of its own accord: an agent message whose predecessor is not
+ * mine and is at least [ARRIVAL_QUIET_MS] old — nobody asked, and nothing was already in flight.
+ *
+ * Telemetry (cron check-ins, runtime footers) never arrives: those are already quiet low-contrast
+ * rows and marking each one would turn the banner into wallpaper. A null [prev] is NOT an arrival
+ * either — at the top of a loaded window "nothing before this" means "not paged in yet", and a
+ * false banner on every scrollback boundary is worse than a missed one.
+ */
+fun isArrival(m: Message, prev: Message?): Boolean {
+    if (m.sender != SenderType.HERMES) return false
+    if (isTelemetryMessage(m)) return false
+    if (prev == null) return false
+    if (prev.sender == SenderType.ME) return false
+    return m.timestamp - prev.timestamp >= ARRIVAL_QUIET_MS
 }
 
 /** Local-calendar day of a timestamp, as a stable key (year * 1000 + day-of-year). */
@@ -421,6 +494,9 @@ private fun dedupCalls(entries: List<ToolRunEntry>, seenBefore: Set<Pair<String,
     val out = mutableListOf<ToolRunEntry>()
     for (e in entries) {
         if (e is ToolRunEntry.Call) {
+            // Deliveries are exempt: messaging the same agent twice in a turn is two conversations,
+            // not one step re-announced, and collapsing them loses a message the user was sent.
+            if (deliveryTargetOf(e.call) != null) { out += e; continue }
             val key = e.call.name to e.call.args
             if (key in seenBefore) continue
             val prev = out.lastOrNull()
@@ -476,7 +552,13 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
  *  chronological order plus the carried state at the range's end. */
 private class RangeWalk(val items: MutableList<ChatRenderItem>, val lastMineId: String?)
 
-private fun walkRange(chronoRange: List<Message>, lastMineIdInit: String?): RangeWalk {
+private fun walkRange(
+    chronoRange: List<Message>,
+    lastMineIdInit: String?,
+    /** The message immediately before this range, when the timeline was split — [isArrival] needs
+     *  it or the first turn of every resumed suffix would lose its banner. */
+    prevBeforeRange: Message? = null,
+): RangeWalk {
     val chrono = mergeRuntimeFooters(chronoRange)
     val out = mutableListOf<ChatRenderItem>()
     // The user's most recent message so far in the walk. An agent quote pointing at it is the
@@ -640,7 +722,35 @@ private fun walkRange(chronoRange: List<Message>, lastMineIdInit: String?): Rang
         closeRun()
         i = blockEnd
     }
+    insertArrivals(out, chrono, prevBeforeRange)
     return RangeWalk(out, lastMineId)
+}
+
+/**
+ * Put an [ChatRenderItem.Arrival] above every bubble that turns out to be unprompted. Done as a
+ * pass over the finished items rather than inside the block walk: only messages that survived as
+ * their own bubble can arrive (anything folded into a tool run is mid-turn by definition), and the
+ * walk is intricate enough without another branch in it.
+ */
+private fun insertArrivals(
+    items: MutableList<ChatRenderItem>,
+    chrono: List<Message>,
+    prevBeforeRange: Message?,
+) {
+    if (items.isEmpty()) return
+    val prevOf = HashMap<String, Message?>(chrono.size)
+    for ((idx, m) in chrono.withIndex()) {
+        prevOf[m.id] = if (idx == 0) prevBeforeRange else chrono[idx - 1]
+    }
+    var at = 0
+    while (at < items.size) {
+        val item = items[at]
+        if (item is ChatRenderItem.Single && isArrival(item.message, prevOf[item.message.id])) {
+            items.add(at, ChatRenderItem.Arrival(item.message))
+            at++ // skip the bubble we just announced
+        }
+        at++
+    }
 }
 
 /** Day boundaries: [items] is chronological here, so a single walk inserts one quiet header
@@ -656,6 +766,9 @@ private fun insertDayHeaders(items: MutableList<ChatRenderItem>, lastDayInit: St
             is ChatRenderItem.Single -> item.message.timestamp
             is ChatRenderItem.ToolRun -> item.ts
             is ChatRenderItem.DayHeader -> 0L
+            // The arrival carries its bubble's own timestamp, so a day boundary lands *above* the
+            // mark instead of between the mark and the message it announces.
+            is ChatRenderItem.Arrival -> item.message.timestamp
         }
         if (ts > 0L) {
             val day = dayKeyOf(ts)
@@ -737,7 +850,11 @@ fun groupChatItemsIncremental(
         prefixItems = walk.items
         prefixLastMineId = walk.lastMineId
     }
-    val suffix = walkRange(chrono.subList(suffixStart, n), lastMineIdInit = prefixLastMineId)
+    val suffix = walkRange(
+        chrono.subList(suffixStart, n),
+        lastMineIdInit = prefixLastMineId,
+        prevBeforeRange = chrono.getOrNull(suffixStart - 1),
+    )
     insertDayHeaders(suffix.items, lastDayInit = prefixLastDay)
     val combined = ArrayList<ChatRenderItem>(prefixItems.size + suffix.items.size)
     combined.addAll(prefixItems)

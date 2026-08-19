@@ -31,11 +31,20 @@ data class BubbleAppearance(
 fun contrastColorFor(bg: Color): Color =
     if (bg.luminance() > 0.5f) Color(0xFF1C1C1E) else Color.White
 
+/**
+ * [accent] / [accent2] default to the user's own theme accents. A herald in a council room passes
+ * its own light instead, so the hairline on its bubble is *its* colour (2.3 §1) — the fills stay
+ * matte either way, because color is light and light means life.
+ */
 @Composable
-fun bubbleAppearance(isMine: Boolean, style: String): BubbleAppearance {
+fun bubbleAppearance(
+    isMine: Boolean,
+    style: String,
+    accent: Color = MaterialTheme.colorScheme.primary,
+    accent2: Color = MaterialTheme.colorScheme.tertiary,
+    heraldRim: Boolean = false,
+): BubbleAppearance {
     val cs = MaterialTheme.colorScheme
-    val accent = cs.primary
-    val accent2 = cs.tertiary
     return when (style) {
         BubbleStyles.GLASS ->
             if (isMine) BubbleAppearance(
@@ -78,7 +87,15 @@ fun bubbleAppearance(isMine: Boolean, style: String): BubbleAppearance {
                 brush = SolidColor(lerp(cs.surface, cs.surfaceVariant, 0.45f)),
                 textColor = cs.onSurface,
                 border = null,
-                edgeBrush = Brush.verticalGradient(
+                // A named herald in a council room signs its bubble with its own light; the
+                // primary herald (and every plain human) keeps the neutral seam of 2.2, so a
+                // 1:1 room is unchanged.
+                edgeBrush = if (heraldRim) Brush.verticalGradient(
+                    listOf(
+                        accent.copy(alpha = 0.85f),
+                        lerp(accent, accent2, 0.65f).copy(alpha = 0.28f),
+                    )
+                ) else Brush.verticalGradient(
                     listOf(
                         cs.onSurface.copy(alpha = 0.24f),
                         cs.onSurface.copy(alpha = 0.06f),

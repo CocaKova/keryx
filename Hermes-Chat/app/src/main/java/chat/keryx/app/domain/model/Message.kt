@@ -14,6 +14,9 @@ data class Message(
     val mediaKind: MediaKind? = null,
     val fileName: String = "",
     val replyToId: String? = null,            // event id this message is a reply to, if any
+    /** Set when this message is really one agent messaging another (2.3 §2) — it renders as an
+     *  attributed notice, never as that sender simply speaking. */
+    val agentDelivery: AgentDelivery? = null,
 )
 
 /** A single aggregated reaction on a message. */

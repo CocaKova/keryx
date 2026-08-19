@@ -24,6 +24,22 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getBoolean("allow_insecure", false)
         set(value) = prefs.edit().putBoolean("allow_insecure", value).apply()
 
+    /** Stored as one string: "milo=#5FD3BC;theo=#B08CFF" — a map in prefs would need a
+     *  StringSet dance and this is read on every bubble, so keep it cheap and ordered. */
+    override var heraldAccents: Map<String, String>
+        get() = (prefs.getString("herald_accents", "") ?: "")
+            .split(';')
+            .mapNotNull { entry ->
+                val k = entry.substringBefore('=').trim().lowercase()
+                val v = entry.substringAfter('=', "").trim()
+                if (k.isNotEmpty() && v.startsWith("#")) k to v else null
+            }
+            .toMap()
+        set(value) = prefs.edit().putString(
+            "herald_accents",
+            value.entries.joinToString(";") { "${it.key.lowercase()}=${it.value}" },
+        ).apply()
+
     override var pinnedRoomIds: Set<String>
         // Return a copy — SharedPreferences forbids mutating the returned set.
         get() = prefs.getStringSet("pinned_room_ids", emptySet())?.toSet() ?: emptySet()

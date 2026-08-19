@@ -116,9 +116,12 @@ class KeryxApp : Application() {
                         android.util.Log.i("KeryxNotify", "skip ${room.id}: foreground & open")
                         continue
                     }
-                    val last = withTimeoutOrNull(4_000L) {
-                        repository.getMessages(room.id, 1).first { it.isNotEmpty() }.lastOrNull()
+                    // Two, not one: the arrival test (2.3 §3) needs the message before this one to
+                    // know whether anybody actually asked for it.
+                    val tail = withTimeoutOrNull(4_000L) {
+                        repository.getMessages(room.id, 2).first { it.isNotEmpty() }
                     }
+                    val last = tail?.lastOrNull()
                     if (last == null) {
                         android.util.Log.w("KeryxNotify", "no last message resolved for ${room.id}")
                         continue
@@ -129,11 +132,19 @@ class KeryxApp : Application() {
                         android.util.Log.i("KeryxNotify", "skip ${room.id}: historical (${last.timestamp} < $watchStart)")
                         continue
                     }
-                    android.util.Log.i("KeryxNotify", "new activity in ${room.id} (${room.name}); notifying")
+                    // An unprompted turn arrives under the herald's own name and sigil, so the
+                    // lock screen says *who* walked in rather than just which room stirred.
+                    val arrived = chat.keryx.app.presentation.ui.components.isArrival(
+                        last,
+                        tail.getOrNull(tail.size - 2),
+                    )
+                    val title = if (arrived) "${chat.keryx.app.domain.model.Heralds.SIGIL} ${heraldName(last)}"
+                    else room.name
+                    android.util.Log.i("KeryxNotify", "new activity in ${room.id} (${room.name}); notifying arrival=$arrived")
                     KeryxNotifications.notifyMessage(
                         context = applicationContext,
                         roomId = room.id,
-                        title = room.name,
+                        title = title,
                         body = notificationSnippet(last),
                         quickActions = quickActionsFor(last),
                     )
@@ -142,6 +153,11 @@ class KeryxApp : Application() {
             }
         }
     }
+
+    /** A herald's display name, falling back to its MXID localpart. */
+    private fun heraldName(m: Message): String = m.senderName
+        .takeIf { it.isNotBlank() && !it.startsWith("@") }
+        ?: chat.keryx.app.domain.model.Heralds.localpart(m.senderId).ifEmpty { "Herald" }
 
     private fun notificationSnippet(m: Message): String = when {
         m.mediaKind == MediaKind.IMAGE -> "🖼 Photo"

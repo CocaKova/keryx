@@ -3,7 +3,11 @@ package chat.keryx.app.domain.repository
 interface SettingsRepository {
     var homeserverUrl: String
     var matrixToken: String
+    /** Agent MXIDs Keryx renders as heralds. One id, or several (comma / newline separated) —
+     *  the first is the primary herald and keeps the user's own theme accents (2.3 Council). */
     var agentMatrixId: String
+    /** Per-herald accent overrides: MXID localpart -> "#RRGGBB". Empty = derived from the palette. */
+    var heraldAccents: Map<String, String>
     /** Allow self-signed / invalid TLS certs. Off by default; for local servers only. */
     var allowInsecure: Boolean
     /** Room IDs the user pinned as Quick Rooms, for fast access when there are many rooms. */

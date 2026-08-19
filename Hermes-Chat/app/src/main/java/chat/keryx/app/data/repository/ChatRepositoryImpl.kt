@@ -408,7 +408,10 @@ class ChatRepositoryImpl(
                             val (agents, humans) = typers.partition {
                                 senderTypeOf(it.full, myId.full, agentId, legacyAgentRoom) == SenderType.HERMES
                             }
-                            if (humans.isEmpty()) flowOf(TypingState(agentTyping = agents.isNotEmpty()))
+                            val agentIds = agents.map { it.full }
+                            if (humans.isEmpty()) flowOf(
+                                TypingState(agentTyping = agents.isNotEmpty(), agentIds = agentIds)
+                            )
                             else combine(
                                 humans.map { uid ->
                                     client.user.getById(roomId, uid)
@@ -417,7 +420,11 @@ class ChatRepositoryImpl(
                                         .map { it ?: uid.full.removePrefix("@").substringBefore(':') }
                                 }
                             ) { names ->
-                                TypingState(agentTyping = agents.isNotEmpty(), humanNames = names.toList())
+                                TypingState(
+                                    agentTyping = agents.isNotEmpty(),
+                                    humanNames = names.toList(),
+                                    agentIds = agentIds,
+                                )
                             }
                         }
                     }
@@ -634,12 +641,29 @@ class ChatRepositoryImpl(
         }
         val replyToId = messageContent.relatesTo?.replyTo?.eventId?.full
         // Matrix puts a "> quoted…" fallback in the body for replies; strip it (we render our own quote).
-        val body = if (replyToId != null) stripReplyFallback(messageContent.body) else messageContent.body
+        val unquoted = if (replyToId != null) stripReplyFallback(messageContent.body) else messageContent.body
+        // 2.3 §4: my own messages carry the sense marker to the agent, but I should never have to
+        // read my own telemetry back. Stripped here rather than at the bubble so the Archive, the
+        // reply quote, TTS and the notification all show what I actually typed.
+        val body = if (sender == SenderType.ME) {
+            chat.keryx.app.senses.KeryxSenses.stripMarker(unquoted)
+        } else unquoted
+        // 2.3 §2: `Message from 🤖 X: …` is one agent relaying another, not this sender talking.
+        // Parsed here so every surface (bubble, notification, Archive) sees the same truth.
+        //
+        // Agent senders only — the same gate `quickActionsFor` applies to ⟦keryx:ask⟧ markers, and
+        // for the same reason: a human who happens to quote the convention must not have their own
+        // words reattributed to somebody else. Only machinery gets parsed as machinery.
+        val delivery = if (sender == SenderType.HERMES) {
+            chat.keryx.app.domain.model.AgentDelivery.parse(body)
+        } else null
         return Message(
             id = event.id.full,
             sessionId = event.roomId.full,
             sender = sender,
-            content = body,
+            // A delivery's content is what the ORIGINATING agent said; the `Message from X:`
+            // envelope is addressing, and it belongs to the notice above the bubble (2.3 §2).
+            content = delivery?.body ?: body,
             timestamp = event.originTimestamp,
             senderId = senderId,
             senderName = senderId,
@@ -647,6 +671,7 @@ class ChatRepositoryImpl(
             mediaKind = mediaKind,
             fileName = fileName,
             replyToId = replyToId,
+            agentDelivery = delivery,
         )
     }
 
@@ -671,12 +696,12 @@ class ChatRepositoryImpl(
         legacyAgentRoom: Boolean,
     ): SenderType {
         if (senderId == myId) return SenderType.ME
-        val cfg = agentId.trim()
-        if (cfg.isEmpty()) return if (legacyAgentRoom) SenderType.HERMES else SenderType.OTHER
-        if (senderId.equals(cfg, ignoreCase = true)) return SenderType.HERMES
-        val cfgLocal = cfg.removePrefix("@").substringBefore(':').lowercase()
-        val senderLocal = senderId.removePrefix("@").substringBefore(':').lowercase()
-        return if (cfgLocal.isNotEmpty() && senderLocal == cfgLocal) SenderType.HERMES else SenderType.OTHER
+        // 2.3: the setting holds a LIST — one id still works, several make a council. Any of them
+        // is a herald; everyone else stays a human.
+        val ids = chat.keryx.app.domain.model.Heralds.parseIds(agentId)
+        if (ids.isEmpty()) return if (legacyAgentRoom) SenderType.HERMES else SenderType.OTHER
+        return if (chat.keryx.app.domain.model.Heralds.isHerald(senderId, ids)) SenderType.HERMES
+        else SenderType.OTHER
     }
 
     /** The blank-agent-id fallback only applies on installs that actually talk to a Hermes

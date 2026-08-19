@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Edge colour sampled from KryexIconPicture.png so the adaptive-icon background blends with
-         the full-bleed photographic foreground when the launcher mask crops the corners. -->
-    <color name="ic_launcher_bg">#000000</color>
+    <!-- Matte void behind the gilded kerykeion. Must match
+         @drawable/ic_launcher_background so the launcher mask
+         never reveals a seam at the corners. -->
+    <color name="ic_launcher_bg">#0B0A12</color>
 </resources>

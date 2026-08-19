@@ -6,7 +6,6 @@
      generator and re-run it; editing this file by hand makes the
      mipmap PNGs drift out of sync with the adaptive icon. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
@@ -15,97 +14,44 @@
     <path
         android:pathData="M54,32.38C54,48.83 54,65.28 54,81.73"
         android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
         android:strokeWidth="2.7"
         android:strokeLineCap="round"
-        android:strokeLineJoin="round">
-        <aapt:attr name="android:strokeColor">
-            <gradient
-                android:type="linear"
-                android:startX="54" android:startY="24"
-                android:endX="54" android:endY="84">
-                <item android:color="#FFF0B429" android:offset="0" />
-                <item android:color="#FFE55A00" android:offset="1" />
-            </gradient>
-        </aapt:attr>
-    </path>
+        android:strokeLineJoin="round" />
     <!-- serpentA -->
     <path
         android:pathData="M50.62,45.16C50.33,45.67 49.83,47.23 48.92,48.17C48.02,49.11 45.48,49.77 45.16,50.8C44.85,51.84 45.57,53.37 47.04,54.38C48.52,55.38 51.56,56.01 54,56.82C56.44,57.63 59.86,58.14 61.71,59.26C63.56,60.39 65.19,62.21 65.09,63.59C65,64.97 62.99,66.5 61.14,67.54C59.3,68.57 56.32,69.04 54,69.79C51.68,70.54 48.8,71.05 47.23,72.05C45.67,73.05 44.18,74.49 44.6,75.81C45.02,77.12 48.91,79.25 49.77,79.94"
         android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
         android:strokeWidth="2.15"
         android:strokeLineCap="round"
-        android:strokeLineJoin="round">
-        <aapt:attr name="android:strokeColor">
-            <gradient
-                android:type="linear"
-                android:startX="54" android:startY="24"
-                android:endX="54" android:endY="84">
-                <item android:color="#FFF0B429" android:offset="0" />
-                <item android:color="#FFE55A00" android:offset="1" />
-            </gradient>
-        </aapt:attr>
-    </path>
+        android:strokeLineJoin="round" />
     <!-- serpentB -->
     <path
         android:pathData="M57.38,45.16C57.67,45.67 58.17,47.23 59.08,48.17C59.98,49.11 62.52,49.77 62.84,50.8C63.15,51.84 62.43,53.37 60.96,54.38C59.48,55.38 56.44,56.01 54,56.82C51.56,57.63 48.14,58.14 46.29,59.26C44.44,60.39 42.81,62.21 42.91,63.59C43,64.97 45.01,66.5 46.86,67.54C48.7,68.57 51.68,69.04 54,69.79C56.32,70.54 59.2,71.05 60.77,72.05C62.33,73.05 63.82,74.49 63.4,75.81C62.98,77.12 59.09,79.25 58.23,79.94"
         android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
         android:strokeWidth="2.15"
         android:strokeLineCap="round"
-        android:strokeLineJoin="round">
-        <aapt:attr name="android:strokeColor">
-            <gradient
-                android:type="linear"
-                android:startX="54" android:startY="24"
-                android:endX="54" android:endY="84">
-                <item android:color="#FFF0B429" android:offset="0" />
-                <item android:color="#FFE55A00" android:offset="1" />
-            </gradient>
-        </aapt:attr>
-    </path>
+        android:strokeLineJoin="round" />
     <!-- wingR0 -->
     <path
         android:pathData="M55.69,38.58C56.26,38.02 57.63,36.12 59.08,35.2C60.52,34.28 62.59,33.38 64.34,33.04C66.09,32.69 68.35,32.83 69.6,33.13C70.86,33.43 72.2,34.29 71.86,34.82C71.52,35.36 69.07,35.73 67.54,36.33C66,36.92 64.31,37.71 62.65,38.4C60.99,39.09 58.73,39.99 57.57,40.46C56.41,40.93 56.01,41.09 55.69,41.22"
         android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
         android:strokeWidth="1.85"
         android:strokeLineCap="round"
-        android:strokeLineJoin="round">
-        <aapt:attr name="android:strokeColor">
-            <gradient
-                android:type="linear"
-                android:startX="54" android:startY="24"
-                android:endX="54" android:endY="84">
-                <item android:color="#FFFFD98A" android:offset="0" />
-                <item android:color="#FFF0B429" android:offset="1" />
-            </gradient>
-        </aapt:attr>
-    </path>
+        android:strokeLineJoin="round" />
     <!-- wingL0 -->
     <path
         android:pathData="M52.31,38.58C51.74,38.02 50.37,36.12 48.92,35.2C47.48,34.28 45.41,33.38 43.66,33.04C41.91,32.69 39.65,32.83 38.4,33.13C37.14,33.43 35.8,34.29 36.14,34.82C36.48,35.36 38.93,35.73 40.46,36.33C42,36.92 43.69,37.71 45.35,38.4C47.01,39.09 49.27,39.99 50.43,40.46C51.59,40.93 51.99,41.09 52.31,41.22"
         android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
         android:strokeWidth="1.85"
         android:strokeLineCap="round"
-        android:strokeLineJoin="round">
-        <aapt:attr name="android:strokeColor">
-            <gradient
-                android:type="linear"
-                android:startX="54" android:startY="24"
-                android:endX="54" android:endY="84">
-                <item android:color="#FFFFD98A" android:offset="0" />
-                <item android:color="#FFF0B429" android:offset="1" />
-            </gradient>
-        </aapt:attr>
-    </path>
+        android:strokeLineJoin="round" />
     <!-- orb -->
-    <path android:pathData="M51.4,28.62a2.6,2.6 0 1,0 5.2,0a2.6,2.6 0 1,0 -5.2,0z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:type="linear"
-                android:startX="54" android:startY="24"
-                android:endX="54" android:endY="84">
-                <item android:color="#FFFFD98A" android:offset="0" />
-                <item android:color="#FFF0B429" android:offset="1" />
-            </gradient>
-        </aapt:attr>
-    </path>
+    <path
+        android:pathData="M51.4,28.62a2.6,2.6 0 1,0 5.2,0a2.6,2.6 0 1,0 -5.2,0z"
+        android:fillColor="#FFFFFFFF" />
 </vector>

@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui
 
+import chat.keryx.app.presentation.ui.components.HeraldConfig
+import chat.keryx.app.presentation.ui.components.LocalHeraldConfig
 import chat.keryx.app.presentation.ui.components.keryxDuskSky
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.background
@@ -25,6 +27,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +64,8 @@ fun HermesApp(viewModel: ChatViewModel) {
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     val currentSession by viewModel.currentSession.collectAsState()
     val linkHealth by viewModel.linkHealth.collectAsState()
+    val heraldIds by viewModel.agentMatrixId.collectAsState()
+    val heraldAccents by viewModel.heraldAccents.collectAsState()
 
     // The navigation spine (2.0): full-screen places live on this stack above the chat floor.
     val nav = rememberKeryxNav()
@@ -137,6 +142,15 @@ fun HermesApp(viewModel: ChatViewModel) {
         }
     }
 
+    // 2.3 §1: the configured heralds, resolved once for the whole app — every bubble, sigil and
+    // spinner below reads its sender's light out of this. (Body left at its original indent so the
+    // wrapper stays a two-line diff.)
+    CompositionLocalProvider(
+        LocalHeraldConfig provides HeraldConfig(
+            ids = chat.keryx.app.domain.model.Heralds.parseIds(heraldIds),
+            overrides = heraldAccents,
+        )
+    ) {
     KeryxNavHost(
         nav = nav,
         root = {
@@ -308,6 +322,7 @@ fun HermesApp(viewModel: ChatViewModel) {
             }
         },
     )
+    }
 }
 
 /**

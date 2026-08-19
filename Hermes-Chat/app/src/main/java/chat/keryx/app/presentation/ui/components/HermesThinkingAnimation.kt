@@ -34,7 +34,11 @@ import kotlin.math.sin
 @Composable
 fun HermesThinkingAnimation(
     style: String = "Caduceus",
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Whoever is thinking tints the spinner. Defaults to the user's own theme accents; a herald
+     *  in a council room passes its own, so you can tell who is working by the colour (2.3 §1). */
+    accent: Color? = null,
+    accent2: Color? = null,
 ) {
     // Subtle pulsing alpha on the whole component
     val infiniteTransition = rememberInfiniteTransition(label = "snake_spin")
@@ -75,8 +79,8 @@ fun HermesThinkingAnimation(
         "GENERATING MAGIC"
     )
     val quip = remember { phrases.random() }
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val accent2 = MaterialTheme.colorScheme.tertiary
+    val primaryColor = accent ?: MaterialTheme.colorScheme.primary
+    val secondColor = accent2 ?: MaterialTheme.colorScheme.tertiary
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -85,10 +89,10 @@ fun HermesThinkingAnimation(
             .alpha(alpha)
     ) {
         when (style) {
-            "Braille" -> BrailleSpinner(primaryColor, accent2)
-            "Dots" -> DotsSpinner(primaryColor, accent2, infiniteTransition)
+            "Braille" -> BrailleSpinner(primaryColor, secondColor)
+            "Dots" -> DotsSpinner(primaryColor, secondColor, infiniteTransition)
             "ASCII Wave" -> AsciiWaveSpinner()
-            else -> CaduceusSpinner(primaryColor, accent2)
+            else -> CaduceusSpinner(primaryColor, secondColor)
         }
         
         Spacer(modifier = Modifier.width(12.dp))
@@ -98,7 +102,7 @@ fun HermesThinkingAnimation(
             style = androidx.compose.ui.text.TextStyle(
                 // Accent 1 → accent 2 sweep across the quip, matching the spinner's gradient.
                 brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                    listOf(primaryColor, accent2),
+                    listOf(primaryColor, secondColor),
                 ),
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
