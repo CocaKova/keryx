@@ -49,6 +49,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.keryx.app.domain.model.Message
+import chat.keryx.app.domain.model.Theater
+import chat.keryx.app.domain.model.ToolBeat
+import chat.keryx.app.domain.model.ToolGrammar
 import chat.keryx.app.domain.model.SenderType
 
 /**
@@ -64,6 +67,9 @@ fun ToolCallCard(
     /** The recipient's answer, when this call turned out to be an inter-agent delivery and the
      *  run carried a reply back (2.3 §2). */
     deliveryReply: String? = null,
+    /** The same call as the side-channel saw it, when the turn was watched live (2.4) — this is
+     *  where a duration, a real verdict and a diff come from; the message text has none. */
+    beat: ToolBeat? = null,
 ) {
     // An inter-agent delivery is a `terminal` call by mechanism and a conversation by meaning.
     // A FAILED one keeps the terminal row on purpose: when the mechanism breaks, the mechanism is
@@ -83,48 +89,81 @@ fun ToolCallCard(
     // it distinctly so "it just learned something" stands out from ordinary tool noise. This rides
     // genuine, universal Hermes output (the tool call itself) — no config or plugin to set up.
     val isSkill = call.name == "skill_manage"
-    val tint = if (isSkill) 0.22f else 0.16f
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(IntrinsicSize.Min)
-            .clip(RoundedCornerShape(10.dp))
-            .background(
-                Brush.linearGradient(listOf(accent.copy(alpha = tint), accent.copy(alpha = 0.05f)))
+    // The theater's row, at rest. Same glyph, same verb grammar, same quiet — this is the same
+    // call the live view already showed, and a boxed gradient card beside a hairline row made
+    // one run look like two features.
+    val target = ToolGrammar.targetOf(call.name, call.args)
+    val ok = beat?.ok ?: call.ok
+    val ms = beat?.ms ?: 0L
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text(
+                if (ok == false) "✕" else "✓",
+                fontSize = 9.sp,
+                color = if (ok == false) MaterialTheme.colorScheme.error else baseColor.copy(alpha = 0.45f),
+                modifier = Modifier.width(6.dp),
             )
-            .border(1.dp, accent.copy(alpha = if (isSkill) 0.4f else 0.22f), RoundedCornerShape(10.dp)),
-    ) {
-        Box(modifier = Modifier.width(3.dp).fillMaxHeight().background(accent.copy(alpha = 0.75f)))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 11.dp, vertical = 9.dp),
-        ) {
-            Text(if (isSkill) "✦" else call.emoji.ifBlank { "⚙" }, fontSize = 15.sp)
-            Spacer(modifier = Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
+            Spacer(modifier = Modifier.width(7.dp))
+            Text(
+                if (isSkill) "✦" else ToolGrammar.glyphOf(call.name),
+                fontSize = 10.sp,
+                color = if (isSkill) accent.copy(alpha = 0.9f) else baseColor.copy(alpha = 0.55f),
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = ToolGrammar.title(call.name, "", running = false),
+                color = baseColor.copy(alpha = 0.72f),
+                fontSize = 11.sp,
+                maxLines = 1,
+            )
+            if (target.isNotBlank()) {
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = if (isSkill) "Skill" else call.name,
-                    color = if (isSkill) accent.copy(alpha = 0.95f) else baseColor,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = if (isSkill) FontFamily.Default else FontFamily.Monospace,
+                    text = target,
+                    color = baseColor.copy(alpha = 0.5f),
+                    fontSize = 10.5.sp,
+                    fontFamily = FontFamily.Monospace,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
-                if (call.args.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = call.args,
-                        color = baseColor.copy(alpha = 0.62f),
-                        fontSize = 12.sp,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            // Verdict glyph: explicit failure reads loud, success stays quiet.
-            when (call.ok) {
-                false -> Text("✗", color = Color(0xFFE0524D), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                else -> Text("✓", color = accent.copy(alpha = 0.8f), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            if (beat != null && (beat.added > 0 || beat.removed > 0)) {
+                Spacer(modifier = Modifier.width(6.dp))
+                DiffStat(added = beat.added, removed = beat.removed)
+            }
+            if (ms > 0L) {
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    if (ms >= 1000L) "${ms / 1000}s" else "${ms}ms",
+                    fontSize = 9.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = baseColor.copy(alpha = 0.35f),
+                )
+            }
+        }
+        if (beat != null && beat.hasDiff) {
+            var open by androidx.compose.runtime.saveable.rememberSaveable(call.name + call.args) {
+                mutableStateOf(false)
+            }
+            Text(
+                if (open) "▾ diff" else "▸ diff",
+                fontSize = 9.5.sp,
+                fontFamily = FontFamily.Monospace,
+                color = baseColor.copy(alpha = 0.42f),
+                modifier = Modifier
+                    .padding(start = 19.dp, top = 1.dp)
+                    .clickable { open = !open },
+            )
+            if (open) {
+                DiffPanel(
+                    diff = beat.diff,
+                    truncated = beat.diffTruncated,
+                    baseColor = baseColor,
+                    modifier = Modifier.padding(start = 19.dp, top = 2.dp, bottom = 2.dp),
+                )
             }
         }
     }
@@ -149,6 +188,16 @@ fun ToolGroupCard(
     active: Boolean,
     baseColor: Color,
     onToggle: (expanded: Boolean) -> Unit = {},
+    /**
+     * The structured record of this run, when the turn was watched live (2.4).
+     *
+     * The committed message only ever carried tool NAMES and a display argument, so a written
+     * file could never say what it changed. The side-channel knows — durations, verdicts, real
+     * diffs — and while the app is up it keeps that record keyed to the message the turn
+     * committed to. Empty for history loaded from Matrix after a restart, which is simply the
+     * pre-2.4 card: same grammar, fewer facts.
+     */
+    structured: List<ToolBeat> = emptyList(),
 ) {
     val accent = MaterialTheme.colorScheme.primary
     // Expand state persists as the group grows (keyed on the stable oldest-message id).
@@ -168,22 +217,42 @@ fun ToolGroupCard(
         ).value
     } else 0.22f
 
-    val distinctEmoji = run.entries.filterIsInstance<ToolRunEntry.Call>()
-        .map { it.call.emoji.ifBlank { "⚙" } }.distinct().take(3)
+    val calls = run.entries.filterIsInstance<ToolRunEntry.Call>().map { it.call }
+    // The theater's glyphs, not the emoji the gateway happened to print into the message text:
+    // the live view and this record are the same run at two ages and must not look like two
+    // different features (Jonny, on device: "the tool call log and the new tool call kind of
+    // fight"). Same source of truth for the summary sentence, too.
+    val distinctGlyphs = calls.map { ToolGrammar.glyphOf(it.name) }.distinct().take(3)
         .ifEmpty { listOf("⚙") }
     val n = run.callCount
-    val failed = run.entries.count { it is ToolRunEntry.Call && it.call.ok == false }
+    val failed = calls.count { it.ok == false }
     // A continuation run (header-less fence output only — no headered Call survived Hermes'
     // progress grouping) counts its output steps instead of reading "Ran 0 tools".
     val steps = run.entries.count { it is ToolRunEntry.Note }
     val label = buildString {
-        if (n > 0) {
+        if (calls.isNotEmpty()) {
+            append(
+                ToolGrammar.summarize(
+                    calls.map {
+                        ToolGrammar.Mention(
+                            name = it.name,
+                            target = ToolGrammar.targetOf(it.name, it.args),
+                            running = active && it.ok == null,
+                        )
+                    },
+                    live = active,
+                )
+            )
+        } else if (n > 0) {
             append(if (active) "Running $n ${plural(n)}…" else "Ran $n ${plural(n)}")
         } else {
             append(if (active) "Working…" else "$steps output ${if (steps == 1) "step" else "steps"}")
         }
         if (failed > 0) append(" · $failed failed")
     }
+    val enriched = remember(calls, structured) { Theater.align(calls.map { it.name }, structured) }
+    val added = enriched.values.sumOf { it.added }
+    val removed = enriched.values.sumOf { it.removed }
 
     Column(
         horizontalAlignment = Alignment.Start,
@@ -192,24 +261,37 @@ fun ToolGroupCard(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .clip(RoundedCornerShape(14.dp))
-                .background(
-                    Brush.linearGradient(listOf(accent.copy(alpha = 0.14f), accent.copy(alpha = 0.04f)))
+                .clip(RoundedCornerShape(10.dp))
+                // Hairline, not a filled gradient card. This is scaffolding around the answer,
+                // and at rest it should read as quietly as the live theater does; only the
+                // border carries the "still working" breath.
+                .border(
+                    1.dp,
+                    if (active) accent.copy(alpha = glow) else baseColor.copy(alpha = 0.16f),
+                    RoundedCornerShape(10.dp),
                 )
-                .border(1.dp, accent.copy(alpha = glow), RoundedCornerShape(14.dp))
                 .clickable { expanded = !expanded; onToggle(expanded) }
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
-            Text(distinctEmoji.joinToString(" "), fontSize = 14.sp)
+            Text(distinctGlyphs.joinToString(" "), fontSize = 12.sp, color = baseColor.copy(alpha = 0.65f))
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = label,
-                color = baseColor,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
+                color = baseColor.copy(alpha = 0.8f),
+                fontSize = 12.5.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
             )
+            // What a run of edits actually did, on the collapsed header — the question you have
+            // before deciding whether to open it at all.
+            if (added > 0 || removed > 0) {
+                Spacer(modifier = Modifier.width(8.dp))
+                DiffStat(added = added, removed = removed)
+            }
             Spacer(modifier = Modifier.width(8.dp))
-            Text(if (expanded) "▾" else "▸", color = accent.copy(alpha = 0.8f), fontSize = 12.sp)
+            Text(if (expanded) "▾" else "▸", color = baseColor.copy(alpha = 0.5f), fontSize = 11.sp)
         }
 
         AnimatedVisibility(
@@ -249,6 +331,7 @@ fun ToolGroupCard(
                                 deliveryReply = (run.entries.getOrNull(i + 1) as? ToolRunEntry.Note)
                                     ?.takeIf { i + 1 in consumed }
                                     ?.let { chat.keryx.app.domain.model.AgentDeliveryCommand.replyText(it.text) },
+                                beat = enriched[calls.indexOfFirst { c -> c === entry.call }],
                             )
                             // A tool's own output (terminal stdout, vision result): monospace in a
                             // subtle code surface so it reads as machine output, not prose.

@@ -105,6 +105,54 @@ onto it.
 
 The beats clear on a mid-turn segment commit, since that commit carries its own parsed tool rows.
 
+## One language, live and committed
+
+The first cut shipped the theater beside the existing text-parsed `ToolGroupCard`, and on device
+they read as two different features describing the same call — a boxed gradient card under a
+monospace hairline row (Jonny: *"the tool call log and the new tool call show kind of fight"*).
+
+`domain/model/ToolGrammar.kt` is the fix: one verb/glyph/target vocabulary that both surfaces
+speak. `read_file` is `▤ Read SOUL.md` wherever it is drawn, live or in the transcript, and a run
+collapses to the same sentence ("Wrote c.kt, explored 2 files, ran ls"). The committed card lost
+its gradient fill for a hairline; only the border still carries the "working" breath.
+
+One divergence from Talaria: a **single**-call run uses the tool's own verb rather than its
+category's — "Read SOUL.md", not "Explored SOUL.md". The category grammar exists to count a
+crowd, and there is no crowd.
+
+## Diff stats
+
+`tool.completed` carries the tool's *result*, which for an edit is a success envelope, not a
+diff — the diff only exists by comparing the file against what it was before the call. The agent's
+own display layer already does exactly that, so the gateway borrows it (`capture_local_edit_snapshot`
+at start, `render_edit_diff_with_delta` at completion) and the app shows the same diff the CLI
+would have printed. It rides its own `phase: "diff"` frame because the progress callback fires
+*before* the complete one, so the `end` frame is already gone by then.
+
+⚠️ The rendered lines are ANSI-coloured 24-bit (`ESC[38;2;…m+line ESC[0m`). Anything classifying
+by leading character sees an escape byte and counts zero forever — strip first, then classify, on
+both sides. Counts come from the whole diff before clipping, so "+2 −1" stays true when the panel
+is cut.
+
+## The committed transcript
+
+Durations, real verdicts and diffs exist only in the side-channel, never in the message text. So
+the record of the turn just watched is held per room, one deep, and attached to the newest tool
+run: `Theater.align` pairs parsed names to beats **positionally**, and a mismatch at position *i*
+leaves that row un-enriched rather than guessing — a row with fewer facts is right, a row with
+another call's diff is not. It dies with the process, and history then renders exactly as it did
+before: same grammar, fewer facts. Persisting it would mean a second store of tool results, and
+the answer to "what did that edit change" a week later is the file, not a phone's memory of it.
+
+## Opening a subagent
+
+A wing showed a goal, a rollup and a summary — enough to know it worked and nothing about how
+(Jonny: *"there's no way of seeing the subagent session"*). The gateway relays `child_session_id`;
+the first cut dropped it. It now rides the `sub` frames, a landed wing is underlined and tappable,
+and `SubagentSessionSheet` opens the child's own transcript through the existing
+`GET /api/sessions/{id}/messages`. Read-only: the Sessions tab owns resuming, and the verb here is
+"show me", not "carry on".
+
 ## Verified
 
 Live against the real gateway, 2026-08-19.
@@ -124,5 +172,9 @@ tool, so the first delegation attempts came back "I have no delegate_task" and r
 this work. It was the wrong room. `default` (Sy) rooms are The Office, Clocktower and
 Jonny & SILAS.
 
-36 unit tests (`TheaterTest`). The app half is **not yet walked on device** — everything above is
-the wire, verified from the gateway side.
+**Diffs** — a real `patch` on a 4-line file: `+2 −1`, with the ANSI-coloured body, the
+`┊ review diff` banner and the `a/… → b/…` header the chrome rules have to skip. That exact
+payload is now a test.
+
+60 unit tests (`TheaterTest`, `ToolGrammarTest`). Everything above is verified on the wire, from
+the gateway side; 2.3 and the first theater cut have been walked on device, this pass has not.
