@@ -1670,6 +1670,7 @@ class ChatViewModel(
             var lastDeltaAt = 0L
             // EMA of the instantaneous delta rate (chars/s); see TPS_* constants.
             var emaCps = 0f
+            var theater = emptyList<chat.keryx.app.domain.model.ToolBeat>()
             fun dispatch(status: LiveStreamStatus, finalText: String? = null) {
                 val cur = _liveStream.value ?: LiveStream(roomId, "", status, System.currentTimeMillis())
                 _liveStream.value = cur.copy(
@@ -1682,6 +1683,7 @@ class ChatViewModel(
                     finalText = finalText ?: cur.finalText,
                     charsPerSec = emaCps,
                     reasoning = reasoningBuf.windowText(),
+                    theater = theater,
                 )
                 lastDispatch = System.currentTimeMillis()
                 charsSinceDispatch = 0
@@ -1696,6 +1698,9 @@ class ChatViewModel(
                 chat.keryx.app.util.KLog.i("KeryxHandoff") { "consume segment (${buf.length}ch text, ${reasoningBuf.length}ch reasoning) — stream stays live" }
                 buf.clear()
                 reasoningBuf.clear()
+                // The committed segment carries its own parsed tool rows, so keeping the beats
+                // would show every call twice — once live, once in the transcript above.
+                theater = emptyList()
                 if (_liveStream.value != null) dispatch(LiveStreamStatus.STREAMING)
             }
             client.stream(roomId).collect { ev ->
@@ -1736,6 +1741,12 @@ class ChatViewModel(
                         if (now - lastDispatch >= STREAM_DISPATCH_MS || charsSinceDispatch >= STREAM_DISPATCH_CHARS) {
                             dispatch(LiveStreamStatus.STREAMING)
                         }
+                    }
+                    is chat.keryx.app.data.remote.HermesStreamClient.Event.Tool -> {
+                        // Rare next to token deltas (a handful per turn), so it never waits for
+                        // the throttle — a tool starting is exactly the beat you want on screen.
+                        theater = chat.keryx.app.domain.model.Theater.reduce(theater, ev.event)
+                        dispatch(_liveStream.value?.status ?: LiveStreamStatus.STREAMING)
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.SegmentBreak -> {
                         if (buf.isNotEmpty() && !buf.endsWith("\n\n")) buf.append("\n\n")

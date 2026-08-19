@@ -59,6 +59,10 @@ of raw model output.
   room full of agents reads as several lives rather than one voice with different words. One
   agent relaying another renders as an attributed notice, never as the courier speaking, and a
   turn nobody asked for is marked as an *arrival* instead of an answer.
+- **The tool theater (2.4)** — While the agent works you see what it is *doing*, not a spinner:
+  each tool as it starts, how long it took, what failed and why, and a delegated subagent's own
+  calls indented under it. It is deliberately quiet — the committed reply renders the same calls
+  properly a moment later.
 - **Local-first diagnostics** — Crash log kept on-device only, shareable from Settings.
 
 ## Installing

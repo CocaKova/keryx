@@ -56,6 +56,8 @@ class HermesStreamClient(
         data class Reasoning(val text: String) : Event
         /** A segment boundary — the current text run ended (e.g. a tool call interleaves). */
         data object SegmentBreak : Event
+        /** One beat of the tool / subagent theater (2.4). */
+        data class Tool(val event: chat.keryx.app.domain.model.TheaterEvent) : Event
         /** Turn finished. [finalText] is the exact body Hermes commits to Matrix (may be null if
          *  the server couldn't include it; match then falls back to accumulated text). */
         data class Stop(val finalText: String?) : Event
@@ -118,6 +120,7 @@ class HermesStreamClient(
                         "delta" -> parseText(data)?.let { trySendBlocking(Event.Delta(it)) }
                         "reasoning" -> parseText(data)?.let { trySendBlocking(Event.Reasoning(it)) }
                         "segment" -> trySendBlocking(Event.SegmentBreak)
+                        "tool" -> parseTheater(data)?.let { trySendBlocking(Event.Tool(it)) }
                         "usage" -> parseUsage(data)?.let { trySendBlocking(it) }
                         "stop" -> {
                             trySendBlocking(Event.Stop(parseText(data)))
@@ -145,6 +148,30 @@ class HermesStreamClient(
 
     private fun parseText(data: String): String? = try {
         (json.parseToJsonElement(data).jsonObject["text"] as? JsonPrimitive)?.content
+    } catch (e: Exception) {
+        null
+    }
+
+    /**
+     * A `tool` frame: the theater vocabulary, nested in the same {"text": …} envelope as usage.
+     * Unknown phases parse fine and the reducer ignores them, so a newer gateway can add beats
+     * without a client release.
+     */
+    private fun parseTheater(data: String): chat.keryx.app.domain.model.TheaterEvent? = try {
+        val obj = json.parseToJsonElement(parseText(data) ?: return null).jsonObject
+        fun str(k: String) = (obj[k] as? JsonPrimitive)?.content.orEmpty()
+        val phase = str("phase")
+        if (phase.isBlank()) null
+        else chat.keryx.app.domain.model.TheaterEvent(
+            phase = phase,
+            kind = str("kind"),
+            name = str("name"),
+            preview = str("preview"),
+            ok = (obj["ok"] as? JsonPrimitive)?.content?.toBooleanStrictOrNull(),
+            ms = str("ms").toLongOrNull() ?: 0L,
+            result = str("result"),
+            child = str("child"),
+        )
     } catch (e: Exception) {
         null
     }
