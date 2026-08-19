@@ -30,8 +30,15 @@ data class ToolBeat(
      * doesn't, and the weaker claim is the one that survives.
      */
     val concurrent: Boolean = false,
+    /** The edit this call made, when it made one — the gateway's own inline diff, ANSI and all. */
+    val diff: String = "",
+    val added: Int = 0,
+    val removed: Int = 0,
+    /** The panel was cut to fit the wire; [added]/[removed] are still counted from the whole. */
+    val diffTruncated: Boolean = false,
 ) {
     val running: Boolean get() = ok == null
+    val hasDiff: Boolean get() = diff.isNotBlank()
 }
 
 /**
@@ -49,6 +56,9 @@ data class Delegation(
     val taskIndex: Int = 0,
     val taskCount: Int = 1,
     val model: String = "",
+    /** The child's own stored session — what "open this subagent" opens. Blank on older
+     *  gateways, and the wing simply isn't tappable then. */
+    val sessionId: String = "",
     val depth: Int = 0,
     val state: DelegationState = DelegationState.RUNNING,
     /** Newest live line: the tool it just picked up, a thinking fragment, a batch summary. */
@@ -98,8 +108,14 @@ data class TheaterEvent(
     val ms: Long = 0L,
     val result: String = "",
     val child: String = "",
+    // --- edit diffs, present on "diff" frames only ---
+    val diff: String = "",
+    val added: Int = 0,
+    val removed: Int = 0,
+    val truncated: Boolean = false,
     // --- the delegation identity block + rollup, present on "sub" frames only ---
     val goal: String = "",
+    val sessionId: String = "",
     val model: String = "",
     val status: String = "",
     val summary: String = "",
@@ -145,6 +161,10 @@ object Theater {
         // nothing. The name is a tiebreak, not a key.
         "end" -> state.copy(beats = state.beats.close(ev))
 
+        // Its own frame because it arrives AFTER the end (the progress callback fires before
+        // the complete one), so it lands on the row that just closed.
+        "diff" -> state.copy(beats = state.beats.attachDiff(ev))
+
         "sub" -> state.copy(delegations = state.delegations.fold(ev))
 
         else -> state
@@ -162,6 +182,21 @@ object Theater {
         val marked = if (overlaps) map { if (it.running) it.copy(concurrent = true) else it } else this
         return (marked + beat.copy(concurrent = overlaps))
             .let { if (it.size > MAX_BEATS) it.takeLast(MAX_BEATS) else it }
+    }
+
+    /** The newest closed row of that name still without a diff — an edit tool called twice in
+     *  one turn gets one diff each, in the order they landed. */
+    private fun List<ToolBeat>.attachDiff(ev: TheaterEvent): List<ToolBeat> {
+        if (ev.diff.isBlank()) return this
+        val byName = indexOfLast { !it.running && !it.hasDiff && it.name == ev.name }
+        val i = if (byName >= 0) byName else indexOfLast { !it.running && !it.hasDiff }
+        if (i < 0) return this
+        return toMutableList().also {
+            it[i] = it[i].copy(
+                diff = ev.diff, added = ev.added, removed = ev.removed,
+                diffTruncated = ev.truncated,
+            )
+        }
     }
 
     private fun List<ToolBeat>.close(ev: TheaterEvent): List<ToolBeat> {
@@ -187,6 +222,7 @@ object Theater {
             taskIndex = ev.taskIndex ?: prev.taskIndex,
             taskCount = ev.taskCount ?: prev.taskCount,
             model = ev.model.ifBlank { prev.model },
+            sessionId = ev.sessionId.ifBlank { prev.sessionId },
             depth = ev.depth ?: prev.depth,
             toolCount = ev.toolCount ?: prev.toolCount,
         )
@@ -219,6 +255,28 @@ object Theater {
             else -> withIdentity
         }
         return if (i >= 0) toMutableList().also { it[i] = next } else this + next
+    }
+
+    /**
+     * Pair a committed message's parsed tool names with the structured beats from the same turn,
+     * so the transcript can show what the text never carried — durations, verdicts, real diffs.
+     *
+     * Positional, by name: the two lists describe the same sequence, and there is no id in the
+     * committed text to join on. A name mismatch at position i means the two views have drifted
+     * (a tool the parser missed, a run stitched from more than one turn), and rather than guess,
+     * that position simply goes un-enriched — a row with fewer facts is right, a row with
+     * ANOTHER call's diff on it is not.
+     *
+     * @return parsed-call index -> its beat, for the positions that agreed.
+     */
+    fun align(parsedNames: List<String>, beats: List<ToolBeat>): Map<Int, ToolBeat> {
+        if (parsedNames.isEmpty() || beats.isEmpty()) return emptyMap()
+        val out = LinkedHashMap<Int, ToolBeat>()
+        for (i in parsedNames.indices) {
+            val beat = beats.getOrNull(i) ?: break
+            if (beat.name == parsedNames[i]) out[i] = beat
+        }
+        return out
     }
 
     /**

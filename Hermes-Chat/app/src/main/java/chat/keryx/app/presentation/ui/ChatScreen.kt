@@ -211,6 +211,15 @@ fun ChatScreen(
     val arrivalIds = remember(renderItems) {
         renderItems.filterIsInstance<ChatRenderItem.Arrival>().mapTo(HashSet()) { it.message.id }
     }
+    // The turn just watched, and the run it belongs to (2.4). renderItems is newest-first under
+    // reverseLayout, so the first ToolRun in it IS the newest one.
+    val lastTurn by viewModel.lastTurnTheater.collectAsState()
+    val newestToolRunKey = remember(renderItems) {
+        renderItems.firstOrNull { it is ChatRenderItem.ToolRun }?.key
+    }
+    val lastTurnBeats = lastTurn?.takeIf { it.first == currentSession?.id }?.second?.beats.orEmpty()
+    // A landed subagent the reader asked to see inside (2.4).
+    var openSubagent by remember { mutableStateOf<chat.keryx.app.domain.model.Delegation?>(null) }
 
     // Restore this room's unsent draft when it opens (and swap drafts when switching rooms) so
     // half-typed thoughts survive room hops and app restarts.
@@ -498,6 +507,7 @@ fun ChatScreen(
                             stream = stream,
                             bubbleStyle = bubbleStyle,
                             textScale = messageTextScale,
+                            onOpenSubagent = { openSubagent = it },
                         )
                     }
                 }
@@ -558,6 +568,10 @@ fun ChatScreen(
                         is ChatRenderItem.Arrival -> ArrivalMark(item.message)
                         is ChatRenderItem.ToolRun -> ToolGroupCard(
                             run = item,
+                            // Only the newest run, and only in the room it was watched in: the
+                            // record is of one turn, and putting it on an older run would be
+                            // attaching one turn's diffs to another's calls.
+                            structured = if (item.key == newestToolRunKey) lastTurnBeats else emptyList(),
                             // The newest item (index 0 under reverseLayout) is "running" while we
                             // still await Hermes' reply; older runs are settled ("Ran N tools").
                             active = index == 0 && awaitingReply,
@@ -811,6 +825,14 @@ fun ChatScreen(
             tokPerSec = topTokPerSec,
             typingAgentIds = typingAgentIds,
             modifier = Modifier.align(Alignment.TopCenter).padding(top = 6.dp),
+        )
+    }
+
+    openSubagent?.let { run ->
+        chat.keryx.app.presentation.ui.components.SubagentSessionSheet(
+            run = run,
+            fetch = { id -> viewModel.hubSessionMessages(id) },
+            onDismiss = { openSubagent = null },
         )
     }
 }
@@ -1981,6 +2003,7 @@ private fun StreamingBubble(
     stream: chat.keryx.app.presentation.LiveStream,
     bubbleStyle: String,
     textScale: Float,
+    onOpenSubagent: (chat.keryx.app.domain.model.Delegation) -> Unit = {},
 ) {
     val appearance = bubbleAppearance(isMine = false, style = bubbleStyle)
     val accent = MaterialTheme.colorScheme.primary
@@ -2030,6 +2053,7 @@ private fun StreamingBubble(
                         state = stream.theater,
                         live = streaming,
                         baseColor = appearance.textColor,
+                        onOpenSubagent = onOpenSubagent,
                     )
                     if (stream.text.isNotBlank()) chat.keryx.app.presentation.ui.components.MessageContent(
                         content = stream.text,

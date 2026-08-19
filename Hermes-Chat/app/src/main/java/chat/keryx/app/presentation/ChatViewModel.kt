@@ -1811,8 +1811,25 @@ class ChatViewModel(
         scheduleClearAwaiting(ANSWER_SETTLED_MS, force = true)
     }
 
+    /**
+     * The structured record of the turn that just finished, so the committed transcript can show
+     * what the message text never carried — durations, real verdicts, real diffs (2.4).
+     *
+     * Room-keyed and one deep, on purpose: this is "the run you just watched", not a cache. It
+     * dies with the process, and history then renders exactly as it did before — same grammar,
+     * fewer facts. Persisting it would mean a second store of tool results, and the answer to
+     * "what did that edit change" a week later is the file, not a phone's memory of it.
+     */
+    private val _lastTurnTheater =
+        MutableStateFlow<Pair<String, chat.keryx.app.domain.model.TheaterState>?>(null)
+    val lastTurnTheater: StateFlow<Pair<String, chat.keryx.app.domain.model.TheaterState>?> =
+        _lastTurnTheater.asStateFlow()
+
     private fun clearStream() {
         chat.keryx.app.util.KLog.i("KeryxHandoff") { "clearStream (was ${_liveStream.value?.status})" }
+        _liveStream.value?.let { s ->
+            if (s.theater.beats.isNotEmpty()) _lastTurnTheater.value = s.roomId to s.theater
+        }
         streamClearJob?.cancel()
         streamJob?.cancel()
         consumeStreamedSegment = null

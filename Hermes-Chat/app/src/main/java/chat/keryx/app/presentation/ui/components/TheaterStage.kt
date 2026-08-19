@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,6 +52,7 @@ import chat.keryx.app.domain.model.DelegationState
 import chat.keryx.app.domain.model.Theater
 import chat.keryx.app.domain.model.TheaterState
 import chat.keryx.app.domain.model.ToolBeat
+import chat.keryx.app.domain.model.ToolGrammar
 
 /**
  * The tool theater (2.4), inside the live reply: what the agent is *doing* while it works —
@@ -74,6 +76,8 @@ fun TheaterStage(
     live: Boolean,
     baseColor: Color,
     modifier: Modifier = Modifier,
+    /** Open a landed subagent's own session — null when this surface has no way to. */
+    onOpenSubagent: ((Delegation) -> Unit)? = null,
 ) {
     AnimatedVisibility(
         visible = !state.isEmpty,
@@ -96,7 +100,7 @@ fun TheaterStage(
                 else TheaterRow(batch[0], live, baseColor)
             }
             if (state.delegations.isNotEmpty()) {
-                DelegationWings(state.delegations, live, baseColor)
+                DelegationWings(state.delegations, live, baseColor, onOpenSubagent)
             }
         }
     }
@@ -118,7 +122,12 @@ private fun ParallelBatch(calls: List<ToolBeat>, live: Boolean, baseColor: Color
                 // Say only what is known. This channel reports when calls were ANNOUNCED, not
                 // how the runtime ran them — it may well have gone one at a time (barriers,
                 // path conflicts). "In one turn" is the claim that survives.
-                "${calls.size} in one turn",
+                "${calls.size} in one turn · " + ToolGrammar.summarize(
+                    calls.map {
+                        ToolGrammar.Mention(it.name, ToolGrammar.targetOf(it.name, it.preview), it.running)
+                    },
+                    live = running,
+                ),
                 color = baseColor.copy(alpha = 0.45f),
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Medium,
@@ -132,7 +141,12 @@ private fun ParallelBatch(calls: List<ToolBeat>, live: Boolean, baseColor: Color
 /** The subagents this turn sent out, under the same rail a parallel batch uses — because that
  *  is exactly what this is: work happening somewhere else, at the same time. */
 @Composable
-private fun DelegationWings(runs: List<Delegation>, live: Boolean, baseColor: Color) {
+private fun DelegationWings(
+    runs: List<Delegation>,
+    live: Boolean,
+    baseColor: Color,
+    onOpen: ((Delegation) -> Unit)?,
+) {
     val accent = MaterialTheme.colorScheme.tertiary
     val flying = runs.count { it.running }
     Row(Modifier.height(IntrinsicSize.Min).padding(top = 2.dp)) {
@@ -152,13 +166,18 @@ private fun DelegationWings(runs: List<Delegation>, live: Boolean, baseColor: Co
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.8.sp,
             )
-            runs.forEach { DelegationWing(it, live, baseColor) }
+            runs.forEach { DelegationWing(it, live, baseColor, onOpen) }
         }
     }
 }
 
 @Composable
-private fun DelegationWing(run: Delegation, live: Boolean, baseColor: Color) {
+private fun DelegationWing(
+    run: Delegation,
+    live: Boolean,
+    baseColor: Color,
+    onOpen: ((Delegation) -> Unit)?,
+) {
     val accent = MaterialTheme.colorScheme.tertiary
     val error = MaterialTheme.colorScheme.error
     val failed = run.state == DelegationState.FAILED
@@ -176,6 +195,8 @@ private fun DelegationWing(run: Delegation, live: Boolean, baseColor: Color) {
                 )
             }
             Spacer(Modifier.width(4.dp))
+            // A landed wing with a session behind it is a door, and should look like one.
+            val canOpen = onOpen != null && run.openable && !run.running
             Text(
                 buildString {
                     // A fan-out's wings are told apart by their 1-based index, matching the
@@ -185,10 +206,17 @@ private fun DelegationWing(run: Delegation, live: Boolean, baseColor: Color) {
                 },
                 color = baseColor.copy(alpha = 0.85f),
                 fontSize = 10.sp,
+                textDecoration = if (canOpen) TextDecoration.Underline else null,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .then(if (canOpen) Modifier.clickable { onOpen!!(run) } else Modifier),
             )
+            if (canOpen) {
+                Spacer(Modifier.width(5.dp))
+                Text("↗", fontSize = 9.sp, color = baseColor.copy(alpha = 0.45f))
+            }
         }
         val meta = buildList {
             if (run.model.isNotBlank()) add(run.model)
@@ -271,28 +299,38 @@ private fun TheaterRow(beat: ToolBeat, live: Boolean, baseColor: Color) {
             )
         }
         Spacer(Modifier.width(7.dp))
-        Text("⚙", fontSize = 9.5.sp, color = baseColor.copy(alpha = 0.55f))
-        Spacer(Modifier.width(5.dp))
         Text(
-            beat.name,
+            ToolGrammar.glyphOf(beat.name),
+            fontSize = 9.5.sp,
+            color = baseColor.copy(alpha = 0.55f),
+        )
+        Spacer(Modifier.width(5.dp))
+        // One grammar, live and committed alike: "Reading SOUL.md" now, "Read SOUL.md" in the
+        // transcript afterwards — not `read_file` in one place and a sentence in the other.
+        val target = ToolGrammar.targetOf(beat.name, beat.preview)
+        Text(
+            ToolGrammar.title(beat.name, "", beat.running),
             fontSize = 10.sp,
-            fontFamily = FontFamily.Monospace,
             color = baseColor.copy(alpha = if (beat.running) 0.85f else 0.6f),
             maxLines = 1,
         )
-        if (beat.preview.isNotBlank()) {
-            Spacer(Modifier.width(6.dp))
+        if (target.isNotBlank()) {
+            Spacer(Modifier.width(5.dp))
             Text(
-                beat.preview,
+                target,
                 fontSize = 9.5.sp,
                 fontFamily = FontFamily.Monospace,
-                color = baseColor.copy(alpha = 0.4f),
+                color = baseColor.copy(alpha = 0.45f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),
             )
         } else {
             Spacer(Modifier.weight(1f))
+        }
+        if (beat.added > 0 || beat.removed > 0) {
+            Spacer(Modifier.width(6.dp))
+            DiffStat(added = beat.added, removed = beat.removed)
         }
         if (!beat.running && beat.ms > 0L) {
             Spacer(Modifier.width(6.dp))
@@ -301,6 +339,29 @@ private fun TheaterRow(beat: ToolBeat, live: Boolean, baseColor: Color) {
                 fontSize = 9.sp,
                 fontFamily = FontFamily.Monospace,
                 color = baseColor.copy(alpha = 0.35f),
+            )
+        }
+    }
+    // What the edit actually did. Behind a tap, because the stat beside the row already answers
+    // "how big was it" and the body is only wanted when the answer is "bigger than I expected".
+    if (beat.hasDiff) {
+        var open by rememberSaveable(beat.name + beat.added + beat.removed) { mutableStateOf(false) }
+        Text(
+            if (open) "▾ diff" else "▸ diff",
+            fontSize = 9.sp,
+            fontFamily = FontFamily.Monospace,
+            color = baseColor.copy(alpha = 0.4f),
+            modifier = Modifier
+                .padding(start = 17.dp, bottom = 1.dp)
+                .clickable { open = !open },
+        )
+        if (open) {
+            DiffPanel(
+                diff = beat.diff,
+                truncated = beat.diffTruncated,
+                baseColor = baseColor,
+                maxHeight = 150.dp,
+                modifier = Modifier.padding(start = 17.dp, bottom = 3.dp),
             )
         }
     }
