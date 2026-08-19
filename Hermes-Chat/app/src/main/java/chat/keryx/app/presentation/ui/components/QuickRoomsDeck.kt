@@ -48,6 +48,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.keryx.app.domain.model.RoomProfile
+import chat.keryx.app.domain.model.RoomSigil
+import chat.keryx.app.domain.model.RoomSigils
 import kotlin.math.min
 
 /**
@@ -155,7 +157,17 @@ private fun QuickRoomAvatar(
                     modifier = Modifier.size(44.dp).clip(CircleShape),
                 )
             } else {
-                MonogramAvatar(name = room.name, accent = accent, highlighted = selected)
+                val sigil = RoomSigils.of(room.heraldIds)
+                if (sigil != RoomSigil.None) {
+                    RoomSigilAvatar(
+                        sigil = sigil,
+                        base = deckAvatarBase(room.name, accent, selected),
+                        size = 44.dp,
+                        highlighted = selected,
+                    )
+                } else {
+                    MonogramAvatar(name = room.name, accent = accent, highlighted = selected)
+                }
             }
         }
         Spacer(modifier = Modifier.height(6.dp))
@@ -176,10 +188,15 @@ private fun QuickRoomAvatar(
     }
 }
 
+/** The deck's plate colour for a room — shared so a sigil and a monogram sit on the same ground. */
+private fun deckAvatarBase(name: String, accent: Color, highlighted: Boolean): Color {
+    val base = avatarColor(name)
+    return if (highlighted) lerp(base, accent, 0.35f) else base
+}
+
 @Composable
 private fun MonogramAvatar(name: String, accent: Color, highlighted: Boolean) {
-    val base = avatarColor(name)
-    val bg = if (highlighted) lerp(base, accent, 0.35f) else base
+    val bg = deckAvatarBase(name, accent, highlighted)
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier

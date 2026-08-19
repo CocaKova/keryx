@@ -209,7 +209,7 @@ Council* (several agents, one room, each its own light). Framing only; the code 
 
 | # | Addition | State |
 |---|----------|-------|
-| 1 | Heraldry | **built** — bubble rim, sender label, spinner, working-bar sigils, Settings "Heralds" list with per-herald picker. One sub-bullet deferred: the drawer / Quick Rooms council sigil row (see below). 19 tests. |
+| 1 | Heraldry | **built** — bubble rim, sender label, spinner, working-bar sigils, Settings "Heralds" list with per-herald picker, and (08-19) the drawer / Quick Rooms sigils. 30 tests. |
 | 2 | Bot Mode exchange | **built** — `AgentDelivery` + `AgentDeliveryCommand` ported, receiving notice + sent notice, reply cut at the `session_id:` boundary of the following note, `dedupCalls` exempts deliveries. 24 tests. |
 | 3 | Arrival | **built** — `ChatRenderItem.Arrival`, hairline mark in the herald's hue, one light sweep on the bubble, `☤ <name>` notification title. 13 tests. |
 | 4 | Senses | **built** — card in Settings → Privacy & Security, marker appended on the send path, stripped from my own bubble in the repository, plus the plan's "send now" row (implemented as *drop the throttle*, since Senses never sends on its own). 24 tests. |
@@ -220,15 +220,30 @@ Council* (several agents, one room, each its own light). Framing only; the code 
 298 unit tests pass; `assembleDebug` is clean. **Not yet walked on device** — the phone was off
 ADB (wireless-debugging port dead) when this landed, so nothing here has been seen on glass.
 
-### Deferred, needs a decision
+### The drawer / Quick Rooms sigils — resolved 2026-08-19
 
-**§1's drawer / Quick Rooms sigil row.** A council room is supposed to show stacked sigils instead
-of the monogram, which means knowing whether ≥2 heralds are among its members. `Session` and
-`RoomProfile` carry no member list and `ChatRepository` exposes only `ensureMembersLoaded(roomId)`
-— no accessor. So it is either (a) force a member sync for every room in the drawer (Matrix
-lazy-loads members; real cost on a long list) or (b) read already-loaded members only, so sigils
-appear on rooms you have opened and not on the rest. That trade is Jonny's call, not the
-implementer's. Everything else in §1 is wired.
+The plan left this open between (a) forcing a member sync for every room in the drawer and
+(b) reading already-loaded members only. It shipped as **(b)**, and the reason is stronger than
+"cheaper": `UserService.getAll` delegates straight to `RoomUserStore.getAll` — a pure store read,
+no request — so holding it open for every room costs nothing, while (a) would fetch a full member
+list per room to decorate a 34dp circle. A room never opened on this install answers "no heralds"
+and keeps its monogram; opening it once already calls `ensureMembersLoaded`, and members persist,
+so the sigil is there from then on.
+
+**One deliberate divergence from §1.** The plan only changed rooms with **≥2** heralds. That rule
+would have been invisible in practice: every one of Jonny's rooms is a two-member room with the
+same single agent (the personas are routed *inside* `@silas` by `room_profile_map`, not by separate
+accounts), so nothing would ever have stacked. So `RoomSigil` answers per shape instead:
+
+- **Stack** (≥2 heralds) — one staff per herald in its own hue on the void plate, exactly as §1 asked.
+- **Single** (1 herald) — the staff in the **room's** hue, not the herald's. Painting the herald's
+  hue here would give every agent room the same circle; the room *is* that life, so the room's
+  colour is the one that carries information. It also replaces a monogram that was already saying
+  nothing — The Study, The Office, True North, The Ledger and The Forge all monogram to "T".
+- **None** — no herald known: the existing lettered monogram, untouched.
+
+Keyed on the room map rather than the sorted room list, so ordinary traffic (which churns every
+room's timestamp) does not tear down and rebuild the member subscriptions.
 
 ## Sequence & shipping
 

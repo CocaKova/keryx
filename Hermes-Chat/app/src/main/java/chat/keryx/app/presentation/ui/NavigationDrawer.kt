@@ -44,10 +44,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.keryx.app.domain.model.RoomInvite
 import chat.keryx.app.domain.model.RoomProfile
+import chat.keryx.app.domain.model.RoomSigil
+import chat.keryx.app.domain.model.RoomSigils
 import chat.keryx.app.domain.model.RoomType
 import chat.keryx.app.domain.model.Session
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.ui.components.KeryxRadius
+import chat.keryx.app.presentation.ui.components.RoomSigilAvatar
 import chat.keryx.app.theme.*
 
 @Composable
@@ -650,19 +653,24 @@ private fun RoomAvatar(
         )
     } else {
         val base = roomAvatarColor(room.name)
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(34.dp)
-                .clip(CircleShape)
-                .background(base.copy(alpha = if (selected) 0.95f else 0.8f)),
-        ) {
-            Text(
-                text = room.name.trimStart('@', '#', '!').trim().firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "•",
-                color = Color.White,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-            )
+        val sigil = RoomSigils.of(room.heraldIds)
+        if (sigil != RoomSigil.None) {
+            RoomSigilAvatar(sigil = sigil, base = base, size = 34.dp, highlighted = selected)
+        } else {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(base.copy(alpha = if (selected) 0.95f else 0.8f)),
+            ) {
+                Text(
+                    text = room.name.trimStart('@', '#', '!').trim().firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "•",
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
     }
 }

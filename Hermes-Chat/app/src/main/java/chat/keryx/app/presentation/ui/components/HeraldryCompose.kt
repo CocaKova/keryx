@@ -1,5 +1,14 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.Dp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -11,6 +20,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import chat.keryx.app.domain.model.Heraldry
 import chat.keryx.app.domain.model.Heralds
+import chat.keryx.app.domain.model.RoomSigil
 
 /** The configured heralds, provided once near the root so any bubble can resolve a sender's light. */
 data class HeraldConfig(
@@ -86,4 +96,66 @@ fun HeraldSigil(
         fontWeight = FontWeight.SemiBold,
         modifier = modifier,
     )
+}
+
+/** A herald's accent by bare key ("milo"), for places that hold keys rather than MXIDs. */
+@Composable
+fun heraldAccentFor(key: String): Color = heraldLightFor(key, key).accent
+
+/**
+ * A room avatar that says "an agent lives here": the herald's staff in place of the lettered
+ * monogram. See [RoomSigil] for why a single-herald room wears the ROOM's hue and a council
+ * wears its members'.
+ *
+ * Drawn only when the room actually has a herald among its loaded members — otherwise the two
+ * call sites keep their own monogram, unchanged. [base] is the caller's own avatar colour for
+ * this room, so the drawer and the deck each keep their palette.
+ */
+@Composable
+fun RoomSigilAvatar(
+    sigil: RoomSigil,
+    base: Color,
+    size: Dp,
+    highlighted: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val shell = modifier
+        .size(size)
+        .clip(CircleShape)
+    when (sigil) {
+        is RoomSigil.None -> Unit
+        is RoomSigil.Single -> Box(
+            contentAlignment = Alignment.Center,
+            modifier = shell.background(base.copy(alpha = if (highlighted) 0.95f else 0.75f)),
+        ) {
+            Text(
+                text = Heralds.SIGIL,
+                color = Color.White,
+                fontSize = (size.value * 0.46f).sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        is RoomSigil.Stack -> Box(
+            contentAlignment = Alignment.Center,
+            // A council gets the void, not a room hue — the members ARE the colour here, and a
+            // tinted plate behind several accents muddies all of them.
+            modifier = shell.background(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (highlighted) 0.95f else 0.7f)
+            ),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(size * 0.02f),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                sigil.heraldKeys.forEach { key ->
+                    Text(
+                        text = Heralds.SIGIL,
+                        color = heraldAccentFor(key),
+                        fontSize = (size.value * (if (sigil.heraldKeys.size >= 3) 0.30f else 0.38f)).sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        }
+    }
 }
