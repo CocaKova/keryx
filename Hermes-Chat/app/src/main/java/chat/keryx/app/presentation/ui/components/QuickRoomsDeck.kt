@@ -238,12 +238,5 @@ private fun monogram(name: String): String {
 private fun shortLabel(name: String): String = name.trimStart('@', '#', '!').trim()
 
 /** Deterministic, tasteful avatar color derived from the room name. */
-private val AVATAR_PALETTE = listOf(
-    Color(0xFFE57373), Color(0xFF64B5F6), Color(0xFF81C784), Color(0xFFFFB74D),
-    Color(0xFFBA68C8), Color(0xFF4DB6AC), Color(0xFF7986CB), Color(0xFFF06292),
-)
-
-private fun avatarColor(name: String): Color {
-    val idx = (name.hashCode() and 0x7FFFFFFF) % AVATAR_PALETTE.size
-    return AVATAR_PALETTE[idx]
-}
+// The palette lives in RoomLight.kt — it was duplicated here and in the drawer.
+private fun avatarColor(name: String): Color = roomLightRaw(name)

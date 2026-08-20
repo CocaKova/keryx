@@ -1,6 +1,7 @@
 package chat.keryx.app
 
 import chat.keryx.app.domain.model.Heralds
+import chat.keryx.app.presentation.ui.components.roomLightRaw
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -144,5 +145,42 @@ class PaperContrastTest {
                 "parchment — use KeryxStatus:\n" + offenders.joinToString("\n"),
             offenders.isEmpty(),
         )
+    }
+
+    @Test
+    fun `a room's light is stable and survives being pressed onto paper`() {
+        // The hue IS the room's identity in the drawer, the deck, and now the switch wake, so it
+        // must not wander between launches.
+        val name = "The Study"
+        assertEquals(roomLightRaw(name), roomLightRaw(name))
+
+        // roomLight() darkens by a fixed 40% on parchment. These are Material 300s — pitched as a
+        // ground with white on top, not as a mark on paper — and raw they measure 1.55:1 to
+        // 3.19:1 there. WCAG asks 3:1 of a graphical object; the wake also carries its own alpha,
+        // so headroom matters.
+        val names = listOf("a", "b", "c", "d", "e", "f", "g", "h", "The Study", "Clocktower")
+        for (n in names) {
+            val raw = roomLightRaw(n)
+            val pressed = 0xFF000000L or
+                ((raw.red * 0.60f * 255f).toLong() shl 16) or
+                ((raw.green * 0.60f * 255f).toLong() shl 8) or
+                (raw.blue * 0.60f * 255f).toLong()
+            val c = contrast(pressed, paper)
+            assertTrue("Room light for '$n' scores $c on parchment", c >= 3.0)
+        }
+    }
+
+    @Test
+    fun `the room palette is defined once`() {
+        // It lived twice, byte-identical, in the drawer and the deck — harmless while both only
+        // drew circles, and not harmless the moment the switch wake wanted the same light. A wake
+        // carrying a different colour from the circle you tapped breaks the one thing it says.
+        val defs = File("src/main/java/chat/keryx/app")
+            .walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .filter { f -> f.readText().contains("Color(0xFFE57373)") }
+            .map { it.name }
+            .toList()
+        assertEquals("The room palette should exist in RoomLight.kt only, found: $defs", 1, defs.size)
     }
 }

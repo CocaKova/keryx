@@ -231,13 +231,20 @@ fun ChatScreen(
         viewModel.onComposerTextChanged(draft)
     }
 
-    // Dream dissolve on room switch: the timeline re-materializes through a soft blur+fade
-    // while a wisp of braille glyphs drifts across and scatters — the app's signature
-    // "crossing rooms in a dream" beat. Skipped on first open (no jarring boot blur).
+    // Dream dissolve on room switch: the timeline re-materializes through a soft blur+fade while
+    // the arriving room's light streams across it as a braille wake — the app's signature
+    // "crossing rooms" beat. Skipped on first open (no jarring boot blur), and skipped entirely
+    // under Battery Saver, which is where KeryxSpaceBody's arrival already stands.
     var lastRoomForDissolve by remember { mutableStateOf<String?>(null) }
     val dissolve = remember { Animatable(1f) }
+    val dissolveReduced by chat.keryx.app.presentation.ui.components.rememberReducedMotion()
     LaunchedEffect(currentSession?.id) {
         val id = currentSession?.id
+        if (dissolveReduced) {
+            dissolve.snapTo(1f)
+            lastRoomForDissolve = id
+            return@LaunchedEffect
+        }
         if (lastRoomForDissolve != null && id != null && id != lastRoomForDissolve) {
             dissolve.snapTo(0f)
             // Hold while the drawer clears the stage — the old 560ms version played almost
@@ -797,23 +804,30 @@ fun ChatScreen(
         // dissolve, and gating the node on `dissolve < 1f` would tear the light down mid-cross.
         // Idle costs nothing — the draw returns immediately at rest, and the node takes no input.
         val sweepCore = chat.keryx.app.presentation.ui.components.keryxSweepCore()
+        // One light for the whole beat: the gleam and the wake below it are the same hue, the one
+        // the arriving room wears in the drawer. Two different accents crossing the same 1.2s was
+        // most of why this read as assembled rather than composed.
+        val arrivingRoom = currentSession?.title.orEmpty()
+        val arrivingLight =
+            if (arrivingRoom.isNotBlank()) chat.keryx.app.presentation.ui.components.roomLight(arrivingRoom)
+            else MaterialTheme.colorScheme.primary
         Box(
             Modifier.fillMaxSize().then(
-                with(MaterialTheme.colorScheme) {
-                    Modifier.keryxLightSweep(
-                        primary,
-                        tertiary,
-                        core = sweepCore,
-                        progress = rememberSweepProgress { dissolve.value },
-                    )
-                }
+                Modifier.keryxLightSweep(
+                    arrivingLight,
+                    MaterialTheme.colorScheme.tertiary,
+                    core = sweepCore,
+                    progress = rememberSweepProgress { dissolve.value },
+                )
             )
         )
-        // The braille dream-field riding the room-switch dissolve: glyphs over the whole screen.
+        // The wake rides the room-switch dissolve, carrying the light of the room you are
+        // arriving in — the same hue its avatar wears in the drawer, so the light you tapped is
+        // the light that travels. Falls back to the theme accents before a room is known.
         if (dissolve.value < 1f) {
-            BrailleWisp(
+            BrailleWake(
                 progress = dissolve.value,
-                color = MaterialTheme.colorScheme.primary,
+                color = arrivingLight,
                 color2 = MaterialTheme.colorScheme.tertiary,
                 modifier = Modifier.fillMaxSize(),
             )
@@ -1912,50 +1926,106 @@ private fun DreamPill(
  * Peak visibility at the middle of [progress]; fully gone at both ends, so it never obstructs.
  */
 @Composable
-private fun BrailleWisp(
+private fun BrailleWake(
     progress: Float,
     color: Color,
     color2: Color,
     modifier: Modifier = Modifier,
 ) {
-    val n = 72
-    // sin envelope: invisible at 0 and 1, fullest mid-flight.
+    // The room-switch beat, rebuilt for 2.5.
+    //
+    // What was here (2026-07-02, seven weeks before the gilded void gave the app a visual
+    // language) was 72 hash-scattered glyphs at random sizes mutating on a counter. Every other
+    // living thing in Keryx is *ordered* — the snake traces a path, the sand obeys physics, the
+    // sweep is one specular pass — so a field of noise read as a different app's idea, and light
+    // mode exposed it because noise had no darkness left to hide in.
+    //
+    // So: a wake, not a scatter. Braille streams in lanes from the edge you came from, a bright
+    // leading edge with a fading tail, in the DESTINATION room's own light. That is 2.2's
+    // endorsed-but-never-built vision — "room-to-room navigation as light traveling with you" —
+    // and it says something true: this room has its own life, and you have just walked into it.
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 128)
+    // sin envelope: nothing at either end, fullest mid-flight.
     val envelope = kotlin.math.sin(progress.coerceIn(0f, 1f) * Math.PI.toFloat())
-    val step = (progress * 26).toInt() // glyph mutation clock
-    val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 160)
-    androidx.compose.foundation.Canvas(
-        modifier = modifier.graphicsLayer {
-            alpha = envelope
-            // The whole field exhales: slightly swollen while the blur is deep, settling to 1.
-            val sc = 1.05f - 0.05f * progress
-            scaleX = sc; scaleY = sc
-        }
-    ) {
-        for (i in 0 until n) {
-            // Deterministic scatter over the whole screen (hash-based, stable per glyph).
-            val fx = ((i * 73 + 31) % 97) / 97f
-            val fy = ((i * 149 + 17) % 101) / 101f
-            // Deterministic per-(cell, step) dot pattern in the braille block U+2800–U+28FF.
-            val h = (i * 31 + step * 17 + i * step * 7) and 0xFF
-            // Each glyph rises gently as the room re-materializes; odd ones sink instead.
-            val rise = (1f - progress) * (if (i % 2 == 0) 34f else -22f) * ((i % 5 + 2) / 4f)
-            val glyphAlpha = (0.20f + 0.80f * (((i * 7 + step) % 6) / 5f)) * envelope
-            val sizeSp = (13 + (i * 13) % 12).sp
-            val layout = measurer.measure(
-                text = (0x2800 + h).toChar().toString(),
-                style = androidx.compose.ui.text.TextStyle(fontSize = sizeSp),
-            )
-            drawText(
-                textLayoutResult = layout,
-                color = lerp(color, color2, fy).copy(alpha = glyphAlpha.coerceIn(0f, 1f)),
-                topLeft = androidx.compose.ui.geometry.Offset(
-                    x = fx * (size.width - layout.size.width),
-                    y = (fy * (size.height - layout.size.height) + rise).coerceIn(0f, size.height - layout.size.height),
-                ),
-            )
+    if (envelope <= 0.01f) return
+
+    androidx.compose.foundation.Canvas(modifier = modifier) {
+        // The front runs past the right edge by the tail's length so the last lane empties out
+        // instead of being cut off mid-stream when progress lands.
+        val front = progress * (1f + WAKE_TAIL)
+        val laneH = size.height / WAKE_LANES
+        val stepPx = size.width * WAKE_STEP
+
+        for (lane in 0 until WAKE_LANES) {
+            val laneF = lane / (WAKE_LANES - 1f)
+            // A deterministic per-lane lead so the front is a soft diagonal rather than a wall —
+            // the difference between a curtain and something moving through the room.
+            val lead = ((lane * 37) % 11) / 11f * WAKE_SKEW
+            val laneFront = (front - lead) * size.width
+            if (laneFront <= 0f) continue
+
+            // Lanes breathe apart slightly as they travel, so the stream has depth.
+            val drift = kotlin.math.sin((progress * Math.PI.toFloat()) + lane) * laneH * 0.18f
+            val y = lane * laneH + laneH * 0.5f + drift
+            val laneColor = androidx.compose.ui.graphics.lerp(color, color2, laneF)
+
+            var i = 0
+            while (true) {
+                val gx = laneFront - i * stepPx
+                if (gx < -stepPx) break
+                // Distance behind the leading edge, 0 at the front -> 1 at the tail's end.
+                val behind = (i * stepPx) / (size.width * WAKE_TAIL)
+                if (behind > 1f) break
+                i++
+                if (gx > size.width) continue
+
+                // An ordered ring of dot patterns, advanced along the lane: consecutive glyphs
+                // read as one thing streaming past, which is the conga line the snake walks —
+                // not the per-glyph randomness this replaced.
+                val glyph = (0x2800 + WAKE_DOTS[(i + lane) % WAKE_DOTS.size]).toChar()
+                // Bright at the edge, fading back. Squared so the head stays crisp and the tail
+                // gives up quickly rather than smearing halfway across the screen.
+                val fade = (1f - behind) * (1f - behind)
+                val a = (fade * envelope * 0.85f).coerceIn(0f, 1f)
+                if (a < 0.02f) continue
+
+                val layout = measurer.measure(
+                    text = glyph.toString(),
+                    style = androidx.compose.ui.text.TextStyle(fontSize = WAKE_GLYPH_SP.sp),
+                )
+                drawText(
+                    textLayoutResult = layout,
+                    color = laneColor.copy(alpha = a),
+                    topLeft = androidx.compose.ui.geometry.Offset(
+                        x = gx - layout.size.width / 2f,
+                        y = y - layout.size.height / 2f,
+                    ),
+                )
+            }
         }
     }
 }
+
+/** Lanes the wake streams along. Odd, so one runs through the middle of the screen. */
+private const val WAKE_LANES = 9
+
+/** Tail length as a fraction of screen width — how far the stream trails its leading edge. */
+private const val WAKE_TAIL = 0.42f
+
+/** Gap between glyphs along a lane, as a fraction of width. */
+private const val WAKE_STEP = 0.052f
+
+/** How far lanes lead or lag each other, as a fraction of the crossing. Enough to read as a
+ *  diagonal, little enough that it never reads as ragged. */
+private const val WAKE_SKEW = 0.22f
+
+private const val WAKE_GLYPH_SP = 15f
+
+/**
+ * One ordered turn of the braille dot ring — the same six-step conga the spinner walks, so the
+ * wake and the emblem are visibly the same alphabet.
+ */
+private val WAKE_DOTS = intArrayOf(0x19, 0x38, 0x34, 0x26, 0x07, 0x0B)
 
 private fun replyPreviewText(m: Message): String = when {
     m.content.isNotBlank() -> m.content.lineSequence().firstOrNull { it.isNotBlank() }?.trim() ?: m.content.trim()
