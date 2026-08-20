@@ -83,6 +83,7 @@ import chat.keryx.app.presentation.ui.components.LocalHeraldConfig
 import chat.keryx.app.presentation.ui.components.bubbleAppearance
 import chat.keryx.app.presentation.ui.components.heraldLightFor
 import chat.keryx.app.presentation.ui.components.keryxLightSweep
+import chat.keryx.app.presentation.ui.components.rememberSweepProgress
 import androidx.compose.ui.text.font.FontFamily
 import chat.keryx.app.presentation.ui.components.keryxMagicDust
 import chat.keryx.app.presentation.ui.components.GroupedTimeline
@@ -792,15 +793,20 @@ fun ChatScreen(
 
         // Light travel (2.2): the accent band crosses the room with the dissolve — arriving
         // somewhere reads as light moving with you. Under the braille wisps, over the content.
-        if (dissolve.value < 1f) {
-            Box(
-                Modifier.fillMaxSize().then(
-                    with(MaterialTheme.colorScheme) {
-                        Modifier.keryxLightSweep(primary, tertiary) { dissolve.value }
-                    }
-                )
+        // Mounted unconditionally: the sweep now runs on its own clock, which outlives a fast
+        // dissolve, and gating the node on `dissolve < 1f` would tear the light down mid-cross.
+        // Idle costs nothing — the draw returns immediately at rest, and the node takes no input.
+        Box(
+            Modifier.fillMaxSize().then(
+                with(MaterialTheme.colorScheme) {
+                    Modifier.keryxLightSweep(
+                        primary,
+                        tertiary,
+                        rememberSweepProgress { dissolve.value },
+                    )
+                }
             )
-        }
+        )
         // The braille dream-field riding the room-switch dissolve: glyphs over the whole screen.
         if (dissolve.value < 1f) {
             BrailleWisp(

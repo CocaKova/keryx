@@ -1,6 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -36,15 +38,16 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.addOutline
@@ -52,6 +55,7 @@ import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
@@ -206,10 +210,19 @@ fun Modifier.keryxShimmerBorder(
 }
 
 /**
- * Light travel (2.2): while a transition is mid-flight, a soft diagonal band of accent light
- * crosses the surface with it — navigation reads as light moving with you, not screens swapping.
+ * Light travel (2.2): while a transition is mid-flight, a band of accent light crosses the
+ * surface with it — navigation reads as light moving with you, not screens swapping.
  * [progress] is read in the draw phase only, so the sweep invalidates drawing, never layout.
- * Peak alpha rides sin(pi*p): nothing at rest, brightest mid-journey.
+ *
+ * It is built like light rather than like a tint: a long dim **wake** trailing behind, the soft
+ * **body**, three thin **filaments** drifting at their own speeds (what gives it texture — a flat
+ * band reads as a wash, a bundle of strands reads as something passing), a **prism fringe** where
+ * accent2 runs just ahead of accent, and the **blade**, the bright leading edge. Everything scales
+ * with sin(pi·p): nothing at rest, brightest mid-journey.
+ *
+ * ⚠️ Do NOT drive this straight off a transition's progress — see [rememberSweepProgress]. A fast
+ * navigation (the agent Hub) finishes in a couple of frames, and the light was gone before it
+ * could be seen (Jonny, second walk: "very very quick on some actions").
  */
 fun Modifier.keryxLightSweep(
     accent: Color,
@@ -220,35 +233,126 @@ fun Modifier.keryxLightSweep(
     val p = progress()
     if (p > 0.02f && p < 0.98f) {
         val glow = kotlin.math.sin(p * Math.PI).toFloat()
-        val cx = size.width * (p * 1.8f - 0.4f)
-        val half = size.width * 0.35f
-        // The soft body of the light, wide and diagonal.
-        drawRect(
+        val cx = size.width * (p * 1.7f - 0.35f)
+        // Narrow on purpose. At 0.35 of the width the body covered most of the screen at
+        // mid-journey and read as a blue WASH over the page rather than as something crossing it —
+        // and a wash hides its own grain. Narrow also steepens every gradient axis, so the strands
+        // run visibly diagonal instead of near-vertical.
+        val half = size.width * 0.20f
+        // Diagonal by construction: every band runs bottom-left to top-right, so they read as one
+        // body of light travelling rather than as separate bars.
+        fun band(centre: Float, halfWidth: Float, stops: Array<Pair<Float, Color>>) = drawRect(
             Brush.linearGradient(
-                colorStops = arrayOf(
-                    0f to Color.Transparent,
-                    0.45f to accent.copy(alpha = 0.30f * glow),
-                    0.55f to accent2.copy(alpha = 0.22f * glow),
-                    1f to Color.Transparent,
-                ),
-                start = Offset(cx - half, size.height),
-                end = Offset(cx + half, 0f),
+                colorStops = stops,
+                start = Offset(centre - halfWidth, size.height),
+                end = Offset(centre + halfWidth, 0f),
             ),
         )
-        // The blade: a thin bright leading edge, unmistakably *light*, not a tint.
-        val blade = size.width * 0.05f
-        drawRect(
-            Brush.linearGradient(
-                colorStops = arrayOf(
+
+        // The wake: what the light leaves behind it. Long and very dim — the reason the sweep
+        // reads as *passing* rather than as a shape that appeared.
+        band(
+            cx - half * 1.1f, half * 2.0f,
+            arrayOf(
+                0f to Color.Transparent,
+                0.75f to accent2.copy(alpha = 0.07f * glow),
+                1f to accent.copy(alpha = 0.11f * glow),
+            ),
+        )
+
+        // The soft body.
+        band(
+            cx, half,
+            arrayOf(
+                0f to Color.Transparent,
+                0.45f to accent.copy(alpha = 0.26f * glow),
+                0.55f to accent2.copy(alpha = 0.19f * glow),
+                1f to Color.Transparent,
+            ),
+        )
+
+        // Filaments: thin strands at their own offsets and speeds, so the body has grain instead
+        // of being one smooth gradient. The slow shimmer keeps them alive without strobing.
+        val shimmer = 0.78f + 0.22f * kotlin.math.sin(p * 9f).toFloat()
+        for ((offset, width, alpha) in FILAMENTS) {
+            band(
+                cx + half * offset * (0.85f + 0.3f * glow), size.width * width,
+                arrayOf(
                     0f to Color.Transparent,
-                    0.5f to accent.copy(alpha = 0.55f * glow),
+                    0.5f to accent.copy(alpha = alpha * glow * shimmer),
                     1f to Color.Transparent,
                 ),
-                start = Offset(cx + half * 0.5f - blade, size.height),
-                end = Offset(cx + half * 0.5f + blade, 0f),
+            )
+        }
+
+        // Prism fringe: accent2 running just ahead of the blade. Light through an edge splits;
+        // this is the cheapest honest version of that.
+        val blade = size.width * 0.032f
+        band(
+            cx + half * 0.5f + blade * 1.6f, blade * 0.9f,
+            arrayOf(
+                0f to Color.Transparent,
+                0.5f to accent2.copy(alpha = 0.28f * glow),
+                1f to Color.Transparent,
+            ),
+        )
+
+        // The blade: the bright leading edge, unmistakably *light*, not a tint.
+        band(
+            cx + half * 0.5f, blade,
+            arrayOf(
+                0f to Color.Transparent,
+                0.5f to accent.copy(alpha = 0.62f * glow),
+                1f to Color.Transparent,
             ),
         )
     }
+}
+
+/** (offset along the band, width as a fraction of the surface, peak alpha). */
+private val FILAMENTS = listOf(
+    Triple(-0.62f, 0.011f, 0.26f),
+    Triple(-0.18f, 0.006f, 0.34f),
+    Triple(0.22f, 0.015f, 0.22f),
+    Triple(0.48f, 0.008f, 0.18f),
+)
+
+/**
+ * The sweep's own clock.
+ *
+ * A transition's progress is the wrong tempo to borrow. The page slide takes ~300ms, but opening
+ * the agent Hub snaps in a couple of frames, and the light rode that to nothing (Jonny, second
+ * walk: *"it's very very quick on some actions like the agent Hub"*). Light travelling has one
+ * speed of its own.
+ *
+ * So the clock starts when the transition does and runs [durationMs] regardless — and the sweep
+ * takes whichever of the two is **further behind**. A snap transition leaves the clock as the only
+ * brake, so the light still crosses at its own pace; a slow back-drag leaves the *finger* as the
+ * brake, so the light stays under the thumb instead of racing ahead of it and finishing on a
+ * screen that hasn't moved yet. Taking the further-ALONG of the two would undo the whole thing:
+ * a transition that lands instantly would pin the sweep at 1 and draw nothing.
+ *
+ * The exit direction is deliberately left riding its driver — the layer is torn down when it
+ * reaches zero, so there is nothing left to light.
+ */
+@Composable
+fun rememberSweepProgress(
+    durationMs: Int = 620,
+    driver: () -> Float,
+): () -> Float {
+    val clock = remember { Animatable(0f) }
+    // Rising off rest, not "mid-flight": a fast transition can go 0 → 1 between two samples, and
+    // a window that narrow is never observed at all.
+    val started by remember { derivedStateOf { driver() > 0.02f } }
+    LaunchedEffect(started) {
+        if (started) {
+            clock.snapTo(0f)
+            clock.animateTo(1f, tween(durationMs, easing = LinearOutSlowInEasing))
+        } else {
+            clock.snapTo(0f)
+        }
+    }
+    return { minOf(driver(), clock.value) }
 }
 
 /** A small status dot that breathes while [alive]; solid and still otherwise. */
