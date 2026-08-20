@@ -991,13 +991,19 @@ private fun Composer(
         if (sttEnabled) {
             val recording = dictation == DictationPhase.RECORDING
             // A slow breathing pulse while the mic is hot — unmistakable "it's listening".
-            val pulseTransition = rememberInfiniteTransition(label = "mic_pulse")
-            val pulse by pulseTransition.animateFloat(
-                initialValue = 1f,
-                targetValue = if (recording) 1.3f else 1f,
-                animationSpec = infiniteRepeatable(tween(480), RepeatMode.Reverse),
-                label = "mic_pulse_scale",
-            )
+            // The transition used to exist whenever the composer did, animating 1f → 1f while idle:
+            // no visible motion, one frame-clock client held open for every second the app was on
+            // screen. It now exists only while the mic is actually hot, and not under Battery Saver
+            // — where a hot mic reads from the icon's error tint instead of from its scale.
+            val reducedMotion by chat.keryx.app.presentation.ui.components.rememberReducedMotion()
+            val pulse = if (recording && !reducedMotion) {
+                rememberInfiniteTransition(label = "mic_pulse").animateFloat(
+                    initialValue = 1f,
+                    targetValue = 1.3f,
+                    animationSpec = infiniteRepeatable(tween(480), RepeatMode.Reverse),
+                    label = "mic_pulse_scale",
+                ).value
+            } else 1f
             IconButton(onClick = onMicTap, modifier = Modifier.size(44.dp)) {
                 if (dictation == DictationPhase.TRANSCRIBING) {
                     CircularProgressIndicator(
@@ -1633,12 +1639,15 @@ fun MessageBubble(
                 Spacer(modifier = Modifier.width(6.dp))
                 // Breathing speaker while the voice is live (dimmer while speech is being fetched);
                 // tapping it stops playback without reopening the long-press bar.
-                val pulse by rememberInfiniteTransition(label = "ttsPulse").animateFloat(
-                    initialValue = 0.45f,
-                    targetValue = 1f,
-                    animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
-                    label = "ttsPulseAlpha",
-                )
+                val reducedMotion by chat.keryx.app.presentation.ui.components.rememberReducedMotion()
+                val pulse = if (!reducedMotion) {
+                    rememberInfiniteTransition(label = "ttsPulse").animateFloat(
+                        initialValue = 0.45f,
+                        targetValue = 1f,
+                        animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
+                        label = "ttsPulseAlpha",
+                    ).value
+                } else 1f
                 Icon(
                     Icons.AutoMirrored.Filled.VolumeUp,
                     contentDescription = "Stop speaking",
@@ -2070,12 +2079,17 @@ private fun StreamingBubble(
                         // A quiet blinking caret marks "still writing" without a layout-shifting
                         // spinner; its blink crossfades accent 1 → accent 2. Beside it, a live
                         // ≈tok/s readout — practical telemetry that also just looks alive.
-                        val caret = rememberInfiniteTransition(label = "caret")
-                        val a by caret.animateFloat(
-                            initialValue = 0.15f, targetValue = 0.9f,
-                            animationSpec = infiniteRepeatable(tween(520), RepeatMode.Reverse),
-                            label = "caretAlpha",
-                        )
+                        // Stilled, the caret holds solid rather than blinking — the text growing
+                        // above it is the liveness signal, and the ≈tok/s readout beside it moves
+                        // on its own without a frame clock.
+                        val reducedMotion by chat.keryx.app.presentation.ui.components.rememberReducedMotion()
+                        val a = if (!reducedMotion) {
+                            rememberInfiniteTransition(label = "caret").animateFloat(
+                                initialValue = 0.15f, targetValue = 0.9f,
+                                animationSpec = infiniteRepeatable(tween(520), RepeatMode.Reverse),
+                                label = "caretAlpha",
+                            ).value
+                        } else 0.9f
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("▍", color = lerp(accent2, accent, a).copy(alpha = a), fontSize = 13.sp)
                             if (stream.charsPerSec > 8f) {
@@ -2133,12 +2147,14 @@ private fun PendingSendBubble(text: String, bubbleStyle: String, textScale: Floa
     // The glow flare rides the same progress but fades back out near the end of the settle.
     val glowAlpha = (1f - bloom.value) * 0.55f + 0.12f
     // Breathing "sending" indicator, alive until the echo swap retires this bubble.
-    val breathe = rememberInfiniteTransition(label = "sendBreathe")
-    val tickAlpha by breathe.animateFloat(
-        initialValue = 0.25f, targetValue = 0.9f,
-        animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
-        label = "sendTickAlpha",
-    )
+    val reducedMotion by chat.keryx.app.presentation.ui.components.rememberReducedMotion()
+    val tickAlpha = if (!reducedMotion) {
+        rememberInfiniteTransition(label = "sendBreathe").animateFloat(
+            initialValue = 0.25f, targetValue = 0.9f,
+            animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
+            label = "sendTickAlpha",
+        ).value
+    } else 0.9f
 
     val baseDensity = LocalDensity.current
     Column(horizontalAlignment = Alignment.End, modifier = Modifier.fillMaxWidth()) {

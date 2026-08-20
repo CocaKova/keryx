@@ -261,17 +261,29 @@ private fun CallOrb(
     accent2: Color,
     onTap: () -> Unit,
 ) {
-    val breath = rememberInfiniteTransition(label = "orbBreath")
-    val slow by breath.animateFloat(
-        initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(2400), RepeatMode.Reverse),
-        label = "orbSlow",
-    )
-    val spin by breath.animateFloat(
-        initialValue = 0f, targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(9000)),
-        label = "orbSpin",
-    )
+    // A call already costs a lit screen, an open mic and playing audio, so stilling the orb saves
+    // comparatively little — but the budget is not a cost calculation, it is a promise. The orb's
+    // reactive half survives regardless: [micLevel] is not a frame clock, so under Battery Saver
+    // the orb still rides your voice, it just stops breathing and turning underneath it.
+    val reduced by rememberReducedMotion()
+    val slow: Float
+    val spin: Float
+    if (!reduced) {
+        val breath = rememberInfiniteTransition(label = "orbBreath")
+        slow = breath.animateFloat(
+            initialValue = 0f, targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(2400), RepeatMode.Reverse),
+            label = "orbSlow",
+        ).value
+        spin = breath.animateFloat(
+            initialValue = 0f, targetValue = 360f,
+            animationSpec = infiniteRepeatable(tween(9000)),
+            label = "orbSpin",
+        ).value
+    } else {
+        slow = 0.5f
+        spin = 0f
+    }
     // Listening: the orb rides YOUR voice. Everything else: a slow breath.
     val live = animateFloatAsState(
         targetValue = when (phase) {
@@ -354,11 +366,14 @@ private fun CallOrb(
 /** Five bars, phased sine waves — the agent's voice made visible. */
 @Composable
 private fun SpeakingBars(accent: Color, accent2: Color) {
-    val t by rememberInfiniteTransition(label = "bars").animateFloat(
-        initialValue = 0f, targetValue = (2 * Math.PI).toFloat(),
-        animationSpec = infiniteRepeatable(tween(900)),
-        label = "barsT",
-    )
+    val reduced by rememberReducedMotion()
+    val t = if (!reduced) {
+        rememberInfiniteTransition(label = "bars").animateFloat(
+            initialValue = 0f, targetValue = (2 * Math.PI).toFloat(),
+            animationSpec = infiniteRepeatable(tween(900)),
+            label = "barsT",
+        ).value
+    } else 0f
     Canvas(Modifier.size(width = 92.dp, height = 60.dp)) {
         val barW = 8.dp.toPx()
         val gap = (size.width - barW * 5) / 4
@@ -388,11 +403,15 @@ private fun DriftField(accent: Color, accent2: Color) {
                 rnd.nextFloat() * (2 * Math.PI).toFloat(), rnd.nextBoolean())
         }
     }
-    val t by rememberInfiniteTransition(label = "drift").animateFloat(
-        initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(24_000)),
-        label = "driftT",
-    )
+    // 42 motes over a full screen: the most expensive ornament on the call, and the least missed.
+    val reduced by rememberReducedMotion()
+    val t = if (!reduced) {
+        rememberInfiniteTransition(label = "drift").animateFloat(
+            initialValue = 0f, targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(24_000)),
+            label = "driftT",
+        ).value
+    } else 0f
     Canvas(Modifier.fillMaxSize()) {
         motes.forEach { m ->
             val y = ((m.y - t * (0.05f + m.r * 0.03f)) % 1f + 1f) % 1f

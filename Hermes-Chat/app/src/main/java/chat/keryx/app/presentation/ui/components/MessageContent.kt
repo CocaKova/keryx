@@ -398,8 +398,10 @@ internal fun ReasoningCanvas(text: String, baseColor: Color, active: Boolean) {
     var userOverride by remember { mutableStateOf<Boolean?>(null) }
     val expanded = userOverride ?: active
 
-    // Breathing glow while reasoning is actively streaming.
-    val glow = if (active) {
+    // Breathing glow while reasoning is actively streaming. Battery Saver holds it at the bright
+    // end rather than the resting value, so a stream still reads as streaming.
+    val reduced by rememberReducedMotion()
+    val glow = if (active && !reduced) {
         val t = rememberInfiniteTransition(label = "reasonPulse")
         t.animateFloat(
             initialValue = 0.16f,
@@ -407,7 +409,7 @@ internal fun ReasoningCanvas(text: String, baseColor: Color, active: Boolean) {
             animationSpec = infiniteRepeatable(tween(1200), RepeatMode.Reverse),
             label = "reasonPulseAlpha",
         ).value
-    } else 0.18f
+    } else if (active) 0.5f else 0.18f
 
     Column(
         modifier = Modifier

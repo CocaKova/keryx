@@ -338,7 +338,10 @@ private fun LinkHealthDot(
     if (health == chat.keryx.app.presentation.LinkHealth.OFF) return
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.tertiary
-    val alpha = if (health == chat.keryx.app.presentation.LinkHealth.LIVE) {
+    // Stilled, LIVE holds the top of its breath — full-strength accent, still a step clear of OK's
+    // 75% — so "tokens are flowing" survives Battery Saver as a state you can read at a glance.
+    val reduced by chat.keryx.app.presentation.ui.components.rememberReducedMotion()
+    val alpha = if (health == chat.keryx.app.presentation.LinkHealth.LIVE && !reduced) {
         val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "linkBreath")
         t.animateFloat(
             initialValue = 0.35f,

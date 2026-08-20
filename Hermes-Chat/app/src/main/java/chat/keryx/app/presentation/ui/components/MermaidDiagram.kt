@@ -84,13 +84,18 @@ fun MermaidDiagram(code: String, baseColor: Color) {
 
     val layout = remember(graph) { layout(graph) }
 
-    // Breathing glow on the connection lines.
-    val pulse by rememberInfiniteTransition(label = "mermaidPulse").animateFloat(
-        initialValue = 0.45f,
-        targetValue = 0.95f,
-        animationSpec = infiniteRepeatable(tween(1500), RepeatMode.Reverse),
-        label = "mermaidPulseAlpha",
-    )
+    // Breathing glow on the connection lines. A diagram is a static picture the moment it renders,
+    // so under Battery Saver the lines simply sit at full strength — nothing here is telling you
+    // that anything is still happening.
+    val reduced by rememberReducedMotion()
+    val pulse = if (!reduced) {
+        rememberInfiniteTransition(label = "mermaidPulse").animateFloat(
+            initialValue = 0.45f,
+            targetValue = 0.95f,
+            animationSpec = infiniteRepeatable(tween(1500), RepeatMode.Reverse),
+            label = "mermaidPulseAlpha",
+        ).value
+    } else 0.95f
 
     Box(
         modifier = Modifier

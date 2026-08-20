@@ -48,28 +48,41 @@ fun CloudBanner(
     border2: Color = border,
     content: @Composable () -> Unit,
 ) {
-    val t = rememberInfiniteTransition(label = "cloudBanner")
-    // Scallops travel once around the edge every ~11s — slow and dreamlike.
-    val orbit by t.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(11000, easing = LinearEasing), RepeatMode.Restart),
-        label = "orbit",
-    )
-    // Independent gentle bob.
-    val bobT by t.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(2800, easing = LinearEasing), RepeatMode.Reverse),
-        label = "bob",
-    )
-    // Slow breath: bump sizes swell and relax a touch, out of phase with the bob.
-    val breath by t.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(4300, easing = LinearEasing), RepeatMode.Reverse),
-        label = "breath",
-    )
+    // Three frame-clock clients for one banner, so Battery Saver takes all three at once: the
+    // cloud keeps its shape and its scalloped edge, it just stops drifting, bobbing and breathing.
+    val reduced by rememberReducedMotion()
+    val orbit: Float
+    val bobT: Float
+    val breath: Float
+    if (!reduced) {
+        val t = rememberInfiniteTransition(label = "cloudBanner")
+        // Scallops travel once around the edge every ~11s — slow and dreamlike.
+        orbit = t.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(11000, easing = LinearEasing), RepeatMode.Restart),
+            label = "orbit",
+        ).value
+        // Independent gentle bob.
+        bobT = t.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(2800, easing = LinearEasing), RepeatMode.Reverse),
+            label = "bob",
+        ).value
+        // Slow breath: bump sizes swell and relax a touch, out of phase with the bob.
+        breath = t.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(4300, easing = LinearEasing), RepeatMode.Reverse),
+            label = "breath",
+        ).value
+    } else {
+        orbit = 0f
+        // sin(0.5 * PI) == 1 would hold the bob at the top of its travel; 0f sits it level.
+        bobT = 0f
+        breath = 0.5f
+    }
 
     Box(
         modifier = modifier
