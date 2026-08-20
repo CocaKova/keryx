@@ -105,12 +105,23 @@ class ChatRepositoryImpl(
      */
     private fun heraldsByRoom(client: MatrixClient, roomIds: Collection<RoomId>): Flow<Map<String, List<String>>> {
         val configured = Heralds.parseIds(settingsRepository.agentMatrixId)
-        if (configured.isEmpty() || roomIds.isEmpty()) return flowOf(emptyMap())
+        // Nobody named a herald — the setting ships empty and Jonny's install never filled it in,
+        // so every room in the drawer wore the lettered monogram while the bubbles inside them
+        // rendered as the agent. Fall back to the rule the transcript already uses for exactly
+        // this case (`legacyAgentRoomOf`): on a gateway install, a room with one other member is
+        // an agent DM. See [RoomSigils.soloHerald].
+        val inferSolo = configured.isEmpty() && settingsRepository.gatewayConfigured
+        if ((configured.isEmpty() && !inferSolo) || roomIds.isEmpty()) return flowOf(emptyMap())
+        val me = client.userId.full
         val ids = roomIds.toList()
         return combine(
             ids.map { roomId ->
                 client.user.getAll(roomId)
-                    .map { members -> RoomSigils.heraldsAmong(members.keys.map { it.full }, configured) }
+                    .map { members ->
+                        val memberIds = members.keys.map { it.full }
+                        if (configured.isEmpty()) RoomSigils.soloHerald(memberIds, me)
+                        else RoomSigils.heraldsAmong(memberIds, configured)
+                    }
                     // Emit before the store answers so the drawer paints immediately; a room whose
                     // members are still resolving simply shows its monogram for that beat.
                     .onStart { emit(emptyList()) }
