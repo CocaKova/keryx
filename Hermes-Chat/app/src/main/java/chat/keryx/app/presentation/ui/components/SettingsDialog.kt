@@ -161,7 +161,7 @@ fun SettingsScreen(
                 ) {
                     // Gateway-backed state for the Agent and Companion sections (and their hub
                     // subtitles). Cheap to collect here — both flows are already hot for the
-                    // Agent Hub and the drawer mascot.
+                    // Gateway space and the drawer mascot.
                     val caps by viewModel.reasoningCaps.collectAsState()
                     val hubHealth by viewModel.hubHealth.collectAsState()
                     val petInfo by viewModel.petInfo.collectAsState()
@@ -251,7 +251,7 @@ fun SettingsScreen(
                             }
                             Spacer(Modifier.height(6.dp))
                             Text(
-                                "Live console — jobs, sessions, skills, tools — lives in the Agent Hub.",
+                                "Live console — jobs in Gateway; sessions, skills and tools in Workshop.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 fontSize = 11.sp,
                             )

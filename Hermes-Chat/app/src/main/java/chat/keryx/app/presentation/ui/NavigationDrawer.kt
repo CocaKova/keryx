@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.BrightnessAuto
+import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Handyman
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.*
 import androidx.compose.foundation.shape.CircleShape
@@ -287,12 +289,16 @@ fun NavigationDrawerContent(
             // full-width stacked rows; this halves the footer's height).
             Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
 
-            Row(
+            // The doors. Six of these now share the footer, and as one Row of equal weights the
+            // labels were already stepping their font down to fit at four ("Mission" losing its
+            // s). A wrapping row of thirds keeps every door the same size no matter how many
+            // there are — the next one costs a list entry, not a re-layout.
+            androidx.compose.foundation.layout.FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 10.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                maxItemsInEachRow = 3,
             ) {
                 val themeIcon = when (isDarkTheme) {
                     true -> Icons.Default.LightMode
@@ -304,91 +310,29 @@ fun NavigationDrawerContent(
                     false -> "System"
                     null -> "Dark"
                 }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable {
-                            val next = when (isDarkTheme) {
-                                null -> true
-                                true -> false
-                                false -> null
-                            }
-                            viewModel.toggleTheme(next)
+                DrawerDoor(themeIcon, themeText, Modifier.weight(1f)) {
+                    viewModel.toggleTheme(
+                        when (isDarkTheme) {
+                            null -> true
+                            true -> false
+                            false -> null
                         }
-                        .padding(vertical = 12.dp),
-                ) {
-                    Icon(
-                        themeIcon, contentDescription = "Theme",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    // The three equal-width cells get tight at large font scales, and the cell's
-                    // clip() cuts anything that doesn't fit ("Mission" losing its s). Auto-size
-                    // steps the label down until it fits instead of wrapping or clipping.
-                    Text(themeText, color = MaterialTheme.colorScheme.onSurface,
-                        autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 14.sp, stepSize = 0.25.sp),
-                        maxLines = 1, softWrap = false)
                 }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Missions) }
-                        .padding(vertical = 12.dp),
-                ) {
-                    Icon(
-                        Icons.Default.ViewKanban, contentDescription = "Missions",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Missions", color = MaterialTheme.colorScheme.onSurface,
-                        autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 14.sp, stepSize = 0.25.sp),
-                        maxLines = 1, softWrap = false)
+                DrawerDoor(Icons.Default.ViewKanban, "Missions", Modifier.weight(1f)) {
+                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Missions)
                 }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Archive) }
-                        .padding(vertical = 12.dp),
-                ) {
-                    Icon(
-                        Icons.Default.AutoStories, contentDescription = "Archive",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Archive", color = MaterialTheme.colorScheme.onSurface,
-                        autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 14.sp, stepSize = 0.25.sp),
-                        maxLines = 1, softWrap = false)
+                DrawerDoor(Icons.Default.AutoStories, "Archive", Modifier.weight(1f)) {
+                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Archive)
                 }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Settings) }
-                        .padding(vertical = 12.dp),
-                ) {
-                    Icon(
-                        Icons.Default.Settings, contentDescription = "Settings",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Settings", color = MaterialTheme.colorScheme.onSurface,
-                        autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 14.sp, stepSize = 0.25.sp),
-                        maxLines = 1, softWrap = false)
+                DrawerDoor(Icons.Default.Dns, "Gateway", Modifier.weight(1f)) {
+                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway)
+                }
+                DrawerDoor(Icons.Default.Handyman, "Workshop", Modifier.weight(1f)) {
+                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Workshop)
+                }
+                DrawerDoor(Icons.Default.Settings, "Settings", Modifier.weight(1f)) {
+                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Settings)
                 }
             }
         }
@@ -693,5 +637,39 @@ private fun formatRelativeTime(ts: Long): String {
         diff < 86_400_000L -> "${diff / 3_600_000L}h"
         diff < 604_800_000L -> "${diff / 86_400_000L}d"
         else -> "${diff / 604_800_000L}w"
+    }
+}
+
+/**
+ * One door in the drawer's footer. Was four near-identical 18-line blocks; the auto-sizing label
+ * is the part worth keeping — a fixed size clips ("Mission" lost its s at large font scales) and
+ * wrapping makes the cells different heights.
+ */
+@Composable
+private fun DrawerDoor(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+    ) {
+        Icon(
+            icon, contentDescription = label,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            label, color = MaterialTheme.colorScheme.onSurface,
+            autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 14.sp, stepSize = 0.25.sp),
+            maxLines = 1, softWrap = false,
+        )
     }
 }
