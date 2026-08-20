@@ -398,7 +398,7 @@ private fun LinkHealthDot(
             androidx.compose.ui.graphics.lerp(accent2, accent, alpha).copy(alpha = 0.5f + 0.5f * alpha)
         chat.keryx.app.presentation.LinkHealth.OK -> accent.copy(alpha = 0.75f)
         chat.keryx.app.presentation.LinkHealth.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
-        else -> Color(0xFFE0524D).copy(alpha = 0.85f)
+        else -> chat.keryx.app.presentation.ui.components.KeryxStatus.bad.copy(alpha = 0.85f)
     }
     val context = androidx.compose.ui.platform.LocalContext.current
     val label = when (health) {

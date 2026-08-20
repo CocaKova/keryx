@@ -29,7 +29,7 @@ data class BubbleAppearance(
 
 /** Pick black/white text for maximum contrast against a given background color. */
 fun contrastColorFor(bg: Color): Color =
-    if (bg.luminance() > 0.5f) Color(0xFF1C1C1E) else Color.White
+    if (bg.luminance() > 0.5f) Color(0xFF1F1B14) else Color.White
 
 /**
  * [accent] / [accent2] default to the user's own theme accents. A herald in a council room passes

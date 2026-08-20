@@ -50,7 +50,7 @@ fun ToolActivityCard(
                         width = 1.dp,
                         color = if (activity.status == ToolStatus.EXECUTING) 
                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                               else Color(0xFF4CAF50).copy(alpha = 0.5f),
+                               else KeryxStatus.good.copy(alpha = 0.5f),
                         shape = RoundedCornerShape(12.dp)
                     )
                     .padding(12.dp),
@@ -66,7 +66,7 @@ fun ToolActivityCard(
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = "Success",
-                            tint = Color(0xFF4CAF50),
+                            tint = KeryxStatus.good,
                             modifier = Modifier.size(24.dp)
                         )
                     } else {

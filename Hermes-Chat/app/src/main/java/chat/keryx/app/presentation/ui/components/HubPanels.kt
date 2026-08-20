@@ -109,6 +109,7 @@ internal fun SectionLabel(text: String) {
     KeryxSectionHeader(text, modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
 }
 
+@Composable
 private fun connStateColor(state: String): Color = when (state) {
     "connected" -> KeryxStatus.good
     "retrying", "connecting" -> KeryxStatus.warn
@@ -464,7 +465,7 @@ private fun JobCard(
             val ok = job.lastStatus == "ok"
             if (!job.lastStatus.isNullOrBlank()) {
                 Box(Modifier.size(6.dp).clip(CircleShape).background(
-                    if (ok) Color(0xFF4CAF50) else Color(0xFFE0524D)))
+                    if (ok) KeryxStatus.good else KeryxStatus.bad))
                 Spacer(Modifier.width(6.dp))
                 Text(
                     "last run ${job.lastStatus}" +
@@ -1141,7 +1142,7 @@ internal fun ToolsTab(viewModel: ChatViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (!hub.canToggle) {
                                 Box(Modifier.size(7.dp).clip(CircleShape).background(
-                                    if (t.enabled) Color(0xFF4CAF50)
+                                    if (t.enabled) KeryxStatus.good
                                     else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)))
                                 Spacer(Modifier.width(9.dp))
                             }

@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -26,9 +27,14 @@ fun KeryxWordmark(
     val accent2 = MaterialTheme.colorScheme.tertiary
     // Sheen runs from a lit accent-1 head into an accent-2 tail so the brand mark carries the
     // same two-accent gradient as the rest of the app's animations.
+    //
+    // On parchment the head is *pressed* rather than lit: lerping toward white would bleach the
+    // one word the app is named after into the page. Toward ink instead — foil catching shade.
+    val onVoid = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val head = if (onVoid) lerp(accent, Color.White, 0.35f) else lerp(accent, Inkwell, 0.35f)
     val sheen = Brush.linearGradient(
         listOf(
-            lerp(accent, Color.White, 0.35f),
+            head,
             accent,
             lerp(accent, accent2, 0.65f),
         )
@@ -45,3 +51,6 @@ fun KeryxWordmark(
         ),
     )
 }
+
+/** The ink the paper theme presses its brightest marks into. */
+private val Inkwell = Color(0xFF1F1B14)
