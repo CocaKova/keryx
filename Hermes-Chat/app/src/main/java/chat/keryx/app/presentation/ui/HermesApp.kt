@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.lifecycle.repeatOnLifecycle
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.ui.nav.KeryxDest
 import chat.keryx.app.presentation.ui.nav.KeryxNavHost
@@ -66,6 +67,8 @@ fun HermesApp(viewModel: ChatViewModel) {
     val linkHealth by viewModel.linkHealth.collectAsState()
     val heraldIds by viewModel.agentMatrixId.collectAsState()
     val heraldAccents by viewModel.heraldAccents.collectAsState()
+    val hapticsEnabled by viewModel.hapticsEnabled.collectAsState()
+    val awaitingReply by viewModel.awaitingReply.collectAsState()
 
     // The navigation spine (2.0): full-screen places live on this stack above the chat floor.
     val nav = rememberKeryxNav()
@@ -145,7 +148,29 @@ fun HermesApp(viewModel: ChatViewModel) {
     // 2.3 §1: the configured heralds, resolved once for the whole app — every bubble, sigil and
     // spinner below reads its sender's light out of this. (Body left at its original indent so the
     // wrapper stays a two-line diff.)
+    // 2.5: the tick vocabulary, resolved once. Provided here rather than built at each call site
+    // so that Settings ▸ Interface ▸ "Haptic Feedback" has exactly one place to be obeyed.
+    val hapticFeedback = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val keryxHaptics = remember(hapticFeedback, hapticsEnabled, scope) {
+        chat.keryx.app.presentation.ui.components.KeryxHaptics(hapticFeedback, hapticsEnabled, scope)
+    }
+
+    // The completion tick: the agent stopped working. Fired on the awaiting -> idle edge and only
+    // while the app is actually resumed — a phone in a pocket gets a notification for a finished
+    // turn, and buzzing twice more for the same event is one signal too many.
+    val hapticLifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.LaunchedEffect(hapticLifecycle, keryxHaptics) {
+        hapticLifecycle.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            var wasAwaiting = viewModel.awaitingReply.value
+            viewModel.awaitingReply.collect { awaiting ->
+                if (wasAwaiting && !awaiting) keryxHaptics.completion()
+                wasAwaiting = awaiting
+            }
+        }
+    }
+
     CompositionLocalProvider(
+        chat.keryx.app.presentation.ui.components.LocalKeryxHaptics provides keryxHaptics,
         LocalHeraldConfig provides HeraldConfig(
             ids = chat.keryx.app.domain.model.Heralds.parseIds(heraldIds),
             overrides = heraldAccents,
