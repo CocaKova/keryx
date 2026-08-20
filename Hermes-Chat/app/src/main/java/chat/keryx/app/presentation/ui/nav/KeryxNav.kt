@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import chat.keryx.app.presentation.ui.components.keryxLightSweep
+import chat.keryx.app.presentation.ui.components.rememberSweepProgress
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
@@ -170,7 +171,11 @@ fun KeryxNavHost(
                         // Before graphicsLayer on purpose: inside the layer the sweep would be
                         // blurred and alpha-faded along with the arriving page — the light must
                         // ride OVER the transition, not drown in it.
-                        .keryxLightSweep(sweepAccent, sweepAccent2) { layer.progress.value }
+                        .keryxLightSweep(
+                            sweepAccent,
+                            sweepAccent2,
+                            rememberSweepProgress { layer.progress.value },
+                        )
                         .graphicsLayer {
                             val p = layer.progress.value
                             alpha = p
