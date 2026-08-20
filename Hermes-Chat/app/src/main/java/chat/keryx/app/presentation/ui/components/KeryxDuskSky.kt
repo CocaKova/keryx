@@ -147,6 +147,17 @@ half4 main(float2 frag) {
         col = mix(col, uAccent.rgb, exp(-uv.y * 6.0) * 0.07);
     }
 
+    // Dither. Every colour above is computed in float and then crushed to 8 bits per channel, and
+    // a wide, shallow gradient crosses a step every few hundred pixels — which the eye sharpens
+    // into a hard vertical edge that is not in the maths at all (Jonny, 08-19: "a big portion of
+    // the left is lighter and the right is a hard cut to a darker tone" — measured at TWO of 255).
+    // A sub-quantum of noise per pixel scatters each step across a band and the edge stops
+    // existing. Keyed on the pixel only, never on time, so it is a fixed grain and not a shimmer.
+    //
+    // ⚠️ It gets more visible, not less, as the accent gets more saturated: the same step in a
+    // deep orange sky reads far harder than in the blue this was designed against.
+    col += (hash(frag) - 0.5) * (1.6 / 255.0);
+
     return half4(col, 1.0);
 }
 """
