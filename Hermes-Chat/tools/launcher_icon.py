@@ -21,24 +21,17 @@ look drawn by little kids".  The failure was structural, not a matter of
 tuning: a real mark needs tapered bodies, a shaped serpent head and wings with
 internal structure, which is filled-form work rather than traced lines.
 
-So the art is now a raster mark (tools/icon_source/keryx-mark.png), and this
-script does everything downstream of it deterministically.  kerykeion_icon.py
-survives, but ONLY as the source of the 24dp notification glyph — see its
-header.  Nothing writes the launcher art but this file.
+So the art comes from a vector master (tools/icon_source/eclipse-sigil.svg), and
+this script does everything downstream of it deterministically.
+kerykeion_icon.py survives, but ONLY as the source of the 24dp notification
+glyph — see its header.  Nothing writes the launcher art but this file.
 
 WHAT IT DOES
 ------------
-The source is a flat matte-void square with the mark centred.  Android wants
-the mark on transparency, scaled inside the 66dp safe circle of the 108dp
-adaptive canvas, so:
-
-  1. key the near-black ground out to alpha
-  2. crop to the mark, scale so its longest side fits SAFE of the canvas
+  1. rasterise the sigil's subpaths to a void-on-transparent mark
+  2. crop to the mark, scale it against THE DISC (see MARK_ON_DISC below)
   3. emit the foreground PNGs, the monochrome silhouette, and the legacy
      rounded-square / circular rasters
-
-Edge fringe from the key lands on a near-black background layer, where it is
-invisible by construction.
 """
 
 import os
@@ -55,13 +48,30 @@ VOID = (0x0B, 0x0A, 0x12)
 BONE = (0xED, 0xE6, 0xD6)
 BONE_HEX = "#EDE6D6"
 
-# Fraction of the 108dp adaptive canvas the mark may occupy. The safe circle is
-# 66/108 = 0.611; we sit just inside it so a circular mask never clips a wingtip.
-SAFE = 0.62   # matches the proof the mark was approved at
+# ⚠️ THE MARK IS SIZED AGAINST THE DISC, NOT THE CANVAS.
+#
+# The eclipse is a void sigil knocked out of a bone DISC, and the bone margin
+# around the sigil is part of the mark — without it you get a dark blob, not an
+# eclipse. In the approved master the sigil's longest side is 633.4 of the 1024
+# disc, and the standalone raster measures the same, so that ratio is the thing
+# to preserve everywhere the mark appears.
+MARK_ON_DISC = 0.619
 
-# Keying thresholds against the flat ground. Below FLOOR is background, above
-# FLOOR+RAMP is solid mark; between is the antialiased edge.
-FLOOR, RAMP = 52, 70
+# In an adaptive icon the launcher's mask IS the disc, and that mask falls on the
+# central 72dp of the 108dp foreground canvas — so the canvas is 1.5x wider than
+# the disc and the ratio has to be converted before use.
+#
+# ⚠️ 2.5.2 shipped `SAFE = 0.62` applied straight to the 108dp canvas, i.e. the
+# disc ratio spent against the wrong reference. That is 1.5x too large: the mark
+# overran the 66dp safe circle, the mask ate the point off the blade, and the
+# bone margin vanished. Do not "simplify" these two constants back into one —
+# they are different denominators, not a redundant pair.
+VISIBLE = 72.0 / 108.0
+SAFE = MARK_ON_DISC * VISIBLE      # 0.413 of the 108dp adaptive canvas
+
+# The legacy raster gets masked to fill its whole tile, so there the tile IS the
+# disc and the ratio applies unconverted.
+LEGACY_SAFE = MARK_ON_DISC
 
 # (density, legacy px, adaptive foreground px) — the legacy 108dp canvas maps
 # onto a 72dp visible window, hence the two different sizes.
@@ -121,11 +131,11 @@ def silhouette(rgba):
 
 
 def legacy(mark, size, shape):
-    """Pre-adaptive icon: the mark on the void, masked to a rounded square or a circle."""
+    """Pre-adaptive icon: the mark on the bone field, masked to a rounded square or a circle."""
     S = size * SS
     base = Image.new("RGBA", (S, S), BONE + (255,))
-    # The legacy window is 72dp of the 108dp canvas, so the mark reads larger here.
-    fg = fitted(mark, S, safe=SAFE * 108 / 72)
+    # No 72/108 conversion here: this tile is the disc itself. See MARK_ON_DISC.
+    fg = fitted(mark, S, safe=LEGACY_SAFE)
     base.paste(fg, (0, 0), fg)
     m = Image.new("L", (S, S), 0)
     d = ImageDraw.Draw(m)
