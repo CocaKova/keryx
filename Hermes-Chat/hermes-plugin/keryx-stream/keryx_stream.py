@@ -2773,6 +2773,401 @@ def pet_select(slug: str) -> Tuple[int, dict]:
     return 200, {"ok": True, "slug": slug, "displayName": pet.display_name}
 
 
+# ---------------------------------------------------------------------------
+# Hermes update (Keryx 2.4.1) — how far behind this install is, and the button
+# that runs the operator's update command.
+#
+# Two deliberate splits:
+#
+#  * READ is always LOCAL. `git fetch` against this repo takes ~70 s (thousands
+#    of auto-generated branches upstream), so the panel must never block on it.
+#    The count comes from the refs already on disk and carries the age of the
+#    last fetch; the phone decides whether that is fresh enough.
+#  * REFRESH is a detached background fetch (`POST /keryx/update/check`), and
+#    the phone re-reads the GET when it finishes.
+#
+# The update COMMAND is operator-configured and never leaves the gateway — same
+# contract as `keryx.brains`. Unset = no button; the count still shows.
+# ---------------------------------------------------------------------------
+
+# One fetch at a time, and one update at a time.
+_UPDATE_FETCH: Dict[str, Any] = {"running": False, "error": "", "ts": 0.0}
+# Last anchor-probe result, kept in memory: a preflight is only meaningful for the
+# session that ran it, and a stale "ALL CLEAR" from last week is worse than none.
+_UPDATE_PROBE: Dict[str, Any] = {
+    "running": False, "ts": 0.0, "exit": None, "output": "",
+}
+_PROBE_TIMEOUT_S = 900
+_PROBE_OUTPUT_MAX = 4000
+_UPDATE_RUN: Dict[str, float] = {"ts": 0.0}
+_UPDATE_RUN_COOLDOWN_S = 600.0
+
+
+def _update_entry() -> Optional[Dict[str, str]]:
+    """What the update button runs, in two tiers.
+
+     1. config.yaml `keryx.update.command` — an operator's own wrapper. Any install
+        carrying a local patch layer MUST set this: a bare `hermes update` would
+        overwrite the patches with no rollback point.
+     2. Otherwise Hermes' own recommended command for this install method — plain
+        `hermes update` on a normal git checkout. A stock install therefore gets a
+        working button with no configuration at all, which is the point: this ships
+        to people who have never heard of anyone's private wrapper.
+
+    `keryx.update.enabled: false` turns the button off entirely (the commits-behind
+    count still shows — that is read-only and always safe).
+
+    The COMMAND never leaves the gateway; the phone only ever sees [label].
+    """
+    from hermes_cli.config import load_config
+
+    raw = (load_config().get("keryx") or {}).get("update")
+    if not isinstance(raw, dict):
+        raw = {}
+    if raw.get("enabled") is False:
+        return None
+
+    branch = str(raw.get("branch") or "").strip() or "origin/main"
+    command = str(raw.get("command") or "").strip()
+    if command:
+        return {
+            "command": command,
+            "label": str(raw.get("label") or "").strip() or command.split()[0],
+            "branch": branch,
+            "source": "configured",
+        }
+
+    # Tier 2. recommended_update_command() already resolves managed installs
+    # (package manager, Docker, Nix) and returns GUIDANCE TEXT rather than a
+    # runnable command for the ones git can't update — only offer the button
+    # when what comes back is actually runnable.
+    try:
+        from hermes_cli.config import recommended_update_command
+
+        default_cmd = str(recommended_update_command() or "").strip()
+    except Exception:
+        return None
+    if not default_cmd or "\n" in default_cmd or not default_cmd.startswith("hermes "):
+        return None
+    return {
+        "command": default_cmd,
+        "label": default_cmd,
+        "branch": branch,
+        "source": "default",
+    }
+
+
+def _update_probe_entry() -> Optional[Dict[str, str]]:
+    """The operator's ANCHOR SCRIPT: a read-only preflight run before committing to
+    an update (config.yaml `keryx.update.probe`).
+
+    The shape this exists for: an install carrying a patch layer needs to know
+    whether its anchors still exist in the target ref BEFORE anything mutates —
+    `silas-update --check` is one such script, a bare `hermes update --check` is
+    another, and a stock install has none and simply sees no button.
+
+    Read-only is the CONTRACT, not something the gateway can enforce: whatever is
+    named here runs verbatim. Point it at a probe, never at the update itself.
+    """
+    from hermes_cli.config import load_config
+
+    raw = (load_config().get("keryx") or {}).get("update")
+    if not isinstance(raw, dict):
+        return None
+    probe = raw.get("probe")
+    # Accept both `probe: "<command>"` and `probe: {command:, label:}`.
+    if isinstance(probe, dict):
+        command = str(probe.get("command") or "").strip()
+        label = str(probe.get("label") or "").strip()
+    else:
+        command = str(probe or "").strip()
+        label = str(raw.get("probe_label") or "").strip()
+    if not command:
+        return None
+    return {"command": command, "label": label or "preflight"}
+
+
+def _update_tree() -> Optional[Path]:
+    try:
+        from hermes_cli.main import PROJECT_ROOT
+
+        return Path(PROJECT_ROOT)
+    except Exception:
+        return None
+
+
+def _git(tree: Path, *args: str, timeout: int = 15) -> Tuple[int, str]:
+    import subprocess
+
+    try:
+        proc = subprocess.run(
+            ["git", *args], cwd=str(tree),
+            capture_output=True, text=True, timeout=timeout,
+            encoding="utf-8", errors="replace",
+        )
+        return proc.returncode, (proc.stdout or "").strip()
+    except Exception as exc:  # git missing, timeout, unreadable tree
+        return 1, str(exc)
+
+
+def _update_compare_ref(tree: Path, branch: str) -> str:
+    """Resolve the ref to count against, preferring a remote that exists.
+
+    A fork checkout has both `origin` (upstream) and `fork`; a plain install
+    has only `origin`. Counting against a ref git can't resolve yields a bogus
+    0 ("up to date!") — the one wrong answer this panel must never give.
+    """
+    if _git(tree, "rev-parse", "--verify", "--quiet", branch)[0] == 0:
+        return branch
+    for candidate in ("origin/main", "upstream/main", "up/main"):
+        if _git(tree, "rev-parse", "--verify", "--quiet", candidate)[0] == 0:
+            return candidate
+    return ""
+
+
+def update_snapshot() -> dict:
+    """`GET /keryx/update` — local-only, ~10 ms. Never fetches.
+
+    [behind] is -1 whenever the number cannot be trusted (shallow clone, no
+    resolvable remote ref) so the client can say "unknown" instead of "0".
+    """
+    import time as _time
+
+    entry = _update_entry()
+    base: Dict[str, Any] = {
+        "supported": False,
+        "reason": "",
+        "behind": -1,
+        "ahead": 0,
+        "branch": "",
+        "head": "",
+        "head_branch": "",
+        "version": "",
+        "command_configured": entry is not None,
+        "label": (entry or {}).get("label", ""),
+        # "configured" = operator wrapper, "default" = Hermes' own `hermes update`.
+        "command_source": (entry or {}).get("source", ""),
+        "checked_at": "",
+        "checking": bool(_UPDATE_FETCH["running"]),
+        "check_error": str(_UPDATE_FETCH["error"] or ""),
+        "running": False,
+    }
+
+    probe = _update_probe_entry()
+    base["probe_configured"] = probe is not None
+    base["probe_label"] = (probe or {}).get("label", "")
+    base["probe_running"] = bool(_UPDATE_PROBE["running"])
+    # exit is None until a probe has ever run — "not yet run" is distinct from "passed".
+    base["probe_exit"] = _UPDATE_PROBE["exit"]
+    base["probe_output"] = str(_UPDATE_PROBE["output"] or "")
+    base["probe_at"] = ""
+    if _UPDATE_PROBE["ts"]:
+        import datetime as _pdt
+
+        base["probe_at"] = _pdt.datetime.fromtimestamp(
+            float(_UPDATE_PROBE["ts"]), _pdt.timezone.utc
+        ).isoformat(timespec="seconds")
+    try:
+        from hermes_cli import __version__
+
+        base["version"] = str(__version__)
+    except Exception:
+        pass
+
+    now = _time.time()
+    base["running"] = (now - _UPDATE_RUN["ts"]) < _UPDATE_RUN_COOLDOWN_S
+
+    tree = _update_tree()
+    if tree is None or not (tree / ".git").exists():
+        base["reason"] = "this install is not a git checkout — update from the host"
+        return base
+
+    try:
+        from hermes_cli.config import detect_install_method
+
+        method = detect_install_method(tree)
+        if method in {"docker", "nix", "nixos"}:
+            base["reason"] = f"{method} installs update outside git"
+            return base
+    except Exception:
+        pass
+
+    base["supported"] = True
+    base["head"] = _git(tree, "rev-parse", "--short", "HEAD")[1]
+    base["head_branch"] = _git(tree, "rev-parse", "--abbrev-ref", "HEAD")[1]
+
+    branch = _update_compare_ref(tree, (entry or {}).get("branch", "origin/main"))
+    base["branch"] = branch
+    if not branch:
+        base["reason"] = "no remote branch to compare against"
+        return base
+
+    # A shallow clone (installer default) can't count honestly — the boundary
+    # makes every ancestor look missing. Report presence, not a number.
+    if _git(tree, "rev-parse", "--is-shallow-repository")[1] == "true":
+        rc, out = _git(tree, "rev-list", "--count", f"HEAD..{branch}")
+        base["reason"] = "shallow clone — exact count unavailable"
+        base["behind"] = -1 if rc != 0 else (1 if out not in ("", "0") else 0)
+        return base
+
+    rc, out = _git(tree, "rev-list", "--left-right", "--count", f"HEAD...{branch}")
+    if rc == 0:
+        parts = out.split()
+        if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
+            base["ahead"], base["behind"] = int(parts[0]), int(parts[1])
+
+    # Age of the count = age of the last fetch, not of this request.
+    import datetime as _dt
+
+    for name in ("FETCH_HEAD", "HEAD"):
+        candidate = tree / ".git" / name
+        try:
+            if candidate.is_file():
+                base["checked_at"] = _dt.datetime.fromtimestamp(
+                    candidate.stat().st_mtime, _dt.timezone.utc
+                ).isoformat(timespec="seconds")
+                break
+        except Exception:
+            continue
+    return base
+
+
+def update_check() -> Tuple[int, dict]:
+    """`POST /keryx/update/check` — refresh the refs in the background.
+
+    202 and return immediately: the fetch takes over a minute on this repo and
+    an aiohttp worker thread is not the place to spend it.
+    """
+    import threading
+    import time as _time
+
+    if _UPDATE_FETCH["running"]:
+        return 202, {"ok": True, "checking": True}
+    tree = _update_tree()
+    if tree is None or not (tree / ".git").exists():
+        return 501, {"error": {"message": "not a git checkout"}}
+
+    branch = _update_compare_ref(tree, (_update_entry() or {}).get("branch", "origin/main"))
+    remote, _, ref = branch.partition("/")
+    if not remote or not ref:
+        return 501, {"error": {"message": "no remote branch to compare against"}}
+
+    def _fetch() -> None:
+        _UPDATE_FETCH["running"] = True
+        _UPDATE_FETCH["error"] = ""
+        try:
+            # Clear an abandoned lock first: one crashed fetch otherwise wedges
+            # every later one with "File exists" and the count silently goes stale.
+            try:
+                from hermes_cli.gitlock import clear_stale_git_locks
+
+                clear_stale_git_locks(tree)
+            except Exception:
+                pass
+            shallow = _git(tree, "rev-parse", "--is-shallow-repository")[1] == "true"
+            depth = ["--depth", "1"] if shallow else []
+            # Scope the fetch to the one branch: a bare `git fetch` drags in
+            # thousands of upstream auto-branches.
+            rc, out = _git(tree, "fetch", "--quiet", *depth, remote, ref, timeout=240)
+            if rc != 0:
+                _UPDATE_FETCH["error"] = (out or "fetch failed")[:200]
+        except Exception as exc:
+            _UPDATE_FETCH["error"] = str(exc)[:200]
+        finally:
+            _UPDATE_FETCH["ts"] = _time.time()
+            _UPDATE_FETCH["running"] = False
+
+    threading.Thread(target=_fetch, name="keryx-update-fetch", daemon=True).start()
+    return 202, {"ok": True, "checking": True}
+
+
+def update_probe() -> Tuple[int, dict]:
+    """`POST /keryx/update/probe` — run the operator's anchor script in the background.
+
+    202 and return: an anchor probe fetches and diffs against the target, which is
+    minutes of work, not milliseconds. Poll `probe_running` on GET /keryx/update and
+    read `probe_exit` (0 = clear) plus the captured tail when it clears.
+    """
+    import subprocess
+    import threading
+    import time as _time
+
+    entry = _update_probe_entry()
+    if entry is None:
+        return 501, {
+            "error": {"message": "no anchor script configured (config.yaml keryx.update.probe)"}
+        }
+    if _UPDATE_PROBE["running"]:
+        return 202, {"ok": True, "probe_running": True}
+
+    def _run() -> None:
+        _UPDATE_PROBE.update({"running": True, "exit": None, "output": ""})
+        out, code = "", 1
+        try:
+            proc = subprocess.run(
+                ["bash", "-lc", entry["command"]],
+                cwd=str(Path.home()),
+                capture_output=True, text=True, timeout=_PROBE_TIMEOUT_S,
+                encoding="utf-8", errors="replace",
+            )
+            out = ((proc.stdout or "") + (proc.stderr or "")).strip()
+            code = proc.returncode
+        except subprocess.TimeoutExpired:
+            out, code = f"probe timed out after {_PROBE_TIMEOUT_S}s", 124
+        except Exception as exc:
+            out, code = str(exc), 1
+        # Same fail-closed rule the log tail uses: unredacted output never leaves
+        # the gateway, and a probe prints whatever the operator's script prints.
+        try:
+            from agent.redact import redact_sensitive_text
+
+            out = redact_sensitive_text(out)
+        except Exception:
+            out = "(probe output withheld — redaction unavailable)"
+        if len(out) > _PROBE_OUTPUT_MAX:
+            out = "…" + out[-_PROBE_OUTPUT_MAX:]
+        _UPDATE_PROBE.update(
+            {"running": False, "ts": _time.time(), "exit": code, "output": out}
+        )
+
+    threading.Thread(target=_run, name="keryx-update-probe", daemon=True).start()
+    return 202, {"ok": True, "probe_running": True, "started": entry["label"]}
+
+
+def update_start() -> Tuple[int, dict]:
+    """`POST /keryx/update` — launch the operator's update command detached.
+
+    Detached for the same reason a brain swap is: the command restarts (and
+    reinstalls under) this very gateway, so a child in our process group would
+    be killed halfway through its own update.
+    """
+    import subprocess
+    import time as _time
+
+    entry = _update_entry()
+    if entry is None:
+        return 501, {
+            "error": {"message": "no update command configured (config.yaml keryx.update.command)"}
+        }
+    now = _time.time()
+    if now - _UPDATE_RUN["ts"] < _UPDATE_RUN_COOLDOWN_S:
+        return 409, {"error": {"message": "an update was just started — let it finish"}}
+    _UPDATE_RUN["ts"] = now
+
+    log_dir = Path.home() / ".hermes" / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log = open(log_dir / "keryx-update.log", "ab")
+    log.write(
+        f"\n--- {entry['label']} @ {_time.strftime('%Y-%m-%dT%H:%M:%S')} ---\n".encode()
+    )
+    subprocess.Popen(
+        ["bash", "-lc", entry["command"]],
+        stdout=log, stderr=subprocess.STDOUT,
+        start_new_session=True,
+    )
+    return 202, {"ok": True, "started": entry["label"]}
+
+
 def register_keryx_routes(router: Any, check_auth) -> None:
     """Single registrar for every /keryx/* route — api_server.py calls only
     this, so future routes ship in this module (copied wholesale by
@@ -2956,6 +3351,18 @@ def register_keryx_routes(router: Any, check_auth) -> None:
     def _brain_post(request, body):
         return brain_select(body.get("name"))
 
+    def _update_get(request, body):
+        return 200, update_snapshot()
+
+    def _update_check_post(request, body):
+        return update_check()
+
+    def _update_probe_post(request, body):
+        return update_probe()
+
+    def _update_post(request, body):
+        return update_start()
+
     def _config_raw_get(request, body):
         return config_raw_get()
 
@@ -2970,3 +3377,9 @@ def register_keryx_routes(router: Any, check_auth) -> None:
     router.add_get("/keryx/logs", _make_json_handler(check_auth, _logs_get))
     router.add_get("/keryx/brains", _make_json_handler(check_auth, _brains_get))
     router.add_post("/keryx/brain", _make_json_handler(check_auth, _brain_post))
+    # Hermes update (2.4.1): GET is local-only, /check refreshes refs in the
+    # background, POST launches the operator's command.
+    router.add_get("/keryx/update", _make_json_handler(check_auth, _update_get))
+    router.add_post("/keryx/update/check", _make_json_handler(check_auth, _update_check_post))
+    router.add_post("/keryx/update/probe", _make_json_handler(check_auth, _update_probe_post))
+    router.add_post("/keryx/update", _make_json_handler(check_auth, _update_post))

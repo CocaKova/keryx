@@ -713,11 +713,15 @@ class ChatViewModel(
     private val _hubBrains = seededPanel("/keryx/brains", chat.keryx.app.data.remote.HubJson::brains)
     val hubBrains: StateFlow<HubPanel<chat.keryx.app.data.remote.HermesStreamClient.Brains>> =
         _hubBrains.asStateFlow()
+    private val _hubUpdate = seededPanel("/keryx/update", chat.keryx.app.data.remote.HubJson::update)
+    val hubUpdate: StateFlow<HubPanel<chat.keryx.app.data.remote.HermesStreamClient.UpdateStatus>> =
+        _hubUpdate.asStateFlow()
 
     fun refreshHubHealth() = _hubHealth.refreshFrom { healthDetailed() }
     fun refreshHubModels() = _hubModels.refreshFrom { models() }
     fun refreshHubConfig() = _hubConfig.refreshFrom { configKnobs() }
     fun refreshHubBrains() = _hubBrains.refreshFrom { brains() }
+    fun refreshHubUpdate() = _hubUpdate.refreshFrom { updateStatus() }
 
     // --- Gateway Controls (1.21) ------------------------------------------------------------------
 
@@ -744,6 +748,65 @@ class ChatViewModel(
     suspend fun hubLogs(lines: Int = 120): Result<chat.keryx.app.data.remote.HermesStreamClient.LogsTail> =
         gatewayClient()?.logsTail(lines)
             ?: Result.failure(IllegalStateException("Hermes Link is off"))
+
+    // --- Hermes update (2.4.1) --------------------------------------------------------------------
+
+    /** Ask the gateway to re-fetch its refs, then poll until the count is fresh.
+     *
+     *  The fetch runs detached server-side and takes over a minute on hermes-agent, so this
+     *  polls `checking` rather than waiting on the POST. The ceiling is deliberate: if a fetch
+     *  wedges, the panel stops spinning and keeps showing the last good count with its age,
+     *  which is more useful than an indefinite spinner. */
+    fun hubUpdateCheck() {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.updateCheck()
+                .onSuccess {
+                    _toasts.tryEmit("Checking upstream…")
+                    refreshHubUpdate()
+                    // ~2 min of headroom; the fetch itself is ~70 s on this repo.
+                    repeat(40) {
+                        kotlinx.coroutines.delay(3_000)
+                        refreshHubUpdate()
+                        if (_hubUpdate.value.data?.checking == false) return@launch
+                    }
+                }
+                .onFailure { _toasts.tryEmit("Check refused: ${it.message?.take(80)}") }
+        }
+    }
+
+    /** Run the operator's anchor script and poll until it reports. Same shape as
+     *  [hubUpdateCheck]: the work is minutes long and happens server-side. */
+    fun hubUpdateProbe() {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.updateProbe()
+                .onSuccess {
+                    _toasts.tryEmit("Preflight running…")
+                    refreshHubUpdate()
+                    repeat(100) {
+                        kotlinx.coroutines.delay(3_000)
+                        refreshHubUpdate()
+                        if (_hubUpdate.value.data?.probeRunning == false) return@launch
+                    }
+                }
+                .onFailure { _toasts.tryEmit("Preflight refused: ${it.message?.take(80)}") }
+        }
+    }
+
+    /** Launch the operator's update command. The gateway restarts partway through its own
+     *  update, so the link dropping right after this is the expected shape of success. */
+    fun hubUpdateStart() {
+        val client = gatewayClient() ?: return
+        viewModelScope.launch {
+            client.updateStart()
+                .onSuccess {
+                    _toasts.tryEmit("Update started — the gateway will restart itself")
+                    refreshHubUpdate()
+                }
+                .onFailure { _toasts.tryEmit("Update refused: ${it.message?.take(80)}") }
+        }
+    }
 
     fun hubBrainSelect(name: String) {
         val client = gatewayClient() ?: return

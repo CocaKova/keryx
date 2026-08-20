@@ -1233,6 +1233,86 @@ class HermesStreamClient(
         Unit
     }
 
+    /** How far this Hermes install is behind its upstream branch, plus whether the operator
+     *  configured an update command at all (`keryx.update.command`). The command itself never
+     *  leaves the gateway — we only ever learn its [label].
+     *
+     *  [behind] is **-1 when the number is not trustworthy** (shallow clone, no resolvable remote
+     *  ref). Render that as "unknown", never as "up to date" — a false all-clear is the one
+     *  wrong answer this panel must not give. [checkedAt] is when the refs were last fetched,
+     *  which is NOT when this call ran: the read is deliberately local (a fetch against
+     *  hermes-agent takes over a minute), so the count is as old as the last [updateCheck]. */
+    data class UpdateStatus(
+        val supported: Boolean,
+        val reason: String,
+        val behind: Int,
+        val ahead: Int,
+        val branch: String,
+        val head: String,
+        val headBranch: String,
+        val version: String,
+        val commandConfigured: Boolean,
+        val label: String,
+        /** "configured" = an operator wrapper from config.yaml; "default" = Hermes' own
+         *  `hermes update`. The dialog warns differently for the second. */
+        val commandSource: String,
+        val checkedAt: String,
+        val checking: Boolean,
+        val checkError: String,
+        val running: Boolean,
+        /** The operator's anchor script — a read-only preflight (`keryx.update.probe`).
+         *  Absent on a stock install, which simply sees no preflight button. */
+        val probeConfigured: Boolean,
+        val probeLabel: String,
+        val probeRunning: Boolean,
+        /** null until a probe has ever run. "Not yet run" is NOT "passed". */
+        val probeExit: Int?,
+        val probeOutput: String,
+        val probeAt: String,
+    ) {
+        val countKnown: Boolean get() = behind >= 0
+        val upToDate: Boolean get() = behind == 0
+        val probePassed: Boolean? get() = probeExit?.let { it == 0 }
+    }
+
+    suspend fun updateStatus(): Result<UpdateStatus> =
+        runCatching { HubJson.update(apiCall("/keryx/update")) }
+
+    /** Kick off a background `git fetch` (202 immediately — it takes ~70 s on this repo).
+     *  Poll [updateStatus] until `checking` goes false, then read the new count.
+     *
+     *  The `{}` body is REQUIRED, not decoration: the gateway's /keryx handler parses the body
+     *  of every POST and answers 400 "invalid JSON body" to an empty one. A parameterless POST
+     *  still has to carry an empty object. */
+    suspend fun updateCheck(): Result<Unit> = runCatching {
+        apiCall(
+            "/keryx/update/check", method = "POST",
+            body = kotlinx.serialization.json.buildJsonObject { }, snapshot = false,
+        )
+        Unit
+    }
+
+    /** Run the operator's anchor script (202 — minutes of work; poll `probeRunning`).
+     *  Empty-but-present body, for the same reason as [updateCheck]. */
+    suspend fun updateProbe(): Result<Unit> = runCatching {
+        apiCall(
+            "/keryx/update/probe", method = "POST",
+            body = kotlinx.serialization.json.buildJsonObject { }, snapshot = false,
+        )
+        Unit
+    }
+
+    /** Launch the operator's update command, detached (202). The gateway restarts partway
+     *  through, so expect the link to drop — that is the update working, not a failure.
+     *  Empty-but-present body, for the same reason as [updateCheck]. */
+    suspend fun updateStart(): Result<Unit> = runCatching {
+        apiCall(
+            "/keryx/update", method = "POST",
+            body = kotlinx.serialization.json.buildJsonObject { }, snapshot = false,
+        )
+        Unit
+    }
+
     // --- Skill Forge — /keryx/skills/* ----------------------------------------------------------
 
     /** One skill's full SKILL.md. [name] is the CANONICAL directory basename — always use it for
@@ -1669,6 +1749,32 @@ internal object HubJson {
                 locked = k.bool("locked"),
             )
         }
+
+    fun update(obj: kotlinx.serialization.json.JsonObject): HermesStreamClient.UpdateStatus =
+        HermesStreamClient.UpdateStatus(
+            supported = obj.bool("supported"),
+            reason = obj.str("reason"),
+            // Absent/garbled -> -1 ("unknown"), never 0 ("up to date").
+            behind = (obj["behind"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull() ?: -1,
+            ahead = obj.long("ahead").toInt(),
+            branch = obj.str("branch"),
+            head = obj.str("head"),
+            headBranch = obj.str("head_branch"),
+            version = obj.str("version"),
+            commandConfigured = obj.bool("command_configured"),
+            label = obj.str("label"),
+            commandSource = obj.str("command_source"),
+            checkedAt = obj.str("checked_at"),
+            checking = obj.bool("checking"),
+            checkError = obj.str("check_error"),
+            running = obj.bool("running"),
+            probeConfigured = obj.bool("probe_configured"),
+            probeLabel = obj.str("probe_label"),
+            probeRunning = obj.bool("probe_running"),
+            probeExit = (obj["probe_exit"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull(),
+            probeOutput = obj.str("probe_output"),
+            probeAt = obj.str("probe_at"),
+        )
 
     fun brains(obj: kotlinx.serialization.json.JsonObject): HermesStreamClient.Brains =
         HermesStreamClient.Brains(

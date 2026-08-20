@@ -219,6 +219,67 @@ enabled. Both report `locked: true` in the GET so clients grey the switch out. T
 sentinel survives writes (the desktop picker's save-clears-it consent rule doesn't apply to a
 phone toggle of one toolset).
 
+## Hermes update endpoints (2.4.1)
+
+How far behind upstream this Hermes install is, an optional read-only preflight, and the
+button that updates it. Works on a stock install with **no configuration at all**; the config
+below exists for installs that need a wrapper.
+
+```
+GET  /keryx/update          → {"supported", "reason", "behind", "ahead", "branch", "head",
+                               "head_branch", "version", "command_configured", "label",
+                               "command_source", "checked_at", "checking", "check_error",
+                               "running", "probe_configured", "probe_label", "probe_running",
+                               "probe_exit", "probe_output", "probe_at"}
+POST /keryx/update/check    {} → 202 {"ok", "checking"}   background `git fetch`
+POST /keryx/update/probe    {} → 202 {"ok", "probe_running", "started"}   anchor script
+POST /keryx/update          {} → 202 {"ok", "started"}    501 unconfigured · 409 cooldown
+```
+
+**All three POSTs need a body**, even though none take parameters: the shared `/keryx` handler
+parses the body of every POST and answers `400 invalid JSON body` to an empty one. Send `{}`.
+
+**The read is deliberately local.** `git fetch` against hermes-agent takes over a minute
+(thousands of upstream branches), so `GET /keryx/update` never fetches — it counts against the
+refs already on disk and reports `checked_at`, the age of the last fetch. `POST
+/keryx/update/check` refreshes in the background; poll `checking`.
+
+`behind` is **-1 when the number cannot be trusted** (shallow clone, no resolvable remote ref).
+Render that as "unknown". Never as "up to date" — a false all-clear is the one wrong answer
+here. `ahead` is local commits on top of upstream, which on a patched install is the patch
+layer, not drift.
+
+### Config (`config.yaml`)
+
+```yaml
+keryx:
+  update:
+    # Tier 1 — your own wrapper. REQUIRED if this install carries a local patch layer:
+    # a bare `hermes update` overwrites patches with no rollback point.
+    # Omit the whole block and you get tier 2: Hermes' own `hermes update`.
+    command: my-safe-update --yes
+    label: my-safe-update          # what the phone shows; the COMMAND never leaves the gateway
+    branch: origin/main            # what "behind" counts against
+    # Anchor script — a READ-ONLY preflight the phone can run before committing.
+    # Exit 0 = clear, anything else = failed; stdout+stderr are redacted and shown in-app.
+    probe: my-safe-update --check
+    probe_label: anchor gate
+    enabled: false                 # hide the update button entirely (the count still shows)
+```
+
+`command_source` tells the client which tier answered: `"configured"` (your wrapper) or
+`"default"` (Hermes' own `hermes update`). Keryx warns in the confirm dialog on `"default"`,
+because that command is correct on a stock install and destructive on a patched one.
+
+Read-only is the **contract** of `probe`, not something the gateway enforces — whatever is
+named there runs verbatim. Point it at a probe, never at the update itself.
+
+Both the update and the probe run detached (`start_new_session`), for the same reason a brain
+swap does: the command restarts, and reinstalls under, the very gateway that launched it.
+Update output goes to `~/.hermes/logs/keryx-update.log`; probe output is captured, run through
+`redact_sensitive_text` (fail-closed, like the log tail), tail-capped at 4000 chars, and kept
+in memory only — a stale "ALL CLEAR" from last week is worse than none.
+
 ## Pet endpoints (1.10/1.11)
 
 The petdex mascot from the Hermes desktop app, served to the phone. Pets stay configured
