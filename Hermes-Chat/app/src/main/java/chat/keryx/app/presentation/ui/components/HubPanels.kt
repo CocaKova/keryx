@@ -82,193 +82,6 @@ import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.LinkHealth
 import kotlinx.coroutines.launch
 
-private val TABS = listOf("Status", "Controls", "Jobs", "Sessions", "Skills", "Tools")
-
-/** Tabs whose data moves under you (gateway state, job runs, session activity) — these re-poll
- *  every 10 s while their tab is visible AND the app is resumed. Skills/Tools stay fetch-once:
- *  they change on operator action, not on their own. */
-private val LIVE_TABS = setOf(0, 2, 3)
-private const val HUB_POLL_MS = 10_000L
-
-/**
- * A hard fling that runs a tab's LazyColumn into its edge used to spill the leftover velocity into
- * the ModalBottomSheet's own nested-scroll handling — the sheet dragged a few px and sprang back,
- * over and over (the "scroll down hard and the UI glitches up and down" stutter). Swallow
- * everything a fling leaves unconsumed before it reaches the sheet; real finger drags
- * (UserInput) pass through untouched, so swipe-down-to-dismiss still works.
- */
-private val FlingTamer = object : NestedScrollConnection {
-    override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset =
-        if (source == NestedScrollSource.SideEffect) available else Offset.Zero
-    override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity = available
-}
-
-/**
- * The Agent Hub, grown from a bottom sheet into Keryx's own full-screen gateway space (1.21):
- * Status keeps the identity view (brain, reasoning, quick actions) plus platform states and
- * models; Controls is the write side (reasoning dial, brains, curated config knobs, log tail);
- * Jobs / Sessions / Skills / Tools ride the gateway's admin API — Sessions can stream a live
- * turn into a past session in place. Tabs fetch on first visit, and the volatile ones re-poll
- * gently while visible ([LIVE_TABS]); the whole space degrades to cached snapshots offline.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AgentHubSheet(
-    viewModel: ChatViewModel,
-    health: LinkHealth,
-    onDismiss: () -> Unit,
-) {
-    val gatewayUrl by viewModel.gatewayUrl.collectAsState()
-    // 2.1: tabs became pager pages — swipe moves between them. currentPage drives the tab-row
-    // visuals live during a drag; settledPage is what the fetch/poll effects key on, so tabs
-    // skimmed past mid-swipe never fire their network refresh.
-    val pagerScope = rememberCoroutineScope()
-    val pagerState = rememberPagerState(pageCount = { TABS.size })
-    val tab = pagerState.settledPage
-    val accent = MaterialTheme.colorScheme.primary
-    val accent2 = MaterialTheme.colorScheme.tertiary
-
-    // Per-tab fetch on first visit per sheet-opening. Panels may already hold the offline-cache
-    // seed (or last opening's snapshot) — that renders instantly while this refresh runs behind
-    // it, so the sheet is never blank and never silently stale.
-    val fetchedTabs = remember { mutableSetOf<Int>() }
-    LaunchedEffect(tab) {
-        if (!fetchedTabs.add(tab)) return@LaunchedEffect
-        when (tab) {
-            0 -> { viewModel.refreshHubHealth(); viewModel.refreshHubModels() }
-            1 -> { viewModel.refreshHubConfig(); viewModel.refreshHubBrains(); viewModel.refreshReasoningCaps() }
-            2 -> viewModel.refreshHubJobs()
-            3 -> viewModel.refreshHubSessions()
-            4 -> viewModel.refreshHubSkills()
-            5 -> viewModel.refreshHubToolsets()
-        }
-    }
-
-    // Live refresh (1.20): the visible tab re-polls while the sheet is open — gateway state,
-    // job runs and session activity move without us. repeatOnLifecycle suspends the loop when
-    // the app backgrounds (same discipline as the Missions board poll); switching tabs restarts
-    // the effect, so only the tab actually on screen polls.
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    LaunchedEffect(tab, lifecycleOwner) {
-        if (tab !in LIVE_TABS) return@LaunchedEffect
-        lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
-            while (true) {
-                kotlinx.coroutines.delay(HUB_POLL_MS)
-                when (tab) {
-                    0 -> { viewModel.refreshHubHealth(); viewModel.refreshHubModels() }
-                    2 -> viewModel.refreshHubJobs()
-                    3 -> viewModel.refreshHubSessions()
-                }
-            }
-        }
-    }
-
-    // 1.21: the Hub graduated from a bottom sheet to its own full-screen space; 1.23: that space
-    // scaffold (dusk gradient, emblem, letter-spaced title, breathing live line, close X) is now
-    // the shared KeryxSpace — the Hub just supplies its link-health line and refresh action.
-    KeryxSpace(
-        title = "Agent Hub",
-        onClose = onDismiss,
-        standalone = false,
-        liveSlot = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                KeryxBreathingDot(
-                    color = linkHealthColor(health),
-                    alive = health == LinkHealth.LIVE || health == LinkHealth.OK,
-                )
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    text = linkHealthLabel(health) +
-                        (gatewayUrl.takeIf { it.isNotBlank() }?.let { url ->
-                            " · " + url.removePrefix("https://").removePrefix("http://").trimEnd('/')
-                        } ?: ""),
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
-            }
-        },
-        actions = {
-            IconButton(onClick = {
-                when (tab) {
-                    0 -> { viewModel.refreshHubHealth(); viewModel.refreshHubModels(); viewModel.refreshReasoningCaps() }
-                    1 -> { viewModel.refreshHubConfig(); viewModel.refreshHubBrains(); viewModel.refreshReasoningCaps() }
-                    2 -> viewModel.refreshHubJobs()
-                    3 -> viewModel.refreshHubSessions()
-                    4 -> viewModel.refreshHubSkills()
-                    5 -> viewModel.refreshHubToolsets()
-                }
-            }) {
-                Icon(Icons.Default.Refresh, contentDescription = "Refresh",
-                    tint = MaterialTheme.colorScheme.primary)
-            }
-        },
-    ) {
-            Spacer(Modifier.height(6.dp))
-
-            val visibleTab = pagerState.currentPage
-            ScrollableTabRow(
-                selectedTabIndex = visibleTab,
-                edgePadding = 12.dp,
-                containerColor = Color.Transparent,
-                indicator = { positions ->
-                    TabRowDefaults.SecondaryIndicator(
-                        Modifier.tabIndicatorOffset(positions[visibleTab]),
-                        color = accent,
-                    )
-                },
-                divider = { HorizontalDivider(color = accent.copy(alpha = 0.12f)) },
-            ) {
-                TABS.forEachIndexed { i, label ->
-                    Tab(
-                        selected = visibleTab == i,
-                        onClick = { pagerScope.launch { pagerState.animateScrollToPage(i) } },
-                        text = {
-                            Text(label, fontSize = 12.sp,
-                                fontWeight = if (visibleTab == i) FontWeight.SemiBold else FontWeight.Normal)
-                        },
-                        selectedContentColor = accent,
-                        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.weight(1f).nestedScroll(FlingTamer),
-                verticalAlignment = Alignment.Top,
-            ) { page ->
-                Box(modifier = Modifier.fillMaxSize()) {
-                    when (page) {
-                        0 -> StatusTab(viewModel, health, onDismiss)
-                        1 -> ControlsTab(viewModel)
-                        2 -> JobsTab(viewModel)
-                        3 -> SessionsTab(viewModel)
-                        4 -> SkillsTab(viewModel)
-                        5 -> ToolsTab(viewModel)
-                    }
-                }
-            }
-    }
-}
-
-/** Link-health → status color, in the shared semantic palette. */
-private fun linkHealthColor(health: LinkHealth): Color = when (health) {
-    LinkHealth.LIVE, LinkHealth.OK -> KeryxStatus.good
-    LinkHealth.UNKNOWN -> KeryxStatus.warn
-    LinkHealth.OFF -> KeryxStatus.idle
-    else -> KeryxStatus.bad
-}
-
-/** One-line description of a link-health state, shared by the header and the Status tab. */
-private fun linkHealthLabel(health: LinkHealth): String = when (health) {
-    LinkHealth.LIVE -> "Streaming live"
-    LinkHealth.OK -> "Connected"
-    LinkHealth.UNKNOWN -> "Not tested yet"
-    LinkHealth.OFF -> "Side-channel off"
-    else -> "Unreachable — using Matrix sync"
-}
-
 /** The panel-degradation row every tab shares: stale data stays visible, the error rides on top. */
 @Composable
 internal fun PanelErrorLine(error: String?) {
@@ -306,7 +119,7 @@ private fun connStateColor(state: String): Color = when (state) {
 // --- Status ------------------------------------------------------------------------------------
 
 @Composable
-private fun StatusTab(
+internal fun StatusTab(
     viewModel: ChatViewModel,
     health: LinkHealth,
     onDismiss: () -> Unit,
@@ -520,7 +333,7 @@ private fun StatusTab(
 // --- Jobs --------------------------------------------------------------------------------------
 
 @Composable
-private fun JobsTab(viewModel: ChatViewModel) {
+internal fun JobsTab(viewModel: ChatViewModel) {
     val panel by viewModel.hubJobs.collectAsState()
     val currentSession by viewModel.currentSession.collectAsState()
     var createOpen by remember { mutableStateOf(false) }
@@ -811,7 +624,7 @@ private fun JobEditDialog(
 // --- Sessions ----------------------------------------------------------------------------------
 
 @Composable
-private fun SessionsTab(viewModel: ChatViewModel) {
+internal fun SessionsTab(viewModel: ChatViewModel) {
     val panel by viewModel.hubSessions.collectAsState()
     var open by remember { mutableStateOf<HubSession?>(null) }
 
@@ -1094,7 +907,7 @@ private fun epochAgo(epochSec: Double): String? {
 // --- Skills ------------------------------------------------------------------------------------
 
 @Composable
-private fun SkillsTab(viewModel: ChatViewModel) {
+internal fun SkillsTab(viewModel: ChatViewModel) {
     val panel by viewModel.hubSkills.collectAsState()
     val trash by viewModel.skillTrash.collectAsState()
     var filter by remember { mutableStateOf("") }
@@ -1295,7 +1108,7 @@ private fun NewSkillDialog(viewModel: ChatViewModel, onClose: () -> Unit) {
 // --- Tools -------------------------------------------------------------------------------------
 
 @Composable
-private fun ToolsTab(viewModel: ChatViewModel) {
+internal fun ToolsTab(viewModel: ChatViewModel) {
     val panel by viewModel.hubToolsets.collectAsState()
 
     Column(Modifier.fillMaxSize()) {

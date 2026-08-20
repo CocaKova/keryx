@@ -227,10 +227,12 @@ fun HermesApp(viewModel: ChatViewModel) {
                     actions = {
                         // Hermes Link health, whispered: a tiny dot that breathes while tokens flow,
                         // dims when idle, warms red when the gateway is unreachable. Tap opens the
-                        // Agent Hub — the live who/what/how of the system Keryx is pointed at.
+                        // Gateway — the live who/what/how of the system Keryx is pointed at. The dot
+                        // reports on the link, so it lands on the space that is about the link; the
+                        // Workshop is reached from the drawer, where you go looking for it on purpose.
                         LinkHealthDot(health = linkHealth, onClick = {
                             viewModel.refreshReasoningCaps()
-                            openSpace(KeryxDest.Hub)
+                            openSpace(KeryxDest.Gateway)
                         })
                         if (currentSession != null) {
                             // New session: one tap sends /new — same auto-send the command palette
@@ -273,7 +275,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                 )
             }
         ) { paddingValues ->
-            // Skill Forge opens from two places — Agent Hub Skills rows (direct ViewModel call)
+            // Skill Forge opens from two places — the Workshop's Skills rows (direct ViewModel call)
             // and in-chat SkillDistilled pills (via this CompositionLocal, since the render chain
             // doesn't carry the ViewModel). One shared target keeps a single hosted sheet.
             androidx.compose.runtime.CompositionLocalProvider(
@@ -310,7 +312,12 @@ fun HermesApp(viewModel: ChatViewModel) {
                     viewModel = viewModel,
                     onDismissRequest = nav::back,
                 )
-                KeryxDest.Hub -> chat.keryx.app.presentation.ui.components.AgentHubSheet(
+                KeryxDest.Gateway -> chat.keryx.app.presentation.ui.components.GatewaySpace(
+                    viewModel = viewModel,
+                    health = linkHealth,
+                    onDismiss = nav::back,
+                )
+                KeryxDest.Workshop -> chat.keryx.app.presentation.ui.components.WorkshopSpace(
                     viewModel = viewModel,
                     health = linkHealth,
                     onDismiss = nav::back,

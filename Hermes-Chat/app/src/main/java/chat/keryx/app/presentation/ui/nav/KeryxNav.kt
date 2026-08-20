@@ -28,7 +28,7 @@ import kotlin.coroutines.cancellation.CancellationException
 /**
  * Keryx's navigation spine (2.0 "The Dream Rebuild", Phase 1).
  *
- * The chat is the app's permanent floor; everything else — Archive, Missions, the Agent Hub —
+ * The chat is the app's permanent floor; everything else — Archive, Missions, Gateway, Workshop —
  * is a *place* pushed onto a real back stack above it. This ~200-line owned layer replaces the
  * scattered `remember { mutableStateOf(false) }` booleans and their full-screen Dialogs, and it
  * exists instead of Navigation Compose for one reason: the back gesture. [KeryxNavHost] renders
@@ -47,12 +47,27 @@ sealed interface KeryxDest {
 
     data object Archive : KeryxDest { override val route = "archive" }
     data object Missions : KeryxDest { override val route = "missions" }
-    data object Hub : KeryxDest { override val route = "hub" }
+
+    /** The server: status, controls, jobs. Half of what used to be the one "Agent Hub". */
+    data object Gateway : KeryxDest { override val route = "gateway" }
+
+    /** The agent: sessions, skills, tools. The other half. */
+    data object Workshop : KeryxDest { override val route = "workshop" }
+
     data object Settings : KeryxDest { override val route = "settings" }
 
     companion object {
+        private val all = listOf(Archive, Missions, Gateway, Workshop, Settings)
+
+        /**
+         * Legacy route names that must keep resolving. A saved back stack written by 2.4 — or an
+         * intent someone pinned — still says "hub"; it lands on the Gateway, which is where the
+         * panels you were most likely looking at now live. Entries here are never removed.
+         */
+        private val aliases = mapOf("hub" to Gateway)
+
         fun fromRoute(route: String): KeryxDest? =
-            listOf(Archive, Missions, Hub, Settings).firstOrNull { it.route == route }
+            all.firstOrNull { it.route == route } ?: aliases[route]
     }
 }
 
