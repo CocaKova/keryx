@@ -122,6 +122,24 @@ def test_snapshot_reports_locked_and_platform(config_seam, monkeypatch):
     if "browser" in by_name:
         assert by_name["browser"]["locked"] is True
     assert by_name["web"]["enabled"] is True
-    fixture = {"file", "no_mcp", "terminal", "todo", "web"}
-    not_enabled = [t for t in snap["data"] if t["name"] not in fixture]
-    assert not_enabled and all(t["enabled"] is False for t in not_enabled)
+    # `enabled` must mirror Hermes' OWN resolution, not the saved list restated
+    # here. Hermes injects toolsets the saved list predates
+    # (`_enable_recently_shipped_toolsets`, e.g. `bfl`) so a platform keeps
+    # parity with its composite instead of freezing at whatever shipped the day
+    # the list was saved. Asserting "outside the saved list ⇒ off" re-encoded an
+    # assumption Hermes deliberately broke, and failed on a snapshot that was
+    # telling the truth. Compare against the resolver instead: this still fails
+    # the moment Keryx disagrees with the gateway, which is the whole point.
+    from hermes_cli.tools_config import _get_platform_tools
+    from hermes_cli.config import load_config
+
+    truth = set(
+        _get_platform_tools(load_config(), "matrix", include_default_mcp_servers=False)
+    )
+    off = [t for t in snap["data"] if not t["enabled"]]
+    assert off, "a snapshot where every toolset is enabled proves nothing"
+    for t in snap["data"]:
+        assert t["enabled"] is (t["name"] in truth), (
+            f"{t['name']}: snapshot says enabled={t['enabled']}, "
+            f"Hermes says {t['name'] in truth}"
+        )

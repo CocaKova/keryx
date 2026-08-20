@@ -14,7 +14,10 @@ command into a Matrix room. While that subscriber is attached:
   * protocol edits to the homeserver are suppressed — the room receives only the single final
     committed message (no m.replace database bloat);
   * ``event: stop`` fires when the turn's stream finishes, telling the client to hold its overlay
-    until the final Matrix event syncs in.
+    until the final Matrix event syncs in;
+  * ``event: tool`` carries the tool + subagent lifecycle (start / end / subagent.*) as JSON, so
+    the app can show what the agent is DOING mid-turn instead of a spinner (see
+    ``_attach_tool_callbacks``).
 
 When no subscriber is attached and ``FALLBACK_EDITS`` is True, Matrix falls back to
 smart-throttled native m.replace edits driven by the normal streaming config
@@ -188,12 +191,299 @@ def publish_segment(adapter: Any, chat_id: Any) -> None:
     hub.publish_threadsafe(_platform_of(adapter), str(chat_id), "segment", None)
 
 
+# Live agent per in-flight turn, so publish_stop can read token usage at the finish line.
+# Weakrefs on purpose: the stash must never keep a dead agent (and its context) alive, and a
+# missing/collected entry just means "no usage frame this turn" — the app's ring stays put.
+_TURN_AGENTS: Dict[Tuple[str, str], Any] = {}
+
+
+def _publish_usage(platform: str, chat_id: str) -> None:
+    """Emit one ``event: usage`` frame with the turn's context occupancy.
+
+    ``last_prompt_tokens`` (the final API call's prompt size) IS the model's current context
+    occupancy — unlike the session_* counters, which are cumulative across calls. Must be
+    published BEFORE the stop frame: the side-channel subscription is transient and the reader
+    hangs up at stop, so anything after it is never delivered.
+    """
+    try:
+        ref = _TURN_AGENTS.pop((platform, chat_id), None)
+        agent = ref() if ref is not None else None
+        comp = getattr(agent, "context_compressor", None) if agent is not None else None
+        used = int(getattr(comp, "last_prompt_tokens", 0) or 0)
+        cmax = int(getattr(comp, "context_length", 0) or 0)
+        if used <= 0 or cmax <= 0:
+            return
+        payload = json.dumps(
+            {"used": used, "max": cmax, "model": str(getattr(agent, "model", "") or "")}
+        )
+        hub.publish_threadsafe(platform, chat_id, "usage", payload)
+    except Exception:
+        logger.debug("usage publish failed", exc_info=True)
+
+
 def publish_stop(adapter: Any, chat_id: Any, final_text: Optional[str] = None) -> None:
-    hub.publish_threadsafe(_platform_of(adapter), str(chat_id), "stop", final_text)
+    platform = _platform_of(adapter)
+    _publish_usage(platform, str(chat_id))
+    hub.publish_threadsafe(platform, str(chat_id), "stop", final_text)
+
+
+# --- tool & subagent theater (Keryx 2.4) ---------------------------------------------------
+#
+# The agent core has fired ``tool_progress_callback`` all along; the Keryx side-channel simply
+# never listened, which is why a Matrix turn showed a spinner and nothing else until the whole
+# answer committed. One SSE event type (``tool``) carries the whole vocabulary as JSON, so the
+# frame alphabet stays small and an older app ignores it (unknown events are skipped client-side).
+#
+#   {"phase":"start",    "name": "terminal", "preview": "ls -la"}
+#   {"phase":"end",      "name": "terminal", "ok": true, "ms": 412}   ("result" on failure only)
+#   {"phase":"diff",     "name": "patch", "added": 40, "removed": 3, "diff": "…", "truncated": false}
+#   {"phase":"sub", "kind":"start|tool|complete|thinking|progress|spawn_requested",
+#    "child":"…", "name":…, "preview":…, plus the identity block and, on completion, the rollup}
+#
+# Starts and ends are correlated by ORDER, not by id: the executor runs a turn's tool calls
+# sequentially, and ``tool.completed`` doesn't carry the call id anyway. The name rides along so
+# the client can prefer the newest open entry with a matching name.
+
+_TOOL_PREVIEW_MAX = 240
+# Failures only (see below), and clipped: the full result lands in the committed Matrix message
+# a moment later, and an unbounded one would push megabytes through a phone's SSE socket.
+_TOOL_RESULT_MAX = 400
+
+
+def _clip(value: Any, limit: int) -> str:
+    text = "" if value is None else str(value)
+    text = text.replace("\r\n", "\n").strip()
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+# Every ``subagent.*`` event carries the same identity block (goal, task index/count, model,
+# child session) and adds what only it knows — the lifecycle ones add activity, the completion
+# adds the rollup. Relayed by ``tools/delegate_tool.py``'s ``_identity_kwargs``. This is the
+# same set Talaria's ``Delegation`` model consumes, so the two clients show a delegation the
+# same way rather than each inventing its own half-view.
+_SUB_STR_FIELDS = ("goal", "model", "status")
+_SUB_INT_FIELDS = (
+    "task_index", "task_count", "depth", "tool_count",
+    "input_tokens", "output_tokens", "reasoning_tokens", "api_calls",
+)
+
+
+def _subagent_frame(event_type: str, name: Any, preview: Any, kw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    kind = event_type.split(".", 1)[1]
+    # The child's streamed assistant text, relayed per delta. A watch window can drink from
+    # that; a phone on a transient SSE socket cannot, and Talaria drops it for the same reason
+    # — the wing's activity line is fed by thinking / tool / progress instead.
+    if kind == "text":
+        return None
+    frame: Dict[str, Any] = {
+        "phase": "sub",
+        "kind": kind,
+        # subagent_id is optional on the wire (older emitters omit it); the task index is the
+        # stable fallback within one dispatch.
+        "child": str(kw.get("subagent_id") or "").strip() or f"task-{kw.get('task_index', 0)}",
+        "name": str(name or ""),
+        "preview": _clip(preview, _TOOL_PREVIEW_MAX),
+    }
+    session = kw.get("child_session_id")
+    if session:
+        # The child's own stored session — what "open this subagent" needs. A delegated child
+        # is not a live gateway session and its relay is never persisted, so without this id
+        # a landed wing is a dead end: you can see that it worked and never what it did.
+        frame["session"] = str(session)
+    for key in _SUB_STR_FIELDS:
+        value = kw.get(key)
+        if value:
+            frame[key] = _clip(value, 200)
+    for key in _SUB_INT_FIELDS:
+        value = kw.get(key)
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            frame[key] = int(value)
+    duration = kw.get("duration_seconds")
+    if isinstance(duration, (int, float)) and not isinstance(duration, bool):
+        frame["duration_seconds"] = float(duration)
+    summary = kw.get("summary")
+    if summary:
+        # Longer than a tool preview on purpose: for a background fan-out reporting back, the
+        # summary IS the work — it is the only place the child's result exists on this screen.
+        frame["summary"] = _clip(summary, 600)
+    # Only the counts: the wing renders "3 written", never the paths, and a 40-path list per
+    # completion is a lot of socket for a number.
+    for key in ("files_read", "files_written"):
+        value = kw.get(key)
+        if isinstance(value, (list, tuple)):
+            frame[key + "_n"] = len(value)
+    return frame
+
+
+# --- inline edit diffs -----------------------------------------------------------------------
+#
+# `tool.completed` carries the tool's RESULT, which for an edit tool is a success envelope, not
+# a diff — the diff only exists by comparing the file against what it was before the call. The
+# agent's own display layer already does exactly that (`capture_local_edit_snapshot` at start,
+# `render_edit_diff_with_delta` at completion), so this borrows it rather than re-deriving it,
+# and the app therefore shows the same diff the CLI would have printed.
+#
+# Snapshots are keyed by tool_call_id and popped on completion; the cap is a leak-stop for the
+# case where a call starts and never completes (interrupt, crash mid-tool).
+_EDIT_SNAPSHOTS: Dict[str, Any] = {}
+_EDIT_SNAPSHOT_MAX = 32
+
+# The panel is a glimpse, like every other payload here. Stats are counted from the WHOLE diff
+# before clipping, so "+40 −3" stays true even when the panel below it is cut.
+_DIFF_MAX = 1800
+
+
+def _capture_edit_snapshot(tool_call_id: str, name: str, args: Any) -> None:
+    try:
+        from agent.display import capture_local_edit_snapshot
+
+        snapshot = capture_local_edit_snapshot(name, args if isinstance(args, dict) else {})
+        if snapshot is None:
+            return
+        if len(_EDIT_SNAPSHOTS) >= _EDIT_SNAPSHOT_MAX:
+            _EDIT_SNAPSHOTS.clear()
+        _EDIT_SNAPSHOTS[str(tool_call_id)] = snapshot
+    except Exception:
+        logger.debug("edit snapshot failed", exc_info=True)
+
+
+def _edit_diff(tool_call_id: str, name: str, args: Any, result: Any) -> Optional[str]:
+    snapshot = _EDIT_SNAPSHOTS.pop(str(tool_call_id), None)
+    try:
+        from agent.display import render_edit_diff_with_delta
+
+        rendered: List[str] = []
+        ok = render_edit_diff_with_delta(
+            name,
+            result if isinstance(result, str) else json.dumps(result, default=str),
+            function_args=args if isinstance(args, dict) else None,
+            snapshot=snapshot,
+            print_fn=rendered.append,
+        )
+        return "\n".join(rendered) if ok and rendered else None
+    except Exception:
+        logger.debug("edit diff render failed", exc_info=True)
+        return None
+
+
+def _diff_counts(diff: str) -> Tuple[int, int]:
+    """(+added, -removed), counted the way the app's panel classifies lines.
+
+    ⚠️ The rendered lines are ANSI-coloured (``ESC[38;2;…m+line ESC[0m``), so a naive
+    ``startswith("+")`` counts nothing at all. Strip first, then classify — and a ``+++``/``---``
+    file header is not a changed line.
+    """
+    add = rem = 0
+    for line in diff.splitlines():
+        bare = _ANSI.sub("", line).lstrip()
+        if bare.startswith("+++") or bare.startswith("---"):
+            continue
+        if bare.startswith("+"):
+            add += 1
+        elif bare.startswith("-"):
+            rem += 1
+    return add, rem
+
+
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _attach_tool_callbacks(agent: Any, platform: str, chat_id: str) -> None:
+    """Mirror tool + subagent lifecycle onto the side-channel, without stealing the hook.
+
+    ``gateway/run.py`` assigns ``tool_progress_callback`` immediately before calling us (it may
+    be a live-status/log-mode consumer, or None), so this CHAINS: the previous callback still
+    runs, and its exceptions are its own. It also runs per turn on a *cached* agent, so the
+    wrapper is tagged and unwrapped before re-wrapping — otherwise every turn would nest one
+    more layer for the life of the process.
+    """
+    prev = getattr(agent, "tool_progress_callback", None)
+    prev = getattr(prev, "_keryx_inner", prev)  # never wrap our own wrapper
+
+    def _emit(payload: Dict[str, Any]) -> None:
+        try:
+            hub.publish_threadsafe(platform, chat_id, "tool", json.dumps(payload))
+        except Exception:
+            pass
+
+    def _mirror(event_type: Any, name: Any = None, preview: Any = None, args: Any = None, **kw: Any) -> None:
+        try:
+            et = str(event_type or "")
+            if et == "tool.started":
+                _emit({"phase": "start", "name": str(name or "tool"),
+                       "preview": _clip(preview, _TOOL_PREVIEW_MAX)})
+            elif et == "tool.completed":
+                ok = not bool(kw.get("is_error"))
+                frame = {"phase": "end", "name": str(name or "tool"), "ok": ok,
+                         "ms": int(float(kw.get("duration") or 0.0) * 1000)}
+                # Only a FAILURE carries its result. A success's output is the answer's raw
+                # material — it lands in the committed message a moment later, rendered
+                # properly, and pushing a few hundred bytes of escaped JSON per call to a phone
+                # to show nothing is waste. A failure is the one case where the mid-turn glimpse
+                # is the whole point.
+                if not ok:
+                    frame["result"] = _clip(kw.get("result"), _TOOL_RESULT_MAX)
+                _emit(frame)
+            elif et.startswith("subagent."):
+                frame = _subagent_frame(et, name, preview, kw)
+                if frame is not None:
+                    _emit(frame)
+        except Exception:
+            logger.debug("keryx tool mirror failed", exc_info=True)
+        # The mirror is a passenger: whatever the gateway wired stays authoritative and runs
+        # even if our half raised.
+        if prev is not None:
+            prev(event_type, name, preview, args, **kw)
+
+    _mirror._keryx_inner = prev  # type: ignore[attr-defined]
+    agent.tool_progress_callback = _mirror
+
+    # The id-bearing pair, for edit diffs only. Matrix leaves both unset (run.py wires them for
+    # Discord voice acks and Slack task cards), but chain anyway — this module has no business
+    # deciding that the platform it happens to be running under doesn't need its own callback.
+    prev_start = getattr(agent, "tool_start_callback", None)
+    prev_start = getattr(prev_start, "_keryx_inner", prev_start)
+    prev_complete = getattr(agent, "tool_complete_callback", None)
+    prev_complete = getattr(prev_complete, "_keryx_inner", prev_complete)
+
+    def _on_start(tool_call_id: Any, name: Any, args: Any) -> None:
+        _capture_edit_snapshot(tool_call_id, str(name or ""), args)
+        if prev_start is not None:
+            prev_start(tool_call_id, name, args)
+
+    def _on_complete(tool_call_id: Any, name: Any, args: Any, result: Any) -> None:
+        try:
+            diff = _edit_diff(tool_call_id, str(name or ""), args, result)
+            if diff:
+                added, removed = _diff_counts(diff)
+                # Its own frame, not a field on "end": `tool_progress_callback("tool.completed")`
+                # fires BEFORE this one, so the end frame is already on the wire by now. The app
+                # attaches it to the matching closed row.
+                _emit({
+                    "phase": "diff",
+                    "name": str(name or "tool"),
+                    "added": added,
+                    "removed": removed,
+                    "diff": _clip(diff, _DIFF_MAX),
+                    "truncated": len(diff) > _DIFF_MAX,
+                })
+        except Exception:
+            logger.debug("keryx diff mirror failed", exc_info=True)
+        if prev_complete is not None:
+            prev_complete(tool_call_id, name, args, result)
+
+    _on_start._keryx_inner = prev_start  # type: ignore[attr-defined]
+    _on_complete._keryx_inner = prev_complete  # type: ignore[attr-defined]
+    agent.tool_start_callback = _on_start
+    agent.tool_complete_callback = _on_complete
 
 
 def attach_reasoning_callback(agent: Any, source: Any) -> None:
-    """Register a live-reasoning mirror on the agent for this turn.
+    """Register this turn's live mirrors on the agent — reasoning, and via
+    [_attach_tool_callbacks] the tool/subagent theater.
+
+    (Name kept for the install.py/reapply hook in gateway/run.py, which calls it as the single
+    per-turn attach point.)
 
     The agent core already has a ``reasoning_callback`` hook that fires with every structured
     reasoning delta (``delta.reasoning_content`` / inline think-block text) — the gateway just
@@ -215,6 +505,12 @@ def attach_reasoning_callback(agent: Any, source: Any) -> None:
                 pass
 
         agent.reasoning_callback = _mirror_reasoning
+        _attach_tool_callbacks(agent, platform, chat_id)
+        # Same per-turn refresh cadence as the callback itself: the finish-line usage frame
+        # (see _publish_usage) reads this turn's agent, weakly held.
+        import weakref
+
+        _TURN_AGENTS[(platform, chat_id)] = weakref.ref(agent)
     except Exception:
         logger.debug("attach_reasoning_callback failed", exc_info=True)
 
@@ -338,7 +634,13 @@ def _reasoning_capabilities() -> Dict[str, Any]:
                     if model:
                         break
         agent_cfg = cfg.get("agent") or {}
-        effort = str(agent_cfg.get("reasoning_effort", "medium") or "medium").strip().lower()
+        # The global effort lives under model: in current configs (agent: is the legacy spot,
+        # and the subagents block's '' must never win) — model wins, then agent, then medium.
+        effort = str(
+            model_cfg.get("reasoning_effort")
+            or agent_cfg.get("reasoning_effort")
+            or "medium"
+        ).strip().lower()
         display = ((cfg.get("display") or {}).get("platforms") or {}).get("matrix") or {}
         show = bool(display.get("show_reasoning", True))
         # Which agent profile answers in which Matrix room (the routing-only multiplex map).
@@ -350,12 +652,25 @@ def _reasoning_capabilities() -> Dict[str, Any]:
         logger.debug("capabilities config read failed", exc_info=True)
 
     local = provider == "custom" or provider.startswith("custom:")
-    if local:
+    if local and _is_mistral_native(model):
+        # Mistral-native tokenizers accept only none/high on reasoning_effort — for them a
+        # binary switch is the honest declaration.
         reasoning = {
             "mode": "binary",
             "levels": ["none", "high"],
             "labels": {"none": "Off", "high": "On"},
             "current": "none" if effort == "none" else "high",
+        }
+    elif local:
+        # The local serving stack (patched qwen-family templates) validates effort levels —
+        # operator-confirmed on-device 2026-08-19: the accepted set is low/medium/xhigh (plus
+        # none for thinking-off). Do NOT collapse this to a binary switch: the levels are real
+        # on this stack, and the earlier binary declaration was the bug, not the ladder.
+        reasoning = {
+            "mode": "effort",
+            "levels": ["none", "low", "medium", "xhigh"],
+            "labels": {"none": "Off"},
+            "current": effort,
         }
     else:
         reasoning = {
@@ -1459,7 +1774,7 @@ _CONFIG_KNOBS: Dict[str, Dict[str, Any]] = {
         "description": "What a new message does while the agent is mid-task: wait in line, steer the current run, or interrupt it.",
     },
     "max_turns": {
-        "section": "agent", "path": ["max_turns"], "kind": "int", "min": 1, "max": 500, "default": 90,
+        "section": "agent", "path": ["max_turns"], "kind": "int", "min": 1, "max": 500, "default": 500,
         "applies": "next session", "label": "Max turns", "group": "Behavior",
         "description": "How many agent turns one task may take before it must wrap up.",
     },
@@ -1775,7 +2090,7 @@ _CONFIG_KNOBS: Dict[str, Dict[str, Any]] = {
     },
     "delegation_max_children": {
         "section": "delegation", "path": ["max_concurrent_children"], "kind": "int",
-        "min": 1, "max": 16, "default": 3,
+        "min": 1, "max": 16, "default": 10,
         "applies": "next session", "label": "Concurrent subagents", "group": "Delegation",
         "description": "How many subagents may run at once.",
     },
@@ -1787,7 +2102,7 @@ _CONFIG_KNOBS: Dict[str, Dict[str, Any]] = {
     },
     "delegation_max_iterations": {
         "section": "delegation", "path": ["max_iterations"], "kind": "int",
-        "min": 5, "max": 500, "default": 50,
+        "min": 5, "max": 500, "default": 250,
         "applies": "next session", "label": "Subagent turns", "group": "Delegation",
         "description": "Turn ceiling for one subagent.",
     },

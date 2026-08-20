@@ -62,9 +62,58 @@ streaming:
 event: delta     data: {"text": "…incremental tokens (may contain <think> blocks — client filters)…"}
 event: reasoning data: {"text": "…live reasoning/thinking deltas, ahead of the answer tokens…"}
 event: segment   data: {}                       # text → tool → text boundary
+event: tool      data: {"text": "{…JSON…}"}     # tool + subagent lifecycle (see below)
+event: usage     data: {"text": "{…JSON…}"}     # {"used","max","model"} — context occupancy
 event: stop      data: {}                       # turn complete; channel closes
 event: ping      data: {}                       # 20 s keepalive
 ```
+
+`usage` reports the turn's context occupancy from `last_prompt_tokens` — the final API call's
+prompt size, which IS the model's current occupancy, unlike the cumulative `session_*` counters.
+It must be published **before** `stop`: the subscription is transient and the reader hangs up at
+the stop frame, so anything after it is never delivered.
+
+`tool` carries the whole tool and subagent vocabulary as JSON inside the same `{"text": …}`
+envelope, so what the agent is *doing* is visible mid-turn instead of a spinner:
+
+```
+{"phase":"start", "name":"read_file", "preview":"SOUL.md"}
+{"phase":"end",   "name":"read_file", "ok":true,  "ms":113}
+{"phase":"end",   "name":"read_file", "ok":false, "ms":85, "result":"File not found: …"}
+{"phase":"diff",  "name":"patch", "body":"…ANSI-coloured unified diff…"}
+{"phase":"sub",   "kind":"start|tool|complete|thinking|progress|spawn_requested",
+                  "child":"sa-0-cf0971a4", "goal":…, "model":…, "task_index":0, "task_count":1,
+                  "tool_count":2, "status":"completed", "duration_seconds":38.15,
+                  "input_tokens":…, "output_tokens":…, "api_calls":…, "files_written_n":…,
+                  "summary":…, "child_session_id":…}
+```
+
+Four rules the frames follow, each load-bearing for a client:
+
+- **`result` rides only on a failure.** A successful call's output is the answer's raw material and
+  arrives in the committed message moments later, rendered properly. A failure is the one case
+  where the mid-turn glimpse is the whole point.
+- **`tool.completed` carries no call id**, so starts and ends correlate by *order*. Models batch
+  calls (two `read_file`s can both open before either closes), and the executor emits completions
+  in the order it emitted starts — so an end closes the **oldest** open row. FIFO, not a stack;
+  the tool name is a tiebreak, not a key.
+- **File lists are sent as counts** (`files_read_n` / `files_written_n`), not paths. A client
+  renders "2 written" and a 40-path array per completion is a lot of socket for a number.
+- **`subagent.text` is dropped.** A watch window can drink from a child's assistant stream; a phone
+  on a transient socket cannot. The `tool` / `thinking` / `progress` kinds carry the activity line
+  instead.
+
+Parallelism is *observed*, not announced: a call still open when another opens marks the overlap,
+but that is an observation about when calls were **announced**, not how the runtime ran them — so
+a client should say "2 in one turn", never "in parallel". `diff` frames ride their own phase
+because the progress callback fires before the completion one; ⚠️ their body is 24-bit-ANSI
+coloured, so strip escapes **before** classifying lines by leading character or every `+`/`−`
+count reads zero.
+
+One event type rather than five keeps the frame alphabet small, and clients already ignore unknown
+event types — so this is backward compatible in both directions: an old app on a new gateway
+ignores `tool`, and a new app on an unpatched gateway simply never sees one and falls back to
+rendering the committed message's parsed tool rows.
 
 `delta` and `reasoning` text are **append-only** within their own channel: a single frame may carry
 one token or many. A fast brain emits tokens faster than a remote client drains them, so the handler
