@@ -233,14 +233,7 @@ fun Modifier.keryxLightSweep(
     val p = progress()
     if (p > 0.02f && p < 0.98f) {
         val glow = kotlin.math.sin(p * Math.PI).toFloat()
-        val cx = size.width * (p * 1.7f - 0.35f)
-        // Narrow on purpose. At 0.35 of the width the body covered most of the screen at
-        // mid-journey and read as a blue WASH over the page rather than as something crossing it —
-        // and a wash hides its own grain. Narrow also steepens every gradient axis, so the strands
-        // run visibly diagonal instead of near-vertical.
-        val half = size.width * 0.20f
-        // Diagonal by construction: every band runs bottom-left to top-right, so they read as one
-        // body of light travelling rather than as separate bars.
+        val cx = size.width * (p * 1.6f - 0.3f)
         fun band(centre: Float, halfWidth: Float, stops: Array<Pair<Float, Color>>) = drawRect(
             Brush.linearGradient(
                 colorStops = stops,
@@ -248,74 +241,30 @@ fun Modifier.keryxLightSweep(
                 end = Offset(centre + halfWidth, 0f),
             ),
         )
-
-        // The wake: what the light leaves behind it. Long and very dim — the reason the sweep
-        // reads as *passing* rather than as a shape that appeared.
+        // A halo, so the gleam has somewhere to sit and no hard edge — dim enough that on its own
+        // it would not be noticed.
         band(
-            cx - half * 1.1f, half * 2.0f,
+            cx, size.width * 0.26f,
             arrayOf(
                 0f to Color.Transparent,
-                0.75f to accent2.copy(alpha = 0.07f * glow),
-                1f to accent.copy(alpha = 0.11f * glow),
-            ),
-        )
-
-        // The soft body.
-        band(
-            cx, half,
-            arrayOf(
-                0f to Color.Transparent,
-                0.45f to accent.copy(alpha = 0.26f * glow),
-                0.55f to accent2.copy(alpha = 0.19f * glow),
+                0.5f to accent.copy(alpha = 0.07f * glow),
                 1f to Color.Transparent,
             ),
         )
-
-        // Filaments: thin strands at their own offsets and speeds, so the body has grain instead
-        // of being one smooth gradient. The slow shimmer keeps them alive without strobing.
-        val shimmer = 0.78f + 0.22f * kotlin.math.sin(p * 9f).toFloat()
-        for ((offset, width, alpha) in FILAMENTS) {
-            band(
-                cx + half * offset * (0.85f + 0.3f * glow), size.width * width,
-                arrayOf(
-                    0f to Color.Transparent,
-                    0.5f to accent.copy(alpha = alpha * glow * shimmer),
-                    1f to Color.Transparent,
-                ),
-            )
-        }
-
-        // Prism fringe: accent2 running just ahead of the blade. Light through an edge splits;
-        // this is the cheapest honest version of that.
-        val blade = size.width * 0.032f
+        // The gleam: ONE narrow specular pass, accent at its shoulders and near-white at its core.
+        // A sheen across glass, not a body of colour crossing the page.
         band(
-            cx + half * 0.5f + blade * 1.6f, blade * 0.9f,
+            cx, size.width * 0.075f,
             arrayOf(
                 0f to Color.Transparent,
-                0.5f to accent2.copy(alpha = 0.28f * glow),
-                1f to Color.Transparent,
-            ),
-        )
-
-        // The blade: the bright leading edge, unmistakably *light*, not a tint.
-        band(
-            cx + half * 0.5f, blade,
-            arrayOf(
-                0f to Color.Transparent,
-                0.5f to accent.copy(alpha = 0.62f * glow),
+                0.34f to accent.copy(alpha = 0.16f * glow),
+                0.5f to Color.White.copy(alpha = 0.17f * glow),
+                0.66f to accent2.copy(alpha = 0.14f * glow),
                 1f to Color.Transparent,
             ),
         )
     }
 }
-
-/** (offset along the band, width as a fraction of the surface, peak alpha). */
-private val FILAMENTS = listOf(
-    Triple(-0.62f, 0.011f, 0.26f),
-    Triple(-0.18f, 0.006f, 0.34f),
-    Triple(0.22f, 0.015f, 0.22f),
-    Triple(0.48f, 0.008f, 0.18f),
-)
 
 /**
  * The sweep's own clock.
