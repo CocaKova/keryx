@@ -97,6 +97,7 @@ Full details in [`Hermes-Chat/hermes-plugin/keryx-stream/README.md`](Hermes-Chat
 ## Status
 
 Actively developed and released — see [Releases](https://github.com/CocaKova/keryx/releases)
-for the changelog. The streaming plugin is submitted upstream as
-[NousResearch/hermes-agent#57091](https://github.com/NousResearch/hermes-agent/pull/57091);
-until it lands there, install it from this repo as shown above.
+for the changelog. The streaming plugin was proposed upstream as
+[NousResearch/hermes-agent#57091](https://github.com/NousResearch/hermes-agent/pull/57091), which
+was closed without merging, so this repo is its home: install it on top of any hermes-agent tree
+as shown above.

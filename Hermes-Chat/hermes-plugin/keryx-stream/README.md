@@ -273,7 +273,8 @@ curl -N -H "Authorization: Bearer $KEY" \
 
 ## Upstream
 
-The side-channel is also proposed for the Hermes gateway itself in
-[NousResearch/hermes-agent#57091](https://github.com/NousResearch/hermes-agent/pull/57091).
-If that lands, a future `hermes` release may ship it natively; until then (and for any build that
-doesn't carry it), this repo is the standalone, install-on-top version.
+The side-channel was proposed for the Hermes gateway itself in
+[NousResearch/hermes-agent#57091](https://github.com/NousResearch/hermes-agent/pull/57091). That PR
+was closed without merging (2026-07-15), so no `hermes` release ships it natively and this repo is
+the standalone, install-on-top version — the supported path, not a stopgap. It installs onto any
+hermes-agent tree and re-applies after an upgrade.
