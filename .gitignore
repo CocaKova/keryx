@@ -24,3 +24,7 @@ Thumbs.db
 # Local-only cruft
 backups/
 Hermes-Chat/jdk.tar.gz
+
+# Build output. keryx-2.1.1.apk predates this line and stays tracked; releases ship from
+# GitHub Releases, not from the working tree, and three test builds went in by accident once.
+*.apk
