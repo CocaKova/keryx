@@ -214,8 +214,10 @@ fun ToolGroupCard(
     // the log "closed on its own" while being watched.
     var expanded by androidx.compose.runtime.saveable.rememberSaveable(run.id) { mutableStateOf(false) }
 
-    // Subtle breathing glow while the agent is actively invoking tools.
-    val glow = if (active) {
+    // Subtle breathing glow while the agent is actively invoking tools. Battery Saver holds it at
+    // the bright end rather than the resting value, so an active run still reads as active.
+    val reduced by rememberReducedMotion()
+    val glow = if (active && !reduced) {
         val t = rememberInfiniteTransition(label = "toolPulse")
         t.animateFloat(
             initialValue = 0.18f,
@@ -223,7 +225,7 @@ fun ToolGroupCard(
             animationSpec = infiniteRepeatable(tween(1100), RepeatMode.Reverse),
             label = "toolPulseAlpha",
         ).value
-    } else 0.22f
+    } else if (active) 0.42f else 0.22f
 
     val calls = run.entries.filterIsInstance<ToolRunEntry.Call>().map { it.call }
     // The theater's glyphs, not the emoji the gateway happened to print into the message text:

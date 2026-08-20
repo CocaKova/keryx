@@ -96,7 +96,9 @@ private fun decodeSheet(info: PetInfo): PetSheet? = runCatching {
 
 /**
  * A small animated pet. [running] gates the frame ticker — the drawer composes offscreen, so the
- * host passes real visibility (same contract as the Braille snake beside it).
+ * host passes real visibility (same contract as the Braille snake beside it). Battery Saver stills
+ * it on top of that: the pet holds its pose's first frame rather than vanishing, because it is the
+ * drawer's one sign of life and an absent pet reads as a broken app, not as a saved battery.
  */
 @Composable
 fun PetSprite(
@@ -113,9 +115,11 @@ fun PetSprite(
     val frames = (info.framesByRow[rowName] ?: info.framesPerState).coerceAtLeast(1)
 
     var frame by remember { mutableIntStateOf(0) }
-    LaunchedEffect(running, rowName, frames, info.revision) {
+    val reduced by rememberReducedMotion()
+    val animate = running && !reduced
+    LaunchedEffect(animate, rowName, frames, info.revision) {
         frame = 0
-        if (!running) return@LaunchedEffect
+        if (!animate) return@LaunchedEffect
         // petdex timing: one loop of framesPerState frames per loopMs, whatever the row's length.
         val stepMs = (info.loopMs / info.framesPerState.coerceAtLeast(1)).coerceAtLeast(50).toLong()
         while (true) {

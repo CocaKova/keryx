@@ -40,17 +40,23 @@ fun HermesThinkingAnimation(
     accent: Color? = null,
     accent2: Color? = null,
 ) {
-    // Subtle pulsing alpha on the whole component
-    val infiniteTransition = rememberInfiniteTransition(label = "snake_spin")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.6f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = EaseInOutSine),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "alpha_pulse"
-    )
+    // Subtle pulsing alpha on the whole component. Battery Saver stills it and every spinner
+    // below — the same thing the braille snake beside the drafting quip has always done. Stilled,
+    // the component holds full opacity rather than the dim end of its breath: it is saying "a turn
+    // is running", and it only lives for the moment before the first token, so a frozen-but-bright
+    // mark is honest where a frozen-and-faded one reads as something that gave up.
+    val reduced by rememberReducedMotion()
+    val alpha = if (!reduced) {
+        rememberInfiniteTransition(label = "snake_spin").animateFloat(
+            initialValue = 0.6f,
+            targetValue = 1.0f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1000, easing = EaseInOutSine),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "alpha_pulse"
+        ).value
+    } else 1.0f
 
     val phrases = listOf(
         "SYNTHESIZING",
@@ -90,7 +96,7 @@ fun HermesThinkingAnimation(
     ) {
         when (style) {
             "Braille" -> BrailleSpinner(primaryColor, secondColor)
-            "Dots" -> DotsSpinner(primaryColor, secondColor, infiniteTransition)
+            "Dots" -> DotsSpinner(primaryColor, secondColor)
             "ASCII Wave" -> AsciiWaveSpinner()
             else -> CaduceusSpinner(primaryColor, secondColor)
         }
@@ -125,19 +131,21 @@ fun BrailleSpinner(primaryColor: Color, accent2: Color = primaryColor) {
         listOf(1, 0, 3)  // ⠙
     )
     var frameIndex by remember { mutableStateOf(0) }
-    
-    LaunchedEffect(Unit) {
+    val reduced by rememberReducedMotion()
+
+    LaunchedEffect(reduced) {
+        if (reduced) return@LaunchedEffect
         while (true) {
-            delay(100) 
+            delay(100)
             frameIndex = (frameIndex + 1) % frames.size
         }
     }
-    
+
     Box(
         modifier = Modifier.size(24.dp),
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.size(10.dp, 16.dp)) { 
+        Canvas(modifier = Modifier.size(10.dp, 16.dp)) {
             val dotRadius = 1.5.dp.toPx()
             
             // 2x3 Grid positions mimicking Braille
@@ -167,15 +175,22 @@ fun BrailleSpinner(primaryColor: Color, accent2: Color = primaryColor) {
 @Composable
 fun AsciiWaveSpinner() {
     val frames = listOf(" ", "▂", "▃", "▄", "▅", "▆", "▇", "█", "▇", "▆", "▅", "▄", "▃", "▂")
+    // Frame 0 is a space — a stilled wave would be an empty box where a spinner should be, so the
+    // static frame is the tall one.
     var frameIndex by remember { mutableStateOf(0) }
-    
-    LaunchedEffect(Unit) {
+    val reduced by rememberReducedMotion()
+
+    LaunchedEffect(reduced) {
+        if (reduced) {
+            frameIndex = frames.indexOf("█")
+            return@LaunchedEffect
+        }
         while (true) {
             delay(100)
             frameIndex = (frameIndex + 1) % frames.size
         }
     }
-    
+
     Box(
         modifier = Modifier.defaultMinSize(minWidth = 24.dp),
         contentAlignment = Alignment.Center
@@ -191,17 +206,22 @@ fun AsciiWaveSpinner() {
 }
 
 @Composable
-fun DotsSpinner(primaryColor: Color, accent2: Color = primaryColor, infiniteTransition: InfiniteTransition) {
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = (2 * PI).toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "rotation"
-    )
-    
+fun DotsSpinner(primaryColor: Color, accent2: Color = primaryColor) {
+    // Owns its transition rather than borrowing the caller's, so that stilling it under Battery
+    // Saver disposes the frame-clock client instead of leaving one alive upstream.
+    val reduced by rememberReducedMotion()
+    val rotation = if (!reduced) {
+        rememberInfiniteTransition(label = "dots_spin").animateFloat(
+            initialValue = 0f,
+            targetValue = (2 * PI).toFloat(),
+            animationSpec = infiniteRepeatable(
+                animation = tween(1200, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "rotation"
+        ).value
+    } else 0f
+
     Box(
         modifier = Modifier.size(24.dp),
         contentAlignment = Alignment.Center
@@ -241,13 +261,15 @@ fun DotsSpinner(primaryColor: Color, accent2: Color = primaryColor, infiniteTran
  */
 @Composable
 fun CaduceusSpinner(primaryColor: Color, accent2: Color) {
-    val transition = rememberInfiniteTransition(label = "caduceus")
-    val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = (2 * PI).toFloat(),
-        animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing)),
-        label = "caduceus_phase"
-    )
+    val reduced by rememberReducedMotion()
+    val phase = if (!reduced) {
+        rememberInfiniteTransition(label = "caduceus").animateFloat(
+            initialValue = 0f,
+            targetValue = (2 * PI).toFloat(),
+            animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing)),
+            label = "caduceus_phase"
+        ).value
+    } else 0f
     Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.size(22.dp, 14.dp)) {
             val mid = size.height / 2f

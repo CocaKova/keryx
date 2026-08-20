@@ -394,12 +394,19 @@ private fun Rail(active: Boolean, baseColor: Color, accent: Color) {
 
 @Composable
 private fun Pulse(color: Color) {
-    val transition = rememberInfiniteTransition(label = "beat")
-    val a by transition.animateFloat(
-        initialValue = 0.25f, targetValue = 0.9f,
-        animationSpec = infiniteRepeatable(tween(760), RepeatMode.Reverse),
-        label = "beatAlpha",
-    )
+    // The transition only exists while it actually animates: a turn that runs for minutes under
+    // Battery Saver must not hold a frame-clock client open for a 5dp dot. Stilled, the dot keeps
+    // the bright end of its range — it is marking something genuinely live, so it reads as lit
+    // rather than as a beat that stopped.
+    val reduced by rememberReducedMotion()
+    val a = if (!reduced) {
+        val transition = rememberInfiniteTransition(label = "beat")
+        transition.animateFloat(
+            initialValue = 0.25f, targetValue = 0.9f,
+            animationSpec = infiniteRepeatable(tween(760), RepeatMode.Reverse),
+            label = "beatAlpha",
+        ).value
+    } else 0.9f
     Box(Modifier.size(5.dp).clip(CircleShape).background(color.copy(alpha = a)))
 }
 

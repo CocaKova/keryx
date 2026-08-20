@@ -116,15 +116,22 @@ private fun QuickRoomAvatar(
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(58.dp)) {
             if (unread) {
-                val breath by rememberInfiniteTransition(label = "unreadBreath").animateFloat(
-                    initialValue = 0.22f,
-                    targetValue = 0.60f,
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(2200, easing = FastOutSlowInEasing),
-                        repeatMode = RepeatMode.Reverse,
-                    ),
-                    label = "unreadBreathAlpha",
-                )
+                // The halo carries state, not decoration, so Battery Saver stills it rather than
+                // hiding it — it holds mid-breath, bright enough to still read as unread. The
+                // transition itself only exists while it animates; a deck of unread rooms would
+                // otherwise be one frame-clock client per avatar.
+                val reduced by rememberReducedMotion()
+                val breath = if (!reduced) {
+                    rememberInfiniteTransition(label = "unreadBreath").animateFloat(
+                        initialValue = 0.22f,
+                        targetValue = 0.60f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(2200, easing = FastOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse,
+                        ),
+                        label = "unreadBreathAlpha",
+                    ).value
+                } else 0.41f
                 val tertiary = MaterialTheme.colorScheme.tertiary
                 Canvas(Modifier.fillMaxSize()) {
                     drawCircle(
