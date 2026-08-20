@@ -528,7 +528,9 @@ if __name__ == "__main__":
     # write_rasters are deliberately NOT called: they still work, and running them would
     # silently overwrite the new mark with the old monoline one. They are kept only so the
     # 24dp notification geometry below still has its helpers.
+    # 2.5.2: the background and colors.xml moved to tools/launcher_icon.py when the launcher
+    # mark became the eclipse — the field is bone now, not void, and two generators writing one
+    # file is how an icon silently reverts. This file owns the 24dp notification glyph, and
+    # nothing else.
     sanity()
-    write_background()   # flat void — shared by both icons, unchanged
-    write_stat()         # the 24dp notification glyph, which is still this file's job
-    write_colors()
+    write_stat()
