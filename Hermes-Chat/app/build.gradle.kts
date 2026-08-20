@@ -26,7 +26,7 @@ android {
         applicationId = "chat.keryx.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 59
+        versionCode = 60
         versionName = "2.5.0"
     }
 
