@@ -136,7 +136,7 @@ fun AgentHubSheet(
         if (!fetchedTabs.add(tab)) return@LaunchedEffect
         when (tab) {
             0 -> { viewModel.refreshHubHealth(); viewModel.refreshHubModels() }
-            1 -> { viewModel.refreshHubConfig(); viewModel.refreshHubBrains(); viewModel.refreshReasoningCaps() }
+            1 -> { viewModel.refreshHubConfig(); viewModel.refreshHubBrains(); viewModel.refreshReasoningCaps(); viewModel.refreshHubUpdate() }
             2 -> viewModel.refreshHubJobs()
             3 -> viewModel.refreshHubSessions()
             4 -> viewModel.refreshHubSkills()
@@ -192,7 +192,7 @@ fun AgentHubSheet(
             IconButton(onClick = {
                 when (tab) {
                     0 -> { viewModel.refreshHubHealth(); viewModel.refreshHubModels(); viewModel.refreshReasoningCaps() }
-                    1 -> { viewModel.refreshHubConfig(); viewModel.refreshHubBrains(); viewModel.refreshReasoningCaps() }
+                    1 -> { viewModel.refreshHubConfig(); viewModel.refreshHubBrains(); viewModel.refreshReasoningCaps(); viewModel.refreshHubUpdate() }
                     2 -> viewModel.refreshHubJobs()
                     3 -> viewModel.refreshHubSessions()
                     4 -> viewModel.refreshHubSkills()

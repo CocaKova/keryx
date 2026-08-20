@@ -58,7 +58,9 @@ fun ControlsTab(viewModel: ChatViewModel) {
     val caps by viewModel.reasoningCaps.collectAsState()
     val brains by viewModel.hubBrains.collectAsState()
     val config by viewModel.hubConfig.collectAsState()
+    val update by viewModel.hubUpdate.collectAsState()
     var swapTarget by remember { mutableStateOf<String?>(null) }
+    var updateConfirm by remember { mutableStateOf(false) }
     var logsOpen by remember { mutableStateOf(false) }
     var rawOpen by remember { mutableStateOf(false) }
 
@@ -67,6 +69,55 @@ fun ControlsTab(viewModel: ChatViewModel) {
     }
     if (rawOpen) {
         RawConfigEditor(viewModel = viewModel, onDismiss = { rawOpen = false })
+    }
+    if (updateConfirm) {
+        val u = update.data
+        AlertDialog(
+            onDismissRequest = { updateConfirm = false },
+            title = { Text("Update Hermes?", fontSize = 16.sp) },
+            text = {
+                Text(
+                    buildString {
+                        append("The gateway runs ")
+                        append(u?.label?.takeIf { it.isNotBlank() }?.let { "\"$it\"" }
+                            ?: "the configured update command")
+                        append(" on its own host and restarts itself partway through. ")
+                        append("Chats pause; the link here will drop and come back on its own. ")
+                        // The stock command is fine on a stock install and destructive on a
+                        // patched one — say which you're about to run, don't assume.
+                        if (u?.commandSource == "default") {
+                            append("This is Hermes' own update command. If this install carries ")
+                            append("local patches, set keryx.update.command to your own wrapper ")
+                            append("first — a plain update overwrites them. ")
+                        }
+                        append("Progress lands in ~/.hermes/logs/keryx-update.log.")
+                        // The preflight only protects you if its verdict is in front of you
+                        // at the moment you decide.
+                        if (u?.probeConfigured == true) {
+                            when (u.probePassed) {
+                                false -> append(
+                                    "\n\n⚠ ${u.probeLabel.ifBlank { "Preflight" }} FAILED " +
+                                        "(exit ${u.probeExit}). Updating now is likely to break " +
+                                        "this install."
+                                )
+                                null -> append(
+                                    "\n\n${u.probeLabel.ifBlank { "Preflight" }} has not been " +
+                                        "run against this target yet."
+                                )
+                                true -> Unit
+                            }
+                        }
+                    },
+                    fontSize = 13.sp,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.hubUpdateStart(); updateConfirm = false }) {
+                    Text("Update")
+                }
+            },
+            dismissButton = { TextButton(onClick = { updateConfirm = false }) { Text("Cancel") } },
+        )
     }
     swapTarget?.let { target ->
         AlertDialog(
@@ -90,7 +141,11 @@ fun ControlsTab(viewModel: ChatViewModel) {
             start = 20.dp, end = 20.dp, bottom = 20.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
-        item { PanelErrorLine(config.error ?: brains.error) }
+        item { PanelErrorLine(config.error ?: brains.error ?: update.error) }
+
+        // --- Hermes update (2.4.1): how far behind, and the operator's update command ---------
+        update.data?.let { u -> item { UpdatePanel(u, onCheck = viewModel::hubUpdateCheck,
+            onProbe = viewModel::hubUpdateProbe, onUpdate = { updateConfirm = true }) } }
 
         // --- Reasoning dial (write side of /keryx/capabilities) -----------------------------
         caps?.let { c ->
@@ -206,6 +261,190 @@ fun ControlsTab(viewModel: ChatViewModel) {
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
+    }
+}
+
+/**
+ * Hermes' own version state: what is installed, how far behind upstream it is, and — only when
+ * the operator configured `keryx.update.command` — the button that updates it.
+ *
+ * The count is deliberately as old as the last fetch, because a live fetch against hermes-agent
+ * takes over a minute. So the age is shown next to the number, always, and "unknown" is a real
+ * rendered state: a shallow clone cannot count honestly and must not be drawn as "up to date".
+ */
+@Composable
+private fun UpdatePanel(
+    u: chat.keryx.app.data.remote.HermesStreamClient.UpdateStatus,
+    onCheck: () -> Unit,
+    onProbe: () -> Unit,
+    onUpdate: () -> Unit,
+) {
+    var probeOpen by remember { mutableStateOf(false) }
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SectionLabel("Hermes")
+
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.weight(1f)) {
+                val headline = when {
+                    !u.supported -> "Updates unavailable"
+                    !u.countKnown -> "Update state unknown"
+                    u.upToDate -> "Up to date"
+                    else -> "${u.behind} commit${if (u.behind == 1) "" else "s"} behind"
+                }
+                Text(
+                    headline,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = when {
+                        !u.supported || !u.countKnown -> MaterialTheme.colorScheme.onSurfaceVariant
+                        u.upToDate -> MaterialTheme.colorScheme.onSurface
+                        else -> MaterialTheme.colorScheme.tertiary
+                    },
+                )
+                val detail = buildString {
+                    if (u.version.isNotBlank()) append("v${u.version}")
+                    if (u.headBranch.isNotBlank()) {
+                        if (isNotEmpty()) append("  ·  ")
+                        append(u.headBranch)
+                    }
+                    if (u.head.isNotBlank()) append(" @ ${u.head.take(9)}")
+                }
+                if (detail.isNotBlank()) {
+                    Text(
+                        detail,
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                // Local commits on top of upstream are the patch layer, not drift — say so
+                // rather than letting "1 ahead" read as an error.
+                if (u.ahead > 0) {
+                    Text(
+                        "${u.ahead} local commit${if (u.ahead == 1) "" else "s"} on top" +
+                            (u.branch.takeIf { it.isNotBlank() }?.let { " of $it" } ?: ""),
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                val note = when {
+                    u.checking -> "checking upstream…"
+                    u.checkError.isNotBlank() -> "last check failed: ${u.checkError.take(70)}"
+                    u.reason.isNotBlank() -> u.reason
+                    else -> relativeAge(u.checkedAt)?.let { "as of $it" }.orEmpty()
+                }
+                if (note.isNotBlank()) {
+                    Text(
+                        note,
+                        fontSize = 10.sp,
+                        color = if (u.checkError.isNotBlank()) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+            }
+            if (u.supported) {
+                TextButton(onClick = onCheck, enabled = !u.checking) {
+                    Text(if (u.checking) "Checking" else "Check", fontSize = 13.sp)
+                }
+            }
+        }
+
+        // --- Anchor script: the read-only preflight, when the operator named one ----------
+        if (u.supported && u.probeConfigured) {
+            Spacer(Modifier.height(8.dp))
+            val passed = u.probePassed
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        u.probeLabel.ifBlank { "Preflight" },
+                        fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                    )
+                    Text(
+                        when {
+                            u.probeRunning -> "running…"
+                            // Never-run and passed must not look alike: an update gated on a
+                            // preflight nobody ran is an ungated update.
+                            passed == null -> "not run yet"
+                            passed -> "clear" + (relativeAge(u.probeAt)?.let { " · $it" } ?: "")
+                            else -> "FAILED (exit ${u.probeExit})" +
+                                (relativeAge(u.probeAt)?.let { " · $it" } ?: "")
+                        },
+                        fontSize = 11.sp,
+                        color = when {
+                            u.probeRunning || passed == null ->
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            passed -> MaterialTheme.colorScheme.tertiary
+                            else -> MaterialTheme.colorScheme.error
+                        },
+                    )
+                }
+                if (u.probeOutput.isNotBlank()) {
+                    TextButton(onClick = { probeOpen = true }) { Text("Output", fontSize = 13.sp) }
+                }
+                TextButton(onClick = onProbe, enabled = !u.probeRunning) {
+                    Text(if (u.probeRunning) "Running" else "Run", fontSize = 13.sp)
+                }
+            }
+        }
+
+        if (probeOpen) {
+            AlertDialog(
+                onDismissRequest = { probeOpen = false },
+                title = { Text(u.probeLabel.ifBlank { "Preflight" }, fontSize = 15.sp) },
+                text = {
+                    Text(
+                        u.probeOutput,
+                        fontSize = 10.sp,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                    )
+                },
+                confirmButton = { TextButton(onClick = { probeOpen = false }) { Text("Close") } },
+            )
+        }
+
+        // No configured command = no button, exactly like the brain picker. The count above is
+        // still worth showing on a gateway that updates by hand.
+        if (u.supported && u.commandConfigured) {
+            Spacer(Modifier.height(6.dp))
+            OutlinedButton(
+                onClick = onUpdate,
+                enabled = !u.running,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    when {
+                        u.running -> "Update running…"
+                        u.label.isNotBlank() -> "Update Hermes (${u.label})"
+                        else -> "Update Hermes"
+                    }
+                )
+            }
+            Text(
+                "Runs on the gateway host and restarts the gateway. Log: ~/.hermes/logs/keryx-update.log",
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+    }
+}
+
+/** "3 minutes ago" from the gateway's ISO timestamp; null when it can't be parsed. */
+private fun relativeAge(iso: String): String? {
+    val millis = chat.keryx.app.data.remote.HubJson.isoToMillis(iso) ?: return null
+    val delta = System.currentTimeMillis() - millis
+    if (delta < 0) return "just now"
+    val minutes = delta / 60_000
+    return when {
+        minutes < 1 -> "just now"
+        minutes < 60 -> "$minutes minute${if (minutes == 1L) "" else "s"} ago"
+        minutes < 1_440 -> (minutes / 60).let { "$it hour${if (it == 1L) "" else "s"} ago" }
+        else -> (minutes / 1_440).let { "$it day${if (it == 1L) "" else "s"} ago" }
     }
 }
 
