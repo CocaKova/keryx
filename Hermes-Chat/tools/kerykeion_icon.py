@@ -1,9 +1,27 @@
 #!/usr/bin/env python3
 """
-Keryx 2.3 — kerykeion launcher icon generator.
+Keryx 2.3 — kerykeion icon geometry.
 
-Single source of geometry for BOTH the adaptive VectorDrawables and the legacy
-API 24/25 rasters, so the vector and the PNGs can never drift.
+⚠️ 2.5: THIS NO LONGER OWNS THE LAUNCHER ICON. It owns the 24dp notification
+glyph (ic_stat_keryx), the flat void background, and colors.xml — nothing else.
+
+The launcher art was monoline here: constant-width, round-capped strokes, exact
+and symmetrical and reading as clip art ("those look drawn by little kids"). A
+mark needs tapered bodies, a shaped serpent head and structured wings, which is
+filled-form work this generator cannot express. The launcher icon is now built
+by tools/launcher_icon.py from tools/icon_source/keryx-mark.png.
+
+write_foreground / write_monochrome / write_adaptive / write_rasters are left
+intact but are NOT called from __main__ — running them would quietly restore
+the old mark over the new one.
+
+The notification glyph stays here on purpose: at status-bar size it is an
+alpha-only silhouette whose job is legibility, not brand fidelity, and it is
+already authored natively in the 24-unit viewport with a single serpent
+crossing because the two-crossing braid collapses into a blob that small.
+
+Originally: single source of geometry for BOTH the adaptive VectorDrawables and
+the legacy API 24/25 rasters, so the vector and the PNGs can never drift.
 
 Design space is the 108x108 adaptive canvas (centre 54,54).  Everything is
 authored in "design units", then uniformly scaled about the centre by SCALE so
@@ -505,11 +523,12 @@ def sanity():
 
 
 if __name__ == "__main__":
+    # 2.5: the LAUNCHER art no longer comes from here — see the module docstring and
+    # tools/launcher_icon.py. write_foreground / write_monochrome / write_adaptive /
+    # write_rasters are deliberately NOT called: they still work, and running them would
+    # silently overwrite the new mark with the old monoline one. They are kept only so the
+    # 24dp notification geometry below still has its helpers.
     sanity()
-    write_background()
-    write_foreground()
-    write_monochrome()
-    write_adaptive()
-    write_stat()
+    write_background()   # flat void — shared by both icons, unchanged
+    write_stat()         # the 24dp notification glyph, which is still this file's job
     write_colors()
-    write_rasters()
