@@ -1,5 +1,6 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.domain.model.ToolGrammar
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -873,7 +874,17 @@ object MessageParser {
                     else -> null
                 }
                 val (args, verdict) = stripTrailingVerdict(cleanArgs(rawArgs))
-                return ToolCall(emoji = glyph, name = verb, args = args, ok = verdict ?: ok)
+                // The line names a verb ("Reading"), not a tool. Resolve it back to the tool that
+                // printed it, so this row and the live theater's row are the same sentence — and
+                // so Theater.align, which pairs them by name, can hand this one its duration and
+                // its real verdict. An unrecognised gerund keeps the verb as its name.
+                val friendly = ToolGrammar.fromFriendly(verb, args)
+                return ToolCall(
+                    emoji = glyph,
+                    name = friendly?.name ?: verb,
+                    args = friendly?.target ?: args,
+                    ok = verdict ?: ok,
+                )
             }
         }
         return null

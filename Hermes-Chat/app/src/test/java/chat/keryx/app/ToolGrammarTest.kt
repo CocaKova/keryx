@@ -39,8 +39,14 @@ class ToolGrammarTest {
 
     @Test
     fun `the browser family is recognised by prefix`() {
+        // An unnamed member of the family still reads as browsing...
+        assertEquals("◍", ToolGrammar.glyphOf("browser_scroll"))
+        assertEquals("Browsing", ToolGrammar.verbOf("browser_scroll").present)
+        // ...while the two the gateway has its own word for keep that word (display.py's
+        // _TOOL_VERBS), because "Clicking" says more than "Browsing" and the glyph is unchanged.
+        assertEquals("Clicking", ToolGrammar.verbOf("browser_click").present)
+        assertEquals("Typing", ToolGrammar.verbOf("browser_type").present)
         assertEquals("◍", ToolGrammar.glyphOf("browser_click"))
-        assertEquals("Browsing", ToolGrammar.verbOf("browser_click").present)
     }
 
     // --- targets -------------------------------------------------------------------------------
@@ -238,5 +244,49 @@ class ToolGrammarTest {
     fun `no record at all means no enrichment, which is the pre-2_4 card`() {
         assertTrue(Theater.align(listOf("read_file"), emptyList()).isEmpty())
         assertTrue(Theater.align(emptyList(), listOf(ToolBeat("read_file"))).isEmpty())
+    }
+
+    // --- friendly progress lines (the gerund the gateway prints) --------------------------------
+
+    @Test
+    fun `a friendly progress line resolves back to the tool that printed it`() {
+        val f = ToolGrammar.fromFriendly("Reading", "a.txt")!!
+        assertEquals("read_file", f.name)
+        assertEquals("a.txt", f.target)
+        // The whole point: this row and the theater's row are now one sentence.
+        assertEquals("Read a.txt", ToolGrammar.title(f.name, f.target, running = false))
+        assertEquals("▤", ToolGrammar.glyphOf(f.name))
+    }
+
+    @Test
+    fun `a longer phrase wins over the word that starts it`() {
+        assertEquals("skill_view", ToolGrammar.fromFriendly("Reading", "skill espocrm")!!.name)
+        assertEquals("read_file", ToolGrammar.fromFriendly("Reading", "skills.md")!!.name)
+        assertEquals("execute_code", ToolGrammar.fromFriendly("Running", "code")!!.name)
+        assertEquals("terminal", ToolGrammar.fromFriendly("Running", "ls -la")!!.name)
+    }
+
+    @Test
+    fun `the search connector belongs to the phrase, not to the query`() {
+        val f = ToolGrammar.fromFriendly("Searching", "the web for keryx client")!!
+        assertEquals("web_search", f.name)
+        assertEquals("keryx client", f.target)
+    }
+
+    @Test
+    fun `Reading a URL is the web tool, not the file tool`() {
+        assertEquals("web_extract", ToolGrammar.fromFriendly("Reading", "https://example.com/x")!!.name)
+    }
+
+    @Test
+    fun `an unknown gerund stays unknown rather than guessing a tool`() {
+        assertEquals(null, ToolGrammar.fromFriendly("Pondering", "the void"))
+    }
+
+    @Test
+    fun `a bare verb with no target still resolves`() {
+        val f = ToolGrammar.fromFriendly("Delegating", "")!!
+        assertEquals("delegate_task", f.name)
+        assertEquals("", f.target)
     }
 }

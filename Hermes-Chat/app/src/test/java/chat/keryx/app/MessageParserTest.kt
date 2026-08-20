@@ -81,7 +81,9 @@ class MessageParserTest {
         // Genuine progress lines keep parsing.
         val call = MessageParser.parse("📖 Reading consolidate.py L80-89")
             .filterIsInstance<MessageParser.Segment.Tools>().single().calls.single()
-        assertEquals("Reading", call.name)
+        // Filed under the tool, not the verb the gateway happened to print.
+        assertEquals("read_file", call.name)
+        assertEquals("consolidate.py L80-89", call.args)
     }
 
     @Test
@@ -615,5 +617,25 @@ class MessageParserTest {
     fun streamTailWindow_giantUnclosedFence_returnedWhole() {
         val text = "```\n" + "x\n\n".repeat(50)
         assertEquals(text, MessageParser.streamTailWindow(text, 30))
+    }
+
+    @Test
+    fun `a friendly progress line is filed under its tool, not under its verb`() {
+        val calls = MessageParser.parse("📖 Reading a.txt")
+            .filterIsInstance<MessageParser.Segment.Tools>()
+            .flatMap { it.calls }
+        assertEquals(1, calls.size)
+        // Was "Reading" — a verb where the tool id belongs, which cost the committed card its
+        // glyph, its verb AND (via Theater.align, which pairs by name) every enriched fact.
+        assertEquals("read_file", calls[0].name)
+        assertEquals("a.txt", calls[0].args)
+    }
+
+    @Test
+    fun `a friendly delegate line resolves too`() {
+        val calls = MessageParser.parse("⑂ Delegating summarise b.txt")
+            .filterIsInstance<MessageParser.Segment.Tools>()
+            .flatMap { it.calls }
+        assertEquals("delegate_task", calls.single().name)
     }
 }

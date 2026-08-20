@@ -269,6 +269,34 @@ object Theater {
      *
      * @return parsed-call index -> its beat, for the positions that agreed.
      */
+    /**
+     * The failure reason, out of whatever the tool handed back.
+     *
+     * A tool's result is its own envelope, and a phone showed the envelope: a `read_file` on a
+     * missing path rendered as `{"content": "", "total_lines": 0, "file_size": 0, "truncated":
+     * false, "is_bin…` — every field except the one that says what went wrong, clipped off before
+     * the reason it exists. The one line a failure gets should be the reason.
+     */
+    fun reason(raw: String): String {
+        val t = raw.trim()
+        if (t.startsWith("{") || t.startsWith("[")) {
+            REASON_KEYS.firstNotNullOfOrNull { key ->
+                Regex("\"$key\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"")
+                    .find(t)?.groupValues?.get(1)
+                    ?.replace("\\n", " ")?.replace("\\\"", "\"")?.replace("\\\\", "\\")
+                    ?.trim()?.takeIf { it.isNotBlank() }
+            }?.let { return it.take(REASON_MAX) }
+        }
+        // Not JSON, or JSON with nothing that reads as a reason: the first line still beats the
+        // middle of one.
+        return t.lineSequence().firstOrNull { it.isNotBlank() }?.trim()?.take(REASON_MAX).orEmpty()
+    }
+
+    /** In the order a tool is likely to have meant it. */
+    private val REASON_KEYS = listOf("error", "message", "detail", "reason", "stderr")
+
+    private const val REASON_MAX = 200
+
     fun align(parsedNames: List<String>, beats: List<ToolBeat>): Map<Int, ToolBeat> {
         if (parsedNames.isEmpty() || beats.isEmpty()) return emptyMap()
         val out = LinkedHashMap<Int, ToolBeat>()

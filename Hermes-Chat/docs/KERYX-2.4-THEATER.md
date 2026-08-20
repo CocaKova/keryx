@@ -1,6 +1,7 @@
 # Keryx 2.4 — the tool theater
 
-**Status: built 2026-08-19, gateway half verified live, app half NOT yet walked on device.**
+**Status: built 2026-08-19, gateway half verified live, app half walked on device 2026-08-19
+(second walk — see "The verb where the tool's name belonged" at the end).**
 
 ## The problem
 
@@ -178,3 +179,43 @@ payload is now a test.
 
 60 unit tests (`TheaterTest`, `ToolGrammarTest`). Everything above is verified on the wire, from
 the gateway side; 2.3 and the first theater cut have been walked on device, this pass has not.
+
+## The verb where the tool's name belonged (second walk, 2026-08-19)
+
+The first walk fixed the two surfaces looking different. The second found them still saying
+different things, one screen apart: the live rows read `▤ Read a.txt 99ms`, the committed card
+read `⚙ Used Reading a.txt` — no duration, no diff, and a ✓ on the call that had failed.
+
+The gateway prints tool lines **two** ways. One names the tool (`read_file: "a.txt"`); the other
+is human-phrased progress — `📖 Reading a.txt`, `🌐 Searching the web for keryx` — built from
+`agent/display.py`'s `_TOOL_VERBS`. `MessageParser` matched the second kind (it has to: the first
+never appears for those tools) and filed the call under **"Reading"**, a verb standing where a
+tool id belongs. From there:
+
+- `ToolGrammar` had no entry, so the row fell through to the generic-gear fallback, `Used <name>`;
+- the working banner composed `"Running " + name` → "Running Reading";
+- and `Theater.align`, which pairs the watched turn to the committed text **by name**, matched
+  nothing at all — so every enriched fact the side-channel carried (duration, real verdict, diff
+  stats) was dropped, silently, on exactly the turns the agent narrated this way. The diff work
+  verified live earlier that day was real and never reached a transcript.
+
+`ToolGrammar.fromFriendly(verb, rest)` resolves the phrase back to its tool, longest phrase first
+("Reading skill" is not "Reading"; "Running code" is not "Running"). The gateway's own table
+leaves one ambiguity — `read_file`, `web_extract` and `skill_view` all say "Reading" — settled by
+the target: a URL is the web tool, a bare path is the file tool.
+
+Two smaller things the same walk turned up:
+
+**A ✓ has to mean *seen* to succeed.** Most tool lines carry no verdict in their text, and the row
+printed ✓ for all of them — a turn's one failure was distinguishable from its successes only by
+luck. `null` now gets its own faint mark (`·`), and a watched turn fills in the real verdict from
+its beat.
+
+**A failure shows its reason, not the envelope it arrived in.** `Theater.reason` digs the
+`error`/`message`/`detail` out of a tool's result JSON; a `read_file` on a missing path used to
+render as `{"content": "", "total_lines": 0, "file_size": 0, "truncated": fal…` — every field
+except the one that says what went wrong, clipped off before the reason it exists.
+
+Verified on device, one turn, five calls: `✓ ▤ Read a.txt 108ms` · `✓ ▤ Read b.txt 40ms` ·
+`✕ ▤ Read missing.txt 76ms` · `✓ ✎ Edited a.txt +1 −1 93ms` with its expandable diff ·
+`✓ ⑂ Delegated … 44ms`. 372 unit tests.

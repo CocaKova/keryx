@@ -296,4 +296,31 @@ class TheaterTest {
         assertTrue(TheaterState().isEmpty)
         assertFalse(run(sub("start")).isEmpty)
     }
+
+    // --- the failure reason ---------------------------------------------------------------------
+
+    @Test
+    fun `a failure shows its reason, not the envelope it arrived in`() {
+        val raw = """{"content": "", "total_lines": 0, "file_size": 0, "truncated": false, """ +
+            """"is_binary": false, "error": "File not found: /home/j/missing.txt"}"""
+        assertEquals("File not found: /home/j/missing.txt", Theater.reason(raw))
+    }
+
+    @Test
+    fun `an envelope with nothing that reads as a reason still shows its first line`() {
+        assertEquals("""{"content": "", "ok": false}""", Theater.reason("""{"content": "", "ok": false}"""))
+    }
+
+    @Test
+    fun `a plain-text failure keeps its first line`() {
+        assertEquals("bash: nope: command not found", Theater.reason("bash: nope: command not found\n\nexit 127"))
+    }
+
+    @Test
+    fun `an escaped newline in the reason does not break the one line it gets`() {
+        assertEquals(
+            "Permission denied and then some",
+            Theater.reason("""{"error": "Permission denied\nand then some"}"""),
+        )
+    }
 }
