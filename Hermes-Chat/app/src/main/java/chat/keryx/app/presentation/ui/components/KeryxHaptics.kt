@@ -22,6 +22,13 @@ import kotlinx.coroutines.launch
  * setting honoured in four places independently is a setting that will be honoured in three of
  * them by the next release.
  *
+ * ⚠️ [enabled] is a function, not a Boolean, and that is load-bearing. Consumers capture this
+ * instance inside blocks that do not restart when a setting changes — `pointerInput(message.id)`
+ * around swipe-to-reply is the sharp one, since a message id never changes — so an instance
+ * holding a captured Boolean freezes at whatever the setting was when that block first ran. On
+ * device that presents as a switch that is *backwards*: every flip appears to take effect one
+ * flip late. The instance must therefore be permanent and the flag read live.
+ *
  * Three ticks, and deliberately only three — a phone that buzzes differently at ten different
  * moments is not a vocabulary, it is noise:
  *
@@ -33,18 +40,18 @@ import kotlinx.coroutines.launch
 @Stable
 class KeryxHaptics(
     private val haptics: HapticFeedback,
-    private val enabled: Boolean,
+    private val enabled: () -> Boolean,
     private val scope: CoroutineScope,
 ) {
     /** A gesture landing, a message leaving, an action taking effect. */
     fun commit() {
-        if (!enabled) return
+        if (!enabled()) return
         haptics.performHapticFeedback(HapticFeedbackType.GestureEnd)
     }
 
     /** A long press opening a menu, a sheet, or a confirm. */
     fun press() {
-        if (!enabled) return
+        if (!enabled()) return
         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
     }
 
@@ -53,7 +60,7 @@ class KeryxHaptics(
      * far enough apart to be countable in a pocket.
      */
     fun completion() {
-        if (!enabled) return
+        if (!enabled()) return
         scope.launch {
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
             delay(COMPLETION_GAP_MS)
@@ -76,7 +83,7 @@ val LocalKeryxHaptics = staticCompositionLocalOf {
         haptics = object : HapticFeedback {
             override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) = Unit
         },
-        enabled = false,
+        enabled = { false },
         scope = CoroutineScope(kotlinx.coroutines.Dispatchers.Main.immediate),
     )
 }

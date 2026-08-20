@@ -33,7 +33,7 @@ class KeryxHapticsTest {
     @Test
     fun `the setting silences every tick, including the two-beat one`() = runTest {
         val rec = Recorder()
-        val haptics = KeryxHaptics(rec, enabled = false, scope = this)
+        val haptics = KeryxHaptics(rec, enabled = { false }, scope = this)
         haptics.commit()
         haptics.press()
         haptics.completion()
@@ -44,7 +44,7 @@ class KeryxHapticsTest {
     @Test
     fun `commit is one tick and press is one tick`() = runTest {
         val rec = Recorder()
-        val haptics = KeryxHaptics(rec, enabled = true, scope = this)
+        val haptics = KeryxHaptics(rec, enabled = { true }, scope = this)
         haptics.commit()
         assertEquals(1, rec.ticks.size)
         haptics.press()
@@ -57,7 +57,7 @@ class KeryxHapticsTest {
     @Test
     fun `completion is the only two-beat tick`() = runTest {
         val rec = Recorder()
-        val haptics = KeryxHaptics(rec, enabled = true, scope = this)
+        val haptics = KeryxHaptics(rec, enabled = { true }, scope = this)
         haptics.completion()
         advanceUntilIdle()
         assertEquals("Completion is a soft double", 2, rec.ticks.size)
@@ -67,7 +67,7 @@ class KeryxHapticsTest {
     @Test
     fun `the beats are far enough apart to count and close enough to read as one event`() = runTest {
         val rec = Recorder()
-        KeryxHaptics(rec, enabled = true, scope = this).completion()
+        KeryxHaptics(rec, enabled = { true }, scope = this).completion()
         runCurrent()
         assertEquals("The first beat lands immediately", 1, rec.ticks.size)
         // A beat short of the gap, the second must still be waiting — otherwise the two collapse
@@ -102,5 +102,30 @@ class KeryxHapticsTest {
                 "LocalKeryxHaptics instead:\n" + offenders.joinToString("\n"),
             offenders.isEmpty(),
         )
+    }
+
+    @Test
+    fun `flipping the setting reaches an instance that was captured long ago`() = runTest {
+        // The device bug this replaces: `enabled` was a captured Boolean and the provider handed
+        // out a fresh instance per flip. Consumers that capture the instance inside a block which
+        // never restarts — pointerInput(message.id) around swipe-to-reply — kept the old one, so
+        // every flip of the switch appeared to take effect one flip late. Backwards, on device.
+        val rec = Recorder()
+        var on = true
+        val captured = KeryxHaptics(rec, enabled = { on }, scope = this)
+
+        captured.commit()
+        assertEquals(1, rec.ticks.size)
+
+        on = false
+        captured.commit()
+        captured.press()
+        captured.completion()
+        advanceUntilIdle()
+        assertEquals("A stale instance kept buzzing after the switch went off", 1, rec.ticks.size)
+
+        on = true
+        captured.commit()
+        assertEquals("A stale instance stayed silent after the switch came back on", 2, rec.ticks.size)
     }
 }

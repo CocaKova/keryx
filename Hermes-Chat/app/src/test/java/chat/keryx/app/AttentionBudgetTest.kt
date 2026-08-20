@@ -1,6 +1,7 @@
 package chat.keryx.app
 
 import java.io.File
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -15,7 +16,14 @@ import org.junit.Test
  * because the thing being asserted is a property of the code, not of a value some function
  * returns — `rememberReducedMotion()` needs a live Context, and this module has no Robolectric.
  *
- * When this fails, the fix is almost never to widen the allow-list. It is to gate the animation:
+ * There is one deliberate exception, added after the first build reached a device: a **spinner**
+ * keeps spinning. Motion that carries information stays; motion that decorates stops. Freeze the
+ * thing that says "working" and the app reads as hung, which costs the user more than the frames
+ * cost the battery. Such a site marks itself with a `battery-saver-exempt:` comment carrying a
+ * reason, and this test accepts that in place of a gate — an exemption you have to write a
+ * sentence for is one you will not add by accident.
+ *
+ * When this fails, the fix is almost never to claim an exemption. It is to gate the animation:
  *
  *     val reduced by rememberReducedMotion()
  *     val x = if (!reduced) { rememberInfiniteTransition(...).animateFloat(...).value } else <still>
@@ -29,6 +37,10 @@ class AttentionBudgetTest {
 
     /** How far above a call site the gate may live before it stops being obviously connected. */
     private val gateWindow = 16
+
+    /** A gate, or a written-down reason for not having one. */
+    private fun List<String>.excused() =
+        any { it.contains("reduced", ignoreCase = true) || it.contains("battery-saver-exempt") }
 
     /** Hand-rolled tickers sit further from their gate: it guards the whole composable body. */
     private val tickerWindow = 60
@@ -54,15 +66,15 @@ class AttentionBudgetTest {
                 // Skip the import that gives the call site its name.
                 if (!line.contains("rememberInfiniteTransition(")) return@forEachIndexed
                 if (line.trimStart().startsWith("import ")) return@forEachIndexed
-                val window = lines.subList(maxOf(0, i - gateWindow), i + 1)
-                if (window.none { it.contains("reduced", ignoreCase = true) }) {
+                if (!lines.subList(maxOf(0, i - gateWindow), i + 1).excused()) {
                     offenders += "${file.name}:${i + 1}  ${line.trim()}"
                 }
             }
         }
         assertTrue(
-            "Always-on animations with no reduced-motion gate within $gateWindow lines " +
-                "— Battery Saver must still every ornament:\n" + offenders.joinToString("\n"),
+            "Always-on animations with neither a reduced-motion gate nor a written " +
+                "battery-saver-exempt reason within $gateWindow lines — Battery Saver must still " +
+                "every ornament:\n" + offenders.joinToString("\n"),
             offenders.isEmpty(),
         )
     }
@@ -86,8 +98,7 @@ class AttentionBudgetTest {
                 }
                 // A wider window than the infinite-transition check: these gates sit at the top of
                 // the composable and the loop they guard can be some way down its body.
-                val window = lines.subList(maxOf(0, i - tickerWindow), i + 1)
-                if (window.none { it.contains("reduced", ignoreCase = true) }) {
+                if (!lines.subList(maxOf(0, i - tickerWindow), i + 1).excused()) {
                     offenders += "${file.name}:${i + 1}  ${line.trim()}"
                 }
             }
@@ -96,6 +107,25 @@ class AttentionBudgetTest {
             "Frame-clock or sprite tickers with no reduced-motion gate within $tickerWindow " +
                 "lines:\n" + offenders.joinToString("\n"),
             offenders.isEmpty(),
+        )
+    }
+
+    @Test
+    fun `the spinner exemption stays an exemption`() {
+        // Every escape hatch grows. This is the count of animations allowed to run under Battery
+        // Saver, and it should change only when someone means it — if this number climbs, the
+        // budget is eroding again by exactly the mechanism that eroded it the first time.
+        val exempt = sources()
+            .flatMap { f ->
+                f.readLines().withIndex()
+                    .filter { (_, l) -> "battery-saver-exempt" in l }
+                    .map { (i, _) -> "${f.name}:${i + 1}" }
+            }
+            .sorted()
+        assertEquals(
+            "Battery-saver exemptions changed — every one must be a spinner whose motion IS the " +
+                "information it carries:\n" + exempt.joinToString("\n"),
+            5, exempt.size,
         )
     }
 }

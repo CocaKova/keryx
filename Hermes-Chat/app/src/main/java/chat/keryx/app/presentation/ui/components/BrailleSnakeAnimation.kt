@@ -44,12 +44,25 @@ fun BrailleSnakeAnimation(
     periodMillis: Int = 5200,
     glyphSize: Float = 7f,
     pathProvider: (Size) -> Path = ::wingPath,
+    /**
+     * True where this snake is the app's way of saying *something is happening right now* — the
+     * drafting row, the login handshake, the agent thinking mid-call. Those keep moving under
+     * Battery Saver: a frozen progress spinner reads as a hung app, which costs the user more
+     * than the frames cost the battery (Jonny, on device: "make spinners the exception").
+     *
+     * Left false for ornament — the drawer emblem, a selected room's ring, an empty state's
+     * flourish, a space header. Nothing is waiting on those, so they still like everything else.
+     */
+    progress: Boolean = false,
 ) {
     // The infinite transition only exists while actually animating: an idle/hidden snake (the
     // drawer emblem with the drawer closed, Battery Saver on) must not keep a frame-clock client
     // alive rendering ornament at 60fps — that's a measurable battery cost for zero visible pixels.
+    //
+    // battery-saver-exempt: unless [progress] — see the parameter's doc. A snake that is reporting
+    // work in flight keeps moving, because there its motion IS the message.
     val reducedMotion by rememberReducedMotion()
-    val animate = running && !reducedMotion
+    val animate = running && (progress || !reducedMotion)
     val head = if (animate) {
         val transition = rememberInfiniteTransition(label = "braille-snake")
         transition.animateFloat(

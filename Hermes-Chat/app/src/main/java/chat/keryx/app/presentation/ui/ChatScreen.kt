@@ -2279,6 +2279,7 @@ private fun WaitingIndicator() {
                 snakeLength = 10,
                 periodMillis = 1500,
                 glyphSize = 7f,
+                progress = true,
             )
         }
         Spacer(modifier = Modifier.width(8.dp))

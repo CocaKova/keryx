@@ -89,6 +89,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 modifier = Modifier.fillMaxSize(),
                 color = accent,
                 running = true,
+                progress = true,
             )
         }
 

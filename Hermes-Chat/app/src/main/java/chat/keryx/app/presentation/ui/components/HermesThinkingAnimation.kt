@@ -40,11 +40,13 @@ fun HermesThinkingAnimation(
     accent: Color? = null,
     accent2: Color? = null,
 ) {
-    // Subtle pulsing alpha on the whole component. Battery Saver stills it and every spinner
-    // below — the same thing the braille snake beside the drafting quip has always done. Stilled,
-    // the component holds full opacity rather than the dim end of its breath: it is saying "a turn
-    // is running", and it only lives for the moment before the first token, so a frozen-but-bright
-    // mark is honest where a frozen-and-faded one reads as something that gave up.
+    // Subtle pulsing alpha on the whole component — decoration wrapped around a spinner, so
+    // Battery Saver stills it and holds full opacity instead of the dim end of the breath.
+    //
+    // The spinners themselves do NOT still (Jonny, on device: "make spinners the exception"). The
+    // distinction the app draws: motion that carries information keeps moving, motion that
+    // decorates stops. A spinner IS the information — freeze it and the app reads as hung, and no
+    // amount of saved frames is worth a user force-quitting an agent mid-turn.
     val reduced by rememberReducedMotion()
     val alpha = if (!reduced) {
         rememberInfiniteTransition(label = "snake_spin").animateFloat(
@@ -131,10 +133,9 @@ fun BrailleSpinner(primaryColor: Color, accent2: Color = primaryColor) {
         listOf(1, 0, 3)  // ⠙
     )
     var frameIndex by remember { mutableStateOf(0) }
-    val reduced by rememberReducedMotion()
 
-    LaunchedEffect(reduced) {
-        if (reduced) return@LaunchedEffect
+    // battery-saver-exempt: a spinner's motion is its message.
+    LaunchedEffect(Unit) {
         while (true) {
             delay(100)
             frameIndex = (frameIndex + 1) % frames.size
@@ -175,16 +176,10 @@ fun BrailleSpinner(primaryColor: Color, accent2: Color = primaryColor) {
 @Composable
 fun AsciiWaveSpinner() {
     val frames = listOf(" ", "▂", "▃", "▄", "▅", "▆", "▇", "█", "▇", "▆", "▅", "▄", "▃", "▂")
-    // Frame 0 is a space — a stilled wave would be an empty box where a spinner should be, so the
-    // static frame is the tall one.
     var frameIndex by remember { mutableStateOf(0) }
-    val reduced by rememberReducedMotion()
 
-    LaunchedEffect(reduced) {
-        if (reduced) {
-            frameIndex = frames.indexOf("█")
-            return@LaunchedEffect
-        }
+    // battery-saver-exempt: a spinner's motion is its message.
+    LaunchedEffect(Unit) {
         while (true) {
             delay(100)
             frameIndex = (frameIndex + 1) % frames.size
@@ -209,18 +204,16 @@ fun AsciiWaveSpinner() {
 fun DotsSpinner(primaryColor: Color, accent2: Color = primaryColor) {
     // Owns its transition rather than borrowing the caller's, so that stilling it under Battery
     // Saver disposes the frame-clock client instead of leaving one alive upstream.
-    val reduced by rememberReducedMotion()
-    val rotation = if (!reduced) {
-        rememberInfiniteTransition(label = "dots_spin").animateFloat(
+    // battery-saver-exempt: a spinner's motion is its message.
+    val rotation = rememberInfiniteTransition(label = "dots_spin").animateFloat(
             initialValue = 0f,
             targetValue = (2 * PI).toFloat(),
             animationSpec = infiniteRepeatable(
                 animation = tween(1200, easing = LinearEasing),
                 repeatMode = RepeatMode.Restart
             ),
-            label = "rotation"
-        ).value
-    } else 0f
+        label = "rotation"
+    ).value
 
     Box(
         modifier = Modifier.size(24.dp),
@@ -261,15 +254,13 @@ fun DotsSpinner(primaryColor: Color, accent2: Color = primaryColor) {
  */
 @Composable
 fun CaduceusSpinner(primaryColor: Color, accent2: Color) {
-    val reduced by rememberReducedMotion()
-    val phase = if (!reduced) {
-        rememberInfiniteTransition(label = "caduceus").animateFloat(
-            initialValue = 0f,
-            targetValue = (2 * PI).toFloat(),
-            animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing)),
-            label = "caduceus_phase"
-        ).value
-    } else 0f
+    // battery-saver-exempt: a spinner's motion is its message.
+    val phase by rememberInfiniteTransition(label = "caduceus").animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * PI).toFloat(),
+        animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing)),
+        label = "caduceus_phase"
+    )
     Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.size(22.dp, 14.dp)) {
             val mid = size.height / 2f
