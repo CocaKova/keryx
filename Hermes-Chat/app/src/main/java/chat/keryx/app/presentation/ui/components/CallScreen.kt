@@ -347,6 +347,7 @@ private fun CallOrb(
                         modifier = Modifier.size(74.dp),
                         color = accent, color2 = accent2,
                         snakeLength = 12, periodMillis = 2600, glyphSize = 13f,
+                        progress = true,
                     )
                 CallController.Phase.SPEAKING -> SpeakingBars(accent, accent2)
                 CallController.Phase.MUTED -> Icon(

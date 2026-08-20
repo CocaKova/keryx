@@ -151,8 +151,15 @@ fun HermesApp(viewModel: ChatViewModel) {
     // 2.5: the tick vocabulary, resolved once. Provided here rather than built at each call site
     // so that Settings ▸ Interface ▸ "Haptic Feedback" has exactly one place to be obeyed.
     val hapticFeedback = androidx.compose.ui.platform.LocalHapticFeedback.current
-    val keryxHaptics = remember(hapticFeedback, hapticsEnabled, scope) {
-        chat.keryx.app.presentation.ui.components.KeryxHaptics(hapticFeedback, hapticsEnabled, scope)
+    // NOT keyed on hapticsEnabled: the instance must outlive every flip of the switch. Consumers
+    // capture it inside blocks that never restart (pointerInput keyed on a message id), so handing
+    // out a fresh instance per flip strands them on the old one — which on device looks like a
+    // switch that is backwards. One permanent instance, reading the flag live.
+    val hapticsOn = androidx.compose.runtime.rememberUpdatedState(hapticsEnabled)
+    val keryxHaptics = remember(hapticFeedback, scope) {
+        chat.keryx.app.presentation.ui.components.KeryxHaptics(
+            hapticFeedback, { hapticsOn.value }, scope,
+        )
     }
 
     // The completion tick: the agent stopped working. Fired on the awaiting -> idle edge and only
