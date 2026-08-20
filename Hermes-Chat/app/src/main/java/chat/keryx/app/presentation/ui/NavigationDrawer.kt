@@ -363,7 +363,7 @@ fun RoomRow(
     avatarLoader: suspend (String) -> ByteArray?,
     previewLoader: (suspend () -> String?)? = null,
 ) {
-    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val haptics = chat.keryx.app.presentation.ui.components.LocalKeryxHaptics.current
     // Long-press menu (pin/unpin + invite + leave). Replaced the instant pin toggle once leaving
     // rooms became possible — two destructive-adjacent actions can't share one blind gesture.
     var menuOpen by remember { mutableStateOf(false) }
@@ -385,7 +385,7 @@ fun RoomRow(
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = {
-                    haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                    haptics.press()
                     if (onLeave != null) menuOpen = true else onTogglePin()
                 },
             )

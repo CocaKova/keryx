@@ -1027,7 +1027,7 @@ private fun Composer(
         // itself flicks like a wing — a snap back-and-under, then a spring home with mass — while
         // a haptic tick marks the moment of departure. Only when something real leaves.
         var sendPuffTick by remember { mutableStateOf(0) }
-        val sendHaptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+        val sendHaptics = chat.keryx.app.presentation.ui.components.LocalKeryxHaptics.current
         val wing = remember { androidx.compose.animation.core.Animatable(0f) }
         LaunchedEffect(sendPuffTick) {
             if (sendPuffTick > 0) {
@@ -1040,9 +1040,7 @@ private fun Composer(
                 onClick = {
                     if (textState.text.isNotBlank()) {
                         sendPuffTick++
-                        sendHaptics.performHapticFeedback(
-                            androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress
-                        )
+                        sendHaptics.commit()
                     }
                     onSend()
                 },
@@ -1348,7 +1346,7 @@ fun MessageBubble(
     // left-edge navigation drawer — agent bubbles used to pull right and swallowed that gesture.
     val dragX = remember { Animatable(0f) }
     val dragScope = rememberCoroutineScope()
-    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val haptics = chat.keryx.app.presentation.ui.components.LocalKeryxHaptics.current
     val replyThresholdPx = with(LocalDensity.current) { 56.dp.toPx() }
 
     Box(modifier = modifier.fillMaxWidth()) {
@@ -1386,7 +1384,7 @@ fun MessageBubble(
                         val next = (dragX.value + -amount * 0.62f).coerceIn(0f, replyThresholdPx * 1.5f)
                         if (!fired && next >= replyThresholdPx) {
                             fired = true
-                            haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                            haptics.commit()
                         }
                         dragScope.launch { dragX.snapTo(next) }
                         return next
