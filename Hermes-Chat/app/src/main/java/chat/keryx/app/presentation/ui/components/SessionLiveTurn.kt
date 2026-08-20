@@ -58,10 +58,10 @@ fun SessionLiveTurn(viewModel: ChatViewModel) {
             Box(
                 Modifier.size(8.dp).clip(CircleShape).background(
                     when (console.status) {
-                        "completed" -> Color(0xFF4CAF50)
-                        "starting", "streaming", "waiting" -> Color(0xFFE8A33D)
+                        "completed" -> KeryxStatus.good
+                        "starting", "streaming", "waiting" -> KeryxStatus.warn
                         "cancelled", "lost" -> Color(0x66FFFFFF)
-                        else -> Color(0xFFE0524D)
+                        else -> KeryxStatus.bad
                     },
                 ),
             )

@@ -310,7 +310,7 @@ fun ActionOutputCard(
     var showRaw by remember(action.raw) { mutableStateOf(false) }
     val statusColor = when (action.success) {
         true -> Color(0xFF4CAF7D)
-        false -> Color(0xFFE0524D)
+        false -> KeryxStatus.bad
         null -> baseColor.copy(alpha = 0.5f)
     }
     Column(

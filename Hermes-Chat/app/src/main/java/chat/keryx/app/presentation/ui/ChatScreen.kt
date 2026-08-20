@@ -796,13 +796,15 @@ fun ChatScreen(
         // Mounted unconditionally: the sweep now runs on its own clock, which outlives a fast
         // dissolve, and gating the node on `dissolve < 1f` would tear the light down mid-cross.
         // Idle costs nothing — the draw returns immediately at rest, and the node takes no input.
+        val sweepCore = chat.keryx.app.presentation.ui.components.keryxSweepCore()
         Box(
             Modifier.fillMaxSize().then(
                 with(MaterialTheme.colorScheme) {
                     Modifier.keryxLightSweep(
                         primary,
                         tertiary,
-                        rememberSweepProgress { dissolve.value },
+                        core = sweepCore,
+                        progress = rememberSweepProgress { dissolve.value },
                     )
                 }
             )
@@ -1494,6 +1496,7 @@ fun MessageBubble(
                     .keryxLightSweep(
                         herald?.accent ?: MaterialTheme.colorScheme.primary,
                         herald?.accent2 ?: MaterialTheme.colorScheme.tertiary,
+                        core = chat.keryx.app.presentation.ui.components.keryxSweepCore(),
                     ) { arrivalSweep.value }
                     // While the agent's reply is still growing, magic sand rises off the bubble's
                     // edge and sifts back down — the dreaming made visible, in the user's own

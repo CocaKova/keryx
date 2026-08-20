@@ -50,6 +50,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.compositeOver
@@ -85,11 +86,42 @@ object KeryxRadius {
 }
 
 /** Semantic status colors — the exact values already used across the Hub and board, named. */
+/**
+ * Status colours, per ground (2.5).
+ *
+ * These were four fixed values chosen against black, and on parchment three of the four failed:
+ * `good` 2.66:1, `warn` 2.07:1, and `idle` — a flat 40% white — measured **1.04:1**, which is to
+ * say the "idle" state was not dim in light mode, it was absent. A disconnected platform and a
+ * healthy one looked identical.
+ *
+ * Composable getters rather than a CompositionLocal so every existing `KeryxStatus.good` reads the
+ * same at the call site; this is the idiom `MaterialTheme.colorScheme` already uses.
+ *
+ * ⚠️ These read the THEME's background, not the surface underfoot. Two places are dark whatever
+ * the theme says — the Call screen and the media lightbox — so on parchment they would be handed
+ * paper colours to paint on black. Both keep their own literals on purpose; do not "tidy" them
+ * into this object without giving it a way to be told which ground it is standing on.
+ */
 object KeryxStatus {
-    val good = Color(0xFF4CAF50)
-    val warn = Color(0xFFE8A33D)
-    val bad = Color(0xFFE0524D)
-    val idle = Color(0x66FFFFFF)
+    private val voidGood = Color(0xFF4CAF50)
+    private val voidWarn = Color(0xFFE8A33D)
+    private val voidBad = Color(0xFFE0524D)
+    private val voidIdle = Color(0x66FFFFFF)
+
+    // Same signals, darkened onto parchment until each clears 4.5:1. Idle stays the quietest of
+    // the four — but quiet now means faded ink, not invisible.
+    private val paperGood = Color(0xFF307D33)
+    private val paperWarn = Color(0xFF94651F)
+    private val paperBad = Color(0xFFC63F3A)
+    private val paperIdle = Color(0x8C4A4438)
+
+    private val onVoid: Boolean
+        @Composable get() = MaterialTheme.colorScheme.background.luminance() < 0.5f
+
+    val good: Color @Composable get() = if (onVoid) voidGood else paperGood
+    val warn: Color @Composable get() = if (onVoid) voidWarn else paperWarn
+    val bad: Color @Composable get() = if (onVoid) voidBad else paperBad
+    val idle: Color @Composable get() = if (onVoid) voidIdle else paperIdle
 }
 
 /** The dusk backdrop every full-screen Keryx space sits on: quiet surface up top melting into a
@@ -224,9 +256,24 @@ fun Modifier.keryxShimmerBorder(
  * navigation (the agent Hub) finishes in a couple of frames, and the light was gone before it
  * could be seen (Jonny, second walk: "very very quick on some actions").
  */
+/**
+ * The gleam's core for the ground underfoot — near-white on the void, ink on parchment. A
+ * one-liner so the three call sites stay honest about which they are on.
+ */
+@Composable
+fun keryxSweepCore(): Color =
+    if (MaterialTheme.colorScheme.background.luminance() < 0.5f) Color.White else Color(0xFF1F1B14)
+
 fun Modifier.keryxLightSweep(
     accent: Color,
     accent2: Color,
+    /**
+     * The core of the gleam. On the void it is near-white — light added to darkness. On parchment
+     * that is nothing at all: lightening paper is invisible, so the same pass has to travel as a
+     * *shadow*, ink laid down rather than light lifted off. Same gesture, opposite sign, because
+     * the physical metaphor inverts with the ground.
+     */
+    core: Color = Color.White,
     progress: () -> Float,
 ): Modifier = drawWithContent {
     drawContent()
@@ -258,7 +305,7 @@ fun Modifier.keryxLightSweep(
             arrayOf(
                 0f to Color.Transparent,
                 0.34f to accent.copy(alpha = 0.16f * glow),
-                0.5f to Color.White.copy(alpha = 0.17f * glow),
+                0.5f to core.copy(alpha = 0.17f * glow),
                 0.66f to accent2.copy(alpha = 0.14f * glow),
                 1f to Color.Transparent,
             ),

@@ -286,6 +286,7 @@ private fun HubSpace(
 }
 
 /** Link-health → status color, in the shared semantic palette. */
+@Composable
 internal fun linkHealthColor(health: LinkHealth): Color = when (health) {
     LinkHealth.LIVE, LinkHealth.OK -> KeryxStatus.good
     LinkHealth.UNKNOWN -> KeryxStatus.warn

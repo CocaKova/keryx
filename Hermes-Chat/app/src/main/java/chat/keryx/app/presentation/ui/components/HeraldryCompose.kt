@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
@@ -63,6 +64,10 @@ fun heraldLightFor(senderId: String, senderName: String): HeraldLight {
         overrides = cfg.overrides.mapNotNull { (k, v) -> parseHex(v)?.let { k to it } }.toMap(),
         themeAccent = argbOf(cs.primary),
         themeAccent2 = argbOf(cs.tertiary),
+        // The council dresses for the ground it stands on: the void palette is unreadable on
+        // parchment and vice versa. Slot assignment is untouched, so a herald keeps its identity
+        // across a theme flip — only the ink it is printed in changes.
+        palette = if (cs.background.luminance() < 0.5f) Heralds.PALETTE else Heralds.PALETTE_PAPER,
     )
     return HeraldLight(
         name = h.name,

@@ -168,6 +168,7 @@ fun KeryxNavHost(
     val liftPx = with(LocalDensity.current) { 28.dp.toPx() }
     val sweepAccent = androidx.compose.material3.MaterialTheme.colorScheme.primary
     val sweepAccent2 = androidx.compose.material3.MaterialTheme.colorScheme.tertiary
+    val sweepCore = chat.keryx.app.presentation.ui.components.keryxSweepCore()
     Box(modifier.fillMaxSize()) {
         root()
         layers.forEach { layer ->
@@ -189,7 +190,8 @@ fun KeryxNavHost(
                         .keryxLightSweep(
                             sweepAccent,
                             sweepAccent2,
-                            rememberSweepProgress { layer.progress.value },
+                            core = sweepCore,
+                            progress = rememberSweepProgress { layer.progress.value },
                         )
                         .graphicsLayer {
                             val p = layer.progress.value

@@ -37,7 +37,14 @@ object Heralds {
         }
     }
 
-    /** Curated council palette: (accent, accent2) pairs that sit well on the gilded void. */
+    /**
+     * Curated council palette: (accent, accent2) pairs that sit well on the gilded void.
+     *
+     * ⚠️ Void-tuned, and only the void. Measured against the light background every one of these
+     * lands between 1.37:1 and 2.50:1 — all six FAIL WCAG outright, while scoring 8:1 to 14.7:1 on
+     * black. "Each life has its own colour" was therefore a dark-mode-only promise: in light mode
+     * a Council room was six agents wearing six invisible colours. See [PALETTE_PAPER].
+     */
     val PALETTE: List<Pair<Long, Long>> = listOf(
         0xFF5FD3BCL to 0xFF1E6F8CL, // verdigris → deep teal
         0xFFB08CFFL to 0xFF5B2EA6L, // dusk violet → ink
@@ -45,6 +52,23 @@ object Heralds {
         0xFF8FD0FFL to 0xFF3A6FB0L, // ice → cobalt
         0xFFC9E36BL to 0xFF5E8A1CL, // chartreuse → moss
         0xFFF0B429L to 0xFFE55A00L, // gilt → ember
+    )
+
+    /**
+     * The same six lives, dressed for paper (2.5).
+     *
+     * Hue and identity are preserved — slot 0 is the verdigris herald on both grounds — but each is
+     * darkened and slightly saturated until it clears 4.5:1 on parchment, so a herald keeps being
+     * *that* herald when the lights come on. Index-for-index with [PALETTE]; the two must never
+     * drift apart, which [chat.keryx.app.HeraldryPaperTest] enforces.
+     */
+    val PALETTE_PAPER: List<Pair<Long, Long>> = listOf(
+        0xFF2B7B6BL to 0xFF175347L, // verdigris → deep teal
+        0xFF7D5AC9L to 0xFF4A2E7CL, // dusk violet → ink
+        0xFFAB5454L to 0xFF7A3430L, // rose gold → oxblood
+        0xFF457395L to 0xFF2A4C66L, // ice → cobalt
+        0xFF65752CL to 0xFF44541AL, // chartreuse → moss
+        0xFF90680AL to 0xFF7A3C00L, // gilt → ember
     )
 
     /** FNV-1a over the key — stable across launches and devices, unlike hashCode() contracts. */
@@ -97,6 +121,7 @@ object Heralds {
         overrides: Map<String, Long>,
         themeAccent: Long,
         themeAccent2: Long,
+        palette: List<Pair<Long, Long>> = PALETTE,
     ): Heraldry {
         val key = localpart(senderId)
         val name = senderName.takeIf { it.isNotBlank() && !it.startsWith("@") } ?: key.ifEmpty { senderId }
@@ -104,8 +129,8 @@ object Heralds {
         val primary = ids.isEmpty() || key == primaryKey
         overrides[key]?.let { return Heraldry(key, name, it, shade(it, 0.45f), primary) }
         if (primary) return Heraldry(key, name, themeAccent, themeAccent2, true)
-        val slot = assignSlots(ids)[key] ?: (stableHash(key) % PALETTE.size)
-        val (a, a2) = PALETTE[slot]
+        val slot = assignSlots(ids)[key] ?: (stableHash(key) % palette.size)
+        val (a, a2) = palette[slot]
         return Heraldry(key, name, a, a2, false)
     }
 }
