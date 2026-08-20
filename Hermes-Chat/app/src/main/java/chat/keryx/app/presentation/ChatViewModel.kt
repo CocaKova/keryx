@@ -2,6 +2,7 @@ package chat.keryx.app.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import chat.keryx.app.domain.model.ToolGrammar
 import chat.keryx.app.domain.model.Message
 import chat.keryx.app.domain.model.MessageReaction
 import chat.keryx.app.domain.model.RoomProfile
@@ -1425,7 +1426,12 @@ class ChatViewModel(
             // Telemetry first: a "⏳ Working…" heartbeat parses as a tool-shaped line too, and
             // "Running Working" is not a label.
             isTelemetry -> "Working"
-            !hasAnswer && tools.isNotEmpty() -> "Running ${tools.last().name}"
+            // The shared grammar names it, so the banner says what the theater says: "Reading
+            // a.txt", not "Running read_file" (and never the "Running Reading" a friendly
+            // progress line used to produce).
+            !hasAnswer && tools.isNotEmpty() -> tools.last().let {
+                ToolGrammar.title(it.name, ToolGrammar.targetOf(it.name, it.args), running = true)
+            }
             hasReasoning && !hasAnswer -> "Reasoning"
             else -> "Working"
         }

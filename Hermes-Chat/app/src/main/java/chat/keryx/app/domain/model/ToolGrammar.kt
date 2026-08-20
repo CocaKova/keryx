@@ -36,6 +36,12 @@ object ToolGrammar {
         "image_generate" to Verb("Generated image", "Generating image", "▣"),
         "text_to_speech" to Verb("Spoke", "Speaking", "♪"),
         "delegate_task" to Verb("Delegated", "Delegating", "⑂"),
+        "video_generate" to Verb("Generated video", "Generating video", "▣"),
+        "session_search" to Verb("Searched sessions", "Searching sessions", "⌕"),
+        "skill_view" to Verb("Read skill", "Reading skill", "✦"),
+        "skills_list" to Verb("Listed skills", "Listing skills", "✦"),
+        "browser_click" to Verb("Clicked", "Clicking", "◍"),
+        "browser_type" to Verb("Typed", "Typing", "◍"),
         "clarify" to Verb("Asked", "Asking", "?"),
         "cronjob" to Verb("Scheduled", "Scheduling", "◷"),
         "session_search_recall" to Verb("Recalled", "Recalling", "⌕"),
@@ -86,6 +92,76 @@ object ToolGrammar {
     fun title(name: String, target: String, running: Boolean): String {
         val verb = verbOf(name).let { if (running) it.present else it.past }
         return if (target.isBlank()) verb else "$verb $target"
+    }
+
+    // ---- friendly progress lines ---------------------------------------------------------
+
+    /**
+     * The gateway prints *two* kinds of tool line. One names the tool (`read_file: "a.txt"`); the
+     * other is human-phrased progress — `📖 Reading a.txt`, `🌐 Searching the web for keryx` — built
+     * from `agent/display.py`'s `_TOOL_VERBS`. The second kind names a VERB, and the parser handed
+     * that word on as the tool name, so this grammar had no entry for it and fell through to the
+     * generic gear: the committed card read "Used Reading a.txt" while the live theater, which
+     * gets real tool ids off the side-channel, read "▤ Read a.txt" — the two surfaces fighting
+     * again, in the one place the shared grammar exists to stop it.
+     *
+     * Worse, and invisibly: [Theater.align] pairs the live turn to the committed text BY NAME, so
+     * the mismatch also cost every enriched fact — duration, real verdict, diff stats — on any
+     * turn the agent narrated this way. Mapping the phrase back to its tool is what makes one call
+     * read as one call.
+     *
+     * Longest phrase first: "Reading skill" is not "Reading", and "Running code" is not "Running".
+     */
+    private val GERUND_TOOLS: List<Pair<String, String>> = listOf(
+        "Searching past sessions" to "session_search",
+        "Looking at the image" to "vision_analyze",
+        "Searching the web" to "web_search",
+        "Generating image" to "image_generate",
+        "Generating video" to "video_generate",
+        "Generating speech" to "text_to_speech",
+        "Searching files" to "search_files",
+        "Updating memory" to "memory",
+        "Updating tasks" to "todo",
+        "Updating skill" to "skill_manage",
+        "Listing skills" to "skills_list",
+        "Reading skill" to "skill_view",
+        "Running code" to "execute_code",
+        "Delegating" to "delegate_task",
+        "Scheduling" to "cronjob",
+        "Browsing" to "browser_navigate",
+        "Clicking" to "browser_click",
+        "Typing" to "browser_type",
+        "Writing" to "write_file",
+        "Editing" to "patch",
+        "Running" to "terminal",
+        "Asking" to "clarify",
+        "Reading" to "read_file",
+    ).sortedByDescending { it.first.length }
+
+    /** A friendly progress line resolved back to the tool that printed it. */
+    data class Friendly(val name: String, val target: String)
+
+    private val URLISH = Regex("""^[a-zA-Z][a-zA-Z0-9+.-]*://|^www\.""")
+
+    /**
+     * Resolve `🌐 Searching the web for keryx` to `web_search` + `keryx`. Returns null when the
+     * verb is not one the gateway prints, so an unknown gerund keeps reading exactly as it did.
+     */
+    fun fromFriendly(verb: String, rest: String): Friendly? {
+        val whole = if (rest.isBlank()) verb else "$verb $rest"
+        for ((phrase, tool) in GERUND_TOOLS) {
+            if (!whole.startsWith(phrase)) continue
+            // The phrase has to end on a word boundary, or "Read" would swallow "Readiness".
+            val after = whole.drop(phrase.length)
+            if (after.isNotEmpty() && !after.first().isWhitespace()) continue
+            // "Searching the web FOR <query>" — the connector belongs to the phrase, not the target.
+            val target = after.trim().removePrefix("for ").trim()
+            // `read_file` and `web_extract` share the word "Reading"; only one of them reads URLs.
+            val name =
+                if (tool == "read_file" && URLISH.containsMatchIn(target)) "web_extract" else tool
+            return Friendly(name, target)
+        }
+        return null
     }
 
     // ---- run summary ---------------------------------------------------------------------

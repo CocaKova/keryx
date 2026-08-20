@@ -97,10 +97,18 @@ fun ToolCallCard(
     val ms = beat?.ms ?: 0L
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            // Three verdicts, not two: a ✓ has to mean the call was SEEN to succeed. Most tool
+            // lines carry no verdict in the text, and printing ✓ for those told a turn's one
+            // failure apart from its successes only by luck. Unknown gets its own faint mark; a
+            // watched turn fills it in for real from the beat.
             Text(
-                if (ok == false) "✕" else "✓",
+                when (ok) { true -> "✓"; false -> "✕"; null -> "·" },
                 fontSize = 9.sp,
-                color = if (ok == false) MaterialTheme.colorScheme.error else baseColor.copy(alpha = 0.45f),
+                color = when (ok) {
+                    false -> MaterialTheme.colorScheme.error
+                    true -> baseColor.copy(alpha = 0.45f)
+                    null -> baseColor.copy(alpha = 0.28f)
+                },
                 modifier = Modifier.width(6.dp),
             )
             Spacer(modifier = Modifier.width(7.dp))

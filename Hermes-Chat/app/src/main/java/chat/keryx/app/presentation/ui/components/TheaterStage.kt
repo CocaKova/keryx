@@ -369,7 +369,7 @@ private fun TheaterRow(beat: ToolBeat, live: Boolean, baseColor: Color) {
     // when a tool breaks mid-turn the reason is the one thing worth the extra line.
     if (beat.ok == false && beat.result.isNotBlank()) {
         Text(
-            beat.result,
+            Theater.reason(beat.result),
             fontSize = 9.5.sp,
             fontFamily = FontFamily.Monospace,
             color = MaterialTheme.colorScheme.error.copy(alpha = 0.75f),
