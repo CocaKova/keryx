@@ -58,17 +58,41 @@ fun AmbientVoid(modifier: Modifier = Modifier) {
         // the aurora so the pools read as depth without crowding the focal effects.
         drawRect(
             Brush.radialGradient(
-                listOf(accent.copy(alpha = 0.11f), Color.Transparent),
+                colorStops = pool(accent, 0.11f),
                 center = Offset(w * (0.10f + 0.28f * phase), h * (0.08f + 0.10f * phase)),
-                radius = (w * 0.62f).coerceAtLeast(1f),
+                radius = (w * 0.78f).coerceAtLeast(1f),
             ),
         )
         drawRect(
             Brush.radialGradient(
-                listOf(accent2.copy(alpha = 0.09f), Color.Transparent),
+                colorStops = pool(accent2, 0.09f),
                 center = Offset(w * (0.92f - 0.30f * phase), h * (0.85f - 0.12f * phase)),
-                radius = (w * 0.58f).coerceAtLeast(1f),
+                radius = (w * 0.74f).coerceAtLeast(1f),
             ),
         )
     }
 }
+
+/**
+ * A pool's falloff.
+ *
+ * Two stops is a *linear* ramp in radius, which arrives at zero with a shoulder — and a shoulder
+ * in a shallow gradient is what the eye turns into an edge. On device that read as a hard vertical
+ * cut down the top of the screen with the left side lighter (Jonny, 08-19), and the maths behind
+ * it was a step of two parts in 255: not an edge at all, just the place a slope stopped.
+ *
+ * These stops approximate a gaussian instead — most of the light in the middle, and a long tail
+ * that reaches zero asymptotically, so there is no last band to see. The radius grows to match, or
+ * the softer curve would shrink the visible pool.
+ *
+ * ⚠️ It gets worse as the accent gets more saturated; a deep orange sky shows a step the blue this
+ * was tuned against hid completely.
+ */
+private fun pool(color: Color, peak: Float): Array<Pair<Float, Color>> = arrayOf(
+    0.00f to color.copy(alpha = peak),
+    0.30f to color.copy(alpha = peak * 0.72f),
+    0.52f to color.copy(alpha = peak * 0.42f),
+    0.70f to color.copy(alpha = peak * 0.20f),
+    0.85f to color.copy(alpha = peak * 0.07f),
+    1.00f to Color.Transparent,
+)
