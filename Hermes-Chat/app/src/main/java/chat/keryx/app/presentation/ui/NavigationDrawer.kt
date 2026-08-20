@@ -619,13 +619,9 @@ private fun RoomAvatar(
     }
 }
 
-private val ROOM_AVATAR_PALETTE = listOf(
-    Color(0xFFE57373), Color(0xFF64B5F6), Color(0xFF81C784), Color(0xFFFFB74D),
-    Color(0xFFBA68C8), Color(0xFF4DB6AC), Color(0xFF7986CB), Color(0xFFF06292),
-)
-
+// The palette lives in RoomLight.kt — it was duplicated here and in the Quick Rooms deck.
 private fun roomAvatarColor(name: String): Color =
-    ROOM_AVATAR_PALETTE[(name.hashCode() and 0x7FFFFFFF) % ROOM_AVATAR_PALETTE.size]
+    chat.keryx.app.presentation.ui.components.roomLightRaw(name)
 
 /** Compact relative timestamp: now, 5m, 3h, 2d, 1w. */
 private fun formatRelativeTime(ts: Long): String {
