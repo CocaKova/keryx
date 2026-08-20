@@ -1,6 +1,8 @@
 package chat.keryx.app
 
 import chat.keryx.app.domain.model.Heralds
+import chat.keryx.app.domain.model.RoomSigil
+import chat.keryx.app.domain.model.RoomSigils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -175,5 +177,45 @@ class HeraldryTest {
         val shaded = Heralds.shade(0xFF808080L, 0.5f)
         assertEquals(0xFFL, (shaded shr 24) and 0xFF)
         assertEquals(0x40L, (shaded shr 16) and 0xFF)
+    }
+
+    // --- the blank-config fallback ---------------------------------------------------------------
+
+    @Test
+    fun `with nobody configured, the one other member of a room is its herald`() {
+        assertEquals(
+            listOf("@silas:silas.local"),
+            RoomSigils.soloHerald(listOf("@jonny:silas.local", "@silas:silas.local"), "@jonny:silas.local"),
+        )
+    }
+
+    @Test
+    fun `a room full of people keeps its letter, because a wrong staff is worse than one`() {
+        assertEquals(
+            emptyList<String>(),
+            RoomSigils.soloHerald(
+                listOf("@jonny:silas.local", "@silas:silas.local", "@milo:silas.local"),
+                "@jonny:silas.local",
+            ),
+        )
+    }
+
+    @Test
+    fun `a room of one is a room of no heralds`() {
+        assertEquals(emptyList<String>(), RoomSigils.soloHerald(listOf("@jonny:silas.local"), "@jonny:silas.local"))
+    }
+
+    @Test
+    fun `my own id is matched case-insensitively, so I am never my own herald`() {
+        assertEquals(
+            listOf("@silas:silas.local"),
+            RoomSigils.soloHerald(listOf("@Jonny:silas.local", "@silas:silas.local"), "@jonny:silas.local"),
+        )
+    }
+
+    @Test
+    fun `the solo herald still resolves to a single sigil`() {
+        val heralds = RoomSigils.soloHerald(listOf("@jonny:silas.local", "@silas:silas.local"), "@jonny:silas.local")
+        assertEquals(RoomSigil.Single("silas"), RoomSigils.of(heralds))
     }
 }

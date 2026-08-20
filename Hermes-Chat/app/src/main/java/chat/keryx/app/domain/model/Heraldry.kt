@@ -151,4 +151,22 @@ object RoomSigils {
     fun heraldsAmong(memberIds: Collection<String>, configuredIds: List<String>): List<String> =
         if (configuredIds.isEmpty()) emptyList()
         else memberIds.filter { Heralds.isHerald(it, configuredIds) }.distinct()
+
+    /**
+     * The blank-config case: who the herald is when nobody has named one.
+     *
+     * The agent id setting ships empty, and it turns out most installs never fill it in — so the
+     * drawer answered "no heralds anywhere" while the transcript in those very rooms rendered the
+     * other member AS the agent, off the same-shaped rule (`senderTypeOf`'s legacy fallback: a
+     * gateway install, a room with one other member). One app, two answers to one question.
+     *
+     * So this is that rule, held in the one place both halves can read: in a room with exactly one
+     * other member, that member is its herald. A group room stays [None] — with several members
+     * and nothing configured there is no way to tell an agent from a person, and a wrong staff is
+     * worse than a letter.
+     */
+    fun soloHerald(memberIds: Collection<String>, myId: String): List<String> {
+        val others = memberIds.filter { !it.equals(myId, ignoreCase = true) }.distinct()
+        return if (others.size == 1) others else emptyList()
+    }
 }
