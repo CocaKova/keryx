@@ -1,6 +1,5 @@
-package chat.keryx.app.data.repository
+package chat.keryx.app.transport.matrix
 
-import chat.keryx.app.data.remote.MatrixService
 import chat.keryx.core.model.Heralds
 import chat.keryx.core.model.MediaKind
 import chat.keryx.core.model.Message
@@ -11,7 +10,8 @@ import chat.keryx.core.model.RoomSigils
 import chat.keryx.core.model.RoomType
 import chat.keryx.core.model.SenderType
 import chat.keryx.core.model.TypingState
-import chat.keryx.app.domain.repository.ChatRepository
+import chat.keryx.core.transport.ChatTransport
+import chat.keryx.core.transport.MatrixCapabilities
 import chat.keryx.app.domain.repository.SettingsRepository
 import io.ktor.http.ContentType
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -57,7 +57,8 @@ import net.folivo.trixnity.core.model.events.m.room.RoomMessageEventContent
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Bridges the app's domain layer onto the Trixnity Matrix SDK (via [MatrixService]).
+ * The Matrix transport: [ChatTransport] plus the full [MatrixCapabilities] surface, standing on
+ * the Trixnity SDK (via [MatrixService]).
  *
  * In Matrix a room *is* the conversation, and this used to be said with a `Session` type that
  * wrapped one — every construction of it in the codebase was `Session(room.id, room.id,
@@ -70,17 +71,19 @@ import kotlin.time.Duration.Companion.seconds
  * and nowhere is it called a session.
  */
 @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
-class ChatRepositoryImpl(
-    private val matrix: MatrixService,
+class MatrixTransport(
+    private val service: MatrixService,
     private val settingsRepository: SettingsRepository,
-) : ChatRepository {
+) : ChatTransport, MatrixCapabilities {
 
-    override fun isLoggedIn(): Flow<Boolean> = matrix.client.map { it != null }
+    override val matrix: MatrixCapabilities get() = this
 
-    override fun currentUserId(): Flow<String?> = matrix.client.map { it?.userId?.full }
+    override fun isLoggedIn(): Flow<Boolean> = service.client.map { it != null }
+
+    override fun currentUserId(): Flow<String?> = service.client.map { it?.userId?.full }
 
     override fun getRooms(): Flow<List<RoomProfile>> =
-        matrix.client.flatMapLatest { client ->
+        service.client.flatMapLatest { client ->
             if (client == null) flowOf(emptyList())
             else client.room.getAll().flatMapLatest { roomMap ->
                 val roomFlows = roomMap.values.toList()
@@ -147,7 +150,7 @@ class ChatRepositoryImpl(
         // pagination limit change) — bounds how stale a rename can get while keeping the
         // steady-state name pass subscription-free (see withSenderNames).
         senderNames.keys.removeAll { it.startsWith("$roomId|") }
-        return matrix.client.flatMapLatest { client ->
+        return service.client.flatMapLatest { client ->
             if (client == null) flowOf(emptyList())
             else {
                 val myId = client.userId.full
@@ -222,7 +225,7 @@ class ChatRepositoryImpl(
     private class EndOfTimeline : Exception()
 
     override suspend fun messagesAround(roomId: String, eventId: String, before: Int, after: Int): List<Message> {
-        val client = matrix.client.value ?: return emptyList()
+        val client = service.client.value ?: return emptyList()
         val roomId = RoomId(roomId)
         val myId = client.userId.full
         val agentId = settingsRepository.agentMatrixId
@@ -269,7 +272,7 @@ class ChatRepositoryImpl(
     private val senderNames = java.util.concurrent.ConcurrentHashMap<String, String>()
 
     private fun withSenderNames(roomId: RoomId, msgs: List<Message>): Flow<List<Message>> {
-        val client = matrix.client.value ?: return flowOf(msgs)
+        val client = service.client.value ?: return flowOf(msgs)
         val senderIds = msgs.asSequence().map { it.senderId }.filter { it.startsWith("@") }.distinct().toList()
         if (senderIds.isEmpty()) return flowOf(msgs)
         fun cached(sid: String) = senderNames["${roomId.full}|$sid"]
@@ -304,12 +307,12 @@ class ChatRepositoryImpl(
     }
 
     override suspend fun sendMessage(roomId: String, content: String) {
-        val client = matrix.client.value ?: return
+        val client = service.client.value ?: return
         client.room.sendMessage(RoomId(roomId)) { text(content) }
     }
 
     override suspend fun sendReply(roomId: String, content: String, replyToEventId: String) {
-        val client = matrix.client.value ?: return
+        val client = service.client.value ?: return
         val roomId = RoomId(roomId)
         val target = runCatching {
             client.room.getTimelineEvent(roomId, EventId(replyToEventId)).first()
@@ -321,7 +324,7 @@ class ChatRepositoryImpl(
     }
 
     override suspend fun react(roomId: String, eventId: String, emoji: String) {
-        val client = matrix.client.value ?: return
+        val client = service.client.value ?: return
         val roomId = RoomId(roomId)
         val myId = client.userId.full
         // If we already reacted with this emoji, redact that reaction (toggle off); otherwise add it.
@@ -341,7 +344,7 @@ class ChatRepositoryImpl(
     }
 
     override fun reactionsFlow(roomId: String, eventId: String): Flow<List<MessageReaction>> =
-        matrix.client.flatMapLatest { client ->
+        service.client.flatMapLatest { client ->
             if (client == null) flowOf(emptyList())
             else {
                 val roomId = RoomId(roomId)
@@ -381,7 +384,7 @@ class ChatRepositoryImpl(
             }
 
     override suspend fun mediaBytes(roomId: String, eventId: String): ByteArray? {
-        val client = matrix.client.value ?: return null
+        val client = service.client.value ?: return null
         val roomId = RoomId(roomId)
         return runCatching {
             // Wait (briefly) for the event to resolve to decrypted FileBased content — for E2EE
@@ -428,7 +431,7 @@ class ChatRepositoryImpl(
     }
 
     override suspend fun sendAttachment(roomId: String, bytes: ByteArray, fileName: String, contentType: String, caption: String?) {
-        val client = matrix.client.value ?: return
+        val client = service.client.value ?: return
         val ct = ContentType.parse(contentType)
         // MSC2530: with a caption, body carries the user's words and fileName keeps the real name —
         // one event, so Hermes sees the question and the image as a single turn instead of
@@ -444,7 +447,7 @@ class ChatRepositoryImpl(
     }
 
     override fun typing(roomId: String): Flow<TypingState> =
-        matrix.client.flatMapLatest { client ->
+        service.client.flatMapLatest { client ->
             if (client == null) flowOf(TypingState())
             else {
                 val roomId = RoomId(roomId)
@@ -486,12 +489,12 @@ class ChatRepositoryImpl(
             .catch { emit(TypingState()) }
 
     override suspend fun ensureMembersLoaded(roomId: String) {
-        val client = matrix.client.value ?: return
+        val client = service.client.value ?: return
         runCatching { client.user.loadMembers(RoomId(roomId), wait = false) }
     }
 
     override suspend fun markRead(roomId: String, eventId: String) {
-        val client = matrix.client.value ?: return
+        val client = service.client.value ?: return
         runCatching {
             client.api.room.setReadMarkers(
                 roomId = RoomId(roomId),
@@ -502,7 +505,7 @@ class ChatRepositoryImpl(
     }
 
     override suspend fun avatarBytes(mxc: String): ByteArray? {
-        val client = matrix.client.value ?: return null
+        val client = service.client.value ?: return null
         return runCatching {
             val media = client.media.getMedia(mxc).getOrThrow()
             val flow: kotlinx.coroutines.flow.Flow<ByteArray> = media
@@ -513,7 +516,7 @@ class ChatRepositoryImpl(
     }
 
     override suspend fun setRoomAvatar(roomId: String, bytes: ByteArray, contentType: String): Result<Unit> {
-        val client = matrix.client.value ?: return Result.failure(IllegalStateException("Not logged in"))
+        val client = service.client.value ?: return Result.failure(IllegalStateException("Not logged in"))
         return runCatching {
             val cacheUri = client.media.prepareUploadMedia(flowOf(bytes), ContentType.parse(contentType))
             val mxc = client.media.uploadMedia(cacheUri).getOrThrow()
@@ -523,7 +526,7 @@ class ChatRepositoryImpl(
     }
 
     override suspend fun login(username: String, password: String): Result<Unit> =
-        matrix.login(
+        service.login(
             baseUrl = settingsRepository.homeserverUrl,
             username = username,
             password = password,
@@ -531,11 +534,11 @@ class ChatRepositoryImpl(
         ).map { }
 
     override suspend fun logout() {
-        runCatching { matrix.logout() }
+        runCatching { service.logout() }
     }
 
     override fun getInvites(): Flow<List<RoomInvite>> =
-        matrix.client.flatMapLatest { client ->
+        service.client.flatMapLatest { client ->
             if (client == null) flowOf(emptyList())
             else client.room.getAll().flatMapLatest { roomMap ->
                 val roomFlows = roomMap.values.toList()
@@ -556,13 +559,13 @@ class ChatRepositoryImpl(
         }
 
     override suspend fun acceptInvite(roomId: String): Result<Unit> = runCatching {
-        val client = matrix.client.value ?: error("not logged in")
+        val client = service.client.value ?: error("not logged in")
         client.api.room.joinRoom(RoomId(roomId)).getOrThrow()
         Unit
     }
 
     override suspend fun leaveRoom(roomId: String): Result<Unit> = runCatching {
-        val client = matrix.client.value ?: error("not logged in")
+        val client = service.client.value ?: error("not logged in")
         client.api.room.leaveRoom(RoomId(roomId)).getOrThrow()
     }
 
@@ -574,7 +577,7 @@ class ChatRepositoryImpl(
     }
 
     override suspend fun startDirectMessage(userId: String): Result<String> = runCatching {
-        val client = matrix.client.value ?: error("not logged in")
+        val client = service.client.value ?: error("not logged in")
         val target = UserId(normalizeUserId(userId, client.userId.domain))
         require(target != client.userId) { "that's you" }
         // Reuse an existing DM (m.direct) when we're still joined to it — no duplicate rooms.
@@ -597,7 +600,7 @@ class ChatRepositoryImpl(
     }
 
     override suspend fun createRoom(name: String, inviteUserIds: List<String>): Result<String> = runCatching {
-        val client = matrix.client.value ?: error("not logged in")
+        val client = service.client.value ?: error("not logged in")
         val invitees = inviteUserIds
             .filter { it.isNotBlank() }
             .map { UserId(normalizeUserId(it, client.userId.domain)) }
@@ -610,7 +613,7 @@ class ChatRepositoryImpl(
     }
 
     override suspend fun joinRoomByAddress(address: String): Result<String> = runCatching {
-        val client = matrix.client.value ?: error("not logged in")
+        val client = service.client.value ?: error("not logged in")
         val t = address.trim()
         when {
             t.startsWith("#") -> client.api.room.joinRoom(RoomAliasId(t)).getOrThrow().full
@@ -620,13 +623,13 @@ class ChatRepositoryImpl(
     }
 
     override suspend fun inviteUser(roomId: String, userId: String): Result<Unit> = runCatching {
-        val client = matrix.client.value ?: error("not logged in")
+        val client = service.client.value ?: error("not logged in")
         val target = UserId(normalizeUserId(userId, client.userId.domain))
         client.api.room.inviteUser(RoomId(roomId), target).getOrThrow()
     }
 
     override suspend fun setTyping(roomId: String, typing: Boolean) {
-        val client = matrix.client.value ?: return
+        val client = service.client.value ?: return
         // 30s server-side timeout: refreshed by the caller's throttle while composing continues,
         // expires on its own if the app dies mid-thought. Best-effort — never raises.
         runCatching {
@@ -640,7 +643,7 @@ class ChatRepositoryImpl(
     }
 
     override suspend fun redactMessage(roomId: String, eventId: String): Result<Unit> = runCatching {
-        val client = matrix.client.value ?: error("not logged in")
+        val client = service.client.value ?: error("not logged in")
         client.api.room.redactEvent(RoomId(roomId), EventId(eventId)).getOrThrow()
         Unit
     }

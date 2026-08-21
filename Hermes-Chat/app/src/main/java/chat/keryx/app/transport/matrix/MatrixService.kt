@@ -1,4 +1,4 @@
-package chat.keryx.app.data.remote
+package chat.keryx.app.transport.matrix
 
 import android.content.Context
 import androidx.room.Room

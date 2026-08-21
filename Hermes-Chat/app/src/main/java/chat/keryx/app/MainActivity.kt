@@ -29,8 +29,8 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import chat.keryx.app.data.remote.MatrixService
-import chat.keryx.app.data.repository.ChatRepositoryImpl
+import chat.keryx.app.transport.matrix.MatrixService
+import chat.keryx.app.transport.matrix.MatrixTransport
 import chat.keryx.app.data.repository.SettingsRepositoryImpl
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.ui.HermesApp
@@ -112,7 +112,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
         // per activity used to start a second Matrix client on the same DB on every config change.
         val app = application as KeryxApp
         val settingsRepository = app.settingsRepository
-        val repository = app.repository
+        val transport = app.transport
 
         // Ask once to be exempt from battery optimization. Without this, aggressive OEM power
         // management (Samsung's "deep sleep" / Freecess) freezes the process in the background and
@@ -127,7 +127,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
 
         val factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return ChatViewModel(repository, settingsRepository, app.archiveStore, app.archiveIndexer) as T
+                return ChatViewModel(transport, settingsRepository, app.archiveStore, app.archiveIndexer) as T
             }
         }
         viewModel = ViewModelProvider(this, factory)[ChatViewModel::class.java]

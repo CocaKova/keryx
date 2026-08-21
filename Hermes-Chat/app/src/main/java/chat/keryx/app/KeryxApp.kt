@@ -3,8 +3,8 @@ package chat.keryx.app
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
-import chat.keryx.app.data.remote.MatrixService
-import chat.keryx.app.data.repository.ChatRepositoryImpl
+import chat.keryx.app.transport.matrix.MatrixService
+import chat.keryx.app.transport.matrix.MatrixTransport
 import chat.keryx.app.data.repository.SettingsRepositoryImpl
 import chat.keryx.core.model.MediaKind
 import chat.keryx.core.model.Message
@@ -30,7 +30,7 @@ class KeryxApp : Application() {
         private set
     lateinit var matrixService: MatrixService
         private set
-    lateinit var repository: ChatRepositoryImpl
+    lateinit var transport: MatrixTransport
         private set
     lateinit var archiveStore: chat.keryx.app.data.archive.ArchiveStore
         private set
@@ -51,7 +51,7 @@ class KeryxApp : Application() {
         CrashLog.install(applicationContext)
         settingsRepository = SettingsRepositoryImpl(applicationContext)
         matrixService = MatrixService(applicationContext)
-        repository = ChatRepositoryImpl(matrixService, settingsRepository)
+        transport = MatrixTransport(matrixService, settingsRepository)
         archiveStore = chat.keryx.app.data.archive.ArchiveStore(applicationContext)
         archiveIndexer = chat.keryx.app.data.archive.ArchiveIndexer(matrixService, archiveStore)
 
@@ -97,7 +97,7 @@ class KeryxApp : Application() {
             val watchStart = System.currentTimeMillis()
             val historyGrace = 15_000L
             var baseline: Map<String, Long>? = null
-            repository.getRooms().collect { rooms ->
+            transport.getRooms().collect { rooms ->
                 val current = rooms.associate { it.id to it.timestamp }
                 val prev = baseline
                 if (prev == null) {
@@ -119,7 +119,7 @@ class KeryxApp : Application() {
                     // Two, not one: the arrival test (2.3 §3) needs the message before this one to
                     // know whether anybody actually asked for it.
                     val tail = withTimeoutOrNull(4_000L) {
-                        repository.getMessages(room.id, 2).first { it.isNotEmpty() }
+                        transport.getMessages(room.id, 2).first { it.isNotEmpty() }
                     }
                     val last = tail?.lastOrNull()
                     if (last == null) {
