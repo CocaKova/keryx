@@ -401,11 +401,18 @@ fun ChatScreen(
     }
     // Signature changes on streamed edits AND live side-channel tokens (content length / tool
     // state / stream length) so the view keeps following the stream while pinned.
-    val lastSignature = (messages.lastOrNull()?.let { "${it.id}:${it.content.length}:${it.toolActivity?.status?.name ?: ""}" } ?: "") +
-        ":${liveStream?.text?.length ?: 0}"
-    LaunchedEffect(lastSignature, awaitingReply) {
-        // Never fight an active user drag/fling — that's what made scroll-up impossible mid-stream.
-        if (atBottom && !listState.isScrollInProgress) listState.scrollToItem(0)
+    // snapshotFlow, NOT composition-scope reads: per-token signature changes (and atBottom
+    // flips) must nudge this effect without recomposing the whole screen — the old plain-val
+    // form re-ran ChatScreen top to bottom on every streamed token.
+    LaunchedEffect(Unit) {
+        snapshotFlow {
+            val sig = (messages.lastOrNull()?.let { "${it.id}:${it.content.length}:${it.toolActivity?.status?.name ?: ""}" } ?: "") +
+                ":${liveStream?.text?.length ?: 0}"
+            sig to awaitingReply
+        }.collect {
+            // Never fight an active user drag/fling — that's what made scroll-up impossible mid-stream.
+            if (atBottom && !listState.isScrollInProgress) listState.scrollToItem(0)
+        }
     }
     // A message I just sent always snaps to the newest, wherever I was scrolled.
     val lastMineId = messages.lastOrNull()?.takeIf { it.sender == SenderType.ME }?.id
@@ -415,8 +422,9 @@ fun ChatScreen(
 
     // Timeline-window decay: tell the ViewModel when the viewport is (and stays) at the bottom so
     // a deep-scrolled history window can shrink back after a dwell instead of pinning hundreds of
-    // resolved events for the rest of the session.
-    LaunchedEffect(atBottom) { viewModel.onViewportAtBottom(atBottom) }
+    // resolved events for the rest of the session. (snapshotFlow: an atBottom flip as an effect
+    // KEY is still a composition-scope read — it restarted the whole screen twice per swipe.)
+    LaunchedEffect(Unit) { snapshotFlow { atBottom }.collect { viewModel.onViewportAtBottom(it) } }
 
     // Pagination: when the oldest loaded item scrolls into view, request more history.
     LaunchedEffect(listState, renderItems.size) {
@@ -699,7 +707,7 @@ fun ChatScreen(
             val last = messages.lastOrNull() ?: return@LaunchedEffect
             if (!atBottom && last.sender != SenderType.ME) missedWhileAway++
         }
-        LaunchedEffect(atBottom) { if (atBottom) missedWhileAway = 0 }
+        LaunchedEffect(Unit) { snapshotFlow { atBottom }.collect { if (it) missedWhileAway = 0 } }
         val showJump by remember { derivedStateOf { listState.firstVisibleItemIndex > 4 } }
         AnimatedVisibility(
             visible = showJump,
@@ -838,7 +846,10 @@ fun ChatScreen(
                 onSend = ::doSend,
                 onPickGallery = { galleryPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) },
                 onPickFile = { filePicker.launch("*/*") },
-                atBottom = atBottom,
+                // Deferred read: Composer only consults this inside its focus callback, and a
+                // plain Boolean param recomposed the composer (and this whole screen) on every
+                // bottom-threshold crossing during scroll.
+                atBottom = { atBottom },
                 hasMessages = messages.isNotEmpty(),
                 onFocusedAtBottom = { scope.launch { listState.animateScrollToItem(0) } },
                 focusRequester = focusRequester,
@@ -981,7 +992,7 @@ private fun Composer(
     onSend: () -> Unit,
     onPickGallery: () -> Unit,
     onPickFile: () -> Unit,
-    atBottom: Boolean,
+    atBottom: () -> Boolean,
     hasMessages: Boolean,
     onFocusedAtBottom: () -> Unit,
     focusRequester: FocusRequester,
@@ -1047,7 +1058,7 @@ private fun Composer(
                 .weight(1f)
                 .focusRequester(focusRequester)
                 .onFocusChanged { focus ->
-                    if (focus.isFocused && hasMessages && atBottom) onFocusedAtBottom()
+                    if (focus.isFocused && hasMessages && atBottom()) onFocusedAtBottom()
                 },
             placeholder = { Text("Message…", color = MaterialTheme.colorScheme.onSurfaceVariant) },
             shape = RoundedCornerShape(24.dp),

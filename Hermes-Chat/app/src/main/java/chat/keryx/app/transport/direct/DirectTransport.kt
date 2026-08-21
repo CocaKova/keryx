@@ -136,12 +136,20 @@ class DirectTransport(
          */
         private var hydratedRows: List<MessageRow> = emptyList()
         private var hydratedMessages: List<Message> = emptyList()
+            set(v) { field = v; baseCache = null }
         private var local: List<Message> = emptyList()
+            set(v) { field = v; baseCache = null }
         // A background fan-out can be witnessed twice — once as each wing lands live, and
         // again when its consolidated report arrives in history. Keep the persisted one.
+        // Cached (invalidated by the setters above): publish() runs per streaming delta, and
+        // the settled transcript must not pay a full dedup walk + media-tag regex scan of
+        // every message per token — only the small live overlay changes between deltas.
+        private var baseCache: List<Message>? = null
         private val base: List<Message>
-            get() = chat.keryx.core.model.DelegationReport
-                .withoutSupersededLandings(hydratedMessages + local)
+            get() = baseCache ?: expandMediaTags(
+                chat.keryx.core.model.DelegationReport
+                    .withoutSupersededLandings(hydratedMessages + local),
+            ).also { baseCache = it }
 
         private val items = mutableListOf<TurnItem>()
         private var seq = 0
@@ -510,7 +518,9 @@ class DirectTransport(
                     delegations = flying.values.toList(),
                 )
             )
-            messages.value = expandMediaTags(base + overlay + wings)
+            // base is already media-expanded (cached); only the live overlay + wings — a
+            // handful of rows — get the per-publish expansion pass.
+            messages.value = base + expandMediaTags(overlay + wings)
         }
     }
 
