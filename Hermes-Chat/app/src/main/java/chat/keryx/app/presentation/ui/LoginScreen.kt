@@ -48,7 +48,11 @@ import chat.keryx.app.presentation.ui.components.BrailleSnakeAnimation
 
 /**
  * First-run connect/login experience. The Braille snake traces the contour of an emblem while the
- * user enters their homeserver + credentials. Generalized: works against any Matrix homeserver.
+ * user picks a door and enters credentials.
+ *
+ * Two doors (absorption plan §5, Phase 4): a Matrix account — the herald's home — or a
+ * hermes-agent gateway URL and API key, no homeserver anywhere. The door decides the process
+ * spine, so crossing to the other one relaunches the app (the transport is built at startup).
  */
 @Composable
 fun LoginScreen(viewModel: ChatViewModel) {
@@ -66,8 +70,27 @@ fun LoginScreen(viewModel: ChatViewModel) {
     var error by remember { mutableStateOf<String?>(null) }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    // The chosen door. Starts on whichever spine this process booted with.
+    var directDoor by remember { mutableStateOf(viewModel.transportIsDirect) }
+    val initialGatewayUrl by viewModel.gatewayUrl.collectAsState()
+    val initialGatewayKey by viewModel.gatewayApiKey.collectAsState()
+    var directUrl by remember { mutableStateOf(initialGatewayUrl) }
+    var directKey by remember { mutableStateOf(initialGatewayKey) }
+
     val accent = MaterialTheme.colorScheme.primary
     val focusManager = LocalFocusManager.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    // The door change is a different process spine — relaunch cleanly into it.
+    fun relaunch() {
+        val i = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
+        i.addFlags(
+            android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+                android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK,
+        )
+        context.startActivity(i)
+        Runtime.getRuntime().exit(0)
+    }
 
     Column(
         modifier = Modifier
@@ -98,11 +121,142 @@ fun LoginScreen(viewModel: ChatViewModel) {
             fontSize = 34.sp,
         )
         Text(
-            text = if (connecting) "Connecting…" else "Connect to your homeserver",
+            text = when {
+                connecting -> "Connecting…"
+                directDoor -> "Connect straight to your gateway"
+                else -> "Connect to your homeserver"
+            },
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp,
-            modifier = Modifier.padding(top = 4.dp, bottom = 28.dp),
+            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
         )
+
+        // The two doors. A quiet segmented pair — the door is a decision, not a setting.
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            @Composable
+            fun Door(label: String, selected: Boolean, onClick: () -> Unit) {
+                TextButton(onClick = onClick, enabled = !connecting) {
+                    Text(
+                        label,
+                        fontSize = 14.sp,
+                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (selected) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Door("Matrix", !directDoor) { directDoor = false; error = null }
+            Door("Direct to gateway", directDoor) { directDoor = true; error = null }
+        }
+
+        if (directDoor) {
+            OutlinedTextField(
+                value = directUrl,
+                onValueChange = { directUrl = it; error = null },
+                label = { Text("Gateway URL") },
+                placeholder = { Text("http://your-host:8686") },
+                singleLine = true,
+                enabled = !connecting,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = directKey,
+                onValueChange = { directKey = it; error = null },
+                label = { Text("API key") },
+                singleLine = true,
+                enabled = !connecting,
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                            contentDescription = if (passwordVisible) "Hide key" else "Show key",
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Allow self-signed certificates",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 15.sp,
+                    )
+                    Text(
+                        "Only for local / self-hosted gateways",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.sp,
+                    )
+                }
+                Switch(checked = allowInsecure, onCheckedChange = { allowInsecure = it }, enabled = !connecting)
+            }
+            error?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                )
+            }
+            Button(
+                onClick = {
+                    error = null
+                    connecting = true
+                    viewModel.setAllowInsecure(allowInsecure)
+                    viewModel.loginToGateway(directUrl.trim(), directKey.trim()) { ok, needsRestart, message ->
+                        if (!ok) {
+                            connecting = false
+                            error = message ?: "Login failed"
+                        } else if (needsRestart) {
+                            relaunch()
+                        } else {
+                            connecting = false
+                        }
+                    }
+                },
+                enabled = !connecting && directUrl.isNotBlank(),
+                modifier = Modifier.fillMaxWidth().height(52.dp).padding(top = 24.dp),
+            ) {
+                if (connecting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp,
+                    )
+                } else {
+                    Text("Connect", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+            return@Column
+        }
+
+        if (viewModel.transportIsDirect) {
+            // Booted on the direct spine: a Matrix login needs the Matrix transport, which is
+            // built at startup. Cross the doorway first; credentials come after the relaunch.
+            Text(
+                "Keryx is currently in direct-gateway mode. Switching to Matrix restarts the app.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            )
+            Button(
+                onClick = { viewModel.chooseMatrixTransport(); relaunch() },
+                modifier = Modifier.fillMaxWidth().height(52.dp).padding(top = 24.dp),
+            ) {
+                Text("Switch to Matrix", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            }
+            return@Column
+        }
 
         OutlinedTextField(
             value = homeserver,

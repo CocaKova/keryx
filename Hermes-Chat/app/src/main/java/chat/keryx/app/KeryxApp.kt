@@ -4,7 +4,9 @@ import android.app.Activity
 import android.app.Application
 import android.os.Bundle
 import chat.keryx.app.transport.matrix.MatrixService
+import chat.keryx.app.transport.direct.DirectTransport
 import chat.keryx.app.transport.matrix.MatrixTransport
+import chat.keryx.core.transport.ChatTransport
 import chat.keryx.app.data.repository.SettingsRepositoryImpl
 import chat.keryx.core.model.MediaKind
 import chat.keryx.core.model.Message
@@ -30,8 +32,11 @@ class KeryxApp : Application() {
         private set
     lateinit var matrixService: MatrixService
         private set
-    lateinit var transport: MatrixTransport
+    lateinit var transport: ChatTransport
         private set
+
+    /** True when this process is riding the direct gateway door (no homeserver anywhere). */
+    val isDirectTransport: Boolean get() = transport is DirectTransport
     lateinit var archiveStore: chat.keryx.app.data.archive.ArchiveStore
         private set
     lateinit var archiveIndexer: chat.keryx.app.data.archive.ArchiveIndexer
@@ -51,7 +56,13 @@ class KeryxApp : Application() {
         CrashLog.install(applicationContext)
         settingsRepository = SettingsRepositoryImpl(applicationContext)
         matrixService = MatrixService(applicationContext)
-        transport = MatrixTransport(matrixService, settingsRepository)
+        // The login screen's chosen door decides the spine for this whole process life —
+        // a transport is not hot-swappable under a ViewModel, so switching doors restarts.
+        transport = if (settingsRepository.transportMode == "direct") {
+            DirectTransport(settingsRepository, appScope).also { it.connectIfConfigured() }
+        } else {
+            MatrixTransport(matrixService, settingsRepository)
+        }
         archiveStore = chat.keryx.app.data.archive.ArchiveStore(applicationContext)
         archiveIndexer = chat.keryx.app.data.archive.ArchiveIndexer(matrixService, archiveStore)
 
@@ -59,7 +70,7 @@ class KeryxApp : Application() {
         registerActivityLifecycleCallbacks(ForegroundTracker())
 
         // Restore an existing Matrix session exactly once for the whole process.
-        appScope.launch {
+        if (!isDirectTransport) appScope.launch {
             runCatching { matrixService.restore(allowInsecure = settingsRepository.allowInsecure) }
                 // Log.e survives release stripping ON PURPOSE: a swallowed restore failure
                 // renders as a silent logout (the login screen with settings intact) and is
@@ -69,7 +80,7 @@ class KeryxApp : Application() {
 
         // Keep the UnifiedPush registration fresh across app updates / distributor restarts —
         // idempotent, and a rotated endpoint comes back through onNewEndpoint → pusher update.
-        if (settingsRepository.pushEnabled) {
+        if (settingsRepository.pushEnabled && !isDirectTransport) {
             runCatching { chat.keryx.app.notify.PushManager.enable(this) }
         }
 

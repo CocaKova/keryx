@@ -97,6 +97,14 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = (prefs.getString("gateway_url", "") ?: "").ifBlank { defaultGatewayUrl() }
         set(value) = prefs.edit().putString("gateway_url", value).apply()
 
+    override var transportMode: String
+        get() = prefs.getString("transport_mode", "matrix") ?: "matrix"
+        set(value) = prefs.edit().putString("transport_mode", value).apply()
+
+    override var directLoggedIn: Boolean
+        get() = prefs.getBoolean("direct_logged_in", false)
+        set(value) = prefs.edit().putBoolean("direct_logged_in", value).apply()
+
     override var gatewayApiKey: String
         get() = prefs.getString("gateway_api_key", "") ?: ""
         set(value) = prefs.edit().putString("gateway_api_key", value).apply()

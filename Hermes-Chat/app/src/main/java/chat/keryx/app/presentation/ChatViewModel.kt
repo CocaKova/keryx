@@ -1341,8 +1341,9 @@ class ChatViewModel(
         // Clear if the agent never responds at all; agent activity resets this to a shorter quiet timeout.
         scheduleClearAwaiting(NO_REPLY_MS)
         // Subscribe the side-channel BEFORE the command lands, so the gateway already sees a
-        // live subscriber when it decides how to deliver this turn's tokens.
-        openSideChannel(session.id)
+        // live subscriber when it decides how to deliver this turn's tokens. Matrix-path only:
+        // the direct transport IS its own stream — the WS delivers the turn into the timeline.
+        if (transport.matrix != null) openSideChannel(session.id)
         // Optimistic echo: the bubble appears the moment Send is tapped instead of waiting for the
         // homeserver round-trip. Retired by the echo match in the messages collector; the timeout
         // is only a safety net (the real event still renders normally if matching ever misses).
@@ -1471,6 +1472,49 @@ class ChatViewModel(
             matrix?.redactMessage(sessionId, eventId)
                 ?.onFailure { _toasts.tryEmit("Delete failed: ${it.message?.take(80)}") }
         }
+    }
+
+    /** This process rides the direct gateway door (login screen adapts; Matrix chrome hides). */
+    val transportIsDirect: Boolean get() = transport.matrix == null
+
+    /**
+     * The login screen's second door (plan §5 Phase 4): a gateway URL and an API key instead
+     * of a homeserver. Validates against the gateway, persists the choice, and reports
+     * [needsRestart] when the process was booted on the other spine — the transport is not
+     * hot-swappable under this ViewModel, so the door change takes effect on relaunch.
+     */
+    fun loginToGateway(url: String, apiKey: String, onResult: (ok: Boolean, needsRestart: Boolean, message: String?) -> Unit) {
+        viewModelScope.launch {
+            val probe = chat.keryx.app.transport.direct.GatewayRest(
+                url, apiKey, settingsRepository.allowInsecure,
+            )
+            val status = probe.status()
+            val validated = status.mapCatching { st ->
+                if (st.authRequired || apiKey.isNotBlank()) probe.validateToken().getOrThrow()
+            }
+            validated.fold(
+                onSuccess = {
+                    settingsRepository.gatewayUrl = url
+                    settingsRepository.gatewayApiKey = apiKey
+                    settingsRepository.transportMode = "direct"
+                    settingsRepository.directLoggedIn = true
+                    val direct = transport as? chat.keryx.app.transport.direct.DirectTransport
+                    if (direct != null) {
+                        direct.login()
+                        onResult(true, false, null)
+                    } else {
+                        onResult(true, true, null)
+                    }
+                },
+                onFailure = { onResult(false, false, it.message?.take(160) ?: "Gateway unreachable") },
+            )
+        }
+    }
+
+    /** The other side of the door: back to Matrix on next launch (login screen restarts). */
+    fun chooseMatrixTransport() {
+        settingsRepository.transportMode = "matrix"
+        settingsRepository.directLoggedIn = false
     }
 
     fun loginToMatrix(username: String, password: String, onResult: (Boolean, String?) -> Unit) {

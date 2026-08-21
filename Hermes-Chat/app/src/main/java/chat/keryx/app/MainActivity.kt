@@ -127,7 +127,12 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
 
         val factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return ChatViewModel(transport, settingsRepository, app.archiveStore, app.archiveIndexer) as T
+                return ChatViewModel(
+                    transport, settingsRepository, app.archiveStore,
+                    // The indexer walks a Matrix timeline; the direct path hydrates over REST
+                    // and gets its own indexer with the harvest (plan §5).
+                    if (app.isDirectTransport) null else app.archiveIndexer,
+                ) as T
             }
         }
         viewModel = ViewModelProvider(this, factory)[ChatViewModel::class.java]
