@@ -84,7 +84,7 @@ fun ArchiveScreen(
     onDismissRequest: () -> Unit,
 ) {
     val progress by viewModel.archiveProgress.collectAsState()
-    val roomId = viewModel.currentSession.collectAsState().value?.id
+    val roomId = viewModel.currentRoom.collectAsState().value?.id
     var tab by remember { mutableStateOf(ArchiveTab.SEARCH) }
     var contextAnchor by remember { mutableStateOf<String?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -362,7 +362,7 @@ private fun SavedTab(
                             viewModel.toggleSaved(
                                 Message(
                                     id = e.eventId,
-                                    sessionId = e.roomId,
+                                    roomId = e.roomId,
                                     sender = SenderType.OTHER,
                                     content = e.body,
                                     timestamp = e.timestamp,
@@ -717,7 +717,7 @@ private fun ContextRow(m: Message, anchor: Boolean, viewModel: ChatViewModel) {
                     kind = m.mediaKind,
                     fileName = m.fileName,
                     textColor = MaterialTheme.colorScheme.onSurface,
-                    loader = { viewModel.loadMessageMedia(m.sessionId, m.id) },
+                    loader = { viewModel.loadMessageMedia(m.roomId, m.id) },
                 )
                 if (MessageParser.extractKeryx(m.content).text.isNotBlank() && m.content != m.fileName) {
                     Spacer(Modifier.height(3.dp))

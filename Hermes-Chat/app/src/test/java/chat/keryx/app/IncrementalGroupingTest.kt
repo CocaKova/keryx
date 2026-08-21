@@ -31,7 +31,7 @@ class IncrementalGroupingTest {
     ): Message {
         ts += 1_000L
         return Message(
-            id = "e${idSeq++}", sessionId = "!room", sender = sender, content = content,
+            id = "e${idSeq++}", roomId = "!room", sender = sender, content = content,
             timestamp = ts, mediaKind = media, replyToId = replyTo,
         )
     }

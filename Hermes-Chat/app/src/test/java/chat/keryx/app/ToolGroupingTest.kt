@@ -15,7 +15,7 @@ class ToolGroupingTest {
 
     private var ts = 0L
     private fun msg(sender: SenderType, content: String) =
-        Message(id = "e${ts}", sessionId = "room", sender = sender, content = content, timestamp = ts++)
+        Message(id = "e${ts}", roomId = "room", sender = sender, content = content, timestamp = ts++)
 
     /** groupChatItems takes newest-first (the reversed list the UI uses). */
     private fun group(vararg chrono: Message) = groupChatItems(chrono.toList().asReversed())

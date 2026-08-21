@@ -13,7 +13,7 @@ import org.junit.Test
 class ReplayIncidentTest {
 
     private fun msg(id: String, sender: SenderType, body: String, ts: Long) = Message(
-        id = id, sessionId = "!room", sender = sender, content = body,
+        id = id, roomId = "!room", sender = sender, content = body,
         timestamp = ts, senderId = if (sender == SenderType.ME) "@jonny:x" else "@silas:x",
         senderName = "x",
     )

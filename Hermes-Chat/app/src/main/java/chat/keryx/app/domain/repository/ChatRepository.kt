@@ -4,7 +4,6 @@ import chat.keryx.app.domain.model.Message
 import chat.keryx.app.domain.model.MessageReaction
 import chat.keryx.app.domain.model.RoomInvite
 import chat.keryx.app.domain.model.RoomProfile
-import chat.keryx.app.domain.model.Session
 import chat.keryx.app.domain.model.TypingState
 import kotlinx.coroutines.flow.Flow
 
@@ -16,46 +15,44 @@ interface ChatRepository {
     fun currentUserId(): Flow<String?>
 
     fun getRooms(): Flow<List<RoomProfile>>
-    fun getSessions(roomId: String): Flow<List<Session>>
-
     /** Materialize up to [limit] recent timeline events. Increasing [limit] backfills older history. */
-    fun getMessages(sessionId: String, limit: Int): Flow<List<Message>>
+    fun getMessages(roomId: String, limit: Int): Flow<List<Message>>
 
     /**
      * A one-shot window of history around [eventId] (the Archive's context view): up to [before]
      * events older and [after] newer, anchor included, oldest-first. Timeline gaps are fetched
      * from the server as needed; the call is time-bounded and returns what resolved.
      */
-    suspend fun messagesAround(sessionId: String, eventId: String, before: Int, after: Int): List<Message>
-    suspend fun sendMessage(sessionId: String, content: String)
+    suspend fun messagesAround(roomId: String, eventId: String, before: Int, after: Int): List<Message>
+    suspend fun sendMessage(roomId: String, content: String)
 
     /** Send a text message that quote-replies to [replyToEventId]. */
-    suspend fun sendReply(sessionId: String, content: String, replyToEventId: String)
+    suspend fun sendReply(roomId: String, content: String, replyToEventId: String)
 
     /** Toggle a reaction [emoji] on [eventId]. */
-    suspend fun react(sessionId: String, eventId: String, emoji: String)
+    suspend fun react(roomId: String, eventId: String, emoji: String)
 
     /**
      * Live aggregated reactions on [eventId] (emoji -> count + whether the current user reacted).
      * Unlike a one-shot fetch this updates the moment a reaction is added or redacted by anyone, so
      * incoming reactions no longer appear "a chat late".
      */
-    fun reactionsFlow(sessionId: String, eventId: String): Flow<List<MessageReaction>>
+    fun reactionsFlow(roomId: String, eventId: String): Flow<List<MessageReaction>>
 
     /** Download bytes for a media message (handles both plaintext mxc and E2EE-encrypted files). */
-    suspend fun mediaBytes(sessionId: String, eventId: String): ByteArray?
+    suspend fun mediaBytes(roomId: String, eventId: String): ByteArray?
 
     /** Upload and send a media attachment (image -> m.image, otherwise m.file). A non-null
      *  [caption] rides in the event body (MSC2530) so text + media land as one turn. */
-    suspend fun sendAttachment(sessionId: String, bytes: ByteArray, fileName: String, contentType: String, caption: String? = null)
+    suspend fun sendAttachment(roomId: String, bytes: ByteArray, fileName: String, contentType: String, caption: String? = null)
 
     /** Mark the room read up to [eventId] (sends read receipt + fully-read marker). */
     suspend fun markRead(roomId: String, eventId: String)
 
-    /** Who's typing in [sessionId], split agent vs humans. Hermes sends typing while it works, so
+    /** Who's typing in [roomId], split agent vs humans. Hermes sends typing while it works, so
      *  [TypingState.agentTyping] is a reliable "agent is busy" signal even through long single tool
      *  calls; human typers surface separately (display names) for a plain typing indicator. */
-    fun typing(sessionId: String): Flow<TypingState>
+    fun typing(roomId: String): Flow<TypingState>
 
     /** Pull the full member list for [roomId] (Trixnity lazy-loads members; without this, display
      *  names in cold group rooms stay raw MXIDs until each member happens to send something). */
@@ -94,7 +91,7 @@ interface ChatRepository {
     suspend fun setTyping(roomId: String, typing: Boolean)
 
     /** Redact (delete) a message. Own messages always work; others need room power. */
-    suspend fun redactMessage(sessionId: String, eventId: String): Result<Unit>
+    suspend fun redactMessage(roomId: String, eventId: String): Result<Unit>
 
     /** Password login against the configured homeserver. Url + insecure flag come from settings. */
     suspend fun login(username: String, password: String): Result<Unit>

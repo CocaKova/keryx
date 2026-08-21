@@ -2,7 +2,7 @@ package chat.keryx.app.domain.model
 
 data class Message(
     val id: String,
-    val sessionId: String,
+    val roomId: String,
     val sender: SenderType,
     val content: String,
     val timestamp: Long,

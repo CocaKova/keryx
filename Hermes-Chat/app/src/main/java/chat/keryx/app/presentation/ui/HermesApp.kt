@@ -63,7 +63,7 @@ fun HermesApp(viewModel: ChatViewModel) {
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
-    val currentSession by viewModel.currentSession.collectAsState()
+    val currentRoom by viewModel.currentRoom.collectAsState()
     val linkHealth by viewModel.linkHealth.collectAsState()
     val heraldIds by viewModel.agentMatrixId.collectAsState()
     val heraldAccents by viewModel.heraldAccents.collectAsState()
@@ -193,8 +193,8 @@ fun HermesApp(viewModel: ChatViewModel) {
             ModalDrawerSheet {
                 NavigationDrawerContent(
                     viewModel = viewModel,
-                    onSessionSelected = { session ->
-                        viewModel.selectSession(session)
+                    onRoomSelected = { room ->
+                        viewModel.selectRoom(room)
                         scope.launch { drawerState.close() }
                     },
                     onOpenSpace = openSpace,
@@ -217,10 +217,10 @@ fun HermesApp(viewModel: ChatViewModel) {
                     title = {
                         Column {
                             chat.keryx.app.presentation.ui.components.KeryxWordmark(fontSize = 18.sp)
-                            currentSession?.let { session ->
+                            currentRoom?.let { room ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = session.title,
+                                        text = room.name,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 13.sp,
                                         maxLines = 1,
@@ -230,7 +230,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                                     // Which agent profile answers in this room (from the gateway's
                                     // room→profile routing map): a small tinted chip by the name.
                                     val caps by viewModel.reasoningCaps.collectAsState()
-                                    caps?.roomProfiles?.get(session.id)
+                                    caps?.roomProfiles?.get(room.id)
                                         // "default" is the unnamed home profile — a "Default" chip
                                         // is noise; only the named secondaries earn the badge.
                                         ?.takeIf { !it.equals("default", ignoreCase = true) }
@@ -266,7 +266,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                             viewModel.refreshReasoningCaps()
                             openSpace(KeryxDest.Gateway)
                         })
-                        if (currentSession != null) {
+                        if (currentRoom != null) {
                             // New session: one tap sends /new — same auto-send the command palette
                             // does, so the gateway's fresh-session reply lands in the chat itself.
                             IconButton(onClick = {
@@ -294,7 +294,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                             if (showCall) {
                                 chat.keryx.app.presentation.ui.components.CallScreen(
                                     viewModel = viewModel,
-                                    roomName = currentSession?.title ?: "Keryx",
+                                    roomName = currentRoom?.name ?: "Keryx",
                                     onDismiss = { showCall = false },
                                 )
                             }

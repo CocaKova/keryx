@@ -17,7 +17,7 @@ class RoomPreviewTest {
         mediaKind: MediaKind? = null,
         fileName: String = "",
     ) = Message(
-        id = "\$e", sessionId = "!r", sender = sender, content = content,
+        id = "\$e", roomId = "!r", sender = sender, content = content,
         timestamp = 1L, mediaKind = mediaKind, fileName = fileName,
     )
 
