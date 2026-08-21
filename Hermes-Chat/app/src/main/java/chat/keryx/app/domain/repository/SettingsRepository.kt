@@ -67,6 +67,19 @@ interface SettingsRepository {
      * the same prefs file. Null [gatewayUrl]/[gatewayApiKey] leave those keys untouched.
      */
     fun commitTransportDoor(gatewayUrl: String?, gatewayApiKey: String?, mode: String, directLoggedIn: Boolean)
+
+    /**
+     * The TOGGLE, not a logout: flip which door the next process life boots through, touching
+     * neither credential set. The Matrix session stays in Trixnity's store, the sealed direct
+     * token stays in prefs — whichever spine comes up resumes what it holds. Synchronous for
+     * the same relaunch-race reason as [commitTransportDoor].
+     */
+    fun commitTransportMode(mode: String)
+
+    /** Trixnity's store exists on disk. ⚠️ Only the NEGATIVE is proof: any matrix-mode boot
+     *  creates the (possibly empty) store, so true means "maybe signed in" and the toggle's
+     *  hint words it that way; false means the switch definitely lands on the login screen. */
+    val matrixSessionOnFile: Boolean
     /** Master switch for the SSE side-channel; off = always use the Matrix fallback tier. */
     var sideChannelEnabled: Boolean
     /** True when the user actually wired a Hermes gateway (explicit URL or API key) — the

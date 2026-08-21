@@ -220,6 +220,67 @@ fun SettingsScreen(
                         }
                     }
 
+                    // --- Transport: the two doors, toggleable without touching either session ---
+                    // (Phase 4's second door, made a switch: the Matrix session stays in
+                    // Trixnity's store, the sealed direct token stays in prefs — flipping the
+                    // door just decides which spine the next process life boots.)
+                    if (section == "Account") SettingsCard("Transport") {
+                        val direct = viewModel.transportIsDirect
+                        val otherReady =
+                            if (direct) viewModel.matrixSessionOnFile else viewModel.directCredentialsOnFile
+                        var confirmSwitch by remember { mutableStateOf(false) }
+                        val settingsContext = androidx.compose.ui.platform.LocalContext.current
+                        Text(
+                            text = if (direct) "Direct to gateway" else "Matrix",
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 15.sp,
+                        )
+                        Text(
+                            text = buildString {
+                                append(if (direct) "No homeserver — straight to the hermes gateway." else "The herald's home — E2EE rooms over your homeserver.")
+                            },
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 12.sp,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            text = when {
+                                direct && otherReady -> "Switching boots the Matrix door — a signed-in session resumes there."
+                                direct -> "No Matrix session on file — you'll sign in after the switch."
+                                otherReady -> "Gateway credentials are on file — switching connects with them."
+                                else -> "No gateway credentials yet — you'll connect after the switch."
+                            },
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            fontSize = 12.sp,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        OutlinedButton(onClick = { confirmSwitch = true }) {
+                            Text(if (direct) "Switch to Matrix" else "Switch to direct gateway")
+                        }
+                        if (confirmSwitch) {
+                            AlertDialog(
+                                onDismissRequest = { confirmSwitch = false },
+                                title = { Text(if (direct) "Switch to Matrix?" else "Switch to the direct gateway?") },
+                                text = {
+                                    Text(
+                                        "Keryx restarts on the other transport. Nothing is signed out — " +
+                                            "both sessions stay stored, and you can switch back the same way.",
+                                    )
+                                },
+                                confirmButton = {
+                                    TextButton(onClick = {
+                                        viewModel.switchTransport(if (direct) "matrix" else "direct")
+                                        relaunchApp(settingsContext)
+                                    }) { Text("Switch & restart") }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { confirmSwitch = false }) { Text("Cancel") }
+                                },
+                            )
+                        }
+                    }
+
                     // --- Agent (gateway-backed: what's running, and how it speaks up) ---
                     if (section == "Agent") {
                         LaunchedEffect(Unit) {

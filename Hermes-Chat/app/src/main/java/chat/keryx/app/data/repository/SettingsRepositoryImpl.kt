@@ -7,14 +7,29 @@ import java.net.URI
 
 class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     private val prefs: SharedPreferences = context.getSharedPreferences("hermes_settings", Context.MODE_PRIVATE)
+    private val appContext = context.applicationContext
+
+    // --- sealed secrets (TokenVault: AES/GCM under an AndroidKeyStore key) ---------------
+    // Every credential goes to disk sealed; a legacy plaintext value is re-written sealed
+    // the first time it is read, so existing installs migrate lazily and losslessly.
+    private fun sealedGet(key: String): String {
+        val stored = prefs.getString(key, "") ?: ""
+        if (stored.isNotBlank() && !chat.keryx.app.data.local.TokenVault.isSealed(stored)) {
+            prefs.edit().putString(key, chat.keryx.app.data.local.TokenVault.seal(stored)).apply()
+        }
+        return chat.keryx.app.data.local.TokenVault.open(stored)
+    }
+
+    private fun sealedPut(key: String, value: String) =
+        prefs.edit().putString(key, chat.keryx.app.data.local.TokenVault.seal(value)).apply()
 
     override var homeserverUrl: String
         get() = prefs.getString("homeserver_url", "") ?: ""
         set(value) = prefs.edit().putString("homeserver_url", value).apply()
 
     override var matrixToken: String
-        get() = prefs.getString("matrix_token", "") ?: ""
-        set(value) = prefs.edit().putString("matrix_token", value).apply()
+        get() = sealedGet("matrix_token")
+        set(value) = sealedPut("matrix_token", value)
 
     override var agentMatrixId: String
         get() = prefs.getString("agent_matrix_id", "") ?: ""
@@ -110,8 +125,16 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         set(value) = prefs.edit().putString("direct_gateway_url", value).apply()
 
     override var directApiKey: String
-        get() = prefs.getString("direct_api_key", "") ?: ""
-        set(value) = prefs.edit().putString("direct_api_key", value).apply()
+        get() = sealedGet("direct_api_key")
+        set(value) = sealedPut("direct_api_key", value)
+
+    @Suppress("ApplySharedPref") // synchronous ON PURPOSE — see the interface doc.
+    override fun commitTransportMode(mode: String) {
+        prefs.edit().putString("transport_mode", mode).commit()
+    }
+
+    override val matrixSessionOnFile: Boolean
+        get() = appContext.getDatabasePath("trixnity.db").exists()
 
     @Suppress("ApplySharedPref") // synchronous ON PURPOSE — see the interface doc.
     override fun commitTransportDoor(
@@ -125,15 +148,15 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
             // door crossing must not clobber it (they are different services; see the
             // interface doc on directGatewayUrl).
             gatewayUrl?.let { putString("direct_gateway_url", it) }
-            gatewayApiKey?.let { putString("direct_api_key", it) }
+            gatewayApiKey?.let { putString("direct_api_key", chat.keryx.app.data.local.TokenVault.seal(it)) }
             putString("transport_mode", mode)
             putBoolean("direct_logged_in", directLoggedIn)
         }.commit()
     }
 
     override var gatewayApiKey: String
-        get() = prefs.getString("gateway_api_key", "") ?: ""
-        set(value) = prefs.edit().putString("gateway_api_key", value).apply()
+        get() = sealedGet("gateway_api_key")
+        set(value) = sealedPut("gateway_api_key", value)
 
     override var sideChannelEnabled: Boolean
         get() = prefs.getBoolean("side_channel_enabled", true)
@@ -168,8 +191,8 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         set(value) = prefs.edit().putString("stt_url", value).apply()
 
     override var sttApiKey: String
-        get() = prefs.getString("stt_api_key", "") ?: ""
-        set(value) = prefs.edit().putString("stt_api_key", value).apply()
+        get() = sealedGet("stt_api_key")
+        set(value) = sealedPut("stt_api_key", value)
 
     override var sttModel: String
         get() = prefs.getString("stt_model", "") ?: ""
@@ -184,8 +207,8 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         set(value) = prefs.edit().putString("tts_url", value).apply()
 
     override var ttsApiKey: String
-        get() = prefs.getString("tts_api_key", "") ?: ""
-        set(value) = prefs.edit().putString("tts_api_key", value).apply()
+        get() = sealedGet("tts_api_key")
+        set(value) = sealedPut("tts_api_key", value)
 
     override var ttsVoice: String
         get() = prefs.getString("tts_voice", "") ?: ""
