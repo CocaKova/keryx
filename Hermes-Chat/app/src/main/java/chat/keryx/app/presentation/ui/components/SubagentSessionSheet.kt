@@ -73,8 +73,8 @@ fun SubagentSessionSheet(
                 run.durationSeconds?.takeIf { it > 0 }?.let { add("${it.toInt()}s") }
                 if (run.totalTokens > 0) add("${run.totalTokens / 1000}k tok")
                 if (run.apiCalls > 0) add("${run.apiCalls} calls")
-                if (run.filesRead > 0) add("${run.filesRead} read")
-                if (run.filesWritten > 0) add("${run.filesWritten} written")
+                if (run.filesReadN > 0) add("${run.filesReadN} read")
+                if (run.filesWrittenN > 0) add("${run.filesWrittenN} written")
                 if (run.state == DelegationState.FAILED) add("failed")
                 if (run.state == DelegationState.INTERRUPTED) add("interrupted")
             }

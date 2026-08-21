@@ -528,7 +528,7 @@ class ChatViewModel(
             // a.txt", not "Running read_file" (and never the "Running Reading" a friendly
             // progress line used to produce).
             !hasAnswer && tools.isNotEmpty() -> tools.last().let {
-                ToolGrammar.title(it.name, ToolGrammar.targetOf(it.name, it.args), running = true)
+                ToolGrammar.title(it.name, ToolGrammar.targetOf(it.name, it.context), running = true)
             }
             hasReasoning && !hasAnswer -> "Reasoning"
             else -> "Working"

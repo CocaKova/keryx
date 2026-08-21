@@ -51,7 +51,8 @@ import chat.keryx.core.model.Delegation
 import chat.keryx.core.model.DelegationState
 import chat.keryx.core.model.Theater
 import chat.keryx.core.model.TheaterState
-import chat.keryx.core.model.ToolBeat
+import chat.keryx.core.model.ToolCall
+import chat.keryx.core.model.ToolStatus
 import chat.keryx.core.model.ToolGrammar
 
 /**
@@ -112,7 +113,7 @@ fun TheaterStage(
  * communicated ("these ran together") is structural, not decorative.
  */
 @Composable
-private fun ParallelBatch(calls: List<ToolBeat>, live: Boolean, baseColor: Color) {
+private fun ParallelBatch(calls: List<ToolCall>, live: Boolean, baseColor: Color) {
     val accent = MaterialTheme.colorScheme.tertiary
     val running = calls.any { it.running }
     Row(Modifier.height(IntrinsicSize.Min)) {
@@ -124,7 +125,7 @@ private fun ParallelBatch(calls: List<ToolBeat>, live: Boolean, baseColor: Color
                 // path conflicts). "In one turn" is the claim that survives.
                 "${calls.size} in one turn · " + ToolGrammar.summarize(
                     calls.map {
-                        ToolGrammar.Mention(it.name, ToolGrammar.targetOf(it.name, it.preview), it.running)
+                        ToolGrammar.Mention(it.name, ToolGrammar.targetOf(it.name, it.context), it.running)
                     },
                     live = running,
                 ),
@@ -223,7 +224,7 @@ private fun DelegationWing(
             if (run.toolCount > 0) add("${run.toolCount} tool${if (run.toolCount == 1) "" else "s"}")
             durationLabel(run.durationSeconds)?.let { add(it) }
             if (run.totalTokens > 0) add("${run.totalTokens / 1000}k tok")
-            if (run.filesWritten > 0) add("${run.filesWritten} written")
+            if (run.filesWrittenN > 0) add("${run.filesWrittenN} written")
             if (interrupted) add("interrupted")
         }
         if (meta.isNotEmpty()) {
@@ -274,7 +275,7 @@ private fun DelegationWing(
 }
 
 @Composable
-private fun TheaterRow(beat: ToolBeat, live: Boolean, baseColor: Color) {
+private fun TheaterRow(beat: ToolCall, live: Boolean, baseColor: Color) {
     val accent = MaterialTheme.colorScheme.tertiary
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -289,11 +290,11 @@ private fun TheaterRow(beat: ToolBeat, live: Boolean, baseColor: Color) {
             Text(
                 when {
                     beat.running -> "·"
-                    beat.ok == false -> "✕"
+                    beat.failed -> "✕"
                     else -> "✓"
                 },
                 fontSize = 9.sp,
-                color = if (beat.ok == false) MaterialTheme.colorScheme.error
+                color = if (beat.failed) MaterialTheme.colorScheme.error
                         else baseColor.copy(alpha = 0.45f),
                 modifier = Modifier.width(5.dp),
             )
@@ -307,7 +308,7 @@ private fun TheaterRow(beat: ToolBeat, live: Boolean, baseColor: Color) {
         Spacer(Modifier.width(5.dp))
         // One grammar, live and committed alike: "Reading SOUL.md" now, "Read SOUL.md" in the
         // transcript afterwards — not `read_file` in one place and a sentence in the other.
-        val target = ToolGrammar.targetOf(beat.name, beat.preview)
+        val target = ToolGrammar.targetOf(beat.name, beat.context)
         Text(
             ToolGrammar.title(beat.name, "", beat.running),
             fontSize = 10.sp,
@@ -332,10 +333,11 @@ private fun TheaterRow(beat: ToolBeat, live: Boolean, baseColor: Color) {
             Spacer(Modifier.width(6.dp))
             DiffStat(added = beat.added, removed = beat.removed)
         }
-        if (!beat.running && beat.ms > 0L) {
+        val durS = beat.durationS
+        if (!beat.running && durS != null && durS > 0.0) {
             Spacer(Modifier.width(6.dp))
             Text(
-                if (beat.ms >= 1000L) "${beat.ms / 1000}s" else "${beat.ms}ms",
+                if (durS >= 1.0) "${durS.toInt()}s" else "${(durS * 1000).toInt()}ms",
                 fontSize = 9.sp,
                 fontFamily = FontFamily.Monospace,
                 color = baseColor.copy(alpha = 0.35f),
@@ -357,7 +359,7 @@ private fun TheaterRow(beat: ToolBeat, live: Boolean, baseColor: Color) {
         )
         if (open) {
             DiffPanel(
-                diff = beat.diff,
+                diff = beat.inlineDiff,
                 truncated = beat.diffTruncated,
                 baseColor = baseColor,
                 maxHeight = 150.dp,
@@ -367,7 +369,7 @@ private fun TheaterRow(beat: ToolBeat, live: Boolean, baseColor: Color) {
     }
     // Only a failure carries its result this far (the gateway sends it for nothing else), and
     // when a tool breaks mid-turn the reason is the one thing worth the extra line.
-    if (beat.ok == false && beat.result.isNotBlank()) {
+    if (beat.failed && beat.result.isNotBlank()) {
         Text(
             Theater.reason(beat.result),
             fontSize = 9.5.sp,

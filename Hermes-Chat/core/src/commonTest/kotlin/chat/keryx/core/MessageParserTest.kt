@@ -29,9 +29,9 @@ class MessageParserTest {
             .single().calls
         assertEquals(2, tools.size)
         assertEquals("graphiti_forget", tools[0].name)
-        assertEquals("User should still have keys", tools[0].args)
+        assertEquals("User should still have keys", tools[0].context)
         assertEquals("graphiti_list", tools[1].name)
-        assertEquals("memory context stale", tools[1].args)
+        assertEquals("memory context stale", tools[1].context)
     }
 
     @Test
@@ -39,12 +39,12 @@ class MessageParserTest {
         // Hermes often wraps the command in markdown code formatting; the card should show it clean.
         val single = MessageParser.parse("⚙️ terminal: `ls -la /tmp`")
             .filterIsInstance<MessageParser.Segment.Tools>().single().calls.single()
-        assertEquals("ls -la /tmp", single.args)
+        assertEquals("ls -la /tmp", single.context)
 
         // But backticks that are part of the command (shell substitution) survive.
         val inner = MessageParser.parse("⚙️ terminal: \"echo `date`\"")
             .filterIsInstance<MessageParser.Segment.Tools>().single().calls.single()
-        assertEquals("echo `date`", inner.args)
+        assertEquals("echo `date`", inner.context)
     }
 
     @Test
@@ -62,7 +62,7 @@ class MessageParserTest {
         val call = MessageParser.parse("🌐 web_extract: https://github.com/CocaKova/keryx")
             .filterIsInstance<MessageParser.Segment.Tools>().single().calls.single()
         assertEquals("web_extract", call.name)
-        assertEquals("https://github.com/CocaKova/keryx", call.args)
+        assertEquals("https://github.com/CocaKova/keryx", call.context)
 
         // An argless call (colon ends the line) still parses too.
         val argless = MessageParser.parse("⚙️ session_reset:")
@@ -83,7 +83,7 @@ class MessageParserTest {
             .filterIsInstance<MessageParser.Segment.Tools>().single().calls.single()
         // Filed under the tool, not the verb the gateway happened to print.
         assertEquals("read_file", call.name)
-        assertEquals("consolidate.py L80-89", call.args)
+        assertEquals("consolidate.py L80-89", call.context)
     }
 
     @Test
@@ -116,7 +116,7 @@ class MessageParserTest {
         val call = MessageParser.parse("terminal: \"git status\"")
             .filterIsInstance<MessageParser.Segment.Tools>().single().calls.single()
         assertEquals("terminal", call.name)
-        assertEquals("git status", call.args)
+        assertEquals("git status", call.context)
         // Ordinary prose with a colon must NOT become a tool.
         assertTrue(MessageParser.parse("Note: this is just a note").none { it is MessageParser.Segment.Tools })
     }
@@ -323,7 +323,7 @@ class MessageParserTest {
     fun failedToolGlyph_setsFailure() {
         val call = MessageParser.parse("❌ terminal: \"cat /missing\"")
             .filterIsInstance<MessageParser.Segment.Tools>().single().calls.single()
-        assertEquals(false, call.ok)
+        assertEquals(false, call.verdictOk)
     }
 
     @Test
@@ -628,7 +628,7 @@ class MessageParserTest {
         // Was "Reading" — a verb where the tool id belongs, which cost the committed card its
         // glyph, its verb AND (via Theater.align, which pairs by name) every enriched fact.
         assertEquals("read_file", calls[0].name)
-        assertEquals("a.txt", calls[0].args)
+        assertEquals("a.txt", calls[0].context)
     }
 
     @Test

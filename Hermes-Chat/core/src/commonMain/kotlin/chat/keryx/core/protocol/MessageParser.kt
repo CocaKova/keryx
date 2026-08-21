@@ -1,6 +1,8 @@
 package chat.keryx.core.protocol
 
+import chat.keryx.core.model.ToolCall
 import chat.keryx.core.model.ToolGrammar
+import chat.keryx.core.model.ToolStatus
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -19,13 +21,6 @@ import kotlinx.serialization.json.jsonObject
  */
 object MessageParser {
 
-    data class ToolCall(
-        val emoji: String,
-        val name: String,
-        val args: String,
-        /** null = announced/running (no verdict in the text); true/false = explicit ✓ / ❌ verdict. */
-        val ok: Boolean? = null,
-    )
 
     data class Citation(val n: Int, val kind: String, val label: String, val detail: String)
 
@@ -817,6 +812,14 @@ object MessageParser {
         return segments
     }
 
+    /** Text verdicts map to the shared status: ✓/❌ when the text shows one, else UNKNOWN —
+     *  a committed line without a verdict is not a success, and not a failure either. */
+    private fun statusOf(ok: Boolean?): ToolStatus = when (ok) {
+        true -> ToolStatus.COMPLETED
+        false -> ToolStatus.FAILED
+        null -> ToolStatus.UNKNOWN
+    }
+
     /** Parse a single line as a tool call, or null if it isn't one. */
     private fun parseTool(trimmed: String): ToolCall? {
         val line = trimmed.trim()
@@ -831,19 +834,19 @@ object MessageParser {
                     else -> null
                 }
                 val (args, verdict) = stripTrailingVerdict(cleanArgs(rawArgs))
-                return ToolCall(emoji = glyph, name = name, args = args, ok = verdict ?: ok)
+                return ToolCall(name = name, context = args, status = statusOf(verdict ?: ok))
             }
         }
         // Glyph-less fallback (e.g. an emoji-less `terminal: "…"` repeat).
         TOOL_LINE_NOGLYPH.matchEntire(line)?.let { m ->
             val (args, verdict) = stripTrailingVerdict(cleanArgs(m.groupValues[2]))
-            return ToolCall(emoji = "", name = m.groupValues[1], args = args, ok = verdict)
+            return ToolCall(name = m.groupValues[1], context = args, status = statusOf(verdict))
         }
         // Truncated progress form: `⚙️ brain_store...` — the tool's identity without its args.
         TOOL_LINE_TRUNCATED.matchEntire(line)?.let { m ->
             val (emoji, name) = m.destructured
             if (!emoji.first().isLetterOrDigit()) {
-                return ToolCall(emoji = emoji.trimEnd('️'), name = name, args = "…", ok = null)
+                return ToolCall(name = name, context = "…", status = ToolStatus.UNKNOWN)
             }
         }
         // Progress-style line (`📖 Reading consolidate.py L80-89`). Sentence-shaped lines are
@@ -883,10 +886,9 @@ object MessageParser {
                 // its real verdict. An unrecognised gerund keeps the verb as its name.
                 val friendly = ToolGrammar.fromFriendly(verb, args)
                 return ToolCall(
-                    emoji = glyph,
                     name = friendly?.name ?: verb,
-                    args = friendly?.target ?: args,
-                    ok = verdict ?: ok,
+                    context = friendly?.target ?: args,
+                    status = statusOf(verdict ?: ok),
                 )
             }
         }
@@ -946,7 +948,7 @@ object MessageParser {
             glyph in OK_GLYPHS -> true
             else -> null
         }
-        return ToolCall(emoji = glyph, name = m.groupValues[2], args = cmd.toString().trim('\n'), ok = ok) to j
+        return ToolCall(name = m.groupValues[2], context = cmd.toString().trim('\n'), status = statusOf(ok)) to j
     }
 
     // --- Action Output (structured tool JSON) --------------------------------------------------

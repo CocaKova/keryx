@@ -76,7 +76,7 @@ import chat.keryx.app.presentation.ui.components.HermesThinkingAnimation
 import chat.keryx.app.presentation.ui.components.MessageContent
 import chat.keryx.app.presentation.ui.components.MessageMedia
 import chat.keryx.app.presentation.ui.components.ToolActivityCard
-import chat.keryx.app.presentation.ui.components.ToolGroupCard
+import chat.keryx.app.presentation.ui.components.ToolTheaterRun
 import chat.keryx.app.presentation.ui.components.AgentDeliveryNotice
 import chat.keryx.app.presentation.ui.components.HeraldSigil
 import chat.keryx.app.presentation.ui.components.LocalHeraldConfig
@@ -574,7 +574,7 @@ fun ChatScreen(
                     when (item) {
                         is ChatRenderItem.DayHeader -> DaySeparator(item.epochMillis)
                         is ChatRenderItem.Arrival -> ArrivalMark(item.message)
-                        is ChatRenderItem.ToolRun -> ToolGroupCard(
+                        is ChatRenderItem.ToolRun -> ToolTheaterRun(
                             run = item,
                             // Only the newest run, and only in the room it was watched in: the
                             // record is of one turn, and putting it on an older run would be
