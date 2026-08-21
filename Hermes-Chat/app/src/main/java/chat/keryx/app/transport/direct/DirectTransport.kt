@@ -538,8 +538,8 @@ class DirectTransport(
 
     fun connectIfConfigured() {
         if (!settings.directLoggedIn) return
-        val url = settings.gatewayUrl
-        val token = settings.gatewayApiKey
+        val url = settings.directGatewayUrl
+        val token = settings.directApiKey
         if (url.isBlank()) return
         rpc?.close()
         pumpJob?.cancel()
@@ -1115,7 +1115,7 @@ class DirectTransport(
     override fun isLoggedIn(): Flow<Boolean> = _loggedIn
 
     override fun currentUserId(): Flow<String?> = _loggedIn.map { ok ->
-        if (!ok) null else "you@" + (runCatching { URI(settings.gatewayUrl).host }.getOrNull() ?: "gateway")
+        if (!ok) null else "you@" + (runCatching { URI(settings.directGatewayUrl).host }.getOrNull() ?: "gateway")
     }
 
     // Sessions ARE the top-level items: the gateway has no rooms, so each gateway session
@@ -1765,7 +1765,7 @@ class DirectTransport(
     /** Gateway "login": credentials already live in settings (the login screen's direct door
      *  writes them); validate the token against an authed endpoint, then bring the WS up. */
     suspend fun login(): Result<Unit> {
-        val probe = GatewayRest(settings.gatewayUrl, settings.gatewayApiKey, settings.allowInsecure)
+        val probe = GatewayRest(settings.directGatewayUrl, settings.directApiKey, settings.allowInsecure)
         return probe.validateToken()
             .onSuccess {
                 settings.directLoggedIn = true

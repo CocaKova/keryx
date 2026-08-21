@@ -1518,6 +1518,10 @@ class ChatViewModel(
     /** This process rides the direct gateway door (login screen adapts; Matrix chrome hides). */
     val transportIsDirect: Boolean get() = transport.matrix == null
 
+    /** Login-screen prefill for the direct door (its own keys — never Hermes Link's). */
+    val directGatewayUrl: String get() = settingsRepository.directGatewayUrl
+    val directApiKey: String get() = settingsRepository.directApiKey
+
     /**
      * The login screen's second door (plan §5 Phase 4): a gateway URL and an API key instead
      * of a homeserver. Validates against the gateway, persists the choice, and reports
@@ -1535,13 +1539,9 @@ class ChatViewModel(
             }
             validated.fold(
                 onSuccess = {
-                    settingsRepository.gatewayUrl = url
-                    settingsRepository.gatewayApiKey = apiKey
-                    settingsRepository.transportMode = "direct"
-                    settingsRepository.directLoggedIn = true
-                    // Hermes Link IS this gateway on the direct path — light the Hub, the
-                    // Missions board, the Skill Forge and the pet without a second setup step.
-                    settingsRepository.sideChannelEnabled = true
+                    // One synchronous commit: the caller relaunches the process on our answer,
+                    // and apply()'s async disk write loses that race (device-caught).
+                    settingsRepository.commitTransportDoor(url, apiKey, "direct", true)
                     val direct = transport as? chat.keryx.app.transport.direct.DirectTransport
                     if (direct != null) {
                         direct.login()
@@ -1557,8 +1557,7 @@ class ChatViewModel(
 
     /** The other side of the door: back to Matrix on next launch (login screen restarts). */
     fun chooseMatrixTransport() {
-        settingsRepository.transportMode = "matrix"
-        settingsRepository.directLoggedIn = false
+        settingsRepository.commitTransportDoor(null, null, "matrix", false)
     }
 
     fun loginToMatrix(username: String, password: String, onResult: (Boolean, String?) -> Unit) {

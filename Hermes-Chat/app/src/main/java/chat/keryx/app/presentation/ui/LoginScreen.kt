@@ -72,10 +72,8 @@ fun LoginScreen(viewModel: ChatViewModel) {
 
     // The chosen door. Starts on whichever spine this process booted with.
     var directDoor by remember { mutableStateOf(viewModel.transportIsDirect) }
-    val initialGatewayUrl by viewModel.gatewayUrl.collectAsState()
-    val initialGatewayKey by viewModel.gatewayApiKey.collectAsState()
-    var directUrl by remember { mutableStateOf(initialGatewayUrl) }
-    var directKey by remember { mutableStateOf(initialGatewayKey) }
+    var directUrl by remember { mutableStateOf(viewModel.directGatewayUrl) }
+    var directKey by remember { mutableStateOf(viewModel.directApiKey) }
 
     val accent = MaterialTheme.colorScheme.primary
     val focusManager = LocalFocusManager.current
