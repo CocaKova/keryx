@@ -30,6 +30,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.zIndex
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -157,6 +158,10 @@ fun ChatScreen(
     val density = LocalDensity.current
     val focusRequester = remember { FocusRequester() }
     val composerPrefill by viewModel.composerPrefill.collectAsState()
+    // The harvest's instruments (plan §5) — quiet nulls on the Matrix path.
+    val pendingApproval by viewModel.pendingApproval.collectAsState()
+    val pendingBlocking by viewModel.pendingBlocking.collectAsState()
+    val flightPlan by viewModel.flightPlan.collectAsState()
 
     var pendingAttachment by remember { mutableStateOf<PendingAttachment?>(null) }
     var composerHeightPx by remember { mutableStateOf(0) }
@@ -477,6 +482,12 @@ fun ChatScreen(
         if (currentRoom == null) {
             EmptyChat(modifier = Modifier.align(Alignment.Center))
         }
+        // FLIGHT PLAN: pinned with the instruments — the transcript scrolls, the plan doesn't.
+        flightPlan?.takeIf { it.total > 0 }?.let { plan ->
+            Box(Modifier.align(Alignment.TopCenter).zIndex(1f)) {
+                chat.keryx.app.presentation.ui.components.FlightPlanStrip(plan)
+            }
+        }
         // Reserve space at the bottom equal to the (growing) composer height so messages never
         // slide underneath it as the user types a multi-line message.
         val bottomReserve = with(density) { composerHeightPx.toDp() } + 28.dp
@@ -755,6 +766,28 @@ fun ChatScreen(
                 .fillMaxWidth()
                 .onSizeChanged { composerHeightPx = it.height },
         ) {
+            // The agent is STOPPED waiting on a human — loudest thing on screen, right above
+            // the composer where the answer happens (merge dowry, plan §5).
+            androidx.compose.animation.AnimatedVisibility(visible = pendingApproval != null) {
+                pendingApproval?.let { approval ->
+                    Column {
+                        chat.keryx.app.presentation.ui.components.ApprovalCard(approval) {
+                            viewModel.respondApproval(it)
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                    }
+                }
+            }
+            androidx.compose.animation.AnimatedVisibility(visible = pendingBlocking != null) {
+                pendingBlocking?.let { request ->
+                    Column {
+                        chat.keryx.app.presentation.ui.components.BlockingRequestCard(request) {
+                            viewModel.respondBlocking(request, it)
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                    }
+                }
+            }
             androidx.compose.animation.AnimatedVisibility(visible = replyTarget != null) {
                 replyTarget?.let { target ->
                     Column {
