@@ -1,0 +1,85 @@
+name: CI
+
+# Keryx is two halves that ship together — a Compose app and a gateway payload — and until now
+# neither had anything checking it but the person who wrote it. Both halves are tested; this is
+# the thing that runs those tests when someone other than that person pushes.
+
+on:
+  push:
+    branches: ["**"]
+    tags-ignore: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: App — unit tests + debug build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('Hermes-Chat/**/*.gradle.kts', 'Hermes-Chat/gradle/libs.versions.toml') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Unit tests
+        working-directory: Hermes-Chat
+        run: ./gradlew --no-daemon :app:testDebugUnitTest
+
+      # A debug build, not a release one: release signing falls back to the debug keystore when
+      # local.properties carries no key, and a CI runner has neither. Compiling is the point.
+      - name: Debug build
+        working-directory: Hermes-Chat
+        run: ./gradlew --no-daemon :app:assembleDebug
+
+      - name: Upload test report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-test-report
+          path: Hermes-Chat/app/build/reports/tests/
+
+  gateway:
+    name: Gateway payload — pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install pytest
+
+      # The suite `importorskip`s hermes_cli, so on a runner with no hermes-agent install the
+      # tests that need one skip and the rest still run. A skip is reported, never silent.
+      - name: pytest
+        working-directory: Hermes-Chat/hermes-plugin/keryx-stream
+        run: pytest tests/ -q -rs
+
+  payload-sync:
+    name: Gateway payload — three copies, one file
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # On a runner there is no gateway to compare against, so this reports "nothing to compare"
+      # and passes. It earns its place on a self-hosted runner, and as the thing a release
+      # checklist can point at instead of a remembered md5sum.
+      - run: Hermes-Chat/tools/check-payload-sync.sh
