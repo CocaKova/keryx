@@ -35,6 +35,16 @@ interface SettingsRepository {
     var gatewayUrl: String
     /** Bearer key for the gateway API server (API_SERVER_KEY). */
     var gatewayApiKey: String
+
+    /**
+     * Which transport carries the chat: "matrix" (the herald's home) or "direct" (straight
+     * to a hermes-agent gateway — no homeserver anywhere). Chosen on the login screen;
+     * the process builds its transport from this at startup.
+     */
+    var transportMode: String
+
+    /** The direct door's session flag: a validated gateway credential is a login. */
+    var directLoggedIn: Boolean
     /** Master switch for the SSE side-channel; off = always use the Matrix fallback tier. */
     var sideChannelEnabled: Boolean
     /** True when the user actually wired a Hermes gateway (explicit URL or API key) — the

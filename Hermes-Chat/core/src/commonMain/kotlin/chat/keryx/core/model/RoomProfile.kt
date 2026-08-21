@@ -18,6 +18,14 @@ data class RoomProfile(
      * already carries.
      */
     val heraldIds: List<String> = emptyList(),
+    // --- gateway-session facts (direct transport) — the drawer's meta line + live shimmer.
+    // Matrix rooms leave these at rest; a "room" on the direct path IS a gateway session.
+    val messageCount: Long = 0L,
+    val source: String = "",
+    val isActive: Boolean = false,
+    /** First line of the session's own content — the only readable thing about a scheduled
+     *  run you have never opened. */
+    val preview: String = "",
 )
 
 enum class RoomType {
