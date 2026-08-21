@@ -61,7 +61,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
     val initialInsecure by viewModel.allowInsecure.collectAsState()
 
     var homeserver by remember { mutableStateOf(initialUrl) }
-    var username by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf(viewModel.lastMatrixUsername) }
     var password by remember { mutableStateOf("") }
     var agentId by remember { mutableStateOf(initialAgent) }
     var allowInsecure by remember { mutableStateOf(initialInsecure) }

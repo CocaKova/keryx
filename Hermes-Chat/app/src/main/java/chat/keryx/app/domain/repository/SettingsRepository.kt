@@ -46,6 +46,11 @@ interface SettingsRepository {
     /** The direct door's session flag: a validated gateway credential is a login. */
     var directLoggedIn: Boolean
 
+    /** The last Matrix username that signed in — a login-form prefill, nothing more. The
+     *  password is never stored anywhere: the session token in Trixnity's store is the
+     *  durable credential, and it survives every transport toggle on its own. */
+    var lastMatrixUsername: String
+
     /**
      * ⚠️ The direct transport's dashboard address — NOT [gatewayUrl]. Two different services
      * share one host: [gatewayUrl] is Hermes Link (the keryx_stream payload on the messaging
