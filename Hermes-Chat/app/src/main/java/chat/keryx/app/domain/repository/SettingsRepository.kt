@@ -45,6 +45,28 @@ interface SettingsRepository {
 
     /** The direct door's session flag: a validated gateway credential is a login. */
     var directLoggedIn: Boolean
+
+    /**
+     * ⚠️ The direct transport's dashboard address — NOT [gatewayUrl]. Two different services
+     * share one host: [gatewayUrl] is Hermes Link (the keryx_stream payload on the messaging
+     * gateway), this is the dashboard's WS/REST surface (`hermes dashboard`). Conflating them
+     * broke the Hub the moment the direct door lit it (device-caught 2026-08-21: /health
+     * against the dashboard answers the SPA's index.html), and a direct login was silently
+     * clobbering a Matrix user's Hermes Link URL.
+     */
+    var directGatewayUrl: String
+
+    /** The dashboard session token the direct transport authenticates with. */
+    var directApiKey: String
+
+    /**
+     * Persist a door decision SYNCHRONOUSLY (commit, not apply) — the process relaunches the
+     * moment this returns, and an async apply() loses that race: the relaunch comes up with
+     * default settings and the login screen again (device-caught on the first direct-door
+     * walk, 2026-08-21). One commit at the end also flushes any apply()s already queued on
+     * the same prefs file. Null [gatewayUrl]/[gatewayApiKey] leave those keys untouched.
+     */
+    fun commitTransportDoor(gatewayUrl: String?, gatewayApiKey: String?, mode: String, directLoggedIn: Boolean)
     /** Master switch for the SSE side-channel; off = always use the Matrix fallback tier. */
     var sideChannelEnabled: Boolean
     /** True when the user actually wired a Hermes gateway (explicit URL or API key) — the

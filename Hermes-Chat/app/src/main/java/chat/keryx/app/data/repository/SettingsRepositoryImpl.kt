@@ -105,6 +105,32 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getBoolean("direct_logged_in", false)
         set(value) = prefs.edit().putBoolean("direct_logged_in", value).apply()
 
+    override var directGatewayUrl: String
+        get() = prefs.getString("direct_gateway_url", "") ?: ""
+        set(value) = prefs.edit().putString("direct_gateway_url", value).apply()
+
+    override var directApiKey: String
+        get() = prefs.getString("direct_api_key", "") ?: ""
+        set(value) = prefs.edit().putString("direct_api_key", value).apply()
+
+    @Suppress("ApplySharedPref") // synchronous ON PURPOSE — see the interface doc.
+    override fun commitTransportDoor(
+        gatewayUrl: String?,
+        gatewayApiKey: String?,
+        mode: String,
+        directLoggedIn: Boolean,
+    ) {
+        prefs.edit().apply {
+            // The DIRECT keys, never gateway_url — that one belongs to Hermes Link and a
+            // door crossing must not clobber it (they are different services; see the
+            // interface doc on directGatewayUrl).
+            gatewayUrl?.let { putString("direct_gateway_url", it) }
+            gatewayApiKey?.let { putString("direct_api_key", it) }
+            putString("transport_mode", mode)
+            putBoolean("direct_logged_in", directLoggedIn)
+        }.commit()
+    }
+
     override var gatewayApiKey: String
         get() = prefs.getString("gateway_api_key", "") ?: ""
         set(value) = prefs.edit().putString("gateway_api_key", value).apply()
