@@ -121,6 +121,106 @@ class HubDelegate(deps: GatewayDeps) {
     val brains: StateFlow<PanelState<chat.keryx.app.data.remote.HermesStreamClient.Brains>> =
         _hubBrains.asStateFlow()
 
+    // --- The Runs surface (harvest: Talaria's CronSpace — scheduled runs are READ, not chatted) ---
+
+    /** Everything the Runs tab draws: one card per job, live job rows paired by name, and
+     *  what's arrived since the user last looked. */
+    data class CronBoard(
+        val cards: List<chat.keryx.core.model.CronJobCard>,
+        val jobsByName: Map<String, chat.keryx.app.data.remote.HermesStreamClient.HubJob>,
+        val unread: chat.keryx.core.model.CronUnread,
+        /** Runs the session list serves, by id — the reader opens straight from a card. */
+        val runsById: Map<String, chat.keryx.app.data.remote.HermesStreamClient.HubSession>,
+    )
+
+    private val _cron = MutableStateFlow<PanelState<CronBoard>>(PanelState())
+    val cron: StateFlow<PanelState<CronBoard>> = _cron.asStateFlow()
+
+    fun refreshCron() {
+        val client = client() ?: run {
+            _cron.value = _cron.value.copy(error = "Hermes Link is off — enable it in Settings", refreshing = false)
+            return
+        }
+        _cron.value = _cron.value.copy(refreshing = true)
+        scope.launch {
+            val jobsRes = client.jobs()
+            val runsRes = client.cronSessions()
+            val failure = listOf(jobsRes, runsRes).firstNotNullOfOrNull { it.exceptionOrNull() }
+            if (failure != null && runsRes.isFailure) {
+                _cron.value = _cron.value.copy(error = failure.message?.take(120) ?: "unavailable", refreshing = false)
+                return@launch
+            }
+            val jobs = jobsRes.getOrDefault(emptyList())
+            val sessions = runsRes.getOrDefault(emptyList())
+            val runs = sessions.map {
+                chat.keryx.core.model.CronRun(
+                    id = it.id,
+                    title = it.title.orEmpty().ifBlank { it.id },
+                    timestamp = (it.lastActive * 1000).toLong(),
+                )
+            }
+            val cards = chat.keryx.core.model.CronGrouping.group(runs, jobs.map { it.name })
+            // First sight of this surface stamps the baseline: what already existed is history.
+            if (settings.cronBaseline <= 0L) {
+                settings.cronBaseline = chat.keryx.core.model.CronUnreadCalc.baselineOf(cards)
+            }
+            val seen = chat.keryx.core.model.CronUnreadCalc.prune(
+                settings.cronSeenIds,
+                chat.keryx.core.model.CronUnreadCalc.knownIds(cards),
+            ).also { if (it.size != settings.cronSeenIds.size) settings.cronSeenIds = it }
+            _cron.value = PanelState(
+                data = CronBoard(
+                    cards = cards,
+                    jobsByName = jobs.associateBy { it.name },
+                    unread = chat.keryx.core.model.CronUnreadCalc.compute(cards, seen, settings.cronBaseline),
+                    runsById = sessions.associateBy { it.id },
+                ),
+            )
+        }
+    }
+
+    /** Opening a run IS reading it — recompute the badge without a refetch. */
+    fun cronMarkSeen(runId: String) {
+        settings.cronSeenIds = settings.cronSeenIds + runId
+        recomputeCronUnread()
+    }
+
+    fun cronMarkAllSeen() {
+        val board = _cron.value.data ?: return
+        settings.cronSeenIds = settings.cronSeenIds +
+            chat.keryx.core.model.CronUnreadCalc.knownIds(board.cards)
+        recomputeCronUnread()
+    }
+
+    private fun recomputeCronUnread() {
+        val board = _cron.value.data ?: return
+        _cron.value = _cron.value.copy(
+            data = board.copy(
+                unread = chat.keryx.core.model.CronUnreadCalc.compute(
+                    board.cards, settings.cronSeenIds, settings.cronBaseline,
+                ),
+            ),
+        )
+    }
+
+    /**
+     * A run's skimmable headline: its REPORT (the longest assistant text — the last message
+     * is usually narration or bookkeeping), digested to (title, lead). Cached per run id —
+     * transcripts don't change after the run ends.
+     */
+    private val cronDigests = java.util.concurrent.ConcurrentHashMap<String, chat.keryx.core.model.CronDigest>()
+
+    suspend fun cronDigest(runId: String): chat.keryx.core.model.CronDigest? {
+        cronDigests[runId]?.let { return it }
+        val client = client() ?: return null
+        return client.sessionMessages(runId).getOrNull()?.let { messages ->
+            val report = chat.keryx.core.model.CronHumanize.pickReport(
+                messages.filter { it.role == "assistant" }.map { it.content },
+            ) ?: return@let chat.keryx.core.model.CronDigest(null, null)
+            chat.keryx.core.model.CronHumanize.digest(report)
+        }?.also { cronDigests[runId] = it }
+    }
+
     fun refreshHealth() = _hubHealth.refreshFrom { healthDetailed() }
     fun refreshModels() = _hubModels.refreshFrom { models() }
     fun refreshConfig() = _hubConfig.refreshFrom { configKnobs() }

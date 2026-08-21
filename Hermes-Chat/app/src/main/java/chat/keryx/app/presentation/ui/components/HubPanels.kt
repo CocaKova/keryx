@@ -95,7 +95,7 @@ internal fun PanelErrorLine(error: String?) {
 }
 
 @Composable
-private fun PanelLoading() {
+internal fun PanelLoading() {
     Text(
         "Asking the gateway…",
         fontSize = 12.sp,
@@ -721,7 +721,7 @@ private fun SessionCard(s: HubSession, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SessionTranscript(
+internal fun SessionTranscript(
     session: HubSession,
     viewModel: ChatViewModel,
     onBack: () -> Unit,

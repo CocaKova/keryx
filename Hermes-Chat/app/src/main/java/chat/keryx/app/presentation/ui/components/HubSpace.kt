@@ -111,6 +111,13 @@ val GATEWAY_PANELS: List<HubPanel> = listOf(
         refresh = { vm -> vm.hub.refreshJobs() },
         content = { JobsTab(it.viewModel) },
     ),
+    HubPanel(
+        id = "runs",
+        label = "Runs",
+        live = true,
+        refresh = { vm -> vm.hub.refreshCron() },
+        content = { RunsTab(it.viewModel) },
+    ),
 )
 
 /** The agent: what it has done, what it knows how to do, and what it can reach. */

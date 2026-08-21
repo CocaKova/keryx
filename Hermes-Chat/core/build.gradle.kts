@@ -25,6 +25,9 @@ kotlin {
             // consumers need them on their own compile classpath.
             api(libs.kotlinx.coroutines.core)
             api(libs.kotlinx.serialization.json)
+            // ISO instants for cron humanization (CronHumanize.nextIn) — the KMP-standard
+            // clock library; Talaria's shared half already stood on it.
+            api(libs.kotlinx.datetime)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
