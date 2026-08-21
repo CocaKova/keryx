@@ -125,10 +125,10 @@ internal fun StatusTab(
     health: LinkHealth,
     onDismiss: () -> Unit,
 ) {
-    val panel by viewModel.hubHealth.collectAsState()
-    val models by viewModel.hubModels.collectAsState()
-    val console by viewModel.console.collectAsState()
-    val caps by viewModel.reasoningCaps.collectAsState()
+    val panel by viewModel.hub.health.collectAsState()
+    val models by viewModel.hub.models.collectAsState()
+    val console by viewModel.console.ui.collectAsState()
+    val caps by viewModel.hub.reasoningCaps.collectAsState()
     val currentRoom by viewModel.currentRoom.collectAsState()
     val accent = MaterialTheme.colorScheme.primary
 
@@ -335,7 +335,7 @@ internal fun StatusTab(
 
 @Composable
 internal fun JobsTab(viewModel: ChatViewModel) {
-    val panel by viewModel.hubJobs.collectAsState()
+    val panel by viewModel.hub.jobs.collectAsState()
     val currentRoom by viewModel.currentRoom.collectAsState()
     var createOpen by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<HubJob?>(null) }
@@ -374,8 +374,8 @@ internal fun JobsTab(viewModel: ChatViewModel) {
                 items(jobs, key = { it.id }) { job ->
                     JobCard(
                         job = job,
-                        onToggle = { viewModel.hubJobAction(job.id, if (job.enabled) "pause" else "resume") },
-                        onRunNow = { viewModel.hubJobAction(job.id, "run") },
+                        onToggle = { viewModel.hub.jobAction(job.id, if (job.enabled) "pause" else "resume") },
+                        onRunNow = { viewModel.hub.jobAction(job.id, "run") },
                         onDelete = { deleteTarget = job },
                         onEdit = { editTarget = job },
                     )
@@ -388,7 +388,7 @@ internal fun JobsTab(viewModel: ChatViewModel) {
         JobCreateDialog(
             currentRoomId = currentRoom?.id,
             onCreate = { name, schedule, prompt, deliver ->
-                viewModel.hubJobCreate(name, schedule, prompt, deliver)
+                viewModel.hub.jobCreate(name, schedule, prompt, deliver)
                 createOpen = false
             },
             onDismiss = { createOpen = false },
@@ -398,7 +398,7 @@ internal fun JobsTab(viewModel: ChatViewModel) {
         JobEditDialog(
             job = job,
             onSave = { name, schedule, prompt, deliver ->
-                viewModel.hubJobEdit(job.id, name, schedule, prompt, deliver)
+                viewModel.hub.jobEdit(job.id, name, schedule, prompt, deliver)
                 editTarget = null
             },
             onDismiss = { editTarget = null },
@@ -411,7 +411,7 @@ internal fun JobsTab(viewModel: ChatViewModel) {
             text = { Text("The schedule and its run history go with it. This can't be undone.",
                 fontSize = 13.sp) },
             confirmButton = {
-                TextButton(onClick = { viewModel.hubJobDelete(job.id); deleteTarget = null }) {
+                TextButton(onClick = { viewModel.hub.jobDelete(job.id); deleteTarget = null }) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
@@ -626,7 +626,7 @@ private fun JobEditDialog(
 
 @Composable
 internal fun SessionsTab(viewModel: ChatViewModel) {
-    val panel by viewModel.hubSessions.collectAsState()
+    val panel by viewModel.hub.sessions.collectAsState()
     var open by remember { mutableStateOf<HubSession?>(null) }
 
     open?.let { session ->
@@ -731,11 +731,11 @@ private fun SessionTranscript(
     var renameOpen by remember { mutableStateOf(false) }
     var deleteOpen by remember { mutableStateOf(false) }
     var reloads by remember { mutableStateOf(0) }
-    val console by viewModel.console.collectAsState()
+    val console by viewModel.console.ui.collectAsState()
     // The live-turn panel belongs to THIS transcript only when the streaming turn targets it.
     val liveHere = console.runId == "session:${session.id}" && console.status != "idle"
     LaunchedEffect(session.id, reloads) {
-        viewModel.hubSessionMessages(session.id)
+        viewModel.hub.sessionMessages(session.id)
             .onSuccess { messages = it }
             .onFailure { error = it.message }
     }
@@ -760,7 +760,7 @@ private fun SessionTranscript(
                 TextButton(
                     enabled = title.isNotBlank(),
                     onClick = {
-                        viewModel.hubSessionRename(session.id, title.trim())
+                        viewModel.hub.sessionRename(session.id, title.trim())
                         renameOpen = false
                     },
                 ) { Text("Rename") }
@@ -778,7 +778,7 @@ private fun SessionTranscript(
             confirmButton = {
                 TextButton(onClick = {
                     deleteOpen = false
-                    viewModel.hubSessionDelete(session.id) { ok -> if (ok) onBack() }
+                    viewModel.hub.sessionDelete(session.id) { ok -> if (ok) onBack() }
                 }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = { TextButton(onClick = { deleteOpen = false }) { Text("Keep") } },
@@ -805,7 +805,7 @@ private fun SessionTranscript(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.padding(horizontal = 16.dp),
         ) {
-            TextButton(onClick = { viewModel.hubSessionFork(session.id) }) { Text("Fork", fontSize = 12.sp) }
+            TextButton(onClick = { viewModel.hub.sessionFork(session.id) }) { Text("Fork", fontSize = 12.sp) }
             TextButton(onClick = { renameOpen = true }) { Text("Rename", fontSize = 12.sp) }
             TextButton(onClick = { deleteOpen = true }) {
                 Text("Delete", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
@@ -871,9 +871,9 @@ private fun SessionTranscript(
             IconButton(
                 enabled = resumePrompt.isNotBlank() && !console.live,
                 onClick = {
-                    viewModel.consoleReset()
-                    viewModel.consoleSetSessionTarget(session)
-                    viewModel.consoleLaunch(resumePrompt.trim())
+                    viewModel.console.reset()
+                    viewModel.console.setSessionTarget(session)
+                    viewModel.console.launch(resumePrompt.trim())
                     resumePrompt = ""
                 },
             ) {
@@ -909,15 +909,15 @@ private fun epochAgo(epochSec: Double): String? {
 
 @Composable
 internal fun SkillsTab(viewModel: ChatViewModel) {
-    val panel by viewModel.hubSkills.collectAsState()
-    val trash by viewModel.skillTrash.collectAsState()
+    val panel by viewModel.hub.skills.collectAsState()
+    val trash by viewModel.hub.skillTrash.collectAsState()
     var filter by remember { mutableStateOf("") }
     // 1.25: the library and its trash are one tab — deleting somewhere you can't see the
     // undo would make "recoverable" a claim rather than an affordance.
     var showTrash by remember { mutableStateOf(false) }
     var creating by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { viewModel.refreshSkillTrash() }
+    LaunchedEffect(Unit) { viewModel.hub.refreshSkillTrash() }
 
     Column(Modifier.fillMaxSize()) {
         PanelErrorLine(panel.error)
@@ -971,7 +971,7 @@ internal fun SkillsTab(viewModel: ChatViewModel) {
                     ) {
                         items(shown, key = { it.name }) { s ->
                             // Tap opens the Skill Forge (1.8): full SKILL.md, edit, save, delete.
-                            Column(Modifier.fillMaxWidth().clickable { viewModel.openSkillForge(s.name) }) {
+                            Column(Modifier.fillMaxWidth().clickable { viewModel.hub.openSkillForge(s.name) }) {
                                 Text(s.name, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                                 if (s.description.isNotBlank()) {
                                     Text(s.description, fontSize = 11.sp,
@@ -1012,7 +1012,7 @@ private fun SkillTrashList(
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     if (t.restorable) {
-                        TextButton(onClick = { viewModel.skillRestore(t.id, t.name) }) {
+                        TextButton(onClick = { viewModel.hub.skillRestore(t.id, t.name) }) {
                             Text("Restore", fontSize = 12.sp)
                         }
                     } else {
@@ -1037,7 +1037,7 @@ private fun SkillTrashList(
                     confirmButton = {
                         TextButton(onClick = {
                             confirmPurge = false
-                            viewModel.skillPurge(t.id, t.name)
+                            viewModel.hub.skillPurge(t.id, t.name)
                         }) { Text("Purge", color = MaterialTheme.colorScheme.error) }
                     },
                     dismissButton = {
@@ -1095,7 +1095,7 @@ private fun NewSkillDialog(viewModel: ChatViewModel, onClose: () -> Unit) {
                 onClick = {
                     saving = true
                     status = null
-                    viewModel.skillCreate(slug, content, null) { ok, message ->
+                    viewModel.hub.skillCreate(slug, content, null) { ok, message ->
                         saving = false
                         if (ok) onClose() else status = message
                     }
@@ -1110,7 +1110,7 @@ private fun NewSkillDialog(viewModel: ChatViewModel, onClose: () -> Unit) {
 
 @Composable
 internal fun ToolsTab(viewModel: ChatViewModel) {
-    val panel by viewModel.hubToolsets.collectAsState()
+    val panel by viewModel.hub.toolsets.collectAsState()
 
     Column(Modifier.fillMaxSize()) {
         PanelErrorLine(panel.error)
@@ -1156,7 +1156,7 @@ internal fun ToolsTab(viewModel: ChatViewModel) {
                                 Spacer(Modifier.width(8.dp))
                                 Switch(
                                     checked = t.enabled,
-                                    onCheckedChange = { viewModel.hubToolsetToggle(t.name, it) },
+                                    onCheckedChange = { viewModel.hub.toolsetToggle(t.name, it) },
                                     // Operator-pinned (config-guard invariants): show state, refuse input.
                                     enabled = !t.locked && !panel.refreshing,
                                 )

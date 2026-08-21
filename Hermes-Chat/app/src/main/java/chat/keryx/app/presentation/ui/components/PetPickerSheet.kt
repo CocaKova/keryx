@@ -61,12 +61,12 @@ fun PetPickerSheet(
     viewModel: ChatViewModel,
     onDismiss: () -> Unit,
 ) {
-    val gallery by viewModel.petGallery.collectAsState()
-    val loading by viewModel.petGalleryLoading.collectAsState()
-    val selecting by viewModel.petSelecting.collectAsState()
-    val selectError by viewModel.petSelectError.collectAsState()
-    val thumbs by viewModel.petThumbs.collectAsState()
-    val petInfo by viewModel.petInfo.collectAsState()
+    val gallery by viewModel.pet.petGallery.collectAsState()
+    val loading by viewModel.pet.petGalleryLoading.collectAsState()
+    val selecting by viewModel.pet.petSelecting.collectAsState()
+    val selectError by viewModel.pet.petSelectError.collectAsState()
+    val thumbs by viewModel.pet.petThumbs.collectAsState()
+    val petInfo by viewModel.pet.petInfo.collectAsState()
 
     var query by remember { mutableStateOf("") }
 
@@ -190,7 +190,7 @@ private fun PetRow(
 ) {
     // Lazy per-visible-row preview; the VM throttles concurrent fetches so a fast
     // scroll doesn't turn into a CDN download storm on the gateway.
-    LaunchedEffect(pet.slug) { viewModel.requestPetThumb(pet.slug, pet.spritesheetUrl) }
+    LaunchedEffect(pet.slug) { viewModel.pet.requestPetThumb(pet.slug, pet.spritesheetUrl) }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -201,7 +201,7 @@ private fun PetRow(
                 if (active) MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
                 else androidx.compose.ui.graphics.Color.Transparent
             )
-            .clickable(enabled = selecting == null && !active) { viewModel.selectPet(pet.slug) }
+            .clickable(enabled = selecting == null && !active) { viewModel.pet.selectPet(pet.slug) }
             .padding(horizontal = 8.dp, vertical = 6.dp),
     ) {
         Box(

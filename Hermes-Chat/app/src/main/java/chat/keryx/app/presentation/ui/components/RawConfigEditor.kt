@@ -48,7 +48,7 @@ fun RawConfigEditor(viewModel: ChatViewModel, onDismiss: () -> Unit) {
     var confirmDiscard by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        viewModel.configRaw()
+        viewModel.hub.configRaw()
             .onSuccess {
                 draft = it.content
                 original = it.content
@@ -66,7 +66,7 @@ fun RawConfigEditor(viewModel: ChatViewModel, onDismiss: () -> Unit) {
         val text = draft ?: return
         saving = true
         status = null
-        viewModel.configRawSave(text, baseHash, force) { ok, message, needsForce ->
+        viewModel.hub.configRawSave(text, baseHash, force) { ok, message, needsForce ->
             saving = false
             if (needsForce) {
                 confirmForce = message

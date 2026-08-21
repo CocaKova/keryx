@@ -68,7 +68,7 @@ fun SessionPruneDialog(
     fun runPreview() {
         working = true
         scope.launch {
-            viewModel.hubSessionsPrunePreview(ageDays, maxMessages, includeArchived)
+            viewModel.hub.sessionsPrunePreview(ageDays, maxMessages, includeArchived)
                 .onSuccess { preview = it.preview; previewError = null }
                 .onFailure { previewError = it.message?.take(120) ?: "preview failed" }
             working = false
@@ -111,7 +111,7 @@ fun SessionPruneDialog(
 
     fun executePrune() {
         working = true
-        viewModel.hubSessionsPrune(ageDays, maxMessages, includeArchived) { removed ->
+        viewModel.hub.sessionsPrune(ageDays, maxMessages, includeArchived) { removed ->
             // Success closes the dialog (the toast carries the count); failure re-enables it.
             if (removed != null) onDismiss() else working = false
         }

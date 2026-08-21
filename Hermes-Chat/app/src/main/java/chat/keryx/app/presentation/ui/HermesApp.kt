@@ -229,7 +229,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                                     )
                                     // Which agent profile answers in this room (from the gateway's
                                     // room→profile routing map): a small tinted chip by the name.
-                                    val caps by viewModel.reasoningCaps.collectAsState()
+                                    val caps by viewModel.hub.reasoningCaps.collectAsState()
                                     caps?.roomProfiles?.get(room.id)
                                         // "default" is the unnamed home profile — a "Default" chip
                                         // is noise; only the named secondaries earn the badge.
@@ -263,7 +263,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                         // reports on the link, so it lands on the space that is about the link; the
                         // Workshop is reached from the drawer, where you go looking for it on purpose.
                         LinkHealthDot(health = linkHealth, onClick = {
-                            viewModel.refreshReasoningCaps()
+                            viewModel.hub.refreshReasoningCaps()
                             openSpace(KeryxDest.Gateway)
                         })
                         if (currentRoom != null) {
@@ -285,7 +285,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                             // both voice endpoints; a missing one gets a pointer, not a dead mic.
                             var showCall by remember { mutableStateOf(false) }
                             IconButton(onClick = {
-                                if (viewModel.voiceCallReady()) showCall = true
+                                if (viewModel.voice.callReady()) showCall = true
                                 else viewModel.toast("Set the STT and TTS endpoints in Settings → Voice first")
                             }) {
                                 Icon(Icons.Default.Call, contentDescription = "Call",
@@ -311,7 +311,7 @@ fun HermesApp(viewModel: ChatViewModel) {
             // and in-chat SkillDistilled pills (via this CompositionLocal, since the render chain
             // doesn't carry the ViewModel). One shared target keeps a single hosted sheet.
             androidx.compose.runtime.CompositionLocalProvider(
-                chat.keryx.app.presentation.ui.components.LocalSkillForgeOpener provides viewModel::openSkillForge,
+                chat.keryx.app.presentation.ui.components.LocalSkillForgeOpener provides viewModel.hub::openSkillForge,
                 // Quick-action chips (⟦keryx:ask⟧) send their option text as a normal message.
                 chat.keryx.app.presentation.ui.components.LocalQuickActionSender provides viewModel::sendMessage,
             ) {
@@ -322,12 +322,12 @@ fun HermesApp(viewModel: ChatViewModel) {
                         .padding(paddingValues)
                 )
             }
-            val skillForgeTarget by viewModel.skillForgeTarget.collectAsState()
+            val skillForgeTarget by viewModel.hub.skillForgeTarget.collectAsState()
             skillForgeTarget?.let { name ->
                 chat.keryx.app.presentation.ui.components.SkillForgeSheet(
                     skillName = name,
                     viewModel = viewModel,
-                    onDismiss = viewModel::closeSkillForge,
+                    onDismiss = viewModel.hub::closeSkillForge,
                 )
             }
         }

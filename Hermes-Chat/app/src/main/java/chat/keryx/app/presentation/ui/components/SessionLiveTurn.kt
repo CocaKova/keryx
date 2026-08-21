@@ -44,7 +44,7 @@ import chat.keryx.app.presentation.ChatViewModel
  */
 @Composable
 fun SessionLiveTurn(viewModel: ChatViewModel) {
-    val console by viewModel.console.collectAsState()
+    val console by viewModel.console.ui.collectAsState()
 
     Column(
         modifier = Modifier
@@ -83,14 +83,14 @@ fun SessionLiveTurn(viewModel: ChatViewModel) {
                 maxLines = 2, overflow = TextOverflow.Ellipsis,
             )
             if (console.live) {
-                TextButton(onClick = { viewModel.consoleStop() }) {
+                TextButton(onClick = { viewModel.console.stop() }) {
                     Icon(Icons.Default.Stop, contentDescription = null,
                         modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.width(4.dp))
                     Text("Stop", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
                 }
             } else {
-                TextButton(onClick = { viewModel.consoleReset() }) { Text("Clear", fontSize = 12.sp) }
+                TextButton(onClick = { viewModel.console.reset() }) { Text("Clear", fontSize = 12.sp) }
             }
         }
         if (console.reasoningTail.isNotBlank()) {

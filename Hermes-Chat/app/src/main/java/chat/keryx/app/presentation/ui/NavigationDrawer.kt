@@ -128,12 +128,12 @@ fun NavigationDrawerContent(
                     // The petdex mascot (Hermes desktop's floating pet, drawer-header sized).
                     // Fetched lazily on first drawer open; absent entirely when the gateway has
                     // no pet configured, so the header stays exactly as before for those setups.
-                    val petInfo by viewModel.petInfo.collectAsState()
+                    val petInfo by viewModel.pet.petInfo.collectAsState()
                     val awaitingReply by viewModel.awaitingReply.collectAsState()
                     var petGreeting by remember { mutableStateOf(false) }
                     LaunchedEffect(drawerVisible) {
                         if (drawerVisible) {
-                            viewModel.refreshPet()
+                            viewModel.pet.refreshPet()
                             // Wave hello when the drawer opens, then settle into the idle loop.
                             petGreeting = true
                             kotlinx.coroutines.delay(2200)
@@ -163,7 +163,7 @@ fun NavigationDrawerContent(
                                 modifier = Modifier
                                     .size(width = 26.dp, height = 28.dp)
                                     // Tap your pet to adopt a different one.
-                                    .clickable { viewModel.refreshPetGallery(); showPetPicker = true },
+                                    .clickable { viewModel.pet.refreshPetGallery(); showPetPicker = true },
                             )
                         }
                     }

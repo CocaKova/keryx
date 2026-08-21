@@ -195,7 +195,7 @@ class CallController(
     }
 
     private suspend fun transcribe(wav: File): String = suspendCancellableCoroutine { cont ->
-        viewModel.transcribe(wav) { result ->
+        viewModel.voice.transcribe(wav) { result ->
             if (cont.isActive) result.fold(
                 { cont.resume(it) },
                 { cont.resumeWithException(it) },
@@ -204,7 +204,7 @@ class CallController(
     }
 
     private suspend fun synthesize(text: String, into: File): File = suspendCancellableCoroutine { cont ->
-        viewModel.synthesizeSpeech(text, into) { result ->
+        viewModel.voice.synthesizeSpeech(text, into) { result ->
             if (cont.isActive) result.fold(
                 { cont.resume(it) },
                 { cont.resumeWithException(it) },
