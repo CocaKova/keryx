@@ -80,15 +80,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
     // The door change is a different process spine — relaunch cleanly into it.
-    fun relaunch() {
-        val i = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
-        i.addFlags(
-            android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
-                android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK,
-        )
-        context.startActivity(i)
-        Runtime.getRuntime().exit(0)
-    }
+    fun relaunch() = chat.keryx.app.presentation.ui.components.relaunchApp(context)
 
     Column(
         modifier = Modifier
@@ -248,7 +240,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             )
             Button(
-                onClick = { viewModel.chooseMatrixTransport(); relaunch() },
+                onClick = { viewModel.switchTransport("matrix"); relaunch() },
                 modifier = Modifier.fillMaxWidth().height(52.dp).padding(top = 24.dp),
             ) {
                 Text("Switch to Matrix", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)

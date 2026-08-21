@@ -1555,10 +1555,20 @@ class ChatViewModel(
         }
     }
 
-    /** The other side of the door: back to Matrix on next launch (login screen restarts). */
-    fun chooseMatrixTransport() {
-        settingsRepository.commitTransportDoor(null, null, "matrix", false)
+    /**
+     * The transport TOGGLE: flip the spine for the next process life, keeping BOTH credential
+     * sets — the Matrix session stays in Trixnity's store, the sealed direct token stays in
+     * prefs. Not a logout; whichever door comes up resumes what it holds (or lands on its own
+     * login pane if it holds nothing). The caller relaunches.
+     */
+    fun switchTransport(mode: String) {
+        settingsRepository.commitTransportMode(mode)
     }
+
+    /** The other door's stored state — the toggle's "resumes signed in" hints. */
+    val matrixSessionOnFile: Boolean get() = settingsRepository.matrixSessionOnFile
+    val directCredentialsOnFile: Boolean
+        get() = settingsRepository.directLoggedIn && settingsRepository.directGatewayUrl.isNotBlank()
 
     fun loginToMatrix(username: String, password: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
