@@ -60,6 +60,8 @@ import chat.keryx.core.protocol.MessageParser
  *  an entry — it's gathered into [ChatRenderItem.ToolRun.reasoning]. */
 sealed interface ToolRunEntry {
     data class Call(val call: ToolCall) : ToolRunEntry
+    /** A subagent this turn dispatched (direct producer) — rendered as a wing, not a tool row. */
+    data class Delegated(val run: chat.keryx.core.model.Delegation) : ToolRunEntry
     data class Note(val text: String) : ToolRunEntry
     data class Action(val action: MessageParser.Segment.ActionOutput) : ToolRunEntry
     data class Telemetry(val text: String) : ToolRunEntry
@@ -173,7 +175,7 @@ fun isToolMessage(m: Message): Boolean {
     if (m.sender != SenderType.HERMES) return false
     if (m.mediaKind != null) return false
     // The direct producer: structured calls arrive ON the message — no parsing, same runs.
-    if (m.toolCalls.isNotEmpty()) return true
+    if (m.toolCalls.isNotEmpty() || m.delegations.isNotEmpty()) return true
     if (m.content.isBlank()) return false
     return MessageParser.parse(m.content).any {
         it is MessageParser.Segment.Tools || it is MessageParser.Segment.ActionOutput
@@ -374,8 +376,12 @@ private fun walkRange(
             // and reasoning structurally; a Matrix message carries text the parser reads the
             // same facts out of. From here down the two are indistinguishable.
             val segs = MessageParser.parse(m.content)
-            val parts = if (m.toolCalls.isNotEmpty()) {
-                MsgParts(m.toolCalls.map { ToolRunEntry.Call(it) }, m.reasoning)
+            val parts = if (m.toolCalls.isNotEmpty() || m.delegations.isNotEmpty()) {
+                MsgParts(
+                    m.toolCalls.map { ToolRunEntry.Call(it) } +
+                        m.delegations.map { ToolRunEntry.Delegated(it) },
+                    m.reasoning,
+                )
             } else {
                 segmentsToParts(segs)
             }

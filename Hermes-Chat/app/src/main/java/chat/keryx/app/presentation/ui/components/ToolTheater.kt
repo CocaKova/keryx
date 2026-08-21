@@ -229,6 +229,7 @@ fun ToolTheaterRun(
     } else if (active) 0.42f else 0.22f
 
     val calls = run.entries.filterIsInstance<ToolRunEntry.Call>().map { it.call }
+    val wings = run.entries.filterIsInstance<ToolRunEntry.Delegated>().map { it.run }
     // The theater's glyphs, not the emoji the gateway happened to print into the message text:
     // the live view and this record are the same run at two ages and must not look like two
     // different features (Jonny, on device: "the tool call log and the new tool call kind of
@@ -256,6 +257,18 @@ fun ToolTheaterRun(
             )
         } else if (n > 0) {
             append(if (active) "Running $n ${plural(n)}…" else "Ran $n ${plural(n)}")
+        } else if (wings.isNotEmpty()) {
+            // A wings-only run (a background fan-out's dispatch or its landed report): the
+            // rail says what it is; the header just counts.
+            val flying = wings.count { it.running }
+            append(
+                when {
+                    flying > 0 && wings.size > 1 -> "$flying of ${wings.size} subagents running"
+                    flying > 0 -> "Subagent running"
+                    wings.size > 1 -> "Delegated ${wings.size} tasks"
+                    else -> "Delegated a task"
+                },
+            )
         } else {
             append(if (active) "Working…" else "$steps output ${if (steps == 1) "step" else "steps"}")
         }
@@ -332,8 +345,21 @@ fun ToolTheaterRun(
                                 run.entries.getOrNull(i + 1) is ToolRunEntry.Note
                         }.mapTo(HashSet()) { it + 1 }
                     }
+                    // Consecutive wings are one dispatch — one rail, not one header per wing.
+                    var wingGroupStart = -1
                     run.entries.forEachIndexed { i, entry ->
                         if (i in consumed) return@forEachIndexed
+                        if (entry is ToolRunEntry.Delegated) {
+                            if (wingGroupStart < 0) {
+                                wingGroupStart = i
+                                val group = run.entries.drop(i)
+                                    .takeWhile { it is ToolRunEntry.Delegated }
+                                    .map { (it as ToolRunEntry.Delegated).run }
+                                DelegationWings(group, live = active, baseColor = baseColor, onOpen = null)
+                            }
+                            return@forEachIndexed
+                        }
+                        wingGroupStart = -1
                         when (entry) {
                             is ToolRunEntry.Call -> ToolTheaterRow(
                                 entry.call,
@@ -366,6 +392,7 @@ fun ToolTheaterRun(
                                 fontFamily = FontFamily.Monospace,
                                 modifier = Modifier.padding(start = 8.dp, top = 2.dp, bottom = 2.dp),
                             )
+                            is ToolRunEntry.Delegated -> Unit // drawn as a wing group above
                         }
                     }
                 }
