@@ -359,6 +359,47 @@ class ChatViewModel(
         },
         toast = { _toasts.tryEmit(it) },
     )
+    // --- Direct-transport instruments (the harvest, plan §5). Null/quiet on Matrix. ---
+    private val direct get() = transport as? chat.keryx.app.transport.direct.DirectTransport
+
+    /** The agent is stopped on a tool approval in the open room (direct path only). */
+    val pendingApproval: StateFlow<chat.keryx.core.model.ApprovalRequest?> =
+        _currentRoom.flatMapLatest { r ->
+            val d = direct
+            if (r == null || d == null) flowOf(null) else d.pendingApproval(r.id)
+        }.stateIn(viewModelScope, SharingStarted.Lazily, null)
+
+    /** The agent is stopped on a question / sudo / secret in the open room (direct path only). */
+    val pendingBlocking: StateFlow<chat.keryx.core.model.BlockingRequest?> =
+        _currentRoom.flatMapLatest { r ->
+            val d = direct
+            if (r == null || d == null) flowOf(null) else d.pendingBlocking(r.id)
+        }.stateIn(viewModelScope, SharingStarted.Lazily, null)
+
+    /** The agent's own todo plan for the open room — the Flight Plan strip's fuel. */
+    val flightPlan: StateFlow<chat.keryx.core.model.TodoPlan?> =
+        _currentRoom.flatMapLatest { r ->
+            val d = direct
+            if (r == null || d == null) flowOf(null) else d.todoPlan(r.id)
+        }.stateIn(viewModelScope, SharingStarted.Lazily, null)
+
+    fun respondApproval(choice: String) {
+        val room = _currentRoom.value ?: return
+        viewModelScope.launch {
+            direct?.respondApproval(room.id, choice)
+                ?.onSuccess { resolved -> if (!resolved) _toasts.tryEmit("Approval had already expired") }
+                ?.onFailure { _toasts.tryEmit("Approval failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    fun respondBlocking(request: chat.keryx.core.model.BlockingRequest, answer: String) {
+        val room = _currentRoom.value ?: return
+        viewModelScope.launch {
+            direct?.respondBlocking(room.id, request.requestId, request.kind, answer)
+                ?.onFailure { _toasts.tryEmit("Reply failed: ${it.message?.take(80)}") }
+        }
+    }
+
     val hub = HubDelegate(deps)
     val pet = PetDelegate(deps)
     val missions = MissionsDelegate(deps) { _rooms.value }
