@@ -49,7 +49,6 @@ import chat.keryx.app.domain.model.RoomProfile
 import chat.keryx.app.domain.model.RoomSigil
 import chat.keryx.app.domain.model.RoomSigils
 import chat.keryx.app.domain.model.RoomType
-import chat.keryx.app.domain.model.Session
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.ui.components.KeryxRadius
 import chat.keryx.app.presentation.ui.components.RoomSigilAvatar
@@ -58,7 +57,7 @@ import chat.keryx.app.theme.*
 @Composable
 fun NavigationDrawerContent(
     viewModel: ChatViewModel,
-    onSessionSelected: (Session) -> Unit,
+    onRoomSelected: (RoomProfile) -> Unit,
     // Full-screen places (Missions, Archive) open on the nav stack owned by the host — the
     // drawer only asks; it never composes a space itself (2.0 Phase 1).
     onOpenSpace: (chat.keryx.app.presentation.ui.nav.KeryxDest) -> Unit,
@@ -70,7 +69,7 @@ fun NavigationDrawerContent(
     val rooms by viewModel.rooms.collectAsState()
     val pinnedRoomIds by viewModel.pinnedRoomIds.collectAsState()
     val currentUserId by viewModel.currentUserId.collectAsState()
-    val currentSession by viewModel.currentSession.collectAsState()
+    val currentRoom by viewModel.currentRoom.collectAsState()
     val isDarkTheme by viewModel.isDarkTheme.collectAsState()
 
     // Image picker for setting a Quick Room's avatar (server-side m.room.avatar).
@@ -90,9 +89,6 @@ fun NavigationDrawerContent(
     
     // Settings is a nav destination now (2.0 Phase 4) — see SettingsPlace.
     
-    // Each Matrix room is its own conversation -> one session per room.
-    fun sessionFor(room: RoomProfile) = Session(room.id, room.id, room.name, 0L)
-
     ModalDrawerSheet(
         drawerContainerColor = MaterialTheme.colorScheme.surface,
         drawerContentColor = MaterialTheme.colorScheme.onSurface,
@@ -239,8 +235,8 @@ fun NavigationDrawerContent(
                     item {
                         chat.keryx.app.presentation.ui.components.QuickRoomsDeck(
                             rooms = pinned,
-                            selectedRoomId = currentSession?.id,
-                            onRoomClick = { onSessionSelected(sessionFor(it)) },
+                            selectedRoomId = currentRoom?.id,
+                            onRoomClick = { onRoomSelected(it) },
                             avatarLoader = { viewModel.loadAvatar(it) },
                             // Long-press a Quick Room to pin/unpin it — consistent with the
                             // room list below. Setting a room photo lives on the avatar
@@ -269,9 +265,9 @@ fun NavigationDrawerContent(
                 items(listRooms, key = { it.id }) { room ->
                     RoomRow(
                         room = room,
-                        isSelected = currentSession?.id == room.id,
+                        isSelected = currentRoom?.id == room.id,
                         isPinned = room.id in pinnedRoomIds,
-                        onClick = { onSessionSelected(sessionFor(room)) },
+                        onClick = { onRoomSelected(room) },
                         onTogglePin = { viewModel.togglePin(room.id) },
                         onSetAvatar = {
                             pendingAvatarRoomId = room.id

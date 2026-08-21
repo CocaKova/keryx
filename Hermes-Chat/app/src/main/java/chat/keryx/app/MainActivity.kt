@@ -135,9 +135,9 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
         // Keep KeryxApp's "currently open room" in sync so we don't notify for the room on screen,
         // and clear that room's notification when it's opened.
         lifecycleScope.launch {
-            viewModel.currentSession.collectLatest { session ->
-                app.openRoomId = session?.id
-                session?.id?.let { KeryxNotifications.clear(applicationContext, it) }
+            viewModel.currentRoom.collectLatest { room ->
+                app.openRoomId = room?.id
+                room?.id?.let { KeryxNotifications.clear(applicationContext, it) }
             }
         }
 

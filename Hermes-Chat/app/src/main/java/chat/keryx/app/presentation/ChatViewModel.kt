@@ -7,7 +7,6 @@ import chat.keryx.app.domain.model.Message
 import chat.keryx.app.domain.model.MessageReaction
 import chat.keryx.app.domain.model.RoomProfile
 import chat.keryx.app.domain.model.SenderType
-import chat.keryx.app.domain.model.Session
 import chat.keryx.app.domain.repository.ChatRepository
 import chat.keryx.app.domain.repository.SettingsRepository
 import chat.keryx.app.presentation.ui.components.MessageParser
@@ -174,15 +173,15 @@ class ChatViewModel(
     private val _invites = MutableStateFlow<List<chat.keryx.app.domain.model.RoomInvite>>(emptyList())
     val invites: StateFlow<List<chat.keryx.app.domain.model.RoomInvite>> = _invites.asStateFlow()
 
-    private val _currentSession = MutableStateFlow<Session?>(null)
-    val currentSession: StateFlow<Session?> = _currentSession.asStateFlow()
+    private val _currentRoom = MutableStateFlow<RoomProfile?>(null)
+    val currentRoom: StateFlow<RoomProfile?> = _currentRoom.asStateFlow()
 
     // How many timeline events to load for the open room; grows as the user scrolls into history.
     private val _timelineLimit = MutableStateFlow(INITIAL_LIMIT)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val messages: StateFlow<List<Message>> =
-        combine(_currentSession.filterNotNull(), _timelineLimit) { session, limit -> session.id to limit }
+        combine(_currentRoom.filterNotNull(), _timelineLimit) { room, limit -> room.id to limit }
             .flatMapLatest { (sessionId, limit) -> repository.getMessages(sessionId, limit) }
             .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
@@ -1455,15 +1454,15 @@ class ChatViewModel(
                     val room = roomList.firstOrNull { it.id == pending }
                     if (room != null) {
                         pendingOpenRoomId = null
-                        selectSession(Session(room.id, room.id, room.name, 0L))
+                        selectRoom(room)
                         return@collectLatest
                     }
                 }
                 // Restore the last open conversation once rooms are available.
-                if (_currentSession.value == null) {
+                if (_currentRoom.value == null) {
                     val lastId = settingsRepository.lastRoomId
                     val room = roomList.firstOrNull { it.id == lastId }
-                    if (room != null) _currentSession.value = Session(room.id, room.id, room.name, 0L)
+                    if (room != null) _currentRoom.value = room
                 }
             }
         }
@@ -1485,11 +1484,11 @@ class ChatViewModel(
                 // Classify this emission relative to the last one we saw. Crossing into another
                 // room gets first-open semantics (recency-guarded openedMidRun), NOT "new message"
                 // — an old conversation that merely ended on a tool call must not light the banner.
-                val roomChanged = lastSeenRoomId != last.sessionId
+                val roomChanged = lastSeenRoomId != last.roomId
                 val firstEval = lastSeenId == null || roomChanged
                 val isNewMsg = !firstEval && last.id != lastSeenId
                 val grew = !firstEval && last.id == lastSeenId && last.content.length > lastSeenLen
-                lastSeenRoomId = last.sessionId
+                lastSeenRoomId = last.roomId
                 lastSeenId = last.id
                 lastSeenLen = last.content.length
 
@@ -1506,7 +1505,7 @@ class ChatViewModel(
                     // same frame its real timeline event renders — that's the seamless swap. Reply
                     // echoes may carry a quote-fallback prefix, so suffix match is accepted too.
                     val pending = _pendingSend.value
-                    if (pending != null && last.sessionId == pending.roomId &&
+                    if (pending != null && last.roomId == pending.roomId &&
                         pendingEchoMatches(last.content, pending.text)
                     ) clearPendingSend()
                     return@collect
@@ -1534,7 +1533,7 @@ class ChatViewModel(
                 // filtered explicitly, and background rooms stay silent.
                 if (_ttsAutoSpeak.value && isNewMsg && !midRun && !last.isStreaming &&
                     last.sender == SenderType.HERMES &&
-                    last.sessionId == _currentSession.value?.id &&
+                    last.roomId == _currentRoom.value?.id &&
                     last.id != lastAutoSpokenId &&
                     !chat.keryx.app.presentation.ui.components.MessageParser.isTelemetryMessage(last.content)
                 ) {
@@ -1578,7 +1577,7 @@ class ChatViewModel(
             .asSequence()
             .dropWhile { it.id == latest.id }
             .firstOrNull {
-                it.sessionId == latest.sessionId &&
+                it.roomId == latest.roomId &&
                     it.sender == SenderType.HERMES &&
                     it.content.isNotBlank() &&
                     !MessageParser.isTelemetryMessage(it.content)
@@ -1593,7 +1592,7 @@ class ChatViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeTyping() {
         viewModelScope.launch {
-            _currentSession
+            _currentRoom
                 .flatMapLatest { s ->
                     if (s == null) flowOf(chat.keryx.app.domain.model.TypingState())
                     else repository.typing(s.id)
@@ -1846,7 +1845,7 @@ class ChatViewModel(
     /** Drop the overlay when its committed Matrix counterpart is in the timeline. */
     private fun maybeHandOffStream(messages: List<Message>, last: Message, isNewMsg: Boolean) {
         val s = _liveStream.value ?: return
-        if (last.sessionId != s.roomId) return
+        if (last.roomId != s.roomId) return
         // Runs on every messages emission during a turn, and normalizing the streamed target is a
         // full uncached parse — skip when neither the stream phase nor the candidate window (last
         // 8 non-ME messages in this room, by id + length) has changed since the last evaluation.
@@ -1854,7 +1853,7 @@ class ChatViewModel(
         var seen = 0
         for (i in messages.indices.reversed()) {
             val m = messages[i]
-            if (m.sessionId != s.roomId || m.sender == SenderType.ME) continue
+            if (m.roomId != s.roomId || m.sender == SenderType.ME) continue
             fingerprint = fingerprint * 31 + m.id.hashCode()
             fingerprint = fingerprint * 31 + m.content.length
             if (++seen == 8) break
@@ -1873,7 +1872,7 @@ class ChatViewModel(
                     val normalizedTarget = StreamHandoff.normalize(target, cacheable = false)
                     val matched = normalizedTarget.isNotEmpty() && messages.asReversed()
                         .asSequence()
-                        .filter { it.sessionId == s.roomId && it.sender != SenderType.ME }
+                        .filter { it.roomId == s.roomId && it.sender != SenderType.ME }
                         .filterNot { MessageParser.isTelemetryMessage(it.content) }
                         .take(8)
                         .any { StreamHandoff.matchesNormalized(it.content, normalizedTarget) }
@@ -1887,7 +1886,7 @@ class ChatViewModel(
             LiveStreamStatus.AWAITING_SYNC -> {
                 val recentHermes = messages.asReversed()
                     .asSequence()
-                    .filter { it.sessionId == s.roomId && it.sender != SenderType.ME }
+                    .filter { it.roomId == s.roomId && it.sender != SenderType.ME }
                     .take(8)
                     .toList()
                 val target = s.finalText ?: s.matchText
@@ -1921,12 +1920,12 @@ class ChatViewModel(
     /** Open a room by id (from a notification tap). Defers until the room list is loaded if needed. */
     fun openRoomById(roomId: String) {
         val room = _rooms.value.firstOrNull { it.id == roomId }
-        if (room != null) selectSession(Session(room.id, room.id, room.name, 0L))
+        if (room != null) selectRoom(room)
         else pendingOpenRoomId = roomId
     }
 
-    fun selectSession(session: Session) {
-        _currentSession.value = session
+    fun selectRoom(room: RoomProfile) {
+        _currentRoom.value = room
         limitDecayJob?.cancel()
         limitDecayJob = null
         _timelineLimit.value = INITIAL_LIMIT
@@ -1950,10 +1949,10 @@ class ChatViewModel(
         // The old room's reaction flows are all unsubscribed now — drop them rather than letting
         // them age out of the LRU while the new room fills it.
         synchronized(reactionFlows) { reactionFlows.clear() }
-        settingsRepository.lastRoomId = session.id
+        settingsRepository.lastRoomId = room.id
         _typingHumans.value = emptyList()
         // Warm the member store so sender display names resolve in cold group rooms.
-        viewModelScope.launch { repository.ensureMembersLoaded(session.id) }
+        viewModelScope.launch { repository.ensureMembersLoaded(room.id) }
         // The bookmark state in the bubble menu belongs to the room being opened.
         _savedIds.value = emptySet()
         refreshSavedIds()
@@ -2098,7 +2097,7 @@ class ChatViewModel(
         }
 
     fun sendReaction(eventId: String, emoji: String) {
-        val session = _currentSession.value ?: return
+        val session = _currentRoom.value ?: return
         viewModelScope.launch { repository.react(session.id, eventId, emoji) }
     }
 
@@ -2185,7 +2184,7 @@ class ChatViewModel(
         _commandMenuVisible.value = text.startsWith("/") && !text.contains(' ')
         if (text.startsWith("/")) _commandFilter.value = text.removePrefix("/").substringBefore(' ')
         // Keep the per-room draft current so an app kill / room switch never loses typed text.
-        _currentSession.value?.id?.let { settingsRepository.setDraft(it, text) }
+        _currentRoom.value?.id?.let { settingsRepository.setDraft(it, text) }
         broadcastTyping(text)
     }
 
@@ -2202,7 +2201,7 @@ class ChatViewModel(
     }
 
     fun sendAttachment(bytes: ByteArray, fileName: String, contentType: String, caption: String? = null) {
-        val session = _currentSession.value ?: return
+        val session = _currentRoom.value ?: return
         viewModelScope.launch { repository.sendAttachment(session.id, bytes, fileName, contentType, caption) }
     }
 
@@ -2242,7 +2241,7 @@ class ChatViewModel(
     }
 
     fun sendMessage(content: String) {
-        val session = _currentSession.value ?: return
+        val session = _currentRoom.value ?: return
         val replyTo = _replyTarget.value
         _awaitingReply.value = true
         _workStartedAt.value = System.currentTimeMillis()
@@ -2285,7 +2284,7 @@ class ChatViewModel(
     /** Throttled m.typing broadcast driven by composer text changes. A refresh every ~4s keeps the
      *  30s server-side timeout alive while composing; clearing the composer stops it eagerly. */
     private fun broadcastTyping(text: String) {
-        val room = _currentSession.value?.id ?: return
+        val room = _currentRoom.value?.id ?: return
         val now = System.currentTimeMillis()
         if (text.isBlank()) {
             stopTypingBroadcast(room)
@@ -2365,10 +2364,10 @@ class ChatViewModel(
                     _toasts.tryEmit("Left room")
                     if (settingsRepository.lastRoomId == roomId) settingsRepository.lastRoomId = null
                     // Move off the dead room so the chat pane never points at a membership we lost.
-                    if (_currentSession.value?.id == roomId) {
+                    if (_currentRoom.value?.id == roomId) {
                         val next = _rooms.value.firstOrNull { it.id != roomId }
-                        if (next != null) selectSession(Session(next.id, next.id, next.name, 0L))
-                        else _currentSession.value = null
+                        if (next != null) selectRoom(next)
+                        else _currentRoom.value = null
                     }
                 }
                 .onFailure { _toasts.tryEmit("Leave failed: ${it.message?.take(80)}") }
@@ -2396,7 +2395,7 @@ class ChatViewModel(
     fun logout() {
         viewModelScope.launch {
             settingsRepository.lastRoomId = null
-            _currentSession.value = null
+            _currentRoom.value = null
             repository.logout()
         }
     }
@@ -2554,7 +2553,7 @@ class ChatViewModel(
     val savedIds: StateFlow<Set<String>> = _savedIds.asStateFlow()
 
     fun refreshSavedIds() {
-        val roomId = _currentSession.value?.id ?: return
+        val roomId = _currentRoom.value?.id ?: return
         val store = archiveStore ?: return
         viewModelScope.launch(Dispatchers.IO) { _savedIds.value = store.savedIds(roomId) }
     }
@@ -2562,44 +2561,44 @@ class ChatViewModel(
     /** Kick an index sweep of the open room. First ever run is the big backfill; later runs catch
      *  up on what's new and stop. Safe to call every time the Archive opens. */
     fun startArchiveSweep() {
-        val roomId = _currentSession.value?.id ?: return
+        val roomId = _currentRoom.value?.id ?: return
         archiveIndexer?.sweep(viewModelScope, roomId)
     }
 
     suspend fun archiveSearch(query: String): List<chat.keryx.app.data.archive.ArchiveStore.Hit> {
-        val roomId = _currentSession.value?.id ?: return emptyList()
+        val roomId = _currentRoom.value?.id ?: return emptyList()
         val store = archiveStore ?: return emptyList()
         return withContext(Dispatchers.IO) { store.search(roomId, query) }
     }
 
     suspend fun archiveMedia(): List<chat.keryx.app.data.archive.ArchiveStore.Entry> {
-        val roomId = _currentSession.value?.id ?: return emptyList()
+        val roomId = _currentRoom.value?.id ?: return emptyList()
         val store = archiveStore ?: return emptyList()
         return withContext(Dispatchers.IO) { store.media(roomId) }
     }
 
     suspend fun archiveSaved(): List<chat.keryx.app.data.archive.ArchiveStore.Entry> {
-        val roomId = _currentSession.value?.id ?: return emptyList()
+        val roomId = _currentRoom.value?.id ?: return emptyList()
         val store = archiveStore ?: return emptyList()
         return withContext(Dispatchers.IO) { store.saved(roomId) }
     }
 
     /** Oldest→newest indexed timestamps for the open room (bounds the date picker). */
     suspend fun archiveTimeSpan(): Pair<Long, Long>? {
-        val roomId = _currentSession.value?.id ?: return null
+        val roomId = _currentRoom.value?.id ?: return null
         val store = archiveStore ?: return null
         return withContext(Dispatchers.IO) { store.timeSpan(roomId) }
     }
 
     suspend fun archiveEventForDate(dayStartMillis: Long): String? {
-        val roomId = _currentSession.value?.id ?: return null
+        val roomId = _currentRoom.value?.id ?: return null
         val store = archiveStore ?: return null
         return withContext(Dispatchers.IO) { store.eventForDate(roomId, dayStartMillis) }
     }
 
     /** History around an event for the Archive's context view (server-fetches gaps, bounded). */
     suspend fun archiveContext(eventId: String, before: Int = 25, after: Int = 25): List<Message> {
-        val roomId = _currentSession.value?.id ?: return emptyList()
+        val roomId = _currentRoom.value?.id ?: return emptyList()
         return runCatching { repository.messagesAround(roomId, eventId, before, after) }
             .onFailure { android.util.Log.w("KeryxArchive", "context load failed: ${it.message}") }
             .getOrDefault(emptyList())
@@ -2617,7 +2616,7 @@ class ChatViewModel(
                 store.addSaved(
                     chat.keryx.app.data.archive.ArchiveStore.Entry(
                         eventId = message.id,
-                        roomId = message.sessionId,
+                        roomId = message.roomId,
                         sender = message.senderId.ifBlank { message.senderName },
                         timestamp = message.timestamp,
                         mediaKind = message.mediaKind?.name,
@@ -2631,7 +2630,7 @@ class ChatViewModel(
                     )
                 )
             }
-            _savedIds.value = store.savedIds(message.sessionId)
+            _savedIds.value = store.savedIds(message.roomId)
             _toasts.tryEmit(if (kept) "Removed from Saved" else "Kept — find it in the Archive")
         }
     }

@@ -129,7 +129,7 @@ internal fun StatusTab(
     val models by viewModel.hubModels.collectAsState()
     val console by viewModel.console.collectAsState()
     val caps by viewModel.reasoningCaps.collectAsState()
-    val currentSession by viewModel.currentSession.collectAsState()
+    val currentRoom by viewModel.currentRoom.collectAsState()
     val accent = MaterialTheme.colorScheme.primary
 
     LazyColumn(contentPadding = androidx.compose.foundation.layout.PaddingValues(
@@ -293,7 +293,7 @@ internal fun StatusTab(
                 Triple("/compress", "Compress", "Summarize this thread to free context"),
                 Triple("/handoff", "Handoff", "Carry context into a new session"),
             )
-            val haveRoom = currentSession != null
+            val haveRoom = currentRoom != null
             actions.forEach { (cmd, title, desc) ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -336,7 +336,7 @@ internal fun StatusTab(
 @Composable
 internal fun JobsTab(viewModel: ChatViewModel) {
     val panel by viewModel.hubJobs.collectAsState()
-    val currentSession by viewModel.currentSession.collectAsState()
+    val currentRoom by viewModel.currentRoom.collectAsState()
     var createOpen by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<HubJob?>(null) }
     var editTarget by remember { mutableStateOf<HubJob?>(null) }
@@ -386,7 +386,7 @@ internal fun JobsTab(viewModel: ChatViewModel) {
 
     if (createOpen) {
         JobCreateDialog(
-            currentRoomId = currentSession?.id,
+            currentRoomId = currentRoom?.id,
             onCreate = { name, schedule, prompt, deliver ->
                 viewModel.hubJobCreate(name, schedule, prompt, deliver)
                 createOpen = false

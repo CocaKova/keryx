@@ -189,7 +189,7 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
                         payload.uris.forEachIndexed { i, uri ->
                             val (bytes, name, mime) = readShared(uri)
                             app.repository.sendAttachment(
-                                sessionId = roomId,
+                                roomId = roomId,
                                 bytes = bytes,
                                 fileName = name,
                                 contentType = mime,

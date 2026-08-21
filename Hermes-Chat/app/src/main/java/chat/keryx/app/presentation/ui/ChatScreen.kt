@@ -137,7 +137,7 @@ fun ChatScreen(
 ) {
     val messages by viewModel.messages.collectAsState()
     val rooms by viewModel.rooms.collectAsState()
-    val currentSession by viewModel.currentSession.collectAsState()
+    val currentRoom by viewModel.currentRoom.collectAsState()
     val bubbleStyle by viewModel.bubbleStyle.collectAsState()
     val animationStyle by viewModel.animationStyle.collectAsState()
     val messageTextScale by viewModel.messageTextScale.collectAsState()
@@ -187,7 +187,7 @@ fun ChatScreen(
     val recentCommands by viewModel.recentCommands.collectAsState()
     val commandFilter by viewModel.commandFilter.collectAsState()
 
-    val isGroupRoom = rooms.firstOrNull { it.id == currentSession?.id }?.type == RoomType.SHARED_GROUP
+    val isGroupRoom = rooms.firstOrNull { it.id == currentRoom?.id }?.type == RoomType.SHARED_GROUP
     // reverseLayout: index 0 is the newest message, pinned to the bottom.
     val ordered = messages.asReversed()
     // Quote lookups only: the old full id→message map was rebuilt on every emission and held
@@ -218,14 +218,14 @@ fun ChatScreen(
     val newestToolRunKey = remember(renderItems) {
         renderItems.firstOrNull { it is ChatRenderItem.ToolRun }?.key
     }
-    val lastTurnBeats = lastTurn?.takeIf { it.first == currentSession?.id }?.second?.beats.orEmpty()
+    val lastTurnBeats = lastTurn?.takeIf { it.first == currentRoom?.id }?.second?.beats.orEmpty()
     // A landed subagent the reader asked to see inside (2.4).
     var openSubagent by remember { mutableStateOf<chat.keryx.app.domain.model.Delegation?>(null) }
 
     // Restore this room's unsent draft when it opens (and swap drafts when switching rooms) so
     // half-typed thoughts survive room hops and app restarts.
-    LaunchedEffect(currentSession?.id) {
-        val roomId = currentSession?.id ?: return@LaunchedEffect
+    LaunchedEffect(currentRoom?.id) {
+        val roomId = currentRoom?.id ?: return@LaunchedEffect
         val draft = viewModel.draftFor(roomId)
         textState = TextFieldValue(draft, selection = TextRange(draft.length))
         viewModel.onComposerTextChanged(draft)
@@ -238,8 +238,8 @@ fun ChatScreen(
     var lastRoomForDissolve by remember { mutableStateOf<String?>(null) }
     val dissolve = remember { Animatable(1f) }
     val dissolveReduced by chat.keryx.app.presentation.ui.components.rememberReducedMotion()
-    LaunchedEffect(currentSession?.id) {
-        val id = currentSession?.id
+    LaunchedEffect(currentRoom?.id) {
+        val id = currentRoom?.id
         if (dissolveReduced) {
             dissolve.snapTo(1f)
             lastRoomForDissolve = id
@@ -353,7 +353,7 @@ fun ChatScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
-    LaunchedEffect(currentSession?.id) { tts.stop() }
+    LaunchedEffect(currentRoom?.id) { tts.stop() }
 
     fun speakMessage(message: Message) {
         val text = chat.keryx.app.presentation.TtsText.speakable(message.content)
@@ -425,8 +425,8 @@ fun ChatScreen(
     }
 
     // Send a read receipt for the latest message while viewing this room (clears unread).
-    LaunchedEffect(currentSession?.id, messages.lastOrNull()?.id) {
-        val roomId = currentSession?.id
+    LaunchedEffect(currentRoom?.id, messages.lastOrNull()?.id) {
+        val roomId = currentRoom?.id
         val lastId = messages.lastOrNull()?.id
         if (roomId != null && lastId != null) viewModel.markRoomRead(roomId, lastId)
     }
@@ -462,7 +462,7 @@ fun ChatScreen(
                 // out and inside the message body, so it is E2EE-wrapped like everything else and
                 // the gateway needs no change. Self-guards: off by default, never on a slash
                 // command, at most once per room per half hour unless something actually changed.
-                val outgoing = currentSession
+                val outgoing = currentRoom
                     ?.let { chat.keryx.app.senses.KeryxSenses.decorateOutgoing(context, it.id, text) }
                     ?: text
                 viewModel.sendMessage(outgoing)
@@ -474,7 +474,7 @@ fun ChatScreen(
 
     // Background is supplied app-wide (gradient lives in HermesApp); keep this surface transparent.
     Box(modifier = modifier.fillMaxSize().imePadding()) {
-        if (currentSession == null) {
+        if (currentRoom == null) {
             EmptyChat(modifier = Modifier.align(Alignment.Center))
         }
         // Reserve space at the bottom equal to the (growing) composer height so messages never
@@ -503,7 +503,7 @@ fun ChatScreen(
             // While side-channel tokens are visible the streaming bubble takes the slot; the
             // quips indicator covers the silent phases (connecting, reasoning, tools).
             val stream = liveStream
-            val streamVisible = stream != null && stream.roomId == currentSession?.id &&
+            val streamVisible = stream != null && stream.roomId == currentRoom?.id &&
                 (stream.text.isNotBlank() || stream.reasoning.isNotBlank() ||
                     stream.status == chat.keryx.app.presentation.LiveStreamStatus.INTERRUPTED)
             if (streamVisible && stream != null) {
@@ -545,7 +545,7 @@ fun ChatScreen(
             val echoLanded = pending != null && messages.lastOrNull()?.let {
                 it.sender == SenderType.ME && ChatViewModel.pendingEchoMatches(it.content, pending.text)
             } == true
-            if (pending != null && pending.roomId == currentSession?.id && !echoLanded) {
+            if (pending != null && pending.roomId == currentRoom?.id && !echoLanded) {
                 item(key = "pendingsend") {
                     Box(modifier = Modifier.animateItem()) {
                         PendingSendBubble(
@@ -602,7 +602,7 @@ fun ChatScreen(
                             }
                             // Live reactions: updates the moment anyone adds/removes one — no manual refresh.
                             val reactionsFlow = remember(message.id) {
-                                viewModel.reactionsFlow(message.sessionId, message.id)
+                                viewModel.reactionsFlow(message.roomId, message.id)
                             }
                             // Flash halo when this message is the target of a quote-jump.
                             val flashed = flashMessageId == message.id
@@ -627,13 +627,13 @@ fun ChatScreen(
                                 reactionsFlow = reactionsFlow,
                                 // Resolve media by event id in the repo, which handles both plaintext
                                 // (mxc) and E2EE-encrypted files and falls back to the thumbnail.
-                                mediaLoader = { viewModel.loadMessageMedia(message.sessionId, message.id) },
+                                mediaLoader = { viewModel.loadMessageMedia(message.roomId, message.id) },
                                 onReply = { viewModel.setReplyTarget(message) },
                                 onReact = { emoji -> viewModel.sendReaction(message.id, emoji) },
                                 onQuoteClick = quotedId?.let { target -> { jumpToMessage(target) } },
                                 // Redaction: own messages only — the agent's power level owns the rest.
                                 onDelete = if (message.sender == SenderType.ME) {
-                                    { viewModel.deleteMessage(message.sessionId, message.id) }
+                                    { viewModel.deleteMessage(message.roomId, message.id) }
                                 } else null,
                                 kept = savedIds.contains(message.id),
                                 onToggleKeep = if (viewModel.archiveAvailable) {
@@ -789,7 +789,7 @@ fun ChatScreen(
                 onMicTap = ::onMicTap,
                 caps = composerCaps,
                 contextUsage = composerUsage,
-                roomId = currentSession?.id,
+                roomId = currentRoom?.id,
                 brains = hubBrainsPanel.data,
                 onReasoningCommand = { viewModel.sendReasoningCommand(it) },
                 onBrainSelect = { viewModel.hubBrainSelect(it) },
@@ -807,7 +807,7 @@ fun ChatScreen(
         // One light for the whole beat: the gleam and the wake below it are the same hue, the one
         // the arriving room wears in the drawer. Two different accents crossing the same 1.2s was
         // most of why this read as assembled rather than composed.
-        val arrivingRoom = currentSession?.title.orEmpty()
+        val arrivingRoom = currentRoom?.name.orEmpty()
         val arrivingLight =
             if (arrivingRoom.isNotBlank()) chat.keryx.app.presentation.ui.components.roomLight(arrivingRoom)
             else MaterialTheme.colorScheme.primary
@@ -837,7 +837,7 @@ fun ChatScreen(
         // plus a live ≈tok/s readout while side-channel tokens are flowing.
         // Pinned at the top so it stays put for the whole run, unlike the per-message tool labels.
         val topTokPerSec = liveStream?.takeIf {
-            it.roomId == currentSession?.id &&
+            it.roomId == currentRoom?.id &&
                 it.status == chat.keryx.app.presentation.LiveStreamStatus.STREAMING
         }?.charsPerSec?.div(4f) ?: 0f
         WorkingStatusBar(

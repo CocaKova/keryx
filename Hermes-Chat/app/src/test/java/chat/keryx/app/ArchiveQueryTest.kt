@@ -102,7 +102,7 @@ class ArchiveQueryTest {
     private fun msg(id: String, content: String, me: Boolean = false, ts: Long = 1L) =
         chat.keryx.app.domain.model.Message(
             id = id,
-            sessionId = "!room:x",
+            roomId = "!room:x",
             sender = if (me) chat.keryx.app.domain.model.SenderType.ME
             else chat.keryx.app.domain.model.SenderType.HERMES,
             content = content,

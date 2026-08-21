@@ -10,7 +10,6 @@ import chat.keryx.app.domain.model.RoomProfile
 import chat.keryx.app.domain.model.RoomSigils
 import chat.keryx.app.domain.model.RoomType
 import chat.keryx.app.domain.model.SenderType
-import chat.keryx.app.domain.model.Session
 import chat.keryx.app.domain.model.TypingState
 import chat.keryx.app.domain.repository.ChatRepository
 import chat.keryx.app.domain.repository.SettingsRepository
@@ -59,7 +58,16 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * Bridges the app's domain layer onto the Trixnity Matrix SDK (via [MatrixService]).
- * In Matrix a room *is* the conversation, so each room maps to one [Session].
+ *
+ * In Matrix a room *is* the conversation, and this used to be said with a `Session` type that
+ * wrapped one — every construction of it in the codebase was `Session(room.id, room.id,
+ * room.name, 0L)`, and `getSessions(roomId)` returned a one-element list holding the room it was
+ * handed. It named nothing the room did not already name.
+ *
+ * The word is now reserved for what the gateway means by it: a real agent session, the thing
+ * `/keryx/sessions/prune` prunes and a delegated subagent runs inside. Two meanings for one noun
+ * is a bill that comes due when a second transport arrives, so a room id is called [roomId] here
+ * and nowhere is it called a session.
  */
 @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
 class ChatRepositoryImpl(
@@ -132,18 +140,13 @@ class ChatRepositoryImpl(
         }.catch { emit(emptyMap()) }
     }
 
-    override fun getSessions(roomId: String): Flow<List<Session>> =
-        getRooms().map { rooms ->
-            rooms.filter { it.id == roomId }.map { Session(it.id, it.id, it.name, 0L) }
-        }
-
-    override fun getMessages(sessionId: String, limit: Int): Flow<List<Message>> {
-        val roomId = RoomId(sessionId)
+    override fun getMessages(roomId: String, limit: Int): Flow<List<Message>> {
+        val roomId = RoomId(roomId)
         val agentId = settingsRepository.agentMatrixId
         // Re-learn this room's display names on each (re)build of the pipeline (room open,
         // pagination limit change) — bounds how stale a rename can get while keeping the
         // steady-state name pass subscription-free (see withSenderNames).
-        senderNames.keys.removeAll { it.startsWith("$sessionId|") }
+        senderNames.keys.removeAll { it.startsWith("$roomId|") }
         return matrix.client.flatMapLatest { client ->
             if (client == null) flowOf(emptyList())
             else {
@@ -187,7 +190,7 @@ class ChatRepositoryImpl(
             // (e.g. after heavy m.replace edit-streaming). That used to crash the whole app on launch
             // when restoring the offending room. Swallow it so the room degrades to empty instead.
             .catch { e ->
-                android.util.Log.e("KeryxTimeline", "timeline flow failed for $sessionId: ${e.message}", e)
+                android.util.Log.e("KeryxTimeline", "timeline flow failed for $roomId: ${e.message}", e)
                 emit(emptyList())
             }
             // Every NEW timeline event re-emits the paging flow, so flatMapLatest tears the inner
@@ -218,9 +221,9 @@ class ChatRepositoryImpl(
      *  completes on its own — it waits for future events). */
     private class EndOfTimeline : Exception()
 
-    override suspend fun messagesAround(sessionId: String, eventId: String, before: Int, after: Int): List<Message> {
+    override suspend fun messagesAround(roomId: String, eventId: String, before: Int, after: Int): List<Message> {
         val client = matrix.client.value ?: return emptyList()
-        val roomId = RoomId(sessionId)
+        val roomId = RoomId(roomId)
         val myId = client.userId.full
         val agentId = settingsRepository.agentMatrixId
         val legacyAgentRoom = legacyAgentRoomOf(
@@ -300,14 +303,14 @@ class ChatRepositoryImpl(
         }
     }
 
-    override suspend fun sendMessage(sessionId: String, content: String) {
+    override suspend fun sendMessage(roomId: String, content: String) {
         val client = matrix.client.value ?: return
-        client.room.sendMessage(RoomId(sessionId)) { text(content) }
+        client.room.sendMessage(RoomId(roomId)) { text(content) }
     }
 
-    override suspend fun sendReply(sessionId: String, content: String, replyToEventId: String) {
+    override suspend fun sendReply(roomId: String, content: String, replyToEventId: String) {
         val client = matrix.client.value ?: return
-        val roomId = RoomId(sessionId)
+        val roomId = RoomId(roomId)
         val target = runCatching {
             client.room.getTimelineEvent(roomId, EventId(replyToEventId)).first()
         }.getOrNull()
@@ -317,9 +320,9 @@ class ChatRepositoryImpl(
         }
     }
 
-    override suspend fun react(sessionId: String, eventId: String, emoji: String) {
+    override suspend fun react(roomId: String, eventId: String, emoji: String) {
         val client = matrix.client.value ?: return
-        val roomId = RoomId(sessionId)
+        val roomId = RoomId(roomId)
         val myId = client.userId.full
         // If we already reacted with this emoji, redact that reaction (toggle off); otherwise add it.
         val mine = runCatching {
@@ -337,11 +340,11 @@ class ChatRepositoryImpl(
         }
     }
 
-    override fun reactionsFlow(sessionId: String, eventId: String): Flow<List<MessageReaction>> =
+    override fun reactionsFlow(roomId: String, eventId: String): Flow<List<MessageReaction>> =
         matrix.client.flatMapLatest { client ->
             if (client == null) flowOf(emptyList())
             else {
-                val roomId = RoomId(sessionId)
+                val roomId = RoomId(roomId)
                 val myId = client.userId.full
                 // The set of annotation (reaction) relations updates live as reactions are added or
                 // redacted by anyone — that's what makes incoming reactions appear immediately.
@@ -377,9 +380,9 @@ class ChatRepositoryImpl(
                 emit(emptyList())
             }
 
-    override suspend fun mediaBytes(sessionId: String, eventId: String): ByteArray? {
+    override suspend fun mediaBytes(roomId: String, eventId: String): ByteArray? {
         val client = matrix.client.value ?: return null
-        val roomId = RoomId(sessionId)
+        val roomId = RoomId(roomId)
         return runCatching {
             // Wait (briefly) for the event to resolve to decrypted FileBased content — for E2EE
             // rooms the first emission can arrive before decryption finishes.
@@ -424,14 +427,14 @@ class ChatRepositoryImpl(
         }.onFailure { android.util.Log.w("KeryxMedia", "load failed for $eventId: ${it.message}") }.getOrNull()
     }
 
-    override suspend fun sendAttachment(sessionId: String, bytes: ByteArray, fileName: String, contentType: String, caption: String?) {
+    override suspend fun sendAttachment(roomId: String, bytes: ByteArray, fileName: String, contentType: String, caption: String?) {
         val client = matrix.client.value ?: return
         val ct = ContentType.parse(contentType)
         // MSC2530: with a caption, body carries the user's words and fileName keeps the real name —
         // one event, so Hermes sees the question and the image as a single turn instead of
         // describing the image first and answering from memory after.
         val body = caption?.takeIf { it.isNotBlank() } ?: fileName
-        client.room.sendMessage(RoomId(sessionId)) {
+        client.room.sendMessage(RoomId(roomId)) {
             when (ct.contentType) {
                 "image" -> image(body = body, image = flowOf(bytes), fileName = fileName, type = ct, size = bytes.size.toLong())
                 "video" -> video(body = body, video = flowOf(bytes), fileName = fileName, type = ct, size = bytes.size.toLong())
@@ -440,11 +443,11 @@ class ChatRepositoryImpl(
         }
     }
 
-    override fun typing(sessionId: String): Flow<TypingState> =
+    override fun typing(roomId: String): Flow<TypingState> =
         matrix.client.flatMapLatest { client ->
             if (client == null) flowOf(TypingState())
             else {
-                val roomId = RoomId(sessionId)
+                val roomId = RoomId(roomId)
                 val myId = client.userId
                 val agentId = settingsRepository.agentMatrixId
                 client.room.getById(roomId)
@@ -636,9 +639,9 @@ class ChatRepositoryImpl(
         }
     }
 
-    override suspend fun redactMessage(sessionId: String, eventId: String): Result<Unit> = runCatching {
+    override suspend fun redactMessage(roomId: String, eventId: String): Result<Unit> = runCatching {
         val client = matrix.client.value ?: error("not logged in")
-        client.api.room.redactEvent(RoomId(sessionId), EventId(eventId)).getOrThrow()
+        client.api.room.redactEvent(RoomId(roomId), EventId(eventId)).getOrThrow()
         Unit
     }
 
@@ -709,7 +712,7 @@ class ChatRepositoryImpl(
         } else null
         return Message(
             id = event.id.full,
-            sessionId = event.roomId.full,
+            roomId = event.roomId.full,
             sender = sender,
             // A delivery's content is what the ORIGINATING agent said; the `Message from X:`
             // envelope is addressing, and it belongs to the notice above the bubble (2.3 §2).

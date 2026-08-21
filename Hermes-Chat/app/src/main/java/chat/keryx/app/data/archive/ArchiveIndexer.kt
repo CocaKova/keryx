@@ -247,7 +247,7 @@ class ArchiveIndexer(
         val sender = ev.event.sender.full
         return Message(
             id = ev.event.id.full,
-            sessionId = ev.event.roomId.full,
+            roomId = ev.event.roomId.full,
             sender = if (sender == myId) SenderType.ME else SenderType.HERMES,
             content = body,
             timestamp = ev.event.originTimestamp,
@@ -289,7 +289,7 @@ class ArchiveIndexer(
             if (m.mediaKind == null && body.isBlank()) return null
             return ArchiveStore.Entry(
                 eventId = m.id,
-                roomId = m.sessionId,
+                roomId = m.roomId,
                 sender = m.senderId,
                 timestamp = m.timestamp,
                 mediaKind = m.mediaKind?.name,
