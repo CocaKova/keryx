@@ -79,7 +79,7 @@ fun SkillForgeSheet(
     var confirmDelete by remember { mutableStateOf(false) }
 
     LaunchedEffect(skillName) {
-        viewModel.skillDetail(skillName)
+        viewModel.hub.skillDetail(skillName)
             .onSuccess { detail = it; loadError = null }
             .onFailure { loadError = it.message }
     }
@@ -127,7 +127,7 @@ fun SkillForgeSheet(
                     onClick = {
                         saving = true
                         statusLine = null
-                        viewModel.skillSave(d!!.name, draft) { ok, message ->
+                        viewModel.hub.skillSave(d!!.name, draft) { ok, message ->
                             saving = false
                             statusLine = message
                             if (ok) {
@@ -225,7 +225,7 @@ fun SkillForgeSheet(
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false
-                    viewModel.skillDelete(d?.name ?: skillName) { ok, message ->
+                    viewModel.hub.skillDelete(d?.name ?: skillName) { ok, message ->
                         if (ok) onDismiss() else statusLine = message
                     }
                 }) { Text("Delete", color = MaterialTheme.colorScheme.error) }

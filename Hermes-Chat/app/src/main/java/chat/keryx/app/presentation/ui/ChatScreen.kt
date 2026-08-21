@@ -150,7 +150,7 @@ fun ChatScreen(
     val workStartedAt by viewModel.workStartedAt.collectAsState()
     val workLabel by viewModel.workLabel.collectAsState()
     val replyTarget by viewModel.replyTarget.collectAsState()
-    val savedIds by viewModel.savedIds.collectAsState()
+    val savedIds by viewModel.archive.savedIds.collectAsState()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -276,7 +276,7 @@ fun ChatScreen(
 
     // Voice dictation: mic tap → record m4a → POST to the configured STT endpoint → transcript
     // appends to whatever's already typed. The mic only appears once an endpoint is configured.
-    val sttUrl by viewModel.sttUrl.collectAsState()
+    val sttUrl by viewModel.voice.sttUrl.collectAsState()
     val voiceRecorder = remember { chat.keryx.app.audio.VoiceRecorder(context) }
     var dictation by remember { mutableStateOf(DictationPhase.IDLE) }
     DisposableEffect(Unit) { onDispose { voiceRecorder.cancel() } }
@@ -307,7 +307,7 @@ fun ChatScreen(
             return
         }
         dictation = DictationPhase.TRANSCRIBING
-        viewModel.transcribe(take) { result ->
+        viewModel.voice.transcribe(take) { result ->
             dictation = DictationPhase.IDLE
             result.onSuccess(::insertTranscript).onFailure {
                 android.widget.Toast.makeText(context, "Transcription failed: ${it.message}", android.widget.Toast.LENGTH_LONG).show()
@@ -337,7 +337,7 @@ fun ChatScreen(
     // Voice replies: agent messages read aloud — the device's built-in voice when no TTS server
     // is configured, otherwise the user's /v1/audio/speech endpoint. One voice at a time; leaving
     // the screen, switching rooms, or sending all silence it.
-    val ttsUrl by viewModel.ttsUrl.collectAsState()
+    val ttsUrl by viewModel.voice.ttsUrl.collectAsState()
     val tts = remember {
         chat.keryx.app.audio.TtsController(context) { error ->
             android.widget.Toast.makeText(context, error, android.widget.Toast.LENGTH_SHORT).show()
@@ -366,7 +366,7 @@ fun ChatScreen(
         } else {
             val gen = tts.prepare(message.id)
             val out = java.io.File(context.cacheDir, "tts_reply_${System.currentTimeMillis()}.mp3")
-            viewModel.synthesizeSpeech(text, out) { result ->
+            viewModel.voice.synthesizeSpeech(text, out) { result ->
                 result.onSuccess { tts.playFile(message.id, gen, it) }
                     .onFailure { err ->
                         out.delete()
@@ -636,8 +636,8 @@ fun ChatScreen(
                                     { viewModel.deleteMessage(message.roomId, message.id) }
                                 } else null,
                                 kept = savedIds.contains(message.id),
-                                onToggleKeep = if (viewModel.archiveAvailable) {
-                                    { viewModel.toggleSaved(message) }
+                                onToggleKeep = if (viewModel.archive.available) {
+                                    { viewModel.archive.toggleSaved(message) }
                                 } else null,
                                 speaking = ttsState.messageId == message.id &&
                                     ttsState.phase != chat.keryx.app.audio.TtsController.Phase.IDLE,
@@ -711,11 +711,11 @@ fun ChatScreen(
         }
 
         // Floating Command Palette
-        val gatewayCommands by viewModel.gatewayCommands.collectAsState()
+        val gatewayCommands by viewModel.hub.gatewayCommands.collectAsState()
         LaunchedEffect(commandMenuVisible) {
             // Opening "/" refreshes the live registry (throttled in the VM); the preset list
             // covers the gap until the first successful fetch.
-            if (commandMenuVisible) viewModel.refreshGatewayCommands()
+            if (commandMenuVisible) viewModel.hub.refreshGatewayCommands()
         }
         AnimatedVisibility(
             visible = commandMenuVisible,
@@ -771,9 +771,9 @@ fun ChatScreen(
                     }
                 }
             }
-            val composerCaps by viewModel.reasoningCaps.collectAsState()
+            val composerCaps by viewModel.hub.reasoningCaps.collectAsState()
             val composerUsage by viewModel.contextUsage.collectAsState()
-            val hubBrainsPanel by viewModel.hubBrains.collectAsState()
+            val hubBrainsPanel by viewModel.hub.brains.collectAsState()
             Composer(
                 textState = textState,
                 onTextChange = { textState = it; viewModel.onComposerTextChanged(it.text) },
@@ -792,8 +792,8 @@ fun ChatScreen(
                 roomId = currentRoom?.id,
                 brains = hubBrainsPanel.data,
                 onReasoningCommand = { viewModel.sendReasoningCommand(it) },
-                onBrainSelect = { viewModel.hubBrainSelect(it) },
-                onRefreshCaps = { viewModel.refreshReasoningCaps(); viewModel.refreshHubBrains() },
+                onBrainSelect = { viewModel.hub.brainSelect(it) },
+                onRefreshCaps = { viewModel.hub.refreshReasoningCaps(); viewModel.hub.refreshBrains() },
                 onSteer = { viewModel.prefillComposer("/steer ") },
             )
         }
@@ -853,7 +853,7 @@ fun ChatScreen(
     openSubagent?.let { run ->
         chat.keryx.app.presentation.ui.components.SubagentSessionSheet(
             run = run,
-            fetch = { id -> viewModel.hubSessionMessages(id) },
+            fetch = { id -> viewModel.hub.sessionMessages(id) },
             onDismiss = { openSubagent = null },
         )
     }

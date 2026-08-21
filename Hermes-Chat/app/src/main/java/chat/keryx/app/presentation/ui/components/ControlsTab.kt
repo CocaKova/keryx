@@ -55,9 +55,9 @@ import kotlinx.serialization.json.JsonPrimitive
  */
 @Composable
 fun ControlsTab(viewModel: ChatViewModel) {
-    val caps by viewModel.reasoningCaps.collectAsState()
-    val brains by viewModel.hubBrains.collectAsState()
-    val config by viewModel.hubConfig.collectAsState()
+    val caps by viewModel.hub.reasoningCaps.collectAsState()
+    val brains by viewModel.hub.brains.collectAsState()
+    val config by viewModel.hub.config.collectAsState()
     var swapTarget by remember { mutableStateOf<String?>(null) }
     var logsOpen by remember { mutableStateOf(false) }
     var rawOpen by remember { mutableStateOf(false) }
@@ -77,7 +77,7 @@ fun ControlsTab(viewModel: ChatViewModel) {
                     "gateway itself) restarts. Chats pause until the new brain is up.",
                 fontSize = 13.sp) },
             confirmButton = {
-                TextButton(onClick = { viewModel.hubBrainSelect(target); swapTarget = null }) {
+                TextButton(onClick = { viewModel.hub.brainSelect(target); swapTarget = null }) {
                     Text("Swap")
                 }
             },
@@ -107,7 +107,7 @@ fun ControlsTab(viewModel: ChatViewModel) {
                         choices = c.levels,
                         labels = c.labels,
                         selected = c.current,
-                        onSelect = { viewModel.hubReasoningSet(it) },
+                        onSelect = { viewModel.hub.reasoningSet(it) },
                     )
                     Text(
                         "applies next session",
@@ -175,7 +175,7 @@ fun ControlsTab(viewModel: ChatViewModel) {
                     KnobRow(
                         knob = knob,
                         busy = config.refreshing,
-                        onSet = { value -> viewModel.hubConfigSet(knob.key, value) },
+                        onSet = { value -> viewModel.hub.configSet(knob.key, value) },
                     )
                 }
             }
@@ -355,7 +355,7 @@ private fun GatewayLogViewer(viewModel: ChatViewModel, onDismiss: () -> Unit) {
     var text by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(lines) {
-        viewModel.hubLogs(lines)
+        viewModel.hub.logs(lines)
             .onSuccess { text = it.text; error = null }
             .onFailure { error = it.message }
     }

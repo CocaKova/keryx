@@ -162,9 +162,9 @@ fun SettingsScreen(
                     // Gateway-backed state for the Agent and Companion sections (and their hub
                     // subtitles). Cheap to collect here — both flows are already hot for the
                     // Gateway space and the drawer mascot.
-                    val caps by viewModel.reasoningCaps.collectAsState()
-                    val hubHealth by viewModel.hubHealth.collectAsState()
-                    val petInfo by viewModel.petInfo.collectAsState()
+                    val caps by viewModel.hub.reasoningCaps.collectAsState()
+                    val hubHealth by viewModel.hub.health.collectAsState()
+                    val petInfo by viewModel.pet.petInfo.collectAsState()
 
                     if (section == null) {
                         Spacer(Modifier.height(4.dp))
@@ -223,8 +223,8 @@ fun SettingsScreen(
                     // --- Agent (gateway-backed: what's running, and how it speaks up) ---
                     if (section == "Agent") {
                         LaunchedEffect(Unit) {
-                            viewModel.refreshReasoningCaps()
-                            viewModel.refreshHubHealth()
+                            viewModel.hub.refreshReasoningCaps()
+                            viewModel.hub.refreshHealth()
                         }
                         SettingsCard("Brain") {
                             val rows = listOfNotNull(
@@ -274,7 +274,7 @@ fun SettingsScreen(
 
                     // --- Companion (the petdex mascot) ---
                     if (section == "Companion") SettingsCard("Companion") {
-                        LaunchedEffect(Unit) { viewModel.refreshPet() }
+                        LaunchedEffect(Unit) { viewModel.pet.refreshPet() }
                         var showPetPicker by remember { mutableStateOf(false) }
                         if (showPetPicker) {
                             PetPickerSheet(viewModel = viewModel, onDismiss = { showPetPicker = false })
@@ -1053,16 +1053,16 @@ fun SettingsPlace(viewModel: ChatViewModel, onClose: () -> Unit) {
     val gatewayUrl by viewModel.gatewayUrl.collectAsState()
     val gatewayApiKey by viewModel.gatewayApiKey.collectAsState()
     val sideChannelEnabled by viewModel.sideChannelEnabled.collectAsState()
-    val sttUrl by viewModel.sttUrl.collectAsState()
-    val sttApiKey by viewModel.sttApiKey.collectAsState()
-    val sttModel by viewModel.sttModel.collectAsState()
-    val ttsAutoSpeak by viewModel.ttsAutoSpeak.collectAsState()
-    val ttsUrl by viewModel.ttsUrl.collectAsState()
-    val ttsApiKey by viewModel.ttsApiKey.collectAsState()
-    val ttsVoice by viewModel.ttsVoice.collectAsState()
-    val ttsModel by viewModel.ttsModel.collectAsState()
+    val sttUrl by viewModel.voice.sttUrl.collectAsState()
+    val sttApiKey by viewModel.voice.sttApiKey.collectAsState()
+    val sttModel by viewModel.voice.sttModel.collectAsState()
+    val ttsAutoSpeak by viewModel.voice.ttsAutoSpeak.collectAsState()
+    val ttsUrl by viewModel.voice.ttsUrl.collectAsState()
+    val ttsApiKey by viewModel.voice.ttsApiKey.collectAsState()
+    val ttsVoice by viewModel.voice.ttsVoice.collectAsState()
+    val ttsModel by viewModel.voice.ttsModel.collectAsState()
     val showTelemetry by viewModel.showTelemetry.collectAsState()
-    val missionAlertsEnabled by viewModel.missionAlertsEnabled.collectAsState()
+    val missionAlertsEnabled by viewModel.missions.alertsEnabled.collectAsState()
     val pushEnabled by viewModel.pushEnabled.collectAsState()
     val pushGatewayUrl by viewModel.pushGatewayUrl.collectAsState()
 
@@ -1088,27 +1088,27 @@ fun SettingsPlace(viewModel: ChatViewModel, onClose: () -> Unit) {
         sideChannelEnabled = sideChannelEnabled,
         onSideChannelEnabledChanged = { viewModel.setSideChannelEnabled(it) },
         sttUrl = sttUrl,
-        onSttUrlChanged = { viewModel.setSttUrl(it) },
+        onSttUrlChanged = { viewModel.voice.setSttUrl(it) },
         sttApiKey = sttApiKey,
-        onSttApiKeyChanged = { viewModel.setSttApiKey(it) },
+        onSttApiKeyChanged = { viewModel.voice.setSttApiKey(it) },
         sttModel = sttModel,
-        onSttModelChanged = { viewModel.setSttModel(it) },
+        onSttModelChanged = { viewModel.voice.setSttModel(it) },
         ttsAutoSpeak = ttsAutoSpeak,
-        onTtsAutoSpeakChanged = { viewModel.setTtsAutoSpeak(it) },
+        onTtsAutoSpeakChanged = { viewModel.voice.setTtsAutoSpeak(it) },
         ttsUrl = ttsUrl,
-        onTtsUrlChanged = { viewModel.setTtsUrl(it) },
+        onTtsUrlChanged = { viewModel.voice.setTtsUrl(it) },
         ttsApiKey = ttsApiKey,
-        onTtsApiKeyChanged = { viewModel.setTtsApiKey(it) },
+        onTtsApiKeyChanged = { viewModel.voice.setTtsApiKey(it) },
         ttsVoice = ttsVoice,
-        onTtsVoiceChanged = { viewModel.setTtsVoice(it) },
+        onTtsVoiceChanged = { viewModel.voice.setTtsVoice(it) },
         ttsModel = ttsModel,
-        onTtsModelChanged = { viewModel.setTtsModel(it) },
+        onTtsModelChanged = { viewModel.voice.setTtsModel(it) },
         onTestLink = { viewModel.testGatewayLink() },
         showTelemetry = showTelemetry,
         onShowTelemetryChanged = { viewModel.setShowTelemetry(it) },
         missionAlertsEnabled = missionAlertsEnabled,
         onMissionAlertsChanged = {
-            viewModel.setMissionAlertsEnabled(it)
+            viewModel.missions.setAlertsEnabled(it)
             chat.keryx.app.notify.MissionAlertsWorker.setEnabled(context, it)
         },
         pushEnabled = pushEnabled,

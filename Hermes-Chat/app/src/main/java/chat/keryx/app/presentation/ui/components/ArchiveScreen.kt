@@ -84,7 +84,7 @@ fun ArchiveScreen(
     viewModel: ChatViewModel,
     onDismissRequest: () -> Unit,
 ) {
-    val progress by viewModel.archiveProgress.collectAsState()
+    val progress by viewModel.archive.progress.collectAsState()
     val roomId = viewModel.currentRoom.collectAsState().value?.id
     var tab by remember { mutableStateOf(ArchiveTab.SEARCH) }
     var contextAnchor by remember { mutableStateOf<String?>(null) }
@@ -94,8 +94,8 @@ fun ArchiveScreen(
     // Every open kicks a sweep: the first ever is the big backfill, later ones just catch up on
     // what's new and stop within a few dozen events.
     LaunchedEffect(roomId) {
-        viewModel.startArchiveSweep()
-        viewModel.refreshSavedIds()
+        viewModel.archive.startSweep()
+        viewModel.archive.refreshSavedIds()
     }
 
     KeryxSpace(
@@ -179,7 +179,7 @@ fun ArchiveScreen(
                     val utc = dateState.selectedDateMillis
                     showDatePicker = false
                     if (utc != null) scope.launch {
-                        viewModel.archiveEventForDate(utcDayToLocalStart(utc))?.let { contextAnchor = it }
+                        viewModel.archive.eventForDate(utcDayToLocalStart(utc))?.let { contextAnchor = it }
                             ?: viewModel.toast("Nothing indexed yet for that day")
                     }
                 }) { Text("Open") }
@@ -222,7 +222,7 @@ private fun SearchTab(
             return@LaunchedEffect
         }
         delay(250)
-        hits = viewModel.archiveSearch(query)
+        hits = viewModel.archive.search(query)
         searched = true
     }
 
@@ -323,7 +323,7 @@ private fun SavedTab(
     val myId by viewModel.currentUserId.collectAsState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(refreshKey) {
-        entries = viewModel.archiveSaved()
+        entries = viewModel.archive.saved()
         loaded = true
     }
     if (loaded && entries.isEmpty()) {
@@ -360,7 +360,7 @@ private fun SavedTab(
                     }
                     IconButton(onClick = {
                         scope.launch {
-                            viewModel.toggleSaved(
+                            viewModel.archive.toggleSaved(
                                 Message(
                                     id = e.eventId,
                                     roomId = e.roomId,
@@ -397,9 +397,9 @@ private fun MediaTab(
 ) {
     var entries by remember { mutableStateOf<List<ArchiveStore.Entry>>(emptyList()) }
     var loaded by remember { mutableStateOf(false) }
-    val progress by viewModel.archiveProgress.collectAsState()
+    val progress by viewModel.archive.progress.collectAsState()
     LaunchedEffect(roomId, progress?.indexed) {
-        entries = viewModel.archiveMedia()
+        entries = viewModel.archive.media()
         loaded = true
     }
     if (loaded && entries.isEmpty()) {
@@ -571,7 +571,7 @@ fun ArchiveContextViewer(
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(anchorId) {
-        val loadedItems = viewModel.archiveContext(anchorId).filter { visibleInContext(it) }
+        val loadedItems = viewModel.archive.context(anchorId).filter { visibleInContext(it) }
         items = loadedItems
         loading = false
         val anchorIndex = loadedItems.indexOfFirst { it.id == anchorId }
@@ -609,7 +609,7 @@ fun ArchiveContextViewer(
                     val first = items.firstOrNull() ?: return@ReachButton
                     scope.launch {
                         extending = true
-                        val older = viewModel.archiveContext(first.id, before = 25, after = 0)
+                        val older = viewModel.archive.context(first.id, before = 25, after = 0)
                             .filter { visibleInContext(it) }
                         items = (older + items).distinctBy { it.id }.sortedBy { it.timestamp }
                         extending = false
@@ -628,7 +628,7 @@ fun ArchiveContextViewer(
                     val last = items.lastOrNull() ?: return@ReachButton
                     scope.launch {
                         extending = true
-                        val newer = viewModel.archiveContext(last.id, before = 0, after = 25)
+                        val newer = viewModel.archive.context(last.id, before = 0, after = 25)
                             .filter { visibleInContext(it) }
                         items = (items + newer).distinctBy { it.id }.sortedBy { it.timestamp }
                         extending = false

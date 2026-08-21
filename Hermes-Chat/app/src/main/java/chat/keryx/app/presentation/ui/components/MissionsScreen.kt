@@ -101,11 +101,11 @@ fun MissionsScreen(
     viewModel: ChatViewModel,
     onDismissRequest: () -> Unit,
 ) {
-    val board by viewModel.kanbanBoard.collectAsState()
-    val refreshing by viewModel.kanbanRefreshing.collectAsState()
-    val error by viewModel.kanbanError.collectAsState()
-    val caps by viewModel.reasoningCaps.collectAsState()
-    val subs by viewModel.kanbanSubs.collectAsState()
+    val board by viewModel.missions.kanbanBoard.collectAsState()
+    val refreshing by viewModel.missions.kanbanRefreshing.collectAsState()
+    val error by viewModel.missions.kanbanError.collectAsState()
+    val caps by viewModel.hub.reasoningCaps.collectAsState()
+    val subs by viewModel.missions.kanbanSubs.collectAsState()
     var createOpen by remember { mutableStateOf(false) }
     var openTaskId by remember { mutableStateOf<String?>(null) }
 
@@ -116,10 +116,10 @@ fun MissionsScreen(
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
-            viewModel.refreshKanban()
+            viewModel.missions.refreshKanban()
             while (true) {
                 delay(20_000L)
-                viewModel.refreshKanban()
+                viewModel.missions.refreshKanban()
             }
         }
     }
@@ -156,7 +156,7 @@ fun MissionsScreen(
             }
         },
         actions = {
-            IconButton(onClick = { viewModel.refreshKanban() }, enabled = !refreshing) {
+            IconButton(onClick = { viewModel.missions.refreshKanban() }, enabled = !refreshing) {
                 Icon(
                     Icons.Default.Refresh,
                     contentDescription = "Refresh",
@@ -268,9 +268,9 @@ fun MissionsScreen(
     if (createOpen) {
         MissionCreateDialog(
             profiles = missionAssignees(caps?.roomProfiles.orEmpty()),
-            canNotify = viewModel.missionAlertRoom() != null,
+            canNotify = viewModel.missions.alertRoom() != null,
             onCreate = { title, assignee, body, triage, notify ->
-                viewModel.kanbanCreate(title, assignee, body, triage, notify)
+                viewModel.missions.kanbanCreate(title, assignee, body, triage, notify)
                 createOpen = false
             },
             onDismiss = { createOpen = false },
@@ -440,7 +440,7 @@ private fun MissionDetailSheet(
     var loadError by remember { mutableStateOf<String?>(null) }
     var reload by remember { mutableStateOf(0) }
     LaunchedEffect(taskId, reload) {
-        viewModel.kanbanTaskDetail(taskId)
+        viewModel.missions.kanbanTaskDetail(taskId)
             .onSuccess { detail = it; loadError = null }
             .onFailure { loadError = it.message }
     }
@@ -479,9 +479,9 @@ private fun MissionDetailSheet(
                     Spacer(Modifier.height(8.dp))
                     Text(d.task.title, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(6.dp))
-                    val subs by viewModel.kanbanSubs.collectAsState()
+                    val subs by viewModel.missions.kanbanSubs.collectAsState()
                     val subscribed = subs[taskId]?.isNotEmpty() == true
-                    val roomName = viewModel.missionAlertRoomName()
+                    val roomName = viewModel.missions.alertRoomName()
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Outlined.Notifications,
@@ -506,7 +506,7 @@ private fun MissionDetailSheet(
                         Switch(
                             checked = subscribed,
                             enabled = subscribed || roomName != null,
-                            onCheckedChange = { viewModel.kanbanSetAlert(taskId, it) },
+                            onCheckedChange = { viewModel.missions.kanbanSetAlert(taskId, it) },
                         )
                     }
                     Spacer(Modifier.height(6.dp))
@@ -550,7 +550,7 @@ private fun MissionDetailSheet(
                                                     else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                                                 )
                                                 .clickable(enabled = !selected) {
-                                                    viewModel.kanbanSetReasoning(taskId, value) { reload++ }
+                                                    viewModel.missions.kanbanSetReasoning(taskId, value) { reload++ }
                                                 }
                                                 .padding(horizontal = 10.dp, vertical = 5.dp),
                                         )
@@ -572,7 +572,7 @@ private fun MissionDetailSheet(
                                     trailingIcon = {
                                         if (modelDraft.trim() != d.task.modelOverride) {
                                             TextButton(onClick = {
-                                                viewModel.kanbanSetModel(taskId, modelDraft.trim()) { reload++ }
+                                                viewModel.missions.kanbanSetModel(taskId, modelDraft.trim()) { reload++ }
                                             }) { Text(if (modelDraft.isBlank()) "Clear" else "Pin") }
                                         }
                                     },
@@ -655,7 +655,7 @@ private fun MissionDetailSheet(
                             TextButton(
                                 enabled = comment.isNotBlank(),
                                 onClick = {
-                                    viewModel.kanbanComment(taskId, comment.trim()) { reload++ }
+                                    viewModel.missions.kanbanComment(taskId, comment.trim()) { reload++ }
                                     comment = ""
                                 },
                             ) { Text("Send") }
