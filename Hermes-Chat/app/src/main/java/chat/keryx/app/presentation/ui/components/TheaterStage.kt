@@ -142,7 +142,7 @@ private fun ParallelBatch(calls: List<ToolCall>, live: Boolean, baseColor: Color
 /** The subagents this turn sent out, under the same rail a parallel batch uses — because that
  *  is exactly what this is: work happening somewhere else, at the same time. */
 @Composable
-private fun DelegationWings(
+internal fun DelegationWings(
     runs: List<Delegation>,
     live: Boolean,
     baseColor: Color,
