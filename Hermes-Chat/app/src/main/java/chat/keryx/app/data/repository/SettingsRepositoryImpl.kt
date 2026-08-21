@@ -120,6 +120,14 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getBoolean("direct_logged_in", false)
         set(value) = prefs.edit().putBoolean("direct_logged_in", value).apply()
 
+    override var cronBaseline: Long
+        get() = prefs.getLong("cron_baseline", 0L)
+        set(value) = prefs.edit().putLong("cron_baseline", value).apply()
+
+    override var cronSeenIds: Set<String>
+        get() = prefs.getStringSet("cron_seen_ids", emptySet()) ?: emptySet()
+        set(value) = prefs.edit().putStringSet("cron_seen_ids", value).apply()
+
     override var lastMatrixUsername: String
         get() = prefs.getString("last_matrix_username", "") ?: ""
         set(value) = prefs.edit().putString("last_matrix_username", value).apply()

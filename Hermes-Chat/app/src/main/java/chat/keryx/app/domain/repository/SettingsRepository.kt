@@ -46,6 +46,13 @@ interface SettingsRepository {
     /** The direct door's session flag: a validated gateway credential is a login. */
     var directLoggedIn: Boolean
 
+    /** The cron surface's first-sight baseline (epoch ms; 0 = never seen). Runs that predate
+     *  it are history, not a backlog — a fresh install must not open on forty unread briefs. */
+    var cronBaseline: Long
+
+    /** Run ids the user has actually opened (or swept with mark-all-read). */
+    var cronSeenIds: Set<String>
+
     /** The last Matrix username that signed in — a login-form prefill, nothing more. The
      *  password is never stored anywhere: the session token in Trixnity's store is the
      *  durable credential, and it survives every transport toggle on its own. */

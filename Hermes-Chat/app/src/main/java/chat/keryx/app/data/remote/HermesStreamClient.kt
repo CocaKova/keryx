@@ -877,6 +877,14 @@ class HermesStreamClient(
     suspend fun sessions(): Result<List<HubSession>> =
         runCatching { HubJson.sessions(apiCall("/api/sessions")) }
 
+    /** Scheduled runs only. The server ignores a `sources` filter (verified live), so the
+     *  filter is ours; the wider limit is because machinery outnumbers conversations. */
+    suspend fun cronSessions(limit: Int = 150): Result<List<HubSession>> =
+        runCatching {
+            HubJson.sessions(apiCall("/api/sessions?limit=$limit"))
+                .filter { it.source == "cron" }
+        }
+
     suspend fun sessionMessages(sessionId: String): Result<List<HubMessage>> =
         runCatching { HubJson.messages(apiCall("/api/sessions/$sessionId/messages")) }
 
