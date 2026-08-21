@@ -1,6 +1,5 @@
-package chat.keryx.app.presentation
+package chat.keryx.core.protocol
 
-import chat.keryx.app.presentation.ui.components.MessageParser
 
 /**
  * Incremental accumulator for a live token stream whose per-tick cost is O(delta + window),

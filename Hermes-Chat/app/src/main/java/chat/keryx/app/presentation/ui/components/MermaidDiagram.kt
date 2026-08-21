@@ -39,6 +39,7 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
+import chat.keryx.core.protocol.MermaidParser
 
 private val DiamondShape = GenericShape { size, _ ->
     moveTo(size.width / 2f, 0f)

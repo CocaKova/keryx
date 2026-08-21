@@ -70,6 +70,7 @@ import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.ui.DaySeparator
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import chat.keryx.core.protocol.MessageParser
 
 /**
  * The Archive (1.26 "Mnemosyne") — the room's whole history as a place: full-text search, saved

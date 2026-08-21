@@ -1,6 +1,6 @@
 package chat.keryx.app.presentation
 
-import chat.keryx.app.presentation.ui.components.MessageParser
+import chat.keryx.core.protocol.MessageParser
 
 /**
  * Reduces a message body to speakable prose for text-to-speech.

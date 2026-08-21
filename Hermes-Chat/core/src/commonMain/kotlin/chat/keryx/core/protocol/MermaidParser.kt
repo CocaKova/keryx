@@ -1,4 +1,4 @@
-package chat.keryx.app.presentation.ui.components
+package chat.keryx.core.protocol
 
 /**
  * Pure (Compose-free, unit-testable) parser for the common Mermaid **flowchart** subset

@@ -1,9 +1,9 @@
-package chat.keryx.app
+package chat.keryx.core
 
-import chat.keryx.app.presentation.StreamTailTracker
-import chat.keryx.app.presentation.ui.components.MessageParser
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import chat.keryx.core.protocol.StreamTailTracker
+import chat.keryx.core.protocol.MessageParser
+import kotlin.test.assertEquals
+import kotlin.test.Test
 import kotlin.random.Random
 
 /**
@@ -47,16 +47,16 @@ class StreamTailTrackerTest {
             val raw = text.substring(0, fed)
             val expected = if (sanitize) oracleSanitized(raw, window) else oracleRaw(raw, window)
             assertEquals(
-                "window mismatch (sanitize=$sanitize, window=$window) after ${fed} chars of: " +
-                    raw.takeLast(120).replace("\n", "\\n"),
                 expected,
                 tracker.windowText(),
+                "window mismatch (sanitize=$sanitize, window=$window) after ${fed} chars of: " +
+                    raw.takeLast(120).replace("\n", "\\n"),
             )
             if (sanitize) {
                 assertEquals(
-                    "sanitized full-text mismatch after $fed chars",
                     MessageParser.sanitizeStreamingTail(raw),
                     tracker.sanitizedFullText(),
+                    "sanitized full-text mismatch after $fed chars",
                 )
             }
             assertEquals(raw, tracker.rawText())

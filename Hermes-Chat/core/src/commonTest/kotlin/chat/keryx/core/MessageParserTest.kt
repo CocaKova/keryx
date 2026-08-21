@@ -1,9 +1,9 @@
-package chat.keryx.app
+package chat.keryx.core
 
-import chat.keryx.app.presentation.ui.components.MessageParser
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import chat.keryx.core.protocol.MessageParser
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.test.Test
 
 class MessageParserTest {
 
@@ -425,11 +425,11 @@ class MessageParserTest {
         val thinking = segs.filterIsInstance<MessageParser.Segment.Thinking>().single()
         assertTrue(thinking.text.contains("I'll draft it"))
         assertTrue(thinking.text.contains("That works"))
-        assertTrue("ZWSP stripped from canvas", !thinking.text.contains("\u200B"))
+        assertTrue(!thinking.text.contains("\u200B"), "ZWSP stripped from canvas")
         val text = segs.filterIsInstance<MessageParser.Segment.Text>().joinToString("") { it.text }
-        assertTrue("answer present exactly once", text.contains("Here is the answer"))
-        assertTrue("reasoning header did not leak", !text.contains("Reasoning:"))
-        assertTrue("inner code did not leak into body", !text.contains("x = 1"))
+        assertTrue(text.contains("Here is the answer"), "answer present exactly once")
+        assertTrue(!text.contains("Reasoning:"), "reasoning header did not leak")
+        assertTrue(!text.contains("x = 1"), "inner code did not leak into body")
     }
 
     @Test

@@ -1,4 +1,4 @@
-package chat.keryx.app.presentation.ui.components
+package chat.keryx.core.protocol
 
 import chat.keryx.core.model.ToolGrammar
 import kotlinx.serialization.json.Json
@@ -646,8 +646,11 @@ object MessageParser {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     /** Test hook: raw parse invocations (cache misses + uncacheable). The perf invariant "O(1)
-     *  parses per streaming tick on a long timeline" is asserted against this from JVM tests. */
-    internal var parseUncachedCount = 0L
+     *  parses per streaming tick on a long timeline" is asserted against this from JVM tests.
+     *
+     *  Public rather than internal only because the test that asserts it also exercises
+     *  `groupChatItems`, which is Compose-side and cannot follow this into :core. Not API. */
+    var parseUncachedCount = 0L
 
     private fun parseUncached(content: String, agentChrome: Boolean = true): List<Segment> {
         parseUncachedCount++

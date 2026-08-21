@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.keryx.core.protocol.MessageParser
 
 /**
  * Ethereal context citations: a row of glowing numbered chips (the ⁽ⁿ⁾ superscripts in the answer
