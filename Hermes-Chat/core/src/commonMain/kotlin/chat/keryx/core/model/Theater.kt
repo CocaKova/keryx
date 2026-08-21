@@ -13,34 +13,6 @@ package chat.keryx.core.model
  * `GatewayChatRepository`'s subagent reducer), so a delegation looks like the same thing on
  * both clients instead of each inventing its own half-view.
  */
-data class ToolBeat(
-    val name: String,
-    val preview: String = "",
-    /** null while the call is in flight; true/false once it lands. */
-    val ok: Boolean? = null,
-    val ms: Long = 0L,
-    /** A glimpse of the reason — sent for failures only (see `keryx_stream._attach_tool_callbacks`). */
-    val result: String = "",
-    /**
-     * This call was still open when another one opened, so the model fired them in one breath.
-     *
-     * ⚠️ That is an observation about *announcement*, not about execution: the runtime may
-     * still have run them one at a time. The renderer says "in one turn" for exactly that
-     * reason — Talaria can say "in parallel" because its gateway tells it so; this channel
-     * doesn't, and the weaker claim is the one that survives.
-     */
-    val concurrent: Boolean = false,
-    /** The edit this call made, when it made one — the gateway's own inline diff, ANSI and all. */
-    val diff: String = "",
-    val added: Int = 0,
-    val removed: Int = 0,
-    /** The panel was cut to fit the wire; [added]/[removed] are still counted from the whole. */
-    val diffTruncated: Boolean = false,
-) {
-    val running: Boolean get() = ok == null
-    val hasDiff: Boolean get() = diff.isNotBlank()
-}
-
 /**
  * One delegated subagent, assembled from the `subagent.*` frames.
  *
@@ -70,9 +42,17 @@ data class Delegation(
     val outputTokens: Int = 0,
     val reasoningTokens: Int = 0,
     val apiCalls: Int = 0,
-    val filesRead: Int = 0,
-    val filesWritten: Int = 0,
+    /** File names, when the wire carries them (the direct transport's rollup does). */
+    val filesRead: List<String> = emptyList(),
+    val filesWritten: List<String> = emptyList(),
+    /** Count-only wire — the Matrix side-channel sends counts, not names. Read
+     *  [filesReadN]/[filesWrittenN], which take whichever form is known. */
+    val filesReadCount: Int = 0,
+    val filesWrittenCount: Int = 0,
 ) {
+    val filesReadN: Int get() = if (filesRead.isNotEmpty()) filesRead.size else filesReadCount
+    val filesWrittenN: Int get() = if (filesWritten.isNotEmpty()) filesWritten.size else filesWrittenCount
+
     val running: Boolean get() = state == DelegationState.SPAWNING || state == DelegationState.RUNNING
 
     /** Every token the child burned — the number that makes delegation cost legible. */
@@ -134,9 +114,13 @@ data class TheaterEvent(
 
 /** Everything the theater knows about the turn in flight. */
 data class TheaterState(
-    val beats: List<ToolBeat> = emptyList(),
+    /** The turn's tool calls in announcement order — the same [ToolCall] every producer speaks
+     *  (the beat vocabulary folded into it; a live row is simply `status = EXECUTING`). */
+    val beats: List<ToolCall> = emptyList(),
     /** Insertion-ordered so a fan-out keeps the order it went out in. */
     val delegations: List<Delegation> = emptyList(),
+    /** Monotonic id source for announced-together batches — see [Theater.reduce]'s open. */
+    val batchSeq: Int = 0,
 ) {
     val isEmpty: Boolean get() = beats.isEmpty() && delegations.isEmpty()
 }
@@ -149,7 +133,7 @@ object Theater {
     const val MAX_BEATS = 40
 
     fun reduce(state: TheaterState, ev: TheaterEvent): TheaterState = when (ev.phase) {
-        "start" -> state.copy(beats = state.beats.open(ToolBeat(name = ev.name.orTool(), preview = ev.preview)))
+        "start" -> state.open(ev)
 
         // Correlated by ORDER, not by id: `tool.completed` carries no call id. The executor
         // emits completions in the same order it emitted the starts, so this closes the OLDEST
@@ -174,37 +158,52 @@ object Theater {
 
     /**
      * Opening a call while another is still open is the only evidence this channel gives that
-     * the model fired them together — so both ends of that overlap are marked, not just the
-     * newcomer.
+     * the model fired them together — so both ends of that overlap join one batch, not just
+     * the newcomer. A shared [ToolCall.batchId], never [ToolCall.concurrent]: this channel
+     * observes *announcement*, not execution, and "in one turn" is the claim that survives.
      */
-    private fun List<ToolBeat>.open(beat: ToolBeat): List<ToolBeat> {
-        val overlaps = any { it.running }
-        val marked = if (overlaps) map { if (it.running) it.copy(concurrent = true) else it } else this
-        return (marked + beat.copy(concurrent = overlaps))
-            .let { if (it.size > MAX_BEATS) it.takeLast(MAX_BEATS) else it }
+    private fun TheaterState.open(ev: TheaterEvent): TheaterState {
+        val overlaps = beats.any { it.running }
+        if (!overlaps) {
+            val next = beats + ToolCall(name = ev.name.orTool(), context = ev.preview)
+            return copy(beats = if (next.size > MAX_BEATS) next.takeLast(MAX_BEATS) else next)
+        }
+        val existing = beats.firstOrNull { it.running && it.batchId.isNotBlank() }?.batchId
+        val seq = if (existing == null) batchSeq + 1 else batchSeq
+        val bid = existing ?: "turn-$seq"
+        val marked = beats.map { if (it.running && it.batchId.isBlank()) it.copy(batchId = bid) else it }
+        val next = marked + ToolCall(name = ev.name.orTool(), context = ev.preview, batchId = bid)
+        return copy(
+            beats = if (next.size > MAX_BEATS) next.takeLast(MAX_BEATS) else next,
+            batchSeq = seq,
+        )
     }
 
     /** The newest closed row of that name still without a diff — an edit tool called twice in
      *  one turn gets one diff each, in the order they landed. */
-    private fun List<ToolBeat>.attachDiff(ev: TheaterEvent): List<ToolBeat> {
+    private fun List<ToolCall>.attachDiff(ev: TheaterEvent): List<ToolCall> {
         if (ev.diff.isBlank()) return this
         val byName = indexOfLast { !it.running && !it.hasDiff && it.name == ev.name }
         val i = if (byName >= 0) byName else indexOfLast { !it.running && !it.hasDiff }
         if (i < 0) return this
         return toMutableList().also {
             it[i] = it[i].copy(
-                diff = ev.diff, added = ev.added, removed = ev.removed,
+                inlineDiff = ev.diff, added = ev.added, removed = ev.removed,
                 diffTruncated = ev.truncated,
             )
         }
     }
 
-    private fun List<ToolBeat>.close(ev: TheaterEvent): List<ToolBeat> {
+    private fun List<ToolCall>.close(ev: TheaterEvent): List<ToolCall> {
         val byName = indexOfFirst { it.running && it.name == ev.name }
         val i = if (byName >= 0) byName else indexOfFirst { it.running }
         if (i < 0) return this
         return toMutableList().also {
-            it[i] = it[i].copy(ok = ev.ok ?: true, ms = ev.ms, result = ev.result)
+            it[i] = it[i].copy(
+                status = if (ev.ok == false) ToolStatus.FAILED else ToolStatus.COMPLETED,
+                durationS = if (ev.ms > 0L) ev.ms / 1000.0 else null,
+                result = ev.result,
+            )
         }
     }
 
@@ -247,8 +246,8 @@ object Theater {
                 outputTokens = ev.outputTokens ?: prev.outputTokens,
                 reasoningTokens = ev.reasoningTokens ?: prev.reasoningTokens,
                 apiCalls = ev.apiCalls ?: prev.apiCalls,
-                filesRead = ev.filesRead ?: prev.filesRead,
-                filesWritten = ev.filesWritten ?: prev.filesWritten,
+                filesReadCount = ev.filesRead ?: prev.filesReadCount,
+                filesWrittenCount = ev.filesWritten ?: prev.filesWrittenCount,
             )
             // A kind this client doesn't know still folds its identity in, so a later gateway
             // adding one can't blank a wing.
@@ -297,9 +296,9 @@ object Theater {
 
     private const val REASON_MAX = 200
 
-    fun align(parsedNames: List<String>, beats: List<ToolBeat>): Map<Int, ToolBeat> {
+    fun align(parsedNames: List<String>, beats: List<ToolCall>): Map<Int, ToolCall> {
         if (parsedNames.isEmpty() || beats.isEmpty()) return emptyMap()
-        val out = LinkedHashMap<Int, ToolBeat>()
+        val out = LinkedHashMap<Int, ToolCall>()
         for (i in parsedNames.indices) {
             val beat = beats.getOrNull(i) ?: break
             if (beat.name == parsedNames[i]) out[i] = beat
@@ -308,15 +307,15 @@ object Theater {
     }
 
     /**
-     * The beats grouped for display: a run of calls that overlapped is one batch, everything
-     * else stands alone. Structural, not decorative — the fact being shown is "these ran
-     * together".
+     * The beats grouped for display: calls sharing one dispatch ([ToolCall.batchId]) are one
+     * batch, everything else stands alone. Structural, not decorative — the fact being shown
+     * is "these went out together".
      */
-    fun batches(beats: List<ToolBeat>): List<List<ToolBeat>> {
-        val out = mutableListOf<MutableList<ToolBeat>>()
+    fun batches(beats: List<ToolCall>): List<List<ToolCall>> {
+        val out = mutableListOf<MutableList<ToolCall>>()
         for (beat in beats) {
             val last = out.lastOrNull()
-            if (beat.concurrent && last != null && last.last().concurrent) last.add(beat)
+            if (beat.batchId.isNotBlank() && last != null && last.last().batchId == beat.batchId) last.add(beat)
             else out.add(mutableListOf(beat))
         }
         return out

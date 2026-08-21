@@ -4,7 +4,7 @@ import chat.keryx.core.model.DelegationState
 import chat.keryx.core.model.Theater
 import chat.keryx.core.model.TheaterEvent
 import chat.keryx.core.model.TheaterState
-import chat.keryx.core.model.ToolBeat
+import chat.keryx.core.model.ToolCall
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -30,7 +30,7 @@ class TheaterTest {
     private fun run(vararg events: TheaterEvent): TheaterState =
         events.fold(TheaterState()) { acc, e -> Theater.reduce(acc, e) }
 
-    private fun beats(vararg events: TheaterEvent): List<ToolBeat> = run(*events).beats
+    private fun beats(vararg events: TheaterEvent): List<ToolCall> = run(*events).beats
 
     // --- the ordinary shape --------------------------------------------------------------------
 
@@ -39,9 +39,9 @@ class TheaterTest {
         val b = beats(start("terminal", "ls -la"))
         assertEquals(1, b.size)
         assertEquals("terminal", b[0].name)
-        assertEquals("ls -la", b[0].preview)
+        assertEquals("ls -la", b[0].context)
         assertTrue(b[0].running)
-        assertNull(b[0].ok)
+        assertNull(b[0].verdictOk)
     }
 
     @Test
@@ -49,14 +49,14 @@ class TheaterTest {
         val b = beats(start("terminal"), end("terminal", ok = true, ms = 412, result = "hi"))
         assertEquals(1, b.size)
         assertFalse(b[0].running)
-        assertEquals(true, b[0].ok)
-        assertEquals(412L, b[0].ms)
+        assertEquals(true, b[0].verdictOk)
+        assertEquals(0.412, b[0].durationS!!, 1e-9)
         assertEquals("hi", b[0].result)
     }
 
     @Test
     fun `a failure is kept as a failure`() {
-        assertEquals(false, beats(start("web_search"), end("web_search", ok = false))[0].ok)
+        assertEquals(false, beats(start("web_search"), end("web_search", ok = false))[0].verdictOk)
     }
 
     @Test
@@ -68,7 +68,7 @@ class TheaterTest {
 
     @Test
     fun `an end with nothing open is ignored rather than inventing a row`() {
-        assertEquals(emptyList<ToolBeat>(), beats(end("terminal")))
+        assertEquals(emptyList<ToolCall>(), beats(end("terminal")))
     }
 
     @Test
@@ -110,11 +110,11 @@ class TheaterTest {
             end("read_file", ok = true, ms = 113),
             end("read_file", ok = false, ms = 85, result = "File not found"),
         )
-        assertEquals("SOUL.md", b[0].preview)
-        assertEquals(true, b[0].ok)
-        assertEquals(113L, b[0].ms)
-        assertEquals("nope.md", b[1].preview)
-        assertEquals(false, b[1].ok)
+        assertEquals("SOUL.md", b[0].context)
+        assertEquals(true, b[0].verdictOk)
+        assertEquals(0.113, b[0].durationS!!, 1e-9)
+        assertEquals("nope.md", b[1].context)
+        assertEquals(false, b[1].verdictOk)
         assertEquals("File not found", b[1].result)
     }
 
@@ -123,15 +123,17 @@ class TheaterTest {
     @Test
     fun `calls that never overlapped are not a batch`() {
         val b = beats(start("read"), end("read"), start("write"), end("write"))
-        assertTrue(b.none { it.concurrent })
+        assertTrue(b.all { it.batchId.isBlank() })
         assertEquals(listOf(1, 1), Theater.batches(b).map { it.size })
     }
 
     @Test
-    fun `an overlap marks BOTH ends of it, not just the newcomer`() {
+    fun `an overlap joins BOTH ends of it into one dispatch, not just the newcomer`() {
         val b = beats(start("read"), start("write"))
-        assertTrue(b[0].concurrent)
-        assertTrue(b[1].concurrent)
+        assertTrue(b[0].batchId.isNotBlank())
+        assertEquals(b[0].batchId, b[1].batchId)
+        // ⚠️ Announced together is NOT observed concurrency — this channel never claims it (§6).
+        assertTrue(b.none { it.concurrent })
         assertEquals(listOf(2), Theater.batches(b).map { it.size })
     }
 
@@ -146,7 +148,7 @@ class TheaterTest {
 
     @Test
     fun `an empty beat list groups into nothing`() {
-        assertEquals(emptyList<List<ToolBeat>>(), Theater.batches(emptyList()))
+        assertEquals(emptyList<List<ToolCall>>(), Theater.batches(emptyList()))
     }
 
     // --- delegations ---------------------------------------------------------------------------
@@ -214,7 +216,7 @@ class TheaterTest {
         assertEquals(42.5, d.durationSeconds!!, 0.001)
         assertEquals(11000, d.totalTokens)
         assertEquals(9, d.toolCount)
-        assertEquals(2, d.filesWritten)
+        assertEquals(2, d.filesWrittenN)
     }
 
     @Test

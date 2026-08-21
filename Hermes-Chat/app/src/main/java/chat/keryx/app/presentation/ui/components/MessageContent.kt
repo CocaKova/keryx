@@ -479,13 +479,13 @@ internal fun ReasoningCanvas(text: String, baseColor: Color, active: Boolean) {
  * are completed actions in history. Frosted accent gradient keeps them on-brand and uncluttered.
  */
 @Composable
-private fun ToolCalls(calls: List<MessageParser.ToolCall>, baseColor: Color) {
+private fun ToolCalls(calls: List<chat.keryx.core.model.ToolCall>, baseColor: Color) {
     val accent = MaterialTheme.colorScheme.primary
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        calls.forEach { call -> ToolCallCard(call, accent, baseColor) }
+        calls.forEach { call -> ToolTheaterRow(call, accent, baseColor) }
     }
 }
 

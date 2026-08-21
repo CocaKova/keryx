@@ -1,7 +1,8 @@
 package chat.keryx.core
 
 import chat.keryx.core.model.Theater
-import chat.keryx.core.model.ToolBeat
+import chat.keryx.core.model.ToolCall
+import chat.keryx.core.model.ToolStatus
 import chat.keryx.core.model.ToolGrammar
 import chat.keryx.core.model.ToolGrammar.DiffKind
 import kotlin.test.assertEquals
@@ -213,8 +214,8 @@ class ToolGrammarTest {
     @Test
     fun `beats attach to the parsed calls they describe`() {
         val beats = listOf(
-            ToolBeat("read_file", ok = true, ms = 10),
-            ToolBeat("write_file", ok = true, ms = 20, added = 4, removed = 1),
+            ToolCall(name = "read_file", status = ToolStatus.COMPLETED, durationS = 10 / 1000.0),
+            ToolCall(name = "write_file", status = ToolStatus.COMPLETED, durationS = 20 / 1000.0, added = 4, removed = 1),
         )
         val map = Theater.align(listOf("read_file", "write_file"), beats)
         assertEquals(2, map.size)
@@ -224,8 +225,8 @@ class ToolGrammarTest {
     @Test
     fun `a drifted position is left un-enriched rather than given another call's diff`() {
         val beats = listOf(
-            ToolBeat("read_file", ok = true),
-            ToolBeat("write_file", ok = true, added = 40),
+            ToolCall(name = "read_file", status = ToolStatus.COMPLETED),
+            ToolCall(name = "write_file", status = ToolStatus.COMPLETED, added = 40),
         )
         // The parser missed the read, so position 0 is the write. Attaching beat 0 by position
         // would put a read's (absent) diff on a write; attaching beat 1 would be a coincidence.
@@ -235,7 +236,7 @@ class ToolGrammarTest {
 
     @Test
     fun `a run longer than the record enriches only as far as the record goes`() {
-        val beats = listOf(ToolBeat("read_file", ok = true, ms = 7))
+        val beats = listOf(ToolCall(name = "read_file", status = ToolStatus.COMPLETED, durationS = 7 / 1000.0))
         val map = Theater.align(listOf("read_file", "terminal"), beats)
         assertEquals(setOf(0), map.keys)
     }
@@ -243,7 +244,7 @@ class ToolGrammarTest {
     @Test
     fun `no record at all means no enrichment, which is the pre-2_4 card`() {
         assertTrue(Theater.align(listOf("read_file"), emptyList()).isEmpty())
-        assertTrue(Theater.align(emptyList(), listOf(ToolBeat("read_file"))).isEmpty())
+        assertTrue(Theater.align(emptyList(), listOf(ToolCall(name = "read_file"))).isEmpty())
     }
 
     // --- friendly progress lines (the gerund the gateway prints) --------------------------------
