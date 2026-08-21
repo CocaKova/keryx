@@ -242,6 +242,22 @@ Every test passed untouched at both checkpoints.
 
 ### Phase 3 — one theater, two producers
 
+**Status: done (2026-08-21), with one honest deviation.** The DATA half landed exactly as
+written: one core `ToolCall` (Talaria's schema whole, plus the beat's diff facts and a fourth
+status, UNKNOWN, for the committed card's three-verdict truth), `Message` gained the Talaria
+union (toolCalls / delegations / reasoning / reasoningSeconds), `MessageParser` emits core
+`ToolCall`s, `ToolBeat` folded away, and §6's concurrency-claims trap is pinned by test
+(announced-together = shared batchId on the side-channel, never `concurrent`).
+
+⚠️ **Deviation: the renderer flowed the other way, because it already had.** This plan's tool-card
+table was written against a pre-2.4 snapshot — by the time Phase 3 ran, the 2.4/2.5 passes had
+already hand-ported the theater grammar into Keryx's card (hairline rows, ToolGrammar verbs, beat
+enrichment, the tested diff gutter), and Keryx's card handles things Talaria's theater doesn't
+(Note-as-result, ActionOutput, telemetry asides, herald colours). Porting Talaria's file wholesale
+would have shipped the *worse* half — the exact §3 trap, mirrored. So `ToolGroup.kt` dissolved
+instead: grouping → `ChatRenderItems.kt`, the theater-ified card → `ToolTheater.kt`
+(`ToolTheaterRun` / `ToolTheaterRow`), consuming the one `ToolCall` both producers now speak.
+
 The phase that satisfies the quality directive literally.
 
 - `Message` gains `toolCalls`, `delegations`, `reasoning`, `reasoningSeconds`.
@@ -258,6 +274,18 @@ works on Matrix for the first time.
 
 ### Phase 4 — the direct transport — **3.0**
 
+**Status: done (2026-08-21), build + tests green; ⚠️ NOT yet walked on a device.**
+`GatewayRpc` (WS JSON-RPC), a trimmed `GatewayRest`, and `TranscriptBuilder`+`ToolText` (in
+`:core/protocol`, with the role:"user" machinery-unmasking rules) came over with their tests.
+`DirectTransport` keeps the hard-won parts: dual stored/live sid mapping with compaction-fork
+rotation, session-reclaimed recovery, the ordered turn overlay, wings, blocking requests,
+approvals, slash routing, MEDIA: hand-offs. Sessions map straight onto `RoomProfile` — the
+freed word "session" stays gateway-only. The login screen has the two doors; the door decides
+the process spine, so crossing it relaunches the app. The tier-1 SSE side-channel stays
+Matrix-only (on direct, the WS is the stream). Deliberately NOT ported yet (each returns with
+its harvest feature): projects, cockpit toolsets/cron RPCs, model.options, wake, pet-over-RPC,
+reactions-on-direct, `searchSessions`.
+
 - `DirectTransport : ChatTransport`, ported from `GatewayChatRepository` (2,145) and Talaria's
   `HermesStreamClient` (1,662).
 - The login screen gains a second door: **a Matrix account, or a gateway URL and an API key.**
@@ -268,6 +296,25 @@ someone who isn't Jonny — the current install path reads *stand up a Matrix ho
 hermes-agent gateway, then patch a 3,385-line payload into it*, and the public repo has 0 stars.
 
 ### Phase 5 — the harvest
+
+**Status: first landings in (2026-08-21).** Landed, at Keryx's standard: **ApprovalCard** (the
+dowry — warn border, mono command box, per-choice buttons, no movement built around it),
+**BlockingRequestCard** (clarify / sudo / secret — masked, never logged, blank = the wire's own
+"skipped"), **FlightPlanStrip** (pinned with the instruments, ReducedMotion-honoured pulse),
+**ReasoningDisclosure** ("Thought for Ns" — the per-message shape `Message.reasoning` feeds),
+and **delegation wings in the committed transcript** (reusing the live stage's own
+`DelegationWings` — one renderer, not a second copy). `MEDIA:` hand-offs ride the transport.
+And the direct-door login lights Hermes Link itself, which makes the existing Hub panels —
+Jobs (cron), Models, Brains, Health — plus Missions, the Skill Forge, the Run Console and the
+pet serve the second transport with no second setup step: most of this phase's list turned out
+to already exist as panels on the Keryx side.
+
+**Still to harvest:** the Projects surface (RPCs + picker), the cron *read* view (CronSpace's
+"you don't converse with the Daily Brief" reader — Jobs covers management), the full
+model-catalog picker (`model.options` with connect-a-provider), the wake word (six files;
+device-dependent, and Talaria's own voice leg is still awaiting its device walk), reactions on
+the direct path (the wire supports `message.react`; the seam currently files reactions under
+MatrixCapabilities), and a REST-hydration ArchiveIndexer so the Archive reaches the direct door.
 
 Cron, Projects, Models, Gateway status, Approvals, the flight-plan strip, the wake word, `MEDIA:`
 hand-offs — each re-landing as a `HubPanel` or a Keryx space, under the attention budget, wearing
