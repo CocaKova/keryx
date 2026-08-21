@@ -98,6 +98,10 @@ dependencies {
   // Compose
   implementation(libs.androidx.compose.ui)
   implementation(libs.androidx.compose.ui.tooling.preview)
+  // Composition tracing: names composables inside perfetto traces (debug only — release
+  // builds carry no tracing runtime).
+  debugImplementation("androidx.compose.runtime:runtime-tracing")
+  debugImplementation("androidx.tracing:tracing-perfetto-binary:1.0.0")
   implementation(libs.androidx.compose.material3)
   implementation(libs.androidx.material.icons.extended)
   // Inline video playback (media3/ExoPlayer)
