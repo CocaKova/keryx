@@ -94,11 +94,11 @@ class PushSyncWorker(
         if (app.isForeground && app.openRoomId == roomId) return Result.success()
 
         val message = withTimeoutOrNull(SYNC_WAIT_MS) {
-            app.repository.getMessages(roomId, 1).first { it.isNotEmpty() }.lastOrNull()
+            app.transport.getMessages(roomId, 1).first { it.isNotEmpty() }.lastOrNull()
         }
         if (message == null || message.sender == SenderType.ME) return Result.success()
         val roomName = withTimeoutOrNull(2_000L) {
-            app.repository.getRooms().first().firstOrNull { it.id == roomId }?.name
+            app.transport.getRooms().first().firstOrNull { it.id == roomId }?.name
         } ?: "New message"
         KeryxNotifications.notifyMessage(
             context = applicationContext,

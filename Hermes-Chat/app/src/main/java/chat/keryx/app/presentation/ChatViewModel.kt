@@ -7,7 +7,7 @@ import chat.keryx.core.model.Message
 import chat.keryx.core.model.MessageReaction
 import chat.keryx.core.model.RoomProfile
 import chat.keryx.core.model.SenderType
-import chat.keryx.app.domain.repository.ChatRepository
+import chat.keryx.core.transport.ChatTransport
 import chat.keryx.app.domain.repository.SettingsRepository
 import chat.keryx.core.protocol.MessageParser
 import chat.keryx.core.protocol.StreamTailTracker
@@ -39,12 +39,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 
 class ChatViewModel(
-    private val repository: ChatRepository,
+    private val transport: ChatTransport,
     private val settingsRepository: SettingsRepository,
     // The Archive (1.26): nullable so the ViewModel stays constructible in plain-JVM tests.
     private val archiveStore: chat.keryx.app.data.archive.ArchiveStore? = null,
     private val archiveIndexer: chat.keryx.app.data.archive.ArchiveIndexer? = null,
 ) : ViewModel() {
+
+    // The Matrix-only surface, if this transport has one. Affordances that only Matrix offers
+    // (reactions, invites, avatars, membership) no-op quietly on a transport without it; the UI
+    // gates their chrome on the same nullability.
+    private val matrix get() = transport.matrix
 
     companion object {
         private const val INITIAL_LIMIT = 50
@@ -158,10 +163,10 @@ class ChatViewModel(
         }
     }
 
-    val isLoggedIn: StateFlow<Boolean> = repository.isLoggedIn()
+    val isLoggedIn: StateFlow<Boolean> = transport.isLoggedIn()
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    val currentUserId: StateFlow<String?> = repository.currentUserId()
+    val currentUserId: StateFlow<String?> = transport.currentUserId()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val _rooms = MutableStateFlow<List<RoomProfile>>(emptyList())
@@ -183,7 +188,7 @@ class ChatViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     val messages: StateFlow<List<Message>> =
         combine(_currentRoom.filterNotNull(), _timelineLimit) { room, limit -> room.id to limit }
-            .flatMapLatest { (sessionId, limit) -> repository.getMessages(sessionId, limit) }
+            .flatMapLatest { (sessionId, limit) -> transport.getMessages(sessionId, limit) }
             .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     /** Latest runtime-footer telemetry in the open room (`model · 42% · 22s · ~/dir`) — the data
@@ -1447,7 +1452,7 @@ class ChatViewModel(
 
     init {
         viewModelScope.launch {
-            repository.getRooms().collectLatest { roomList ->
+            transport.getRooms().collectLatest { roomList ->
                 _rooms.value = roomList
                 // A pending notification-tap target takes priority once its room is available.
                 val pending = pendingOpenRoomId
@@ -1468,7 +1473,7 @@ class ChatViewModel(
             }
         }
         viewModelScope.launch {
-            repository.getInvites().collectLatest { _invites.value = it }
+            matrix?.getInvites()?.collectLatest { _invites.value = it }
         }
         viewModelScope.launch {
             messages.collect { msgs ->
@@ -1596,7 +1601,7 @@ class ChatViewModel(
             _currentRoom
                 .flatMapLatest { s ->
                     if (s == null) flowOf(chat.keryx.core.model.TypingState())
-                    else repository.typing(s.id)
+                    else transport.typing(s.id)
                 }
                 .collect { state ->
                     _typingHumans.value = state.humanNames
@@ -1953,7 +1958,7 @@ class ChatViewModel(
         settingsRepository.lastRoomId = room.id
         _typingHumans.value = emptyList()
         // Warm the member store so sender display names resolve in cold group rooms.
-        viewModelScope.launch { repository.ensureMembersLoaded(room.id) }
+        viewModelScope.launch { matrix?.ensureMembersLoaded(room.id) }
         // The bookmark state in the bubble menu belongs to the room being opened.
         _savedIds.value = emptySet()
         refreshSavedIds()
@@ -2054,7 +2059,7 @@ class ChatViewModel(
         mediaBytesCache.get(eventId)?.let { return it }
         val deferred = mediaInFlight.getOrPut(eventId) {
             viewModelScope.async(Dispatchers.IO) {
-                repository.mediaBytes(sessionId, eventId)?.also { mediaBytesCache.put(eventId, it) }
+                transport.mediaBytes(sessionId, eventId)?.also { mediaBytesCache.put(eventId, it) }
             }.also { d -> d.invokeOnCompletion { mediaInFlight.remove(eventId, d) } }
         }
         return deferred.await() // cancellation propagates to the caller, not the download
@@ -2069,7 +2074,7 @@ class ChatViewModel(
     suspend fun roomPreview(roomId: String, stamp: Long): String? {
         previewCache[roomId]?.let { (cachedStamp, preview) -> if (cachedStamp == stamp) return preview }
         val msgs = withTimeoutOrNull(5_000L) {
-            repository.getMessages(roomId, 8).first { it.isNotEmpty() }
+            transport.getMessages(roomId, 8).first { it.isNotEmpty() }
         } ?: return previewCache[roomId]?.second
         // Skip runtime footers so the preview reads as the conversation, not plumbing.
         val last = msgs.lastOrNull { !MessageParser.isRuntimeFooterMessage(it.content) } ?: msgs.lastOrNull() ?: return null
@@ -2092,14 +2097,14 @@ class ChatViewModel(
     fun reactionsFlow(sessionId: String, eventId: String): kotlinx.coroutines.flow.Flow<List<MessageReaction>> =
         synchronized(reactionFlows) {
             reactionFlows.getOrPut(eventId) {
-                repository.reactionsFlow(sessionId, eventId)
+                (matrix?.reactionsFlow(sessionId, eventId) ?: flowOf(emptyList()))
                     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
             }
         }
 
     fun sendReaction(eventId: String, emoji: String) {
         val session = _currentRoom.value ?: return
-        viewModelScope.launch { repository.react(session.id, eventId, emoji) }
+        viewModelScope.launch { matrix?.react(session.id, eventId, emoji) }
     }
 
     fun toggleTheme(isDark: Boolean?) {
@@ -2203,18 +2208,18 @@ class ChatViewModel(
 
     fun sendAttachment(bytes: ByteArray, fileName: String, contentType: String, caption: String? = null) {
         val session = _currentRoom.value ?: return
-        viewModelScope.launch { repository.sendAttachment(session.id, bytes, fileName, contentType, caption) }
+        viewModelScope.launch { transport.sendAttachment(session.id, bytes, fileName, contentType, caption) }
     }
 
     fun markRoomRead(roomId: String, eventId: String) {
-        viewModelScope.launch { repository.markRead(roomId, eventId) }
+        viewModelScope.launch { transport.markRead(roomId, eventId) }
     }
 
     suspend fun loadAvatar(mxc: String): ByteArray? {
         avatarBytesCache.get(mxc)?.let { return it }
         val deferred = avatarInFlight.getOrPut(mxc) {
             viewModelScope.async(Dispatchers.IO) {
-                repository.avatarBytes(mxc)?.also { avatarBytesCache.put(mxc, it) }
+                matrix?.avatarBytes(mxc)?.also { avatarBytesCache.put(mxc, it) }
             }.also { d -> d.invokeOnCompletion { avatarInFlight.remove(mxc, d) } }
         }
         return deferred.await()
@@ -2226,9 +2231,9 @@ class ChatViewModel(
 
     fun setRoomAvatar(roomId: String, bytes: ByteArray, contentType: String) {
         viewModelScope.launch {
-            repository.setRoomAvatar(roomId, bytes, contentType)
-                .onSuccess { _toasts.tryEmit("Room photo updated") }
-                .onFailure {
+            matrix?.setRoomAvatar(roomId, bytes, contentType)
+                ?.onSuccess { _toasts.tryEmit("Room photo updated") }
+                ?.onFailure {
                     android.util.Log.w("KeryxAvatar", "set avatar failed for $roomId: ${it.message}", it)
                     val raw = it.message.orEmpty()
                     val msg = if ("403" in raw || raw.contains("forbidden", true) || raw.contains("M_FORBIDDEN")) {
@@ -2269,8 +2274,8 @@ class ChatViewModel(
             _pendingSend.value = null
         }
         viewModelScope.launch {
-            if (replyTo != null) repository.sendReply(session.id, content, replyTo.id)
-            else repository.sendMessage(session.id, content)
+            if (replyTo != null) transport.sendReply(session.id, content, replyTo.id)
+            else transport.sendMessage(session.id, content)
         }
         _replyTarget.value = null
         settingsRepository.setDraft(session.id, "")
@@ -2292,7 +2297,7 @@ class ChatViewModel(
         } else if (now - typingSentAt > 4_000L || typingRoomId != room) {
             typingSentAt = now
             typingRoomId = room
-            viewModelScope.launch { repository.setTyping(room, true) }
+            viewModelScope.launch { transport.setTyping(room, true) }
         }
     }
 
@@ -2300,7 +2305,7 @@ class ChatViewModel(
         if (typingRoomId == null) return
         typingSentAt = 0L
         typingRoomId = null
-        viewModelScope.launch { repository.setTyping(roomId, false) }
+        viewModelScope.launch { transport.setTyping(roomId, false) }
     }
 
     // --- Room membership: invites, leaving ------------------------------------------------------
@@ -2308,17 +2313,17 @@ class ChatViewModel(
 
     fun acceptInvite(roomId: String) {
         viewModelScope.launch {
-            repository.acceptInvite(roomId)
-                .onSuccess { _toasts.tryEmit("Joined — the room appears on the next sync") }
-                .onFailure { _toasts.tryEmit("Join failed: ${it.message?.take(80)}") }
+            matrix?.acceptInvite(roomId)
+                ?.onSuccess { _toasts.tryEmit("Joined — the room appears on the next sync") }
+                ?.onFailure { _toasts.tryEmit("Join failed: ${it.message?.take(80)}") }
         }
     }
 
     fun declineInvite(roomId: String) {
         viewModelScope.launch {
-            repository.leaveRoom(roomId)
-                .onSuccess { _toasts.tryEmit("Invite declined") }
-                .onFailure { _toasts.tryEmit("Decline failed: ${it.message?.take(80)}") }
+            matrix?.leaveRoom(roomId)
+                ?.onSuccess { _toasts.tryEmit("Invite declined") }
+                ?.onFailure { _toasts.tryEmit("Decline failed: ${it.message?.take(80)}") }
         }
     }
 
@@ -2328,40 +2333,40 @@ class ChatViewModel(
 
     fun startDirectMessage(userId: String, onDone: (String?) -> Unit) {
         viewModelScope.launch {
-            repository.startDirectMessage(userId)
-                .onSuccess { roomId -> openRoomById(roomId); onDone(null) }
-                .onFailure { onDone(it.message?.take(120) ?: "couldn't start the chat") }
+            matrix?.startDirectMessage(userId)
+                ?.onSuccess { roomId -> openRoomById(roomId); onDone(null) }
+                ?.onFailure { onDone(it.message?.take(120) ?: "couldn't start the chat") }
         }
     }
 
     fun createRoom(name: String, invitee: String, onDone: (String?) -> Unit) {
         viewModelScope.launch {
-            repository.createRoom(name, listOf(invitee))
-                .onSuccess { roomId -> openRoomById(roomId); onDone(null) }
-                .onFailure { onDone(it.message?.take(120) ?: "couldn't create the room") }
+            matrix?.createRoom(name, listOf(invitee))
+                ?.onSuccess { roomId -> openRoomById(roomId); onDone(null) }
+                ?.onFailure { onDone(it.message?.take(120) ?: "couldn't create the room") }
         }
     }
 
     fun joinRoomByAddress(address: String, onDone: (String?) -> Unit) {
         viewModelScope.launch {
-            repository.joinRoomByAddress(address)
-                .onSuccess { roomId -> openRoomById(roomId); onDone(null) }
-                .onFailure { onDone(it.message?.take(120) ?: "couldn't join") }
+            matrix?.joinRoomByAddress(address)
+                ?.onSuccess { roomId -> openRoomById(roomId); onDone(null) }
+                ?.onFailure { onDone(it.message?.take(120) ?: "couldn't join") }
         }
     }
 
     fun inviteUser(roomId: String, userId: String) {
         viewModelScope.launch {
-            repository.inviteUser(roomId, userId)
-                .onSuccess { _toasts.tryEmit("Invite sent") }
-                .onFailure { _toasts.tryEmit("Invite failed: ${it.message?.take(80)}") }
+            matrix?.inviteUser(roomId, userId)
+                ?.onSuccess { _toasts.tryEmit("Invite sent") }
+                ?.onFailure { _toasts.tryEmit("Invite failed: ${it.message?.take(80)}") }
         }
     }
 
     fun leaveRoom(roomId: String) {
         viewModelScope.launch {
-            repository.leaveRoom(roomId)
-                .onSuccess {
+            matrix?.leaveRoom(roomId)
+                ?.onSuccess {
                     _toasts.tryEmit("Left room")
                     if (settingsRepository.lastRoomId == roomId) settingsRepository.lastRoomId = null
                     // Move off the dead room so the chat pane never points at a membership we lost.
@@ -2371,21 +2376,22 @@ class ChatViewModel(
                         else _currentRoom.value = null
                     }
                 }
-                .onFailure { _toasts.tryEmit("Leave failed: ${it.message?.take(80)}") }
+                ?.onFailure { _toasts.tryEmit("Leave failed: ${it.message?.take(80)}") }
         }
     }
 
     /** Delete (redact) a message. The event body vanishes for everyone on sync. */
     fun deleteMessage(sessionId: String, eventId: String) {
         viewModelScope.launch {
-            repository.redactMessage(sessionId, eventId)
-                .onFailure { _toasts.tryEmit("Delete failed: ${it.message?.take(80)}") }
+            matrix?.redactMessage(sessionId, eventId)
+                ?.onFailure { _toasts.tryEmit("Delete failed: ${it.message?.take(80)}") }
         }
     }
 
     fun loginToMatrix(username: String, password: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
-            val result = repository.login(username, password)
+            val result = matrix?.login(username, password)
+                ?: Result.failure(IllegalStateException("This transport has no Matrix login"))
             result.fold(
                 onSuccess = { onResult(true, "Logged in") },
                 onFailure = { onResult(false, it.message ?: "Login failed. Check URL or credentials.") },
@@ -2397,7 +2403,7 @@ class ChatViewModel(
         viewModelScope.launch {
             settingsRepository.lastRoomId = null
             _currentRoom.value = null
-            repository.logout()
+            transport.logout()
         }
     }
 
@@ -2600,7 +2606,7 @@ class ChatViewModel(
     /** History around an event for the Archive's context view (server-fetches gaps, bounded). */
     suspend fun archiveContext(eventId: String, before: Int = 25, after: Int = 25): List<Message> {
         val roomId = _currentRoom.value?.id ?: return emptyList()
-        return runCatching { repository.messagesAround(roomId, eventId, before, after) }
+        return runCatching { transport.messagesAround(roomId, eventId, before, after) }
             .onFailure { android.util.Log.w("KeryxArchive", "context load failed: ${it.message}") }
             .getOrDefault(emptyList())
     }

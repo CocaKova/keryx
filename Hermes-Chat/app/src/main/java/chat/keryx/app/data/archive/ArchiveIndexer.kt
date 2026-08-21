@@ -1,6 +1,6 @@
 package chat.keryx.app.data.archive
 
-import chat.keryx.app.data.remote.MatrixService
+import chat.keryx.app.transport.matrix.MatrixService
 import chat.keryx.core.model.Message
 import chat.keryx.core.model.SenderType
 import chat.keryx.app.presentation.ui.components.ChatRenderItem

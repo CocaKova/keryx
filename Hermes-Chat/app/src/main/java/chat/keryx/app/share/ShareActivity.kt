@@ -184,11 +184,11 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
                     val note = listOf(comment.trim(), payload.text)
                         .filter { it.isNotBlank() }.joinToString("\n\n")
                     if (payload.uris.isEmpty()) {
-                        app.repository.sendMessage(roomId, note)
+                        app.transport.sendMessage(roomId, note)
                     } else {
                         payload.uris.forEachIndexed { i, uri ->
                             val (bytes, name, mime) = readShared(uri)
-                            app.repository.sendAttachment(
+                            app.transport.sendAttachment(
                                 roomId = roomId,
                                 bytes = bytes,
                                 fileName = name,
@@ -248,7 +248,7 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
         // Pinned rooms first (they're pinned because they're the frequent targets), then recency.
         val pinned = remember { app.settingsRepository.pinnedRoomIds }
         val rooms by remember {
-            app.repository.getRooms().map { list ->
+            app.transport.getRooms().map { list ->
                 list.sortedWith(
                     compareByDescending<RoomProfile> { it.id in pinned }
                         .thenByDescending { it.timestamp },

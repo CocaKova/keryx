@@ -75,7 +75,7 @@ class SendTextWorker(
 
         val sent = runCatching {
             app.matrixService.restore(allowInsecure = app.settingsRepository.allowInsecure)
-            app.repository.sendMessage(roomId, text)
+            app.transport.sendMessage(roomId, text)
         }
         return if (sent.isSuccess) {
             KeryxNotifications.notifyActionResult(applicationContext, roomId, roomName, "✓ You: $text")
