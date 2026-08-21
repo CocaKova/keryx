@@ -1,4 +1,4 @@
-package chat.keryx.app.domain.model
+package chat.keryx.core.model
 
 /**
  * The tool theater (2.4): what the agent is *doing* while a turn is in flight.

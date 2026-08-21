@@ -66,10 +66,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.keryx.app.domain.model.Message
-import chat.keryx.app.domain.model.MessageReaction
-import chat.keryx.app.domain.model.RoomType
-import chat.keryx.app.domain.model.SenderType
+import chat.keryx.core.model.Message
+import chat.keryx.core.model.MessageReaction
+import chat.keryx.core.model.RoomType
+import chat.keryx.core.model.SenderType
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.ui.components.ChatRenderItem
 import chat.keryx.app.presentation.ui.components.HermesThinkingAnimation
@@ -220,7 +220,7 @@ fun ChatScreen(
     }
     val lastTurnBeats = lastTurn?.takeIf { it.first == currentRoom?.id }?.second?.beats.orEmpty()
     // A landed subagent the reader asked to see inside (2.4).
-    var openSubagent by remember { mutableStateOf<chat.keryx.app.domain.model.Delegation?>(null) }
+    var openSubagent by remember { mutableStateOf<chat.keryx.core.model.Delegation?>(null) }
 
     // Restore this room's unsent draft when it opens (and swap drafts when switching rooms) so
     // half-typed thoughts survive room hops and app restarts.
@@ -2089,7 +2089,7 @@ private fun StreamingBubble(
     stream: chat.keryx.app.presentation.LiveStream,
     bubbleStyle: String,
     textScale: Float,
-    onOpenSubagent: (chat.keryx.app.domain.model.Delegation) -> Unit = {},
+    onOpenSubagent: (chat.keryx.core.model.Delegation) -> Unit = {},
 ) {
     val appearance = bubbleAppearance(isMine = false, style = bubbleStyle)
     val accent = MaterialTheme.colorScheme.primary

@@ -1,10 +1,10 @@
 package chat.keryx.app.domain.repository
 
-import chat.keryx.app.domain.model.Message
-import chat.keryx.app.domain.model.MessageReaction
-import chat.keryx.app.domain.model.RoomInvite
-import chat.keryx.app.domain.model.RoomProfile
-import chat.keryx.app.domain.model.TypingState
+import chat.keryx.core.model.Message
+import chat.keryx.core.model.MessageReaction
+import chat.keryx.core.model.RoomInvite
+import chat.keryx.core.model.RoomProfile
+import chat.keryx.core.model.TypingState
 import kotlinx.coroutines.flow.Flow
 
 interface ChatRepository {

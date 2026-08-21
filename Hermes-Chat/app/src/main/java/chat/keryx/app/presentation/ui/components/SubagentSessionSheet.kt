@@ -29,9 +29,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.keryx.app.data.remote.HermesStreamClient.HubMessage
-import chat.keryx.app.domain.model.Delegation
-import chat.keryx.app.domain.model.DelegationState
-import chat.keryx.app.domain.model.ToolGrammar
+import chat.keryx.core.model.Delegation
+import chat.keryx.core.model.DelegationState
+import chat.keryx.core.model.ToolGrammar
 
 /**
  * What a subagent actually did (2.4).

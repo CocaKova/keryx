@@ -48,11 +48,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.keryx.app.domain.model.Message
-import chat.keryx.app.domain.model.Theater
-import chat.keryx.app.domain.model.ToolBeat
-import chat.keryx.app.domain.model.ToolGrammar
-import chat.keryx.app.domain.model.SenderType
+import chat.keryx.core.model.Message
+import chat.keryx.core.model.Theater
+import chat.keryx.core.model.ToolBeat
+import chat.keryx.core.model.ToolGrammar
+import chat.keryx.core.model.SenderType
 
 /**
  * A single Hermes tool invocation as a dream-aesthetic "Sandbox Card": the tool's own glyph,
@@ -179,7 +179,7 @@ fun ToolCallCard(
 
 /** The profile an inter-agent delivery is addressed to, or null for an ordinary tool call. */
 internal fun deliveryTargetOf(call: MessageParser.ToolCall): String? =
-    chat.keryx.app.domain.model.AgentDeliveryCommand.targetOfCall(call.name, call.args)
+    chat.keryx.core.model.AgentDeliveryCommand.targetOfCall(call.name, call.args)
 
 /**
  * A run of consecutive tool-only Hermes messages, collapsed into one compact bubble. While the
@@ -340,7 +340,7 @@ fun ToolGroupCard(
                                 baseColor,
                                 deliveryReply = (run.entries.getOrNull(i + 1) as? ToolRunEntry.Note)
                                     ?.takeIf { i + 1 in consumed }
-                                    ?.let { chat.keryx.app.domain.model.AgentDeliveryCommand.replyText(it.text) },
+                                    ?.let { chat.keryx.core.model.AgentDeliveryCommand.replyText(it.text) },
                                 beat = enriched[calls.indexOfFirst { c -> c === entry.call }],
                             )
                             // A tool's own output (terminal stdout, vision result): monospace in a

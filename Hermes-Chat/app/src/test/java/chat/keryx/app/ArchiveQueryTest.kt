@@ -100,11 +100,11 @@ class ArchiveQueryTest {
     // as prose. Grouped with their tool-bearing neighbors they fold into the run — and stay out.
 
     private fun msg(id: String, content: String, me: Boolean = false, ts: Long = 1L) =
-        chat.keryx.app.domain.model.Message(
+        chat.keryx.core.model.Message(
             id = id,
             roomId = "!room:x",
-            sender = if (me) chat.keryx.app.domain.model.SenderType.ME
-            else chat.keryx.app.domain.model.SenderType.HERMES,
+            sender = if (me) chat.keryx.core.model.SenderType.ME
+            else chat.keryx.core.model.SenderType.HERMES,
             content = content,
             timestamp = ts,
             senderId = if (me) "@jonny:x" else "@silas:x",

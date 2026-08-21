@@ -47,12 +47,12 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.keryx.app.domain.model.Delegation
-import chat.keryx.app.domain.model.DelegationState
-import chat.keryx.app.domain.model.Theater
-import chat.keryx.app.domain.model.TheaterState
-import chat.keryx.app.domain.model.ToolBeat
-import chat.keryx.app.domain.model.ToolGrammar
+import chat.keryx.core.model.Delegation
+import chat.keryx.core.model.DelegationState
+import chat.keryx.core.model.Theater
+import chat.keryx.core.model.TheaterState
+import chat.keryx.core.model.ToolBeat
+import chat.keryx.core.model.ToolGrammar
 
 /**
  * The tool theater (2.4), inside the live reply: what the agent is *doing* while it works —

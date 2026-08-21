@@ -53,7 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.remember
-import chat.keryx.app.domain.model.MediaKind
+import chat.keryx.core.model.MediaKind
 
 /**
  * Process-wide cache of decoded bitmaps keyed by media id / mxc URL. The chat list re-enters

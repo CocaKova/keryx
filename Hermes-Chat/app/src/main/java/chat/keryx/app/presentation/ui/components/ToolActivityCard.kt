@@ -20,8 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.keryx.app.domain.model.ToolActivity
-import chat.keryx.app.domain.model.ToolStatus
+import chat.keryx.core.model.ToolActivity
+import chat.keryx.core.model.ToolStatus
 
 @Composable
 fun ToolActivityCard(

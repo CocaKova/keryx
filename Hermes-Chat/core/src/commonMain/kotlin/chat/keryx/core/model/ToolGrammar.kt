@@ -1,4 +1,4 @@
-package chat.keryx.app.domain.model
+package chat.keryx.core.model
 
 /**
  * One vocabulary for tool calls, wherever they are drawn.

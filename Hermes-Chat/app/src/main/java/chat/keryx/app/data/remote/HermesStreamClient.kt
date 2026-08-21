@@ -57,7 +57,7 @@ class HermesStreamClient(
         /** A segment boundary — the current text run ended (e.g. a tool call interleaves). */
         data object SegmentBreak : Event
         /** One beat of the tool / subagent theater (2.4). */
-        data class Tool(val event: chat.keryx.app.domain.model.TheaterEvent) : Event
+        data class Tool(val event: chat.keryx.core.model.TheaterEvent) : Event
         /** Turn finished. [finalText] is the exact body Hermes commits to Matrix (may be null if
          *  the server couldn't include it; match then falls back to accumulated text). */
         data class Stop(val finalText: String?) : Event
@@ -157,13 +157,13 @@ class HermesStreamClient(
      * Unknown phases parse fine and the reducer ignores them, so a newer gateway can add beats
      * without a client release.
      */
-    private fun parseTheater(data: String): chat.keryx.app.domain.model.TheaterEvent? = try {
+    private fun parseTheater(data: String): chat.keryx.core.model.TheaterEvent? = try {
         val obj = json.parseToJsonElement(parseText(data) ?: return null).jsonObject
         fun str(k: String) = (obj[k] as? JsonPrimitive)?.content.orEmpty()
         fun int(k: String) = (obj[k] as? JsonPrimitive)?.content?.toDoubleOrNull()?.toInt()
         val phase = str("phase")
         if (phase.isBlank()) null
-        else chat.keryx.app.domain.model.TheaterEvent(
+        else chat.keryx.core.model.TheaterEvent(
             phase = phase,
             kind = str("kind"),
             name = str("name"),

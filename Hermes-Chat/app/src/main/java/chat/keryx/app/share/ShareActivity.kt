@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import chat.keryx.app.KeryxApp
-import chat.keryx.app.domain.model.RoomProfile
+import chat.keryx.core.model.RoomProfile
 import chat.keryx.app.presentation.ui.components.KeryxWordmark
 import chat.keryx.app.theme.HermesChatTheme
 import kotlinx.coroutines.Dispatchers

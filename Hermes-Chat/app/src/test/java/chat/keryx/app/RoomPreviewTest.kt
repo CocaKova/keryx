@@ -1,8 +1,8 @@
 package chat.keryx.app
 
-import chat.keryx.app.domain.model.MediaKind
-import chat.keryx.app.domain.model.Message
-import chat.keryx.app.domain.model.SenderType
+import chat.keryx.core.model.MediaKind
+import chat.keryx.core.model.Message
+import chat.keryx.core.model.SenderType
 import chat.keryx.app.presentation.ChatViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

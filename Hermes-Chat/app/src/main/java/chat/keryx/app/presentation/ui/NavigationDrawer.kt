@@ -44,11 +44,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.keryx.app.domain.model.RoomInvite
-import chat.keryx.app.domain.model.RoomProfile
-import chat.keryx.app.domain.model.RoomSigil
-import chat.keryx.app.domain.model.RoomSigils
-import chat.keryx.app.domain.model.RoomType
+import chat.keryx.core.model.RoomInvite
+import chat.keryx.core.model.RoomProfile
+import chat.keryx.core.model.RoomSigil
+import chat.keryx.core.model.RoomSigils
+import chat.keryx.core.model.RoomType
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.ui.components.KeryxRadius
 import chat.keryx.app.presentation.ui.components.RoomSigilAvatar

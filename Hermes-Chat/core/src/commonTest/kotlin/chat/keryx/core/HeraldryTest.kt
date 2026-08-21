@@ -1,13 +1,13 @@
-package chat.keryx.app
+package chat.keryx.core
 
-import chat.keryx.app.domain.model.Heralds
-import chat.keryx.app.domain.model.RoomSigil
-import chat.keryx.app.domain.model.RoomSigils
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import chat.keryx.core.model.Heralds
+import chat.keryx.core.model.RoomSigil
+import chat.keryx.core.model.RoomSigils
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
+import kotlin.test.Test
 
 /**
  * The pure heraldry layer (2.3 §1). These rules decide which sender is an agent at all and what

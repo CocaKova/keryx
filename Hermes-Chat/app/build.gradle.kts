@@ -77,6 +77,7 @@ kotlin {
 
 dependencies {
   val composeBom = platform(libs.androidx.compose.bom)
+  implementation(project(":core"))
   implementation(composeBom)
   androidTestImplementation(composeBom)
 
@@ -111,8 +112,8 @@ dependencies {
   // Local tests: jUnit, coroutines, Android runner
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)
-  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
-  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+  implementation(libs.kotlinx.coroutines.core)
+  implementation(libs.kotlinx.coroutines.android)
   // Mission alerts: the 15-min background check survives process death and respects Doze.
   implementation(libs.androidx.work.runtime)
   // Real background push for normal messages (UnifiedPush distributor -> PushService wake).

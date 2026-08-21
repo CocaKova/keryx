@@ -1,10 +1,10 @@
-package chat.keryx.app
+package chat.keryx.core
 
-import chat.keryx.app.domain.model.AgentDelivery
-import chat.keryx.app.domain.model.AgentDeliveryCommand
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Test
+import chat.keryx.core.model.AgentDelivery
+import chat.keryx.core.model.AgentDeliveryCommand
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.Test
 
 /** Shapes from desktop's AGENT_MESSAGE_RE suite, ported through Talaria — kept byte-compatible. */
 class AgentDeliveryTest {

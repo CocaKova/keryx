@@ -9,8 +9,8 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import chat.keryx.app.KeryxApp
-import chat.keryx.app.domain.model.MediaKind
-import chat.keryx.app.domain.model.SenderType
+import chat.keryx.core.model.MediaKind
+import chat.keryx.core.model.SenderType
 import chat.keryx.app.presentation.ui.components.MessageParser
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull

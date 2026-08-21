@@ -1,8 +1,8 @@
 package chat.keryx.app.data.archive
 
 import chat.keryx.app.data.remote.MatrixService
-import chat.keryx.app.domain.model.Message
-import chat.keryx.app.domain.model.SenderType
+import chat.keryx.core.model.Message
+import chat.keryx.core.model.SenderType
 import chat.keryx.app.presentation.ui.components.ChatRenderItem
 import chat.keryx.app.presentation.ui.components.MessageParser
 import chat.keryx.app.presentation.ui.components.groupChatItems
@@ -236,10 +236,10 @@ class ArchiveIndexer(
         // m.replace edit events: Trixnity folds the edit into the original — the carrier is noise.
         if (rc.relatesTo is RelatesTo.Replace) return null
         val mediaKind = when (rc) {
-            is RoomMessageEventContent.FileBased.Image -> chat.keryx.app.domain.model.MediaKind.IMAGE
-            is RoomMessageEventContent.FileBased.Video -> chat.keryx.app.domain.model.MediaKind.VIDEO
-            is RoomMessageEventContent.FileBased.Audio -> chat.keryx.app.domain.model.MediaKind.AUDIO
-            is RoomMessageEventContent.FileBased.File -> chat.keryx.app.domain.model.MediaKind.FILE
+            is RoomMessageEventContent.FileBased.Image -> chat.keryx.core.model.MediaKind.IMAGE
+            is RoomMessageEventContent.FileBased.Video -> chat.keryx.core.model.MediaKind.VIDEO
+            is RoomMessageEventContent.FileBased.Audio -> chat.keryx.core.model.MediaKind.AUDIO
+            is RoomMessageEventContent.FileBased.File -> chat.keryx.core.model.MediaKind.FILE
             else -> null
         }
         var body = rc.body

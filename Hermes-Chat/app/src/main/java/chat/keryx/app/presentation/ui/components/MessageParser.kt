@@ -1,6 +1,6 @@
 package chat.keryx.app.presentation.ui.components
 
-import chat.keryx.app.domain.model.ToolGrammar
+import chat.keryx.core.model.ToolGrammar
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive

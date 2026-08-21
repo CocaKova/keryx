@@ -1,16 +1,16 @@
 package chat.keryx.app.data.repository
 
 import chat.keryx.app.data.remote.MatrixService
-import chat.keryx.app.domain.model.Heralds
-import chat.keryx.app.domain.model.MediaKind
-import chat.keryx.app.domain.model.Message
-import chat.keryx.app.domain.model.MessageReaction
-import chat.keryx.app.domain.model.RoomInvite
-import chat.keryx.app.domain.model.RoomProfile
-import chat.keryx.app.domain.model.RoomSigils
-import chat.keryx.app.domain.model.RoomType
-import chat.keryx.app.domain.model.SenderType
-import chat.keryx.app.domain.model.TypingState
+import chat.keryx.core.model.Heralds
+import chat.keryx.core.model.MediaKind
+import chat.keryx.core.model.Message
+import chat.keryx.core.model.MessageReaction
+import chat.keryx.core.model.RoomInvite
+import chat.keryx.core.model.RoomProfile
+import chat.keryx.core.model.RoomSigils
+import chat.keryx.core.model.RoomType
+import chat.keryx.core.model.SenderType
+import chat.keryx.core.model.TypingState
 import chat.keryx.app.domain.repository.ChatRepository
 import chat.keryx.app.domain.repository.SettingsRepository
 import io.ktor.http.ContentType
@@ -708,7 +708,7 @@ class ChatRepositoryImpl(
         // for the same reason: a human who happens to quote the convention must not have their own
         // words reattributed to somebody else. Only machinery gets parsed as machinery.
         val delivery = if (sender == SenderType.HERMES) {
-            chat.keryx.app.domain.model.AgentDelivery.parse(body)
+            chat.keryx.core.model.AgentDelivery.parse(body)
         } else null
         return Message(
             id = event.id.full,
@@ -751,9 +751,9 @@ class ChatRepositoryImpl(
         if (senderId == myId) return SenderType.ME
         // 2.3: the setting holds a LIST — one id still works, several make a council. Any of them
         // is a herald; everyone else stays a human.
-        val ids = chat.keryx.app.domain.model.Heralds.parseIds(agentId)
+        val ids = chat.keryx.core.model.Heralds.parseIds(agentId)
         if (ids.isEmpty()) return if (legacyAgentRoom) SenderType.HERMES else SenderType.OTHER
-        return if (chat.keryx.app.domain.model.Heralds.isHerald(senderId, ids)) SenderType.HERMES
+        return if (chat.keryx.core.model.Heralds.isHerald(senderId, ids)) SenderType.HERMES
         else SenderType.OTHER
     }
 
