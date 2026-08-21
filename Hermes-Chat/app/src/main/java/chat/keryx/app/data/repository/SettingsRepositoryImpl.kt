@@ -6,7 +6,14 @@ import chat.keryx.app.domain.repository.SettingsRepository
 import java.net.URI
 
 class SettingsRepositoryImpl(context: Context) : SettingsRepository {
-    private val prefs: SharedPreferences = context.getSharedPreferences("hermes_settings", Context.MODE_PRIVATE)
+
+    companion object {
+        /** The one settings file. Shared with [chat.keryx.app.presentation.ui.components.relaunchApp],
+         *  which must flush this file's pending apply() writes before it kills the process. */
+        const val PREFS_FILE = "hermes_settings"
+    }
+
+    private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
     private val appContext = context.applicationContext
 
     // --- sealed secrets (TokenVault: AES/GCM under an AndroidKeyStore key) ---------------
