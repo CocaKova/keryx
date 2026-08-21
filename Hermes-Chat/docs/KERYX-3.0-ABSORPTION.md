@@ -218,6 +218,16 @@ arriving as one.
 
 ### Phase 2 — the seam, and the god objects
 
+**Status: done (2026-08-21).** The Session kill landed before `:core` (as §6 demanded).
+`ChatTransport` + `MatrixCapabilities` live in `:core/transport` — the UI now asks
+`transport.matrix != null` instead of pretending; `ChatRepositoryImpl` became
+`app/transport/matrix/MatrixTransport` with `MatrixService` beside it. The ViewModel gave up six
+delegates (hub, console, missions, pet, voice, archive) over one `GatewayDeps` and stands at
+1,555 lines — not the <800 this page asked for, deliberately: the remaining mass IS the turn
+machinery (timeline, work-state, tier-1 stream orchestration) that Phase 3 reshapes, and
+shredding it twice would have doubled the risk on the most timing-sensitive code in the app.
+Every test passed untouched at both checkpoints.
+
 - **Kill Keryx's vestigial `Session`** (§6) and rename `sessionId` → `roomId` through the Matrix
   path. This must happen before anything imports Talaria's `Session`.
 - `ChatRepository` → `ChatTransport` + `MatrixCapabilities`.
