@@ -165,6 +165,13 @@ Each phase ends somewhere shippable. Nothing here is a big-bang rewrite.
 
 ### Phase 0 — Guardrails
 
+**Status: half done (2026-08-21).** The payload-sync script and CI have landed, plus two things
+this phase did not anticipate: the gradle wrapper jar was gitignored, so a fresh clone of the
+public repo could not build at all; and the version catalog declared coroutines 1.10.2 while the
+app hardcoded 1.8.0, so the runtime and the tests ran different builds of the same library. Both
+fixed. **Still open, and both need Jonny:** the history rewrite (force-push, moves six release
+tags) and the release keystore (one-way door).
+
 Before a long stretch of large refactors, not after.
 
 - `tools/check-payload-sync.sh` — the "md5sum the three `keryx_stream.py` copies before any
@@ -184,7 +191,22 @@ through the merge is how the merge fails.
 
 ### Phase 1 — `:core` — no behaviour change
 
-- Create `:core` from Talaria's `shared/`; repackage `cc.gardenofnull.talaria` → `chat.keryx.core`.
+**Status: done for the Keryx half (2026-08-21).** `:core` exists, is KMP (jvm + the iOS pair),
+holds seven models and three parsers, owns 146 of the 404 tests, and rejects `import android.*`
+at compile time. `:app` consumes it.
+
+⚠️ **Deviation from the plan as written, deliberate.** This said to seed `:core` *from Talaria's
+`shared/`*. It was seeded from Keryx's own pure models instead, and the Talaria union is now the
+first half of Phase 3 rather than the back half of Phase 1. Three reasons, all of which held up:
+Keryx's seven domain models turned out to be *already* pure (zero android/java imports between
+them), so there was nothing to port; seeding from Keryx means no foreign package, naming or
+identity ever enters the module and has to be walked back; and it meant the module could be
+proved — built, tested, and its purity rule verified by deliberately breaking it — before any
+merge risk was taken on. Talaria's models now land *into* an established module rather than
+arriving as one.
+
+- ~~Create `:core` from Talaria's `shared/`~~ → created from Keryx's own; repackage
+  `cc.gardenofnull.talaria` → `chat.keryx.core` when the Talaria half lands.
 - Union the models: `Message` (Talaria's, whole), `ToolCall`, `Delegation` (§3), `Session`
   (Talaria's meaning — see §6 first).
 - Move `ToolGrammar` in as the single vocabulary; delete Talaria's inline `TOOL_META`.
@@ -252,7 +274,8 @@ Archive the Talaria repo. Resume the roadmap — Forge, Presence, Ledger — on 
 
 ## 6. Traps
 
-⚠️⚠️ **"Session" means two different things.** Keryx's `Session(id, roomId, title, timestamp)` is
+⚠️⚠️ **"Session" means two different things.** — *resolved 2026-08-21; kept here because the
+reasoning is what stops it coming back.* Keryx's `Session(id, roomId, title, timestamp)` is
 **vestigial**: every construction in the codebase is `Session(room.id, room.id, room.name, 0L)`,
 `getSessions(roomId)` returns a one-element list containing the room itself, and `sessionId` is
 always a Matrix room id (`ChatRepositoryImpl:141` — `val roomId = RoomId(sessionId)`). It is dead
