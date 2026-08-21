@@ -377,6 +377,23 @@ the council mechanism is not to be rebuilt.
 ⚠️ **Approvals are still not a feature Jonny wants.** `ApprovalCard` arrives as merge dowry at 99
 lines because it already exists — not because The Gate came back. Don't build a movement around it.
 
+⚠️ **`atBottom`-style composition-scope reads are the transcript's jank tax** (found 2026-08-21,
+fixed for atBottom/lastSignature). A scroll- or stream-driven value read at ChatScreen scope — as
+a plain param, or even as a `LaunchedEffect` KEY — recomposes the whole screen on every change.
+New consumers of such values go through `snapshotFlow` or a deferred `() -> T` lambda. Composition
+tracing is wired into the debug build (`runtime-tracing` + `tracing-perfetto-binary`): enable with
+the `androidx.tracing.perfetto.action.ENABLE_TRACING` broadcast, record perfetto with a
+`track_event` data source, and slices carry composable names.
+
+⚠️ **OPEN: the direct door still drops ~5% of scroll frames that Matrix doesn't** (measured
+2026-08-21, S25U, after the recompose fixes; Matrix = 0%). The residue is GPU-side: bubble-sized
+(340dp-wide) SOFTWARE bitmaps re-uploaded every frame ("Texture upload 1275x…" under
+`flush layers`), a glyph-atlas overflow ("Atlas full"), and a 1320x120 "alpha caused saveLayer"
+on every frame. The uploader is un-attributed — inline media is decode-sampled ≤1024px, so it
+isn't the obvious suspect. Note the device also runs three accessibility services (Tasker, Wispr
+Flow, Orpheus) that tax every semantics-structure change; the direct door's finer-grained rows
+churn more structure than Matrix's one-bubble-per-event timeline.
+
 ---
 
 ## 7. What this buys
