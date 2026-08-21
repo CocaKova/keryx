@@ -274,7 +274,15 @@ works on Matrix for the first time.
 
 ### Phase 4 — the direct transport — **3.0**
 
-**Status: done (2026-08-21), build + tests green; ⚠️ NOT yet walked on a device.**
+**Status: done (2026-08-21), build + tests green; ✅ WALKED ON DEVICE the same day** — Matrix
+path regression clean (live tool-running turn, theater, handoff), then the direct door
+end-to-end: two-door login → relaunch → gateway sessions as rooms → REST hydration (Thought
+disclosures, real ✓ verdicts on theater rows) → a live WS turn with measured thinking seconds,
+answer committed and round-tripped through the server. The walk found and fixed two real bugs:
+the door-crossing relaunch racing apply() (now one synchronous `commitTransportDoor`), and the
+direct door sharing `gatewayUrl` with Hermes Link — two different services on one pref (now
+`directGatewayUrl`/`directApiKey`; the Hub on the direct path is configured separately, like
+on Matrix).
 `GatewayRpc` (WS JSON-RPC), a trimmed `GatewayRest`, and `TranscriptBuilder`+`ToolText` (in
 `:core/protocol`, with the role:"user" machinery-unmasking rules) came over with their tests.
 `DirectTransport` keeps the hard-won parts: dual stored/live sid mapping with compaction-fork
