@@ -10,7 +10,7 @@ import chat.keryx.core.model.MediaKind
 import chat.keryx.core.model.Message
 import chat.keryx.core.model.SenderType
 import chat.keryx.app.notify.KeryxNotifications
-import chat.keryx.app.presentation.ui.components.MessageParser
+import chat.keryx.core.protocol.MessageParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first

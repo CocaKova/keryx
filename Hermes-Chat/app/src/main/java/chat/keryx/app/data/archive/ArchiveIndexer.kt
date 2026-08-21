@@ -4,7 +4,7 @@ import chat.keryx.app.data.remote.MatrixService
 import chat.keryx.core.model.Message
 import chat.keryx.core.model.SenderType
 import chat.keryx.app.presentation.ui.components.ChatRenderItem
-import chat.keryx.app.presentation.ui.components.MessageParser
+import chat.keryx.core.protocol.MessageParser
 import chat.keryx.app.presentation.ui.components.groupChatItems
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope

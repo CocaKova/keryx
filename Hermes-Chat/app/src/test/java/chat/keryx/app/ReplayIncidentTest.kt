@@ -3,7 +3,7 @@ package chat.keryx.app
 import chat.keryx.core.model.Message
 import chat.keryx.core.model.SenderType
 import chat.keryx.app.presentation.ui.components.ChatRenderItem
-import chat.keryx.app.presentation.ui.components.MessageParser
+import chat.keryx.core.protocol.MessageParser
 import chat.keryx.app.presentation.ui.components.groupChatItems
 import chat.keryx.app.presentation.ui.components.isTelemetryMessage
 import chat.keryx.app.presentation.ui.components.isToolMessage

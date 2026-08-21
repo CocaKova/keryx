@@ -2,7 +2,7 @@ package chat.keryx.app
 
 import chat.keryx.app.data.archive.ArchiveIndexer
 import chat.keryx.app.data.archive.ArchiveStore
-import chat.keryx.app.presentation.ui.components.MessageParser
+import chat.keryx.core.protocol.MessageParser
 import chat.keryx.app.presentation.ui.components.snippetRanges
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

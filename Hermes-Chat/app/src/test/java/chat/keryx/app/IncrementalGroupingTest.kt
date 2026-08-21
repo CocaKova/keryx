@@ -4,7 +4,7 @@ import chat.keryx.core.model.MediaKind
 import chat.keryx.core.model.Message
 import chat.keryx.core.model.SenderType
 import chat.keryx.app.presentation.ui.components.GroupedTimeline
-import chat.keryx.app.presentation.ui.components.MessageParser
+import chat.keryx.core.protocol.MessageParser
 import chat.keryx.app.presentation.ui.components.groupChatItems
 import chat.keryx.app.presentation.ui.components.groupChatItemsIncremental
 import org.junit.Assert.assertEquals

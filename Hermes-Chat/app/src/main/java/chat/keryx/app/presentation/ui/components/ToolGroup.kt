@@ -53,6 +53,7 @@ import chat.keryx.core.model.Theater
 import chat.keryx.core.model.ToolBeat
 import chat.keryx.core.model.ToolGrammar
 import chat.keryx.core.model.SenderType
+import chat.keryx.core.protocol.MessageParser
 
 /**
  * A single Hermes tool invocation as a dream-aesthetic "Sandbox Card": the tool's own glyph,

@@ -9,7 +9,8 @@ import chat.keryx.core.model.RoomProfile
 import chat.keryx.core.model.SenderType
 import chat.keryx.app.domain.repository.ChatRepository
 import chat.keryx.app.domain.repository.SettingsRepository
-import chat.keryx.app.presentation.ui.components.MessageParser
+import chat.keryx.core.protocol.MessageParser
+import chat.keryx.core.protocol.StreamTailTracker
 import kotlinx.coroutines.Deferred
 import kotlinx.serialization.json.jsonObject
 import kotlinx.coroutines.Dispatchers
@@ -1535,7 +1536,7 @@ class ChatViewModel(
                     last.sender == SenderType.HERMES &&
                     last.roomId == _currentRoom.value?.id &&
                     last.id != lastAutoSpokenId &&
-                    !chat.keryx.app.presentation.ui.components.MessageParser.isTelemetryMessage(last.content)
+                    !chat.keryx.core.protocol.MessageParser.isTelemetryMessage(last.content)
                 ) {
                     lastAutoSpokenId = last.id
                     _speakRequests.tryEmit(last)

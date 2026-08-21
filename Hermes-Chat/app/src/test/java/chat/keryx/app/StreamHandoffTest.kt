@@ -75,7 +75,7 @@ class StreamHandoffTest {
     fun windowedOverlayText_mustNeverBeUsedForMatching() {
         val paragraph = "This marathon answer keeps going with plenty of prose in every paragraph block.\n\n"
         val full = paragraph.repeat(200) // ~16 KB — well past the 8 KB overlay window
-        val windowed = chat.keryx.app.presentation.ui.components.MessageParser.streamTailWindow(full, 8_000)
+        val windowed = chat.keryx.core.protocol.MessageParser.streamTailWindow(full, 8_000)
         check(windowed.length < full.length && windowed.startsWith("…")) { "window did not cut" }
         // The committed Matrix body is the full text: matching against the full streamed text
         // works, matching against the windowed view must NOT be relied on.

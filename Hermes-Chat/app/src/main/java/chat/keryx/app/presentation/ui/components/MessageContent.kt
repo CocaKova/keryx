@@ -61,6 +61,7 @@ import com.mikepenz.markdown.model.markdownAnnotator
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.ast.getTextInNode
 import org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor
+import chat.keryx.core.protocol.MessageParser
 
 /**
  * Renders message markdown. GFM **tables** are split out and drawn as real Compose grids
@@ -356,9 +357,12 @@ fun ActionOutputCard(
                 )
             }
         }
-        if (action.result != null) {
+        // Bound to a local: `result` is a public property of :core now, and Kotlin will not
+        // smart-cast across a module boundary.
+        val actionResult = action.result
+        if (actionResult != null) {
             Text(
-                text = action.result,
+                text = actionResult,
                 color = baseColor.copy(alpha = 0.78f),
                 fontSize = 12.sp,
                 modifier = Modifier

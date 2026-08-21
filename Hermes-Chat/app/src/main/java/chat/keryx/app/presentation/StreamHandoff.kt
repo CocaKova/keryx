@@ -1,6 +1,6 @@
 package chat.keryx.app.presentation
 
-import chat.keryx.app.presentation.ui.components.MessageParser
+import chat.keryx.core.protocol.MessageParser
 
 /**
  * Decides when the transient side-channel overlay hands off to the durable Matrix event.
