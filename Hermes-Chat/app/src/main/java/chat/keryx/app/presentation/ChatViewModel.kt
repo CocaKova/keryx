@@ -1570,12 +1570,18 @@ class ChatViewModel(
     val directCredentialsOnFile: Boolean
         get() = settingsRepository.directLoggedIn && settingsRepository.directGatewayUrl.isNotBlank()
 
+    /** Login-form prefill — the durable Matrix credential is the session, never the password. */
+    val lastMatrixUsername: String get() = settingsRepository.lastMatrixUsername
+
     fun loginToMatrix(username: String, password: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             val result = matrix?.login(username, password)
                 ?: Result.failure(IllegalStateException("This transport has no Matrix login"))
             result.fold(
-                onSuccess = { onResult(true, "Logged in") },
+                onSuccess = {
+                    settingsRepository.lastMatrixUsername = username
+                    onResult(true, "Logged in")
+                },
                 onFailure = { onResult(false, it.message ?: "Login failed. Check URL or credentials.") },
             )
         }

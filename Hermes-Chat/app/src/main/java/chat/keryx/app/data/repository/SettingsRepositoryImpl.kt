@@ -120,6 +120,10 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getBoolean("direct_logged_in", false)
         set(value) = prefs.edit().putBoolean("direct_logged_in", value).apply()
 
+    override var lastMatrixUsername: String
+        get() = prefs.getString("last_matrix_username", "") ?: ""
+        set(value) = prefs.edit().putString("last_matrix_username", value).apply()
+
     override var directGatewayUrl: String
         get() = prefs.getString("direct_gateway_url", "") ?: ""
         set(value) = prefs.edit().putString("direct_gateway_url", value).apply()
