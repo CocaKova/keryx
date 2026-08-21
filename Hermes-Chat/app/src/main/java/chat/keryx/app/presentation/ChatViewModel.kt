@@ -46,10 +46,12 @@ class ChatViewModel(
     private val archiveIndexer: chat.keryx.app.data.archive.ArchiveIndexer? = null,
 ) : ViewModel() {
 
-    // The Matrix-only surface, if this transport has one. Affordances that only Matrix offers
-    // (reactions, invites, avatars, membership) no-op quietly on a transport without it; the UI
-    // gates their chrome on the same nullability.
+    // The two capability surfaces, if this transport has them. Affordances only one side offers
+    // (Matrix: invites, avatars, membership, redaction; gateway: session lifecycle, deep search)
+    // no-op quietly on a transport without them; the UI gates their chrome on the same
+    // nullability.
     private val matrix get() = transport.matrix
+    private val gateway get() = transport.gateway
 
     companion object {
         private const val INITIAL_LIMIT = 50
@@ -1209,9 +1211,10 @@ class ChatViewModel(
         return preview
     }
 
-    // Live reactions: a cold flow per event that updates the instant a reaction is added/redacted by
-    // anyone. Cached by event id so re-subscribing the same bubble during scroll reuses the running
-    // flow (shareIn keeps it hot briefly) instead of spinning up a fresh Matrix subscription.
+    // Live reactions: a cold flow per event, from whichever transport is underneath (Matrix
+    // updates the instant anyone reacts; direct reflects hydration + our own reacts). Cached by
+    // event id so re-subscribing the same bubble during scroll reuses the running flow (shareIn
+    // keeps it hot briefly) instead of spinning up a fresh transport subscription.
     // LRU-bounded: scrolling a marathon room used to leave one retained StateFlow per event id
     // for the ViewModel's whole life. Eviction is safe — WhileSubscribed(5s) has already stopped
     // an off-screen flow's upstream, and a re-scrolled bubble simply recreates it.
@@ -1223,14 +1226,14 @@ class ChatViewModel(
     fun reactionsFlow(sessionId: String, eventId: String): kotlinx.coroutines.flow.Flow<List<MessageReaction>> =
         synchronized(reactionFlows) {
             reactionFlows.getOrPut(eventId) {
-                (matrix?.reactionsFlow(sessionId, eventId) ?: flowOf(emptyList()))
+                transport.reactionsFlow(sessionId, eventId)
                     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
             }
         }
 
     fun sendReaction(eventId: String, emoji: String) {
         val session = _currentRoom.value ?: return
-        viewModelScope.launch { matrix?.react(session.id, eventId, emoji) }
+        viewModelScope.launch { transport.react(session.id, eventId, emoji) }
     }
 
     fun toggleTheme(isDark: Boolean?) {
@@ -1514,6 +1517,49 @@ class ChatViewModel(
                 ?.onFailure { _toasts.tryEmit("Delete failed: ${it.message?.take(80)}") }
         }
     }
+
+    /** Message redaction is a Matrix power; the gateway keeps its transcript. */
+    val canDeleteMessages: Boolean get() = matrix != null
+
+    // --- Gateway sessions (direct door): the lifecycle the homeserver would otherwise own -------
+    // The mirror of the membership block above — same shapes, gated on the other capability.
+
+    fun createSession(title: String, onDone: (String?) -> Unit) {
+        viewModelScope.launch {
+            gateway?.createSession(title.trim().ifBlank { null })
+                ?.onSuccess { sessionId -> openRoomById(sessionId); onDone(null) }
+                ?.onFailure { onDone(it.message?.take(120) ?: "couldn't create the session") }
+        }
+    }
+
+    fun renameSession(sessionId: String, title: String) {
+        viewModelScope.launch {
+            gateway?.renameSession(sessionId, title)
+                ?.onFailure { _toasts.tryEmit("Rename failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    fun deleteSession(sessionId: String) {
+        viewModelScope.launch {
+            gateway?.deleteSession(sessionId)
+                ?.onSuccess {
+                    _toasts.tryEmit("Session deleted")
+                    if (settingsRepository.lastRoomId == sessionId) settingsRepository.lastRoomId = null
+                    // Move off the dead session so the chat pane never points at a transcript
+                    // that's gone (same shape as leaveRoom's move-off).
+                    if (_currentRoom.value?.id == sessionId) {
+                        val next = _rooms.value.firstOrNull { it.id != sessionId }
+                        if (next != null) selectRoom(next)
+                        else _currentRoom.value = null
+                    }
+                }
+                ?.onFailure { _toasts.tryEmit("Delete failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    /** Server-side transcript search (drawer deep search). Empty off the direct door. */
+    suspend fun searchGatewaySessions(query: String): List<chat.keryx.core.transport.SessionSearchHit> =
+        gateway?.searchSessions(query)?.getOrNull() ?: emptyList()
 
     /** This process rides the direct gateway door (login screen adapts; Matrix chrome hides). */
     val transportIsDirect: Boolean get() = transport.matrix == null

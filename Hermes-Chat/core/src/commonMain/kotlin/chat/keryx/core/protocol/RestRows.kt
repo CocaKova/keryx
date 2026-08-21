@@ -23,6 +23,8 @@ data class MessageRow(
      * ordinary rows and on gateways predating the column.
      */
     val displayKind: String? = null,
+    /** Per-author reactions on this row (`display_metadata.reactions`); empty when nobody has. */
+    val reactions: List<chat.keryx.core.model.RawReaction> = emptyList(),
 )
 
 /** One entry of an assistant row's `tool_calls[]`: `{id, function: {name, arguments}}`. */

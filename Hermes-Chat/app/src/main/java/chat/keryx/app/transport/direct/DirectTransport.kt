@@ -10,8 +10,12 @@ import chat.keryx.core.model.ToolCall
 import chat.keryx.core.model.ToolStatus
 import chat.keryx.core.model.TypingState
 import chat.keryx.core.protocol.ToolText
+import chat.keryx.core.model.MessageReactions
+import chat.keryx.core.model.RawReaction
 import chat.keryx.core.transport.ChatTransport
+import chat.keryx.core.transport.GatewayCapabilities
 import chat.keryx.core.transport.MatrixCapabilities
+import chat.keryx.core.transport.SessionSearchHit
 import chat.keryx.app.domain.repository.SettingsRepository
 import chat.keryx.core.model.RoomProfile
 import chat.keryx.core.model.RoomType
@@ -22,6 +26,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -53,10 +58,13 @@ import java.net.URI
 class DirectTransport(
     private val settings: SettingsRepository,
     private val scope: CoroutineScope,
-) : ChatTransport {
+) : ChatTransport, GatewayCapabilities {
 
     /** No Matrix here — the UI's Matrix affordances gate themselves off on exactly this. */
     override val matrix: MatrixCapabilities? get() = null
+
+    /** Rooms ARE gateway sessions here, so the session verbs are live. */
+    override val gateway: GatewayCapabilities get() = this
 
     companion object {
         const val GATEWAY_ROOM_ID = "gateway"
@@ -162,9 +170,30 @@ class DirectTransport(
         private var reasonStartedAt = 0L
         private var reasonEndedAt = 0L
 
+        /**
+         * Aggregated reactions per event id. Keys are durable row ids (stringified — the same
+         * ids TranscriptBuilder stamps on hydrated messages), plus the ephemeral `local-*` /
+         * `live-*` id of any message reacted to before it round-tripped through hydration.
+         * Seeded from hydration rows; updated from `message.react` round-trips.
+         */
+        val reactions = MutableStateFlow<Map<String, List<MessageReaction>>>(emptyMap())
+
+        /** Fold a hydration page in — including rows with none, so a reaction someone cleared
+         *  on the gateway also clears here on the next open. */
+        private fun seedReactions(rows: List<MessageRow>) {
+            if (rows.isEmpty()) return
+            reactions.value = reactions.value +
+                rows.associate { it.id.toString() to MessageReactions.aggregate(it.reactions) }
+        }
+
+        fun setReactions(keys: List<String>, aggregated: List<MessageReaction>) {
+            reactions.value = reactions.value + keys.associateWith { aggregated }
+        }
+
         /** Newest page: replaces history wholesale (this is the open-a-session path). */
         fun setHistory(rows: List<MessageRow>, more: Boolean) {
             hydratedRows = rows
+            seedReactions(rows)
             hydratedMessages = chat.keryx.core.protocol.TranscriptBuilder.build(storedId, rows)
             history.value = history.value.copy(hasMore = more, loading = false, loaded = rows.size)
             // Seed the Flight Plan from the newest persisted `todo` result — rows arrive
@@ -184,6 +213,7 @@ class DirectTransport(
             // offset (two taps racing the loading flag) harmless instead of a doubled page.
             val have = hydratedRows.mapTo(HashSet()) { it.id }
             hydratedRows = older.filterNot { it.id in have } + hydratedRows
+            seedReactions(older)
             hydratedMessages = chat.keryx.core.protocol.TranscriptBuilder.build(storedId, hydratedRows)
             history.value = history.value.copy(
                 hasMore = more, loading = false, loaded = hydratedRows.size,
@@ -1348,6 +1378,43 @@ class DirectTransport(
 
     override suspend fun markRead(sessionId: String, eventId: String) { /* no server-side read state */ }
 
+    override suspend fun react(sessionId: String, eventId: String, emoji: String) {
+        val rpc = rpc ?: return
+        runCatching {
+            val live = attach(sessionId)
+            val key = rowIdOf(eventId)
+            val rowId = key.toLongOrNull()
+            val res = rpc.request("message.react", buildJsonObject {
+                put("session_id", JsonPrimitive(live))
+                put("emoji", JsonPrimitive(emoji))
+                if (rowId != null) put("row_id", JsonPrimitive(rowId))
+                // A live message hasn't round-tripped through hydration, so it has no durable
+                // row id yet — name the role whose newest row we mean instead (the wire's own
+                // fallback for exactly this case; local-* ids are this user's sends).
+                else put("newest_role", JsonPrimitive(if (key.startsWith("local-")) "user" else "assistant"))
+            })
+            val raw = (res["reactions"] as? kotlinx.serialization.json.JsonArray)?.mapNotNull { r ->
+                val o = r as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
+                val e = o["emoji"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+                RawReaction(e, o["author"]?.jsonPrimitive?.contentOrNull ?: "user")
+            } ?: emptyList()
+            // Write under the key the bubble subscribed with AND the durable id the message
+            // will wear after its next hydration, so the state survives the id handover.
+            val landed = res["row_id"]?.jsonPrimitive?.contentOrNull
+            store(sessionId).setReactions(
+                listOfNotNull(key, landed).distinct(),
+                MessageReactions.aggregate(raw),
+            )
+        }.onFailure { android.util.Log.w("KeryxGw", "react failed for $eventId", it) }
+    }
+
+    override fun reactionsFlow(sessionId: String, eventId: String): Flow<List<MessageReaction>> {
+        val key = rowIdOf(eventId)
+        return store(sessionId).reactions
+            .map { it[key] ?: emptyList() }
+            .distinctUntilChanged()
+    }
+
     override fun typing(sessionId: String): Flow<TypingState> =
         store(sessionId).agentTyping.map { TypingState(agentTyping = it) }
 
@@ -1355,8 +1422,8 @@ class DirectTransport(
         store(sessionId).todoPlan
 
     // "Leaving" a session = archiving it: it drops out of the list but stays recoverable
-    // (and searchable) on the gateway. Real deletion stays a desktop/dashboard decision.
-    suspend fun archiveSession(sessionId: String): Result<Unit> {
+    // (and searchable) on the gateway. Deletion (below) is the real, destructive verb.
+    override suspend fun archiveSession(sessionId: String): Result<Unit> {
         // Drop the local pending row FIRST. A session created this run but never messaged
         // exists only here (the gateway doesn't list message-less sessions), so archiving it
         // server-side removed nothing while this list kept re-showing the row — the archive
@@ -1373,18 +1440,25 @@ class DirectTransport(
             .onFailure { android.util.Log.e("KeryxGw", "archive failed for $sessionId", it) }
     }
 
-    suspend fun renameSession(sessionId: String, title: String): Result<Unit> =
+    override suspend fun renameSession(sessionId: String, title: String): Result<Unit> =
         (rest?.patchSession(sessionId, title = title) ?: Result.failure(IllegalStateException("gateway not connected")))
             .onSuccess { refreshSessions() }
 
-    suspend fun deleteSession(sessionId: String): Result<Unit> = runCatching {
+    override suspend fun deleteSession(sessionId: String): Result<Unit> = runCatching {
         val rest = rest ?: error("gateway not connected")
         rest.deleteSession(sessionId).getOrThrow()
         // Drop any live mapping + store; then re-pull the list so the row leaves the drawer.
+        _pendingNew.value = _pendingNew.value.filterNot { it.id == sessionId }
         storedToLive.remove(sessionId)?.let { liveToStored.remove(it) }
         stores.remove(sessionId)
         refreshSessions()
     }
+
+    override suspend fun searchSessions(query: String, limit: Int): Result<List<SessionSearchHit>> =
+        (rest?.searchSessions(query, limit) ?: Result.failure(IllegalStateException("gateway not connected")))
+            .map { hits ->
+                hits.map { SessionSearchHit(it.sessionId, it.title, it.snippet, it.role, it.lastActive) }
+            }
 
     // ---- busy-turn inputs (C6: steer / queue) ---------------------------------------
 
@@ -1794,10 +1868,13 @@ class DirectTransport(
         _loggedIn.value = false
     }
 
+    override suspend fun createSession(title: String?): Result<String> = createSession(title, null)
+
     /** Create a fresh gateway session and return its stored id (used by New Chat UI).
      *  [cwd] anchors the session in a workspace (a project's folder); absent = the gateway's
-     *  launch directory, i.e. the Home bucket. */
-    suspend fun createSession(title: String?, cwd: String? = null): Result<String> = runCatching {
+     *  launch directory, i.e. the Home bucket. Kept as a separate overload so the seam stays
+     *  workspace-free until the Projects surface lands and gives cwd a real picker. */
+    suspend fun createSession(title: String?, cwd: String?): Result<String> = runCatching {
         val rpc = rpc ?: error("gateway not connected")
         val res = rpc.request("session.create", buildJsonObject {
             put("cols", JsonPrimitive(100))

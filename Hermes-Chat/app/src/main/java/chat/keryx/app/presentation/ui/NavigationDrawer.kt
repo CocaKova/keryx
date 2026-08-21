@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.keryx.core.model.RoomInvite
@@ -207,6 +208,20 @@ fun NavigationDrawerContent(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
             )
 
+            // Deep search rides the same field on the direct door: after a typing pause the
+            // gateway's server-side FTS answers over message CONTENT, which the local title
+            // filter can never see. Debounced so scrolling through a query doesn't spray
+            // requests; cleared with the query so stale hits never linger.
+            var deepHits by remember { mutableStateOf<List<chat.keryx.core.transport.SessionSearchHit>>(emptyList()) }
+            LaunchedEffect(query) {
+                if (viewModel.transportIsDirect && query.trim().length >= 2) {
+                    kotlinx.coroutines.delay(350)
+                    deepHits = viewModel.searchGatewaySessions(query.trim())
+                } else {
+                    deepHits = emptyList()
+                }
+            }
+
             val filtered = if (query.isBlank()) rooms
                 else rooms.filter { it.name.contains(query, ignoreCase = true) }
             val pinned = filtered.filter { it.id in pinnedRoomIds }
@@ -262,6 +277,7 @@ fun NavigationDrawerContent(
                         )
                     }
                 }
+                val direct = viewModel.transportIsDirect
                 items(listRooms, key = { it.id }) { room ->
                     RoomRow(
                         room = room,
@@ -269,15 +285,53 @@ fun NavigationDrawerContent(
                         isPinned = room.id in pinnedRoomIds,
                         onClick = { onRoomSelected(room) },
                         onTogglePin = { viewModel.togglePin(room.id) },
-                        onSetAvatar = {
-                            pendingAvatarRoomId = room.id
-                            avatarPicker.launch("image/*")
+                        // Each transport brings its own verbs to the long-press menu: Matrix
+                        // rooms have membership and a server-side avatar; gateway sessions
+                        // rename and delete (there is nothing to "leave").
+                        onSetAvatar = if (direct) null else {
+                            {
+                                pendingAvatarRoomId = room.id
+                                avatarPicker.launch("image/*")
+                            }
                         },
-                        onLeave = { viewModel.leaveRoom(room.id) },
-                        onInvite = { userId -> viewModel.inviteUser(room.id, userId) },
+                        onLeave = if (direct) null else {
+                            { viewModel.leaveRoom(room.id) }
+                        },
+                        onInvite = if (direct) null else {
+                            { userId -> viewModel.inviteUser(room.id, userId) }
+                        },
+                        onRename = if (direct) {
+                            { title -> viewModel.renameSession(room.id, title) }
+                        } else null,
+                        onDelete = if (direct) {
+                            { viewModel.deleteSession(room.id) }
+                        } else null,
                         avatarLoader = { viewModel.loadAvatar(it) },
                         previewLoader = { viewModel.roomPreview(room.id, room.timestamp) },
                     )
+                }
+
+                // Deep search (direct door): the gateway's FTS over transcript CONTENT — the
+                // thing the title filter above can never answer. Only sessions the local list
+                // didn't already match, so the two sections never show the same row twice.
+                if (deepHits.isNotEmpty()) {
+                    val shown = filtered.mapTo(HashSet()) { it.id }
+                    val extras = deepHits.filterNot { it.sessionId in shown }
+                    if (extras.isNotEmpty()) {
+                        item { DrawerSectionHeader("In transcripts") }
+                        items(extras, key = { "hit-${it.sessionId}" }) { hit ->
+                            SearchHitRow(hit = hit, onClick = {
+                                val room = rooms.firstOrNull { it.id == hit.sessionId }
+                                    ?: RoomProfile(
+                                        id = hit.sessionId,
+                                        name = hit.title,
+                                        type = RoomType.DIRECT_MESSAGE,
+                                        timestamp = hit.lastActive,
+                                    )
+                                onRoomSelected(room)
+                            })
+                        }
+                    }
                 }
             }
 
@@ -353,18 +407,26 @@ fun RoomRow(
     isPinned: Boolean,
     onClick: () -> Unit,
     onTogglePin: () -> Unit,
-    onSetAvatar: () -> Unit,
+    // Matrix-only affordances (m.room.avatar / membership) — null on the direct door.
+    onSetAvatar: (() -> Unit)? = null,
     onLeave: (() -> Unit)? = null,
     onInvite: ((String) -> Unit)? = null,
+    // Gateway-only affordances (the row IS a session) — null on Matrix.
+    onRename: ((String) -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
     avatarLoader: suspend (String) -> ByteArray?,
     previewLoader: (suspend () -> String?)? = null,
 ) {
     val haptics = chat.keryx.app.presentation.ui.components.LocalKeryxHaptics.current
-    // Long-press menu (pin/unpin + invite + leave). Replaced the instant pin toggle once leaving
-    // rooms became possible — two destructive-adjacent actions can't share one blind gesture.
+    // Long-press menu (pin/unpin + the transport's own verbs). Replaced the instant pin toggle
+    // once leaving rooms became possible — two destructive-adjacent actions can't share one
+    // blind gesture.
     var menuOpen by remember { mutableStateOf(false) }
     var confirmLeave by remember { mutableStateOf(false) }
     var inviteOpen by remember { mutableStateOf(false) }
+    var renameOpen by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
+    val hasMenu = onLeave != null || onInvite != null || onRename != null || onDelete != null
     // Last-message snippet, resolved lazily per row (cached in the VM keyed on room.timestamp so
     // it only refetches after new activity). Keyed on the timestamp so a new message refreshes it.
     val preview by produceState<String?>(initialValue = null, room.id, room.timestamp) {
@@ -382,17 +444,17 @@ fun RoomRow(
                 onClick = onClick,
                 onLongClick = {
                     haptics.press()
-                    if (onLeave != null) menuOpen = true else onTogglePin()
+                    if (hasMenu) menuOpen = true else onTogglePin()
                 },
             )
             .padding(start = 8.dp, end = 10.dp, top = 10.dp, bottom = 10.dp)
     ) {
-        // Long-press the avatar (specifically) to set a room photo.
+        // Long-press the avatar (specifically) to set a room photo — Matrix only.
         Box(
-            modifier = Modifier.combinedClickable(
+            modifier = if (onSetAvatar != null) Modifier.combinedClickable(
                 onClick = onClick,
                 onLongClick = onSetAvatar,
-            )
+            ) else Modifier
         ) {
             RoomAvatar(room = room, selected = isSelected, avatarLoader = avatarLoader)
         }
@@ -473,10 +535,24 @@ fun RoomRow(
                 onClick = { menuOpen = false; inviteOpen = true },
             )
         }
-        DropdownMenuItem(
-            text = { Text("Leave room", color = MaterialTheme.colorScheme.error) },
-            onClick = { menuOpen = false; confirmLeave = true },
-        )
+        if (onRename != null) {
+            DropdownMenuItem(
+                text = { Text("Rename…") },
+                onClick = { menuOpen = false; renameOpen = true },
+            )
+        }
+        if (onLeave != null) {
+            DropdownMenuItem(
+                text = { Text("Leave room", color = MaterialTheme.colorScheme.error) },
+                onClick = { menuOpen = false; confirmLeave = true },
+            )
+        }
+        if (onDelete != null) {
+            DropdownMenuItem(
+                text = { Text("Delete session…", color = MaterialTheme.colorScheme.error) },
+                onClick = { menuOpen = false; confirmDelete = true },
+            )
+        }
     }
     } // end anchor Box
     if (inviteOpen && onInvite != null) {
@@ -521,6 +597,47 @@ fun RoomRow(
             },
         )
     }
+    if (renameOpen && onRename != null) {
+        var newTitle by remember { mutableStateOf(room.name) }
+        AlertDialog(
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
+            onDismissRequest = { renameOpen = false },
+            title = { Text("Rename session", fontSize = 16.sp) },
+            text = {
+                OutlinedTextField(
+                    value = newTitle,
+                    onValueChange = { newTitle = it },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = newTitle.isNotBlank() && newTitle.trim() != room.name,
+                    onClick = { renameOpen = false; onRename(newTitle.trim()) },
+                ) { Text("Rename") }
+            },
+            dismissButton = {
+                TextButton(onClick = { renameOpen = false }) { Text("Cancel") }
+            },
+        )
+    }
+    if (confirmDelete) {
+        AlertDialog(
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Delete ${room.name}?", fontSize = 16.sp) },
+            text = { Text("Deletes the session and its whole transcript from the gateway. This can't be undone.", fontSize = 13.sp) },
+            confirmButton = {
+                TextButton(onClick = { confirmDelete = false; onDelete?.invoke() }) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+            },
+        )
+    }
 }
 
 /** One pending invitation: room name + the accept/decline decision, right in the drawer. */
@@ -560,6 +677,69 @@ private fun InviteRow(
                 Text("Accept", color = MaterialTheme.colorScheme.primary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
             }
         }
+    }
+}
+
+/**
+ * One gateway deep-search hit: the session title over the transcript line that matched, with
+ * the server's `>>>…<<<` match markers rendered as emphasis instead of shown raw.
+ */
+@Composable
+private fun SearchHitRow(
+    hit: chat.keryx.core.transport.SessionSearchHit,
+    onClick: () -> Unit,
+) {
+    val accent = MaterialTheme.colorScheme.primary
+    val snippet = remember(hit.snippet, accent) {
+        androidx.compose.ui.text.buildAnnotatedString {
+            var rest = hit.snippet.replace('\n', ' ')
+            while (true) {
+                val s = rest.indexOf(">>>")
+                val e = if (s >= 0) rest.indexOf("<<<", s + 3) else -1
+                if (s < 0 || e < 0) { append(rest); break }
+                append(rest.substring(0, s))
+                withStyle(
+                    androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.SemiBold, color = accent)
+                ) { append(rest.substring(s + 3, e)) }
+                rest = rest.substring(e + 3)
+            }
+        }
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = hit.title,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            if (hit.lastActive > 0L) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = formatRelativeTime(hit.lastActive),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 11.sp,
+                )
+            }
+        }
+        Text(
+            text = snippet,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 12.sp,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 1.dp),
+        )
     }
 }
 

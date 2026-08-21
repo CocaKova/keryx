@@ -38,10 +38,11 @@ import androidx.compose.ui.unit.sp
 import chat.keryx.app.presentation.ChatViewModel
 
 /**
- * The drawer's one "start a conversation" surface: three compact rows (direct message, new room,
- * join by address) that expand in place — no navigation, no extra chrome. Errors from the
- * homeserver render inline under the active row; success closes the sheet and the room opens as
- * soon as sync surfaces it (ChatViewModel.openRoomById handles the deferral).
+ * The drawer's one "start a conversation" surface. On Matrix: three compact rows (direct
+ * message, new room, join by address) that expand in place — no navigation, no extra chrome.
+ * On the direct door a conversation is a gateway session, so the sheet is a single pane: an
+ * optional title and Create. Errors render inline; success closes the sheet and the room opens
+ * as soon as the list surfaces it (ChatViewModel.openRoomById handles the deferral).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,9 +62,36 @@ fun NewChatSheet(
         if (err == null) onDismiss()
     }
 
-    KeryxSheet(onDismiss = onDismiss, title = "New conversation", sheetState = sheetState) {
+    KeryxSheet(onDismiss = onDismiss, title = if (viewModel.transportIsDirect) "New session" else "New conversation", sheetState = sheetState) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
             Spacer(Modifier.height(4.dp))
+
+            if (viewModel.transportIsDirect) {
+                var title by rememberSaveable { mutableStateOf("") }
+                Text(
+                    "A fresh gateway session. Name it now, or let the first exchange title it.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    placeholder = { Text("Title (optional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.field),
+                )
+                SheetActionRow(busy = busy, enabled = true, label = "Create") {
+                    busy = true; error = null
+                    viewModel.createSession(title, ::done)
+                }
+                error?.let {
+                    Spacer(Modifier.height(6.dp))
+                    Text("⚠ $it", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                }
+                return@Column
+            }
 
             NewChatRow(
                 icon = Icons.Default.Person,
