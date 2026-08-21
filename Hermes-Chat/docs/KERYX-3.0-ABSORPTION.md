@@ -150,11 +150,17 @@ Keryx's `ChatRepository` cannot be the seam as-is. It is Matrix all the way thro
 Split it, and do **not** reduce it to a lowest common denominator:
 
 - **`ChatTransport`** — what both genuinely satisfy: the room/thread list, the message flow, send,
-  reply, stream, attachments, media bytes, typing, read markers, history-around-an-event.
-- **`MatrixCapabilities?`** — invites, reactions, avatars, room creation, membership, redaction.
+  reply, stream, attachments, media bytes, typing, read markers, reactions,
+  history-around-an-event.
+- **`MatrixCapabilities?`** — invites, avatars, room creation, membership, redaction.
   Non-null on Matrix, null on direct.
+- **`GatewayCapabilities?`** *(landed 2026-08-21 with the seam-finish pass)* — the mirror image:
+  session create / rename / delete / archive, and server-side transcript search. Non-null on
+  direct, null on Matrix. Reactions started in `MatrixCapabilities` and moved up to
+  `ChatTransport` once the direct door wired `message.react` — both wires toggle Tapback-style,
+  so the seam stopped pretending reacting was a Matrix power.
 
-The UI then asks *"does this transport have reactions?"* instead of pretending every transport has
+The UI then asks *"does this transport have invites?"* instead of pretending every transport has
 everything and failing quietly on the one that doesn't.
 
 ---
@@ -292,7 +298,8 @@ freed word "session" stays gateway-only. The login screen has the two doors; the
 the process spine, so crossing it relaunches the app. The tier-1 SSE side-channel stays
 Matrix-only (on direct, the WS is the stream). Deliberately NOT ported yet (each returns with
 its harvest feature): projects, cockpit toolsets/cron RPCs, model.options, wake, pet-over-RPC,
-reactions-on-direct, `searchSessions`.
+~~reactions-on-direct, `searchSessions`~~ *(both landed 2026-08-21 — see the seam-finish note
+under Phase 5)*.
 
 - `DirectTransport : ChatTransport`, ported from `GatewayChatRepository` (2,145) and Talaria's
   `HermesStreamClient` (1,662).
@@ -317,12 +324,25 @@ Jobs (cron), Models, Brains, Health — plus Missions, the Skill Forge, the Run 
 pet serve the second transport with no second setup step: most of this phase's list turned out
 to already exist as panels on the Keryx side.
 
-**Still to harvest:** the Projects surface (RPCs + picker), the cron *read* view (CronSpace's
-"you don't converse with the Daily Brief" reader — Jobs covers management), the full
-model-catalog picker (`model.options` with connect-a-provider), the wake word (six files;
-device-dependent, and Talaria's own voice leg is still awaiting its device walk), reactions on
-the direct path (the wire supports `message.react`; the seam currently files reactions under
-MatrixCapabilities), and a REST-hydration ArchiveIndexer so the Archive reaches the direct door.
+**The seam-finish pass (2026-08-21, after the smoothness pass):** the gateway side of the seam
+stopped being read-only. `GatewayCapabilities` landed as `MatrixCapabilities`' mirror
+(§4) and the four transport methods that had ZERO UI callers got their chrome: the drawer's ＋
+becomes "New session" on direct (title optional), the room long-press menu trades
+invite/leave/avatar for Rename/Delete-with-confirm, and the "Jump to…" field grows a debounced
+"In transcripts" section fed by server-side FTS (`>>>match<<<` markers rendered as emphasis, hits
+deduped against the local title matches). Reactions moved from `MatrixCapabilities` up to
+`ChatTransport`: the direct door wires `message.react` (durable `row_id` for hydrated rows, the
+wire's own `newest_role` fallback for live ones not yet round-tripped), seeds reaction state from
+hydration's `display_metadata.reactions`, and aggregates with core's `MessageReactions.aggregate`
+(new, tested) into the same chip shape Matrix computes — so the agent's own `react_to_message`
+tool now shows on the phone. Message *redaction* chrome is now honestly gated off on direct (it
+was a silent no-op). 511 tests green.
+
+**Still to harvest:** the Projects surface (RPCs + picker), the full model-catalog picker
+(`model.options` with connect-a-provider), the wake word (six files; device-dependent, and
+Talaria's own voice leg is still awaiting its device walk), and a REST-hydration ArchiveIndexer
+so the Archive reaches the direct door. (The cron *read* view landed 2026-08-21 as the RUNS tab;
+reactions-on-direct and `searchSessions` landed with the seam-finish pass above.)
 
 Cron, Projects, Models, Gateway status, Approvals, the flight-plan strip, the wake word, `MEDIA:`
 hand-offs — each re-landing as a `HubPanel` or a Keryx space, under the attention budget, wearing

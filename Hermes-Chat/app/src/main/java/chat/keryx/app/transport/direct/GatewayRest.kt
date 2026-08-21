@@ -161,6 +161,16 @@ class GatewayRest(
                         )
                     } ?: emptyList(),
                     displayKind = o.str("display_kind"),
+                    // `display_metadata.reactions`: [{emoji, author, at}] — Tapback rows the
+                    // gateway persists per author (the desktop's and the react tool's writes
+                    // both land here).
+                    reactions = ((o["display_metadata"] as? JsonObject)
+                        ?.get("reactions") as? JsonArray)
+                        ?.mapNotNull { r ->
+                            val ro = r as? JsonObject ?: return@mapNotNull null
+                            val emoji = ro.str("emoji") ?: return@mapNotNull null
+                            chat.keryx.core.model.RawReaction(emoji, ro.str("author") ?: "user")
+                        } ?: emptyList(),
                 )
             }
         }

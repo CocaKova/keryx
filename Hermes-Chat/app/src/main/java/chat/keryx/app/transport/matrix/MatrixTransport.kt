@@ -77,6 +77,7 @@ class MatrixTransport(
 ) : ChatTransport, MatrixCapabilities {
 
     override val matrix: MatrixCapabilities get() = this
+    override val gateway: chat.keryx.core.transport.GatewayCapabilities? get() = null
 
     override fun isLoggedIn(): Flow<Boolean> = service.client.map { it != null }
 

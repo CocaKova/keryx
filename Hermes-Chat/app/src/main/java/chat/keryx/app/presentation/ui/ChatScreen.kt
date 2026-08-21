@@ -674,8 +674,10 @@ fun ChatScreen(
                                 onReply = { viewModel.setReplyTarget(message) },
                                 onReact = { emoji -> viewModel.sendReaction(message.id, emoji) },
                                 onQuoteClick = quotedId?.let { target -> { jumpToMessage(target) } },
-                                // Redaction: own messages only — the agent's power level owns the rest.
-                                onDelete = if (message.sender == SenderType.ME) {
+                                // Redaction: own messages only — the agent's power level owns the
+                                // rest. A Matrix power; the gateway keeps its transcript, so the
+                                // direct door offers no dead affordance.
+                                onDelete = if (message.sender == SenderType.ME && viewModel.canDeleteMessages) {
                                     { viewModel.deleteMessage(message.roomId, message.id) }
                                 } else null,
                                 kept = savedIds.contains(message.id),

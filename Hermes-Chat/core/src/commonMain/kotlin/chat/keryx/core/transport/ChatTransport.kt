@@ -11,11 +11,12 @@ import kotlinx.coroutines.flow.Flow
  * The seam between the one UI tree and however messages actually travel.
  *
  * This is what every transport genuinely satisfies: a room list, a message flow, send/reply,
- * attachments, media bytes, typing, read markers, history-around-an-event. It is deliberately
- * NOT a lowest common denominator of everything the Matrix path can do — the Matrix-only verbs
- * (invites, reactions, avatars, room creation, membership, redaction) live behind [matrix], so
- * the UI asks "does this transport have reactions?" instead of pretending every transport has
- * everything and failing quietly on the one that doesn't.
+ * attachments, media bytes, typing, read markers, reactions, history-around-an-event. It is
+ * deliberately NOT a lowest common denominator of everything one side can do — the Matrix-only
+ * verbs (invites, avatars, room creation, membership, redaction) live behind [matrix], and the
+ * gateway-only verbs (session lifecycle, server-side search) behind [gateway], so the UI asks
+ * "does this transport have invites?" instead of pretending every transport has everything and
+ * failing quietly on the one that doesn't.
  *
  * "Room" here is the transport's unit of conversation: a Matrix room on the Matrix path, a
  * gateway session on the direct path. The word "session" is not used — it was freed in 2.x
@@ -55,6 +56,20 @@ interface ChatTransport {
     /** Mark the room read up to [eventId]. */
     suspend fun markRead(roomId: String, eventId: String)
 
+    /**
+     * Toggle a reaction [emoji] on [eventId]. Tapback semantics on both transports: re-sending
+     * the emoji you already left retracts it. (Matrix redacts the annotation event; the gateway
+     * enforces one reaction per author per message in its own store.)
+     */
+    suspend fun react(roomId: String, eventId: String, emoji: String)
+
+    /**
+     * Live aggregated reactions on [eventId] (emoji -> count + whether the current user reacted).
+     * On Matrix this updates the moment anyone reacts; on direct it reflects hydration plus this
+     * client's own reacts (the gateway has no reaction push yet).
+     */
+    fun reactionsFlow(roomId: String, eventId: String): Flow<List<MessageReaction>>
+
     /** Who's typing in [roomId], split agent vs humans. The agent's typing signal is a reliable
      *  "agent is busy" indicator even through long single tool calls. */
     fun typing(roomId: String): Flow<TypingState>
@@ -67,7 +82,49 @@ interface ChatTransport {
 
     /** The Matrix-only surface, or null on a transport that doesn't speak Matrix. */
     val matrix: MatrixCapabilities?
+
+    /** The gateway-only surface, or null on a transport whose rooms aren't gateway sessions. */
+    val gateway: GatewayCapabilities?
 }
+
+/**
+ * What only the direct (gateway) transport can do. Its rooms are real gateway sessions, so the
+ * lifecycle verbs a homeserver would own — create, rename, delete, archive — go straight to the
+ * gateway, and search runs server-side over full message content, which a client can never do
+ * for itself (local filtering only sees the titles it already downloaded). Non-null from
+ * [ChatTransport.gateway] on the direct path, null on Matrix — the exact mirror of
+ * [MatrixCapabilities], so the UI asks the same kind of question in both directions instead of
+ * branching on a transport flag.
+ */
+interface GatewayCapabilities {
+    /** Create a fresh gateway session, optionally titled, and return its stored id. */
+    suspend fun createSession(title: String?): Result<String>
+
+    /** Retitle a session (the drawer name; the gateway's auto-title stops competing). */
+    suspend fun renameSession(sessionId: String, title: String): Result<Unit>
+
+    /** Permanently delete a session and its transcript from the gateway. */
+    suspend fun deleteSession(sessionId: String): Result<Unit>
+
+    /** Soft-hide: the session leaves the list but survives on the gateway. */
+    suspend fun archiveSession(sessionId: String): Result<Unit>
+
+    /**
+     * Server-side session search: FTS over message content plus session-id prefix matching,
+     * deduped by compression lineage (one logical chat split across stored ids answers once).
+     */
+    suspend fun searchSessions(query: String, limit: Int = 20): Result<List<SessionSearchHit>>
+}
+
+/** One hit from the gateway's session search: the session, plus the line that matched. */
+data class SessionSearchHit(
+    val sessionId: String,
+    val title: String,
+    /** The matching message text, with the query wrapped in `>>>…<<<` by the server. */
+    val snippet: String,
+    val role: String,
+    val lastActive: Long,
+)
 
 /**
  * What only a Matrix transport can do. Non-null from [ChatTransport.matrix] on Matrix, null on
@@ -76,15 +133,6 @@ interface ChatTransport {
 interface MatrixCapabilities {
     /** Password login against the configured homeserver. Url + insecure flag come from settings. */
     suspend fun login(username: String, password: String): Result<Unit>
-
-    /** Toggle a reaction [emoji] on [eventId]. */
-    suspend fun react(roomId: String, eventId: String, emoji: String)
-
-    /**
-     * Live aggregated reactions on [eventId] (emoji -> count + whether the current user reacted).
-     * Updates the moment a reaction is added or redacted by anyone.
-     */
-    fun reactionsFlow(roomId: String, eventId: String): Flow<List<MessageReaction>>
 
     /** Redact (delete) a message. Own messages always work; others need room power. */
     suspend fun redactMessage(roomId: String, eventId: String): Result<Unit>
