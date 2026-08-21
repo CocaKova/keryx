@@ -839,7 +839,7 @@ private fun HeraldsList(
     overrides: Map<String, String>,
     onSetAccent: (String, String?) -> Unit,
 ) {
-    val ids = chat.keryx.app.domain.model.Heralds.parseIds(agentMatrixId)
+    val ids = chat.keryx.core.model.Heralds.parseIds(agentMatrixId)
     if (ids.size < 2) return // One agent is not a council; the row would say nothing.
 
     var editing by remember { mutableStateOf<String?>(null) }
@@ -855,7 +855,7 @@ private fun HeraldsList(
     Spacer(Modifier.height(8.dp))
 
     ids.forEach { id ->
-        val key = chat.keryx.app.domain.model.Heralds.localpart(id)
+        val key = chat.keryx.core.model.Heralds.localpart(id)
         val light = heraldLightFor(id, "")
         val open = editing == key
         Row(

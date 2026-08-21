@@ -10,7 +10,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
-import chat.keryx.app.domain.model.MediaKind
+import chat.keryx.core.model.MediaKind
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

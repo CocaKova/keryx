@@ -2,11 +2,11 @@ package chat.keryx.app.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import chat.keryx.app.domain.model.ToolGrammar
-import chat.keryx.app.domain.model.Message
-import chat.keryx.app.domain.model.MessageReaction
-import chat.keryx.app.domain.model.RoomProfile
-import chat.keryx.app.domain.model.SenderType
+import chat.keryx.core.model.ToolGrammar
+import chat.keryx.core.model.Message
+import chat.keryx.core.model.MessageReaction
+import chat.keryx.core.model.RoomProfile
+import chat.keryx.core.model.SenderType
 import chat.keryx.app.domain.repository.ChatRepository
 import chat.keryx.app.domain.repository.SettingsRepository
 import chat.keryx.app.presentation.ui.components.MessageParser
@@ -136,7 +136,7 @@ class ChatViewModel(
         fun previewOf(m: Message): String {
             val who = if (m.sender == SenderType.ME) "You: " else ""
             val body = when {
-                m.mediaKind == chat.keryx.app.domain.model.MediaKind.IMAGE ->
+                m.mediaKind == chat.keryx.core.model.MediaKind.IMAGE ->
                     "🖼 " + (m.content.takeIf { it.isNotBlank() && it != m.fileName } ?: "Photo")
                 m.mediaKind != null -> "📎 ${m.fileName.ifBlank { "Attachment" }}"
                 MessageParser.isSelfImprovementReview(m.content) -> "💾 self-improvement review"
@@ -170,8 +170,8 @@ class ChatViewModel(
     // Main.immediate and matrix.client is a StateFlow, so the first emission lands
     // SYNCHRONOUSLY inside init — a later declaration is still null at that moment
     // (the v1.9.0 crash-on-open).
-    private val _invites = MutableStateFlow<List<chat.keryx.app.domain.model.RoomInvite>>(emptyList())
-    val invites: StateFlow<List<chat.keryx.app.domain.model.RoomInvite>> = _invites.asStateFlow()
+    private val _invites = MutableStateFlow<List<chat.keryx.core.model.RoomInvite>>(emptyList())
+    val invites: StateFlow<List<chat.keryx.core.model.RoomInvite>> = _invites.asStateFlow()
 
     private val _currentRoom = MutableStateFlow<RoomProfile?>(null)
     val currentRoom: StateFlow<RoomProfile?> = _currentRoom.asStateFlow()
@@ -1594,7 +1594,7 @@ class ChatViewModel(
         viewModelScope.launch {
             _currentRoom
                 .flatMapLatest { s ->
-                    if (s == null) flowOf(chat.keryx.app.domain.model.TypingState())
+                    if (s == null) flowOf(chat.keryx.core.model.TypingState())
                     else repository.typing(s.id)
                 }
                 .collect { state ->
@@ -1675,7 +1675,7 @@ class ChatViewModel(
             var lastDeltaAt = 0L
             // EMA of the instantaneous delta rate (chars/s); see TPS_* constants.
             var emaCps = 0f
-            var theater = chat.keryx.app.domain.model.TheaterState()
+            var theater = chat.keryx.core.model.TheaterState()
             fun dispatch(status: LiveStreamStatus, finalText: String? = null) {
                 val cur = _liveStream.value ?: LiveStream(roomId, "", status, System.currentTimeMillis())
                 _liveStream.value = cur.copy(
@@ -1705,7 +1705,7 @@ class ChatViewModel(
                 reasoningBuf.clear()
                 // The committed segment carries its own parsed tool rows, so keeping the beats
                 // would show every call twice — once live, once in the transcript above.
-                theater = chat.keryx.app.domain.model.TheaterState()
+                theater = chat.keryx.core.model.TheaterState()
                 if (_liveStream.value != null) dispatch(LiveStreamStatus.STREAMING)
             }
             client.stream(roomId).collect { ev ->
@@ -1750,7 +1750,7 @@ class ChatViewModel(
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Tool -> {
                         // Rare next to token deltas (a handful per turn), so it never waits for
                         // the throttle — a tool starting is exactly the beat you want on screen.
-                        theater = chat.keryx.app.domain.model.Theater.reduce(theater, ev.event)
+                        theater = chat.keryx.core.model.Theater.reduce(theater, ev.event)
                         dispatch(_liveStream.value?.status ?: LiveStreamStatus.STREAMING)
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.SegmentBreak -> {
@@ -1826,8 +1826,8 @@ class ChatViewModel(
      * "what did that edit change" a week later is the file, not a phone's memory of it.
      */
     private val _lastTurnTheater =
-        MutableStateFlow<Pair<String, chat.keryx.app.domain.model.TheaterState>?>(null)
-    val lastTurnTheater: StateFlow<Pair<String, chat.keryx.app.domain.model.TheaterState>?> =
+        MutableStateFlow<Pair<String, chat.keryx.core.model.TheaterState>?>(null)
+    val lastTurnTheater: StateFlow<Pair<String, chat.keryx.core.model.TheaterState>?> =
         _lastTurnTheater.asStateFlow()
 
     private fun clearStream() {

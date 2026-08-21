@@ -1,12 +1,12 @@
-package chat.keryx.app
+package chat.keryx.core
 
-import chat.keryx.app.domain.model.Theater
-import chat.keryx.app.domain.model.ToolBeat
-import chat.keryx.app.domain.model.ToolGrammar
-import chat.keryx.app.domain.model.ToolGrammar.DiffKind
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import chat.keryx.core.model.Theater
+import chat.keryx.core.model.ToolBeat
+import chat.keryx.core.model.ToolGrammar
+import chat.keryx.core.model.ToolGrammar.DiffKind
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.test.Test
 
 /**
  * The shared tool vocabulary (2.4). Worth pinning because it is the thing that stops the live

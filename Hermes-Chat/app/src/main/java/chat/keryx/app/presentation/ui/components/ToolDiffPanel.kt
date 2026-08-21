@@ -26,7 +26,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.keryx.app.domain.model.ToolGrammar
+import chat.keryx.core.model.ToolGrammar
 
 /** The add/remove pair, in the two colours the panel uses — resolved once, shared by both. */
 data class DiffColors(

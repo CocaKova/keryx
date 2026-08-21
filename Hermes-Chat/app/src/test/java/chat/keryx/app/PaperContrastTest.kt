@@ -1,6 +1,6 @@
 package chat.keryx.app
 
-import chat.keryx.app.domain.model.Heralds
+import chat.keryx.core.model.Heralds
 import chat.keryx.app.presentation.ui.components.roomLightRaw
 import java.io.File
 import org.junit.Assert.assertEquals

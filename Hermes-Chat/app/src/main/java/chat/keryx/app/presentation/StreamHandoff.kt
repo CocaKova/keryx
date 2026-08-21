@@ -100,5 +100,5 @@ data class LiveStream(
     /** The tool theater (2.4): what the agent is DOING this turn — its tool calls and any
      *  subagents it sent out — reduced from `event: tool` frames. Empty on a gateway without
      *  the mirror, which is exactly the pre-2.4 overlay. */
-    val theater: chat.keryx.app.domain.model.TheaterState = chat.keryx.app.domain.model.TheaterState(),
+    val theater: chat.keryx.core.model.TheaterState = chat.keryx.core.model.TheaterState(),
 )

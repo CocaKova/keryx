@@ -1,7 +1,7 @@
 package chat.keryx.app
 
-import chat.keryx.app.domain.model.RoomSigil
-import chat.keryx.app.domain.model.RoomSigils
+import chat.keryx.core.model.RoomSigil
+import chat.keryx.core.model.RoomSigils
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

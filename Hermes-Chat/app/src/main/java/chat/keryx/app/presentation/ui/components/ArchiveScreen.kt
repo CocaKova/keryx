@@ -63,9 +63,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.keryx.app.data.archive.ArchiveStore
-import chat.keryx.app.domain.model.MediaKind
-import chat.keryx.app.domain.model.Message
-import chat.keryx.app.domain.model.SenderType
+import chat.keryx.core.model.MediaKind
+import chat.keryx.core.model.Message
+import chat.keryx.core.model.SenderType
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.ui.DaySeparator
 import kotlinx.coroutines.delay
@@ -711,10 +711,13 @@ private fun ContextRow(m: Message, anchor: Boolean, viewModel: ChatViewModel) {
                 )
             }
             Spacer(Modifier.height(3.dp))
-            if (m.mediaKind != null) {
+            // Bound to a local: `mediaKind` is a public property of a different module now
+            // (:core), and Kotlin will not smart-cast across that boundary.
+            val mediaKind = m.mediaKind
+            if (mediaKind != null) {
                 MessageMedia(
                     loadKey = m.id,
-                    kind = m.mediaKind,
+                    kind = mediaKind,
                     fileName = m.fileName,
                     textColor = MaterialTheme.colorScheme.onSurface,
                     loader = { viewModel.loadMessageMedia(m.roomId, m.id) },

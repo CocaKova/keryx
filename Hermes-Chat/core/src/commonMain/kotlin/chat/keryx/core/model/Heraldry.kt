@@ -1,4 +1,4 @@
-package chat.keryx.app.domain.model
+package chat.keryx.core.model
 
 /**
  * A herald's colours: every agent account Keryx knows gets a stable hue, so a room with

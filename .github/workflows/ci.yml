@@ -38,9 +38,11 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('Hermes-Chat/**/*.gradle.kts', 'Hermes-Chat/gradle/libs.versions.toml') }}
           restore-keys: gradle-${{ runner.os }}-
 
+      # :core's tests run on the JVM target — they are the ones that hold for every transport,
+      # so they must not be reachable only through the Android app.
       - name: Unit tests
         working-directory: Hermes-Chat
-        run: ./gradlew --no-daemon :app:testDebugUnitTest
+        run: ./gradlew --no-daemon :core:jvmTest :app:testDebugUnitTest
 
       # A debug build, not a release one: release signing falls back to the debug keystore when
       # local.properties carries no key, and a CI runner has neither. Compiling is the point.
@@ -53,7 +55,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-test-report
-          path: Hermes-Chat/app/build/reports/tests/
+          path: |
+            Hermes-Chat/app/build/reports/tests/
+            Hermes-Chat/core/build/reports/tests/
 
   gateway:
     name: Gateway payload — pytest

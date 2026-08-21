@@ -1,10 +1,10 @@
 package chat.keryx.app
 
-import chat.keryx.app.domain.model.DelegationState
-import chat.keryx.app.domain.model.Theater
-import chat.keryx.app.domain.model.TheaterEvent
-import chat.keryx.app.domain.model.TheaterState
-import chat.keryx.app.domain.model.ToolBeat
+import chat.keryx.core.model.DelegationState
+import chat.keryx.core.model.Theater
+import chat.keryx.core.model.TheaterEvent
+import chat.keryx.core.model.TheaterState
+import chat.keryx.core.model.ToolBeat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

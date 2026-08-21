@@ -47,9 +47,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.keryx.app.domain.model.RoomProfile
-import chat.keryx.app.domain.model.RoomSigil
-import chat.keryx.app.domain.model.RoomSigils
+import chat.keryx.core.model.RoomProfile
+import chat.keryx.core.model.RoomSigil
+import chat.keryx.core.model.RoomSigils
 import kotlin.math.min
 
 /**

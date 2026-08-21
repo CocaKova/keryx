@@ -31,3 +31,4 @@ plugins {
 
 rootProject.name = "HermesChat"
 include(":app")
+include(":core")

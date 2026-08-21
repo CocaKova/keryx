@@ -179,7 +179,7 @@ fun HermesApp(viewModel: ChatViewModel) {
     CompositionLocalProvider(
         chat.keryx.app.presentation.ui.components.LocalKeryxHaptics provides keryxHaptics,
         LocalHeraldConfig provides HeraldConfig(
-            ids = chat.keryx.app.domain.model.Heralds.parseIds(heraldIds),
+            ids = chat.keryx.core.model.Heralds.parseIds(heraldIds),
             overrides = heraldAccents,
         )
     ) {

@@ -19,9 +19,9 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
-import chat.keryx.app.domain.model.Heraldry
-import chat.keryx.app.domain.model.Heralds
-import chat.keryx.app.domain.model.RoomSigil
+import chat.keryx.core.model.Heraldry
+import chat.keryx.core.model.Heralds
+import chat.keryx.core.model.RoomSigil
 
 /** The configured heralds, provided once near the root so any bubble can resolve a sender's light. */
 data class HeraldConfig(

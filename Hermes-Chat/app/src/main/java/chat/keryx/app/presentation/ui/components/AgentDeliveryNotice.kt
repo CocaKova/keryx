@@ -28,7 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.keryx.app.domain.model.AgentDelivery
+import chat.keryx.core.model.AgentDelivery
 
 /**
  * An inter-agent delivery as a quiet attribution line (2.3 §2): the relay is an EVENT in this
@@ -56,7 +56,7 @@ fun AgentDeliveryNotice(
         modifier = modifier.padding(start = 4.dp, bottom = 2.dp).alpha(0.85f),
     ) {
         Text(
-            chat.keryx.app.domain.model.Heralds.SIGIL,
+            chat.keryx.core.model.Heralds.SIGIL,
             fontSize = 11.sp,
             color = mark.copy(alpha = 0.85f),
         )
@@ -98,7 +98,7 @@ fun AgentDeliverySentNotice(
             modifier = Modifier.padding(horizontal = 2.dp, vertical = 4.dp),
         ) {
             Text(
-                chat.keryx.app.domain.model.Heralds.SIGIL,
+                chat.keryx.core.model.Heralds.SIGIL,
                 fontSize = 12.sp,
                 color = mark.copy(alpha = 0.85f),
             )
@@ -119,7 +119,7 @@ fun AgentDeliverySentNotice(
                     .padding(horizontal = 2.dp, vertical = 4.dp),
             ) {
                 Text(
-                    chat.keryx.app.domain.model.Heralds.SIGIL,
+                    chat.keryx.core.model.Heralds.SIGIL,
                     fontSize = 12.sp,
                     color = mark.copy(alpha = 0.85f),
                 )

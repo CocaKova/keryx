@@ -1,4 +1,4 @@
-package chat.keryx.app.domain.model
+package chat.keryx.core.model
 
 /**
  * Who is typing in a room, split by classification: the agent's typing drives the

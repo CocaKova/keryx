@@ -6,9 +6,9 @@ import android.os.Bundle
 import chat.keryx.app.data.remote.MatrixService
 import chat.keryx.app.data.repository.ChatRepositoryImpl
 import chat.keryx.app.data.repository.SettingsRepositoryImpl
-import chat.keryx.app.domain.model.MediaKind
-import chat.keryx.app.domain.model.Message
-import chat.keryx.app.domain.model.SenderType
+import chat.keryx.core.model.MediaKind
+import chat.keryx.core.model.Message
+import chat.keryx.core.model.SenderType
 import chat.keryx.app.notify.KeryxNotifications
 import chat.keryx.app.presentation.ui.components.MessageParser
 import kotlinx.coroutines.CoroutineScope
@@ -138,7 +138,7 @@ class KeryxApp : Application() {
                         last,
                         tail.getOrNull(tail.size - 2),
                     )
-                    val title = if (arrived) "${chat.keryx.app.domain.model.Heralds.SIGIL} ${heraldName(last)}"
+                    val title = if (arrived) "${chat.keryx.core.model.Heralds.SIGIL} ${heraldName(last)}"
                     else room.name
                     android.util.Log.i("KeryxNotify", "new activity in ${room.id} (${room.name}); notifying arrival=$arrived")
                     KeryxNotifications.notifyMessage(
@@ -157,7 +157,7 @@ class KeryxApp : Application() {
     /** A herald's display name, falling back to its MXID localpart. */
     private fun heraldName(m: Message): String = m.senderName
         .takeIf { it.isNotBlank() && !it.startsWith("@") }
-        ?: chat.keryx.app.domain.model.Heralds.localpart(m.senderId).ifEmpty { "Herald" }
+        ?: chat.keryx.core.model.Heralds.localpart(m.senderId).ifEmpty { "Herald" }
 
     private fun notificationSnippet(m: Message): String = when {
         m.mediaKind == MediaKind.IMAGE -> "🖼 Photo"

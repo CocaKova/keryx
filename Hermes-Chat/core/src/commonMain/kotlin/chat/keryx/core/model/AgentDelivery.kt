@@ -1,4 +1,4 @@
-package chat.keryx.app.domain.model
+package chat.keryx.core.model
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
