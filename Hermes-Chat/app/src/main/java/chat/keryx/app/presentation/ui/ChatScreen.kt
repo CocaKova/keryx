@@ -603,6 +603,21 @@ fun ChatScreen(
                         )
                         is ChatRenderItem.Single -> {
                             val message = item.message
+                            // Structured reasoning (the direct producer fills Message.reasoning;
+                            // the Matrix parser gathers its own into the run instead): the quiet
+                            // "Thought for Ns" disclosure, above whatever the turn said. A
+                            // reasoning-ONLY row (a turn that was all thought before its tools)
+                            // is just the disclosure — no empty bubble under it.
+                            val thought = message.reasoning?.takeIf { it.isNotBlank() }
+                            if (thought != null && message.content.isBlank()) {
+                                chat.keryx.app.presentation.ui.components.ReasoningDisclosure(
+                                    reasoning = thought,
+                                    seconds = message.reasoningSeconds,
+                                    streaming = message.isStreaming,
+                                    stateKey = "think-${message.id}",
+                                )
+                                return@Box
+                            }
                             // Automated telemetry never gets a chat bubble: it renders as a quiet,
                             // low-contrast block (or nothing at all when telemetry is hidden).
                             val isTelem = message.sender == SenderType.HERMES &&
@@ -627,6 +642,15 @@ fun ChatScreen(
                             // message; a quote of the user's own last message is noise (grouping
                             // marks those suppressed). Genuine references further back still show.
                             val quotedId = message.replyToId.takeUnless { item.suppressQuote }
+                            Column {
+                            if (thought != null) {
+                                chat.keryx.app.presentation.ui.components.ReasoningDisclosure(
+                                    reasoning = thought,
+                                    seconds = message.reasoningSeconds,
+                                    streaming = false,
+                                    stateKey = "think-${message.id}",
+                                )
+                            }
                             MessageBubble(
                                 message = message,
                                 replyTo = quotedId?.let { byId[it] },
@@ -661,6 +685,7 @@ fun ChatScreen(
                                 } else null,
                                 modifier = Modifier.background(flashColor, RoundedCornerShape(18.dp)),
                             )
+                            }
                         }
                     }
                 }

@@ -1539,6 +1539,9 @@ class ChatViewModel(
                     settingsRepository.gatewayApiKey = apiKey
                     settingsRepository.transportMode = "direct"
                     settingsRepository.directLoggedIn = true
+                    // Hermes Link IS this gateway on the direct path — light the Hub, the
+                    // Missions board, the Skill Forge and the pet without a second setup step.
+                    settingsRepository.sideChannelEnabled = true
                     val direct = transport as? chat.keryx.app.transport.direct.DirectTransport
                     if (direct != null) {
                         direct.login()
