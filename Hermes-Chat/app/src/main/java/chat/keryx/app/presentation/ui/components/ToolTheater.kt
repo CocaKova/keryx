@@ -207,6 +207,9 @@ fun ToolTheaterRun(
      * pre-2.4 card: same grammar, fewer facts.
      */
     structured: List<ToolCall> = emptyList(),
+    /** Open a landed subagent's own session. Rode the live stage until 3.1 §A2 retired it; the
+     *  wings live in the run now, and so does the way into them. */
+    onOpenSubagent: ((chat.keryx.core.model.Delegation) -> Unit)? = null,
 ) {
     val accent = MaterialTheme.colorScheme.primary
     // Expand state persists as the group grows (keyed on the stable oldest-message id).
@@ -355,7 +358,7 @@ fun ToolTheaterRun(
                                 val group = run.entries.drop(i)
                                     .takeWhile { it is ToolRunEntry.Delegated }
                                     .map { (it as ToolRunEntry.Delegated).run }
-                                DelegationWings(group, live = active, baseColor = baseColor, onOpen = null)
+                                DelegationWings(group, live = active, baseColor = baseColor, onOpen = onOpenSubagent)
                             }
                             return@forEachIndexed
                         }

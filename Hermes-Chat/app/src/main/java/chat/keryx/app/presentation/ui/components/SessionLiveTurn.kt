@@ -28,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -103,14 +102,13 @@ fun SessionLiveTurn(viewModel: ChatViewModel) {
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
-        console.tools.takeLast(3).forEach { line ->
-            Text(
-                line,
-                fontSize = 10.sp,
-                fontFamily = FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.tertiary,
-                maxLines = 1, overflow = TextOverflow.Ellipsis,
-            )
+        // The run's tool calls, in the app's one tool vocabulary (3.1 §A4). This panel used to
+        // print its own "⚙ tool: preview" / "✓ tool" strings — the same facts the theater rows
+        // carry, said a fifth way. Tail-bounded: the panel sits above the composer and the full
+        // exchange lands in the transcript when the turn commits.
+        val accent = MaterialTheme.colorScheme.primary
+        console.theater.beats.takeLast(3).forEach { call ->
+            ToolTheaterRow(call, accent, MaterialTheme.colorScheme.onSurface)
         }
         if (console.transcript.isNotBlank()) {
             // Bounded, tail-following: the panel sits between transcript and composer, so it

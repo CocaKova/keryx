@@ -611,3 +611,77 @@ fun groupChatItemsIncremental(
         prefixLastDay = prefixLastDay,
     )
 }
+
+/**
+ * Fold the live turn's tool calls into the transcript (3.1 §A1).
+ *
+ * Two sources describe one run. The gateway *narrates* each call as a real message
+ * (`tool_progress`, on by default), which syncs in and groups into a [ChatRenderItem.ToolRun];
+ * the side-channel reports the same calls as `event: tool` frames, which arrive first and carry
+ * what the narration never could — durations, verdicts, real diffs. Until 3.1 the frames had
+ * their own renderer inside the streaming bubble, so a watched turn showed every call twice, in
+ * two different vocabularies, a few dp apart. (Jonny, on device, 2.4: "the tool call log and the
+ * new tool call kind of fight.")
+ *
+ * They are one run at two ages. The transcript is where a run lives, so the frames come here:
+ *
+ *  - a call the transcript **already carries** stays the transcript's row, enriched by its beat
+ *    (`ToolTheaterRun(structured = …)`, positional-by-name via `Theater.align`);
+ *  - a call the transcript **does not carry yet** — because `tool_progress` is `off`/`new`, or
+ *    because the narration simply hasn't synced — has nowhere else to appear, and lands here as
+ *    a live row that its committed twin replaces the moment it arrives.
+ *
+ * The join is the same one `Theater.align` uses and for the same reason: both lists describe the
+ * same sequence in the same order, and there is no call id in committed text to join on. The run
+ * holds N parsed calls, the theater holds M ≥ N beats; the first N are the same calls seen twice
+ * and the last M − N are the ones only the side-channel knows about.
+ *
+ * ⚠️ Only folds into a run that is still the newest thing in the room. A run with anything after
+ * it belongs to a turn that already delivered its answer, and a live beat is never part of that.
+ *
+ * ⚠️ **`tool_progress: off`/`new` keeps its live rows only while the turn is live.** With narration
+ * off the room carries no record of the calls at all, so once the answer commits there is no run
+ * to grow and this opens none: a run materialising *under* an already-delivered answer is a turn
+ * that never happened. That is the same call [ChatViewModel.lastTurnTheater] already makes for the
+ * structured record — the phone shows what it watched, and does not become a second store of tool
+ * results. Under the default (`all`) the narration always lands, so the rows simply settle.
+ *
+ * @param itemsNewestFirst the grouped timeline, as [groupChatItems] returns it.
+ * @param live the turn is still in flight.
+ */
+fun withLiveTheater(
+    itemsNewestFirst: List<ChatRenderItem>,
+    beats: List<ToolCall>,
+    delegations: List<chat.keryx.core.model.Delegation> = emptyList(),
+    live: Boolean = true,
+): List<ChatRenderItem> {
+    if (beats.isEmpty() && delegations.isEmpty()) return itemsNewestFirst
+    // Newest-first: the leading run is this turn's; anything else is history with an answer
+    // already under it. DayHeaders and Arrivals are chrome the walk inserts around a run, never
+    // a turn boundary, so they don't disqualify it.
+    val leadIndex = itemsNewestFirst.indexOfFirst { it !is ChatRenderItem.DayHeader && it !is ChatRenderItem.Arrival }
+    val lead = itemsNewestFirst.getOrNull(leadIndex) as? ChatRenderItem.ToolRun
+    val carried = lead?.entries?.count { it is ToolRunEntry.Call } ?: 0
+    val fresh = beats.drop(carried)
+    val known = lead?.entries.orEmpty().filterIsInstance<ToolRunEntry.Delegated>().mapTo(HashSet()) { it.run.key }
+    val freshWings = delegations.filterNot { it.key in known }
+    if (fresh.isEmpty() && freshWings.isEmpty()) return itemsNewestFirst
+
+    val added = fresh.map { ToolRunEntry.Call(it) } + freshWings.map { ToolRunEntry.Delegated(it) }
+    return if (lead != null) {
+        itemsNewestFirst.toMutableList().also {
+            it[leadIndex] = lead.copy(entries = lead.entries + added)
+        }
+    } else if (live) {
+        // No run to grow: the beats ARE the run, and it opens at the newest position — which is
+        // right whether the turn has said nothing yet (the lead is my own message) or opened with
+        // prose before reaching for a tool (the lead is that prose, and the tools did follow it).
+        // Its own id, so the accordion's expand state never transfers to a committed run that
+        // lands later under the same key.
+        itemsNewestFirst.toMutableList().also {
+            it.add(leadIndex.coerceAtLeast(0), ChatRenderItem.ToolRun("live", added, reasoning = null))
+        }
+    } else {
+        itemsNewestFirst
+    }
+}

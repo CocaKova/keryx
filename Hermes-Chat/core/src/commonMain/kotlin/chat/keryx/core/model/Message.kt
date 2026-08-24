@@ -9,7 +9,6 @@ data class Message(
     val senderId: String = "",
     val senderName: String = "",
     val isStreaming: Boolean = false,
-    val toolActivity: ToolActivity? = null,
     /** Structured tool invocations (direct transport: gateway tool.start/complete or REST
      *  tool_calls rows). Non-empty ⇒ this message renders as a tool-theater block; [content]
      *  is usually blank. The Matrix path leaves this empty — its calls are parsed back out of
@@ -50,11 +49,6 @@ enum class SenderType {
     OTHER,   // any other participant
     SYSTEM
 }
-
-data class ToolActivity(
-    val name: String,
-    val status: ToolStatus
-)
 
 enum class ToolStatus {
     EXECUTING,

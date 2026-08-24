@@ -77,6 +77,18 @@ fun MessageContent(
     /** Agent messages get the full chrome parse (tools/reasoning/telemetry); a human sender's
      *  text must render as plain markdown even when it pattern-matches agent output. */
     isAgent: Boolean = true,
+    /**
+     * Draw parsed tool calls inline, as rows inside this text (3.1 §A4).
+     *
+     * **Off by default, and a chat bubble must never turn it on.** In the transcript a
+     * tool-bearing message is lifted out of the bubble entirely and rendered as a run
+     * ([ToolTheaterRun]) — leaving the inline path armed meant the same calls could draw twice,
+     * once in the run and once inside whatever bubble the parser also found them in.
+     *
+     * The exception is a surface with no run to lift into: the Archive reads one stored message
+     * at a time, so its tool rows have nowhere else to go and it opts in.
+     */
+    inlineTools: Boolean = false,
 ) {
     // The gateway splits turns at tool-call boundaries and can leave several blank lines at the
     // edges of each piece (e.g. a step header stranded after 3 empty lines) — trim so bubbles
@@ -158,7 +170,7 @@ fun MessageContent(
                 }
                 is MessageParser.Segment.Table -> MarkdownTable(segment.header, segment.rows, textColor)
                 is MessageParser.Segment.Thinking -> ReasoningCanvas(segment.text, textColor, active = isStreaming)
-                is MessageParser.Segment.Tools -> ToolCalls(segment.calls, textColor)
+                is MessageParser.Segment.Tools -> if (inlineTools) ToolCalls(segment.calls, textColor)
                 is MessageParser.Segment.Mermaid -> MermaidDiagram(segment.code, textColor)
                 is MessageParser.Segment.Citations -> CitationsBar(segment.items, textColor)
                 is MessageParser.Segment.QuickActions -> QuickActionTiles(segment.options, textColor)
@@ -473,10 +485,9 @@ internal fun ReasoningCanvas(text: String, baseColor: Color, active: Boolean) {
 }
 
 /**
- * Hermes tool invocations as dream-aesthetic "Sandbox Cards". Each tool carries its own glyph
- * (⚙️ graphiti, 👁️ vision, 🔍 search, 🔧 patch …); the card shows that glyph, the tool name in
- * monospace, the (single string) argument as a soft wrapping subtitle, and a quiet ✓ since these
- * are completed actions in history. Frosted accent gradient keeps them on-brand and uncluttered.
+ * Tool calls parsed out of one message's own text, for a surface that reads messages one at a
+ * time and has no run to lift them into (the Archive). Same [ToolTheaterRow] the transcript's
+ * runs use — one renderer, wherever a call is shown.
  */
 @Composable
 private fun ToolCalls(calls: List<chat.keryx.core.model.ToolCall>, baseColor: Color) {
