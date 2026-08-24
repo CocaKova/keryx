@@ -177,7 +177,9 @@ fun isToolMessage(m: Message): Boolean {
     // The direct producer: structured calls arrive ON the message — no parsing, same runs.
     if (m.toolCalls.isNotEmpty() || m.delegations.isNotEmpty()) return true
     if (m.content.isBlank()) return false
-    return MessageParser.parse(m.content).any {
+    // cacheable=!isStreaming (3.1 §E2): a streamed intermediate is parsed once and never seen
+    // again — caching it evicts a committed message from the LRU for nothing.
+    return MessageParser.parse(m.content, cacheable = !m.isStreaming).any {
         it is MessageParser.Segment.Tools || it is MessageParser.Segment.ActionOutput
     }
 }
@@ -319,7 +321,17 @@ private fun walkRange(
             if (m.sender == SenderType.ME && !isCommandMessage(m)) break
             blockEnd++
         }
-        if ((i until blockEnd).none { isToolMessage(chrono[it]) }) {
+        // One classification pass over the block (3.1 §E3): the answer-boundary lookahead below
+        // re-asked these questions for every message ahead of every position — O(block²) in
+        // parses, and §E2's uncached streaming bodies remove the LRU's protection for exactly
+        // the case where the block is longest. Indexed by (q - i).
+        val isToolAt = BooleanArray(blockEnd - i) { isToolMessage(chrono[i + it]) }
+        val isTelemAt = BooleanArray(blockEnd - i) { isTelemetryMessage(chrono[i + it]) }
+        val proseAt = IntArray(blockEnd - i) {
+            val n = chrono[i + it]
+            proseLength(MessageParser.parse(n.content, cacheable = !n.isStreaming))
+        }
+        if (isToolAt.none { it }) {
             // A plain agent reply (no tools anywhere): normal bubbles.
             for (p in i until blockEnd) {
                 val m = chrono[p]
@@ -377,7 +389,7 @@ private fun walkRange(
             // same facts out of. From here down the two are indistinguishable. Reasoning prefers
             // the field on both paths (3.1 §B1 — one owner per fact); the segment gather survives
             // only as the fallback for a producer that never lifted it.
-            val segs = MessageParser.parse(m.content)
+            val segs = MessageParser.parse(m.content, cacheable = !m.isStreaming)
             val parts = if (m.toolCalls.isNotEmpty() || m.delegations.isNotEmpty()) {
                 MsgParts(
                     m.toolCalls.map { ToolRunEntry.Call(it) } +
@@ -393,11 +405,11 @@ private fun walkRange(
             val toolAhead = (p + 1 until blockEnd).asSequence()
                 .takeWhile { q ->
                     val n = chrono[q]
-                    n.sender == SenderType.ME || isToolMessage(n) || isTelemetryMessage(n) ||
+                    n.sender == SenderType.ME || isToolAt[q - i] || isTelemAt[q - i] ||
                         (toolSeen && fenceOnly(n)) ||
-                        proseLength(MessageParser.parse(n.content)) < ANSWER_PROSE_MIN
+                        proseAt[q - i] < ANSWER_PROSE_MIN
                 }
-                .any { q -> isToolMessage(chrono[q]) || (toolSeen && fenceOnly(chrono[q])) }
+                .any { q -> isToolAt[q - i] || (toolSeen && fenceOnly(chrono[q])) }
             // A fence-starting message is only a stdout CONTINUATION while more of the turn is
             // still coming — a real turn always ends on its answer, so stdout is never the last
             // substantive agent message of the block (telemetry heartbeats and embedded slash
@@ -405,17 +417,16 @@ private fun walkRange(
             // with ``` and used to be swallowed into the run as a Note step — live-caught
             // 2026-07-24 when an X-post draft rendered inside its turn's ✍️ write_file run.
             val moreAgentContentAhead = (p + 1 until blockEnd).any { q ->
-                val n = chrono[q]
-                n.sender == SenderType.HERMES && !isTelemetryMessage(n)
+                chrono[q].sender == SenderType.HERMES && !isTelemAt[q - i]
             }
             when {
                 // Telemetry FIRST: a "⏳ Working…" heartbeat can also match the tool-line shapes,
                 // and it must stay a quiet aside, not inflate the "Ran N tools" count.
-                isTelemetryMessage(m) -> {
+                isTelemAt[p - i] -> {
                     if (runStartId != null) entries += ToolRunEntry.Telemetry(m.content.trim())
                     else out += ChatRenderItem.Single(m) // renders as the quiet telemetry row
                 }
-                isToolMessage(m) -> {
+                isToolAt[p - i] -> {
                     toolSeen = true
                     openRun(m)
                     val deduped = dedupCalls(parts.entries, seenCalls)
@@ -435,7 +446,7 @@ private fun walkRange(
                     closeRun()
                     out += agentSingle(m)
                 }
-                (runStartId != null || toolAhead) && proseLength(segs) >= ANSWER_PROSE_MIN -> {
+                (runStartId != null || toolAhead) && proseAt[p - i] >= ANSWER_PROSE_MIN -> {
                     // A substantial INTERIM answer mid-run (steer continued the turn): visible
                     // bubble, and whatever tools follow start a fresh run.
                     closeRun()

@@ -304,6 +304,12 @@ they are what "no longer fluent in the matrix side" means beyond the double:
 
 ### Phase E — the optimizations
 
+**Status 2026-08-23: E2 + E3 DONE (530 tests green; the walk's classification is one pass over
+the block, and all three grouping parse sites pass `cacheable = !isStreaming` — the
+`parseUncachedCount` invariant test still holds at ≤6/tick). E1 NOT started — it requires the
+before/after device measurement below, do not throttle blind. E4 untouched (lift after the
+A-shrunk composables settle).**
+
 **E1. ⚠️ The direct door publishes per token, unthrottled.** `DirectTransport.streamDelta` is
 `buffer.append(text); publish()`. `publish()` rewrites the whole `messages` list, which drives
 `groupChatItemsIncremental` over the trailing block, which re-walks and re-parses the growing
