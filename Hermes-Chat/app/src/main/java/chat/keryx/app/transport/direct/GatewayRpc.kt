@@ -171,7 +171,10 @@ class GatewayRpc(
                 if (!wantConnected) break
                 val st = _state.value
                 // Credential rejection won't fix itself — stop and let the UI re-onboard.
-                if (st is ConnState.Failed && st.wsCloseCode == 4401) break
+                // 4401 = the server accepted the upgrade then closed on a bad credential;
+                // 401 = a proxy/HTTP layer rejected the upgrade outright (onFailure maps
+                // the response code). Same meaning, both terminal.
+                if (st is ConnState.Failed && (st.wsCloseCode == 4401 || st.wsCloseCode == 401)) break
                 // Reset on a socket that actually WORKED, so a long-lived connection that
                 // finally drops retries promptly instead of inheriting an ancient backoff.
                 // (Testing `_state` here instead — as this once did — can never be true: by

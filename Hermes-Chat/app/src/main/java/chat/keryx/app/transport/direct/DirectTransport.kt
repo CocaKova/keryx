@@ -599,10 +599,31 @@ class DirectTransport(
                         is GatewayRpc.ConnState.Connecting -> chat.keryx.core.model.LinkState.CONNECTING
                         else -> chat.keryx.core.model.LinkState.DISCONNECTED
                     }
+                    if (st is GatewayRpc.ConnState.Failed &&
+                        (st.wsCloseCode == 4401 || st.wsCloseCode == 401)
+                    ) onCredentialRejected()
                 }
             }
         }
         scope.launch { refreshSessions() }
+    }
+
+    /**
+     * The gateway rejected our credential TERMINALLY (WS 4401 / upgrade 401): the reconnect
+     * loop has already stopped, and no retry can heal it — a GATED gateway rejects the
+     * legacy token by design (hermes ≥0.20.5), and a native refresh the server won't rotate
+     * is a dead sign-in. Sign the door out so HermesApp falls back to the login screen,
+     * whose Connect speaks BOTH dialects (the probe picks; gated fires the browser sign-in).
+     * Without this a door that walked in on the token dialect sat "logged in" forever
+     * showing disconnected, with the browser sign-in unreachable — device-caught 2026-08-24,
+     * the first gated gateway this app met. URL and sealed credentials stay: the login
+     * screen prefills from them, and a fresh sign-in overwrites what matters.
+     */
+    private fun onCredentialRejected() {
+        if (!settings.directLoggedIn) return
+        android.util.Log.w("KeryxGw", "gateway credential rejected — signing the door out to re-onboard")
+        settings.directLoggedIn = false
+        _loggedIn.value = false
     }
 
     private var stateJob: Job? = null
