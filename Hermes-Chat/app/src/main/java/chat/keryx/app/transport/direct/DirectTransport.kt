@@ -600,7 +600,7 @@ class DirectTransport(
                         else -> chat.keryx.core.model.LinkState.DISCONNECTED
                     }
                     if (st is GatewayRpc.ConnState.Failed &&
-                        (st.wsCloseCode == 4401 || st.wsCloseCode == 401)
+                        st.wsCloseCode in GatewayRpc.TERMINAL_CREDENTIAL_CODES
                     ) onCredentialRejected()
                 }
             }
@@ -609,8 +609,9 @@ class DirectTransport(
     }
 
     /**
-     * The gateway rejected our credential TERMINALLY (WS 4401 / upgrade 401): the reconnect
-     * loop has already stopped, and no retry can heal it — a GATED gateway rejects the
+     * The gateway rejected our credential TERMINALLY (an HTTP 401/403 upgrade reject — the
+     * shape a gated gateway actually sends, measured on the wire — or a post-accept
+     * 4401/4403 close): the reconnect loop has already stopped, and no retry can heal it — a GATED gateway rejects the
      * legacy token by design (hermes ≥0.20.5), and a native refresh the server won't rotate
      * is a dead sign-in. Sign the door out so HermesApp falls back to the login screen,
      * whose Connect speaks BOTH dialects (the probe picks; gated fires the browser sign-in).
