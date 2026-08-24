@@ -537,8 +537,10 @@ fun ChatScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             // reverseLayout: this first item sits at the very bottom, below the newest message.
-            // While side-channel tokens are visible the streaming bubble takes the slot; the
-            // quips indicator covers the silent phases (connecting, reasoning, tools).
+            // While side-channel tokens are visible the streaming bubble takes the slot. The
+            // quips indicator fires only BEFORE the turn's first sign of life (3.1 §C3): once
+            // tool beats exist, the live run row in the transcript already names the tool, and
+            // quips beneath it were a fourth "working" signal saying less than the row above.
             val stream = liveStream
             val streamVisible = stream != null && stream.roomId == currentRoom?.id &&
                 (stream.text.isNotBlank() || stream.reasoning.isNotBlank() ||
@@ -555,7 +557,7 @@ fun ChatScreen(
                         )
                     }
                 }
-            } else if (awaitingReply) {
+            } else if (awaitingReply && liveTheater == null) {
                 item(key = "waiting") { Box(modifier = Modifier.animateItem()) { WaitingIndicator() } }
             } else if (typingHumans.isNotEmpty()) {
                 // Humans typing get a plain low-contrast line in the same slot — never the
