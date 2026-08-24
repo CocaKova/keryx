@@ -68,8 +68,28 @@ interface SettingsRepository {
      */
     var directGatewayUrl: String
 
-    /** The dashboard session token the direct transport authenticates with. */
+    /** The dashboard session token the direct transport authenticates with (token mode). */
     var directApiKey: String
+
+    /** How the direct door authenticates: "token" (legacy session token — loopback/ungated
+     *  gateways) or "native" (RFC 8252 browser sign-in against a GATED gateway: bearer +
+     *  per-connect ws tickets — hermes ≥0.20.5 with auth_required). Decided by the login
+     *  probe's `auth_required`, not by the user. */
+    var directAuthMode: String
+
+    /** Native mode's 12h access token (sealed). Rotated transparently via the refresh token. */
+    var directAccessToken: String
+
+    /** Native mode's 30d refresh token (sealed) — the durable credential of a native login. */
+    var directRefreshToken: String
+
+    /** The access token's exp (epoch SECONDS — the server's own unit). */
+    var directTokenExpiresAt: Long
+
+    /** Persist a fresh native token pair SYNCHRONOUSLY. Commit, not apply, for the same
+     *  relaunch-race reason as [commitTransportDoor]: a login's last write is immediately
+     *  followed by a process relaunch, and apply() loses that race. */
+    fun commitDirectNativeTokens(access: String, refresh: String, expiresAtSeconds: Long)
 
     /**
      * Persist a door decision SYNCHRONOUSLY (commit, not apply) — the process relaunches the

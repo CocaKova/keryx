@@ -1591,30 +1591,68 @@ class ChatViewModel(
      * [needsRestart] when the process was booted on the other spine — the transport is not
      * hot-swappable under this ViewModel, so the door change takes effect on relaunch.
      */
-    fun loginToGateway(url: String, apiKey: String, onResult: (ok: Boolean, needsRestart: Boolean, message: String?) -> Unit) {
+    fun loginToGateway(
+        url: String,
+        apiKey: String,
+        /** Fires the system browser at the gateway's sign-in page (gated gateways only). */
+        launchBrowser: (String) -> Unit,
+        onResult: (ok: Boolean, needsRestart: Boolean, message: String?) -> Unit,
+    ) {
         viewModelScope.launch {
-            val probe = chat.keryx.app.transport.direct.GatewayRest(
-                url, apiKey, settingsRepository.allowInsecure,
-            )
-            val status = probe.status()
-            val validated = status.mapCatching { st ->
-                if (st.authRequired || apiKey.isNotBlank()) probe.validateToken().getOrThrow()
+            val insecure = settingsRepository.allowInsecure
+            val probe = chat.keryx.app.transport.direct.GatewayRest(url, apiKey, insecure)
+            val st = probe.status().getOrElse {
+                onResult(false, false, it.message?.take(160) ?: "Gateway unreachable")
+                return@launch
             }
-            validated.fold(
-                onSuccess = {
-                    // One synchronous commit: the caller relaunches the process on our answer,
-                    // and apply()'s async disk write loses that race (device-caught).
-                    settingsRepository.commitTransportDoor(url, apiKey, "direct", true)
-                    val direct = transport as? chat.keryx.app.transport.direct.DirectTransport
-                    if (direct != null) {
-                        direct.login()
-                        onResult(true, false, null)
-                    } else {
-                        onResult(true, true, null)
-                    }
-                },
-                onFailure = { onResult(false, false, it.message?.take(160) ?: "Gateway unreachable") },
+            if (!st.authRequired) {
+                // Ungated gateway: the legacy token dialect, exactly as before.
+                runCatching { if (apiKey.isNotBlank()) probe.validateToken().getOrThrow() }.fold(
+                    onSuccess = {
+                        settingsRepository.directAuthMode =
+                            chat.keryx.app.transport.direct.DirectAuth.MODE_TOKEN
+                        commitDirectDoor(url, apiKey, onResult)
+                    },
+                    onFailure = { onResult(false, false, it.message?.take(160) ?: "Gateway unreachable") },
+                )
+                return@launch
+            }
+            // GATED gateway (hermes ≥0.20.5, auth_required): the legacy token is rejected there
+            // by upstream design — sign in the way Hermes Desktop does. RFC 8252: our PKCE pair,
+            // the SYSTEM browser on the gateway's /login, a loopback listener catching ?code=,
+            // then the code+verifier→token exchange. DirectAuth owns the whole dance.
+            val auth = chat.keryx.app.transport.direct.DirectAuth(settingsRepository, insecure)
+            val pending = auth.beginLogin(url)
+            launchBrowser(pending.authorizeUrl)
+            runCatching {
+                auth.awaitLogin(url, pending)
+                settingsRepository.directAuthMode =
+                    chat.keryx.app.transport.direct.DirectAuth.MODE_NATIVE
+                // Prove the minted pair actually authenticates before committing the door
+                // (mirrors the token path's validateToken gate).
+                chat.keryx.app.transport.direct.GatewayRest(url, "", insecure, auth)
+                    .validateToken().getOrThrow()
+            }.fold(
+                onSuccess = { commitDirectDoor(url, null, onResult) },
+                onFailure = { onResult(false, false, it.message?.take(160) ?: "Browser sign-in failed") },
             )
+        }
+    }
+
+    private suspend fun commitDirectDoor(
+        url: String,
+        apiKey: String?,
+        onResult: (Boolean, Boolean, String?) -> Unit,
+    ) {
+        // One synchronous commit: the caller relaunches the process on our answer,
+        // and apply()'s async disk write loses that race (device-caught).
+        settingsRepository.commitTransportDoor(url, apiKey, "direct", true)
+        val direct = transport as? chat.keryx.app.transport.direct.DirectTransport
+        if (direct != null) {
+            direct.login()
+            onResult(true, false, null)
+        } else {
+            onResult(true, true, null)
         }
     }
 
