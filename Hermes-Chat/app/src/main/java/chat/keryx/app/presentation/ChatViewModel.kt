@@ -147,9 +147,14 @@ class ChatViewModel(
                     val prose = StreamHandoff.normalize(m.content)
                     if (prose.isNotBlank()) prose
                     else {
-                        val tools = MessageParser.parse(m.content)
-                            .filterIsInstance<MessageParser.Segment.Tools>()
-                            .flatMap { it.calls }
+                        // Structure first (3.1 §C2): direct-door tool messages carry their work
+                        // in Message.toolCalls with no content — the parse-only read rendered
+                        // "💭 thinking…" for every tool message where Matrix named the tool.
+                        val tools = m.toolCalls.ifEmpty {
+                            MessageParser.parse(m.content)
+                                .filterIsInstance<MessageParser.Segment.Tools>()
+                                .flatMap { it.calls }
+                        }
                         if (tools.isNotEmpty()) "🛠 ${tools.last().name}" else "💭 thinking…"
                     }
                 }
@@ -545,8 +550,15 @@ class ChatViewModel(
      *  quips vanished after one automated check-in even though the agent was still mid-run. */
     private fun updateWorkStateFrom(last: Message): Long {
         val segs = MessageParser.parse(last.content)
-        val tools = segs.filterIsInstance<MessageParser.Segment.Tools>().flatMap { it.calls }
-        val hasReasoning = segs.any { it is MessageParser.Segment.Thinking }
+        // Structure first (3.1 §C1): a direct-door tool message carries its work in
+        // Message.toolCalls with content "" — the parse found nothing and the banner said
+        // "Working" forever where Matrix names the tool. The parse stays the fallback for
+        // text-borne facts.
+        val tools = last.toolCalls.ifEmpty {
+            segs.filterIsInstance<MessageParser.Segment.Tools>().flatMap { it.calls }
+        }
+        val hasReasoning = !last.reasoning.isNullOrBlank() ||
+            segs.any { it is MessageParser.Segment.Thinking }
         val isTelemetry = MessageParser.isTelemetryMessage(last.content)
         // Judge the turn by how the message ENDS, not by what it contains: a message that runs
         // tools and then delivers the answer is a finished turn, but "any tool call anywhere"

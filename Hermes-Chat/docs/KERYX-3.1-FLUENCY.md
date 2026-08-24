@@ -261,6 +261,18 @@ reasoning chrome.
 
 ### Phase C — one "working" signal
 
+**Status: DONE 2026-08-23. 530 tests green, build clean. ⚠️ NOT yet device-walked** — the
+checkpoint (the top bar names the running tool on both doors) needs a live direct-door tool turn.
+
+What landed: C1/C2 exactly as written — `updateWorkStateFrom` and `previewOf` read
+`Message.toolCalls`/`Message.reasoning` first with the parse as the text-borne fallback. C3's one
+cut: the `WaitingIndicator` quips now fire only before the turn's first sign of life
+(`awaitingReply && liveTheater == null`) — once tool beats exist, the live run row already names
+the tool, and quips beneath it were a fourth signal saying less than the row above (Talaria's
+0.6.8 one-busy-surface lesson, reached by presence). The surviving three: the top bar
+(*what* + elapsed), the live run row (*which tool*), the caret (*still writing*);
+`FlightPlanStrip` stays — it is a plan, not a status.
+
 **C1. The work label reads structure first.** `ChatViewModel.updateWorkStateFrom` parses
 `last.content` and nothing else. On the direct door a tool message has `content = ""` and its work
 in `toolCalls`, so the parse finds nothing and the banner says **"Working"** forever, where Matrix
