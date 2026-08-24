@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.core.model.Theater
+import chat.keryx.core.model.TheaterEvent
+import chat.keryx.core.model.TheaterState
 import chat.keryx.core.protocol.MessageParser
 import chat.keryx.core.protocol.StreamTailTracker
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +22,6 @@ class ConsoleDelegate(deps: GatewayDeps) {
     private companion object {
         const val CONSOLE_RUNS_KEY = "keryx://console/runs"
         const val CONSOLE_RUNS_MAX = 20
-        const val CONSOLE_TOOL_LINES_MAX = 30
         // Publish cadence for windowed transcript snapshots — matches the chat overlay's feel.
         const val CONSOLE_PUBLISH_MS = 120L
     }
@@ -43,8 +45,10 @@ class ConsoleDelegate(deps: GatewayDeps) {
         val status: String = "idle",
         val transcript: String = "",
         val reasoningTail: String = "",
-        /** Recent tool-activity lines, oldest first (bounded). */
-        val tools: List<String> = emptyList(),
+        /** The run's tool calls, reduced through the same [Theater] state machine the chat
+         *  transports use (3.1 §A4). Was a list of hand-formatted "⚙ tool: preview" strings —
+         *  a fifth vocabulary for facts the app already had one model and one renderer for. */
+        val theater: TheaterState = TheaterState(),
         val approval: ConsoleApproval? = null,
         val error: String? = null,
     ) {
@@ -160,9 +164,7 @@ class ConsoleDelegate(deps: GatewayDeps) {
                 }
             }
         }
-        fun toolLine(line: String) = _console.update {
-            it.copy(tools = (it.tools + line).takeLast(CONSOLE_TOOL_LINES_MAX))
-        }
+        fun beat(ev: TheaterEvent) = _console.update { it.copy(theater = Theater.reduce(it.theater, ev)) }
         try {
             events.collect { ev ->
                 when (ev) {
@@ -175,9 +177,9 @@ class ConsoleDelegate(deps: GatewayDeps) {
                         reasoning.append(ev.text); dirty = true
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.RunEvent.ToolStarted ->
-                        toolLine("⚙ ${ev.tool}" + ev.preview.takeIf { it.isNotBlank() }?.let { ": ${it.take(80)}" }.orEmpty())
+                        beat(TheaterEvent(phase = "start", name = ev.tool, preview = ev.preview))
                     is chat.keryx.app.data.remote.HermesStreamClient.RunEvent.ToolCompleted ->
-                        toolLine((if (ev.failed) "✗" else "✓") + " ${ev.tool}")
+                        beat(TheaterEvent(phase = "end", name = ev.tool, ok = !ev.failed))
                     is chat.keryx.app.data.remote.HermesStreamClient.RunEvent.ApprovalRequest ->
                         _console.update {
                             it.copy(status = "waiting", approval = ConsoleApproval(ev.command, ev.tool, ev.choices))

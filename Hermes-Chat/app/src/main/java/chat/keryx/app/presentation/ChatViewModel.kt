@@ -843,9 +843,14 @@ class ChatViewModel(
                 chat.keryx.app.util.KLog.i("KeryxHandoff") { "consume segment (${buf.length}ch text, ${reasoningBuf.length}ch reasoning) — stream stays live" }
                 buf.clear()
                 reasoningBuf.clear()
-                // The committed segment carries its own parsed tool rows, so keeping the beats
-                // would show every call twice — once live, once in the transcript above.
-                theater = chat.keryx.core.model.TheaterState()
+                // The beats are NOT cleared here (3.1 §A1, reversing 2.4's workaround).
+                //
+                // They used to be, because the committed segment carries its own parsed tool rows
+                // and a second renderer inside the bubble then showed every call twice. There is
+                // no second renderer now: the beats reach the transcript through `withLiveTheater`,
+                // which drops exactly as many as the committed run already carries and enriches
+                // those with what the text could never say. Clearing them here would have thrown
+                // away the first segment's durations, verdicts and diffs on every steered turn.
                 if (_liveStream.value != null) dispatch(LiveStreamStatus.STREAMING)
             }
             client.stream(roomId).collect { ev ->

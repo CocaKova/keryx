@@ -1,16 +1,13 @@
 package chat.keryx.app.presentation.ui.components
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -22,7 +19,6 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -49,98 +45,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.keryx.core.model.Delegation
 import chat.keryx.core.model.DelegationState
-import chat.keryx.core.model.Theater
-import chat.keryx.core.model.TheaterState
-import chat.keryx.core.model.ToolCall
-import chat.keryx.core.model.ToolStatus
-import chat.keryx.core.model.ToolGrammar
 
 /**
- * The tool theater (2.4), inside the live reply: what the agent is *doing* while it works —
- * its own calls, and the subagents it sent out.
+ * A delegation, live: the subagents a turn sent out, and what each is doing right now.
  *
- * Deliberately scaffold voice — monospace, low alpha, one line per beat — because this is
- * telemetry that expires. The committed message renders the same calls properly a moment
- * later ([ToolGroupCard]); if the theater competed with the answer for attention it would be
- * shouting about the means while the end arrives.
+ * This is what survived the tool theater's live stage (3.1 §A3). The stage itself is gone — the
+ * transcript renders a turn's tool calls now, live and settled alike, so a second live vocabulary
+ * inside the reply bubble had nothing left to say that the run above it wasn't already saying
+ * better. (Jonny, on device, 2.4: "the tool call log and the new tool call kind of fight." They
+ * were two ages of one run; there is one now.)
  *
- * The exception is a delegation, which gets Talaria's fuller treatment: a delegated child is
- * not a session you can open and its relay is never persisted, so this live view is the only
- * window onto it. A tail of what it is doing beats a silent spinner, and the token rollup is
- * the one number that makes delegation legible as a decision.
+ * A delegation is the exception, and always was. A delegated child is not a session you can open
+ * and its relay is never persisted, so this live view is the only window onto it: a tail of what
+ * it is doing beats a silent spinner, and the token rollup is the one number that makes
+ * delegating legible as a decision. Both producers' wings render through here — the side-channel's
+ * `subagent.*` frames and the direct door's, one renderer, inside [ToolTheaterRun].
  */
-private const val VISIBLE_BEATS = 6
 
-@Composable
-fun TheaterStage(
-    state: TheaterState,
-    live: Boolean,
-    baseColor: Color,
-    modifier: Modifier = Modifier,
-    /** Open a landed subagent's own session — null when this surface has no way to. */
-    onOpenSubagent: ((Delegation) -> Unit)? = null,
-) {
-    AnimatedVisibility(
-        visible = !state.isEmpty,
-        enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically(),
-        modifier = modifier,
-    ) {
-        val hidden = (state.beats.size - VISIBLE_BEATS).coerceAtLeast(0)
-        Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-            if (hidden > 0) {
-                Text(
-                    "· $hidden earlier",
-                    fontSize = 9.5.sp,
-                    fontFamily = FontFamily.Monospace,
-                    color = baseColor.copy(alpha = 0.35f),
-                )
-            }
-            Theater.batches(state.beats.takeLast(VISIBLE_BEATS)).forEach { batch ->
-                if (batch.size > 1) ParallelBatch(batch, live, baseColor)
-                else TheaterRow(batch[0], live, baseColor)
-            }
-            if (state.delegations.isNotEmpty()) {
-                DelegationWings(state.delegations, live, baseColor, onOpenSubagent)
-            }
-        }
-    }
-}
 
-/**
- * One dispatch: the calls the model fired in a single breath, joined by a hairline rail with a
- * count at its head. No box, no fill — the rail is the only new mark, because the fact being
- * communicated ("these ran together") is structural, not decorative.
- */
-@Composable
-private fun ParallelBatch(calls: List<ToolCall>, live: Boolean, baseColor: Color) {
-    val accent = MaterialTheme.colorScheme.tertiary
-    val running = calls.any { it.running }
-    Row(Modifier.height(IntrinsicSize.Min)) {
-        Rail(active = running && live, baseColor = baseColor, accent = accent)
-        Column {
-            Text(
-                // Say only what is known. This channel reports when calls were ANNOUNCED, not
-                // how the runtime ran them — it may well have gone one at a time (barriers,
-                // path conflicts). "In one turn" is the claim that survives.
-                "${calls.size} in one turn · " + ToolGrammar.summarize(
-                    calls.map {
-                        ToolGrammar.Mention(it.name, ToolGrammar.targetOf(it.name, it.context), it.running)
-                    },
-                    live = running,
-                ),
-                color = baseColor.copy(alpha = 0.45f),
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.8.sp,
-            )
-            calls.forEach { TheaterRow(it, live, baseColor) }
-        }
-    }
-}
-
-/** The subagents this turn sent out, under the same rail a parallel batch uses — because that
- *  is exactly what this is: work happening somewhere else, at the same time. */
+/** The subagents this turn sent out, hanging from a hairline rail — because that is exactly what
+ *  this is: work happening somewhere else, at the same time. */
 @Composable
 internal fun DelegationWings(
     runs: List<Delegation>,
@@ -271,114 +195,6 @@ private fun DelegationWing(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun TheaterRow(beat: ToolCall, live: Boolean, baseColor: Color) {
-    val accent = MaterialTheme.colorScheme.tertiary
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(top = 1.dp, bottom = 1.dp),
-    ) {
-        // A running call breathes; a landed one is a fixed mark. When the turn itself has
-        // stopped, a still-open call is neither — it never reported back, and a pulse that
-        // outlives the turn reads as "still working" when nothing is.
-        if (beat.running && live) {
-            Pulse(accent)
-        } else {
-            Text(
-                when {
-                    beat.running -> "·"
-                    beat.failed -> "✕"
-                    else -> "✓"
-                },
-                fontSize = 9.sp,
-                color = if (beat.failed) MaterialTheme.colorScheme.error
-                        else baseColor.copy(alpha = 0.45f),
-                modifier = Modifier.width(5.dp),
-            )
-        }
-        Spacer(Modifier.width(7.dp))
-        Text(
-            ToolGrammar.glyphOf(beat.name),
-            fontSize = 9.5.sp,
-            color = baseColor.copy(alpha = 0.55f),
-        )
-        Spacer(Modifier.width(5.dp))
-        // One grammar, live and committed alike: "Reading SOUL.md" now, "Read SOUL.md" in the
-        // transcript afterwards — not `read_file` in one place and a sentence in the other.
-        val target = ToolGrammar.targetOf(beat.name, beat.context)
-        Text(
-            ToolGrammar.title(beat.name, "", beat.running),
-            fontSize = 10.sp,
-            color = baseColor.copy(alpha = if (beat.running) 0.85f else 0.6f),
-            maxLines = 1,
-        )
-        if (target.isNotBlank()) {
-            Spacer(Modifier.width(5.dp))
-            Text(
-                target,
-                fontSize = 9.5.sp,
-                fontFamily = FontFamily.Monospace,
-                color = baseColor.copy(alpha = 0.45f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-        } else {
-            Spacer(Modifier.weight(1f))
-        }
-        if (beat.added > 0 || beat.removed > 0) {
-            Spacer(Modifier.width(6.dp))
-            DiffStat(added = beat.added, removed = beat.removed)
-        }
-        val durS = beat.durationS
-        if (!beat.running && durS != null && durS > 0.0) {
-            Spacer(Modifier.width(6.dp))
-            Text(
-                if (durS >= 1.0) "${durS.toInt()}s" else "${(durS * 1000).toInt()}ms",
-                fontSize = 9.sp,
-                fontFamily = FontFamily.Monospace,
-                color = baseColor.copy(alpha = 0.35f),
-            )
-        }
-    }
-    // What the edit actually did. Behind a tap, because the stat beside the row already answers
-    // "how big was it" and the body is only wanted when the answer is "bigger than I expected".
-    if (beat.hasDiff) {
-        var open by rememberSaveable(beat.name + beat.added + beat.removed) { mutableStateOf(false) }
-        Text(
-            if (open) "▾ diff" else "▸ diff",
-            fontSize = 9.sp,
-            fontFamily = FontFamily.Monospace,
-            color = baseColor.copy(alpha = 0.4f),
-            modifier = Modifier
-                .padding(start = 17.dp, bottom = 1.dp)
-                .clickable { open = !open },
-        )
-        if (open) {
-            DiffPanel(
-                diff = beat.inlineDiff,
-                truncated = beat.diffTruncated,
-                baseColor = baseColor,
-                maxHeight = 150.dp,
-                modifier = Modifier.padding(start = 17.dp, bottom = 3.dp),
-            )
-        }
-    }
-    // Only a failure carries its result this far (the gateway sends it for nothing else), and
-    // when a tool breaks mid-turn the reason is the one thing worth the extra line.
-    if (beat.failed && beat.result.isNotBlank()) {
-        Text(
-            Theater.reason(beat.result),
-            fontSize = 9.5.sp,
-            fontFamily = FontFamily.Monospace,
-            color = MaterialTheme.colorScheme.error.copy(alpha = 0.75f),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = 17.dp, bottom = 2.dp),
-        )
     }
 }
 

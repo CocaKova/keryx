@@ -76,7 +76,6 @@ import chat.keryx.app.presentation.ui.components.ChatRenderItem
 import chat.keryx.app.presentation.ui.components.HermesThinkingAnimation
 import chat.keryx.app.presentation.ui.components.MessageContent
 import chat.keryx.app.presentation.ui.components.MessageMedia
-import chat.keryx.app.presentation.ui.components.ToolActivityCard
 import chat.keryx.app.presentation.ui.components.ToolTheaterRun
 import chat.keryx.app.presentation.ui.components.AgentDeliveryNotice
 import chat.keryx.app.presentation.ui.components.HeraldSigil
@@ -89,6 +88,7 @@ import androidx.compose.ui.text.font.FontFamily
 import chat.keryx.app.presentation.ui.components.keryxMagicDust
 import chat.keryx.app.presentation.ui.components.GroupedTimeline
 import chat.keryx.app.presentation.ui.components.groupChatItemsIncremental
+import chat.keryx.app.presentation.ui.components.withLiveTheater
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
@@ -208,22 +208,40 @@ fun ChatScreen(
     // agent block is re-walked (O(changed block), not O(timeline)). Plain holder, not snapshot
     // state — renderItems is already keyed on [messages].
     val groupCache = remember { arrayOfNulls<GroupedTimeline>(1) }
-    val renderItems = remember(messages) {
+    val groupedItems = remember(messages) {
         val grouped = groupChatItemsIncremental(ordered, groupCache[0])
         groupCache[0] = grouped
         grouped.items
+    }
+    // The turn's theater: the live one while it runs, then the record of the one just watched.
+    //
+    // Keyed on the TheaterState itself, NOT on `liveStream` — the stream object is rebuilt ~10×/s
+    // by the token dispatch and carries the same TheaterState instance between tool frames, so
+    // this re-runs a handful of times per turn instead of ten times a second.
+    val lastTurn by viewModel.lastTurnTheater.collectAsState()
+    val liveTheater = liveStream?.takeIf { it.roomId == currentRoom?.id }?.theater?.takeUnless { it.isEmpty }
+    val turnTheater = liveTheater ?: lastTurn?.takeIf { it.first == currentRoom?.id }?.second
+    // 3.1 §A1: the side-channel's tool frames are a PRODUCER, not a second renderer. Calls the
+    // committed transcript already carries get enriched below (`structured`); calls it doesn't
+    // carry yet land as live rows in the same run. One grammar, live and settled.
+    val renderItems = remember(groupedItems, turnTheater, liveTheater != null) {
+        withLiveTheater(
+            groupedItems,
+            beats = turnTheater?.beats.orEmpty(),
+            delegations = turnTheater?.delegations.orEmpty(),
+            live = liveTheater != null,
+        )
     }
     // Which bubbles an arrival announced — they get the single light sweep as they first compose.
     val arrivalIds = remember(renderItems) {
         renderItems.filterIsInstance<ChatRenderItem.Arrival>().mapTo(HashSet()) { it.message.id }
     }
-    // The turn just watched, and the run it belongs to (2.4). renderItems is newest-first under
+    // The run the theater's record belongs to (2.4). renderItems is newest-first under
     // reverseLayout, so the first ToolRun in it IS the newest one.
-    val lastTurn by viewModel.lastTurnTheater.collectAsState()
     val newestToolRunKey = remember(renderItems) {
         renderItems.firstOrNull { it is ChatRenderItem.ToolRun }?.key
     }
-    val lastTurnBeats = lastTurn?.takeIf { it.first == currentRoom?.id }?.second?.beats.orEmpty()
+    val lastTurnBeats = turnTheater?.beats.orEmpty()
     // A landed subagent the reader asked to see inside (2.4).
     var openSubagent by remember { mutableStateOf<chat.keryx.core.model.Delegation?>(null) }
 
@@ -406,7 +424,7 @@ fun ChatScreen(
     // form re-ran ChatScreen top to bottom on every streamed token.
     LaunchedEffect(Unit) {
         snapshotFlow {
-            val sig = (messages.lastOrNull()?.let { "${it.id}:${it.content.length}:${it.toolActivity?.status?.name ?: ""}" } ?: "") +
+            val sig = (messages.lastOrNull()?.let { "${it.id}:${it.content.length}:${it.toolCalls.size}" } ?: "") +
                 ":${liveStream?.text?.length ?: 0}"
             sig to awaitingReply
         }.collect {
@@ -534,7 +552,6 @@ fun ChatScreen(
                             stream = stream,
                             bubbleStyle = bubbleStyle,
                             textScale = messageTextScale,
-                            onOpenSubagent = { openSubagent = it },
                         )
                     }
                 }
@@ -599,6 +616,7 @@ fun ChatScreen(
                             // record is of one turn, and putting it on an older run would be
                             // attaching one turn's diffs to another's calls.
                             structured = if (item.key == newestToolRunKey) lastTurnBeats else emptyList(),
+                            onOpenSubagent = { openSubagent = it },
                             // The newest item (index 0 under reverseLayout) is "running" while we
                             // still await Hermes' reply; older runs are settled ("Ran N tools").
                             active = index == 0 && awaitingReply,
@@ -1534,11 +1552,6 @@ fun MessageBubble(
             }
         }
 
-        if (isAgent && message.toolActivity != null) {
-            ToolActivityCard(toolActivity = message.toolActivity)
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
         // Double-tap-to-❤️ bloom: a heart swells out of the tap and exhales away.
         var heartBloomTick by remember { mutableStateOf(0) }
 
@@ -2160,7 +2173,6 @@ private fun StreamingBubble(
     stream: chat.keryx.app.presentation.LiveStream,
     bubbleStyle: String,
     textScale: Float,
-    onOpenSubagent: (chat.keryx.core.model.Delegation) -> Unit = {},
 ) {
     val appearance = bubbleAppearance(isMine = false, style = bubbleStyle)
     val accent = MaterialTheme.colorScheme.primary
@@ -2205,13 +2217,10 @@ private fun StreamingBubble(
                             active = streaming && stream.text.isBlank(),
                         )
                     }
-                    // Between the thinking and the answer, because that is where it happened.
-                    chat.keryx.app.presentation.ui.components.TheaterStage(
-                        state = stream.theater,
-                        live = streaming,
-                        baseColor = appearance.textColor,
-                        onOpenSubagent = onOpenSubagent,
-                    )
+                    // No tool theater in here (3.1 §A2). What the agent is DOING belongs to the
+                    // transcript, where the run already is — this bubble is what it is SAYING.
+                    // The stage used to draw the same calls a second time, a few dp under the run
+                    // that was drawing them properly, in a different vocabulary.
                     if (stream.text.isNotBlank()) chat.keryx.app.presentation.ui.components.MessageContent(
                         content = stream.text,
                         textColor = appearance.textColor,
