@@ -43,9 +43,9 @@ import javax.net.ssl.X509TrustManager
  * handlers respond out of order); everything else arrives as `method:"event"` frames and
  * is fanned out through [events].
  *
- * Auth: token mode (`?token=`) — loopback-bound gateways reached through an on-box proxy.
- * Gated mode (tickets + PKCE/password login) lands with the onboarding rework; the query
- * credential is already pluggable via [credentialQuery].
+ * Auth, both dialects via [credentialQuery]: token mode (`?token=`, stable — ungated /
+ * loopback gateways) and ticket mode (`?ticket=`, minted fresh per attempt by [DirectAuth]
+ * — GATED gateways, hermes ≥0.20.5, where the legacy token is rejected by design).
  *
  * Deliberately NO Origin header is sent (OkHttp adds none): the stock WS guard admits
  * absent Origins unconditionally, so the WebView-shell 403 saga cannot happen here. The
@@ -54,7 +54,10 @@ import javax.net.ssl.X509TrustManager
  */
 class GatewayRpc(
     baseUrl: String,
-    private val credentialQuery: String, // e.g. "token=abc" or "ticket=xyz" — pre-encoded
+    /** Mints the pre-encoded credential query for ONE connect attempt ("token=…" or
+     *  "ticket=…"). A supplier, not a string: gated gateways issue single-use 30s tickets,
+     *  so every attempt — first dial and every reconnect — needs a fresh mint. */
+    private val credentialQuery: suspend () -> String,
     allowInsecure: Boolean = false,
 ) {
     sealed interface ConnState {
@@ -73,9 +76,9 @@ class GatewayRpc(
     class RpcException(val code: Int, message: String) : Exception("rpc $code: $message")
 
     private val json = Json { ignoreUnknownKeys = true }
-    private val wsUrl: String = baseUrl.trimEnd('/')
+    private val wsBase: String = baseUrl.trimEnd('/')
         .replaceFirst("http://", "ws://")
-        .replaceFirst("https://", "wss://") + "/api/ws?" + credentialQuery
+        .replaceFirst("https://", "wss://") + "/api/ws"
 
     private val client: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(6, TimeUnit.SECONDS)
@@ -147,8 +150,22 @@ class GatewayRpc(
             while (wantConnected) {
                 _state.value = ConnState.Connecting
                 reachedReady = false
+                // Mint this attempt's credential. A mint failure is an attempt failure: back
+                // off and retry — EXCEPT a dead sign-in (refresh token rejected), which no
+                // retry can heal; surface it as 4401 so the one re-onboard path serves both
+                // dialects.
+                val query = try {
+                    credentialQuery()
+                } catch (e: Exception) {
+                    val dead = e.message?.contains("sign-in expired") == true
+                    _state.value = ConnState.Failed(e.message ?: "credential unavailable", if (dead) 4401 else null)
+                    if (dead) break
+                    withTimeoutOrNull(backoffMs) { wake.receive() }
+                    backoffMs = (backoffMs * 2).coerceAtMost(30_000L)
+                    continue
+                }
                 val closed = CompletableDeferred<Unit>()
-                openSocket(closed)
+                openSocket("$wsBase?$query", closed)
                 // Wait for this socket's lifetime to end, then back off and retry.
                 closed.await()
                 if (!wantConnected) break
@@ -178,8 +195,8 @@ class GatewayRpc(
         _state.value = ConnState.Disconnected
     }
 
-    private fun openSocket(closed: CompletableDeferred<Unit>) {
-        val request = Request.Builder().url(wsUrl).build()
+    private fun openSocket(url: String, closed: CompletableDeferred<Unit>) {
+        val request = Request.Builder().url(url).build()
         socket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onMessage(webSocket: WebSocket, text: String) {
                 runCatching { json.parseToJsonElement(text).jsonObject }.getOrNull()?.let(::route)

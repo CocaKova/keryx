@@ -147,6 +147,31 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = sealedGet("direct_api_key")
         set(value) = sealedPut("direct_api_key", value)
 
+    override var directAuthMode: String
+        get() = prefs.getString("direct_auth_mode", "token") ?: "token"
+        set(value) = prefs.edit().putString("direct_auth_mode", value).apply()
+
+    override var directAccessToken: String
+        get() = sealedGet("direct_access_token")
+        set(value) = sealedPut("direct_access_token", value)
+
+    override var directRefreshToken: String
+        get() = sealedGet("direct_refresh_token")
+        set(value) = sealedPut("direct_refresh_token", value)
+
+    override var directTokenExpiresAt: Long
+        get() = prefs.getLong("direct_token_expires_at", 0L)
+        set(value) = prefs.edit().putLong("direct_token_expires_at", value).apply()
+
+    @Suppress("ApplySharedPref") // synchronous ON PURPOSE — see the interface doc.
+    override fun commitDirectNativeTokens(access: String, refresh: String, expiresAtSeconds: Long) {
+        prefs.edit()
+            .putString("direct_access_token", chat.keryx.app.data.local.TokenVault.seal(access))
+            .putString("direct_refresh_token", chat.keryx.app.data.local.TokenVault.seal(refresh))
+            .putLong("direct_token_expires_at", expiresAtSeconds)
+            .commit()
+    }
+
     @Suppress("ApplySharedPref") // synchronous ON PURPOSE — see the interface doc.
     override fun commitTransportMode(mode: String) {
         prefs.edit().putString("transport_mode", mode).commit()

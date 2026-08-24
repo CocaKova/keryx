@@ -29,12 +29,15 @@ import javax.net.ssl.X509TrustManager
 /**
  * The ambient (non-conversational) half of the transport: the dashboard REST surface.
  * TALARIA-PROTOCOL.md §4. Phase-1 scope: connection probe, session list, transcript
- * hydration. Auth = `X-Hermes-Session-Token` header (token mode).
+ * hydration. Auth = `X-Hermes-Session-Token` (token mode) or a rotating Bearer access
+ * token via [DirectAuth] (native mode, gated gateways) — with a rotate-once retry on 401.
  */
 class GatewayRest(
     baseUrl: String,
     private val token: String,
     allowInsecure: Boolean = false,
+    /** Native-dialect credentials (gated gateways). Null = legacy token-header auth. */
+    private val auth: DirectAuth? = null,
 ) {
     private val base = baseUrl.trimEnd('/')
     private val json = Json { ignoreUnknownKeys = true }
@@ -239,10 +242,11 @@ class GatewayRest(
                 // minSdk 24: android.util.Base64 (java.util.Base64 needs API 26).
                 val b64 = android.util.Base64.encodeToString(audio, android.util.Base64.NO_WRAP)
                 val body = """{"data_url":"data:$mime;base64,$b64"}"""
+                val hdr = authHeader()
                 val req = Request.Builder()
                     .url("$base/api/audio/transcribe")
                     .post(body.toRequestBody("application/json".toMediaType()))
-                    .apply { if (token.isNotBlank()) header("X-Hermes-Session-Token", token) }
+                    .apply { hdr?.let { header(it.first, it.second) } }
                     .build()
                 // Not the shared client: its 30s read timeout is tuned for list calls, and a
                 // cold faster-whisper install/first-load can legitimately take minutes.
@@ -272,10 +276,11 @@ class GatewayRest(
             val body = kotlinx.serialization.json.buildJsonObject {
                 put("text", kotlinx.serialization.json.JsonPrimitive(text))
             }.toString()
+            val hdr = authHeader()
             val req = Request.Builder()
                 .url("$base/api/audio/speak")
                 .post(body.toRequestBody("application/json".toMediaType()))
-                .apply { if (token.isNotBlank()) header("X-Hermes-Session-Token", token) }
+                .apply { hdr?.let { header(it.first, it.second) } }
                 .build()
             // Synthesis is compute/network-bound server-side; the list-call timeout is too tight.
             val ttsClient = client.newBuilder().readTimeout(120, TimeUnit.SECONDS).build()
@@ -305,9 +310,10 @@ class GatewayRest(
     suspend fun downloadFile(path: String): Result<ByteArray> = withContext(Dispatchers.IO) {
         runCatching {
             val url = "$base/api/files/download?path=" + java.net.URLEncoder.encode(path, "UTF-8")
+            val hdr = authHeader()
             val req = Request.Builder()
                 .url(url)
-                .apply { if (token.isNotBlank()) header("X-Hermes-Session-Token", token) }
+                .apply { hdr?.let { header(it.first, it.second) } }
                 .build()
             val dl = client.newBuilder().readTimeout(120, TimeUnit.SECONDS).build()
             dl.newCall(req).execute().use { resp ->
@@ -320,37 +326,39 @@ class GatewayRest(
         }
     }
 
+    /** The auth header for one request: native bearer (rotating) or the legacy token. */
+    private suspend fun authHeader(): Pair<String, String>? =
+        auth?.header(base)
+            ?: token.takeIf { it.isNotBlank() }?.let { "X-Hermes-Session-Token" to it }
+
     private suspend fun send(method: String, path: String, jsonBody: String?): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
-            val req = Request.Builder()
-                .url(base + path)
-                .method(method, jsonBody?.toRequestBody("application/json".toMediaType()))
-                .apply { if (token.isNotBlank()) header("X-Hermes-Session-Token", token) }
-                .build()
-            client.newCall(req).execute().use { resp ->
-                val body = resp.body?.string().orEmpty()
-                // Carry the server's own words into the failure: "HTTP 404" alone sent us
-                // hunting the transport when the gateway was already explaining itself.
-                if (!resp.isSuccessful) error(
-                    "HTTP ${resp.code} for $path" + body.take(160).let { if (it.isBlank()) "" else " — $it" }
-                )
-                body
+            fun run(hdr: Pair<String, String>?): Pair<Int, String> {
+                val req = Request.Builder()
+                    .url(base + path)
+                    .method(method, jsonBody?.toRequestBody("application/json".toMediaType()))
+                    .apply { hdr?.let { header(it.first, it.second) } }
+                    .build()
+                return client.newCall(req).execute().use { resp ->
+                    resp.code to resp.body?.string().orEmpty()
+                }
             }
+            var (code, body) = run(authHeader())
+            // A native-mode 401 = the access token died server-side (restart, clock skew) —
+            // rotate through the refresh token once and retry once; a second 401 is real.
+            if (code == 401 && auth?.nativeMode == true && auth.bearer(base, force = true) != null) {
+                val retry = run(authHeader()); code = retry.first; body = retry.second
+            }
+            // Carry the server's own words into the failure: "HTTP 404" alone sent us
+            // hunting the transport when the gateway was already explaining itself.
+            if (code !in 200..299) error(
+                "HTTP $code for $path" + body.take(160).let { if (it.isBlank()) "" else " — $it" }
+            )
+            body
         }
     }
 
-    private suspend fun get(path: String): Result<String> = withContext(Dispatchers.IO) {
-        runCatching {
-            val req = Request.Builder()
-                .url(base + path)
-                .apply { if (token.isNotBlank()) header("X-Hermes-Session-Token", token) }
-                .build()
-            client.newCall(req).execute().use { resp ->
-                if (!resp.isSuccessful) error("HTTP ${resp.code} for $path")
-                resp.body?.string() ?: error("empty body for $path")
-            }
-        }
-    }
+    private suspend fun get(path: String): Result<String> = send("GET", path, null)
 
     private fun JsonObject.str(key: String): String? = this[key]?.jsonPrimitive?.contentOrNull
     private fun JsonObject.bool(key: String): Boolean = this[key]?.jsonPrimitive?.contentOrNull == "true"

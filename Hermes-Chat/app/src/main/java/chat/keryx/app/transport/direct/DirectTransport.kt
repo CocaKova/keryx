@@ -585,8 +585,11 @@ class DirectTransport(
         pumpJob?.cancel()
         stateJob?.cancel()
         storedToLive.clear(); liveToStored.clear()
-        rest = GatewayRest(url, token, settings.allowInsecure)
-        rpc = GatewayRpc(url, GatewayRpc.tokenQuery(token), settings.allowInsecure).also { r ->
+        // One DirectAuth for both halves: REST bearer rotation and per-connect WS tickets
+        // share a refresh mutex, so one expiry rotates once for everyone.
+        val auth = DirectAuth(settings, settings.allowInsecure)
+        rest = GatewayRest(url, token, settings.allowInsecure, auth)
+        rpc = GatewayRpc(url, { auth.wsCredentialQuery(url) }, settings.allowInsecure).also { r ->
             r.connect(scope)
             pumpJob = scope.launch { r.events.collect(::onEvent) }
             stateJob = scope.launch {
@@ -1849,7 +1852,12 @@ class DirectTransport(
     /** Gateway "login": credentials already live in settings (the login screen's direct door
      *  writes them); validate the token against an authed endpoint, then bring the WS up. */
     suspend fun login(): Result<Unit> {
-        val probe = GatewayRest(settings.directGatewayUrl, settings.directApiKey, settings.allowInsecure)
+        val probe = GatewayRest(
+            settings.directGatewayUrl, settings.directApiKey, settings.allowInsecure,
+            // Native mode authenticates this probe with the rotating bearer; without it a
+            // gated gateway 401s the health check and the door looks dead while fine.
+            DirectAuth(settings, settings.allowInsecure),
+        )
         return probe.validateToken()
             .onSuccess {
                 settings.directLoggedIn = true

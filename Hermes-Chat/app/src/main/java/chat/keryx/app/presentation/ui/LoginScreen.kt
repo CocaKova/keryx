@@ -155,7 +155,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
             OutlinedTextField(
                 value = directKey,
                 onValueChange = { directKey = it; error = null },
-                label = { Text("API key") },
+                label = { Text("API key — ungated gateways only") },
                 singleLine = true,
                 enabled = !connecting,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -202,7 +202,20 @@ fun LoginScreen(viewModel: ChatViewModel) {
                     error = null
                     connecting = true
                     viewModel.setAllowInsecure(allowInsecure)
-                    viewModel.loginToGateway(directUrl.trim(), directKey.trim()) { ok, needsRestart, message ->
+                    viewModel.loginToGateway(
+                        directUrl.trim(),
+                        directKey.trim(),
+                        launchBrowser = { url ->
+                            // A gated gateway signs in through the SYSTEM browser (RFC 8252) —
+                            // the password manager lives there, not in any embedded webview.
+                            context.startActivity(
+                                android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse(url),
+                                ),
+                            )
+                        },
+                    ) { ok, needsRestart, message ->
                         if (!ok) {
                             connecting = false
                             error = message ?: "Login failed"
