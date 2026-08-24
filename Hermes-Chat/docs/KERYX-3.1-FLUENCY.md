@@ -211,6 +211,37 @@ signature.** Dead since before the absorption; verified above.
 
 ### Phase B — one reasoning grammar
 
+**Status: DONE 2026-08-23. 530 tests green (522 + 8 new in `ReasoningLiftTest`), build clean.
+⚠️ NOT yet device-walked** — the checkpoint (same turn, same reasoning chrome on both doors) is a
+walk item; cross both doors on a thinking turn before 3.1 ships.
+
+Deviations from the plan as written, both deliberate:
+
+- **B1 lifts the field but does not strip the content.** `MatrixTransport.toMessage` fills
+  `Message.reasoning` via the new `MessageParser.reasoningOf` — which goes through `parse()`, not
+  `extractReasoning` directly, so the keryx-marker unwrap and the self-improvement-review gate keep
+  protecting it (markers can live *inside* the reasoning; stripping the thought from the raw body
+  would tear citations out of the content, and a review quoting "<thought>" must not be lifted at
+  all). Content keeps every line as the stored truth; the parse stays the single owner of what
+  counts as thought; renderers stop drawing `Segment.Thinking`. Every existing content-parse site
+  (work label, drawer preview, TTS, Archive indexing) keeps working unchanged. The one new cost:
+  "reasoning-only" can no longer be judged by blankness — `MessageParser.isReasoningOnly` judges by
+  the parse, and the ChatScreen disclosure-only gate uses it.
+- **B3 took the first option, not the preferred one.** The run keeps carrying its consolidated
+  reasoning block, but `RunReasoning` is deleted and the block renders through
+  `ReasoningDisclosure` (stateKey = the stable run id, so the block growing live doesn't re-collapse
+  a reader — the exact trap `RunReasoning`'s not-keyed-on-text comment recorded). Emitting the
+  thoughts as standalone disclosure rows instead would either scatter N "Thought" rows above one
+  run card or mean synthesizing messages — and the consolidated block ("one inner monologue, never
+  interleaved with the steps") was a deliberate design, not jumble. One fact-owner
+  (`Message.reasoning`), one settled voice (`ReasoningDisclosure`), which is what the phase is for.
+
+What landed: `MessageParser.reasoningOf`/`isReasoningOnly` (:core); `toMessage` fills the field
+(HERMES senders only — a human quoting a think tag keeps their words); `MessageContent` grows
+`inlineReasoning` (default false; the Archive is the only opt-in, same shape as `inlineTools`) and
+its `Segment.Thinking` branch draws the canvas only while streaming; grouping's run block prefers
+the field over re-gathering segments; `RunReasoning` deleted.
+
 **B1. Both producers fill the field.** `MatrixTransport` sets `Message.reasoning` from what
 `MessageParser` already extracts (`Segment.Thinking`, `REASON_CODE`, `THINK_TAG`) instead of leaving
 it as a segment for the renderer to trip over. The parser keeps every line; it stops deciding *how

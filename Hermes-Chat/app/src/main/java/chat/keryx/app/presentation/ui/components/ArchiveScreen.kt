@@ -738,8 +738,10 @@ private fun ContextRow(m: Message, anchor: Boolean, viewModel: ChatViewModel) {
                     textColor = MaterialTheme.colorScheme.onSurface,
                     isAgent = m.sender == SenderType.HERMES,
                     // The Archive reads one stored message at a time — there is no run here to
-                    // lift a tool call into, so this is the one surface that draws them inline.
+                    // lift a tool call into and no message-level reasoning field to ride, so this
+                    // is the one surface that draws both inline.
                     inlineTools = true,
+                    inlineReasoning = true,
                 )
             }
         }

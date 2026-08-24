@@ -327,8 +327,18 @@ fun ToolTheaterRun(
             exit = fadeOut() + shrinkVertically(),
         ) {
             Column(modifier = Modifier.padding(top = 6.dp, start = 8.dp)) {
-                // One consolidated reasoning block for the whole run, above the steps.
-                run.reasoning?.let { RunReasoning(it, baseColor, accent) }
+                // One consolidated reasoning block for the whole run, above the steps — the same
+                // disclosure every settled thought renders as (3.1 §B3: one renderer, one voice).
+                // Not keyed on the text: the block grows while the run is live, and re-keying
+                // collapsed it mid-read; the stable run id keeps the user's toggle.
+                run.reasoning?.let {
+                    ReasoningDisclosure(
+                        reasoning = it,
+                        seconds = null,
+                        streaming = false,
+                        stateKey = "runthink-${run.id}",
+                    )
+                }
                 // Tool steps: bounded height + own scroll, so a long run opens at the FIRST tool
                 // (the scroll state starts at the top) instead of jumping to the newest one.
                 Column(
@@ -400,52 +410,6 @@ fun ToolTheaterRun(
                     }
                 }
             }
-        }
-    }
-}
-
-/**
- * The run's gathered reasoning as one muted, collapsible aside (collapsed by default — it's history).
- * This is where every "💭"/course-correction thought from the burst lands, so it reads as a single
- * inner monologue instead of being scattered between the tool steps.
- */
-@Composable
-private fun RunReasoning(text: String, baseColor: Color, accent: Color) {
-    // NOT keyed on [text]: the reasoning grows while the run is live, and re-keying collapsed the
-    // block mid-read every time a new thought landed. Saveable so scrolling away keeps it too.
-    var open by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
-    Column(
-        modifier = Modifier
-            .padding(bottom = 8.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(accent.copy(alpha = 0.08f))
-            .border(1.dp, accent.copy(alpha = 0.18f), RoundedCornerShape(10.dp))
-            .clickable { open = !open }
-            .animateContentSize(),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
-        ) {
-            Text("💭", fontSize = 12.sp)
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = "Reasoning",
-                color = accent.copy(alpha = 0.9f),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f),
-            )
-            Text(if (open) "▾" else "▸", color = baseColor.copy(alpha = 0.6f), fontSize = 11.sp)
-        }
-        AnimatedVisibility(visible = open, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
-            Text(
-                text = text,
-                color = baseColor.copy(alpha = 0.62f),
-                fontSize = 12.sp,
-                fontStyle = FontStyle.Italic,
-                modifier = Modifier.padding(start = 10.dp, end = 10.dp, bottom = 9.dp),
-            )
         }
     }
 }

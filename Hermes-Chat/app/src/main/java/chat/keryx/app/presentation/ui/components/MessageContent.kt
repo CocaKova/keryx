@@ -89,6 +89,16 @@ fun MessageContent(
      * at a time, so its tool rows have nowhere else to go and it opts in.
      */
     inlineTools: Boolean = false,
+    /**
+     * Draw parsed reasoning inline, as the settled disclosure (3.1 §B2).
+     *
+     * **Off by default, and a chat bubble must never turn it on.** In the transcript the thought
+     * lives on [chat.keryx.core.model.Message.reasoning] (both producers fill it — §B1) and the
+     * bubble's caller renders the one disclosure above the bubble; leaving the inline path armed
+     * would draw the same thought twice. The Archive opts in for the same reason it opts into
+     * [inlineTools]: it reads a raw stored body with no message-level field to ride.
+     */
+    inlineReasoning: Boolean = false,
 ) {
     // The gateway splits turns at tool-call boundaries and can leave several blank lines at the
     // edges of each piece (e.g. a step header stranded after 3 empty lines) — trim so bubbles
@@ -169,7 +179,20 @@ fun MessageContent(
                     )
                 }
                 is MessageParser.Segment.Table -> MarkdownTable(segment.header, segment.rows, textColor)
-                is MessageParser.Segment.Thinking -> ReasoningCanvas(segment.text, textColor, active = isStreaming)
+                // 3.1 §B2 — one reasoning grammar, two states. Live (still streaming): the canvas,
+                // thinking rendered as it happens. Settled: the thought is on Message.reasoning
+                // (§B1) and the bubble's CALLER draws the one disclosure — rendering it here too
+                // would double it, so the branch draws nothing unless this surface opted in
+                // (the Archive, reading raw stored bodies with no field to ride).
+                is MessageParser.Segment.Thinking -> when {
+                    isStreaming -> ReasoningCanvas(segment.text, textColor, active = true)
+                    inlineReasoning -> ReasoningDisclosure(
+                        reasoning = segment.text,
+                        seconds = null,
+                        streaming = false,
+                    )
+                    else -> Unit
+                }
                 is MessageParser.Segment.Tools -> if (inlineTools) ToolCalls(segment.calls, textColor)
                 is MessageParser.Segment.Mermaid -> MermaidDiagram(segment.code, textColor)
                 is MessageParser.Segment.Citations -> CitationsBar(segment.items, textColor)

@@ -629,13 +629,16 @@ fun ChatScreen(
                         )
                         is ChatRenderItem.Single -> {
                             val message = item.message
-                            // Structured reasoning (the direct producer fills Message.reasoning;
-                            // the Matrix parser gathers its own into the run instead): the quiet
-                            // "Thought for Ns" disclosure, above whatever the turn said. A
-                            // reasoning-ONLY row (a turn that was all thought before its tools)
-                            // is just the disclosure — no empty bubble under it.
+                            // Structured reasoning (both producers fill Message.reasoning — 3.1
+                            // §B1): the quiet "Thought for Ns" disclosure, above whatever the
+                            // turn said. A reasoning-ONLY row (a turn that was all thought before
+                            // its tools) is just the disclosure — no empty bubble under it. On
+                            // the Matrix door content keeps its <think> lines (the parse owns
+                            // what counts as thought), so "only" is judged by the parse, not by
+                            // blankness.
                             val thought = message.reasoning?.takeIf { it.isNotBlank() }
-                            if (thought != null && message.content.isBlank()) {
+                            if (thought != null && (message.content.isBlank() ||
+                                    chat.keryx.core.protocol.MessageParser.isReasoningOnly(message.content))) {
                                 chat.keryx.app.presentation.ui.components.ReasoningDisclosure(
                                     reasoning = thought,
                                     seconds = message.reasoningSeconds,
