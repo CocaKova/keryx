@@ -419,6 +419,29 @@ object MessageParser {
         return null to content
     }
 
+    /**
+     * The transport-side lift (3.1 §B1): a producer reads the body's gathered thought off the full
+     * parse and puts it on `Message.reasoning`; renderers stop drawing [Segment.Thinking]. Goes
+     * through [parse] — not [extractReasoning] directly — so the keryx-marker unwrap and the
+     * self-improvement-review gate keep protecting it (a review quoting "<thought>" must not have
+     * half its item list lifted into a disclosure; live-caught 2026-07-09). Cached with the same
+     * entry every renderer of this body hits later.
+     */
+    fun reasoningOf(content: String): String? {
+        if (content.isBlank()) return null
+        val parts = parse(content).filterIsInstance<Segment.Thinking>()
+            .map { it.text.trim() }.filter { it.isNotBlank() }
+        return if (parts.isEmpty()) null else parts.joinToString("\n\n")
+    }
+
+    /** True when the body is nothing but thought — the render path shows only the disclosure and
+     *  must not open an empty bubble under it. Blank content is NOT reasoning-only: it's blank. */
+    fun isReasoningOnly(content: String): Boolean {
+        if (content.isBlank()) return false
+        val segs = parse(content)
+        return segs.isNotEmpty() && segs.all { it is Segment.Thinking }
+    }
+
     /** Walk a `> …`/`-# …` reasoning block that starts with [header]: consume prefixed lines, and
      *  blank lines too when more prefixed lines follow. Returns (reasoning?, body) or null when
      *  [content] doesn't open with this style. */

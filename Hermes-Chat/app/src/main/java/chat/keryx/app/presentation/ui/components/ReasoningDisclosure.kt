@@ -50,8 +50,10 @@ import androidx.compose.ui.unit.sp
  * to "Thought for Ns" (or just "Thought" for hydrated turns — the gateway persists no
  * duration). The first explicit tap wins over the auto behavior from then on.
  *
- * The Matrix path keeps its gathered per-run reasoning block; this is the per-message form
- * the structured field feeds. Scaffold voice throughout: agent-state chrome, never prose.
+ * 3.1 §B: the ONE settled reasoning voice on both doors. Both producers fill
+ * `Message.reasoning` (§B1), a run's consolidated block renders through this same composable
+ * (§B3), and `ReasoningCanvas` survives only as the live still-thinking form inside the
+ * streaming bubble. Scaffold voice throughout: agent-state chrome, never prose.
  */
 @Composable
 fun ReasoningDisclosure(

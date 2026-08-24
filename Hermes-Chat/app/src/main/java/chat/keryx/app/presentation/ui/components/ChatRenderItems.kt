@@ -374,7 +374,9 @@ private fun walkRange(
             }
             // Two producers, one grouping (§2): a direct-transport message carries its calls
             // and reasoning structurally; a Matrix message carries text the parser reads the
-            // same facts out of. From here down the two are indistinguishable.
+            // same facts out of. From here down the two are indistinguishable. Reasoning prefers
+            // the field on both paths (3.1 §B1 — one owner per fact); the segment gather survives
+            // only as the fallback for a producer that never lifted it.
             val segs = MessageParser.parse(m.content)
             val parts = if (m.toolCalls.isNotEmpty() || m.delegations.isNotEmpty()) {
                 MsgParts(
@@ -383,7 +385,7 @@ private fun walkRange(
                     m.reasoning,
                 )
             } else {
-                segmentsToParts(segs)
+                segmentsToParts(segs).let { MsgParts(it.entries, m.reasoning ?: it.reasoning) }
             }
             // Is there more tool activity before the next answer boundary? Decides whether
             // trailing prose/telemetry still belongs to this run or the run is over. Header-less

@@ -714,13 +714,23 @@ class MatrixTransport(
         val delivery = if (sender == SenderType.HERMES) {
             chat.keryx.core.model.AgentDelivery.parse(body)
         } else null
+        val content = delivery?.body ?: body
+        // 3.1 §B1 — both producers fill the field: the direct door reads reasoning off the stored
+        // row's column; here it's lifted off the same parse every renderer performs (cached, so
+        // this warms the entry rather than adding one). Content keeps every line — the parse
+        // stays the single owner of what counts as thought, and the renderers stop deciding how
+        // a thought looks. Agent senders only: a human quoting a <think> tag keeps their words.
+        val reasoning = if (sender == SenderType.HERMES) {
+            chat.keryx.core.protocol.MessageParser.reasoningOf(content)
+        } else null
         return Message(
             id = event.id.full,
             roomId = event.roomId.full,
             sender = sender,
             // A delivery's content is what the ORIGINATING agent said; the `Message from X:`
             // envelope is addressing, and it belongs to the notice above the bubble (2.3 §2).
-            content = delivery?.body ?: body,
+            content = content,
+            reasoning = reasoning,
             timestamp = event.originTimestamp,
             senderId = senderId,
             senderName = senderId,
