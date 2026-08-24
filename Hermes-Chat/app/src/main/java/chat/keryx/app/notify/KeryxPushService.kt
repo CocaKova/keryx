@@ -52,6 +52,10 @@ class KeryxPushService : PushService() {
     }
 }
 
+/** Grace for background workers: how long sync may linger once a push fetch or a
+ *  notification-action send finishes with the app still off screen. */
+internal const val SYNC_JOB_LINGER_MS = 15_000L
+
 /**
  * room_id from a pushed Synapse HTTP-pusher body — ntfy's Matrix gateway forwards it verbatim:
  * `{"notification": {"event_id": "...", "room_id": "...", "counts": {...}, ...}}`. Shared by both
@@ -86,9 +90,13 @@ class PushSyncWorker(
     override suspend fun doWork(): Result {
         val app = applicationContext as? KeryxApp ?: return Result.failure()
         val roomId = inputData.getString(KEY_ROOM_ID)
+        try {
         // Idempotent restore: no-ops when the process was already alive with a live client.
         runCatching { app.matrixService.restore(allowInsecure = app.settingsRepository.allowInsecure) }
             ?: return Result.retry()
+        // A warm process may hold a client whose sync the governor already parked — restore()
+        // returns that client untouched, so the loop must be woken explicitly for this fetch.
+        app.matrixService.syncWake()
 
         if (roomId == null) return Result.success() // badge-only push: the sync poke was the point
         if (app.isForeground && app.openRoomId == roomId) return Result.success()
@@ -121,6 +129,11 @@ class PushSyncWorker(
             },
         )
         return Result.success()
+        } finally {
+            // The fetch is done. If nobody is looking, the loop goes back to sleep — a short
+            // linger lets a burst of pushes (and this push's own ingest) reuse the warm loop.
+            if (!app.isForeground) app.matrixService.syncStandby(SYNC_JOB_LINGER_MS)
+        }
     }
 
     companion object {

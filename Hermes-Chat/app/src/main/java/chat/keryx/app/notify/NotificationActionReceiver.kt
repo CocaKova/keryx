@@ -73,9 +73,16 @@ class SendTextWorker(
         val roomName = inputData.getString(KEY_ROOM_NAME) ?: "Keryx"
         val text = inputData.getString(KEY_TEXT) ?: return Result.failure()
 
-        val sent = runCatching {
-            app.matrixService.restore(allowInsecure = app.settingsRepository.allowInsecure)
-            app.transport.sendMessage(roomId, text)
+        val sent = try {
+            runCatching {
+                app.matrixService.restore(allowInsecure = app.settingsRepository.allowInsecure)
+                // restore() hands back a warm client without restarting a parked sync loop —
+                // wake it so the outbox actually flushes, then park it again below.
+                app.matrixService.syncWake()
+                app.transport.sendMessage(roomId, text)
+            }
+        } finally {
+            if (!app.isForeground) app.matrixService.syncStandby(SYNC_JOB_LINGER_MS)
         }
         return if (sent.isSuccess) {
             KeryxNotifications.notifyActionResult(applicationContext, roomId, roomName, "✓ You: $text")

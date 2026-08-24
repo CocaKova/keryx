@@ -8,7 +8,9 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.http.Url
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -70,6 +72,38 @@ class MatrixService(private val appContext: Context) {
     private suspend fun teardown(mc: MatrixClient) {
         runCatching { mc.cancelSync() }
         runCatching { mc.close() }
+    }
+
+    // ---- sync governor ---------------------------------------------------------------------
+    // Push exists precisely so the /sync long-poll doesn't have to run while nobody is looking.
+    // Before the governor, startSync() ran until the process died — and the built-in push
+    // foreground service pins the process, so "until the process died" meant *forever*: a 24/7
+    // background long-poll alongside the push socket, shielded from Doze by the battery
+    // exemption. The governor parks the loop when the app leaves the screen (after a grace
+    // window) and wakes it for foreground use or a background job (push fetch, notification
+    // reply). Callers never touch startSync/stopSync directly for lifecycle reasons — only
+    // login/restore start the loop, and only the governor parks it.
+
+    private var standbyJob: Job? = null
+
+    /** Sync is needed now — the app came on screen, or a background job is about to read or
+     *  send. Cancels any pending standby and (re)starts the loop. No client → harmless no-op
+     *  (covers the direct-transport door and the logged-out state). */
+    fun syncWake() {
+        standbyJob?.cancel()
+        standbyJob = null
+        scope.launch { runCatching { _client.value?.startSync() } }
+    }
+
+    /** Nothing needs sync any more: stop the long-poll after [graceMs] unless [syncWake]
+     *  preempts. The grace keeps quick app switches, share hand-offs, and in-flight sends
+     *  from thrashing the loop — and gives a push burst one warm loop to land on. */
+    fun syncStandby(graceMs: Long) {
+        standbyJob?.cancel()
+        standbyJob = scope.launch {
+            delay(graceMs)
+            runCatching { _client.value?.stopSync() }
+        }
     }
 
     /** Log sync-state transitions so a stalled/error sync (messages not arriving) is diagnosable. */

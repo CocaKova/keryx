@@ -28,6 +28,13 @@ import kotlinx.coroutines.withTimeoutOrNull
  */
 class KeryxApp : Application() {
 
+    private companion object {
+        /** How long sync may keep running after the last activity leaves the screen. Long
+         *  enough to cover a quick app switch or a share sheet's upload finishing; short
+         *  enough that a pocketed phone stops long-polling within the next Doze window. */
+        const val SYNC_BACKGROUND_GRACE_MS = 90_000L
+    }
+
     lateinit var settingsRepository: SettingsRepositoryImpl
         private set
     lateinit var matrixService: MatrixService
@@ -185,10 +192,18 @@ class KeryxApp : Application() {
     private fun quickActionsFor(m: Message): List<String> =
         if (m.sender == SenderType.HERMES) MessageParser.quickActions(m.content) else emptyList()
 
-    /** Counts started activities so [isForeground] reflects whether Keryx is on screen. */
+    /** Counts started activities so [isForeground] reflects whether Keryx is on screen — and
+     *  drives the sync governor: on screen = sync runs; off screen = the long-poll parks after
+     *  a grace window (push + the workers cover everything that arrives while parked). Both
+     *  calls are no-ops on the direct door, where the Matrix client never exists. */
     private inner class ForegroundTracker : ActivityLifecycleCallbacks {
-        override fun onActivityStarted(activity: Activity) { foregroundCount++ }
-        override fun onActivityStopped(activity: Activity) { foregroundCount = (foregroundCount - 1).coerceAtLeast(0) }
+        override fun onActivityStarted(activity: Activity) {
+            if (++foregroundCount == 1) matrixService.syncWake()
+        }
+        override fun onActivityStopped(activity: Activity) {
+            foregroundCount = (foregroundCount - 1).coerceAtLeast(0)
+            if (foregroundCount == 0) matrixService.syncStandby(SYNC_BACKGROUND_GRACE_MS)
+        }
         override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
         override fun onActivityResumed(activity: Activity) {}
         override fun onActivityPaused(activity: Activity) {}
