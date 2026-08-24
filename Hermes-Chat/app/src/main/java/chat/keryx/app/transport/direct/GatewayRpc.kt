@@ -171,10 +171,12 @@ class GatewayRpc(
                 if (!wantConnected) break
                 val st = _state.value
                 // Credential rejection won't fix itself — stop and let the UI re-onboard.
-                // 4401 = the server accepted the upgrade then closed on a bad credential;
-                // 401 = a proxy/HTTP layer rejected the upgrade outright (onFailure maps
-                // the response code). Same meaning, both terminal.
-                if (st is ConnState.Failed && (st.wsCloseCode == 4401 || st.wsCloseCode == 401)) break
+                // WIRE FACT (measured through tailscale-serve against hermes 0.20.5): a
+                // pre-accept ws.close(4401/4403) surfaces to the client as a plain HTTP 403
+                // upgrade reject — the 4xx01 close codes only exist when the server accepts
+                // first. So the terminal set is all four: 401/403 (upgrade reject, via
+                // onFailure's response code) and 4401/4403 (post-accept close).
+                if (st is ConnState.Failed && st.wsCloseCode in TERMINAL_CREDENTIAL_CODES) break
                 // Reset on a socket that actually WORKED, so a long-lived connection that
                 // finally drops retries promptly instead of inheriting an ancient backoff.
                 // (Testing `_state` here instead — as this once did — can never be true: by
@@ -289,5 +291,11 @@ class GatewayRpc(
 
     companion object {
         fun tokenQuery(token: String): String = "token=" + URLEncoder.encode(token, "UTF-8")
+
+        /** Failure codes no retry can heal: the credential (or Host boundary) is rejected
+         *  as configured. HTTP 401/403 = upgrade rejected before accept (what a gated
+         *  gateway actually sends on the wire); 4401/4403 = the server accepted then
+         *  closed. The reconnect loop stops on these and the transport re-onboards. */
+        val TERMINAL_CREDENTIAL_CODES = setOf(401, 403, 4401, 4403)
     }
 }
