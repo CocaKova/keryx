@@ -461,6 +461,15 @@ class ChatViewModel(
     private val _awaitingReply = MutableStateFlow(false)
     val awaitingReply: StateFlow<Boolean> = _awaitingReply.asStateFlow()
 
+    /** The current turn has already shown SOMETHING — a live overlay, a tool row, streamed
+     *  reasoning. The quips indicator gates on this being false (3.1 §C3): `liveTheater`
+     *  only covers the Matrix side-channel, and on the direct door it is null for the whole
+     *  turn, which kept the quips chattering under a live run row and streaming thought for
+     *  minutes (device-caught on the 08-24 fluency walk). midRun is exactly "the turn has
+     *  signs but no settled answer", and isStreaming covers the first token onward. */
+    private val _liveTurnSigns = MutableStateFlow(false)
+    val liveTurnSigns: StateFlow<Boolean> = _liveTurnSigns.asStateFlow()
+
     /** Display names of HUMAN typers in the open room — the plain "X is typing…" line.
      *  (The agent's typing drives [awaitingReply]/the working banner instead.) */
     private val _typingHumans = MutableStateFlow<List<String>>(emptyList())
@@ -655,6 +664,9 @@ class ChatViewModel(
                 maybeHandOffStream(msgs, last, isNewMsg)
 
                 if (last.sender == SenderType.ME) {
+                    // A fresh prompt of ours starts a turn with no signs yet — quips may speak
+                    // until the agent shows something (3.1 §C3).
+                    _liveTurnSigns.value = false
                     // Our echo is back from the homeserver: retire the optimistic send bubble the
                     // same frame its real timeline event renders — that's the seamless swap. Reply
                     // echoes may carry a quote-fallback prefix, so suffix match is accepted too.
@@ -679,6 +691,7 @@ class ChatViewModel(
                 val window = updateWorkStateFrom(stateMessage)
                 val midRun = window == QUIET_LONG_MS
                 answerLanded = !midRun
+                _liveTurnSigns.value = midRun || last.isStreaming
 
                 // Auto-speak: exactly the settled-answer moment, for both delivery tiers (the
                 // committed Matrix event always lands here). ME/OTHER senders returned above, so
@@ -726,7 +739,14 @@ class ChatViewModel(
         // placeholder that landed after it. HERMES-only: the blank-agent-id blindness this filter
         // once hedged against is now solved structurally in senderTypeOf (legacy agent-room
         // fallback), and "not mine" would let a HUMAN's group-room message relabel the banner.
-        if (!MessageParser.isRuntimeFooterMessage(latest.content) && latest.content.isNotBlank()) return latest
+        // Structure counts as content (3.1 §C1, both doors symmetric): the direct door's live
+        // overlay carries its thought in Message.reasoning with content "" — skipping it made
+        // the cloud say "Working" during pure thinking where Matrix says "Reasoning"
+        // (device-caught on the 08-24 fluency walk).
+        val hasStructure = !latest.reasoning.isNullOrBlank() || latest.toolCalls.isNotEmpty()
+        if (!MessageParser.isRuntimeFooterMessage(latest.content) &&
+            (latest.content.isNotBlank() || hasStructure)
+        ) return latest
         return messages.asReversed()
             .asSequence()
             .dropWhile { it.id == latest.id }
