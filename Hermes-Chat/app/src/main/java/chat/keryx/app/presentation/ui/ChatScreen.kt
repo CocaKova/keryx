@@ -143,6 +143,7 @@ fun ChatScreen(
     val animationStyle by viewModel.animationStyle.collectAsState()
     val messageTextScale by viewModel.messageTextScale.collectAsState()
     val awaitingReply by viewModel.awaitingReply.collectAsState()
+    val liveTurnSigns by viewModel.liveTurnSigns.collectAsState()
     val typingHumans by viewModel.typingHumans.collectAsState()
     val typingAgentIds by viewModel.typingAgentIds.collectAsState()
     val liveStream by viewModel.liveStream.collectAsState()
@@ -557,7 +558,10 @@ fun ChatScreen(
                         )
                     }
                 }
-            } else if (awaitingReply && liveTheater == null) {
+            } else if (awaitingReply && liveTheater == null && !liveTurnSigns) {
+                // liveTheater covers the Matrix side-channel; liveTurnSigns covers the direct
+                // door, whose live overlay and tool rows render inside the transcript itself —
+                // without it the quips ran the whole turn there (3.1 §C3, device-caught).
                 item(key = "waiting") { Box(modifier = Modifier.animateItem()) { WaitingIndicator() } }
             } else if (typingHumans.isNotEmpty()) {
                 // Humans typing get a plain low-contrast line in the same slot — never the

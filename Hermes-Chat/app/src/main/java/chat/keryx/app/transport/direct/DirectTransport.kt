@@ -71,7 +71,8 @@ class DirectTransport(
 
         private const val STREAMING_MSG_ID = "streaming"
         /** Placeholder id for a tool.generating card, replaced by the real tool.start. */
-        private const val GHOST_TOOL_ID = "generating"
+        private const val STREAM_PUBLISH_MS = 100L
+private const val GHOST_TOOL_ID = "generating"
 
         /**
          * Transcript rows per history page. Well under the server's 500 cap on purpose:
@@ -236,14 +237,30 @@ class DirectTransport(
             publish()
         }
 
-        fun streamDelta(text: String) { if (!streaming) streamStart(); buffer.append(text); publish() }
+        // ---- E1: the per-token publish throttle -------------------------------------
+        // publish() rewrites the whole messages list and re-groups the trailing block; at
+        // ~50 tok/s the unthrottled append→publish was ~50 full republishes a second against
+        // the Matrix door's ~10 (STREAM_DISPATCH_MS, since 1.18.3) — measured 08-24 at
+        // 3.9-5.1% janky frames on a long direct stream. Gate-only, no trailing job: every
+        // non-delta path (interim, tool events, completion, handoff) still publishes
+        // immediately and seals the buffer, so the held tail always lands within one event.
+        private var lastStreamPublishAt = 0L
+
+        private fun publishThrottled() {
+            val now = System.currentTimeMillis()
+            if (now - lastStreamPublishAt < STREAM_PUBLISH_MS) return
+            lastStreamPublishAt = now
+            publish()
+        }
+
+        fun streamDelta(text: String) { if (!streaming) streamStart(); buffer.append(text); publishThrottled() }
 
         fun streamReasoning(text: String) {
             if (!streaming) streamStart()
             if (reasonStartedAt == 0L) reasonStartedAt = System.currentTimeMillis()
             reasonEndedAt = System.currentTimeMillis()
             reasonBuf.append(text)
-            publish()
+            publishThrottled()
         }
 
         /** Post-hoc full reasoning (`reasoning.available`) — authoritative, replaces. */
