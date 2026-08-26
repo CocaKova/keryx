@@ -17,6 +17,49 @@ data class ToolsetInfo(
 data class SessionStatus(val kind: String, val text: String) {
     /** True while context compaction is running — the one long op worth a progress bar. */
     val isCompacting: Boolean get() = kind == "compressing" || kind == "compacting"
+
+    /** The token count the line names ("~123,456 tokens", "~92,000 tok"), when it names one. */
+    val tokens: Long? get() = TOKENS.find(text)?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull()
+
+    /** What the working banner says while this holds: the state, and the size of the job. */
+    val headline: String get() = when {
+        isCompacting -> tokens?.let { "Compressing context (~${compact(it)} tokens)" } ?: "Compressing context"
+        else -> text
+    }
+
+    companion object {
+        private val TOKENS = Regex("~\\s*([\\d,]+)\\s*tok")
+
+        /**
+         * A status off either wire, classified. The direct door re-tags only the one line that
+         * carries `COMPACTION_STATUS_MARKER` ("Compacting context"); the pre-API / preflight /
+         * retry / idle lines reach it still tagged `lifecycle`, and the side-channel classifies
+         * on the gateway. Either way the app decides by the line itself when the tag is generic:
+         * every routine compression template the agent emits opens with one of three glyphs.
+         */
+        fun of(kind: String, text: String): SessionStatus {
+            val t = text.trim()
+            val k = if (kind == "lifecycle" || kind == "status") {
+                if (t.startsWith("📦") || t.startsWith("🗜") || t.startsWith("💤") ||
+                    t.contains("Compacting context")
+                ) "compacting" else kind
+            } else kind
+            return SessionStatus(k, t)
+        }
+
+        // No String.format: this is commonMain.
+        private fun tenths(n: Long, unit: Long): String {
+            val t = (n * 10 + unit / 2) / unit
+            return if (t % 10 == 0L) "${t / 10}" else "${t / 10}.${t % 10}"
+        }
+
+        private fun compact(n: Long): String = when {
+            n >= 1_000_000 -> "${tenths(n, 1_000_000)}M"
+            n >= 10_000 -> "${(n + 500) / 1000}k"
+            n >= 1_000 -> "${tenths(n, 1000)}k"
+            else -> n.toString()
+        }
+    }
 }
 
 /**

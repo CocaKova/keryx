@@ -153,6 +153,53 @@ fun ToolTheaterRow(
                 )
             }
         }
+        // What the tool handed back (2.5.7). Both producers carry it now — the direct door always
+        // did (`tool.complete.result`), the side-channel since every `end` frame started carrying
+        // its result — and neither was drawn: a failure showed a ✕ and kept its reason to itself,
+        // and a `write_file` result with the syntax oracle's verdict appended had no window at all
+        // (Jonny: "I don't see the tool payloads or failures"). A failure's reason is always on
+        // show; the full payload is a fold, because a run of twelve calls is a wall otherwise.
+        val output = beat?.result?.ifBlank { null } ?: call.result
+        if (ok == false && output.isNotBlank()) {
+            Text(
+                text = Theater.reason(output),
+                color = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
+                fontSize = 10.5.sp,
+                fontFamily = FontFamily.Monospace,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 19.dp, top = 1.dp),
+            )
+        }
+        if (output.isNotBlank()) {
+            var showOutput by androidx.compose.runtime.saveable.rememberSaveable(
+                "out:" + call.name + call.context,
+            ) { mutableStateOf(false) }
+            Text(
+                if (showOutput) "▾ output" else "▸ output",
+                fontSize = 9.5.sp,
+                fontFamily = FontFamily.Monospace,
+                color = baseColor.copy(alpha = 0.42f),
+                modifier = Modifier
+                    .padding(start = 19.dp, top = 1.dp)
+                    .clickable { showOutput = !showOutput },
+            )
+            if (showOutput) {
+                Text(
+                    text = output,
+                    color = baseColor.copy(alpha = 0.78f),
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    modifier = Modifier
+                        .padding(start = 19.dp, top = 2.dp, bottom = 2.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(baseColor.copy(alpha = 0.06f))
+                        .heightIn(max = 260.dp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                )
+            }
+        }
         if (beat != null && beat.hasDiff) {
             var open by androidx.compose.runtime.saveable.rememberSaveable(call.name + call.context) {
                 mutableStateOf(false)

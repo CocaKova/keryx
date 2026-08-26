@@ -31,6 +31,9 @@ internal fun WorkingStatusBar(
     /** Heralds typing right now — in a council room the bar wears one sigil each, so you can see
      *  *who* is working without waiting for the bubble (2.3 §1). */
     typingAgentIds: List<String> = emptyList(),
+    /** Context compaction is running: the label already says so; the glyph makes it legible at a
+     *  glance from across the room, since the wait it explains is minutes long. */
+    compacting: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -65,6 +68,7 @@ internal fun WorkingStatusBar(
                 }
                 Text(
                     text = buildString {
+                        if (compacting) append("🗜 ")
                         append("$label · $clock")
                         // Live generation speed while tokens stream over the side-channel.
                         if (tokPerSec > 2f) append(" · ≈${tokPerSec.toInt()} tok/s")
