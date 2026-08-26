@@ -64,6 +64,7 @@ event: reasoning data: {"text": "…live reasoning/thinking deltas, ahead of the
 event: segment   data: {}                       # text → tool → text boundary
 event: tool      data: {"text": "{…JSON…}"}     # tool + subagent lifecycle (see below)
 event: usage     data: {"text": "{…JSON…}"}     # {"used","max","model"} — context occupancy
+event: status    data: {"text": "{…JSON…}"}     # lifecycle status — compaction above all (see below)
 event: stop      data: {}                       # turn complete; channel closes
 event: ping      data: {}                       # 20 s keepalive
 ```
@@ -78,8 +79,8 @@ envelope, so what the agent is *doing* is visible mid-turn instead of a spinner:
 
 ```
 {"phase":"start", "name":"read_file", "preview":"SOUL.md"}
-{"phase":"end",   "name":"read_file", "ok":true,  "ms":113}
-{"phase":"end",   "name":"read_file", "ok":false, "ms":85, "result":"File not found: …"}
+{"phase":"end",   "name":"read_file", "ok":true,  "ms":113, "result":"{\"content\": …}", "result_len":812}
+{"phase":"end",   "name":"read_file", "ok":false, "ms":85,  "result":"File not found: …", "result_len":19}
 {"phase":"diff",  "name":"patch", "body":"…ANSI-coloured unified diff…"}
 {"phase":"sub",   "kind":"start|tool|complete|thinking|progress|spawn_requested",
                   "child":"sa-0-cf0971a4", "goal":…, "model":…, "task_index":0, "task_count":1,
@@ -90,9 +91,12 @@ envelope, so what the agent is *doing* is visible mid-turn instead of a spinner:
 
 Four rules the frames follow, each load-bearing for a client:
 
-- **`result` rides only on a failure.** A successful call's output is the answer's raw material and
-  arrives in the committed message moments later, rendered properly. A failure is the one case
-  where the mid-turn glimpse is the whole point.
+- **Every `end` carries its `result`** (2.5.7 — it used to ride only on a failure, on the theory
+  that a success's output reaches the committed message; it never does — Matrix carries tool
+  *names*, not tool output). It is the display result **after** `transform_tool_result` plugins
+  ran, so a verdict a plugin appends (the syntax oracle's) is part of it. Clipped to 2,400 chars
+  **from the middle** — head and tail both kept, with a `⋯ N chars elided ⋯` line between —
+  because the tail is exactly where an appended verdict lives; `result_len` is the unclipped size.
 - **`tool.completed` carries no call id**, so starts and ends correlate by *order*. Models batch
   calls (two `read_file`s can both open before either closes), and the executor emits completions
   in the order it emitted starts — so an end closes the **oldest** open row. FIFO, not a stack;
@@ -114,6 +118,26 @@ One event type rather than five keeps the frame alphabet small, and clients alre
 event types — so this is backward compatible in both directions: an old app on a new gateway
 ignores `tool`, and a new app on an unpatched gateway simply never sees one and falls back to
 rendering the committed message's parsed tool rows.
+
+`status` mirrors the agent's lifecycle status lines (`_emit_status` / `_emit_warning`), which the
+chat gateway swallows on messaging platforms by design (`_TELEGRAM_NOISY_STATUS_RE`; the opt-in
+`compression.progress_notices` posts them as room *messages*, the wrong shape for a state):
+
+```
+{"kind":"compacting", "text":"📦 Pre-API compression: ~123,456 tokens …", "tokens":123456}
+{"kind":"lifecycle",  "text":"…any other lifecycle line…"}
+{"kind":"warning",    "text":"⚠ Compression aborted …"}
+{"kind":"ready"}                                   # _compress_context returned — the wait is over
+```
+
+Classification is the gateway's own template-derived regex (`_COMPRESSION_PROGRESS_STATUS_RE`)
+plus the `COMPACTION_STATUS_MARKER`, with the templates' opening glyphs (📦 🗜 💤) as the fallback.
+`ready` fires when `agent._compress_context` returns — success **or raise** — because nothing
+else announces the end, and the next thing on the wire would otherwise be the first token of the
+next model call, a whole prefill later. ⚠️ `gateway/run.py` assigns `agent.status_callback`
+*after* it calls `attach_reasoning_callback`, so the mirror does not chain that callback (it would
+be overwritten every turn); it wraps the instance's `_emit_status` / `_emit_warning` /
+`_compress_context` instead — tagged and unwrapped on re-attach, like the tool mirror.
 
 `delta` and `reasoning` text are **append-only** within their own channel: a single frame may carry
 one token or many. A fast brain emits tokens faster than a remote client drains them, so the handler

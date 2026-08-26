@@ -824,9 +824,12 @@ private const val GHOST_TOOL_ID = "generating"
             "status.update" -> {
                 val kind = pStr("kind").orEmpty()
                 val text = pStr("text").orEmpty()
+                // `of`, not the constructor: the gateway re-tags only the one line carrying its
+                // COMPACTION marker; a pre-API / preflight compression arrives as plain
+                // "lifecycle" and used to be invisible here too (2.5.7).
                 statusFlow(storedId).value =
                     if (kind == "ready" || text.isBlank()) null
-                    else chat.keryx.core.model.SessionStatus(kind, text)
+                    else chat.keryx.core.model.SessionStatus.of(kind, text)
                 // Failure-shaped status lines are the agent's OWN error report ("❌
                 // Non-retryable error (HTTP 400): …" — run_agent buffers retry chatter and
                 // replays it via status_callback("lifecycle", …) only when the turn actually

@@ -37,6 +37,8 @@ import javax.net.ssl.X509TrustManager
  * Wire format (one JSON object per SSE `data:` line):
  *   event: delta   data: {"text": "…incremental tokens…"}
  *   event: segment data: {"final": false}          — a segment boundary (text → tool → text)
+ *   event: status  data: {"text": "{kind,text?}"}  — lifecycle status (compaction above all); kind
+ *                                                  "ready" clears it
  *   event: stop    data: {"text": "<full final>"}  — turn complete; text is the committed body
  *   event: ping    data: {}                        — keepalive, ignored
  */
@@ -65,6 +67,10 @@ class HermesStreamClient(
          *  model's window. Published by the gateway just before stop (the channel is transient,
          *  so anything after stop would never arrive). */
         data class Usage(val used: Long, val max: Long, val model: String) : Event
+        /** A lifecycle status the gateway would otherwise swallow — above all context compaction,
+         *  which is minutes of silence with nothing else on the wire (2.5.7). `ready` (a null
+         *  status) ends it. */
+        data class Status(val status: chat.keryx.core.model.SessionStatus?) : Event
         /** The SSE channel is connected and live. */
         data object Opened : Event
         /** The channel failed or dropped. [connected] tells whether any bytes ever flowed —
@@ -122,6 +128,7 @@ class HermesStreamClient(
                         "segment" -> trySendBlocking(Event.SegmentBreak)
                         "tool" -> parseTheater(data)?.let { trySendBlocking(Event.Tool(it)) }
                         "usage" -> parseUsage(data)?.let { trySendBlocking(it) }
+                        "status" -> parseStatus(data)?.let { trySendBlocking(it) }
                         "stop" -> {
                             trySendBlocking(Event.Stop(parseText(data)))
                             close() // turn done — tear the transient channel down
@@ -193,6 +200,21 @@ class HermesStreamClient(
             filesWritten = int("files_written_n"),
             durationSeconds = str("duration_seconds").toDoubleOrNull(),
         )
+    } catch (e: Exception) {
+        null
+    }
+
+    /** `{"kind": "compacting"|"lifecycle"|"warning"|"ready", "text"?: …}` in the envelope. */
+    private fun parseStatus(data: String): Event.Status? = try {
+        val inner = parseText(data) ?: return null
+        val obj = json.parseToJsonElement(inner).jsonObject
+        val kind = (obj["kind"] as? JsonPrimitive)?.content.orEmpty()
+        val text = (obj["text"] as? JsonPrimitive)?.content.orEmpty()
+        when {
+            kind.isBlank() -> null
+            kind == "ready" || text.isBlank() -> Event.Status(null)
+            else -> Event.Status(chat.keryx.core.model.SessionStatus.of(kind, text))
+        }
     } catch (e: Exception) {
         null
     }

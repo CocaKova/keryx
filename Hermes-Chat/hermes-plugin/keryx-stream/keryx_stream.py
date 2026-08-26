@@ -17,7 +17,9 @@ command into a Matrix room. While that subscriber is attached:
     until the final Matrix event syncs in;
   * ``event: tool`` carries the tool + subagent lifecycle (start / end / subagent.*) as JSON, so
     the app can show what the agent is DOING mid-turn instead of a spinner (see
-    ``_attach_tool_callbacks``).
+    ``_attach_tool_callbacks``); every ``end`` carries the (middle-clipped) result;
+  * ``event: status`` mirrors the agent's lifecycle status lines — above all context
+    compaction, which the chat gateway swallows by design (see ``_attach_status_mirror``).
 
 When no subscriber is attached and ``FALLBACK_EDITS`` is True, Matrix falls back to
 smart-throttled native m.replace edits driven by the normal streaming config
@@ -245,15 +247,36 @@ def publish_stop(adapter: Any, chat_id: Any, final_text: Optional[str] = None) -
 # the client can prefer the newest open entry with a matching name.
 
 _TOOL_PREVIEW_MAX = 240
-# Failures only (see below), and clipped: the full result lands in the committed Matrix message
-# a moment later, and an unbounded one would push megabytes through a phone's SSE socket.
-_TOOL_RESULT_MAX = 400
+# Every completion carries its result (2.5.7 — it used to ride only on a failure). The
+# committed Matrix message never carries tool output at all: a success's payload was "the
+# answer's raw material", which is true for the model and false for the reader — what a tool
+# actually handed back (a terminal's stdout, the syntax oracle's verdict appended to a
+# write_file result) had no window anywhere on the phone. Clipped, and from the MIDDLE: a
+# result's head says what it is and its tail is where a `transform_tool_result` plugin
+# appends its verdict, so cutting the tail off would cut off exactly the part a diagnosis
+# lives in.
+_TOOL_RESULT_MAX = 2400
+_TOOL_RESULT_TAIL = 800
 
 
 def _clip(value: Any, limit: int) -> str:
     text = "" if value is None else str(value)
     text = text.replace("\r\n", "\n").strip()
     return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def _clip_middle(value: Any, limit: int = _TOOL_RESULT_MAX, tail: int = _TOOL_RESULT_TAIL) -> str:
+    """Clip to ``limit`` keeping both ends — the head names the payload, the tail carries any
+    appended verdict. The elision line states how much is missing so a clipped body never
+    reads as the whole."""
+    text = "" if value is None else str(value)
+    text = text.replace("\r\n", "\n").strip()
+    if len(text) <= limit:
+        return text
+    tail = max(0, min(tail, limit // 2))
+    head = limit - tail
+    elided = len(text) - head - tail
+    return f"{text[:head].rstrip()}\n⋯ {elided:,} chars elided ⋯\n{text[len(text) - tail:].lstrip()}"
 
 
 # Every ``subagent.*`` event carries the same identity block (goal, task index/count, model,
@@ -416,13 +439,14 @@ def _attach_tool_callbacks(agent: Any, platform: str, chat_id: str) -> None:
                 ok = not bool(kw.get("is_error"))
                 frame = {"phase": "end", "name": str(name or "tool"), "ok": ok,
                          "ms": int(float(kw.get("duration") or 0.0) * 1000)}
-                # Only a FAILURE carries its result. A success's output is the answer's raw
-                # material — it lands in the committed message a moment later, rendered
-                # properly, and pushing a few hundred bytes of escaped JSON per call to a phone
-                # to show nothing is waste. A failure is the one case where the mid-turn glimpse
-                # is the whole point.
-                if not ok:
-                    frame["result"] = _clip(kw.get("result"), _TOOL_RESULT_MAX)
+                # The result rides on every completion (see _TOOL_RESULT_MAX). ``result`` here
+                # is the display result AFTER ``transform_tool_result`` hooks ran — a plugin's
+                # appended verdict is part of it — because the executor fires this callback
+                # from the same post-hook value it appends to the conversation.
+                result = _clip_middle(kw.get("result"))
+                if result:
+                    frame["result"] = result
+                    frame["result_len"] = len(str(kw.get("result") or ""))
                 _emit(frame)
             elif et.startswith("subagent."):
                 frame = _subagent_frame(et, name, preview, kw)
@@ -478,6 +502,128 @@ def _attach_tool_callbacks(agent: Any, platform: str, chat_id: str) -> None:
     agent.tool_complete_callback = _on_complete
 
 
+# --- lifecycle status: compaction (Keryx 2.5.7) -------------------------------------------
+#
+# A Matrix turn that hits the context threshold goes quiet for as long as the summary model
+# takes — the agent core says so (``_emit_status`` → ``status_callback("lifecycle", …)``), but
+# ``gateway/run.py`` swallows every routine compression line on chat platforms by design
+# (``_TELEGRAM_NOISY_STATUS_RE``; opt-in ``compression.progress_notices`` posts them as room
+# messages, which is the wrong shape — a status is a state, not a bubble). So the side-channel
+# mirrors it as ``event: status``:
+#
+#   {"kind": "compacting", "text": "📦 Pre-API compression: ~123,456 tokens …", "tokens": 123456}
+#   {"kind": "lifecycle",  "text": "…any other lifecycle line…"}
+#   {"kind": "warning",    "text": "⚠ …"}
+#   {"kind": "ready"}                       # _compress_context returned — the wait is over
+#
+# ⚠️ run.py assigns ``agent.status_callback`` AFTER it calls attach_reasoning_callback, so a
+# chained status_callback would be overwritten every turn. The mirror wraps the two *emitters*
+# on the instance (``_emit_status`` / ``_emit_warning``) instead — an instance attribute shadows
+# the class method and survives whatever run.py does to the callback. Tagged and unwrapped on
+# re-attach, same as the tool mirror, because the agent is cached across turns.
+
+_COMPACTION_GLYPHS = ("📦", "🗜", "💤")
+
+
+def _compression_progress_re() -> Optional["re.Pattern[str]"]:
+    """The gateway's own template-derived matcher, so the classification is the one the agent
+    emits rather than a hand-copied phrase; None when the import shape moves."""
+    try:
+        from gateway.run import _COMPRESSION_PROGRESS_STATUS_RE
+
+        return _COMPRESSION_PROGRESS_STATUS_RE
+    except Exception:
+        return None
+
+
+def classify_status(message: Any) -> str:
+    """'compacting' for a routine compression status line, else 'lifecycle'."""
+    text = str(message or "")
+    try:
+        from agent.conversation_compression import COMPACTION_STATUS_MARKER
+
+        if COMPACTION_STATUS_MARKER in text:
+            return "compacting"
+    except Exception:
+        pass
+    pat = _compression_progress_re()
+    if pat is not None and pat.search(text):
+        return "compacting"
+    # Fallback for a gateway whose regex moved: every routine template opens with one of these.
+    if text.lstrip().startswith(_COMPACTION_GLYPHS):
+        return "compacting"
+    return "lifecycle"
+
+
+_TOKENS_RE = re.compile(r"~\s*([\d,]+)\s*tokens")
+
+
+def status_frame(kind: str, message: Any = "") -> Dict[str, Any]:
+    frame: Dict[str, Any] = {"kind": kind}
+    text = _clip(message, 400)
+    if text:
+        frame["text"] = text
+        m = _TOKENS_RE.search(text)
+        if m:
+            try:
+                frame["tokens"] = int(m.group(1).replace(",", ""))
+            except ValueError:
+                pass
+    return frame
+
+
+def _attach_status_mirror(agent: Any, platform: str, chat_id: str) -> None:
+    def _emit(frame: Dict[str, Any]) -> None:
+        try:
+            hub.publish_threadsafe(platform, chat_id, "status", json.dumps(frame))
+        except Exception:
+            pass
+
+    prev_status = getattr(agent, "_emit_status", None)
+    prev_status = getattr(prev_status, "_keryx_inner", prev_status)
+
+    def _status(message: str) -> None:
+        try:
+            _emit(status_frame(classify_status(message), message))
+        except Exception:
+            logger.debug("keryx status mirror failed", exc_info=True)
+        if prev_status is not None:
+            prev_status(message)
+
+    _status._keryx_inner = prev_status  # type: ignore[attr-defined]
+    agent._emit_status = _status
+
+    prev_warning = getattr(agent, "_emit_warning", None)
+    prev_warning = getattr(prev_warning, "_keryx_inner", prev_warning)
+
+    def _warning(message: str) -> None:
+        try:
+            _emit(status_frame("warning", message))
+        except Exception:
+            logger.debug("keryx warning mirror failed", exc_info=True)
+        if prev_warning is not None:
+            prev_warning(message)
+
+    _warning._keryx_inner = prev_warning  # type: ignore[attr-defined]
+    agent._emit_warning = _warning
+
+    # The end of the wait. Every compression path (pre-API, preflight, retry, idle) goes
+    # through ``agent._compress_context``; nothing announces its return, and the next thing
+    # the app would otherwise hear is the first token of the NEXT model call — which can be a
+    # long prefill away. So: ``ready`` the moment it returns, success or raise.
+    prev_compress = getattr(agent, "_compress_context", None)
+    prev_compress = getattr(prev_compress, "_keryx_inner", prev_compress)
+    if prev_compress is not None:
+        def _compress(*args: Any, **kw: Any) -> Any:
+            try:
+                return prev_compress(*args, **kw)
+            finally:
+                _emit(status_frame("ready"))
+
+        _compress._keryx_inner = prev_compress  # type: ignore[attr-defined]
+        agent._compress_context = _compress
+
+
 def attach_reasoning_callback(agent: Any, source: Any) -> None:
     """Register this turn's live mirrors on the agent — reasoning, and via
     [_attach_tool_callbacks] the tool/subagent theater.
@@ -506,6 +652,7 @@ def attach_reasoning_callback(agent: Any, source: Any) -> None:
 
         agent.reasoning_callback = _mirror_reasoning
         _attach_tool_callbacks(agent, platform, chat_id)
+        _attach_status_mirror(agent, platform, chat_id)
         # Same per-turn refresh cadence as the callback itself: the finish-line usage frame
         # (see _publish_usage) reads this turn's agent, weakly held.
         import weakref

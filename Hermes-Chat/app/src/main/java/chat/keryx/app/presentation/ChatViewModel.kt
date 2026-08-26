@@ -379,6 +379,26 @@ class ChatViewModel(
             if (r == null || d == null) flowOf(null) else d.pendingApproval(r.id)
         }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
+    /**
+     * The gateway's lifecycle status for the open room — context compaction above all (2.5.7).
+     *
+     * Before this, compaction was a silence with a clock on it: the agent core announces it,
+     * the chat gateway swallows the announcement by design, and the direct door stored its copy
+     * in a flow nothing read. Both doors now land here: the Matrix side-channel's `event: status`
+     * (a `ready` frame clears it, so does any sign of the turn moving on), and the direct
+     * transport's `status.update` flow, keyed to the open session.
+     */
+    private val _matrixStatus = MutableStateFlow<chat.keryx.core.model.SessionStatus?>(null)
+    val sessionStatus: StateFlow<chat.keryx.core.model.SessionStatus?> =
+        combine(
+            _matrixStatus,
+            _currentRoom.flatMapLatest { r ->
+                val d = direct
+                if (r == null || d == null) flowOf(null) else d.sessionStatus(r.id)
+            },
+        ) { matrix, direct -> matrix ?: direct }
+            .stateIn(viewModelScope, SharingStarted.Lazily, null)
+
     /** The agent is stopped on a question / sudo / secret in the open room (direct path only). */
     val pendingBlocking: StateFlow<chat.keryx.core.model.BlockingRequest?> =
         _currentRoom.flatMapLatest { r ->
@@ -897,6 +917,9 @@ class ChatViewModel(
                         dispatch(LiveStreamStatus.STREAMING)
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Delta -> {
+                        // Tokens flowing means whatever the status announced is over, whether or
+                        // not its `ready` arrived.
+                        if (_matrixStatus.value != null) _matrixStatus.value = null
                         val now = System.currentTimeMillis()
                         if (firstDeltaAt == 0L) {
                             firstDeltaAt = now
@@ -940,7 +963,14 @@ class ChatViewModel(
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Usage -> {
                         _contextUsage.value = ContextUsage(roomId, ev.used, ev.max, ev.model)
                     }
+                    is chat.keryx.app.data.remote.HermesStreamClient.Event.Status -> {
+                        _matrixStatus.value = ev.status
+                        // Compaction is the turn WORKING, for as long as the summary model
+                        // takes; the no-reply timer must not read it as the agent gone quiet.
+                        if (ev.status?.isCompacting == true) scheduleClearAwaiting(NO_REPLY_MS)
+                    }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Stop -> {
+                        _matrixStatus.value = null
                         _linkHealth.value = LinkHealth.OK
                         callTurnTap?.onTurnEnd(ev.finalText)
                         if (ev.finalText.isNullOrBlank() && buf.isBlank() && reasoningBuf.isBlank()) {
@@ -1024,6 +1054,7 @@ class ChatViewModel(
 
     private fun clearStream() {
         chat.keryx.app.util.KLog.i("KeryxHandoff") { "clearStream (was ${_liveStream.value?.status})" }
+        _matrixStatus.value = null
         _liveStream.value?.let { s ->
             if (s.theater.beats.isNotEmpty()) _lastTurnTheater.value = s.roomId to s.theater
         }

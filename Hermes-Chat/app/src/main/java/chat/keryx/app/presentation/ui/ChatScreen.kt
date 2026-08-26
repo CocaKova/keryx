@@ -133,6 +133,7 @@ fun ChatScreen(
     val showTelemetry by viewModel.showTelemetry.collectAsState()
     val workStartedAt by viewModel.workStartedAt.collectAsState()
     val workLabel by viewModel.workLabel.collectAsState()
+    val sessionStatus by viewModel.sessionStatus.collectAsState()
     val replyTarget by viewModel.replyTarget.collectAsState()
     val savedIds by viewModel.archive.savedIds.collectAsState()
     val listState = rememberLazyListState()
@@ -920,9 +921,14 @@ fun ChatScreen(
             it.roomId == currentRoom?.id &&
                 it.status == chat.keryx.app.presentation.LiveStreamStatus.STREAMING
         }?.charsPerSec?.div(4f) ?: 0f
+        // Compaction takes the banner over while it runs: the gateway's own count of what it is
+        // summarizing, in place of a verb it is not doing (2.5.7). Everything else it says stays
+        // where it was — the clock keeps counting, the cloud keeps its shape.
+        val compacting = sessionStatus?.takeIf { it.isCompacting }
         WorkingStatusBar(
-            visible = awaitingReply || topTokPerSec > 0f,
-            label = workLabel,
+            visible = awaitingReply || topTokPerSec > 0f || compacting != null,
+            label = compacting?.headline ?: workLabel,
+            compacting = compacting != null,
             startedAt = workStartedAt,
             tokPerSec = topTokPerSec,
             typingAgentIds = typingAgentIds,

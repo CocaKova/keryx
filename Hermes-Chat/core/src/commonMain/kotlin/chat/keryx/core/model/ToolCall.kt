@@ -28,8 +28,11 @@ data class ToolCall(
      *  blank when the producer never had them (committed Matrix text doesn't). */
     val argsJson: String = "",
     val status: ToolStatus = ToolStatus.EXECUTING,
-    /** Result payload as display text, wrapper-stripped and capped. On the Matrix path this
-     *  stays blank — the adjacent output Note in the run is the result there. */
+    /** Result payload as display text, capped. Carried by both producers: the direct door's
+     *  `tool.complete`, and (2.5.7) the side-channel's every `end` frame, middle-clipped on the
+     *  gateway. Blank only for a committed Matrix message parsed after the fact — that text
+     *  carries tool names, never tool output. Drawn as the row's `▸ output` fold; a failure's
+     *  reason ([Theater.reason]) is always on show. */
     val result: String = "",
     /** Gateway's human summary ("Did 3 searches in 2.1s"), when it ships one. */
     val summary: String = "",
