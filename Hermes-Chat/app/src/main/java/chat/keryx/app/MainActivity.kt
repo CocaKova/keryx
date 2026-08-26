@@ -132,6 +132,8 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                     // The indexer walks a Matrix timeline; the direct path hydrates over REST
                     // and gets its own indexer with the harvest (plan §5).
                     if (app.isDirectTransport) null else app.archiveIndexer,
+                    // A background SSE drop must not paint INTERRUPTED (08-25 diagnosis).
+                    isAppForeground = { app.isForeground },
                 ) as T
             }
         }

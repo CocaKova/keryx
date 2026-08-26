@@ -269,14 +269,48 @@ fun HermesApp(viewModel: ChatViewModel) {
                         if (currentRoom != null) {
                             // New session: one tap sends /new — same auto-send the command palette
                             // does, so the gateway's fresh-session reply lands in the chat itself.
+                            // While a turn is LIVE, /new invalidates the running generation on the
+                            // gateway (the run's result is discarded), so an accidental tap here
+                            // was a silent run-killer (08-25 diagnosis) — confirm exactly when
+                            // there is something to lose; idle taps stay one-tap.
+                            var confirmNewSession by remember { mutableStateOf(false) }
+                            val liveTurn by viewModel.liveTurnSigns.collectAsState()
                             IconButton(onClick = {
-                                viewModel.recordCommandUse("/new")
-                                viewModel.sendMessage("/new")
+                                if (liveTurn || awaitingReply) confirmNewSession = true
+                                else {
+                                    viewModel.recordCommandUse("/new")
+                                    viewModel.sendMessage("/new")
+                                }
                             }) {
                                 Icon(
                                     Icons.Default.AddComment,
                                     contentDescription = "New session",
                                     tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                            if (confirmNewSession) {
+                                AlertDialog(
+                                    shape = RoundedCornerShape(
+                                        chat.keryx.app.presentation.ui.components.KeryxRadius.sheet
+                                    ),
+                                    onDismissRequest = { confirmNewSession = false },
+                                    title = { Text("Start a new session?", fontSize = 16.sp) },
+                                    text = {
+                                        Text(
+                                            "The agent is still working — /new ends the current run and its result is discarded.",
+                                            fontSize = 13.sp,
+                                        )
+                                    },
+                                    confirmButton = {
+                                        TextButton(onClick = {
+                                            confirmNewSession = false
+                                            viewModel.recordCommandUse("/new")
+                                            viewModel.sendMessage("/new")
+                                        }) { Text("End run & start new", color = MaterialTheme.colorScheme.error) }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { confirmNewSession = false }) { Text("Cancel") }
+                                    },
                                 )
                             }
                             // Reasoning moved to the composer footer (2.2, the Talaria
