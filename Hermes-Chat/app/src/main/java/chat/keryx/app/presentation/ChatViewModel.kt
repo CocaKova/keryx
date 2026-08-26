@@ -44,6 +44,9 @@ class ChatViewModel(
     // The Archive (1.26): nullable so the ViewModel stays constructible in plain-JVM tests.
     private val archiveStore: chat.keryx.app.data.archive.ArchiveStore? = null,
     private val archiveIndexer: chat.keryx.app.data.archive.ArchiveIndexer? = null,
+    // Whether the app is on screen right now (wired to KeryxApp.isForeground). Null — the
+    // plain-JVM test default — reads as foregrounded, so behavior is unchanged where unwired.
+    private val isAppForeground: (() -> Boolean)? = null,
 ) : ViewModel() {
 
     // The two capability surfaces, if this transport has them. Affordances only one side offers
@@ -966,9 +969,21 @@ class ChatViewModel(
                             if (!ev.connected) {
                                 _toasts.tryEmit("Hermes Link unreachable (${ev.reason.take(80)}) — using Matrix sync")
                             }
+                        } else if (isAppForeground?.invoke() == false) {
+                            // Mid-stream drop while the app is OFF SCREEN — Doze cutting the
+                            // socket is the normal fate of an unattended phone, and the run is
+                            // almost certainly still alive on the gateway, so painting
+                            // INTERRUPTED here reads as a false "the run died" (08-25
+                            // diagnosis). Park the partial as awaiting-sync — the same
+                            // machinery the stop path uses — so the committed event swaps in
+                            // seamlessly when sync catches up on reopen, and the overlay
+                            // retires quietly otherwise.
+                            dispatch(LiveStreamStatus.AWAITING_SYNC, finalText = buf.rawText())
+                            scheduleStreamClear(STREAM_SYNC_GRACE_MS)
                         } else {
-                            // Mid-stream drop with visible partial text: keep it, show the alert,
-                            // and recover the moment the final event syncs via Matrix.
+                            // Mid-stream drop with visible partial text while the user is
+                            // watching: keep it, show the alert, and recover the moment the
+                            // final event syncs via Matrix.
                             dispatch(LiveStreamStatus.INTERRUPTED)
                             scheduleStreamClear(STREAM_INTERRUPT_HOLD_MS)
                         }
