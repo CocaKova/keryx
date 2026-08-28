@@ -46,7 +46,7 @@ class KeryxApp : Application() {
     val isDirectTransport: Boolean get() = transport is DirectTransport
     lateinit var archiveStore: chat.keryx.app.data.archive.ArchiveStore
         private set
-    lateinit var archiveIndexer: chat.keryx.app.data.archive.ArchiveIndexer
+    lateinit var archiveIndexer: chat.keryx.app.data.archive.ArchiveSweeper
         private set
 
     private val appScope = CoroutineScope(Dispatchers.IO)
@@ -71,7 +71,10 @@ class KeryxApp : Application() {
             MatrixTransport(matrixService, settingsRepository)
         }
         archiveStore = chat.keryx.app.data.archive.ArchiveStore(applicationContext)
-        archiveIndexer = chat.keryx.app.data.archive.ArchiveIndexer(matrixService, archiveStore)
+        // One store, two producers: the Matrix timeline walk, or the gateway's REST pages.
+        archiveIndexer = (transport as? DirectTransport)
+            ?.let { direct -> chat.keryx.app.data.archive.RestArchiveIndexer({ direct.restClient }, archiveStore) }
+            ?: chat.keryx.app.data.archive.ArchiveIndexer(matrixService, archiveStore)
 
         KeryxNotifications.ensureChannel(applicationContext)
         registerActivityLifecycleCallbacks(ForegroundTracker())

@@ -1250,6 +1250,10 @@ class HermesStreamClient(
 
     data class BrainEntry(val name: String, val description: String)
 
+    /** The gateway's model catalog (`/api/model/options`, the config default as current). */
+    suspend fun modelOptions(): Result<chat.keryx.core.model.ModelCatalog> =
+        runCatching { chat.keryx.core.model.ModelCatalog.parse(apiCall("/api/model/options", snapshot = false)) }
+
     suspend fun brains(): Result<Brains> =
         runCatching { HubJson.brains(apiCall("/keryx/brains")) }
 

@@ -1,0 +1,75 @@
+# Keryx 2.6.0 — Phase F, first two landings (2026-08-28)
+
+Folds in the unreleased 2.5.7 (compaction on the cloud, `▸ output` on every row, execute_code on
+Matrix — `docs/KERYX-2.5.7-COMPRESSION-AND-PAYLOADS.md`), E4 and the unattended-turn fix
+(`9341263`). Adds the first two items of the 3.1 plan's Phase F list.
+
+## 1. The Archive reaches the direct door
+
+**Was:** `MainActivity` injected `null` for the indexer on direct, so the Archive opened, sat on
+"waking the index…" forever, and `DirectTransport.messagesAround` returned nothing.
+
+**Now — one store, two producers.** `ArchiveSweeper` (`progress` + `sweep`) is the seam the
+`ArchiveDelegate` consumes; `ArchiveIndexer` (Matrix timeline walk) and the new
+`RestArchiveIndexer` both implement it. `KeryxApp` picks by transport.
+
+`RestArchiveIndexer` pages `/api/sessions/{id}/messages` newest-first (`TranscriptPages.pageUntil`)
+until it crosses the ceiling (highest row id filed by an earlier sweep — reusing the store's
+`catchupCeiling` slot) or runs dry, builds the stretch through `TranscriptBuilder`, and files what
+`ArchiveIndexer.indexableEntries` admits. **Same policy as Matrix**: what the chat would fold into
+a run card never enters the index. Overshoot to the page boundary is deliberate (a block cut
+mid-run could misread a progress line as a bubble); the tail dedupes on `event_id`.
+
+`messagesAround` on direct pages until the row is in hand with `before` rows beneath it, builds
+the whole stretch (calls re-pair with results across page seams), cuts the window.
+
+Verified live 08-28 against the gateway: pages are chronological inside, offset counts backwards
+from the newest — the two facts the walk rests on.
+
+### Traps
+- ⚠️ The store is NOT re-keyed per door (no `ensureAccount` on direct). Matrix ids (`$…`/`!…`)
+  and gateway ids (numeric / session ids) never collide, so both indexes coexist and a door
+  crossing costs no backfill. A SECOND gateway on the same phone would collide on row ids —
+  if that day comes, key the account by gateway URL and accept the wipe.
+- ⚠️ Compression lineage: one logical chat = several session ids on the gateway. The Archive is
+  per open room, so it shows the current segment only — the same thing the timeline shows.
+- ⚠️ Client ids for synthesized rows are `tools-N` / `think-N`; `TranscriptPages.rowIdOf`
+  reads the numeric suffix. Only prose rows are indexed, but the context view must cope with any.
+
+## 2. The model catalog in the composer pill
+
+**Was:** the pill's menu listed the Spire brains roster only — empty on this box, so it said
+"No brains roster from the gateway" and did nothing.
+
+**Now:** `ModelCatalog` (`:core`, parses the one payload shape both `model.options` RPC and
+`GET /api/model/options` return; 4 tests) → `usable` = authenticated providers with models,
+grouped in the menu, the session's live model marked ●, ⚡/💭 capability tags. The brains roster
+follows below it when configured.
+
+Two doors, two verbs, one `ModelDelegate`:
+- **Direct**: `GatewayCapabilities.modelOptions(sessionId)` = RPC `model.options` with the
+  session overlay (45 s timeout — it is on the gateway's long-handler pool);
+  `selectModel` = RPC `config.set {key:"model", value:"<name> --provider <slug> --session"}`.
+  Outcomes honoured: applied (toast + pill), **deferred** (turn in flight — lands next turn),
+  **confirm_required** (expensive model — toast, tapping the same model again confirms).
+- **Matrix**: catalog over Hermes Link; selection sends `/model <name> --provider <slug>` as a
+  room command (the gateway scopes it to the room and redacts the command line ~5 s later).
+
+### Traps
+- ⚠️ `is_current` is true on MORE than one provider row at once (a dead `configured-current`
+  row beside the serving `user-config` row). Current is judged by model NAME. Pinned by test.
+- ⚠️ `/v1/models` only knows "hermes-agent" — never the catalog source.
+- ⚠️ No `model.set` RPC exists; `config.set` with the raw `/model` grammar is the setter.
+
+## 3. `react_to_message` tool row hidden
+The reaction shows as the chip on the row it landed on; the call row said it twice. A FAILED
+call keeps its row (same rule as failed deliveries). `ToolTheaterRow`, beside the delivery gate.
+
+## Status
+- 544 tests green (`:app:testDebugUnitTest` + `:core:jvmTest`), `assembleDebug` OK, versionCode 68.
+- ⚠️ NOT device-walked (phone off adb 08-28 morning). Walk list, both doors: Archive on direct
+  (open a deep session → Archive → search a word from an old turn → tap the hit → context view
+  fills); pill → catalog lists silas-brain + any authenticated cloud → pick one → toast, pill
+  relabels, next turn answers from it; Matrix: pick → `/model …` command lands, gateway confirms;
+  plus the 2.5.7 walk (compaction label, `▸ output`).
+- Release: cut `v2.6.0` after the walk (slow-cadence rule: this is a milestone, not a patch).

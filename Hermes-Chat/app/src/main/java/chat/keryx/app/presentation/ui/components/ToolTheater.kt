@@ -75,6 +75,11 @@ fun ToolTheaterRow(
     // An inter-agent delivery is a `terminal` call by mechanism and a conversation by meaning.
     // A FAILED one keeps the terminal row on purpose: when the mechanism breaks, the mechanism is
     // exactly what you need to see.
+    // A reaction the agent placed shows up AS the reaction chip on the row it landed on — the
+    // call that put it there is mechanism, and a row saying "react_to_message ✓" beside the
+    // chip said the same thing twice. A FAILED one stays visible for the same reason a failed
+    // delivery does.
+    if (call.name == "react_to_message" && !call.failed) return
     val deliveryTarget = if (call.failed) null else deliveryTargetOf(call)
     if (deliveryTarget != null) {
         AgentDeliverySentNotice(
