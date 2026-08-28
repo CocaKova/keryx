@@ -353,7 +353,8 @@ cut Talaria 0.7.10 and freeze.
 **These are not in scope for 3.1.** 3.1 ends when the app says one thing once.
 
 *Status 2026-08-28: REST `ArchiveIndexer` + model-catalog picker LANDED as 2.6.0 — see
-`docs/KERYX-2.6.0-PHASE-F.md`. Left: Projects surface, wake word.*
+`docs/KERYX-2.6.0-PHASE-F.md`; Projects surface + Move-to-project landed the same day (`d5b2858`,
+`81abebd`). Left: wake word only.*
 
 ---
 
