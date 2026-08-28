@@ -1,0 +1,18 @@
+{
+ "projects": [
+  {
+   "id": "p_0588f8bd",
+   "slug": "palworld-server-setup",
+   "name": "Palworld Server Setup",
+   "description": null,
+   "icon": null,
+   "color": null,
+   "board_slug": null,
+   "primary_path": null,
+   "archived": false,
+   "created_at": 1784393477,
+   "folders": []
+  }
+ ],
+ "active_id": "p_0588f8bd"
+}

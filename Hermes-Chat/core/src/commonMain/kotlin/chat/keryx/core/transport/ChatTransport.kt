@@ -132,6 +132,27 @@ interface GatewayCapabilities {
         provider: String?,
         confirm: Boolean = false,
     ): Result<chat.keryx.core.model.ModelSwitchOutcome>
+
+    // ---- Projects: the gateway's native workspace grouping (`projects.*`). Membership is
+    // cwd-derived — a session belongs to whichever project claims its working directory, so
+    // "moving into a project" re-homes the workspace and "new chat here" is a session born
+    // with that cwd. The whole surface is direct-door: Matrix rooms are profiles, not folders.
+
+    suspend fun projectsTree(): Result<chat.keryx.core.model.ProjectsTree>
+    suspend fun projectSessions(projectId: String): Result<chat.keryx.core.model.ProjectTreeNode?>
+    suspend fun projectsCatalog(): Result<chat.keryx.core.model.ProjectsCatalog>
+    suspend fun createProject(name: String, folderPath: String?): Result<chat.keryx.core.model.ProjectInfo>
+    suspend fun deleteProject(projectId: String): Result<Unit>
+    suspend fun archiveProject(projectId: String, restore: Boolean = false): Result<Unit>
+    /** Child folders of [query] on the gateway (`complete.path`, `@folder:` mode). */
+    suspend fun listFolders(query: String): Result<chat.keryx.core.model.FolderPage>
+    suspend fun folderExists(path: String): Result<Boolean>
+    suspend fun moveSessionToProject(sessionId: String, cwd: String): Result<Unit>
+    /** A session born inside [cwd]; returns its stored id. */
+    suspend fun createSessionIn(title: String?, cwd: String): Result<String>
+    /** Make a session the list does not carry (another machine's, a project's) openable by
+     *  id — it joins the local roster under [title] until the server lists it. */
+    fun adoptSession(sessionId: String, title: String)
 }
 
 /** One hit from the gateway's session search: the session, plus the line that matched. */

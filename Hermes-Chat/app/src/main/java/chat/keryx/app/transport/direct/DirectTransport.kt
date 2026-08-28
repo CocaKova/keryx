@@ -1569,6 +1569,100 @@ private const val GHOST_TOOL_ID = "generating"
         chat.keryx.core.model.ModelSwitchOutcome.parse(res)
     }
 
+    // ---- Projects (harvested from Talaria 08-28; shapes fixture-captured live 08-15) ----
+    // A mid-turn session refuses a move server-side (4009) rather than yanking the
+    // workspace out from under its tools.
+
+    override suspend fun projectsTree(): Result<chat.keryx.core.model.ProjectsTree> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        chat.keryx.core.protocol.ProjectsParser.parseTree(
+            rpc.request("projects.tree", buildJsonObject { put("preview_limit", JsonPrimitive(3)) })
+        ) ?: error("unrecognized projects.tree payload")
+    }
+
+    override suspend fun projectSessions(projectId: String): Result<chat.keryx.core.model.ProjectTreeNode?> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        val res = rpc.request("projects.project_sessions", buildJsonObject {
+            put("project_id", JsonPrimitive(projectId))
+        })
+        chat.keryx.core.protocol.ProjectsParser.parseTreeNode(res["project"])
+    }
+
+    override suspend fun projectsCatalog(): Result<chat.keryx.core.model.ProjectsCatalog> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        chat.keryx.core.protocol.ProjectsParser.parseCatalog(rpc.request("projects.list"))
+            ?: error("unrecognized projects.list payload")
+    }
+
+    override suspend fun createProject(name: String, folderPath: String?): Result<chat.keryx.core.model.ProjectInfo> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        val res = rpc.request("projects.create", buildJsonObject {
+            put("name", JsonPrimitive(name))
+            if (!folderPath.isNullOrBlank()) {
+                put("primary_path", JsonPrimitive(folderPath))
+                put("folders", kotlinx.serialization.json.buildJsonArray { add(JsonPrimitive(folderPath)) })
+            }
+        })
+        chat.keryx.core.protocol.ProjectsParser.parseProject(res["project"]) ?: error("create returned no project")
+    }
+
+    override suspend fun deleteProject(projectId: String): Result<Unit> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        rpc.request("projects.delete", buildJsonObject { put("id", JsonPrimitive(projectId)) })
+        Unit
+    }
+
+    override suspend fun archiveProject(projectId: String, restore: Boolean): Result<Unit> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        rpc.request("projects.archive", buildJsonObject {
+            put("id", JsonPrimitive(projectId))
+            if (restore) put("restore", JsonPrimitive(true))
+        })
+        Unit
+    }
+
+    // `complete.path` in `@folder:` mode is the only stock directories-only listing. Its
+    // `text` is rebased on the gateway's completion cwd — only `display` is a usable name,
+    // so the caller keeps the prefix. Hard 30-item cap, unannounced (FolderPage.truncated).
+    override suspend fun listFolders(query: String): Result<chat.keryx.core.model.FolderPage> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        chat.keryx.core.protocol.FolderCompletionParser.parse(
+            rpc.request("complete.path", buildJsonObject { put("word", JsonPrimitive("@folder:$query")) })
+        )
+    }
+
+    override suspend fun folderExists(path: String): Result<Boolean> = runCatching {
+        val clean = path.trim().trimEnd('/')
+        if (clean.isBlank()) return@runCatching false
+        // Ask the PARENT for a child named exactly this — a listing of the folder itself
+        // can't tell "empty" from "absent".
+        val name = clean.substringAfterLast('/')
+        listFolders(clean).getOrThrow().names.any { it == name }
+    }
+
+    override suspend fun moveSessionToProject(sessionId: String, cwd: String): Result<Unit> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        // Keys on the STORED id (session_key) — no live agent needed.
+        rpc.request("session.workspace.move", buildJsonObject {
+            put("session_key", JsonPrimitive(sessionId))
+            put("cwd", JsonPrimitive(cwd))
+        })
+        refreshSessions()
+    }
+
+    override suspend fun createSessionIn(title: String?, cwd: String): Result<String> =
+        createSession(title?.ifBlank { null }, cwd)
+
+    override fun adoptSession(sessionId: String, title: String) {
+        if (_pendingNew.value.any { it.id == sessionId }) return
+        _pendingNew.value = _pendingNew.value + RoomProfile(
+            id = sessionId,
+            name = title.ifBlank { "Session" },
+            type = RoomType.DIRECT_MESSAGE,
+            timestamp = System.currentTimeMillis(),
+        )
+    }
+
     suspend fun steerTurn(sessionId: String, text: String): Result<Boolean> = runCatching {
         val rpc = rpc ?: error("gateway not connected")
         val live = attach(sessionId)

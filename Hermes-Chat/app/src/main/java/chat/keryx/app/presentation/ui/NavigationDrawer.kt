@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Handyman
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.*
 import androidx.compose.foundation.shape.CircleShape
@@ -135,6 +136,8 @@ fun NavigationDrawerContent(
                     LaunchedEffect(drawerVisible) {
                         if (drawerVisible) {
                             viewModel.pet.refreshPet()
+                            // The Projects door's probe (no-op on Matrix).
+                            viewModel.projects.refreshProjects()
                             // Wave hello when the drawer opens, then settle into the idle loop.
                             petGreeting = true
                             kotlinx.coroutines.delay(2200)
@@ -374,6 +377,11 @@ fun NavigationDrawerContent(
                 }
                 DrawerDoor(Icons.Default.AutoStories, "Archive", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Archive)
+                }
+                // Only where the gateway serves projects.* — the probe is the overview fetch.
+                val hasProjects by viewModel.projects.hasProjects.collectAsState()
+                if (hasProjects) DrawerDoor(Icons.Default.Folder, "Projects", Modifier.weight(1f)) {
+                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Projects)
                 }
                 DrawerDoor(Icons.Default.Dns, "Gateway", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway)
@@ -800,7 +808,7 @@ private fun roomAvatarColor(name: String): Color =
     chat.keryx.app.presentation.ui.components.roomLightRaw(name)
 
 /** Compact relative timestamp: now, 5m, 3h, 2d, 1w. */
-private fun formatRelativeTime(ts: Long): String {
+internal fun formatRelativeTime(ts: Long): String {
     if (ts <= 0L) return ""
     val diff = System.currentTimeMillis() - ts
     return when {

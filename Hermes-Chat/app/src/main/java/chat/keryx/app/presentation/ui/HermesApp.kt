@@ -374,6 +374,13 @@ fun HermesApp(viewModel: ChatViewModel) {
                     viewModel = viewModel,
                     onDismissRequest = nav::back,
                 )
+                KeryxDest.Projects -> chat.keryx.app.presentation.ui.components.ProjectsSpace(
+                    viewModel = viewModel,
+                    // Project sessions can live outside the roster (cron runs, desktop work) —
+                    // the name rides along so the floor can title them.
+                    onOpenSession = { id, name -> viewModel.openSessionById(id, name); nav.back() },
+                    onClose = nav::back,
+                )
                 KeryxDest.Missions -> chat.keryx.app.presentation.ui.components.MissionsScreen(
                     viewModel = viewModel,
                     onDismissRequest = nav::back,

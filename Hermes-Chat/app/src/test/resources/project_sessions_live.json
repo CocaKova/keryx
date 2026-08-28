@@ -1,0 +1,58 @@
+{
+ "project": {
+  "id": "/home/user/workspace/main-workspace",
+  "label": "main-workspace",
+  "path": "/home/user/workspace/main-workspace",
+  "color": null,
+  "icon": null,
+  "isAuto": true,
+  "isNoProject": false,
+  "sessionCount": 1,
+  "lastActive": 1786753437.686332,
+  "totalTokens": 434071,
+  "totalCostUsd": 0.0,
+  "repos": [
+   {
+    "id": "/home/user/workspace/main-workspace",
+    "label": "main-workspace",
+    "path": "/home/user/workspace/main-workspace",
+    "groups": [
+     {
+      "id": "/home/user/workspace/main-workspace::branch::main",
+      "label": "main",
+      "path": "/home/user/workspace/main-workspace",
+      "isMain": true,
+      "isKanban": false,
+      "sessions": [
+       {
+        "id": "20260814_152825_7802ac",
+        "_lineage_root_id": "20260814_121016_972868",
+        "parent_session_id": null,
+        "title": "Reply with exactly: OK",
+        "preview": "Reply with exactly: OK",
+        "started_at": 1786727418.2488213,
+        "ended_at": null,
+        "last_active": 1786753437.686332,
+        "source": "cli",
+        "archived": false,
+        "message_count": 29,
+        "tool_call_count": 6,
+        "input_tokens": 431797,
+        "output_tokens": 2274,
+        "actual_cost_usd": null,
+        "estimated_cost_usd": 0.0,
+        "model": "qwen3.8-27b",
+        "is_active": false,
+        "cwd": "/home/user/workspace/main-workspace/dashboard/config",
+        "git_branch": null,
+        "git_repo_root": null
+       }
+      ]
+     }
+    ],
+    "sessionCount": 1
+   }
+  ],
+  "previewSessions": []
+ }
+}
