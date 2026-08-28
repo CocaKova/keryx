@@ -852,6 +852,8 @@ fun ChatScreen(
             val composerCaps by viewModel.hub.reasoningCaps.collectAsState()
             val composerUsage by viewModel.contextUsage.collectAsState()
             val hubBrainsPanel by viewModel.hub.brains.collectAsState()
+            val modelCatalog by viewModel.models.catalog.collectAsState()
+            val modelCatalogLoading by viewModel.models.loading.collectAsState()
             Composer(
                 textState = textState,
                 onTextChange = { textState = it; viewModel.onComposerTextChanged(it.text) },
@@ -872,9 +874,13 @@ fun ChatScreen(
                 contextUsage = composerUsage,
                 roomId = currentRoom?.id,
                 brains = hubBrainsPanel.data,
+                catalog = modelCatalog,
+                catalogLoading = modelCatalogLoading,
                 onReasoningCommand = { viewModel.sendReasoningCommand(it) },
                 onBrainSelect = { viewModel.hub.brainSelect(it) },
+                onModelSelect = { viewModel.models.select(it) },
                 onRefreshCaps = { viewModel.hub.refreshReasoningCaps(); viewModel.hub.refreshBrains() },
+                onRefreshCatalog = { viewModel.models.refresh() },
                 onSteer = { viewModel.prefillComposer("/steer ") },
             )
         }
@@ -967,9 +973,13 @@ private fun Composer(
     contextUsage: ChatViewModel.ContextUsage? = null,
     roomId: String? = null,
     brains: chat.keryx.app.data.remote.HermesStreamClient.Brains? = null,
+    catalog: chat.keryx.core.model.ModelCatalog? = null,
+    catalogLoading: Boolean = false,
     onReasoningCommand: (String) -> Unit = {},
     onBrainSelect: (String) -> Unit = {},
+    onModelSelect: (chat.keryx.core.model.ModelChoice) -> Unit = {},
     onRefreshCaps: () -> Unit = {},
+    onRefreshCatalog: () -> Unit = {},
     onSteer: () -> Unit = {},
 ) {
     var attachMenu by remember { mutableStateOf(false) }
@@ -1113,9 +1123,13 @@ private fun Composer(
         contextUsage = contextUsage,
         roomId = roomId,
         brains = brains,
+        catalog = catalog,
+        catalogLoading = catalogLoading,
         onReasoningCommand = onReasoningCommand,
         onBrainSelect = onBrainSelect,
+        onModelSelect = onModelSelect,
         onRefreshCaps = onRefreshCaps,
+        onRefreshCatalog = onRefreshCatalog,
         onSteer = onSteer,
     )
     } // end composer surface Column
@@ -1134,9 +1148,13 @@ private fun ComposerFooter(
     contextUsage: ChatViewModel.ContextUsage?,
     roomId: String?,
     brains: chat.keryx.app.data.remote.HermesStreamClient.Brains?,
+    catalog: chat.keryx.core.model.ModelCatalog?,
+    catalogLoading: Boolean,
     onReasoningCommand: (String) -> Unit,
     onBrainSelect: (String) -> Unit,
+    onModelSelect: (chat.keryx.core.model.ModelChoice) -> Unit,
     onRefreshCaps: () -> Unit,
+    onRefreshCatalog: () -> Unit,
     onSteer: () -> Unit,
 ) {
     val usage = contextUsage?.takeIf { roomId != null && it.roomId == roomId }
@@ -1148,13 +1166,14 @@ private fun ComposerFooter(
     ) {
         // Model pill — the live brain by name, ▾ inside the same hit target.
         var modelMenu by remember { mutableStateOf(false) }
-        val modelName = (usage?.model ?: "").ifBlank { caps?.model.orEmpty() }.ifBlank { "model" }
+        val modelName = (usage?.model ?: "").ifBlank { catalog?.model.orEmpty() }
+            .ifBlank { caps?.model.orEmpty() }.ifBlank { "model" }
         Box {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
-                    .clickable { modelMenu = true; onRefreshCaps() }
+                    .clickable { modelMenu = true; onRefreshCaps(); onRefreshCatalog() }
                     .padding(horizontal = 4.dp, vertical = 2.dp),
             ) {
                 Text(
@@ -1169,13 +1188,58 @@ private fun ComposerFooter(
                 Text(" ▾", fontSize = 9.sp, color = meta.copy(alpha = 0.7f))
             }
             DropdownMenu(expanded = modelMenu, onDismissRequest = { modelMenu = false }) {
-                // The Spire brains roster — the machines that can actually answer here. The
-                // gateway's /v1/models only knows its own name ("hermes-agent"), so it was never
-                // the right source. Picking a brain starts a real swap (systemd + cooldown).
-                val roster = brains?.brains.orEmpty()
-                if (roster.isEmpty()) DropdownMenuItem(
-                    text = { Text("No brains roster from the gateway", fontSize = 13.sp, color = meta) },
+                // The gateway's catalog first — every authenticated route, grouped by provider,
+                // the session's live model marked. Picking one re-routes THIS session.
+                val providers = catalog?.usable.orEmpty()
+                if (providers.isEmpty()) DropdownMenuItem(
+                    text = {
+                        Text(
+                            if (catalogLoading) "Reading the catalog…" else "No routes from the gateway",
+                            fontSize = 13.sp, color = meta,
+                        )
+                    },
                     onClick = { modelMenu = false },
+                )
+                providers.forEach { p ->
+                    Text(
+                        p.name.uppercase(), fontSize = 9.sp, color = meta, letterSpacing = 1.sp,
+                        modifier = Modifier.padding(start = 14.dp, top = 8.dp, bottom = 2.dp),
+                    )
+                    p.models.forEach { m ->
+                        val isActive = catalog?.isCurrent(m) == true
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        if (isActive) "● " else "  ",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontFamily = FontFamily.Monospace,
+                                    )
+                                    Text(
+                                        m.name, fontSize = 13.sp, fontFamily = FontFamily.Monospace,
+                                        fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
+                                        color = if (isActive) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false),
+                                    )
+                                    val tag = buildString {
+                                        if (m.fast) append(" ⚡")
+                                        if (m.reasoning) append(" 💭")
+                                    }
+                                    if (tag.isNotBlank()) Text(tag, fontSize = 10.sp, color = meta)
+                                }
+                            },
+                            onClick = { modelMenu = false; if (!isActive) onModelSelect(m) },
+                        )
+                    }
+                }
+                // The Spire brains roster — the machines the operator can swap in under the
+                // gateway (systemd + cooldown). Below the catalog; absent when unconfigured.
+                val roster = brains?.brains.orEmpty()
+                if (roster.isNotEmpty()) Text(
+                    "BRAINS", fontSize = 9.sp, color = meta, letterSpacing = 1.sp,
+                    modifier = Modifier.padding(start = 14.dp, top = 8.dp, bottom = 2.dp),
                 )
                 roster.forEach { b ->
                     val isActive = b.name == brains?.active

@@ -43,7 +43,7 @@ class ChatViewModel(
     private val settingsRepository: SettingsRepository,
     // The Archive (1.26): nullable so the ViewModel stays constructible in plain-JVM tests.
     private val archiveStore: chat.keryx.app.data.archive.ArchiveStore? = null,
-    private val archiveIndexer: chat.keryx.app.data.archive.ArchiveIndexer? = null,
+    private val archiveIndexer: chat.keryx.app.data.archive.ArchiveSweeper? = null,
     // Whether the app is on screen right now (wired to KeryxApp.isForeground). Null — the
     // plain-JVM test default — reads as foregrounded, so behavior is unchanged where unwired.
     private val isAppForeground: (() -> Boolean)? = null,
@@ -431,6 +431,7 @@ class ChatViewModel(
     }
 
     val hub = HubDelegate(deps)
+    val models = ModelDelegate(deps, transport, { _currentRoom.value?.id }) { sendMessage(it) }
     val pet = PetDelegate(deps)
     val missions = MissionsDelegate(deps) { _rooms.value }
     val console = ConsoleDelegate(deps)

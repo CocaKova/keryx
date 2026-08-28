@@ -15,7 +15,7 @@ class ArchiveDelegate(
     deps: GatewayDeps,
     private val transport: ChatTransport,
     private val archiveStore: chat.keryx.app.data.archive.ArchiveStore?,
-    private val archiveIndexer: chat.keryx.app.data.archive.ArchiveIndexer?,
+    private val archiveIndexer: chat.keryx.app.data.archive.ArchiveSweeper?,
     /** The open room, or null — every surface here is scoped to it. */
     private val currentRoomId: () -> String?,
 ) {

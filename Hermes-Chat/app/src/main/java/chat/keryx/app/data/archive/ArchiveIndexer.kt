@@ -47,7 +47,7 @@ import kotlin.time.Duration.Companion.seconds
 class ArchiveIndexer(
     private val matrix: MatrixService,
     private val store: ArchiveStore,
-) {
+) : ArchiveSweeper {
 
     data class Progress(
         val roomId: String,
@@ -59,13 +59,13 @@ class ArchiveIndexer(
     )
 
     private val _progress = MutableStateFlow<Progress?>(null)
-    val progress: StateFlow<Progress?> = _progress.asStateFlow()
+    override val progress: StateFlow<Progress?> = _progress.asStateFlow()
 
     private var job: Job? = null
 
     /** Start (or keep running) a sweep of [roomId]. A sweep already running for the same room is
      *  left alone; one for another room is replaced. */
-    fun sweep(scope: CoroutineScope, roomId: String) {
+    override fun sweep(scope: CoroutineScope, roomId: String) {
         if (job?.isActive == true && _progress.value?.roomId == roomId) return
         job?.cancel()
         job = scope.launch(Dispatchers.IO) {

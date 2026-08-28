@@ -1243,8 +1243,34 @@ private const val GHOST_TOOL_ID = "generating"
         }
     }
 
-    override suspend fun messagesAround(sessionId: String, eventId: String, before: Int, after: Int): List<Message> =
-        emptyList() // Archive context view returns in Phase 2 (REST offset paging).
+    /** The REST client while the door is open — the Archive's producer reads through it. */
+    internal val restClient: GatewayRest? get() = rest
+
+    /**
+     * The Archive's context view: the transcript around one row. Pages newest-first until the
+     * row is in hand with [before] rows of ground beneath it, builds the whole stretch through
+     * [TranscriptBuilder] so calls re-pair with their results across page seams, then cuts the
+     * window. A row id that never turns up (deleted, compacted away) yields an empty view.
+     */
+    override suspend fun messagesAround(sessionId: String, eventId: String, before: Int, after: Int): List<Message> {
+        val client = rest ?: return emptyList()
+        val target = TranscriptPages.rowIdOf(eventId) ?: return emptyList()
+        val walk = TranscriptPages.pageUntil(
+            pageSize = HISTORY_PAGE,
+            fetch = { offset -> client.messages(sessionId, limit = HISTORY_PAGE, offset = offset).getOrThrow() },
+            // Enough once the target is in hand and there is at least a page of older rows
+            // beneath it to draw the "before" side from.
+            enough = { rows ->
+                val i = rows.indexOfFirst { it.id == target }
+                i >= 0 && i >= before
+            },
+        )
+        val built = chat.keryx.core.protocol.TranscriptBuilder.build(sessionId, walk.rows)
+        val at = built.indexOfFirst { it.id == eventId }
+            .takeIf { it >= 0 }
+            ?: built.indexOfFirst { TranscriptPages.rowIdOf(it.id) == target }
+        return TranscriptPages.window(built, at, before, after)
+    }
 
     override suspend fun sendMessage(sessionId: String, content: String) {
         val live = attach(sessionId)
@@ -1506,6 +1532,42 @@ private const val GHOST_TOOL_ID = "generating"
             }
 
     // ---- busy-turn inputs (C6: steer / queue) ---------------------------------------
+
+    override suspend fun modelOptions(sessionId: String): Result<chat.keryx.core.model.ModelCatalog> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        val live = attach(sessionId)
+        // Long-handler pool on the gateway (pricing, tier, custom-endpoint probes): seconds.
+        val res = rpc.request("model.options", buildJsonObject {
+            put("session_id", JsonPrimitive(live))
+            put("explicit_only", JsonPrimitive(false))
+            put("include_unconfigured", JsonPrimitive(false))
+            put("refresh", JsonPrimitive(false))
+        }, timeoutMs = 45_000)
+        chat.keryx.core.model.ModelCatalog.parse(res)
+    }
+
+    override suspend fun selectModel(
+        sessionId: String,
+        model: String,
+        provider: String?,
+        confirm: Boolean,
+    ): Result<chat.keryx.core.model.ModelSwitchOutcome> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        val live = attach(sessionId)
+        // There is no model.set — the setter is config.set with the raw /model grammar.
+        val value = buildString {
+            append(model)
+            if (!provider.isNullOrBlank()) append(" --provider ").append(provider)
+            append(" --session")
+        }
+        val res = rpc.request("config.set", buildJsonObject {
+            put("key", JsonPrimitive("model"))
+            put("value", JsonPrimitive(value))
+            put("session_id", JsonPrimitive(live))
+            put("confirm_expensive_model", JsonPrimitive(confirm))
+        }, timeoutMs = 60_000)
+        chat.keryx.core.model.ModelSwitchOutcome.parse(res)
+    }
 
     suspend fun steerTurn(sessionId: String, text: String): Result<Boolean> = runCatching {
         val rpc = rpc ?: error("gateway not connected")

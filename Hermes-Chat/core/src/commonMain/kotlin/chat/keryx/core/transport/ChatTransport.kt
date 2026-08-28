@@ -114,6 +114,24 @@ interface GatewayCapabilities {
      * deduped by compression lineage (one logical chat split across stored ids answers once).
      */
     suspend fun searchSessions(query: String, limit: Int = 20): Result<List<SessionSearchHit>>
+
+    /**
+     * The gateway's model catalog, with [sessionId]'s live model overlaid on the config
+     * default. A slow call on the gateway side (live pricing + endpoint probes) — fetch when
+     * the picker opens, never per keystroke.
+     */
+    suspend fun modelOptions(sessionId: String): Result<chat.keryx.core.model.ModelCatalog>
+
+    /**
+     * Route [sessionId] to [model] on [provider] for the rest of the session (`/model … --session`
+     * grammar). [confirm] answers a prior [chat.keryx.core.model.ModelSwitchOutcome.confirmRequired].
+     */
+    suspend fun selectModel(
+        sessionId: String,
+        model: String,
+        provider: String?,
+        confirm: Boolean = false,
+    ): Result<chat.keryx.core.model.ModelSwitchOutcome>
 }
 
 /** One hit from the gateway's session search: the session, plus the line that matched. */
