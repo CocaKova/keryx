@@ -832,6 +832,9 @@ def _reasoning_capabilities() -> Dict[str, Any]:
         "reasoning": reasoning,
         "show_reasoning": show,
         "room_profiles": room_profiles,
+        # The Shipyard door (git review) — the app gates the drawer entry on this,
+        # never on a 403 probe.
+        "git": _shipyard_enabled(),
     }
 
 
@@ -3315,6 +3318,219 @@ def update_start() -> Tuple[int, dict]:
     return 202, {"ok": True, "started": entry["label"]}
 
 
+# ---------------------------------------------------------------------------
+# The Shipyard — git review over the direct door (roadmap §2 "The Forge";
+# renamed: the app already has a Skill Forge).
+#
+# A thin, confined layer over hermes_cli.web_git (the library the dashboard's
+# /api/git/* routes wrap).  Three rules that the dashboard does not enforce:
+#   * OFF unless `keryx.git.enabled: true` in config.yaml — a phone that can
+#     commit and push is a phone that acts as the gateway's user.
+#   * `path` must resolve INSIDE the gateway user's home and be a git work
+#     tree (or inside one).  No other confinement exists in web_git.
+#   * Diffs are clipped server-side with an honest `clipped` flag — a phone
+#     socket does not want a 3000-line generated file, and silent truncation
+#     is worse than a short diff.
+# Revert and create-pr are deliberately NOT exposed in this landing: revert
+# destroys work no git object holds; create-pr opens a PR as the user.
+# ---------------------------------------------------------------------------
+
+_SHIPYARD_DIFF_MAX_LINES = 2500
+_SHIPYARD_DIFF_MAX_CHARS = 200_000
+
+
+def _shipyard_enabled() -> bool:
+    try:
+        from hermes_cli.config import load_config
+
+        git_cfg = (load_config().get("keryx") or {}).get("git") or {}
+        return bool(git_cfg.get("enabled", False))
+    except Exception:
+        return False
+
+
+def _shipyard_gate() -> Optional[Tuple[int, Dict[str, Any]]]:
+    """(status, payload) to return when the Forge is switched off (keryx.git.enabled), else None."""
+    if _shipyard_enabled():
+        return None
+    return 403, {"error": {"message": "keryx.git is disabled on this gateway", "code": "shipyard_off"}}
+
+
+def _shipyard_repo(raw: Any) -> Path:
+    """Harden a client path: inside $HOME, exists, is (inside) a git work tree.
+    Raises ValueError (→ 400) otherwise."""
+    text = str(raw or "").strip()
+    if not text or "\0" in text:
+        raise ValueError("path is required")
+    home = Path.home().resolve()
+    try:
+        p = Path(os.path.expanduser(text)).resolve(strict=True)
+    except Exception:
+        raise ValueError("path does not exist")
+    if p != home and home not in p.parents:
+        raise ValueError("path is outside the gateway user's home")
+    if not p.is_dir():
+        raise ValueError("path is not a directory")
+    code, top = _git(p, "rev-parse", "--show-toplevel", timeout=10)
+    if code != 0 or not top:
+        raise ValueError("path is not inside a git work tree")
+    return p
+
+
+def _shipyard_clip(diff: str) -> Dict[str, Any]:
+    """Clip a unified diff by line and by byte, flagging what was cut."""
+    text = diff or ""
+    lines = text.splitlines()
+    clipped = False
+    omitted_lines = 0
+    if len(lines) > _SHIPYARD_DIFF_MAX_LINES:
+        omitted_lines = len(lines) - _SHIPYARD_DIFF_MAX_LINES
+        lines = lines[:_SHIPYARD_DIFF_MAX_LINES]
+        clipped = True
+    out = "\n".join(lines)
+    if len(out) > _SHIPYARD_DIFF_MAX_CHARS:
+        out = out[:_SHIPYARD_DIFF_MAX_CHARS]
+        cut = out.rfind("\n")
+        if cut > 0:
+            out = out[:cut]
+        omitted_lines = max(omitted_lines, len(text.splitlines()) - out.count("\n") - 1)
+        clipped = True
+    return {"diff": out, "clipped": clipped, "omittedLines": omitted_lines if clipped else 0,
+            "totalLines": len(text.splitlines())}
+
+
+def shipyard_repos() -> Dict[str, Any]:
+    """The repo roster a phone can pick from: every folder of every explicit
+    project plus the discovered repos — only those that are git work trees."""
+    seen: Dict[str, Dict[str, Any]] = {}
+
+    def _add(path: str, label: str, source: str) -> None:
+        try:
+            p = _shipyard_repo(path)
+        except ValueError:
+            return
+        key = str(p)
+        if key in seen:
+            return
+        code, branch = _git(p, "rev-parse", "--abbrev-ref", "HEAD", timeout=10)
+        seen[key] = {"path": key, "label": label or p.name, "source": source,
+                     "branch": branch if code == 0 and branch != "HEAD" else None}
+
+    try:
+        from hermes_cli import projects_db
+
+        with projects_db.connect_closing() as conn:
+            for proj in projects_db.list_projects(conn):
+                for f in getattr(proj, "folders", []) or []:
+                    _add(f.path, proj.name if len(proj.folders) == 1 else f"{proj.name} · {Path(f.path).name}", "project")
+            for repo in projects_db.list_discovered_repos(conn):
+                path = repo.get("path") if isinstance(repo, dict) else None
+                if path:
+                    _add(path, Path(path).name, "discovered")
+    except Exception:
+        logger.debug("shipyard: projects roster unavailable", exc_info=True)
+    return {"repos": list(seen.values())}
+
+
+def _shipyard_routes(router: Any, check_auth) -> None:
+    from hermes_cli import web_git
+
+    def gated(work):
+        def _w(request, body):
+            off = _shipyard_gate()
+            if off is not None:
+                return off
+            try:
+                return work(request, body)
+            except RuntimeError as exc:  # web_git mutations raise these
+                return 409, {"error": {"message": str(exc) or "git operation failed", "code": "git"}}
+        return _w
+
+    def q(request, body, key, default=""):
+        v = body.get(key) if body else None
+        if v is None:
+            v = request.query.get(key, default)
+        return v
+
+    def _repos(request, body):
+        return 200, shipyard_repos()
+
+    def _status(request, body):
+        repo = _shipyard_repo(q(request, body, "path"))
+        st = web_git.repo_status(str(repo))
+        return 200, {"path": str(repo), "status": st}
+
+    def _list(request, body):
+        repo = _shipyard_repo(q(request, body, "path"))
+        scope = str(q(request, body, "scope", "uncommitted") or "uncommitted")
+        base = q(request, body, "base", None) or None
+        out = web_git.review_list(str(repo), scope, base)
+        out["path"] = str(repo)
+        out["scope"] = scope
+        return 200, out
+
+    def _diff(request, body):
+        repo = _shipyard_repo(q(request, body, "path"))
+        file_path = str(q(request, body, "file") or "").strip()
+        if not file_path:
+            raise ValueError("file is required")
+        scope = str(q(request, body, "scope", "uncommitted") or "uncommitted")
+        base = q(request, body, "base", None) or None
+        staged = str(q(request, body, "staged", "")).lower() in ("1", "true")
+        raw = web_git.review_diff(str(repo), file_path, scope, base, staged)
+        out = _shipyard_clip(raw)
+        out.update({"file": file_path, "scope": scope, "staged": staged})
+        return 200, out
+
+    def _stage(request, body):
+        repo = _shipyard_repo(body.get("path"))
+        return 200, web_git.review_stage(str(repo), body.get("file") or None)
+
+    def _unstage(request, body):
+        repo = _shipyard_repo(body.get("path"))
+        return 200, web_git.review_unstage(str(repo), body.get("file") or None)
+
+    def _commit_context(request, body):
+        repo = _shipyard_repo(q(request, body, "path"))
+        return 200, web_git.review_commit_context(str(repo))
+
+    def _commit(request, body):
+        repo = _shipyard_repo(body.get("path"))
+        message = str(body.get("message") or "").strip()
+        if not message:
+            raise ValueError("message is required")
+        push = bool(body.get("push", False))
+        out = web_git.review_commit(str(repo), message, push)
+        code, sha = _git(repo, "rev-parse", "--short", "HEAD", timeout=10)
+        out["sha"] = sha if code == 0 else None
+        out["pushed"] = push
+        return 200, out
+
+    def _push(request, body):
+        repo = _shipyard_repo(body.get("path"))
+        code, branch = _git(repo, "rev-parse", "--abbrev-ref", "HEAD", timeout=10)
+        if code != 0 or branch == "HEAD":
+            raise ValueError("HEAD is detached — nothing to push")
+        out = web_git.review_push(str(repo))
+        out["branch"] = branch
+        return 200, out
+
+    def _ship_info(request, body):
+        repo = _shipyard_repo(q(request, body, "path"))
+        return 200, web_git.review_ship_info(str(repo))
+
+    router.add_get("/keryx/git/repos", _make_json_handler(check_auth, gated(_repos)))
+    router.add_get("/keryx/git/status", _make_json_handler(check_auth, gated(_status)))
+    router.add_get("/keryx/git/review/list", _make_json_handler(check_auth, gated(_list)))
+    router.add_get("/keryx/git/review/diff", _make_json_handler(check_auth, gated(_diff)))
+    router.add_get("/keryx/git/review/commit-context", _make_json_handler(check_auth, gated(_commit_context)))
+    router.add_get("/keryx/git/review/ship-info", _make_json_handler(check_auth, gated(_ship_info)))
+    router.add_post("/keryx/git/review/stage", _make_json_handler(check_auth, gated(_stage)))
+    router.add_post("/keryx/git/review/unstage", _make_json_handler(check_auth, gated(_unstage)))
+    router.add_post("/keryx/git/review/commit", _make_json_handler(check_auth, gated(_commit)))
+    router.add_post("/keryx/git/review/push", _make_json_handler(check_auth, gated(_push)))
+
+
 def register_keryx_routes(router: Any, check_auth) -> None:
     """Single registrar for every /keryx/* route — api_server.py calls only
     this, so future routes ship in this module (copied wholesale by
@@ -3530,3 +3746,4 @@ def register_keryx_routes(router: Any, check_auth) -> None:
     router.add_post("/keryx/update/check", _make_json_handler(check_auth, _update_check_post))
     router.add_post("/keryx/update/probe", _make_json_handler(check_auth, _update_probe_post))
     router.add_post("/keryx/update", _make_json_handler(check_auth, _update_post))
+    _shipyard_routes(router, check_auth)

@@ -51,6 +51,9 @@ sealed interface KeryxDest {
     /** Sessions grouped by workspace — the gateway's native projects. Direct door only. */
     data object Projects : KeryxDest { override val route = "projects" }
 
+    /** Git review and shipping over the direct door — gated on the gateway's `git` capability. */
+    data object Shipyard : KeryxDest { override val route = "shipyard" }
+
     /** The server: status, controls, jobs. Half of what used to be the one "Agent Hub". */
     data object Gateway : KeryxDest { override val route = "gateway" }
 
@@ -60,7 +63,7 @@ sealed interface KeryxDest {
     data object Settings : KeryxDest { override val route = "settings" }
 
     companion object {
-        private val all = listOf(Archive, Missions, Gateway, Workshop, Settings)
+        private val all = listOf(Archive, Missions, Projects, Shipyard, Gateway, Workshop, Settings)
 
         /**
          * Legacy route names that must keep resolving. A saved back stack written by 2.4 — or an

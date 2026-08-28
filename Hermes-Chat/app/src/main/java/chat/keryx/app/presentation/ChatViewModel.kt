@@ -433,6 +433,7 @@ class ChatViewModel(
     val hub = HubDelegate(deps)
     val models = ModelDelegate(deps, transport, { _currentRoom.value?.id }) { sendMessage(it) }
     val projects = ProjectsDelegate(deps, transport) { id, title -> openSessionById(id, title) }
+    val shipyard = ShipyardDelegate(deps, transport)
     val pet = PetDelegate(deps)
     val missions = MissionsDelegate(deps) { _rooms.value }
     val console = ConsoleDelegate(deps)

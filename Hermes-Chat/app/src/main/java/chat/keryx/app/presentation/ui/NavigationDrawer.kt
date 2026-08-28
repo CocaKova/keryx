@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.BrightnessAuto
+import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Handyman
 import androidx.compose.material.icons.filled.Folder
@@ -395,6 +396,11 @@ fun NavigationDrawerContent(
                 val hasProjects by viewModel.projects.hasProjects.collectAsState()
                 if (hasProjects) DrawerDoor(Icons.Default.Folder, "Projects", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Projects)
+                }
+                // Only where the gateway declares `git` (keryx.git.enabled) — a capability, not a probe.
+                val caps by viewModel.hub.reasoningCaps.collectAsState()
+                if (caps?.git == true) DrawerDoor(Icons.Default.Construction, "Shipyard", Modifier.weight(1f)) {
+                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Shipyard)
                 }
                 DrawerDoor(Icons.Default.Dns, "Gateway", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway)

@@ -381,6 +381,10 @@ fun HermesApp(viewModel: ChatViewModel) {
                     onOpenSession = { id, name -> viewModel.openSessionById(id, name); nav.back() },
                     onClose = nav::back,
                 )
+                KeryxDest.Shipyard -> chat.keryx.app.presentation.ui.components.ShipyardSpace(
+                    viewModel = viewModel,
+                    onClose = nav::back,
+                )
                 KeryxDest.Missions -> chat.keryx.app.presentation.ui.components.MissionsScreen(
                     viewModel = viewModel,
                     onDismissRequest = nav::back,

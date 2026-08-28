@@ -245,6 +245,9 @@ class HermesStreamClient(
         /** Matrix room id → agent profile name (the gateway's routing-only multiplex map).
          *  Empty when the gateway predates the field or no map is configured. */
         val roomProfiles: Map<String, String> = emptyMap(),
+        /** The Shipyard door: `keryx.git.enabled` on the gateway. False when the gateway
+         *  predates the field — no dead doors. */
+        val git: Boolean = false,
     )
 
     /**
@@ -276,6 +279,7 @@ class HermesStreamClient(
                     roomProfiles = (obj["room_profiles"] as? kotlinx.serialization.json.JsonObject)
                         ?.mapNotNull { (k, v) -> (v as? JsonPrimitive)?.content?.let { k to it } }
                         ?.toMap().orEmpty(),
+                    git = (obj["git"] as? JsonPrimitive)?.content == "true",
                 )
             }
         }
