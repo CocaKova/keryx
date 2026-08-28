@@ -95,8 +95,44 @@ the gateway has — and the session's lane caption follows on the next tree read
 - ⚠️ `projects_meta.active_id` on this box dangles (points at a deleted project) — the app
   ignores `active_id`, so nothing to do, but don't trust it as "the current project".
 
+## 5. The Shipyard — git review and shipping from the phone (roadmap §2, "The Forge")
+
+Renamed: the app already has a Skill Forge. Gateway half = `/keryx/git/…` in `keryx_stream.py`
+(`_shipyard_routes`, a confined layer over `hermes_cli.web_git`, the library the dashboard's
+`/api/git/*` wraps); app half = `ShipyardDelegate` + `ShipyardSpace`, drawer door **Shipyard**
+gated on the new `git` flag in `/keryx/capabilities` (never on a 403 probe).
+
+**What a phone can do:** pick a repo (every explicit project folder + discovered repos — only
+git work trees), see branch / ahead / behind / counts, list changed files in two scopes
+(working tree vs HEAD; branch vs merge-base), read any file's diff through the 2.4
+`DiffPanel`, stage / unstage per file or all, commit (message + recent subjects as a
+reminder, optional push in the same call), push. The PR line reads `review_ship_info`.
+
+**What it deliberately cannot do (the roadmap's own traps):** revert (destroys work no git
+object holds) and create-PR (opens a PR as the gateway's user). Both wait for a landing with
+a confirm that names the file.
+
+**Switch:** OFF by default. `keryx: { git: { enabled: true } }` in `~/.hermes/config.yaml` +
+gateway restart. Off = every route answers 403 `shipyard_off`, the door does not appear.
+
+### Traps
+- ⚠️ `path` is confined to git work trees INSIDE the gateway user's home (`_shipyard_repo`).
+  `web_git` itself confines nothing — do not bypass the helper for a "quick" route.
+- ⚠️ Diffs are clipped at 2500 lines / 200 KB with `clipped` + `omittedLines`; the screen says
+  so in amber. `review_diff` on an untracked file synthesizes an all-add diff via `--no-index`.
+- ⚠️ `web_git` reads degrade to empty (`status: null` = not a repo any more); mutations raise
+  `RuntimeError` → 409 `{code: "git"}` with git's stderr. A push failure AFTER a commit
+  lands is reported the same way — the commit is already in.
+- ⚠️ Kotlin nests block comments: writing `/keryx/git/*` inside KDoc opens a comment. Use `…`.
+- ⚠️ `KeryxDest.Projects` was missing from `KeryxDest.all` (could not survive process death or
+  deep-link) — fixed alongside `Shipyard`.
+- Verified 08-28 by driving `_shipyard_routes` in-process against a scratch repo (off-gate,
+  outside-home, not-a-repo, list, diff, untracked diff, stage, unstage, commit-context,
+  commit, push-without-remote, ship-info, clip). NOT yet exercised through a live gateway —
+  the payload is synced to both installed copies but the gateway was NOT restarted.
+
 ## Status
-- 549 tests green (`:app:testDebugUnitTest` + `:core:jvmTest`), `assembleDebug` OK, versionCode 68.
+- 555 tests green (`:app:testDebugUnitTest` + `:core:jvmTest`), `assembleDebug` OK, versionCode 69.
 - ⚠️ NOT device-walked (phone off adb 08-28 morning). Walk list, both doors: Archive on direct
   (open a deep session → Archive → search a word from an old turn → tap the hit → context view
   fills); pill → catalog lists silas-brain + any authenticated cloud → pick one → toast, pill
@@ -104,4 +140,7 @@ the gateway has — and the session's lane caption follows on the next tree read
   plus the 2.5.7 walk (compaction label, `▸ output`).
 - Projects walk: drawer → Projects (only if the door appears) → cards → drill-in → New chat here
   lands in the project's cwd → long-press a session → Move to project… → caption follows.
+- Shipyard walk (after `keryx.git.enabled: true` + gateway restart): drawer shows Shipyard →
+  pick a repo → toggle scope → open a file → stage → Commit… with push → toast + ahead
+  resets → PR line if the branch has one.
 - Release: cut `v2.6.0` after the walk (slow-cadence rule: this is a milestone, not a patch).

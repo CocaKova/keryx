@@ -153,6 +153,25 @@ interface GatewayCapabilities {
     /** Make a session the list does not carry (another machine's, a project's) openable by
      *  id — it joins the local roster under [title] until the server lists it. */
     fun adoptSession(sessionId: String, title: String)
+
+    // ---- The Shipyard: git review over `/keryx/git/…` (roadmap §2). Reads degrade to a
+    // failed Result; the gateway refuses the whole surface (403, code `shipyard_off`) unless
+    // `keryx.git.enabled` is set — the drawer door gates on the capability flag, never on a
+    // probe. Revert and create-PR are deliberately absent from this landing.
+
+    suspend fun shipyardRepos(): Result<List<chat.keryx.core.model.ShipyardRepo>>
+    suspend fun shipyardStatus(path: String): Result<chat.keryx.core.model.ShipyardStatus?>
+    /** [scope] = "uncommitted" (working tree vs HEAD) or "branch" (merge-base vs HEAD). */
+    suspend fun shipyardReview(path: String, scope: String): Result<chat.keryx.core.model.ShipyardReview>
+    suspend fun shipyardDiff(path: String, file: String, scope: String, staged: Boolean): Result<chat.keryx.core.model.ShipyardDiff>
+    /** [file] null = everything. */
+    suspend fun shipyardStage(path: String, file: String?): Result<Unit>
+    suspend fun shipyardUnstage(path: String, file: String?): Result<Unit>
+    suspend fun shipyardCommitContext(path: String): Result<chat.keryx.core.model.ShipyardCommitContext>
+    /** Commits what is staged (everything, if nothing is); optionally pushes in the same call. */
+    suspend fun shipyardCommit(path: String, message: String, push: Boolean): Result<chat.keryx.core.model.ShipyardCommitResult>
+    suspend fun shipyardPush(path: String): Result<Unit>
+    suspend fun shipyardShipInfo(path: String): Result<chat.keryx.core.model.ShipyardShipInfo>
 }
 
 /** One hit from the gateway's session search: the session, plus the line that matched. */

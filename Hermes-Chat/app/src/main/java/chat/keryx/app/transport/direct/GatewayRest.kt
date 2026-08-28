@@ -6,6 +6,11 @@ import chat.keryx.core.protocol.RestToolCall
 import chat.keryx.core.protocol.sessionMessagesQuery
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -359,6 +364,68 @@ class GatewayRest(
     }
 
     private suspend fun get(path: String): Result<String> = send("GET", path, null)
+
+    // ---- The Shipyard (`/keryx/git/…`) — confined git review; every verb carries the repo path ----
+
+    private fun enc(v: String) = java.net.URLEncoder.encode(v, "UTF-8")
+
+    suspend fun shipyardRepos(): Result<List<chat.keryx.core.model.ShipyardRepo>> =
+        get("/keryx/git/repos").mapCatching { body ->
+            chat.keryx.core.protocol.ShipyardParser.parseRepos(json.parseToJsonElement(body))
+                ?: error("unrecognized /keryx/git/repos payload")
+        }
+
+    suspend fun shipyardStatus(repo: String): Result<chat.keryx.core.model.ShipyardStatus?> =
+        get("/keryx/git/status?path=" + enc(repo)).mapCatching { body ->
+            chat.keryx.core.protocol.ShipyardParser.parseStatus(json.parseToJsonElement(body))
+        }
+
+    suspend fun shipyardReview(repo: String, scope: String): Result<chat.keryx.core.model.ShipyardReview> =
+        get("/keryx/git/review/list?path=" + enc(repo) + "&scope=" + enc(scope)).mapCatching { body ->
+            chat.keryx.core.protocol.ShipyardParser.parseReview(json.parseToJsonElement(body))
+                ?: error("unrecognized review payload")
+        }
+
+    suspend fun shipyardDiff(repo: String, file: String, scope: String, staged: Boolean): Result<chat.keryx.core.model.ShipyardDiff> =
+        get("/keryx/git/review/diff?path=" + enc(repo) + "&file=" + enc(file) + "&scope=" + enc(scope) + "&staged=" + staged)
+            .mapCatching { body ->
+                chat.keryx.core.protocol.ShipyardParser.parseDiff(json.parseToJsonElement(body))
+                    ?: error("unrecognized diff payload")
+            }
+
+    private fun shipyardBody(repo: String, vararg extra: Pair<String, JsonElement>): String =
+        buildJsonObject {
+            put("path", JsonPrimitive(repo))
+            extra.forEach { (k, v) -> put(k, v) }
+        }.toString()
+
+    suspend fun shipyardStage(repo: String, file: String?): Result<Unit> =
+        send("POST", "/keryx/git/review/stage", shipyardBody(repo, "file" to (file?.let { JsonPrimitive(it) } ?: JsonNull))).map { }
+
+    suspend fun shipyardUnstage(repo: String, file: String?): Result<Unit> =
+        send("POST", "/keryx/git/review/unstage", shipyardBody(repo, "file" to (file?.let { JsonPrimitive(it) } ?: JsonNull))).map { }
+
+    suspend fun shipyardCommitContext(repo: String): Result<chat.keryx.core.model.ShipyardCommitContext> =
+        get("/keryx/git/review/commit-context?path=" + enc(repo)).mapCatching { body ->
+            chat.keryx.core.protocol.ShipyardParser.parseCommitContext(json.parseToJsonElement(body))
+                ?: error("unrecognized commit-context payload")
+        }
+
+    suspend fun shipyardCommit(repo: String, message: String, push: Boolean): Result<chat.keryx.core.model.ShipyardCommitResult> =
+        send("POST", "/keryx/git/review/commit", shipyardBody(repo, "message" to JsonPrimitive(message), "push" to JsonPrimitive(push)))
+            .mapCatching { body ->
+                chat.keryx.core.protocol.ShipyardParser.parseCommitResult(json.parseToJsonElement(body))
+                    ?: error("commit was refused")
+            }
+
+    suspend fun shipyardPush(repo: String): Result<Unit> =
+        send("POST", "/keryx/git/review/push", shipyardBody(repo)).map { }
+
+    suspend fun shipyardShipInfo(repo: String): Result<chat.keryx.core.model.ShipyardShipInfo> =
+        get("/keryx/git/review/ship-info?path=" + enc(repo)).mapCatching { body ->
+            chat.keryx.core.protocol.ShipyardParser.parseShipInfo(json.parseToJsonElement(body))
+                ?: error("unrecognized ship-info payload")
+        }
 
     private fun JsonObject.str(key: String): String? = this[key]?.jsonPrimitive?.contentOrNull
     private fun JsonObject.bool(key: String): Boolean = this[key]?.jsonPrimitive?.contentOrNull == "true"

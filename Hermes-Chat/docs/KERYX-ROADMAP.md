@@ -111,6 +111,10 @@ are additive and each degrades cleanly without the other.
 
 ## 2. 2.6 — The Forge
 
+*Status 2026-08-28: LANDED as **the Shipyard** (renamed — the Skill Forge already had the
+name) in 2.6.0, read + stage + commit + push; revert and create-PR deliberately withheld. See
+`docs/KERYX-2.6.0-PHASE-F.md` §5.*
+
 *Review the agent's work and ship it, from a phone.*
 
 ### Why this stands out
