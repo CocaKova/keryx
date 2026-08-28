@@ -70,6 +70,9 @@ fun NavigationDrawerContent(
 ) {
     val rooms by viewModel.rooms.collectAsState()
     val pinnedRoomIds by viewModel.pinnedRoomIds.collectAsState()
+    // "Move to project…" — explicit projects with a folder (membership is cwd).
+    val moveTargets by viewModel.projects.projectMoveTargets.collectAsState()
+    val moveCtx = LocalContext.current
     val currentUserId by viewModel.currentUserId.collectAsState()
     val currentRoom by viewModel.currentRoom.collectAsState()
     val isDarkTheme by viewModel.isDarkTheme.collectAsState()
@@ -309,6 +312,16 @@ fun NavigationDrawerContent(
                         onDelete = if (direct) {
                             { viewModel.deleteSession(room.id) }
                         } else null,
+                        moveTargets = if (direct) moveTargets else emptyList(),
+                        onMoveToProject = if (direct) {
+                            { target ->
+                                viewModel.projects.moveSessionToProject(room.id, target) { err ->
+                                    android.widget.Toast.makeText(
+                                        moveCtx, err ?: "Moved to ${target.name}", android.widget.Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
+                            }
+                        } else null,
                         avatarLoader = { viewModel.loadAvatar(it) },
                         previewLoader = { viewModel.roomPreview(room.id, room.timestamp) },
                     )
@@ -422,6 +435,9 @@ fun RoomRow(
     // Gateway-only affordances (the row IS a session) — null on Matrix.
     onRename: ((String) -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
+    /** Projects that can claim this session (they have a folder); empty = no menu entry. */
+    moveTargets: List<chat.keryx.core.model.ProjectInfo> = emptyList(),
+    onMoveToProject: ((chat.keryx.core.model.ProjectInfo) -> Unit)? = null,
     avatarLoader: suspend (String) -> ByteArray?,
     previewLoader: (suspend () -> String?)? = null,
 ) {
@@ -434,6 +450,7 @@ fun RoomRow(
     var inviteOpen by remember { mutableStateOf(false) }
     var renameOpen by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var moveOpen by remember { mutableStateOf(false) }
     val hasMenu = onLeave != null || onInvite != null || onRename != null || onDelete != null
     // Last-message snippet, resolved lazily per row (cached in the VM keyed on room.timestamp so
     // it only refetches after new activity). Keyed on the timestamp so a new message refreshes it.
@@ -549,6 +566,12 @@ fun RoomRow(
                 onClick = { menuOpen = false; renameOpen = true },
             )
         }
+        if (onMoveToProject != null && moveTargets.isNotEmpty()) {
+            DropdownMenuItem(
+                text = { Text("Move to project…") },
+                onClick = { menuOpen = false; moveOpen = true },
+            )
+        }
         if (onLeave != null) {
             DropdownMenuItem(
                 text = { Text("Leave room", color = MaterialTheme.colorScheme.error) },
@@ -559,6 +582,24 @@ fun RoomRow(
             DropdownMenuItem(
                 text = { Text("Delete session…", color = MaterialTheme.colorScheme.error) },
                 onClick = { menuOpen = false; confirmDelete = true },
+            )
+        }
+    }
+    // The project roster, as a second menu on the same anchor (a submenu would be a
+    // nested popup; this reads as "which one?" and dismisses like the first).
+    DropdownMenu(expanded = moveOpen, onDismissRequest = { moveOpen = false }) {
+        moveTargets.forEach { target ->
+            DropdownMenuItem(
+                text = {
+                    Column {
+                        Text(target.name)
+                        target.anchorPath?.let {
+                            Text(it, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        }
+                    }
+                },
+                onClick = { moveOpen = false; onMoveToProject?.invoke(target) },
             )
         }
     }
