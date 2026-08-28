@@ -432,6 +432,7 @@ class ChatViewModel(
 
     val hub = HubDelegate(deps)
     val models = ModelDelegate(deps, transport, { _currentRoom.value?.id }) { sendMessage(it) }
+    val projects = ProjectsDelegate(deps, transport) { id, title -> openSessionById(id, title) }
     val pet = PetDelegate(deps)
     val missions = MissionsDelegate(deps) { _rooms.value }
     val console = ConsoleDelegate(deps)
@@ -1142,6 +1143,13 @@ class ChatViewModel(
     fun consumeComposerPrefill() { _composerPrefill.value = null }
 
     /** Open a room by id (from a notification tap). Defers until the room list is loaded if needed. */
+    /** Open a session by id even when the roster does not carry it (a project's session, a
+     *  run from another machine): it is adopted locally under [title] first. */
+    fun openSessionById(sessionId: String, title: String) {
+        if (_rooms.value.none { it.id == sessionId }) transport.gateway?.adoptSession(sessionId, title)
+        openRoomById(sessionId)
+    }
+
     fun openRoomById(roomId: String) {
         val room = _rooms.value.firstOrNull { it.id == roomId }
         if (room != null) selectRoom(room)

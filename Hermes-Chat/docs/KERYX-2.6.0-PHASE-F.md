@@ -65,6 +65,32 @@ Two doors, two verbs, one `ModelDelegate`:
 The reaction shows as the chip on the row it landed on; the call row said it twice. A FAILED
 call keeps its row (same rule as failed deliveries). `ToolTheaterRow`, beside the delivery gate.
 
+## 4. Projects — the gateway's native workspace grouping (direct door)
+
+Harvested whole from Talaria (`ProjectsSpace`, `GatewayFolderField`, models, parsers, live
+fixtures + tests): drawer door **Projects** (only once the gateway has answered `projects.tree`
+— no dead doors), overview cards (explicit + auto-discovered repos, Home bucket filtered),
+drill-in = flat recency-ordered session list with lane captions, **New chat here** (session born
+with the project's cwd, opens directly), long-press → Archive / Delete (explicit projects),
+New project with the gateway folder picker (`complete.path @folder:`; the folder is verified
+to exist BEFORE the row is created — `projects.create` never looks at the disk).
+
+Seam: eleven verbs on `GatewayCapabilities` (`projectsTree/projectSessions/projectsCatalog/
+createProject/deleteProject/archiveProject/listFolders/folderExists/moveSessionToProject/
+createSessionIn/adoptSession`); `ProjectsDelegate` in the ViewModel; `KeryxDest.Projects`.
+`ChatViewModel.openSessionById(id, title)` adopts a session the roster does not carry.
+
+### Traps
+- ⚠️ A project is FOLDERS only — no prompt, skills, or model. Membership = cwd prefix. The
+  gateway's `sessions` table has no `project_id`; `session.workspace.move` is the only pin.
+- ⚠️ `complete.path`'s `text` is rebased on the gateway's completion cwd — only `display` is a
+  name; hard 30-item cap, unannounced (`FolderPage.truncated`).
+- ⚠️ Keryx's guard tests bit the port twice: hand-painted identity tints (→ `roomLight(id)`)
+  and a raw `performHapticFeedback` (→ `LocalKeryxHaptics.press()`). Any future harvest from
+  Talaria will trip the same two — run the suite before reading the screen.
+- ⚠️ `projects_meta.active_id` on this box dangles (points at a deleted project) — the app
+  ignores `active_id`, so nothing to do, but don't trust it as "the current project".
+
 ## Status
 - 544 tests green (`:app:testDebugUnitTest` + `:core:jvmTest`), `assembleDebug` OK, versionCode 68.
 - ⚠️ NOT device-walked (phone off adb 08-28 morning). Walk list, both doors: Archive on direct

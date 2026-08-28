@@ -48,6 +48,9 @@ sealed interface KeryxDest {
     data object Archive : KeryxDest { override val route = "archive" }
     data object Missions : KeryxDest { override val route = "missions" }
 
+    /** Sessions grouped by workspace — the gateway's native projects. Direct door only. */
+    data object Projects : KeryxDest { override val route = "projects" }
+
     /** The server: status, controls, jobs. Half of what used to be the one "Agent Hub". */
     data object Gateway : KeryxDest { override val route = "gateway" }
 
