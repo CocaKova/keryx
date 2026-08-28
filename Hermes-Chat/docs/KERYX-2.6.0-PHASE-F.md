@@ -80,6 +80,10 @@ createProject/deleteProject/archiveProject/listFolders/folderExists/moveSessionT
 createSessionIn/adoptSession`); `ProjectsDelegate` in the ViewModel; `KeryxDest.Projects`.
 `ChatViewModel.openSessionById(id, title)` adopts a session the roster does not carry.
 
+**Move to project…** (`81abebd`): the drawer's session long-press menu lists the explicit projects
+that have a folder (`projectMoveTargets`); picking one calls `session.workspace.move` — the only pin
+the gateway has — and the session's lane caption follows on the next tree read. Direct door only.
+
 ### Traps
 - ⚠️ A project is FOLDERS only — no prompt, skills, or model. Membership = cwd prefix. The
   gateway's `sessions` table has no `project_id`; `session.workspace.move` is the only pin.
@@ -92,10 +96,12 @@ createSessionIn/adoptSession`); `ProjectsDelegate` in the ViewModel; `KeryxDest.
   ignores `active_id`, so nothing to do, but don't trust it as "the current project".
 
 ## Status
-- 544 tests green (`:app:testDebugUnitTest` + `:core:jvmTest`), `assembleDebug` OK, versionCode 68.
+- 549 tests green (`:app:testDebugUnitTest` + `:core:jvmTest`), `assembleDebug` OK, versionCode 68.
 - ⚠️ NOT device-walked (phone off adb 08-28 morning). Walk list, both doors: Archive on direct
   (open a deep session → Archive → search a word from an old turn → tap the hit → context view
   fills); pill → catalog lists silas-brain + any authenticated cloud → pick one → toast, pill
   relabels, next turn answers from it; Matrix: pick → `/model …` command lands, gateway confirms;
   plus the 2.5.7 walk (compaction label, `▸ output`).
+- Projects walk: drawer → Projects (only if the door appears) → cards → drill-in → New chat here
+  lands in the project's cwd → long-press a session → Move to project… → caption follows.
 - Release: cut `v2.6.0` after the walk (slow-cadence rule: this is a milestone, not a patch).
