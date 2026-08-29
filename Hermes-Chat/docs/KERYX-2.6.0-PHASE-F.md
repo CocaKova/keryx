@@ -131,6 +131,33 @@ gateway restart. Off = every route answers 403 `shipyard_off`, the door does not
   commit, push-without-remote, ship-info, clip). NOT yet exercised through a live gateway —
   the payload is synced to both installed copies but the gateway was NOT restarted.
 
+## 6. Links become tappable (renderer 0.26.0 → 0.35.0, Kotlin 2.0.0 → 2.1.21)
+
+Jonny 08-29: the Daily AI News Briefing's `[Read](https://arxiv.org/…)` links drew as plain
+text and did nothing on tap. Trace: Hermes' Matrix adapter sends the raw markdown as `body`
+(`_build_text_message_content`), `MatrixTransport.toMessage` keeps it, the parser leaves it
+alone — the loss was in the renderer. multiplatform-markdown-renderer **0.26.0** hit-tests
+links by hand inside its own `pointerInput` (`awaitFirstDown` → `getStringAnnotations("MARKDOWN_URL")`
+→ `waitForUpOrCancellation` → `UriHandler.openUri`), and that detector loses to the bubble's
+swipe-to-reply / `combinedClickable` (long-press + double-tap) gesture stack. The library
+replaced it in **0.31.0** with Compose-native `withLink` / `LinkAnnotation.Url` ("Refactor to
+use `withLink`", "Fix inline link might navigate wrong link", "Fix AUTOLINK in LINK").
+
+Taken to **0.35.0** — the last release built on Kotlin 2.1 — which forces the toolchain to
+**Kotlin 2.1.21 / KSP 2.1.21-2.0.2** (the KSP plugin is applied but nothing consumes it).
+No source changes were needed: `markdownAnnotator`, `markdownComponents(codeBlock/codeFence)`,
+`markdownColor`, `markdownTypography` and `GFMFlavourDescriptor` all still resolve. 555 tests
+green, debug APK built (versionCode 70). Links now come underlined by the library's default
+`TextLinkStyles`; bare URLs autolink via GFM.
+
+⚠️ Walk item: open the Daily AI News Briefing room, tap a `[Read]` link → browser opens the
+arXiv page; long-press and double-tap on the same bubble still react/pick. Check link colour
+on both bubble styles.
+
+Telegram-parity gaps that remain (not built): `||spoiler||` reveal, expandable blockquotes,
+link-preview cards (needs a decision: phone-side fetch vs gateway unfurl), inline images
+(renderer has no image loader wired).
+
 ## Status
 - 555 tests green (`:app:testDebugUnitTest` + `:core:jvmTest`), `assembleDebug` OK, versionCode 69.
 - ⚠️ NOT device-walked (phone off adb 08-28 morning). Walk list, both doors: Archive on direct
@@ -143,4 +170,5 @@ gateway restart. Off = every route answers 403 `shipyard_off`, the door does not
 - Shipyard walk (after `keryx.git.enabled: true` + gateway restart): drawer shows Shipyard →
   pick a repo → toggle scope → open a file → stage → Commit… with push → toast + ahead
   resets → PR line if the branch has one.
+- Link walk (§6): tap `[Read]` in the news brief room.
 - Release: cut `v2.6.0` after the walk (slow-cadence rule: this is a milestone, not a patch).
