@@ -76,7 +76,7 @@ it. Every release ships a signed APK.
 
 ```bash
 cd Hermes-Chat
-./gradlew :app:assembleRelease   # JDK 17 + Android SDK 36
+./gradlew :app:assembleRelease   # JDK 17 + Android SDK 36 (Kotlin 2.1.21)
 ```
 
 Release builds sign with the debug keystore unless `local.properties` provides
