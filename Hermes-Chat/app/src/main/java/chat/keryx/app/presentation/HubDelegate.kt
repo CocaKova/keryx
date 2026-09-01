@@ -495,12 +495,14 @@ class HubDelegate(deps: GatewayDeps) {
         }
     }
 
-    fun sessionFork(sessionId: String, onDone: (Boolean) -> Unit = {}) {
-        val client = client() ?: run { onDone(false); return }
+    /** [onDone] receives the forked session on success (null on failure) — forking without
+     *  being taken to the fork left people hunting the list for it (device-caught 2026-09-01). */
+    fun sessionFork(sessionId: String, onDone: (chat.keryx.app.data.remote.HermesStreamClient.HubSession?) -> Unit = {}) {
+        val client = client() ?: run { onDone(null); return }
         scope.launch {
             client.sessionFork(sessionId)
-                .onSuccess { toast("Forked — transcript carried forward"); refreshSessions(); onDone(true) }
-                .onFailure { toast("Fork failed: ${it.message?.take(80)}"); onDone(false) }
+                .onSuccess { fork -> toast("Forked — transcript carried forward"); refreshSessions(); onDone(fork) }
+                .onFailure { toast("Fork failed: ${it.message?.take(80)}"); onDone(null) }
         }
     }
 

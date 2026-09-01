@@ -111,13 +111,9 @@ val GATEWAY_PANELS: List<HubPanel> = listOf(
         refresh = { vm -> vm.hub.refreshJobs() },
         content = { JobsTab(it.viewModel) },
     ),
-    HubPanel(
-        id = "runs",
-        label = "Runs",
-        live = true,
-        refresh = { vm -> vm.hub.refreshCron() },
-        content = { RunsTab(it.viewModel) },
-    ),
+    // "Runs" left the hub 2026-09-01: reading scheduled work is a floor-level activity, not
+    // server administration, and three taps deep it went unread. It is the Runs door now
+    // (RunsSpace) — Jobs stays here because *managing* schedules is administration.
 )
 
 /** The agent: what it has done, what it knows how to do, and what it can reach. */
@@ -127,7 +123,7 @@ val WORKSHOP_PANELS: List<HubPanel> = listOf(
         label = "Sessions",
         live = true,
         refresh = { vm -> vm.hub.refreshSessions() },
-        content = { SessionsTab(it.viewModel) },
+        content = { SessionsTab(it.viewModel, it.closeSpace) },
     ),
     HubPanel(
         id = "skills",

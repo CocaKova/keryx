@@ -385,6 +385,13 @@ fun HermesApp(viewModel: ChatViewModel) {
                     viewModel = viewModel,
                     onClose = nav::back,
                 )
+                KeryxDest.Runs -> chat.keryx.app.presentation.ui.components.RunsSpace(
+                    viewModel = viewModel,
+                    // A cron run lives outside every roster — the title travels so the floor
+                    // can name the room it adopts (direct door; Matrix reads in-space).
+                    onOpenSession = { id, name -> viewModel.openSessionById(id, name); nav.back() },
+                    onClose = nav::back,
+                )
                 KeryxDest.Missions -> chat.keryx.app.presentation.ui.components.MissionsScreen(
                     viewModel = viewModel,
                     onDismissRequest = nav::back,
