@@ -126,7 +126,9 @@ Kotlin 2.1 line), `io.coil-kt.coil3:coil-compose` + `coil-network-okhttp` 3.1.0.
 - Left-edge swipe = system back (see §3).
 
 ## Status
-- Tests: see the commit; +5 `MathUnicodeTest` (core), +1 tool-tint contrast test (app).
-- ⚠️ NOT walked: the phone locked mid-capture. Walk list: door tiles + header theme toggle,
+- 579 tests green (+5 `MathUnicodeTest` in core, +1 tool-tint contrast test in app); commit
+  `5db07c4` = origin/main; debug build vc74 INSTALLED on the phone 17:28 CT.
+- ⚠️ NOT walked: the phone was in Jonny's hands after the install (the recents card showed the
+  new sidebar glyph and arrow-up send; nothing else was driven). Walk list: door tiles + header theme toggle,
   top bar glyphs, composer row, bubble action bar, a tool run (tinted glyphs, green ✓), a code
   fence with a language, an inline image, `~~x~~`, `$E=mc^2$`.
