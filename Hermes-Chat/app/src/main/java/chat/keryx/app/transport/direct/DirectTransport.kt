@@ -1569,22 +1569,8 @@ private const val GHOST_TOOL_ID = "generating"
         chat.keryx.core.model.ModelSwitchOutcome.parse(res)
     }
 
-    // ---- The Shipyard (`/keryx/git/…`): REST, never RPC — the verbs run git off the event loop ----
-
-    private fun shipyardRest(): GatewayRest = rest ?: error("gateway not connected")
-
-    override suspend fun shipyardRepos() = shipyardRest().shipyardRepos()
-    override suspend fun shipyardStatus(path: String) = shipyardRest().shipyardStatus(path)
-    override suspend fun shipyardReview(path: String, scope: String) = shipyardRest().shipyardReview(path, scope)
-    override suspend fun shipyardDiff(path: String, file: String, scope: String, staged: Boolean) =
-        shipyardRest().shipyardDiff(path, file, scope, staged)
-    override suspend fun shipyardStage(path: String, file: String?) = shipyardRest().shipyardStage(path, file)
-    override suspend fun shipyardUnstage(path: String, file: String?) = shipyardRest().shipyardUnstage(path, file)
-    override suspend fun shipyardCommitContext(path: String) = shipyardRest().shipyardCommitContext(path)
-    override suspend fun shipyardCommit(path: String, message: String, push: Boolean) =
-        shipyardRest().shipyardCommit(path, message, push)
-    override suspend fun shipyardPush(path: String) = shipyardRest().shipyardPush(path)
-    override suspend fun shipyardShipInfo(path: String) = shipyardRest().shipyardShipInfo(path)
+    // The Shipyard moved off this seam to ShipyardRest (Hermes Link base) — this door's
+    // REST base never mounts the git routes (2.6.0 device walk, 08-31).
 
     // ---- Projects (harvested from Talaria 08-28; shapes fixture-captured live 08-15) ----
     // A mid-turn session refuses a move server-side (4009) rather than yanking the

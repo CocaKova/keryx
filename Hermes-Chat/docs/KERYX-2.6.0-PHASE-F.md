@@ -131,6 +131,21 @@ gateway restart. Off = every route answers 403 `shipyard_off`, the door does not
   commit, push-without-remote, ship-info, clip). NOT yet exercised through a live gateway —
   the payload is synced to both installed copies but the gateway was NOT restarted.
 
+### 08-31 — the first walk found the wire was wrong (fixed)
+
+The walk got an HTML page where JSON was promised: the Shipyard verbs rode the transport
+seam (`GatewayCapabilities`), which aimed the direct door at its OWN REST base — a server
+that never mounts `/keryx/git/…` — and left Matrix (no gateway seam at all) silently empty.
+The routes live on the keryx payload surface (the Hermes Link base, bearer-authed), which
+BOTH doors reach the same way.
+
+Fix: `ShipyardRest` (`data/remote`) owns the wire — one client per configured (url, key),
+rebuilt only when Link settings change; `ShipyardDelegate` builds it from the side-channel
+settings and no longer takes the transport. The ten `shipyard*` verbs left
+`GatewayCapabilities` / `GatewayRest` / `DirectTransport`; door gating is unchanged (the
+`git` capability flag). `keryx.git.enabled` switched ON + gateway restarted 08-31 20:19 —
+`/keryx/git/repos` answers 200 with the repo roster (verified 09-01).
+
 ## 6. Links become tappable (renderer 0.26.0 → 0.35.0, Kotlin 2.0.0 → 2.1.21)
 
 Jonny 08-29: the Daily AI News Briefing's `[Read](https://arxiv.org/…)` links drew as plain
@@ -159,15 +174,18 @@ link-preview cards (needs a decision: phone-side fetch vs gateway unfurl), inlin
 (renderer has no image loader wired).
 
 ## Status
-- 555 tests green (`:app:testDebugUnitTest` + `:core:jvmTest`), `assembleDebug` OK, versionCode 69.
-- ⚠️ NOT device-walked (phone off adb 08-28 morning). Walk list, both doors: Archive on direct
+- 555 tests green (`:app:testDebugUnitTest` + `:core:jvmTest`), `assembleDebug` OK, versionCode 70.
+- Fixed build (Shipyard wire) installed on the phone 09-01 07:14 over adb — the walk below
+  runs against it.
+- ⚠️ NOT device-walked (phone off adb 08-28 morning; 08-31 walk reached the Shipyard and
+  stopped on the wire bug). Walk list, both doors: Archive on direct
   (open a deep session → Archive → search a word from an old turn → tap the hit → context view
   fills); pill → catalog lists silas-brain + any authenticated cloud → pick one → toast, pill
   relabels, next turn answers from it; Matrix: pick → `/model …` command lands, gateway confirms;
   plus the 2.5.7 walk (compaction label, `▸ output`).
 - Projects walk: drawer → Projects (only if the door appears) → cards → drill-in → New chat here
   lands in the project's cwd → long-press a session → Move to project… → caption follows.
-- Shipyard walk (after `keryx.git.enabled: true` + gateway restart): drawer shows Shipyard →
+- Shipyard walk (`keryx.git.enabled: true` set + gateway restarted 08-31): drawer shows Shipyard →
   pick a repo → toggle scope → open a file → stage → Commit… with push → toast + ahead
   resets → PR line if the branch has one.
 - Link walk (§6): tap `[Read]` in the news brief room.
