@@ -1537,9 +1537,12 @@ private const val GHOST_TOOL_ID = "generating"
         val rpc = rpc ?: error("gateway not connected")
         val live = attach(sessionId)
         // Long-handler pool on the gateway (pricing, tier, custom-endpoint probes): seconds.
+        // explicit_only is the desktop picker's dialect: rows the user signed into or
+        // configured in Hermes. Without it the gateway also lists providers it borrows
+        // ambient credentials for (a `gh` CLI token seeding Copilot) — routes nobody chose.
         val res = rpc.request("model.options", buildJsonObject {
             put("session_id", JsonPrimitive(live))
-            put("explicit_only", JsonPrimitive(false))
+            put("explicit_only", JsonPrimitive(true))
             put("include_unconfigured", JsonPrimitive(false))
             put("refresh", JsonPrimitive(false))
         }, timeoutMs = 45_000)

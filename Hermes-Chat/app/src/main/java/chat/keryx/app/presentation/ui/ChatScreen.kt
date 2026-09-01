@@ -10,6 +10,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -854,10 +855,51 @@ fun ChatScreen(
             val hubBrainsPanel by viewModel.hub.brains.collectAsState()
             val modelCatalog by viewModel.models.catalog.collectAsState()
             val modelCatalogLoading by viewModel.models.loading.collectAsState()
+            // Desktop's busy-state submit tree, the Talaria way: text typed mid-turn STEERS
+            // the live turn (no interrupt), payloads/compacting/blocked QUEUE for the next
+            // turn, an empty composer stops. Slash commands keep their console path.
+            // Every live-turn sign counts, not just our own awaiting flag: a turn steered from
+            // the desktop, entered mid-flight, or running across a relaunch never set ours —
+            // and a plain send against it would interrupt the work on the direct door.
+            val compactingNow = sessionStatus?.isCompacting == true
+            val agentLive = liveStream != null || typingAgentIds.isNotEmpty() || liveTurnSigns
+            val busyNow = awaitingReply || agentLive || compactingNow
+            val slashTyped = textState.text.trimStart().startsWith("/")
+            val steerable = busyNow && !compactingNow && pendingApproval == null &&
+                pendingBlocking == null && pendingAttachment == null && !slashTyped
+            val busyAction = when {
+                !busyNow -> null
+                slashTyped -> null // slash runs inline even mid-turn
+                textState.text.isBlank() && pendingAttachment == null ->
+                    if (viewModel.canInterruptTurn) "stop" else null
+                steerable -> "steer"
+                else -> "queue"
+            }
+            fun takeComposerText(): String {
+                val t = textState.text.trim()
+                textState = TextFieldValue("")
+                viewModel.onComposerTextChanged("")
+                return t
+            }
             Composer(
                 textState = textState,
                 onTextChange = { textState = it; viewModel.onComposerTextChanged(it.text) },
                 onSend = ::doSend,
+                busyAction = busyAction,
+                onSteer = {
+                    if (textState.text.isNotBlank()) viewModel.steerTurn(takeComposerText())
+                },
+                onQueue = {
+                    if (pendingAttachment != null) {
+                        viewModel.toast("Attachments can't queue — send after this turn finishes")
+                    } else if (textState.text.isNotBlank()) {
+                        viewModel.queueMessage(takeComposerText())
+                    }
+                },
+                onStop = { viewModel.interruptTurn() },
+                onStopHint = {
+                    viewModel.toast("Type your correction first — then tap steers the turn, hold queues it")
+                },
                 onPickGallery = { galleryPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) },
                 onPickFile = { filePicker.launch("*/*") },
                 // Deferred read: Composer only consults this inside its focus callback, and a
@@ -881,7 +923,6 @@ fun ChatScreen(
                 onModelSelect = { viewModel.models.select(it) },
                 onRefreshCaps = { viewModel.hub.refreshReasoningCaps(); viewModel.hub.refreshBrains() },
                 onRefreshCatalog = { viewModel.models.refresh() },
-                onSteer = { viewModel.prefillComposer("/steer ") },
             )
         }
 
@@ -951,7 +992,7 @@ fun ChatScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun Composer(
     textState: TextFieldValue,
@@ -980,7 +1021,12 @@ private fun Composer(
     onModelSelect: (chat.keryx.core.model.ModelChoice) -> Unit = {},
     onRefreshCaps: () -> Unit = {},
     onRefreshCatalog: () -> Unit = {},
+    // The busy tree: null = normal send; "steer" | "queue" | "stop" while a turn runs.
+    busyAction: String? = null,
     onSteer: () -> Unit = {},
+    onQueue: () -> Unit = {},
+    onStop: () -> Unit = {},
+    onStopHint: () -> Unit = {},
 ) {
     var attachMenu by remember { mutableStateOf(false) }
     // The dream attach options bloom in just above the composer pill (rendered inline rather than in
@@ -1031,7 +1077,20 @@ private fun Composer(
                 .onFocusChanged { focus ->
                     if (focus.isFocused && hasMessages && atBottom()) onFocusedAtBottom()
                 },
-            placeholder = { Text("Message…", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+            placeholder = {
+                Text(
+                    // Mid-turn the placeholder IS the teacher: the affordance reached for was
+                    // /steer because nothing said the composer could do it.
+                    when (busyAction) {
+                        null -> "Message…"
+                        "stop" -> "Type to steer this turn — ■ stops"
+                        else -> "Type to steer this turn"
+                    },
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            },
             shape = RoundedCornerShape(24.dp),
             maxLines = 6,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
@@ -1091,26 +1150,55 @@ private fun Composer(
                 wing.animateTo(0f, chat.keryx.app.presentation.ui.components.KeryxMotion.settle)
             }
         }
+        // The primary circle is desktop's whole submit tree in one control: send when idle;
+        // while a turn runs it becomes steer (text), queue (payload/compacting; also steer's
+        // long-press), or stop (empty). One button, states legible by glyph.
+        val (glyph, label) = when (busyAction) {
+            "steer" -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.Steer to "Steer the running turn"
+            "queue" -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.Stack to "Queue for next turn"
+            "stop" -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.StopSquare to "Stop the turn"
+            else -> Icons.AutoMirrored.Filled.Send to "Send"
+        }
+        val armed = textState.text.isNotBlank() || busyAction == "stop"
         Box {
-            FloatingActionButton(
-                onClick = {
-                    if (textState.text.isNotBlank()) {
-                        sendPuffTick++
-                        sendHaptics.commit()
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(48.dp)
+                    .graphicsLayer {
+                        val p = wing.value
+                        scaleX = 1f + 0.12f * p
+                        scaleY = 1f + 0.12f * p
+                        rotationZ = -22f * p
                     }
-                    onSend()
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp),
-                modifier = Modifier.size(48.dp).graphicsLayer {
-                    val p = wing.value
-                    scaleX = 1f + 0.12f * p
-                    scaleY = 1f + 0.12f * p
-                    rotationZ = -22f * p
-                },
-                shape = RoundedCornerShape(50)
+                    .clip(RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = if (armed) 1f else 0.55f))
+                    .combinedClickable(
+                        onClick = {
+                            when (busyAction) {
+                                "steer" -> { if (textState.text.isNotBlank()) sendHaptics.commit(); onSteer() }
+                                "queue" -> { if (textState.text.isNotBlank()) sendHaptics.commit(); onQueue() }
+                                "stop" -> { sendHaptics.commit(); onStop() }
+                                else -> {
+                                    if (textState.text.isNotBlank()) {
+                                        sendPuffTick++
+                                        sendHaptics.commit()
+                                    }
+                                    onSend()
+                                }
+                            }
+                        },
+                        // Desktop's ⌘⏎, translated: long-press while steerable queues instead.
+                        // Long-press on STOP teaches (it was the first thing tried, and silence
+                        // read as broken).
+                        onLongClick = when (busyAction) {
+                            "steer" -> onQueue
+                            "stop" -> onStopHint
+                            else -> null
+                        },
+                    ),
             ) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Color.White)
+                Icon(glyph, contentDescription = label, tint = Color.White, modifier = Modifier.size(24.dp))
             }
             chat.keryx.app.presentation.ui.components.KeryxPuffBurst(
                 tick = sendPuffTick,
@@ -1130,7 +1218,7 @@ private fun Composer(
         onModelSelect = onModelSelect,
         onRefreshCaps = onRefreshCaps,
         onRefreshCatalog = onRefreshCatalog,
-        onSteer = onSteer,
+        busyAction = busyAction,
     )
     } // end composer surface Column
     } // end Column (attach bloom + composer row)
@@ -1155,7 +1243,7 @@ private fun ComposerFooter(
     onModelSelect: (chat.keryx.core.model.ModelChoice) -> Unit,
     onRefreshCaps: () -> Unit,
     onRefreshCatalog: () -> Unit,
-    onSteer: () -> Unit,
+    busyAction: String?,
 ) {
     val usage = contextUsage?.takeIf { roomId != null && it.roomId == roomId }
     if (caps == null && usage == null) return
@@ -1296,7 +1384,18 @@ private fun ComposerFooter(
                 caps = caps,
                 onDismiss = { reasoningMenu = false },
                 onCommand = { arg -> reasoningMenu = false; onReasoningCommand(arg) },
-                onSteer = { reasoningMenu = false; onSteer() },
+            )
+        }
+        if (busyAction == "steer") {
+            Spacer(Modifier.width(10.dp))
+            Text(
+                "↪ steers the turn · hold to queue",
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                // Yields first when the line is tight — the pills are controls, this is a hint.
+                modifier = Modifier.weight(1f, fill = false),
             )
         }
         Spacer(modifier = Modifier.weight(1f))

@@ -1880,4 +1880,68 @@ class ChatViewModel(
         sendMessage("/reasoning $arg".trim())
     }
 
+    // --- Busy-turn inputs (the Talaria way: the send button IS the submit tree) ----------------
+    // Text typed while a turn runs steers it; a long-press queues it for the next turn; an empty
+    // composer stops it. The direct door speaks the gateway's RPC verbs. The Matrix door speaks
+    // the gateway's own slash verbs, which every platform dispatches while busy (`/steer` and
+    // `/queue` carry busy_policy=dispatch) — a plain message there would follow the operator's
+    // busy_input_mode instead, which may be "interrupt".
+
+    /** Whether this door can stop a running turn: `session.interrupt` exists on the direct
+     *  door only — the Matrix gateway has no interrupt verb a room can send. */
+    val canInterruptTurn: Boolean get() = direct != null
+
+    /** Steer the running turn: the text reaches the model on its next step, no interrupt.
+     *  Falls back to a queue when the agent declines (turn past its last tool batch, or a
+     *  model that can't be steered). */
+    fun steerTurn(text: String) {
+        val session = _currentRoom.value ?: return
+        val d = direct
+        if (d == null) {
+            recordCommandUse("/steer")
+            sendMessage("/steer $text")
+            return
+        }
+        viewModelScope.launch {
+            d.steerTurn(session.id, text)
+                .onSuccess { accepted ->
+                    if (accepted) {
+                        toast("Steered — the agent sees it on its next step")
+                    } else {
+                        d.queuePrompt(session.id, text)
+                            .onSuccess { toast("Agent declined the steer — queued for the next turn") }
+                            .onFailure { toast("Queue failed: ${it.message?.take(80)}") }
+                    }
+                }
+                .onFailure { toast("Steer failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    /** Queue a message to run after the current turn finishes. */
+    fun queueMessage(text: String) {
+        val session = _currentRoom.value ?: return
+        val d = direct
+        if (d == null) {
+            recordCommandUse("/queue")
+            sendMessage("/queue $text")
+            return
+        }
+        viewModelScope.launch {
+            d.queuePrompt(session.id, text)
+                .onSuccess { toast("Queued — sends when this turn finishes") }
+                .onFailure { toast("Queue failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    /** Stop the running turn (direct door). */
+    fun interruptTurn() {
+        val session = _currentRoom.value ?: return
+        val d = direct ?: return
+        viewModelScope.launch {
+            d.interruptTurn(session.id)
+                .onSuccess { toast("Stopped") }
+                .onFailure { toast("Stop failed: ${it.message?.take(80)}") }
+        }
+    }
+
 }
