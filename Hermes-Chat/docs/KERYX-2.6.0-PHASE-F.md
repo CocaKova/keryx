@@ -173,20 +173,40 @@ Telegram-parity gaps that remain (not built): `||spoiler||` reveal, expandable b
 link-preview cards (needs a decision: phone-side fetch vs gateway unfurl), inline images
 (renderer has no image loader wired).
 
+⚠️ 09-01 walk finding: GFM AUTOLINKS (bare `https://…` URLs, e.g. the news brief's reddit
+section) render underlined but are NOT tappable — no intent fires on a precise tap, while a
+`[text](url)` link in the same bubble opens the browser. The 0.35 renderer evidently attaches
+`LinkAnnotation` to markdown links only. Decide: post-process autolinks into links app-side,
+or take the renderer's autolink handling upstream.
+
 ## Status
 - 555 tests green (`:app:testDebugUnitTest` + `:core:jvmTest`), `assembleDebug` OK, versionCode 70.
-- Fixed build (Shipyard wire) installed on the phone 09-01 07:14 over adb — the walk below
-  runs against it.
-- ⚠️ NOT device-walked (phone off adb 08-28 morning; 08-31 walk reached the Shipyard and
-  stopped on the wire bug). Walk list, both doors: Archive on direct
-  (open a deep session → Archive → search a word from an old turn → tap the hit → context view
-  fills); pill → catalog lists silas-brain + any authenticated cloud → pick one → toast, pill
-  relabels, next turn answers from it; Matrix: pick → `/model …` command lands, gateway confirms;
-  plus the 2.5.7 walk (compaction label, `▸ output`).
-- Projects walk: drawer → Projects (only if the door appears) → cards → drill-in → New chat here
-  lands in the project's cwd → long-press a session → Move to project… → caption follows.
-- Shipyard walk (`keryx.git.enabled: true` set + gateway restarted 08-31): drawer shows Shipyard →
-  pick a repo → toggle scope → open a file → stage → Commit… with push → toast + ahead
-  resets → PR line if the branch has one.
-- Link walk (§6): tap `[Read]` in the news brief room.
-- Release: cut `v2.6.0` after the walk (slow-cadence rule: this is a milestone, not a patch).
+- Fixed build (Shipyard wire) installed on the phone 09-01 07:14 over adb.
+- **DEVICE-WALKED 09-01** (driven over adb against the live gateway, direct door):
+  - Shipyard, end to end against a scratch repo + local bare remote registered as a
+    temporary project (deleted after): repos roster → open → status counts + "in step" →
+    WORKING TREE / BRANCH scope toggle (branch scope read "0 files changed", correct) →
+    tracked diff → untracked all-add diff → STAGE from the diff panel (button flips to
+    UNSTAGE, index verified server-side) → checkbox stage/unstage round-trip → commit sheet
+    (staged count, RECENT subjects, push toggle) → "Committed 826d585 and pushed" toast,
+    push landed on the remote's ref, ahead reset. PR line untested (no GH remote on scratch).
+  - Projects: cards w/ session counts + captions → drill-in → New chat here (session
+    created and ran in the project workspace) → long-press → Move to project… → toast, moved
+    and moved back.
+  - Model pill: catalog opens ("Reading the catalog…" → grouped providers, ⚡/💭 tags,
+    ● current judged by name on qwen3.8-27b), selection verb fired (same-model re-pick).
+    Cross-provider switch was already proven in the 08-31 evening walk (Haiku 4.5 answered,
+    "model changed" back).
+  - Archive on direct: sweep indexed the open session ("15 messages remembered"), search hit
+    with highlight, tap → context view filled with the surrounding turns.
+  - 2.5.7: failed execute_code run → theater row "1 failed", failure reason in error colour,
+    `▸ output` fold shows the raw clipped result payload (`{"status":"error",…exit_code":1`).
+    `/compress` command round-trips (preflight "Nothing to compress yet." on a short session).
+    ⚠️ The in-flight 🗜 compaction label itself is still unseen — needs a genuinely long
+    session; the status-cloud surface it rides demonstrably renders live SSE states.
+  - Links (§6): `[Read]` in the Aug 31 news brief → Chrome foregrounded; long-press on the
+    same bubble still opens the reaction picker. ⚠️ Bare-URL autolinks NOT tappable (above).
+- Matrix-door walk items (model pick via `/model` room command, compaction label on a long
+  Matrix turn) remain unwalked — the 09-01 walk drove the direct door.
+- Release: `v2.6.0` is unblocked by the walk (decide first whether the autolink gap rides
+  2.6.0 as a known gap or waits for a fix). Wake word = last Phase F item.
