@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Handyman
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.*
 import androidx.compose.foundation.shape.CircleShape
@@ -72,6 +73,7 @@ fun NavigationDrawerContent(
 ) {
     val rooms by viewModel.rooms.collectAsState()
     val pinnedRoomIds by viewModel.pinnedRoomIds.collectAsState()
+    val tempSessionIds by viewModel.temporarySessionIds.collectAsState()
     // "Move to project…" — explicit projects with a folder (membership is cwd).
     val moveTargets by viewModel.projects.projectMoveTargets.collectAsState()
     val moveCtx = LocalContext.current
@@ -291,6 +293,7 @@ fun NavigationDrawerContent(
                         room = room,
                         isSelected = currentRoom?.id == room.id,
                         isPinned = room.id in pinnedRoomIds,
+                        isTemporary = room.id in tempSessionIds,
                         onClick = { onRoomSelected(room) },
                         onTogglePin = { viewModel.togglePin(room.id) },
                         // Each transport brings its own verbs to the long-press menu: Matrix
@@ -357,36 +360,18 @@ fun NavigationDrawerContent(
             // full-width stacked rows; this halves the footer's height).
             Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
 
-            // The doors. Six of these now share the footer, and as one Row of equal weights the
-            // labels were already stepping their font down to fit at four ("Mission" losing its
-            // s). A wrapping row of thirds keeps every door the same size no matter how many
-            // there are — the next one costs a list entry, not a re-layout.
+            // The doors. Nine of them now (the Runs door tipped it), and as rows of three
+            // labeled pills the footer had grown to a third of the drawer. Vertical tiles at
+            // five a row — icon over a small label, the phone-launcher grammar — carry the
+            // same nine in two rows at two-thirds the height, and the next door still costs a
+            // list entry, not a re-layout.
             androidx.compose.foundation.layout.FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 10.dp, bottom = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                maxItemsInEachRow = 3,
+                    .padding(top = 8.dp, bottom = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                maxItemsInEachRow = 5,
             ) {
-                val themeIcon = when (isDarkTheme) {
-                    true -> Icons.Default.LightMode
-                    false -> Icons.Default.BrightnessAuto
-                    null -> Icons.Default.DarkMode
-                }
-                val themeText = when (isDarkTheme) {
-                    true -> "Light"
-                    false -> "System"
-                    null -> "Dark"
-                }
-                DrawerDoor(themeIcon, themeText, Modifier.weight(1f)) {
-                    viewModel.toggleTheme(
-                        when (isDarkTheme) {
-                            null -> true
-                            true -> false
-                            false -> null
-                        }
-                    )
-                }
                 DrawerDoor(Icons.Default.ViewKanban, "Missions", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Missions)
                 }
@@ -415,6 +400,26 @@ fun NavigationDrawerContent(
                 DrawerDoor(Icons.Default.Handyman, "Workshop", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Workshop)
                 }
+                // System last: the places you go daily read before the switches you flip rarely.
+                val themeIcon = when (isDarkTheme) {
+                    true -> Icons.Default.LightMode
+                    false -> Icons.Default.BrightnessAuto
+                    null -> Icons.Default.DarkMode
+                }
+                val themeText = when (isDarkTheme) {
+                    true -> "Light"
+                    false -> "System"
+                    null -> "Dark"
+                }
+                DrawerDoor(themeIcon, themeText, Modifier.weight(1f)) {
+                    viewModel.toggleTheme(
+                        when (isDarkTheme) {
+                            null -> true
+                            true -> false
+                            false -> null
+                        }
+                    )
+                }
                 DrawerDoor(Icons.Default.Settings, "Settings", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Settings)
                 }
@@ -439,6 +444,8 @@ fun RoomRow(
     room: RoomProfile,
     isSelected: Boolean,
     isPinned: Boolean,
+    /** A session living on borrowed time — the next cold start deletes it (direct door). */
+    isTemporary: Boolean = false,
     onClick: () -> Unit,
     onTogglePin: () -> Unit,
     // Matrix-only affordances (m.room.avatar / membership) — null on the direct door.
@@ -508,6 +515,15 @@ fun RoomRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
+                if (isTemporary) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(
+                        imageVector = Icons.Filled.HourglassEmpty,
+                        contentDescription = "Temporary — deleted at next launch",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.size(12.dp),
+                    )
+                }
                 if (isPinned) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Icon(
@@ -875,9 +891,10 @@ internal fun formatRelativeTime(ts: Long): String {
 }
 
 /**
- * One door in the drawer's footer. Was four near-identical 18-line blocks; the auto-sizing label
- * is the part worth keeping — a fixed size clips ("Mission" lost its s at large font scales) and
- * wrapping makes the cells different heights.
+ * One door in the drawer's footer: icon over a small label, launcher-style. Was a horizontal
+ * icon+text pill, three to a row — legible, but nine doors made the footer a third of the
+ * drawer. The auto-sizing label survives from the pill era: a fixed size clips ("Mission"
+ * lost its s at large font scales) and wrapping makes the cells different heights.
  */
 @Composable
 private fun DrawerDoor(
@@ -886,23 +903,22 @@ private fun DrawerDoor(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(vertical = 8.dp),
     ) {
         Icon(
             icon, contentDescription = label,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(19.dp),
         )
-        Spacer(modifier = Modifier.width(6.dp))
+        Spacer(modifier = Modifier.height(3.dp))
         Text(
-            label, color = MaterialTheme.colorScheme.onSurface,
-            autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 14.sp, stepSize = 0.25.sp),
+            label, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+            autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 10.5.sp, stepSize = 0.25.sp),
             maxLines = 1, softWrap = false,
         )
     }

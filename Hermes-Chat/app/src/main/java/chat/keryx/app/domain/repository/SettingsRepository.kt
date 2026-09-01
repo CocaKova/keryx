@@ -53,6 +53,11 @@ interface SettingsRepository {
     /** Run ids the user has actually opened (or swept with mark-all-read). */
     var cronSeenIds: Set<String>
 
+    /** Gateway sessions created as TEMPORARY: they live like any session while the app does,
+     *  and the next cold start deletes them from the gateway. Persisted so a killed process
+     *  can't strand one — the ledger IS the cleanup order. */
+    var temporarySessionIds: Set<String>
+
     /** The last Matrix username that signed in — a login-form prefill, nothing more. The
      *  password is never stored anywhere: the session token in Trixnity's store is the
      *  durable credential, and it survives every transport toggle on its own. */

@@ -634,6 +634,9 @@ class ChatViewModel(
     private var pendingOpenRoomId: String? = null
 
     init {
+        // Before anything restores a room: last launch's temporary sessions die first, and the
+        // synchronous lastRoomId clear inside keeps a dead temp from being this launch's room.
+        sweepTemporarySessions()
         viewModelScope.launch {
             transport.getRooms().collectLatest { roomList ->
                 _rooms.value = roomList
@@ -1617,10 +1620,54 @@ class ChatViewModel(
     // --- Gateway sessions (direct door): the lifecycle the homeserver would otherwise own -------
     // The mirror of the membership block above — same shapes, gated on the other capability.
 
-    fun createSession(title: String, onDone: (String?) -> Unit) {
+    /** Sessions the user asked to be TEMPORARY — normal rooms until the next cold start,
+     *  which deletes them from the gateway (see [sweepTemporarySessions]). */
+    private val _temporarySessionIds = MutableStateFlow(settingsRepository.temporarySessionIds)
+    val temporarySessionIds: StateFlow<Set<String>> = _temporarySessionIds.asStateFlow()
+
+    private fun markTemporary(sessionId: String) {
+        settingsRepository.temporarySessionIds = settingsRepository.temporarySessionIds + sessionId
+        _temporarySessionIds.value = settingsRepository.temporarySessionIds
+    }
+
+    private fun unmarkTemporary(sessionId: String) {
+        settingsRepository.temporarySessionIds = settingsRepository.temporarySessionIds - sessionId
+        _temporarySessionIds.value = settingsRepository.temporarySessionIds
+    }
+
+    /**
+     * The temporary contract, kept at launch: every ledgered session is deleted from the
+     * gateway. Cold-start-only on purpose — deleting the moment you switch rooms would eat a
+     * conversation you meant to hop back to, and hooking app-background would kill the chat
+     * you are IN the moment you check a text. An id whose delete fails (offline, gateway
+     * down) stays ledgered and dies at the next launch instead; one already gone elsewhere
+     * comes off the ledger regardless, or it would be retried forever.
+     */
+    private fun sweepTemporarySessions() {
+        val doomed = settingsRepository.temporarySessionIds
+        if (doomed.isEmpty()) return
+        // Before the room restore runs: last night's temp must not greet you as today's room.
+        if (settingsRepository.lastRoomId in doomed) settingsRepository.lastRoomId = null
+        viewModelScope.launch {
+            val gw = gateway ?: return@launch
+            val remaining = doomed.filterNotTo(mutableSetOf()) { id ->
+                gw.deleteSession(id).isSuccess
+            }
+            // Self-heal: whatever the roster no longer carries is gone however it went.
+            val known = runCatching { _rooms.value.mapTo(HashSet()) { it.id } }.getOrNull()
+            settingsRepository.temporarySessionIds =
+                if (known.isNullOrEmpty()) remaining else remaining.intersect(known)
+            _temporarySessionIds.value = settingsRepository.temporarySessionIds
+        }
+    }
+
+    fun createSession(title: String, temporary: Boolean = false, onDone: (String?) -> Unit) {
         viewModelScope.launch {
             gateway?.createSession(title.trim().ifBlank { null })
-                ?.onSuccess { sessionId -> openRoomById(sessionId); onDone(null) }
+                ?.onSuccess { sessionId ->
+                    if (temporary) markTemporary(sessionId)
+                    openRoomById(sessionId); onDone(null)
+                }
                 ?.onFailure { onDone(it.message?.take(120) ?: "couldn't create the session") }
         }
     }
@@ -1637,6 +1684,7 @@ class ChatViewModel(
             gateway?.deleteSession(sessionId)
                 ?.onSuccess {
                     _toasts.tryEmit("Session deleted")
+                    unmarkTemporary(sessionId) // a hand-deleted temp owes the sweep nothing
                     if (settingsRepository.lastRoomId == sessionId) settingsRepository.lastRoomId = null
                     // Move off the dead session so the chat pane never points at a transcript
                     // that's gone (same shape as leaveRoom's move-off).
