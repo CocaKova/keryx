@@ -265,6 +265,66 @@ object MessageParser {
         return if (open) text + "\n```" else text
     }
 
+    // A bare URL in prose. Backticks, angle brackets, and whitespace end the match; everything
+    // else is settled by the trailing-punctuation trim below.
+    private val BARE_URL = Regex("""https?://[^\s<>`]+""")
+
+    // Trailing characters that read as sentence punctuation, not URL: GFM's autolink trim set.
+    private const val URL_TRAIL = ".,:;!?\"'”»*"
+
+    /** Rewrite bare `http(s)://` autolinks as inline `[url](url)` links. The markdown renderer
+     *  underlines a GFM autolink but attaches no LinkAnnotation, so a bare URL looked tappable
+     *  and wasn't (the 2.6.0 device walk); inline links are the path that provably fires. A URL
+     *  is left untouched inside code (span or fence), inside an existing link's text or
+     *  destination, and inside an `<angle>` autolink. */
+    fun linkifyAutolinks(text: String): String {
+        if (!text.contains("http")) return text
+        val out = StringBuilder(text.length + 32)
+        var fence = false
+        text.lines().forEachIndexed { index, line ->
+            if (index > 0) out.append('\n')
+            if (line.trimStart().startsWith("```")) {
+                fence = !fence
+                out.append(line)
+                return@forEachIndexed
+            }
+            if (fence) {
+                out.append(line)
+                return@forEachIndexed
+            }
+            // Odd-indexed splits sit between backticks — inline code, untouched.
+            line.split('`').forEachIndexed { chunkIndex, chunk ->
+                if (chunkIndex > 0) out.append('`')
+                out.append(if (chunkIndex % 2 == 1) chunk else linkifyChunk(chunk))
+            }
+        }
+        return out.toString()
+    }
+
+    private fun linkifyChunk(chunk: String): String = BARE_URL.replace(chunk) { m ->
+        val before = if (m.range.first == 0) ' ' else chunk[m.range.first - 1]
+        // `](…` = an existing link/image destination, `<` = an angle autolink, quotes = an
+        // attribute or title. An unclosed `[` before the match = inside a link's text —
+        // rewriting there would nest brackets and garble the outer link. A plain `(url)` in
+        // prose is none of these and still gets linkified.
+        val destOpener = before == '(' && m.range.first >= 2 && chunk[m.range.first - 2] == ']'
+        val bracketDepth = chunk.take(m.range.first).let { it.count { c -> c == '[' } - it.count { c -> c == ']' } }
+        if (destOpener || before == '<' || before == '"' || before == '\'' || bracketDepth > 0) return@replace m.value
+        var url = m.value
+        var trail = ""
+        while (url.isNotEmpty()) {
+            val last = url.last()
+            when {
+                last in URL_TRAIL -> { trail = "$last$trail"; url = url.dropLast(1) }
+                last == ')' && url.count { it == '(' } < url.count { it == ')' } -> {
+                    trail = ")$trail"; url = url.dropLast(1)
+                }
+                else -> break
+            }
+        }
+        if (url.substringAfter("://", "").isBlank()) m.value else "[$url]($url)$trail"
+    }
+
     // Every reasoning-tag spelling we accept; a half-typed prefix of one of these at the very end
     // of a live stream must be held back, not rendered as literal text. Internal so
     // StreamTailTracker's incremental sanitize stays byte-identical to sanitizeStreamingTail.

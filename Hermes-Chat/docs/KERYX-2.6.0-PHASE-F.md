@@ -173,15 +173,24 @@ Telegram-parity gaps that remain (not built): `||spoiler||` reveal, expandable b
 link-preview cards (needs a decision: phone-side fetch vs gateway unfurl), inline images
 (renderer has no image loader wired).
 
-⚠️ 09-01 walk finding: GFM AUTOLINKS (bare `https://…` URLs, e.g. the news brief's reddit
-section) render underlined but are NOT tappable — no intent fires on a precise tap, while a
-`[text](url)` link in the same bubble opens the browser. The 0.35 renderer evidently attaches
-`LinkAnnotation` to markdown links only. Decide: post-process autolinks into links app-side,
-or take the renderer's autolink handling upstream.
+09-01 walk finding, FIXED same day: GFM AUTOLINKS (bare `https://…` URLs, e.g. the news
+brief's reddit section) rendered underlined but were NOT tappable — no intent fired on a
+precise tap, while a `[text](url)` link in the same bubble opened the browser. (The 0.35
+renderer's `appendAutoLink` does push a `LinkAnnotation.Url` per its own bytecode, yet on
+device the annotation never fires — not chased further.) Fix:
+`MessageParser.linkifyAutolinks` rewrites bare autolinks as inline `[url](url)` links before
+rendering — the one link path the walk PROVED fires — applied in `MessageContent`'s Text
+branch after `closeDanglingFences`. Untouched: code spans, fenced blocks, `<angle>`
+autolinks, and URLs inside an existing link's text (unclosed-`[` depth check) or destination
+(`](…` opener check); GFM's trailing-punctuation set and unbalanced `)` stay outside the
+link; a plain `(url)` in prose still linkifies. 11 tests in `LinkifyAutolinksTest`.
 
 ## Status
-- 555 tests green (`:app:testDebugUnitTest` + `:core:jvmTest`), `assembleDebug` OK, versionCode 70.
-- Fixed build (Shipyard wire) installed on the phone 09-01 07:14 over adb.
+- 566 tests green (`:app:testDebugUnitTest` + `:core:allTests`; +11 `LinkifyAutolinksTest`),
+  `assembleDebug` + `assembleRelease` OK, versionCode 71 (bumped for the autolink fix).
+- Shipyard-wire build installed on the phone 09-01 07:14 over adb; the autolink-fix build
+  awaits the phone (off adb again after the walk) — the transform is unit-pinned and the
+  inline-link path it emits was device-proven the same morning.
 - **DEVICE-WALKED 09-01** (driven over adb against the live gateway, direct door):
   - Shipyard, end to end against a scratch repo + local bare remote registered as a
     temporary project (deleted after): repos roster → open → status counts + "in step" →
@@ -208,5 +217,5 @@ or take the renderer's autolink handling upstream.
     same bubble still opens the reaction picker. ⚠️ Bare-URL autolinks NOT tappable (above).
 - Matrix-door walk items (model pick via `/model` room command, compaction label on a long
   Matrix turn) remain unwalked — the 09-01 walk drove the direct door.
-- Release: `v2.6.0` is unblocked by the walk (decide first whether the autolink gap rides
-  2.6.0 as a known gap or waits for a fix). Wake word = last Phase F item.
+- Release: `v2.6.0` CUT 09-01 with the autolink fix in (Jonny's call: "fix the autolinks
+  then cut v2.6.0"). Wake word = last Phase F item.
