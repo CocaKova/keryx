@@ -22,7 +22,9 @@ class HubRegistryTest {
 
     @Test
     fun `the split is the one Jonny chose`() {
-        assertEquals(listOf("Status", "Controls", "Jobs", "Runs"), GATEWAY_PANELS.map { it.label })
+        // Runs left the hub 2026-09-01 ("the crons are hard to get to") — it is the Runs DOOR
+        // now (RunsSpace); Jobs stays because managing schedules is server administration.
+        assertEquals(listOf("Status", "Controls", "Jobs"), GATEWAY_PANELS.map { it.label })
         assertEquals(listOf("Sessions", "Skills", "Tools"), WORKSHOP_PANELS.map { it.label })
     }
 
@@ -52,9 +54,8 @@ class HubRegistryTest {
         // Every ten seconds, forever, while you are looking at it — so this is a deliberate list,
         // not a default. Skills and tools change on operator action; they stay fetch-once.
         assertEquals(
-            // Runs polls for the same reason Jobs does: scheduled work lands on its own,
-            // and the unread ledger is the whole point of noticing.
-            setOf("status", "jobs", "sessions", "runs"),
+            // Runs polls too — inside its own door now (RunsSpace runs the 10s loop itself).
+            setOf("status", "jobs", "sessions"),
             panels.filter { it.live }.map { it.id }.toSet(),
         )
     }

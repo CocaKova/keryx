@@ -1152,14 +1152,16 @@ class HermesStreamClient(
         runCatching { apiCall(sessionPath(sessionId), method = "DELETE"); Unit }
 
     /** Branch a session (CLI /branch semantics: source is marked branched, the fork carries the
-     *  transcript forward). Returns the new session id. */
-    suspend fun sessionFork(sessionId: String, title: String? = null): Result<String> = runCatching {
+     *  transcript forward). Returns the forked session itself — the caller's next act is to
+     *  take the user INTO it, and a bare id can't title a room or fill a detail view. */
+    suspend fun sessionFork(sessionId: String, title: String? = null): Result<HubSession> = runCatching {
         val payload = kotlinx.serialization.json.buildJsonObject {
             if (!title.isNullOrBlank()) put("title", kotlinx.serialization.json.JsonPrimitive(title))
         }
         val obj = apiCall(sessionPath(sessionId) + "/fork", method = "POST", body = payload)
-        ((obj["session"] as? kotlinx.serialization.json.JsonObject)
-            ?.get("id") as? JsonPrimitive)?.contentOrNull ?: error("no session id in response")
+        val fork = (obj["session"] as? kotlinx.serialization.json.JsonObject)
+            ?: error("no session in response")
+        HubJson.session(fork).also { if (it.id.isBlank()) error("no session id in response") }
     }
 
     /** Edit a scheduled job (`PATCH /api/jobs/{id}`) — the missing verb next to the existing
@@ -1507,27 +1509,30 @@ internal object HubJson {
             )
         }
 
+    /** One session object → [HermesStreamClient.HubSession] — the list rows and the fork
+     *  response's `session` are the same shape on the wire. */
+    fun session(s: kotlinx.serialization.json.JsonObject): HermesStreamClient.HubSession =
+        HermesStreamClient.HubSession(
+            id = s.str("id"),
+            source = s.str("source"),
+            model = s.str("model"),
+            title = s.strOrNull("title"),
+            messageCount = s.long("message_count").toInt(),
+            toolCallCount = s.long("tool_call_count").toInt(),
+            inputTokens = s.long("input_tokens"),
+            outputTokens = s.long("output_tokens"),
+            apiCallCount = s.long("api_call_count").toInt(),
+            startedAt = s.dbl("started_at") ?: 0.0,
+            lastActive = s.dbl("last_active") ?: 0.0,
+            endedAt = s.dbl("ended_at"),
+            preview = s.str("preview"),
+        )
+
     // distinctBy: every consumer keys rows by session id (LazyColumn keys included, where a
     // duplicate is a crash, not a cosmetic double), so id-uniqueness is this parser's contract —
     // the wire has repeated an id (gateway lineage projection converging two chains on one tip).
     fun sessions(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.HubSession> =
-        obj.objs("data").distinctBy { it.str("id") }.map { s ->
-            HermesStreamClient.HubSession(
-                id = s.str("id"),
-                source = s.str("source"),
-                model = s.str("model"),
-                title = s.strOrNull("title"),
-                messageCount = s.long("message_count").toInt(),
-                toolCallCount = s.long("tool_call_count").toInt(),
-                inputTokens = s.long("input_tokens"),
-                outputTokens = s.long("output_tokens"),
-                apiCallCount = s.long("api_call_count").toInt(),
-                startedAt = s.dbl("started_at") ?: 0.0,
-                lastActive = s.dbl("last_active") ?: 0.0,
-                endedAt = s.dbl("ended_at"),
-                preview = s.str("preview"),
-            )
-        }
+        obj.objs("data").distinctBy { it.str("id") }.map { session(it) }
 
     fun messages(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.HubMessage> =
         obj.objs("data").map { m ->

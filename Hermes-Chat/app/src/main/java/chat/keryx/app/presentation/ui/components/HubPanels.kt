@@ -625,12 +625,26 @@ private fun JobEditDialog(
 // --- Sessions ----------------------------------------------------------------------------------
 
 @Composable
-internal fun SessionsTab(viewModel: ChatViewModel) {
+internal fun SessionsTab(viewModel: ChatViewModel, closeSpace: () -> Unit = {}) {
     val panel by viewModel.hub.sessions.collectAsState()
     var open by remember { mutableStateOf<HubSession?>(null) }
 
     open?.let { session ->
-        SessionTranscript(session = session, viewModel = viewModel, onBack = { open = null })
+        SessionTranscript(
+            session = session,
+            viewModel = viewModel,
+            onBack = { open = null },
+            // A fork is made to be continued: the direct door adopts it as a real room; the
+            // Matrix door swaps this detail view to it, composer and all.
+            onForked = { fork ->
+                if (viewModel.transportIsDirect) {
+                    viewModel.openSessionById(fork.id, fork.title ?: fork.model)
+                    closeSpace()
+                } else {
+                    open = fork
+                }
+            },
+        )
         return
     }
 
@@ -725,6 +739,8 @@ internal fun SessionTranscript(
     session: HubSession,
     viewModel: ChatViewModel,
     onBack: () -> Unit,
+    /** Where to take the user when a fork succeeds; null keeps the old stay-put behavior. */
+    onForked: ((HubSession) -> Unit)? = null,
 ) {
     var messages by remember { mutableStateOf<List<HubMessage>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -805,7 +821,11 @@ internal fun SessionTranscript(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.padding(horizontal = 16.dp),
         ) {
-            TextButton(onClick = { viewModel.hub.sessionFork(session.id) }) { Text("Fork", fontSize = 12.sp) }
+            TextButton(onClick = {
+                viewModel.hub.sessionFork(session.id) { fork ->
+                    if (fork != null) onForked?.invoke(fork)
+                }
+            }) { Text("Fork", fontSize = 12.sp) }
             TextButton(onClick = { renameOpen = true }) { Text("Rename", fontSize = 12.sp) }
             TextButton(onClick = { deleteOpen = true }) {
                 Text("Delete", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
@@ -837,8 +857,23 @@ internal fun SessionTranscript(
                             },
                         )
                         if (m.content.isNotBlank()) {
-                            Text(m.content, fontSize = 12.sp, maxLines = 8,
-                                overflow = TextOverflow.Ellipsis)
+                            // Prose rows get the real markdown renderer — a cron report or an
+                            // agent answer is a formatted document, and showing its raw `**`
+                            // was most of what made these transcripts hard to digest. Tool and
+                            // system rows stay raw text: their payloads are machine output and
+                            // markdown-rendering them would garble more than it helps.
+                            if (m.role == "user" || m.role == "assistant") {
+                                MessageContent(
+                                    content = m.content.trim(),
+                                    textColor = MaterialTheme.colorScheme.onSurface,
+                                    isAgent = m.role == "assistant",
+                                    inlineTools = true,
+                                    inlineReasoning = true,
+                                )
+                            } else {
+                                Text(m.content, fontSize = 12.sp, maxLines = 8,
+                                    overflow = TextOverflow.Ellipsis)
+                            }
                         }
                         if (m.toolCallCount > 0) {
                             Text("→ ${m.toolCallCount} tool call${if (m.toolCallCount > 1) "s" else ""}",

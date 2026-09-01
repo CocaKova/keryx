@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Handyman
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.*
 import androidx.compose.foundation.shape.CircleShape
@@ -401,6 +402,12 @@ fun NavigationDrawerContent(
                 val caps by viewModel.hub.reasoningCaps.collectAsState()
                 if (caps?.git == true) DrawerDoor(Icons.Default.Construction, "Shipyard", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Shipyard)
+                }
+                // Scheduled work reads at floor level (was buried as the hub's 4th tab). Gated
+                // the cheap way: the capabilities probe answering means Hermes Link is alive,
+                // which is the same wire the runs ride.
+                if (caps != null) DrawerDoor(Icons.Default.Schedule, "Runs", Modifier.weight(1f)) {
+                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Runs)
                 }
                 DrawerDoor(Icons.Default.Dns, "Gateway", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway)
