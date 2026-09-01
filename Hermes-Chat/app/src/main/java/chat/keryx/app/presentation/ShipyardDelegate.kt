@@ -6,7 +6,7 @@ import chat.keryx.core.model.ShipyardRepo
 import chat.keryx.core.model.ShipyardReview
 import chat.keryx.core.model.ShipyardShipInfo
 import chat.keryx.core.model.ShipyardStatus
-import chat.keryx.core.transport.ChatTransport
+import chat.keryx.app.data.remote.ShipyardRest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,11 +21,24 @@ import kotlinx.coroutines.launch
  */
 class ShipyardDelegate(
     deps: GatewayDeps,
-    private val transport: ChatTransport,
 ) {
     private val scope = deps.scope
     private val toast = deps.toast
-    private val gateway get() = transport.gateway
+    private val settings = deps.settings
+
+    // The Shipyard rides Hermes Link on BOTH doors — the direct door's REST base never
+    // mounts the git routes, and Matrix has no gateway seam at all (the 2.6.0 walk found
+    // both, 08-31). One client per configured (url, key); rebuilt only when Link changes.
+    private var restCache: Pair<String, ShipyardRest>? = null
+    private val gateway: ShipyardRest?
+        get() {
+            val url = settings.gatewayUrl.trim()
+            if (!settings.sideChannelEnabled || url.isBlank()) return null
+            val fingerprint = url + "\u0000" + settings.gatewayApiKey
+            restCache?.let { (fp, rest) -> if (fp == fingerprint) return rest }
+            return ShipyardRest(url, settings.gatewayApiKey, settings.allowInsecure)
+                .also { restCache = fingerprint to it }
+        }
 
     private val _repos = MutableStateFlow<List<ShipyardRepo>>(emptyList())
     val repos: StateFlow<List<ShipyardRepo>> = _repos.asStateFlow()
