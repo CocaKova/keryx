@@ -1507,8 +1507,11 @@ internal object HubJson {
             )
         }
 
+    // distinctBy: every consumer keys rows by session id (LazyColumn keys included, where a
+    // duplicate is a crash, not a cosmetic double), so id-uniqueness is this parser's contract —
+    // the wire has repeated an id (gateway lineage projection converging two chains on one tip).
     fun sessions(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.HubSession> =
-        obj.objs("data").map { s ->
+        obj.objs("data").distinctBy { it.str("id") }.map { s ->
             HermesStreamClient.HubSession(
                 id = s.str("id"),
                 source = s.str("source"),
