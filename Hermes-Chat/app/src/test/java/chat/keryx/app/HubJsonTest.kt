@@ -76,6 +76,22 @@ class HubJsonTest {
     }
 
     @Test
+    fun `sessions dedupe a repeated id — every consumer keys rows by it`() {
+        // The gateway has served one session twice (compression-lineage projection converging
+        // two chains on one tip, 2026-09-01); a repeated id reaching a LazyColumn key is a
+        // crash, so id-uniqueness is the parser's contract. First occurrence wins (the list is
+        // recency-ordered, so first = the slot the conversation actually earned).
+        val s = HubJson.sessions(obj("""
+            {"object":"list","data":[
+              {"id":"20260825_174116_b04a67","source":"matrix","title":"first","started_at":1.0,"last_active":9.0},
+              {"id":"20260825_174116_b04a67","source":"matrix","title":"second","started_at":2.0,"last_active":9.0},
+              {"id":"other","source":"cli","started_at":3.0,"last_active":8.0}]}
+        """))
+        assertEquals(listOf("20260825_174116_b04a67", "other"), s.map { it.id })
+        assertEquals("first", s[0].title)
+    }
+
+    @Test
     fun `messages map role content and tool call count`() {
         val msgs = HubJson.messages(obj("""
             {"object":"list","session_id":"s","data":[

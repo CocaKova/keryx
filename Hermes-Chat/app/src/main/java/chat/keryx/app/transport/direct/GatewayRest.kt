@@ -117,6 +117,9 @@ class GatewayRest(
                 (if (excludeSources.isEmpty()) "" else "&exclude_sources=" + excludeSources.joinToString(","))
         ).map { body ->
             val rows = json.parseToJsonElement(body).jsonObject["sessions"]?.jsonArray ?: JsonArray(emptyList())
+            // distinctBy: the drawer (and every other roster consumer) keys rows by session id,
+            // and a LazyColumn duplicate key is a crash — id-uniqueness is this parser's
+            // contract even when the gateway repeats a row.
             rows.mapNotNull { el ->
                 val o = el.jsonObject
                 SessionRow(
@@ -131,7 +134,7 @@ class GatewayRest(
                     pinned = o.bool("pinned"),
                     source = o.str("source") ?: "",
                 )
-            }
+            }.distinctBy { it.id }
         }
 
     /**
