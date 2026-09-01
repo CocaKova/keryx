@@ -191,7 +191,12 @@ fun MessageContent(
                                 MessageParser.closeDanglingFences(
                                     // LaTeX → Unicode (2.6.2): `$E=mc^2$` reads as E = mc²
                                     // instead of raw TeX; fences and code spans are skipped.
-                                    chat.keryx.core.protocol.MathUnicode.render(head),
+                                    // runCatching at the CALL SITE: the object's own guard
+                                    // cannot catch its class-init (a regex the phone's ICU
+                                    // engine rejects surfaces as ExceptionInInitializerError
+                                    // here, and killed the app on 09-01). Raw TeX beats a crash.
+                                    runCatching { chat.keryx.core.protocol.MathUnicode.render(head) }
+                                        .getOrDefault(head),
                                 ),
                             ),
                             flavour = GFMFlavourDescriptor(),
