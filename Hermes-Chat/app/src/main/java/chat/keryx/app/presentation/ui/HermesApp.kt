@@ -253,7 +253,11 @@ fun HermesApp(viewModel: ChatViewModel) {
                     },
                     navigationIcon = {
                         IconButton(onClick = { focusManager.clearFocus(); scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = MaterialTheme.colorScheme.onSurface)
+                            Icon(
+                                chat.keryx.app.presentation.ui.components.KeryxGlyphs.Sidebar,
+                                contentDescription = "Menu",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
                         }
                     },
                     actions = {
@@ -283,7 +287,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                                 }
                             }) {
                                 Icon(
-                                    Icons.Default.AddComment,
+                                    chat.keryx.app.presentation.ui.components.KeryxGlyphs.NewChat,
                                     contentDescription = "New session",
                                     tint = MaterialTheme.colorScheme.primary,
                                 )
@@ -322,8 +326,11 @@ fun HermesApp(viewModel: ChatViewModel) {
                                 if (viewModel.voice.callReady()) showCall = true
                                 else viewModel.toast("Set the STT and TTS endpoints in Settings → Voice first")
                             }) {
-                                Icon(Icons.Default.Call, contentDescription = "Call",
-                                    tint = MaterialTheme.colorScheme.primary)
+                                Icon(
+                                    chat.keryx.app.presentation.ui.components.KeryxGlyphs.Phone,
+                                    contentDescription = "Call",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
                             }
                             if (showCall) {
                                 chat.keryx.app.presentation.ui.components.CallScreen(

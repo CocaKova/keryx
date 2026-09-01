@@ -48,6 +48,30 @@ object ToolGrammar {
         "todo" to Verb("Updated todos", "Updating todos", "⚙"),
     )
 
+    /**
+     * The colour a tool wears. One family per kind of work, so a run of twelve calls reads as
+     * "reads, then a shell, then two edits" from across the room — the glyph says which tool,
+     * the tint says what kind. Six families, not one per tool: more hues than a reader can hold
+     * is noise, and the verdict (✓/✕) keeps its own colours (KeryxStatus) apart from these.
+     */
+    enum class Family { SHELL, FILES, EDIT, WEB, MIND, MEDIA, PEOPLE, OTHER }
+
+    private val FAMILIES: Map<String, Family> = mapOf(
+        "terminal" to Family.SHELL, "execute_code" to Family.SHELL,
+        "read_file" to Family.FILES, "list_files" to Family.FILES, "search_files" to Family.FILES,
+        "edit_file" to Family.EDIT, "patch" to Family.EDIT, "write_file" to Family.EDIT,
+        "web_search" to Family.WEB, "web_extract" to Family.WEB,
+        "memory" to Family.MIND, "skill_manage" to Family.MIND, "skill_view" to Family.MIND,
+        "skills_list" to Family.MIND, "session_search" to Family.MIND,
+        "session_search_recall" to Family.MIND, "todo" to Family.MIND,
+        "vision_analyze" to Family.MEDIA, "image_generate" to Family.MEDIA,
+        "video_generate" to Family.MEDIA, "text_to_speech" to Family.MEDIA,
+        "delegate_task" to Family.PEOPLE, "clarify" to Family.PEOPLE, "cronjob" to Family.PEOPLE,
+    )
+
+    fun familyOf(name: String): Family =
+        FAMILIES[name] ?: if (name.startsWith("browser_")) Family.WEB else Family.OTHER
+
     fun verbOf(name: String): Verb =
         VERBS[name]
             ?: if (name.startsWith("browser_")) Verb("Browsed", "Browsing", "◍")

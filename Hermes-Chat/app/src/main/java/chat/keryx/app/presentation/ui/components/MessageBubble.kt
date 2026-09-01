@@ -136,7 +136,7 @@ fun MessageBubble(
     Box(modifier = modifier.fillMaxWidth()) {
         // The arrow that materializes as you pull.
         Icon(
-            Icons.AutoMirrored.Filled.Reply,
+            KeryxGlyphs.Reply,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary.copy(
                 alpha = (dragX.value / replyThresholdPx).coerceIn(0f, 0.9f)
@@ -575,35 +575,38 @@ private fun ReactionPickerRow(
                     }
                     Box(modifier = Modifier.width(1.dp).height(22.dp).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)))
                     IconButton(onClick = onReply, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.AutoMirrored.Filled.Reply, contentDescription = "Reply", tint = MaterialTheme.colorScheme.primary)
+                        Icon(KeryxGlyphs.Reply, contentDescription = "Reply", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     }
                     IconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = "Copy text", tint = MaterialTheme.colorScheme.primary)
+                        Icon(KeryxGlyphs.Copy, contentDescription = "Copy text", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     }
                     if (onToggleKeep != null) {
                         IconButton(onClick = onToggleKeep, modifier = Modifier.size(32.dp)) {
                             Icon(
-                                if (kept == true) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                                if (kept == true) KeryxGlyphs.BookmarkFilled else KeryxGlyphs.Bookmark,
                                 contentDescription = if (kept == true) "Remove from Saved" else "Keep in Archive",
                                 tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
                             )
                         }
                     }
                     if (onSpeak != null) {
                         IconButton(onClick = onSpeak, modifier = Modifier.size(32.dp)) {
                             Icon(
-                                if (speaking) Icons.Default.Stop else Icons.AutoMirrored.Filled.VolumeUp,
+                                if (speaking) KeryxGlyphs.StopSquare else KeryxGlyphs.Volume,
                                 contentDescription = if (speaking) "Stop speaking" else "Read aloud",
                                 tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
                             )
                         }
                     }
                     if (onDelete != null) {
                         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                             Icon(
-                                Icons.Outlined.Delete,
+                                KeryxGlyphs.Trash,
                                 contentDescription = "Delete message",
                                 tint = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
+                                modifier = Modifier.size(20.dp),
                             )
                         }
                     }

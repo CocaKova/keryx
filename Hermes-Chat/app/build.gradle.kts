@@ -136,6 +136,11 @@ dependencies {
   implementation(libs.ktor.client.okhttp)
   implementation(libs.androidx.sqlite.bundled)
   implementation(libs.markdown.renderer.m3)
+  // 2.6.2 renderer parity: syntax-highlighted code fences (highlights) and inline images (coil3).
+  implementation(libs.markdown.renderer.code)
+  implementation(libs.markdown.renderer.coil3)
+  implementation(libs.coil3.compose)
+  implementation(libs.coil3.network.okhttp)
 
   // Room (Removed - Migrating to Matrix Server)
 

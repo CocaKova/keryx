@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import chat.keryx.app.presentation.ui.components.KeryxGlyphs
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -189,11 +190,40 @@ fun NavigationDrawerContent(
                     }
                 }
                 Spacer(modifier = Modifier.weight(1f))
+                // Theme lives up here with the identity, not among the doors: the door grid is
+                // destinations only (2.6.2), and a switch styled as a door was the one tile
+                // that took you nowhere.
+                val themeGlyph = when (isDarkTheme) {
+                    true -> KeryxGlyphs.Sun
+                    false -> KeryxGlyphs.AutoTheme
+                    null -> KeryxGlyphs.Moon
+                }
+                val themeLabel = when (isDarkTheme) {
+                    true -> "Switch to light"
+                    false -> "Follow system"
+                    null -> "Switch to dark"
+                }
+                IconButton(onClick = {
+                    viewModel.toggleTheme(
+                        when (isDarkTheme) {
+                            null -> true
+                            true -> false
+                            false -> null
+                        }
+                    )
+                }) {
+                    Icon(
+                        themeGlyph,
+                        contentDescription = themeLabel,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
                 // The drawer's ONE new-conversation entry point: DM / create / join, in a sheet.
                 var showNewChat by remember { mutableStateOf(false) }
                 IconButton(onClick = { showNewChat = true }) {
                     Icon(
-                        Icons.Default.Add,
+                        KeryxGlyphs.Plus,
                         contentDescription = "New chat",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp),
@@ -212,7 +242,7 @@ fun NavigationDrawerContent(
                 value = query,
                 onValueChange = { query = it },
                 placeholder = { Text("Jump to…") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                leadingIcon = { Icon(KeryxGlyphs.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
@@ -370,57 +400,38 @@ fun NavigationDrawerContent(
                     .fillMaxWidth()
                     .padding(top = 8.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
-                maxItemsInEachRow = 5,
+                maxItemsInEachRow = 4,
             ) {
-                DrawerDoor(Icons.Default.ViewKanban, "Missions", Modifier.weight(1f)) {
+                DrawerDoor(KeryxGlyphs.Board, "Missions", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Missions)
                 }
-                DrawerDoor(Icons.Default.AutoStories, "Archive", Modifier.weight(1f)) {
+                DrawerDoor(KeryxGlyphs.Archive, "Archive", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Archive)
                 }
                 // Only where the gateway serves projects.* — the probe is the overview fetch.
                 val hasProjects by viewModel.projects.hasProjects.collectAsState()
-                if (hasProjects) DrawerDoor(Icons.Default.Folder, "Projects", Modifier.weight(1f)) {
+                if (hasProjects) DrawerDoor(KeryxGlyphs.Folder, "Projects", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Projects)
                 }
                 // Only where the gateway declares `git` (keryx.git.enabled) — a capability, not a probe.
                 val caps by viewModel.hub.reasoningCaps.collectAsState()
-                if (caps?.git == true) DrawerDoor(Icons.Default.Construction, "Shipyard", Modifier.weight(1f)) {
+                if (caps?.git == true) DrawerDoor(KeryxGlyphs.GitBranch, "Shipyard", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Shipyard)
                 }
                 // Scheduled work reads at floor level (was buried as the hub's 4th tab). Gated
                 // the cheap way: the capabilities probe answering means Hermes Link is alive,
                 // which is the same wire the runs ride.
-                if (caps != null) DrawerDoor(Icons.Default.Schedule, "Runs", Modifier.weight(1f)) {
+                if (caps != null) DrawerDoor(KeryxGlyphs.Watch, "Runs", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Runs)
                 }
-                DrawerDoor(Icons.Default.Dns, "Gateway", Modifier.weight(1f)) {
+                DrawerDoor(KeryxGlyphs.Pulse, "Gateway", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway)
                 }
-                DrawerDoor(Icons.Default.Handyman, "Workshop", Modifier.weight(1f)) {
+                DrawerDoor(KeryxGlyphs.Wrench, "Workshop", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Workshop)
                 }
-                // System last: the places you go daily read before the switches you flip rarely.
-                val themeIcon = when (isDarkTheme) {
-                    true -> Icons.Default.LightMode
-                    false -> Icons.Default.BrightnessAuto
-                    null -> Icons.Default.DarkMode
-                }
-                val themeText = when (isDarkTheme) {
-                    true -> "Light"
-                    false -> "System"
-                    null -> "Dark"
-                }
-                DrawerDoor(themeIcon, themeText, Modifier.weight(1f)) {
-                    viewModel.toggleTheme(
-                        when (isDarkTheme) {
-                            null -> true
-                            true -> false
-                            false -> null
-                        }
-                    )
-                }
-                DrawerDoor(Icons.Default.Settings, "Settings", Modifier.weight(1f)) {
+                // Settings last: the places you go daily read before the one you visit rarely.
+                DrawerDoor(KeryxGlyphs.Sliders, "Settings", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Settings)
                 }
             }
@@ -518,7 +529,7 @@ fun RoomRow(
                 if (isTemporary) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Icon(
-                        imageVector = Icons.Filled.HourglassEmpty,
+                        imageVector = KeryxGlyphs.Hourglass,
                         contentDescription = "Temporary — deleted at next launch",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.size(12.dp),
@@ -527,7 +538,7 @@ fun RoomRow(
                 if (isPinned) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Icon(
-                        imageVector = Icons.Filled.Star,
+                        imageVector = KeryxGlyphs.Star,
                         contentDescription = "Pinned",
                         tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
                         modifier = Modifier.size(12.dp),
@@ -913,7 +924,7 @@ private fun DrawerDoor(
         Icon(
             icon, contentDescription = label,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(19.dp),
+            modifier = Modifier.size(22.dp),
         )
         Spacer(modifier = Modifier.height(3.dp))
         Text(

@@ -42,6 +42,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -107,21 +110,27 @@ fun ToolTheaterRow(
             // lines carry no verdict in the text, and printing ✓ for those told a turn's one
             // failure apart from its successes only by luck. Unknown gets its own faint mark; a
             // watched turn fills it in for real from the beat.
+            // Verdicts wear the app's status colours (2.6.2): a seen success is quietly green,
+            // a failure is the same red every failed thing in Keryx wears, unknown stays ink.
             Text(
                 when (ok) { true -> "✓"; false -> "✕"; null -> "·" },
                 fontSize = 9.sp,
                 color = when (ok) {
-                    false -> MaterialTheme.colorScheme.error
-                    true -> baseColor.copy(alpha = 0.45f)
+                    false -> KeryxStatus.bad
+                    true -> KeryxStatus.good.copy(alpha = 0.8f)
                     null -> baseColor.copy(alpha = 0.28f)
                 },
                 modifier = Modifier.width(6.dp),
             )
             Spacer(modifier = Modifier.width(7.dp))
+            // The glyph is the tool's identity and its family's colour is the kind of work —
+            // a shell is gold, a read is slate, an edit is amber — so a run's shape reads
+            // before a single verb is read (2.6.2 tool-log pass).
             Text(
                 if (isSkill) "✦" else ToolGrammar.glyphOf(call.name),
                 fontSize = 10.sp,
-                color = if (isSkill) accent.copy(alpha = 0.9f) else baseColor.copy(alpha = 0.55f),
+                color = if (isSkill) accent.copy(alpha = 0.9f)
+                        else KeryxToolTint.forTool(call.name).copy(alpha = 0.9f),
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
@@ -289,7 +298,8 @@ fun ToolTheaterRun(
     // the live view and this record are the same run at two ages and must not look like two
     // different features (Jonny, on device: "the tool call log and the new tool call kind of
     // fight"). Same source of truth for the summary sentence, too.
-    val distinctGlyphs = calls.map { ToolGrammar.glyphOf(it.name) }.distinct().take(3)
+    // One tool per distinct glyph, so the strip's tints follow its shapes (2.6.2).
+    val distinctGlyphTools = calls.map { it.name }.distinctBy { ToolGrammar.glyphOf(it) }.take(3)
         .ifEmpty { listOf("⚙") }
     val n = run.callCount
     val failed = calls.count { it.failed }
@@ -352,7 +362,19 @@ fun ToolTheaterRun(
                 .clickable { expanded = !expanded; onToggle(expanded) }
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
-            Text(distinctGlyphs.joinToString(" "), fontSize = 12.sp, color = baseColor.copy(alpha = 0.65f))
+            // The header's glyph strip, each glyph in its family's colour: the run's shape at
+            // a glance, before it is opened.
+            Text(
+                buildAnnotatedString {
+                    distinctGlyphTools.forEachIndexed { i, tool ->
+                        if (i > 0) append(" ")
+                        withStyle(SpanStyle(color = KeryxToolTint.forTool(tool).copy(alpha = 0.9f))) {
+                            append(ToolGrammar.glyphOf(tool))
+                        }
+                    }
+                },
+                fontSize = 12.sp,
+            )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = label,
