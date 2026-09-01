@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -68,6 +69,7 @@ fun NewChatSheet(
 
             if (viewModel.transportIsDirect) {
                 var title by rememberSaveable { mutableStateOf("") }
+                var temporary by rememberSaveable { mutableStateOf(false) }
                 Text(
                     "A fresh gateway session. Name it now, or let the first exchange title it.",
                     fontSize = 12.sp,
@@ -82,9 +84,44 @@ fun NewChatSheet(
                     modifier = Modifier.fillMaxWidth(),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.field),
                 )
+                Spacer(Modifier.height(6.dp))
+                // Temporary: a scratch conversation that owes the roster nothing. It behaves
+                // like any session while the app lives; the next cold start deletes it from
+                // the gateway (the drawer marks it with the hourglass meanwhile).
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { temporary = !temporary }
+                        .padding(vertical = 6.dp),
+                ) {
+                    Icon(
+                        Icons.Default.HourglassEmpty,
+                        contentDescription = null,
+                        tint = if (temporary) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "Temporary",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = if (temporary) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            "Deleted from the gateway at the app's next launch",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    androidx.compose.material3.Switch(checked = temporary, onCheckedChange = { temporary = it })
+                }
                 SheetActionRow(busy = busy, enabled = true, label = "Create") {
                     busy = true; error = null
-                    viewModel.createSession(title, ::done)
+                    viewModel.createSession(title, temporary, ::done)
                 }
                 error?.let {
                     Spacer(Modifier.height(6.dp))

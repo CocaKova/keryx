@@ -135,6 +135,10 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getStringSet("cron_seen_ids", emptySet()) ?: emptySet()
         set(value) = prefs.edit().putStringSet("cron_seen_ids", value).apply()
 
+    override var temporarySessionIds: Set<String>
+        get() = prefs.getStringSet("temporary_session_ids", emptySet()) ?: emptySet()
+        set(value) = prefs.edit().putStringSet("temporary_session_ids", value).apply()
+
     override var lastMatrixUsername: String
         get() = prefs.getString("last_matrix_username", "") ?: ""
         set(value) = prefs.edit().putString("last_matrix_username", value).apply()

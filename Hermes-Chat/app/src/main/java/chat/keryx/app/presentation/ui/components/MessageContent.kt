@@ -164,14 +164,27 @@ fun MessageContent(
                         splitAt >= 0 -> segment.text.substring(splitAt + 2)
                         else -> segment.text
                     }
-                    if (head.isNotBlank()) Markdown(
-                        content = MessageParser.linkifyAutolinks(MessageParser.closeDanglingFences(head)),
-                        colors = markdownColor(text = textColor),
-                        typography = chatMarkdownTypography(),
-                        flavour = GFMFlavourDescriptor(),
-                        annotator = annotator,
-                        components = components,
-                    )
+                    if (head.isNotBlank()) {
+                        // immediate (sync) parse, NOT the String overload: 0.35 parses async
+                        // (Loading → Success), and the Loading frame renders as an EMPTY box —
+                        // so any content change collapsed the rendered prose to zero height for
+                        // a frame and the bubble yo-yoed ("very very glitchy" streaming,
+                        // device-caught 2026-09-01; 0.26 parsed in composition and never
+                        // flashed). Chat bodies are small and the streaming head is tail-
+                        // windowed, so the blocking parse is the cheap side of the trade.
+                        val mdState = com.mikepenz.markdown.model.rememberMarkdownState(
+                            content = MessageParser.linkifyAutolinks(MessageParser.closeDanglingFences(head)),
+                            flavour = GFMFlavourDescriptor(),
+                            immediate = true,
+                        )
+                        Markdown(
+                            markdownState = mdState,
+                            colors = markdownColor(text = textColor),
+                            typography = chatMarkdownTypography(),
+                            annotator = annotator,
+                            components = components,
+                        )
+                    }
                     if (fadeTail && tail.isNotEmpty()) FadingStreamText(
                         text = tail,
                         textColor = textColor,
