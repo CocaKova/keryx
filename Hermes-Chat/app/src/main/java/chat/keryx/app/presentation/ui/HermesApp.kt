@@ -487,7 +487,6 @@ internal fun ReasoningMenu(
     caps: chat.keryx.app.data.remote.HermesStreamClient.ReasoningCaps?,
     onDismiss: () -> Unit,
     onCommand: (String) -> Unit,
-    onSteer: () -> Unit,
 ) {
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.tertiary
@@ -591,24 +590,8 @@ internal fun ReasoningMenu(
             },
             onClick = { onCommand("reset") },
         )
-        HorizontalDivider(
-            color = accent.copy(alpha = 0.12f),
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-        )
-        DropdownMenuItem(
-            text = {
-                androidx.compose.foundation.layout.Row(
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        Icons.Default.Explore, contentDescription = null,
-                        tint = accent.copy(alpha = 0.75f),
-                        modifier = Modifier.padding(end = 10.dp).size(16.dp),
-                    )
-                    Text("Steer the agent…", fontSize = 14.sp)
-                }
-            },
-            onClick = onSteer,
-        )
+        // Steering left this menu in 2.6.2: mid-turn the composer's send button IS the steer
+        // (tap steers, hold queues) — a verb hidden behind the reasoning pill was the
+        // affordance nobody found.
     }
 }

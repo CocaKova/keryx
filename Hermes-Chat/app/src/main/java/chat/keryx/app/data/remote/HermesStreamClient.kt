@@ -602,6 +602,9 @@ class HermesStreamClient(
         message: String,
         /** The raw-config editor's "this looks like a truncated paste" confirmation gate. */
         val needsForce: Boolean = false,
+        /** The HTTP status (0 when the failure never reached a response) — a caller that
+         *  probes for a route an older plugin lacks branches on 404, not on message text. */
+        val httpStatus: Int = 0,
     ) : IllegalStateException(message)
 
     private suspend fun apiCall(
@@ -645,7 +648,7 @@ class HermesStreamClient(
                 val needsForce = (err as? kotlinx.serialization.json.JsonObject)
                     ?.get("needs_force")
                     ?.let { (it as? JsonPrimitive)?.contentOrNull == "true" } == true
-                throw GatewayError(msg ?: "HTTP ${resp.code}", needsForce)
+                throw GatewayError(msg ?: "HTTP ${resp.code}", needsForce, resp.code)
             }
             // Snapshot plain GETs only: parameterized paths (event cursors, per-id lookups) would
             // grow the cache without ever being re-read. A caller whose query is fixed rather than
@@ -1256,9 +1259,20 @@ class HermesStreamClient(
 
     data class BrainEntry(val name: String, val description: String)
 
-    /** The gateway's model catalog (`/api/model/options`, the config default as current). */
-    suspend fun modelOptions(): Result<chat.keryx.core.model.ModelCatalog> =
-        runCatching { chat.keryx.core.model.ModelCatalog.parse(apiCall("/api/model/options", snapshot = false)) }
+    /** The gateway's model catalog, the config default as current. `/keryx/model/options`
+     *  (plugin 2.6.2+) answers in the desktop picker's explicit-only dialect — providers the
+     *  user signed into or configured, never ones the gateway borrows ambient credentials for.
+     *  An older plugin has no such route; the API server's own `/api/model/options` is the
+     *  fallback, and it lists the whole universe (the `authenticated` flag still gates rows). */
+    suspend fun modelOptions(): Result<chat.keryx.core.model.ModelCatalog> = runCatching {
+        val obj = try {
+            apiCall("/keryx/model/options", snapshot = false)
+        } catch (e: GatewayError) {
+            if (e.httpStatus != 404) throw e
+            apiCall("/api/model/options", snapshot = false)
+        }
+        chat.keryx.core.model.ModelCatalog.parse(obj)
+    }
 
     suspend fun brains(): Result<Brains> =
         runCatching { HubJson.brains(apiCall("/keryx/brains")) }

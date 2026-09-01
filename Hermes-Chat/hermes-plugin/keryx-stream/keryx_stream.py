@@ -2692,6 +2692,27 @@ def brains_snapshot() -> dict:
     }
 
 
+def model_options_snapshot() -> dict:
+    """`GET /keryx/model/options` — the model picker's catalog, in the desktop's
+    dialect: `explicit_only` (rows the user actually signed into or configured
+    — ambient credentials the gateway borrows on its own, such as a `gh` CLI
+    token seeding Copilot, stay out) and no unconfigured skeletons.
+
+    The API server's own `/api/model/options` hardcodes the opposite
+    (`include_unconfigured=True`, no explicit filter) because it exists for
+    programmatic clients that want the whole universe. A phone picker wants
+    what a human can choose from right now; the JSON-RPC `model.options` the
+    direct door speaks already honours these flags, so this route makes the
+    Matrix door's catalog the same list."""
+    from hermes_cli.inventory import build_model_options_payload, load_picker_context
+
+    return build_model_options_payload(
+        load_picker_context(),
+        explicit_only=True,
+        include_unconfigured=False,
+    )
+
+
 def brain_select(name: Any) -> Tuple[int, dict]:
     """`POST /keryx/brain` — launch the operator's swap command for [name],
     detached (a swap that restarts this gateway must not kill itself). The
@@ -3711,6 +3732,9 @@ def register_keryx_routes(router: Any, check_auth) -> None:
     def _brains_get(request, body):
         return 200, brains_snapshot()
 
+    def _model_options_get(request, body):
+        return 200, model_options_snapshot()
+
     def _brain_post(request, body):
         return brain_select(body.get("name"))
 
@@ -3739,6 +3763,7 @@ def register_keryx_routes(router: Any, check_auth) -> None:
     router.add_put("/keryx/config/raw", _make_json_handler(check_auth, _config_raw_put))
     router.add_get("/keryx/logs", _make_json_handler(check_auth, _logs_get))
     router.add_get("/keryx/brains", _make_json_handler(check_auth, _brains_get))
+    router.add_get("/keryx/model/options", _make_json_handler(check_auth, _model_options_get))
     router.add_post("/keryx/brain", _make_json_handler(check_auth, _brain_post))
     # Hermes update (2.4.1): GET is local-only, /check refreshes refs in the
     # background, POST launches the operator's command.
