@@ -67,10 +67,13 @@ object MathUnicode {
     /** `$…$` with no space just inside the dollars (so "$5 and $6" stays money), or `\(…\)`. */
     private val INLINE = Regex("""(?<![\\$\w])\$(?!\s)([^$\n]+?)(?<!\s)\$(?![\w$])|\\\((.+?)\\\)""")
 
-    private val FRAC = Regex("""\\(?:frac|dfrac|tfrac)\{([^{}]*)}\{([^{}]*)}""")
-    private val SQRT = Regex("""\\sqrt\{([^{}]*)}""")
-    private val SUP_BRACE = Regex("""\^\{([^{}]*)}""")
-    private val SUB_BRACE = Regex("""_\{([^{}]*)}""")
+    // ⚠️ Every literal `}` is escaped: Android's ICU regex rejects a bare one ("Syntax error
+    // near index 33") while the JVM's accepts it — the unit tests passed and the app died at
+    // class-init on the phone (2.6.2, 09-01). Keep every pattern here ICU-clean.
+    private val FRAC = Regex("""\\(?:frac|dfrac|tfrac)\{([^{}]*)\}\{([^{}]*)\}""")
+    private val SQRT = Regex("""\\sqrt\{([^{}]*)\}""")
+    private val SUP_BRACE = Regex("""\^\{([^{}]*)\}""")
+    private val SUB_BRACE = Regex("""_\{([^{}]*)\}""")
     private val SUP_ONE = Regex("""\^(\S)""")
     private val SUB_ONE = Regex("""_(\S)""")
     private val COMMAND = Regex("""\\([a-zA-Z]+|[,;! ])""")
@@ -85,7 +88,14 @@ object MathUnicode {
      * are left untouched. Block math becomes its own paragraph wrapped in `⟦ ⟧` markers on a
      * single line (renderers draw it centered mono via [BLOCK_OPEN]/[BLOCK_CLOSE]).
      */
-    fun render(text: String): String {
+    fun render(text: String): String = try {
+        renderUnsafe(text)
+    } catch (_: Throwable) {
+        // A regex dialect surprise must degrade to raw TeX, never to a dead app.
+        text
+    }
+
+    private fun renderUnsafe(text: String): String {
         if (!hasMath(text)) return text
         // Split on fences so code never gets touched; odd segments are inside a fence.
         val parts = splitFences(text)
