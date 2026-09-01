@@ -758,7 +758,7 @@ fun ChatScreen(
                         )
                     }
                     Icon(
-                        Icons.Default.KeyboardArrowDown,
+                        chat.keryx.app.presentation.ui.components.KeryxGlyphs.ChevronDown,
                         contentDescription = "Jump to newest",
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                         modifier = Modifier.size(18.dp),
@@ -1061,10 +1061,10 @@ private fun Composer(
             )
             IconButton(onClick = { attachMenu = !attachMenu }, modifier = Modifier.size(44.dp)) {
                 Icon(
-                    Icons.Default.Add,
+                    chat.keryx.app.presentation.ui.components.KeryxGlyphs.Plus,
                     contentDescription = "Attach",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.graphicsLayer { rotationZ = addRotation },
+                    modifier = Modifier.size(22.dp).graphicsLayer { rotationZ = addRotation },
                 )
             }
         }
@@ -1128,7 +1128,7 @@ private fun Composer(
                     )
                 } else {
                     Icon(
-                        Icons.Default.Mic,
+                        chat.keryx.app.presentation.ui.components.KeryxGlyphs.Mic,
                         contentDescription = if (recording) "Stop dictation" else "Dictate",
                         tint = if (recording) MaterialTheme.colorScheme.error
                                else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1157,7 +1157,8 @@ private fun Composer(
             "steer" -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.Steer to "Steer the running turn"
             "queue" -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.Stack to "Queue for next turn"
             "stop" -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.StopSquare to "Stop the turn"
-            else -> Icons.AutoMirrored.Filled.Send to "Send"
+            // Arrow-up, the desktop's send — never a paper plane among hand-drawn glyphs.
+            else -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.ArrowUp to "Send"
         }
         val armed = textState.text.isNotBlank() || busyAction == "stop"
         Box {
@@ -1311,11 +1312,17 @@ private fun ComposerFooter(
                                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.weight(1f, fill = false),
                                     )
-                                    val tag = buildString {
-                                        if (m.fast) append(" ⚡")
-                                        if (m.reasoning) append(" 💭")
-                                    }
-                                    if (tag.isNotBlank()) Text(tag, fontSize = 10.sp, color = meta)
+                                    // Capability tags as words, not emoji (2.6.2 icon pass):
+                                    // a glyph family and a tofu-prone emoji on one row read
+                                    // as two apps.
+                                    val tag = listOfNotNull(
+                                        "fast".takeIf { m.fast },
+                                        "thinks".takeIf { m.reasoning },
+                                    ).joinToString(" · ")
+                                    if (tag.isNotBlank()) Text(
+                                        "  $tag", fontSize = 9.5.sp, color = meta,
+                                        fontFamily = FontFamily.Monospace,
+                                    )
                                 }
                             },
                             onClick = { modelMenu = false; if (!isActive) onModelSelect(m) },
@@ -1427,7 +1434,7 @@ private fun ReplyBar(target: Message, onDismiss: () -> Unit) {
             )
         }
         IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Default.Close, contentDescription = "Cancel reply", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(chat.keryx.app.presentation.ui.components.KeryxGlyphs.Close, contentDescription = "Cancel reply", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -1453,7 +1460,13 @@ private fun AttachmentPreview(att: PendingAttachment, onRemove: () -> Unit) {
                 modifier = Modifier.size(44.dp).clip(RoundedCornerShape(8.dp)),
             )
         } else {
-            Text(if (att.isImage) "🖼" else "📎", fontSize = 18.sp)
+            Icon(
+                if (att.isImage) chat.keryx.app.presentation.ui.components.KeryxGlyphs.Image
+                else chat.keryx.app.presentation.ui.components.KeryxGlyphs.FileClip,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp),
+            )
         }
         Spacer(modifier = Modifier.width(10.dp))
         Text(
@@ -1465,7 +1478,7 @@ private fun AttachmentPreview(att: PendingAttachment, onRemove: () -> Unit) {
             modifier = Modifier.weight(1f, fill = false).widthIn(max = 220.dp),
         )
         IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Default.Close, contentDescription = "Remove attachment", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(chat.keryx.app.presentation.ui.components.KeryxGlyphs.Close, contentDescription = "Remove attachment", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -1486,8 +1499,8 @@ private fun DreamAttachBloom(visible: Boolean, onPhoto: () -> Unit, onFile: () -
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(start = 8.dp, bottom = 10.dp),
         ) {
-            DreamPill("Photo", Icons.Default.Image, accent, delayMs = 0) { onPhoto() }
-            DreamPill("File", Icons.Default.AttachFile, accent, delayMs = 55) { onFile() }
+            DreamPill("Photo", chat.keryx.app.presentation.ui.components.KeryxGlyphs.Image, accent, delayMs = 0) { onPhoto() }
+            DreamPill("File", chat.keryx.app.presentation.ui.components.KeryxGlyphs.FileClip, accent, delayMs = 55) { onFile() }
         }
     }
 }

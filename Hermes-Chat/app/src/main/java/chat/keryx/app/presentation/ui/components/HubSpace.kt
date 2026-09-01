@@ -236,7 +236,7 @@ private fun HubSpace(
         },
         actions = {
             IconButton(onClick = { settled?.refresh(viewModel) }) {
-                Icon(Icons.Default.Refresh, contentDescription = "Refresh",
+                Icon(KeryxGlyphs.Refresh, contentDescription = "Refresh",
                     tint = MaterialTheme.colorScheme.primary)
             }
         },

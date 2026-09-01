@@ -30,6 +30,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
@@ -119,14 +120,24 @@ fun MessageContent(
     // Render **strong** spans heavier than the library's default (FontWeight.Bold looked too light).
     val annotator = markdownAnnotator { source, node ->
         // `this` is the AnnotatedString.Builder.
-        if (node.type == MarkdownElementTypes.STRONG) {
-            val inner = node.getTextInNode(source).toString().trim('*', '_')
-            pushStyle(SpanStyle(fontWeight = FontWeight.Black))
-            append(inner)
-            pop()
-            true
-        } else {
-            false
+        when (node.type) {
+            MarkdownElementTypes.STRONG -> {
+                val inner = node.getTextInNode(source).toString().trim('*', '_')
+                pushStyle(SpanStyle(fontWeight = FontWeight.Black))
+                append(inner)
+                pop()
+                true
+            }
+            // GFM ~~strikethrough~~: the flavour parses it, the 0.35 renderer has no element
+            // for it and printed the tildes (2.6.2 renderer parity).
+            org.intellij.markdown.flavours.gfm.GFMElementTypes.STRIKETHROUGH -> {
+                val inner = node.getTextInNode(source).toString().removePrefix("~~").removeSuffix("~~")
+                pushStyle(SpanStyle(textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough))
+                append(inner)
+                pop()
+                true
+            }
+            else -> false
         }
     }
     // Render code blocks/fences in a horizontally-scrollable monospace surface so long lines
@@ -137,7 +148,10 @@ fun MessageContent(
     val components = remember(textColor) {
         markdownComponents(
             codeBlock = { ScrollableCodeBlock(indentedCodeText(it.node.getTextInNode(it.content).toString()), textColor) },
-            codeFence = { ScrollableCodeBlock(fencedCodeText(it.node.getTextInNode(it.content).toString()), textColor) },
+            codeFence = {
+                val raw = it.node.getTextInNode(it.content).toString()
+                ScrollableCodeBlock(fencedCodeText(raw), textColor, language = fenceLanguage(raw))
+            },
         )
     }
     Column(modifier = modifier) {
@@ -173,7 +187,13 @@ fun MessageContent(
                         // flashed). Chat bodies are small and the streaming head is tail-
                         // windowed, so the blocking parse is the cheap side of the trade.
                         val mdState = com.mikepenz.markdown.model.rememberMarkdownState(
-                            content = MessageParser.linkifyAutolinks(MessageParser.closeDanglingFences(head)),
+                            content = MessageParser.linkifyAutolinks(
+                                MessageParser.closeDanglingFences(
+                                    // LaTeX → Unicode (2.6.2): `$E=mc^2$` reads as E = mc²
+                                    // instead of raw TeX; fences and code spans are skipped.
+                                    chat.keryx.core.protocol.MathUnicode.render(head),
+                                ),
+                            ),
                             flavour = GFMFlavourDescriptor(),
                             immediate = true,
                         )
@@ -183,6 +203,9 @@ fun MessageContent(
                             typography = chatMarkdownTypography(),
                             annotator = annotator,
                             components = components,
+                            // Inline `![alt](url)` images load through coil3 (2.6.2); the
+                            // library's default transformer is a no-op that drew nothing.
+                            imageTransformer = com.mikepenz.markdown.coil3.Coil3ImageTransformerImpl,
                         )
                     }
                     if (fadeTail && tail.isNotEmpty()) FadingStreamText(
@@ -230,6 +253,13 @@ internal fun fencedCodeText(raw: String): String {
     if (lines.isEmpty() || !lines.first().trimStart().startsWith("```")) return raw.trim('\n')
     val end = if (lines.size > 1 && lines.last().trim().startsWith("```")) lines.size - 1 else lines.size
     return lines.subList(1, end).joinToString("\n")
+}
+
+/** The info string after the opening fence (```kotlin → "kotlin"), or null when bare. */
+internal fun fenceLanguage(raw: String): String? {
+    val first = raw.trim('\n').lines().firstOrNull()?.trimStart() ?: return null
+    if (!first.startsWith("```") && !first.startsWith("~~~")) return null
+    return first.drop(3).trim().substringBefore(' ').substringBefore('{').ifBlank { null }
 }
 
 /** The code inside an indented (4-space) code block node: strip the indent prefix per line. */
@@ -540,7 +570,7 @@ private fun ToolCalls(calls: List<chat.keryx.core.model.ToolCall>, baseColor: Co
  *  with a quiet copy affordance floating in the corner: tap → clipboard, glyph melts ❐ → ✓ for a
  *  beat as confirmation. Kept low-alpha so it never competes with the code itself. */
 @Composable
-private fun ScrollableCodeBlock(code: String, textColor: Color) {
+private fun ScrollableCodeBlock(code: String, textColor: Color, language: String? = null) {
     val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
     val trimmed = code.trim('\n')
     var copied by remember(trimmed) { mutableStateOf(false) }
@@ -558,16 +588,53 @@ private fun ScrollableCodeBlock(code: String, textColor: Color) {
         // claims every horizontal drag over it, which is what made drawer/reply swipes dead
         // over short code blocks ("you can only swipe in some areas").
         val codeScroll = rememberScrollState()
-        Text(
-            text = trimmed,
-            color = textColor.copy(alpha = 0.85f),
-            fontSize = 12.sp,
-            fontFamily = FontFamily.Monospace,
-            softWrap = false,
+        // The web chats' code block: a language tag in the corner and the tokens coloured.
+        // Highlighting rides `highlights` through the renderer's code module; a language it
+        // doesn't know falls back to plain mono, same as before (2.6.2 renderer parity).
+        val onVoid = MaterialTheme.colorScheme.background.luminance() < 0.5f
+        val highlighter = remember(onVoid) {
+            dev.snipme.highlights.Highlights.Builder()
+                .theme(dev.snipme.highlights.model.SyntaxThemes.pastel(darkMode = onVoid))
+        }
+        val lang = language?.trim()?.lowercase().orEmpty()
+        val known = lang.isNotBlank() &&
+            dev.snipme.highlights.model.SyntaxLanguage.getByName(lang) != null
+        Column(
             modifier = Modifier
                 .horizontalScroll(codeScroll, enabled = codeScroll.maxValue > 0)
-                .padding(start = 10.dp, top = 10.dp, bottom = 10.dp, end = 34.dp),
-        )
+                .padding(start = 10.dp, top = if (lang.isNotBlank()) 22.dp else 10.dp, bottom = 10.dp, end = 34.dp),
+        ) {
+            if (known) {
+                com.mikepenz.markdown.compose.elements.MarkdownHighlightedCode(
+                    trimmed,
+                    lang,
+                    highlighter,
+                    androidx.compose.ui.text.TextStyle(
+                        color = textColor.copy(alpha = 0.85f),
+                        fontSize = 12.sp,
+                        fontFamily = FontFamily.Monospace,
+                    ),
+                )
+            } else {
+                Text(
+                    text = trimmed,
+                    color = textColor.copy(alpha = 0.85f),
+                    fontSize = 12.sp,
+                    fontFamily = FontFamily.Monospace,
+                    softWrap = false,
+                )
+            }
+        }
+        if (lang.isNotBlank()) {
+            Text(
+                text = lang,
+                color = textColor.copy(alpha = 0.45f),
+                fontSize = 9.5.sp,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.5.sp,
+                modifier = Modifier.align(Alignment.TopStart).padding(start = 10.dp, top = 6.dp),
+            )
+        }
         Text(
             text = if (copied) "✓" else "❐",
             color = if (copied) Color(0xFF4CAF7D) else textColor.copy(alpha = 0.45f),

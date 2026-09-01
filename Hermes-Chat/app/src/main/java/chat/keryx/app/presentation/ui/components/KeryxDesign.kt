@@ -137,6 +137,50 @@ fun duskBrush(): Brush {
     )
 }
 
+/**
+ * The tool families' colours (2.6.2 tool-log pass). Same contract as [KeryxStatus]: a void set
+ * and a paper set, picked by the ground, every paper hue clearing 4.5:1 on parchment
+ * (PaperContrastTest pins it). Families come from `ToolGrammar.familyOf`; the tint goes on the
+ * tool's glyph and the run header's glyph strip, never on the verdict mark — ✓/✕ keep
+ * [KeryxStatus] so "failed" reads the same colour everywhere in the app.
+ *
+ * Hue logic: shell = gold (the terminal's prompt), files = slate blue (paper), edit = amber
+ * (ink still wet), web = teal (the wire), mind = violet (memory, skills, recall), media = rose,
+ * people = magenta (delegation, questions, schedules), other = faded ink.
+ */
+object KeryxToolTint {
+    val VOID: Map<chat.keryx.core.model.ToolGrammar.Family, Color> = mapOf(
+        chat.keryx.core.model.ToolGrammar.Family.SHELL to Color(0xFFE6C36A),
+        chat.keryx.core.model.ToolGrammar.Family.FILES to Color(0xFF8FB4E0),
+        chat.keryx.core.model.ToolGrammar.Family.EDIT to Color(0xFFF0A868),
+        chat.keryx.core.model.ToolGrammar.Family.WEB to Color(0xFF6FD3C4),
+        chat.keryx.core.model.ToolGrammar.Family.MIND to Color(0xFFB9A0F0),
+        chat.keryx.core.model.ToolGrammar.Family.MEDIA to Color(0xFFEE9AAE),
+        chat.keryx.core.model.ToolGrammar.Family.PEOPLE to Color(0xFFDE8FD6),
+        chat.keryx.core.model.ToolGrammar.Family.OTHER to Color(0x99FFFFFF),
+    )
+    val PAPER: Map<chat.keryx.core.model.ToolGrammar.Family, Color> = mapOf(
+        chat.keryx.core.model.ToolGrammar.Family.SHELL to Color(0xFF7A5A12),
+        chat.keryx.core.model.ToolGrammar.Family.FILES to Color(0xFF3A5F8A),
+        chat.keryx.core.model.ToolGrammar.Family.EDIT to Color(0xFF9A5418),
+        chat.keryx.core.model.ToolGrammar.Family.WEB to Color(0xFF1F6F66),
+        chat.keryx.core.model.ToolGrammar.Family.MIND to Color(0xFF6A4BB8),
+        chat.keryx.core.model.ToolGrammar.Family.MEDIA to Color(0xFFA6405C),
+        chat.keryx.core.model.ToolGrammar.Family.PEOPLE to Color(0xFF8E3E86),
+        chat.keryx.core.model.ToolGrammar.Family.OTHER to Color(0xFF6B6459),
+    )
+
+    /** The tint for [family] on the current ground. */
+    val of: @Composable (chat.keryx.core.model.ToolGrammar.Family) -> Color
+        get() = { family ->
+            val onVoid = MaterialTheme.colorScheme.background.luminance() < 0.5f
+            (if (onVoid) VOID else PAPER).getValue(family)
+        }
+
+    @Composable
+    fun forTool(name: String): Color = of(chat.keryx.core.model.ToolGrammar.familyOf(name))
+}
+
 // --- Motion ------------------------------------------------------------------------------------
 
 /**
@@ -520,7 +564,7 @@ private fun KeryxSpaceBody(
                 actions()
                 IconButton(onClick = onClose) {
                     Icon(
-                        Icons.Default.Close,
+                        KeryxGlyphs.Close,
                         contentDescription = "Close $title",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

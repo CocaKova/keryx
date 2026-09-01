@@ -1,5 +1,6 @@
 package chat.keryx.app
 
+import chat.keryx.app.presentation.ui.components.KeryxToolTint
 import chat.keryx.core.model.Heralds
 import chat.keryx.app.presentation.ui.components.roomLightRaw
 import java.io.File
@@ -119,6 +120,23 @@ class PaperContrastTest {
             assertTrue("$name scores ${contrast(c, paper)} on parchment", contrast(c, paper) >= AA)
         }
         assertTrue("idle must be quiet, not absent", contrast(idle, paper) >= 3.0)
+    }
+
+    @Test
+    fun `tool family tints are legible on the ground they are printed on`() {
+        // 2.6.2 tool-log colour coding: a family's glyph must read on parchment at AA and on
+        // the void at AA, and the two maps must cover the same families index-for-index.
+        assertEquals(KeryxToolTint.PAPER.keys, KeryxToolTint.VOID.keys)
+        for ((family, c) in KeryxToolTint.PAPER) {
+            val argb = (c.value shr 32).toLong() and 0xFFFFFFFFL
+            val score = contrast(argb or 0xFF000000L, paper)
+            assertTrue("$family paper tint scores $score on parchment", score >= AA)
+        }
+        for ((family, c) in KeryxToolTint.VOID) {
+            val argb = (c.value shr 32).toLong() and 0xFFFFFFFFL
+            val score = contrast(argb or 0xFF000000L, void)
+            assertTrue("$family void tint scores $score on black", score >= AA)
+        }
     }
 
     @Test
