@@ -165,7 +165,7 @@ fun MessageContent(
                         else -> segment.text
                     }
                     if (head.isNotBlank()) Markdown(
-                        content = MessageParser.closeDanglingFences(head),
+                        content = MessageParser.linkifyAutolinks(MessageParser.closeDanglingFences(head)),
                         colors = markdownColor(text = textColor),
                         typography = chatMarkdownTypography(),
                         flavour = GFMFlavourDescriptor(),
