@@ -107,7 +107,7 @@ private fun QuickRoomAvatar(
     // Unread signal, deck-style: no badge — the avatar wears a slow breathing halo in the
     // accent pair (same dream motif as the selected ring). Clears itself once the room's read
     // marker advances; the open room never glows (you're already looking at it).
-    val unread = room.unreadCount > 0L && !selected
+    val unread = room.hasUnread && !selected
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier

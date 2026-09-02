@@ -270,14 +270,55 @@ class ChatViewModel(
     private val _allowInsecure = MutableStateFlow(settingsRepository.allowInsecure)
     val allowInsecure: StateFlow<Boolean> = _allowInsecure.asStateFlow()
 
-    private val _pinnedRoomIds = MutableStateFlow(settingsRepository.pinnedRoomIds)
-    val pinnedRoomIds: StateFlow<Set<String>> = _pinnedRoomIds.asStateFlow()
+    /** The words this door uses for its rows ("room" / "session") — chosen once, from the
+     *  transport, and threaded to every surface that says the noun. */
+    val lexicon: chat.keryx.core.model.DoorLexicon =
+        chat.keryx.core.model.DoorLexicon.forDoor(direct = transport.matrix == null)
+
+    // Two pin ledgers, one per door, and the UI reads one set. Matrix rooms pin into the
+    // phone's own ledger (a homeserver has no such flag). Gateway sessions pin ON THE GATEWAY —
+    // the Desktop sidebar's durable "keep" flag, which also exempts the session from the
+    // auto-archive sweep — so on the direct door the set is read straight off the roster
+    // rows, and the phone's ledger is not consulted at all (it would drift from the truth the
+    // moment Desktop pinned something).
+    private val _localPinnedRoomIds = MutableStateFlow(settingsRepository.pinnedRoomIds)
+    val pinnedRoomIds: StateFlow<Set<String>> =
+        combine(_localPinnedRoomIds, _rooms) { local, rooms ->
+            if (transport.matrix == null) rooms.filter { it.pinned }.mapTo(LinkedHashSet()) { it.id }
+            else local
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, if (transport.matrix == null) emptySet() else settingsRepository.pinnedRoomIds)
 
     fun togglePin(roomId: String) {
-        val updated = _pinnedRoomIds.value.toMutableSet()
+        val gw = gateway
+        if (gw != null) {
+            val nowPinned = roomId in pinnedRoomIds.value
+            viewModelScope.launch {
+                gw.pinSession(roomId, pinned = !nowPinned)
+                    .onFailure { _toasts.tryEmit("${if (nowPinned) "Unpin" else "Pin"} failed: ${it.message?.take(80)}") }
+            }
+            return
+        }
+        val updated = _localPinnedRoomIds.value.toMutableSet()
         if (!updated.add(roomId)) updated.remove(roomId)
-        _pinnedRoomIds.value = updated
+        _localPinnedRoomIds.value = updated
         settingsRepository.pinnedRoomIds = updated
+    }
+
+    /** Direct door: flip the gateway's read watermark to "explicitly unread" — the Desktop
+     *  sidebar's Mark as unread. The row reads unread until it is opened again. */
+    fun markSessionUnread(sessionId: String) {
+        val gw = gateway ?: return
+        viewModelScope.launch {
+            gw.markSessionRead(sessionId, read = false)
+                .onFailure { _toasts.tryEmit("Couldn't mark unread: ${it.message?.take(80)}") }
+        }
+    }
+
+    /** Direct door: re-pull the session roster (the drawer asks on open — the list is the one
+     *  thing another client, a cron run or a compaction can change behind the phone's back). */
+    fun refreshRoster() {
+        val d = direct ?: return
+        viewModelScope.launch { runCatching { d.refreshSessionList() } }
     }
 
     private val _biometricLock = MutableStateFlow(settingsRepository.biometricLockEnabled)
@@ -1312,6 +1353,15 @@ class ChatViewModel(
 
     suspend fun roomPreview(roomId: String, stamp: Long): String? {
         previewCache[roomId]?.let { (cachedStamp, preview) -> if (cachedStamp == stamp) return preview }
+        // Direct door: never fetch for a preview. Subscribing to a session's messages here
+        // hydrated its transcript AND resumed it on the gateway — one live agent per drawer
+        // row. The opened rows already hold their newest line; the rest carry the gateway's
+        // own recognition preview from the list call. (Not cached by stamp: both sources are
+        // already in memory, and the store's tail moves without the row's timestamp.)
+        direct?.let { d ->
+            d.peekPreview(roomId)?.let { return previewOf(it) }
+            return _rooms.value.firstOrNull { it.id == roomId }?.preview?.takeIf { it.isNotBlank() }
+        }
         val msgs = withTimeoutOrNull(5_000L) {
             transport.getMessages(roomId, 8).first { it.isNotEmpty() }
         } ?: return previewCache[roomId]?.second

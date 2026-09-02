@@ -26,7 +26,22 @@ data class RoomProfile(
     /** First line of the session's own content — the only readable thing about a scheduled
      *  run you have never opened. */
     val preview: String = "",
-)
+    /**
+     * The gateway's own pin (the Desktop sidebar's durable "keep" flag: pinned sessions are
+     * exempt from the auto-archive sweep). Server truth on the direct door; Matrix rooms have no
+     * server pin and leave this false — their pins live in the phone's ledger.
+     */
+    val pinned: Boolean = false,
+    /**
+     * The gateway's read watermark, derived server-side: activity postdates the last time this
+     * session was marked read. Matrix rooms count unread events instead ([unreadCount]); this
+     * flag is the direct door's one-bit equivalent, so a row is "unread" when either says so.
+     */
+    val unread: Boolean = false,
+) {
+    /** Either signal: a Matrix count, or the gateway's watermark. */
+    val hasUnread: Boolean get() = unreadCount > 0L || unread
+}
 
 enum class RoomType {
     DIRECT_MESSAGE,

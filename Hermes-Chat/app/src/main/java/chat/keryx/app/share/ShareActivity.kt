@@ -245,12 +245,17 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
         onSend: (roomId: String, roomName: String, comment: String) -> Unit,
     ) {
         val app = application as KeryxApp
-        // Pinned rooms first (they're pinned because they're the frequent targets), then recency.
-        val pinned = remember { app.settingsRepository.pinnedRoomIds }
+        // Pinned rows first (they're pinned because they're the frequent targets), then recency.
+        // Matrix pins live in the phone's ledger; gateway sessions carry the gateway's own pin
+        // on the row, so the sort reads whichever the door has.
+        val direct = app.transport.matrix == null
+        val lexicon = chat.keryx.core.model.DoorLexicon.forDoor(direct)
+        val ledger = remember { if (direct) emptySet() else app.settingsRepository.pinnedRoomIds }
+        val isPinned: (RoomProfile) -> Boolean = { it.pinned || it.id in ledger }
         val rooms by remember {
             app.transport.getRooms().map { list ->
                 list.sortedWith(
-                    compareByDescending<RoomProfile> { it.id in pinned }
+                    compareByDescending<RoomProfile> { isPinned(it) }
                         .thenByDescending { it.timestamp },
                 )
             }
@@ -272,7 +277,7 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
                 KeryxWordmark(fontSize = 20.sp)
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    "Share to a room",
+                    lexicon.shareTitle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 13.sp,
                 )
@@ -331,7 +336,7 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f),
                         )
-                        if (room.id in pinned) {
+                        if (isPinned(room)) {
                             Text("★", color = accent.copy(alpha = 0.8f), fontSize = 12.sp)
                         }
                     }

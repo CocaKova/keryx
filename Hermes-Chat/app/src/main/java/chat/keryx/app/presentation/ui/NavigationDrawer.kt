@@ -81,6 +81,8 @@ fun NavigationDrawerContent(
     val currentUserId by viewModel.currentUserId.collectAsState()
     val currentRoom by viewModel.currentRoom.collectAsState()
     val isDarkTheme by viewModel.isDarkTheme.collectAsState()
+    // The door's own words for its rows — "room" on Matrix, "session" on the gateway.
+    val lexicon = viewModel.lexicon
 
     // Image picker for setting a Quick Room's avatar (server-side m.room.avatar).
     val context = LocalContext.current
@@ -151,6 +153,10 @@ fun NavigationDrawerContent(
                             viewModel.pet.refreshPet()
                             // The Projects door's probe (no-op on Matrix).
                             viewModel.projects.refreshProjects()
+                            // The roster itself (no-op on Matrix, where sync keeps it live):
+                            // pins and read marks set from Desktop, a cron continuation, a
+                            // compaction's new id — the drawer opening is the moment to know.
+                            viewModel.refreshRoster()
                             // Wave hello when the drawer opens, then settle into the idle loop.
                             petGreeting = true
                             kotlinx.coroutines.delay(2200)
@@ -290,7 +296,7 @@ fun NavigationDrawerContent(
                 }
 
                 if (pinned.isNotEmpty() && query.isBlank()) {
-                    item { DrawerSectionHeader("Quick Rooms") }
+                    item { DrawerSectionHeader(lexicon.pinnedHeader) }
                     item {
                         chat.keryx.app.presentation.ui.components.QuickRoomsDeck(
                             rooms = pinned,
@@ -309,12 +315,12 @@ fun NavigationDrawerContent(
                 }
 
                 if (listRooms.isNotEmpty() || rooms.isEmpty() || query.isNotBlank()) {
-                    item { DrawerSectionHeader(if (query.isBlank()) "Rooms" else "Results") }
+                    item { DrawerSectionHeader(if (query.isBlank()) lexicon.listHeader else "Results") }
                 }
                 if (filtered.isEmpty()) {
                     item {
                         Text(
-                            text = if (rooms.isEmpty()) "No rooms yet" else "No matches",
+                            text = if (rooms.isEmpty()) lexicon.emptyList else "No matches",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp,
                             modifier = Modifier.padding(8.dp),
@@ -330,6 +336,14 @@ fun NavigationDrawerContent(
                         isTemporary = room.id in tempSessionIds,
                         onClick = { onRoomSelected(room) },
                         onTogglePin = { viewModel.togglePin(room.id) },
+                        lexicon = lexicon,
+                        // Direct door only: the gateway's read watermark can be pushed back by
+                        // hand (Desktop's "Mark as unread"). The open session is exempt — you
+                        // are looking at it, and the next newest message would stamp it read
+                        // again before you saw the mark.
+                        onMarkUnread = if (direct && !room.hasUnread && currentRoom?.id != room.id) {
+                            { viewModel.markSessionUnread(room.id) }
+                        } else null,
                         // Each transport brings its own verbs to the long-press menu: Matrix
                         // rooms have membership and a server-side avatar; gateway sessions
                         // rename and delete (there is nothing to "leave").
@@ -463,6 +477,9 @@ fun RoomRow(
     isTemporary: Boolean = false,
     onClick: () -> Unit,
     onTogglePin: () -> Unit,
+    lexicon: chat.keryx.core.model.DoorLexicon = chat.keryx.core.model.DoorLexicon.MATRIX,
+    // Gateway-only: push the read watermark back (null = not offered for this row).
+    onMarkUnread: (() -> Unit)? = null,
     // Matrix-only affordances (m.room.avatar / membership) — null on the direct door.
     onSetAvatar: (() -> Unit)? = null,
     onLeave: (() -> Unit)? = null,
@@ -486,7 +503,7 @@ fun RoomRow(
     var renameOpen by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var moveOpen by remember { mutableStateOf(false) }
-    val hasMenu = onLeave != null || onInvite != null || onRename != null || onDelete != null
+    val hasMenu = onLeave != null || onInvite != null || onRename != null || onDelete != null || onMarkUnread != null
     // Last-message snippet, resolved lazily per row (cached in the VM keyed on room.timestamp so
     // it only refetches after new activity). Keyed on the timestamp so a new message refreshes it.
     val preview by produceState<String?>(initialValue = null, room.id, room.timestamp) {
@@ -555,10 +572,10 @@ fun RoomRow(
                 Text(
                     text = it,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                        alpha = if (room.unreadCount > 0L) 0.95f else 0.65f
+                        alpha = if (room.hasUnread) 0.95f else 0.65f
                     ),
                     fontSize = 12.sp,
-                    fontWeight = if (room.unreadCount > 0L) FontWeight.Medium else FontWeight.Normal,
+                    fontWeight = if (room.hasUnread) FontWeight.Medium else FontWeight.Normal,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 1.dp),
@@ -590,14 +607,51 @@ fun RoomRow(
                         fontWeight = FontWeight.Bold,
                     )
                 }
+            } else if (room.unread) {
+                // The gateway knows THAT something happened since you looked, not how much:
+                // a watermark, not a count. A dot says exactly that; a "1" would be a lie.
+                Spacer(modifier = Modifier.height(5.dp))
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                )
             }
         }
     }
     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
         DropdownMenuItem(
-            text = { Text(if (isPinned) "Unpin from Quick Rooms" else "Pin to Quick Rooms") },
+            text = {
+                Column {
+                    Text(if (isPinned) lexicon.unpinVerb else lexicon.pinVerb)
+                    // The gateway's pin is a "keep": say so once, under the verb, so the
+                    // star means the same thing here as in the Desktop sidebar.
+                    if (lexicon.pinHint.isNotBlank() && !isPinned) {
+                        Text(
+                            lexicon.pinHint,
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            },
+            leadingIcon = {
+                Icon(
+                    KeryxGlyphs.Star,
+                    contentDescription = null,
+                    tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp),
+                )
+            },
             onClick = { menuOpen = false; onTogglePin() },
         )
+        if (onMarkUnread != null) {
+            DropdownMenuItem(
+                text = { Text("Mark as unread") },
+                onClick = { menuOpen = false; onMarkUnread() },
+            )
+        }
         if (onInvite != null) {
             DropdownMenuItem(
                 text = { Text("Invite user…") },

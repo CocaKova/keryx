@@ -75,6 +75,8 @@ class GatewayRest(
         val archived: Boolean,
         val pinned: Boolean,
         val source: String,
+        /** The gateway's read watermark, derived server-side (activity after the last read). */
+        val unread: Boolean = false,
     )
 
     // MessageRow / RestToolCall moved to chat.keryx.core.protocol (:shared) —
@@ -133,6 +135,7 @@ class GatewayRest(
                     archived = o.bool("archived"),
                     pinned = o.bool("pinned"),
                     source = o.str("source") ?: "",
+                    unread = o.bool("unread"),
                 )
             }.distinctBy { it.id }
         }
@@ -223,14 +226,23 @@ class GatewayRest(
                 }
             }
 
-    /** One PATCH covers rename + archive + pin (server merges non-null fields). */
-    suspend fun patchSession(sessionId: String, title: String? = null, archived: Boolean? = null, pinned: Boolean? = null): Result<Unit> =
+    /** One PATCH covers rename + archive + pin + read state (server merges non-null fields).
+     *  `unread` is the gateway's own name for the toggle: true = mark explicitly unread,
+     *  false = read up to now. */
+    suspend fun patchSession(
+        sessionId: String,
+        title: String? = null,
+        archived: Boolean? = null,
+        pinned: Boolean? = null,
+        unread: Boolean? = null,
+    ): Result<Unit> =
         send("PATCH", "/api/sessions/$sessionId", buildString {
             append("{")
             val parts = mutableListOf<String>()
             title?.let { parts += "\"title\":${kotlinx.serialization.json.JsonPrimitive(it)}" }
             archived?.let { parts += "\"archived\":$it" }
             pinned?.let { parts += "\"pinned\":$it" }
+            unread?.let { parts += "\"unread\":$it" }
             append(parts.joinToString(","))
             append("}")
         }).map { }

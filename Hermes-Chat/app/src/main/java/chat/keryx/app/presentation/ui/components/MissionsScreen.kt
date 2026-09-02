@@ -269,6 +269,7 @@ fun MissionsScreen(
         MissionCreateDialog(
             profiles = missionAssignees(caps?.roomProfiles.orEmpty()),
             canNotify = viewModel.missions.alertRoom() != null,
+            notifyUnavailableReason = viewModel.missions.alertUnavailableReason,
             onCreate = { title, assignee, body, triage, notify ->
                 viewModel.missions.kanbanCreate(title, assignee, body, triage, notify)
                 createOpen = false
@@ -497,7 +498,7 @@ private fun MissionDetailSheet(
                                 when {
                                     subscribed -> "SILAS pushes a message the moment it completes or blocks"
                                     roomName != null -> "Lands in $roomName as a real message — no polling"
-                                    else -> "Open a room first — alerts land in a Matrix room"
+                                    else -> viewModel.missions.alertUnavailableReason
                                 },
                                 fontSize = 10.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -673,6 +674,7 @@ private fun MissionDetailSheet(
 private fun MissionCreateDialog(
     profiles: List<String>,
     canNotify: Boolean,
+    notifyUnavailableReason: String = "Open a room first — alerts land in a Matrix room",
     onCreate: (title: String, assignee: String, body: String, triage: Boolean, notify: Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -755,7 +757,7 @@ private fun MissionCreateDialog(
                         Text("Notify me when it ends", fontSize = 13.sp)
                         Text(
                             if (canNotify) "A real message lands in your room on completion"
-                            else "Open a room first — alerts land in a Matrix room",
+                            else notifyUnavailableReason,
                             fontSize = 10.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

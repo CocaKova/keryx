@@ -491,7 +491,7 @@ fun ChatScreen(
     // Background is supplied app-wide (gradient lives in HermesApp); keep this surface transparent.
     Box(modifier = modifier.fillMaxSize().imePadding()) {
         if (currentRoom == null) {
-            EmptyChat(modifier = Modifier.align(Alignment.Center))
+            EmptyChat(viewModel = viewModel, modifier = Modifier.align(Alignment.Center))
         }
         // FLIGHT PLAN: pinned with the instruments — the transcript scrolls, the plan doesn't.
         flightPlan?.takeIf { it.total > 0 }?.let { plan ->
@@ -1674,7 +1674,7 @@ private fun queryDisplayName(context: android.content.Context, uri: android.net.
 }
 
 @Composable
-private fun EmptyChat(modifier: Modifier = Modifier) {
+private fun EmptyChat(viewModel: ChatViewModel, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -1689,10 +1689,32 @@ private fun EmptyChat(modifier: Modifier = Modifier) {
         }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Select a room to begin",
+            text = viewModel.lexicon.emptyChat,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 15.sp,
         )
+        // Direct door: the empty pane is also the front door for a fresh install — nothing to
+        // select yet is the common case, so the way to make one is right here, not two taps
+        // away behind the drawer.
+        if (viewModel.transportIsDirect) {
+            var showNewSession by remember { mutableStateOf(false) }
+            Spacer(modifier = Modifier.height(10.dp))
+            TextButton(onClick = { showNewSession = true }) {
+                Icon(
+                    chat.keryx.app.presentation.ui.components.KeryxGlyphs.Plus,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("New session")
+            }
+            if (showNewSession) {
+                chat.keryx.app.presentation.ui.components.NewChatSheet(
+                    viewModel = viewModel,
+                    onDismiss = { showNewSession = false },
+                )
+            }
+        }
     }
 }
 
