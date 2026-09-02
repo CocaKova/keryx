@@ -134,7 +134,12 @@ fun NavigationDrawerContent(
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Column {
+                // weight(1f): the identity column must yield to the buttons that follow it.
+                // Unweighted, a long user id (a Tailscale hostname on the direct door) claims
+                // the row's full width, the trailing spacer collapses, and the theme + new-chat
+                // buttons are laid out past the drawer's edge — the plus vanished entirely.
+                // Weighted, the id ellipsises and the buttons keep their seats.
+                Column(modifier = Modifier.weight(1f)) {
                     // The petdex mascot (Hermes desktop's floating pet, drawer-header sized).
                     // Fetched lazily on first drawer open; absent entirely when the gateway has
                     // no pet configured, so the header stays exactly as before for those setups.
@@ -189,7 +194,6 @@ fun NavigationDrawerContent(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.weight(1f))
                 // Theme lives up here with the identity, not among the doors: the door grid is
                 // destinations only (2.6.2), and a switch styled as a door was the one tile
                 // that took you nowhere.
