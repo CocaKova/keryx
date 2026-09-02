@@ -21,14 +21,27 @@ class HubDelegate(deps: GatewayDeps) {
     private val _reasoningCaps = MutableStateFlow<chat.keryx.app.data.remote.HermesStreamClient.ReasoningCaps?>(null)
     val reasoningCaps: StateFlow<chat.keryx.app.data.remote.HermesStreamClient.ReasoningCaps?> = _reasoningCaps.asStateFlow()
 
-    /** Fetch what the active brain supports for /reasoning, so the menu can adapt (binary vs
-     *  effort scale, current level, model name). Silent on failure — the menu falls back to the
-     *  generic effort list. */
-    fun refreshReasoningCaps() {
+    /** Fetch what a brain supports for /reasoning, so the menu can adapt (binary vs effort
+     *  scale, current level, model name). [model]/[provider] name the session's live route
+     *  (the direct door's catalog), [sessionId] lets the gateway read the stored session's
+     *  row when the route is not known yet; all blank = the global default. [liveCurrent]
+     *  answers the session's effective level straight from the gateway's live agent (the
+     *  direct door's `config.get reasoning`) — it beats the row, which lags a session-scoped
+     *  set until the next turn. Silent on failure — the menu keeps its last answer. */
+    fun refreshReasoningCaps(
+        model: String? = null,
+        provider: String? = null,
+        sessionId: String? = null,
+        liveCurrent: (suspend () -> String?)? = null,
+    ) {
         val client = bareClient() ?: return
         scope.launch {
-            client.capabilities()
-                .onSuccess { _reasoningCaps.value = it }
+            client.capabilities(model, provider, sessionId)
+                .onSuccess { caps ->
+                    val live = liveCurrent?.let { runCatching { it() }.getOrNull() }?.trim()?.lowercase()
+                    _reasoningCaps.value =
+                        if (!live.isNullOrBlank() && caps.mode != "none") caps.copy(current = live) else caps
+                }
         }
     }
 

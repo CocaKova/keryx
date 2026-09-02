@@ -10,6 +10,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
@@ -248,6 +249,11 @@ class HermesStreamClient(
         /** The Shipyard door: `keryx.git.enabled` on the gateway. False when the gateway
          *  predates the field — no dead doors. */
         val git: Boolean = false,
+        /** Provider slug behind [model] ("xai-oauth", "custom"); blank on older gateways. */
+        val provider: String = "",
+        /** Whose dial this is: "session" when the gateway resolved one session's brain,
+         *  "global" when it answered with config.yaml's default (older gateways: blank). */
+        val scope: String = "",
     )
 
     /**
@@ -256,10 +262,23 @@ class HermesStreamClient(
      * enable_thinking switch; cloud providers take the full effort scale). Gateways without the
      * keryx-stream plugin 404 here — callers treat failure as "unknown, show the generic menu".
      */
-    suspend fun capabilities(): Result<ReasoningCaps> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+    suspend fun capabilities(
+        model: String? = null,
+        provider: String? = null,
+        sessionId: String? = null,
+    ): Result<ReasoningCaps> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         runCatching {
+            // Scope the probe to ONE brain: the session's live route when the door knows it
+            // (model + provider), else the stored session (the gateway reads its row). Bare =
+            // the global default — the pre-2.6.3 answer, and the wrong ladder for a session
+            // that picked a cloud model while the profile default is the local brain.
+            val url = (baseUrl.trimEnd('/') + "/keryx/capabilities").toHttpUrl().newBuilder().apply {
+                model?.takeIf { it.isNotBlank() }?.let { addQueryParameter("model", it) }
+                provider?.takeIf { it.isNotBlank() }?.let { addQueryParameter("provider", it) }
+                sessionId?.takeIf { it.isNotBlank() }?.let { addQueryParameter("session_id", it) }
+            }.build()
             val request = Request.Builder()
-                .url(baseUrl.trimEnd('/') + "/keryx/capabilities")
+                .url(url)
                 .apply { if (apiKey.isNotBlank()) header("Authorization", "Bearer $apiKey") }
                 .build()
             val probe = client.newBuilder().readTimeout(5, TimeUnit.SECONDS).build()
@@ -280,6 +299,8 @@ class HermesStreamClient(
                         ?.mapNotNull { (k, v) -> (v as? JsonPrimitive)?.content?.let { k to it } }
                         ?.toMap().orEmpty(),
                     git = (obj["git"] as? JsonPrimitive)?.content == "true",
+                    provider = (obj["provider"] as? JsonPrimitive)?.content.orEmpty(),
+                    scope = (obj["scope"] as? JsonPrimitive)?.content.orEmpty(),
                 )
             }
         }
