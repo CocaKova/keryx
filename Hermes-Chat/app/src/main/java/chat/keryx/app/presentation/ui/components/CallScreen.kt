@@ -91,7 +91,12 @@ fun CallScreen(
     LaunchedEffect(Unit) { if (!permitted) askPermission.launch(Manifest.permission.RECORD_AUDIO) }
 
     val controller = remember { CallController(context, viewModel) }
-    DisposableEffect(Unit) { onDispose { controller.end() } }
+    // Mic lease with the ear (2.7): the wake detector must let go of the microphone before
+    // CallAudio opens it, and gets it back once the call is over.
+    DisposableEffect(Unit) {
+        viewModel.onCallStarted()
+        onDispose { controller.end(); viewModel.onCallEnded() }
+    }
     LaunchedEffect(permitted) { if (permitted) controller.start() }
 
     val ui by controller.ui.collectAsState()

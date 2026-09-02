@@ -80,6 +80,10 @@ fun SettingsScreen(
     onSttModelChanged: (String) -> Unit,
     ttsAutoSpeak: Boolean,
     onTtsAutoSpeakChanged: (Boolean) -> Unit,
+    wakeUi: chat.keryx.app.audio.WakeWordController.Ui? = null,
+    onWakeWordEnabledChanged: (Boolean) -> Unit = {},
+    onWakePolicyChanged: (chat.keryx.core.model.WakePolicy) -> Unit = {},
+    onWakeOnDeviceChanged: (Boolean) -> Unit = {},
     ttsUrl: String,
     onTtsUrlChanged: (String) -> Unit,
     ttsApiKey: String,
@@ -189,6 +193,7 @@ fun SettingsScreen(
                             listOfNotNull(
                                 if (sttUrl.isNotBlank()) "Dictation" else null,
                                 if (ttsAutoSpeak) "Auto-speak" else null,
+                                if (wakeUi?.enabled == true) (if (wakeUi.listening) "Ear listening" else if (wakeUi.resting) "Ear resting" else "Ear on") else null,
                             ).ifEmpty { listOf("Dictation & spoken replies") }.joinToString(" · ")) { section = "Voice" }
                         SettingsHubRow(Icons.Default.Palette, "Appearance",
                             "Bubbles, text size, accent colors") { section = "Appearance" }
@@ -616,6 +621,76 @@ fun SettingsScreen(
                             placeholder = { Text("only if your provider requires one, e.g. whisper-1") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
+                        )
+                    }
+
+                    // The ear (2.7): direct door only — `wakeUi` is null wherever there is no
+                    // gateway socket to ride, so the card simply does not exist on Matrix.
+                    if (section == "Voice" && wakeUi != null) SettingsCard("Hey Hermes") {
+                        Text(
+                            "A wake word, hands free: this phone keeps its microphone open and listens " +
+                                "for the phrase itself; say it and a call opens — even with the screen off. " +
+                                "Costs battery and shows an ongoing notification while on.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 12.sp,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        val context = androidx.compose.ui.platform.LocalContext.current
+                        val askMic = androidx.activity.compose.rememberLauncherForActivityResult(
+                            androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+                        ) { granted -> if (granted) onWakeWordEnabledChanged(true) }
+                        val status = when {
+                            wakeUi.pending -> wakeUi.notice.ifBlank { "arming…" }
+                            wakeUi.listening && wakeUi.onDevice -> "listening for \"${wakeUi.phrase}\" on this phone — nothing streams until you say it"
+                            wakeUi.listening -> "listening for \"${wakeUi.phrase}\" — streams to the gateway only while the room has sound"
+                            wakeUi.resting -> "on · " + wakeUi.notice
+                            wakeUi.enabled -> "on · " + wakeUi.notice.ifBlank { "not listening" }
+                            wakeUi.notice.isNotBlank() -> wakeUi.notice
+                            else -> "say \"${wakeUi.phrase}\" to start a call"
+                        }
+                        SettingsSwitchRow(
+                            title = "Wake word",
+                            subtitle = status,
+                            checked = wakeUi.enabled,
+                            onCheckedChange = { on ->
+                                if (!on) { onWakeWordEnabledChanged(false); return@SettingsSwitchRow }
+                                val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context, android.Manifest.permission.RECORD_AUDIO,
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                if (granted) onWakeWordEnabledChanged(true)
+                                else askMic.launch(android.Manifest.permission.RECORD_AUDIO)
+                            },
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "The Call needs the STT and TTS endpoints below — the ear can hear you without them, but has nothing to say back.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 11.sp,
+                        )
+                        SettingsSwitchRow(
+                            title = "Detect on this phone",
+                            subtitle = "openWakeWord runs locally (LiteRT) — no audio leaves the device until the phrase is heard. Off = stream to the gateway's detector, desktop's way.",
+                            checked = wakeUi.onDevicePreferred,
+                            onCheckedChange = onWakeOnDeviceChanged,
+                        )
+                        val policy = wakeUi.policy
+                        SettingsSwitchRow(
+                            title = "Only while charging",
+                            subtitle = "The nightstand rule: an always-open mic is for a phone on the cable",
+                            checked = policy.onlyWhileCharging,
+                            onCheckedChange = { onWakePolicyChanged(policy.copy(onlyWhileCharging = it)) },
+                        )
+                        SettingsSwitchRow(
+                            title = "Not on mobile data",
+                            subtitle = "Rest the ear when the phone is off Wi-Fi (Tailscale over cellular counts as cellular)",
+                            checked = policy.notOnCellular,
+                            onCheckedChange = { onWakePolicyChanged(policy.copy(notOnCellular = it)) },
+                        )
+                        SettingsSwitchRow(
+                            title = "Auto-off after 4 hours idle",
+                            subtitle = "No wake and no app visit for 4 h → the ear rests until you open Keryx",
+                            checked = policy.idleHours > 0,
+                            onCheckedChange = { onWakePolicyChanged(policy.copy(idleHours = if (it) 4 else 0)) },
                         )
                     }
 
@@ -1164,6 +1239,7 @@ fun SettingsPlace(viewModel: ChatViewModel, onClose: () -> Unit) {
     val sttApiKey by viewModel.voice.sttApiKey.collectAsState()
     val sttModel by viewModel.voice.sttModel.collectAsState()
     val ttsAutoSpeak by viewModel.voice.ttsAutoSpeak.collectAsState()
+    val wakeUi = viewModel.wakeUi?.collectAsState()?.value
     val ttsUrl by viewModel.voice.ttsUrl.collectAsState()
     val ttsApiKey by viewModel.voice.ttsApiKey.collectAsState()
     val ttsVoice by viewModel.voice.ttsVoice.collectAsState()
@@ -1202,6 +1278,10 @@ fun SettingsPlace(viewModel: ChatViewModel, onClose: () -> Unit) {
         onSttModelChanged = { viewModel.voice.setSttModel(it) },
         ttsAutoSpeak = ttsAutoSpeak,
         onTtsAutoSpeakChanged = { viewModel.voice.setTtsAutoSpeak(it) },
+        wakeUi = wakeUi,
+        onWakeWordEnabledChanged = { viewModel.setWakeWordEnabled(it) },
+        onWakePolicyChanged = { viewModel.setWakePolicy(it) },
+        onWakeOnDeviceChanged = { viewModel.setWakeOnDevice(it) },
         ttsUrl = ttsUrl,
         onTtsUrlChanged = { viewModel.voice.setTtsUrl(it) },
         ttsApiKey = ttsApiKey,

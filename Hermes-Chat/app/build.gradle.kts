@@ -36,6 +36,10 @@ android {
         // The on-device canary (app/src/androidTest) runs on this; without it `connectedCheck`
         // finds no instrumentation and reports green having run nothing.
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // The ear's LiteRT runtime ships native code per ABI; every phone this sideloads to is
+        // arm64 and four copies (plus the bundled sqlite's) would triple the APK. Keep the one
+        // that runs. Emulator work needs an arm64 image.
+        ndk { abiFilters += listOf("arm64-v8a") }
     }
 
     signingConfigs {
@@ -162,6 +166,9 @@ dependencies {
   // Animated GIF/WebP for the markdown renderer's inline `![](…)` images; the MEDIA:
   // bubble path animates through the platform decoder in MessageMedia, not through coil.
   implementation(libs.coil3.gif)
+  // 2.7 the ear: openWakeWord on the phone — the LiteRT interpreter runs the gateway's own
+  // melspectrogram / embedding / hey_hermes .tflite files (assets/wake). arm64 runtime 4.3 MB.
+  implementation(libs.litert)
 
   // Room (Removed - Migrating to Matrix Server)
 

@@ -710,6 +710,12 @@ private const val GHOST_TOOL_ID = "generating"
         // Phones background constantly, so mobile meets the orphan reaper far more than
         // desktop does. Dropping the cached sid is the whole fix: the next send re-resumes.
         if (ev.type == "session.reclaimed") { onSessionReclaimed(ev.payload); return }
+        // Global (frame session_id is ""): the gateway-side wake detector heard the phrase in
+        // the PCM this phone fed it (protocol §5.4). The ear controller owns what happens next.
+        if (ev.type == "wake.detected") {
+            _wakeDetections.tryEmit(chat.keryx.core.model.WakeDetection.from(ev.payload))
+            return
+        }
         // Compaction forks the stored session (protocol: /compress ends the parent and
         // continues under a NEW stored id, same live sid). session.info carries the
         // authoritative stored id as `stored_session_id` (server-side that's the
@@ -1970,6 +1976,11 @@ private const val GHOST_TOOL_ID = "generating"
         }, timeoutMs = 30_000)
         Unit
     }
+
+    private val _wakeDetections = MutableSharedFlow<chat.keryx.core.model.WakeDetection>(extraBufferCapacity = 4)
+    /** `wake.detected` events, already parsed. Hot; a detection with no collector is dropped
+     *  (nobody armed the ear, so nobody is feeding it — it cannot fire). */
+    val wakeDetections: kotlinx.coroutines.flow.SharedFlow<chat.keryx.core.model.WakeDetection> = _wakeDetections
 
     /**
      * Raw JSON-RPC passthrough for the wake lease (`wake.start/stop/pause/resume/status/feed`).

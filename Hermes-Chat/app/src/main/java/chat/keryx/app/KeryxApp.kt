@@ -74,6 +74,12 @@ class KeryxApp : Application() {
     lateinit var archiveIndexer: chat.keryx.app.data.archive.ArchiveSweeper
         private set
 
+    /** The ear (2.7): "hey hermes" lease + mic feeder. Lives here because the server lease is
+     *  bound to the process's one socket and the mic must outlive any activity. Null on the
+     *  Matrix door — there is no gateway socket to ride and no Call to open. */
+    var wakeWord: chat.keryx.app.audio.WakeWordController? = null
+        private set
+
     val appScope = CoroutineScope(Dispatchers.IO)
 
     // Foreground + currently-open-room tracking, so we only notify for messages the user isn't
@@ -116,6 +122,12 @@ class KeryxApp : Application() {
         archiveIndexer = (transport as? DirectTransport)
             ?.let { direct -> chat.keryx.app.data.archive.RestArchiveIndexer({ direct.restClient }, archiveStore, direct::profileForSession) }
             ?: chat.keryx.app.data.archive.ArchiveIndexer(matrixService, archiveStore)
+
+        wakeWord = (transport as? DirectTransport)?.let { direct ->
+            chat.keryx.app.audio.WakeWordController(
+                applicationContext, direct, settingsRepository, appScope, isForeground = { isForeground },
+            )
+        }
 
         KeryxNotifications.ensureChannel(applicationContext)
         registerActivityLifecycleCallbacks(ForegroundTracker())
@@ -316,6 +328,9 @@ class KeryxApp : Application() {
         override fun onActivityStarted(activity: Activity) {
             if (++foregroundCount == 1) matrixService.syncWake()
             _foreground.value = true
+            // Visible = the one moment a mic service may start; the ear re-arms itself if the
+            // user opted in and the process came back without it (see WakeEarService.start).
+            wakeWord?.appVisible()
         }
         override fun onActivityStopped(activity: Activity) {
             foregroundCount = (foregroundCount - 1).coerceAtLeast(0)

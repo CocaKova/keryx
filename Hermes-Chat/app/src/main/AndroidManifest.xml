@@ -22,6 +22,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- The ear (2.7, wake word): a microphone-type service keeps the mic open with the screen
+         off, and a full-screen intent lights the display when the phrase is heard. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <!-- The hands (2.8.1): an agent-proposed alarm/timer lands in the clock app on a tap. -->
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
@@ -155,6 +159,14 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Maintains the WebSocket that delivers self-hosted push notifications when no UnifiedPush distributor app is installed" />
         </service>
+
+        <!-- The ear (2.7): keeps the microphone open for "hey hermes" while the screen is off.
+             Started only while the app is visible (Android 14+ rule); the ongoing notification
+             is the honest price and carries a Stop action. -->
+        <service
+            android:name=".notify.WakeEarService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
 
         <!-- Restarts built-in push after reboot / app update (a distributor app would have
              survived those on its own; without one that job is ours). -->
