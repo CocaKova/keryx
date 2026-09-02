@@ -319,7 +319,7 @@ internal fun StatusTab(
                 }
             }
             if (!haveRoom) {
-                Text("Open a room to use quick actions", fontSize = 11.sp,
+                Text(viewModel.lexicon.openOneFirst, fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 8.dp, top = 2.dp))
             }
@@ -386,7 +386,9 @@ internal fun JobsTab(viewModel: ChatViewModel) {
 
     if (createOpen) {
         JobCreateDialog(
-            currentRoomId = currentRoom?.id,
+            // "Deliver to this room" is a Matrix delivery (`matrix:<room>`); a gateway session
+            // id in that slot is a job whose output goes nowhere. Direct door: local only.
+            currentRoomId = if (viewModel.transportIsDirect) null else currentRoom?.id,
             onCreate = { name, schedule, prompt, deliver ->
                 viewModel.hub.jobCreate(name, schedule, prompt, deliver)
                 createOpen = false

@@ -1116,7 +1116,20 @@ private const val GHOST_TOOL_ID = "generating"
         source = r.source,
         isActive = r.isActive,
         preview = r.preview,
+        pinned = r.pinned,
+        unread = r.unread,
     )
+
+    /**
+     * The drawer's second line, at zero gateway cost. A row you have opened this process life
+     * already holds its transcript, so its newest line is the honest "last thing said"; a row
+     * you have not opened answers with the gateway's own recognition preview (the session's
+     * first user line, from the list call that already happened). What this never does is
+     * hydrate: the old path fetched a transcript page AND `session.resume`d every row the
+     * drawer laid out — a drawer of fifty sessions was fifty live agents on the gateway.
+     */
+    fun peekPreview(sessionId: String): Message? =
+        stores[sessionId]?.takeIf { it.hydrated }?.messages?.value?.lastOrNull()
 
     /** Resolve stored id → live sid, resuming the session on the gateway if needed. */
     private suspend fun attach(storedId: String): String {
@@ -1447,7 +1460,44 @@ private const val GHOST_TOOL_ID = "generating"
         }
     }
 
-    override suspend fun markRead(sessionId: String, eventId: String) { /* no server-side read state */ }
+    // The gateway's read state is a watermark (`last_read_at`), not a per-event receipt: one
+    // stamp says "read up to now". The chat screen asks once per newest message while a
+    // session is open, so this is one small PATCH per turn — and it is what makes a session
+    // the agent touches later (a cron continuation, another client) read as unread in the
+    // drawer. Optimistic on the local row: the list call that confirms it is not worth the
+    // round trip for a flag we just set.
+    override suspend fun markRead(sessionId: String, eventId: String) {
+        // One stamp per newest message: the screen re-asks on every recomposition of the
+        // same tail, and the gateway's answer to a repeat is a write that changes nothing.
+        if (readStamps[sessionId] == eventId) return
+        readStamps[sessionId] = eventId
+        markSessionRead(sessionId, read = true)
+    }
+
+    private val readStamps = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    override suspend fun markSessionRead(sessionId: String, read: Boolean): Result<Unit> {
+        val rest = rest ?: return Result.failure(IllegalStateException("gateway not connected"))
+        val row = _sessionRows.value.firstOrNull { it.id == sessionId }
+        if (!read) readStamps.remove(sessionId) // an explicit unread mark re-arms the next stamp
+        if (row != null) {
+            _sessionRows.value = _sessionRows.value.map { if (it.id == sessionId) it.copy(unread = !read) else it }
+        }
+        return rest.patchSession(sessionId, unread = !read)
+            .onFailure { android.util.Log.w("KeryxGw", "read mark failed for $sessionId: ${it.message}") }
+    }
+
+    override suspend fun pinSession(sessionId: String, pinned: Boolean): Result<Unit> {
+        val rest = rest ?: return Result.failure(IllegalStateException("gateway not connected"))
+        // Optimistic: the row moves NOW; the refresh that follows is the gateway agreeing.
+        _sessionRows.value = _sessionRows.value.map { if (it.id == sessionId) it.copy(pinned = pinned) else it }
+        return rest.patchSession(sessionId, pinned = pinned)
+            .onSuccess { refreshSessions() }
+            .onFailure {
+                android.util.Log.e("KeryxGw", "pin failed for $sessionId", it)
+                refreshSessions() // the gateway's answer wins back over the optimistic row
+            }
+    }
 
     override suspend fun react(sessionId: String, eventId: String, emoji: String) {
         val rpc = rpc ?: return

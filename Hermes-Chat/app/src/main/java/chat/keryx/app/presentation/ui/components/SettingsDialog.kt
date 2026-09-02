@@ -174,10 +174,17 @@ fun SettingsScreen(
                             caps?.model?.takeIf { it.isNotBlank() } ?: "Brain, telemetry & alerts") { section = "Agent" }
                         SettingsHubRow(Icons.Default.Pets, "Companion",
                             petInfo?.displayName?.takeIf { it.isNotBlank() } ?: "The drawer mascot") { section = "Companion" }
+                        val directDoor = viewModel.transportIsDirect
                         SettingsHubRow(Icons.Default.Dns, "Connection",
-                            matrixUrl.ifBlank { "Homeserver & agent" }) { section = "Connection" }
+                            if (directDoor) viewModel.directGatewayUrl.ifBlank { "Gateway & certificates" }
+                            else matrixUrl.ifBlank { "Homeserver & agent" }) { section = "Connection" }
                         SettingsHubRow(Icons.Default.Bolt, "Hermes Link",
-                            if (sideChannelEnabled) "Live token streaming on" else "Live token streaming off") { section = "Hermes Link" }
+                            when {
+                                directDoor && sideChannelEnabled -> "Missions, Runs & Shipyard linked"
+                                directDoor -> "Missions, Runs & Shipyard off"
+                                sideChannelEnabled -> "Live token streaming on"
+                                else -> "Live token streaming off"
+                            }) { section = "Hermes Link" }
                         SettingsHubRow(Icons.Default.Mic, "Voice",
                             listOfNotNull(
                                 if (sttUrl.isNotBlank()) "Dictation" else null,
@@ -188,8 +195,8 @@ fun SettingsScreen(
                         SettingsHubRow(Icons.Default.Lock, "Privacy & Security",
                             listOfNotNull(
                                 if (biometricLockEnabled) "App lock" else null,
-                                if (e2eeEnabled) "E2EE" else null,
-                            ).ifEmpty { listOf("App lock & encryption") }.joinToString(" · ")) { section = "Privacy & Security" }
+                                if (e2eeEnabled && !directDoor) "E2EE" else null,
+                            ).ifEmpty { listOf(if (directDoor) "App lock & senses" else "App lock & encryption") }.joinToString(" · ")) { section = "Privacy & Security" }
                         SettingsHubRow(Icons.Default.Tune, "Interface",
                             "Haptics & loading animation") { section = "Interface" }
                         SettingsHubRow(Icons.Default.BugReport, "Diagnostics",
@@ -205,7 +212,8 @@ fun SettingsScreen(
                             fontSize = 15.sp,
                         )
                         Text(
-                            text = matrixUrl.ifBlank { "No homeserver set" },
+                            text = if (viewModel.transportIsDirect) viewModel.directGatewayUrl.ifBlank { "No gateway set" }
+                            else matrixUrl.ifBlank { "No homeserver set" },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 12.sp,
                         )
@@ -372,7 +380,36 @@ fun SettingsScreen(
                     }
 
                     // --- Connection ---
-                    if (section == "Connection") SettingsCard("Connection") {
+                    // Direct door: no homeserver, no agent ids, no push gateway — the gateway IS
+                    // the connection. What remains is where it lives (set at sign-in; changed by
+                    // signing out) and the one switch that applies to it.
+                    if (section == "Connection" && viewModel.transportIsDirect) SettingsCard("Connection") {
+                        Text(
+                            text = "Gateway",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 12.sp,
+                        )
+                        Text(
+                            text = viewModel.directGatewayUrl.ifBlank { "Not set" },
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 15.sp,
+                        )
+                        Text(
+                            text = "Set when you signed in. To point Keryx at another gateway, sign out from Account and connect again.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        SettingsSwitchRow(
+                            title = "Allow self-signed certificates",
+                            subtitle = "Only for local / self-hosted gateways",
+                            checked = allowInsecure,
+                            onCheckedChange = onAllowInsecureChanged,
+                        )
+                    }
+                    if (section == "Connection" && !viewModel.transportIsDirect) SettingsCard("Connection") {
                         OutlinedTextField(
                             value = matrixUrl,
                             onValueChange = onMatrixUrlChanged,
@@ -487,9 +524,15 @@ fun SettingsScreen(
 
                     // --- Hermes Link (side-channel streaming) ---
                     if (section == "Hermes Link") SettingsCard("Hermes Link") {
+                        // The same link serves two jobs by door. On Matrix it is the SSE
+                        // side-channel that streams tokens ahead of sync. On the direct door the
+                        // websocket already streams; the link is the API server the spaces ride
+                        // (Missions, Runs, Shipyard, the Gateway space, the pet).
                         SettingsSwitchRow(
-                            title = "Live token streaming",
-                            subtitle = "Stream replies over the gateway side-channel (SSE); falls back to Matrix sync when unreachable",
+                            title = if (viewModel.transportIsDirect) "Hermes Link" else "Live token streaming",
+                            subtitle = if (viewModel.transportIsDirect)
+                                "The API server behind Missions, Runs, Shipyard and the Gateway space — chat itself streams over the direct connection"
+                            else "Stream replies over the gateway side-channel (SSE); falls back to Matrix sync when unreachable",
                             checked = sideChannelEnabled,
                             onCheckedChange = onSideChannelEnabledChanged,
                         )
@@ -716,13 +759,16 @@ fun SettingsScreen(
                             checked = biometricLockEnabled,
                             onCheckedChange = onBiometricLockChanged
                         )
-                        Spacer(Modifier.height(8.dp))
-                        SettingsSwitchRow(
-                            title = "End-to-End Encryption",
-                            subtitle = "Enable Matrix E2EE session management",
-                            checked = e2eeEnabled,
-                            onCheckedChange = onE2eeChanged
-                        )
+                        // E2EE is a Matrix room property; the direct door has no rooms to encrypt.
+                        if (!viewModel.transportIsDirect) {
+                            Spacer(Modifier.height(8.dp))
+                            SettingsSwitchRow(
+                                title = "End-to-End Encryption",
+                                subtitle = "Enable Matrix E2EE session management",
+                                checked = e2eeEnabled,
+                                onCheckedChange = onE2eeChanged
+                            )
+                        }
                     }
 
                     // Senses owns its own preferences file and needs nothing from this screen, so

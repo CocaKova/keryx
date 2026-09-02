@@ -271,16 +271,38 @@ fun HermesApp(viewModel: ChatViewModel) {
                             viewModel.hub.refreshReasoningCaps()
                             openSpace(KeryxDest.Gateway)
                         })
+                        // Direct door: the rows ARE sessions, so "new session" means a new row —
+                        // the same sheet the drawer's plus opens, reachable without the drawer.
+                        // (It used to send /new here, which resets the OPEN session in place: the
+                        // glyph said "new" and the roster gained nothing.) Offered even with no
+                        // session open — it is how the first one gets made.
+                        if (viewModel.transportIsDirect) {
+                            var showNewSession by remember { mutableStateOf(false) }
+                            IconButton(onClick = { showNewSession = true }) {
+                                Icon(
+                                    chat.keryx.app.presentation.ui.components.KeryxGlyphs.NewChat,
+                                    contentDescription = "New session",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                            if (showNewSession) {
+                                chat.keryx.app.presentation.ui.components.NewChatSheet(
+                                    viewModel = viewModel,
+                                    onDismiss = { showNewSession = false },
+                                )
+                            }
+                        }
                         if (currentRoom != null) {
-                            // New session: one tap sends /new — same auto-send the command palette
-                            // does, so the gateway's fresh-session reply lands in the chat itself.
+                            // Matrix: a room is a profile, and "new session" there means /new —
+                            // one tap sends it, same auto-send the command palette does, so the
+                            // gateway's fresh-session reply lands in the chat itself.
                             // While a turn is LIVE, /new invalidates the running generation on the
                             // gateway (the run's result is discarded), so an accidental tap here
                             // was a silent run-killer (08-25 diagnosis) — confirm exactly when
                             // there is something to lose; idle taps stay one-tap.
                             var confirmNewSession by remember { mutableStateOf(false) }
                             val liveTurn by viewModel.liveTurnSigns.collectAsState()
-                            IconButton(onClick = {
+                            if (!viewModel.transportIsDirect) IconButton(onClick = {
                                 if (liveTurn || awaitingReply) confirmNewSession = true
                                 else {
                                     viewModel.recordCommandUse("/new")

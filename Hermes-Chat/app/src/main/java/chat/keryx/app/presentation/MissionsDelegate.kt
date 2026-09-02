@@ -57,8 +57,17 @@ class MissionsDelegate(
         }
     }
 
-    /** The room mission alerts land in: whichever the user has (last) open. */
-    fun alertRoom(): String? = settings.lastRoomId
+    /** The room mission alerts land in: whichever the user has (last) open. Matrix only — the
+     *  gateway's kanban notifier delivers as a native message to a (platform, chat_id), and on
+     *  the direct door the open row is a gateway session, not a chat any adapter can reach.
+     *  Subscribing it would file a Matrix delivery to a session id: an alert that never lands,
+     *  kept alive until the task ends. Null here keeps the switch honest and off. */
+    fun alertRoom(): String? = if (settings.transportMode == "direct") null else settings.lastRoomId
+
+    /** Why alerts are unavailable, in the door's own words. */
+    val alertUnavailableReason: String
+        get() = if (settings.transportMode == "direct") "Mission alerts land in a Matrix room — switch doors to use them"
+        else "Open a room first — alerts land in a Matrix room"
 
     fun alertRoomName(): String? =
         alertRoom()?.let { id -> rooms().firstOrNull { it.id == id }?.name ?: id }
@@ -70,7 +79,7 @@ class MissionsDelegate(
         scope.launch {
             if (enabled) {
                 val room = alertRoom() ?: run {
-                    toast("Open a room first — alerts land in a Matrix room")
+                    toast(alertUnavailableReason)
                     return@launch
                 }
                 client.kanbanSubscribe(taskId, room)

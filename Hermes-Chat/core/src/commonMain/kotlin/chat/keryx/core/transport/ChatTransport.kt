@@ -110,6 +110,19 @@ interface GatewayCapabilities {
     suspend fun archiveSession(sessionId: String): Result<Unit>
 
     /**
+     * The gateway's durable pin — the same flag the Desktop sidebar sets. A pinned session is
+     * exempt from the auto-archive sweep, so this is "keep", not just "sort first".
+     */
+    suspend fun pinSession(sessionId: String, pinned: Boolean): Result<Unit>
+
+    /**
+     * Move the session's read watermark: [read] = true stamps "read up to now", false marks it
+     * explicitly unread. The gateway derives `unread` from this against `last_active`, so a
+     * session the agent touches after you looked flips back to unread with no further write.
+     */
+    suspend fun markSessionRead(sessionId: String, read: Boolean): Result<Unit>
+
+    /**
      * Server-side session search: FTS over message content plus session-id prefix matching,
      * deduped by compression lineage (one logical chat split across stored ids answers once).
      */
