@@ -144,7 +144,15 @@ class HubDelegate(deps: GatewayDeps) {
         val unread: chat.keryx.core.model.CronUnread,
         /** Runs the session list serves, by id — the reader opens straight from a card. */
         val runsById: Map<String, chat.keryx.app.data.remote.HermesStreamClient.HubSession>,
-    )
+    ) {
+        /** The kept runs, newest first — the shelf above the arrivals rail. */
+        val pinned: List<chat.keryx.core.model.CronRun> = chat.keryx.core.model.CronPins.of(cards)
+        private val pinnedIds: Set<String> = pinned.mapTo(HashSet()) { it.id }
+        fun isPinned(runId: String): Boolean = runId in pinnedIds
+        /** Whether a session id is one of this board's runs — the top bar's pin only shows
+         *  over a scheduled run, never over a conversation. */
+        fun isRun(sessionId: String): Boolean = sessionId in runsById
+    }
 
     private val _cron = MutableStateFlow<PanelState<CronBoard>>(PanelState())
     val cron: StateFlow<PanelState<CronBoard>> = _cron.asStateFlow()
@@ -170,6 +178,7 @@ class HubDelegate(deps: GatewayDeps) {
                     id = it.id,
                     title = it.title.orEmpty().ifBlank { it.id },
                     timestamp = (it.lastActive * 1000).toLong(),
+                    pinned = it.pinned,
                 )
             }
             val cards = chat.keryx.core.model.CronGrouping.group(runs, jobs.map { it.name })
@@ -214,6 +223,35 @@ class HubDelegate(deps: GatewayDeps) {
                 ),
             ),
         )
+    }
+
+    /**
+     * Keep (or release) one run on the gateway. The shelf moves NOW — the pin is a value flip
+     * over the cards — and the PATCH that follows is the gateway agreeing; a refusal flips it
+     * back and says why, so the screen never shows a pin the server doesn't hold. The refresh
+     * after success is the list confirming (and back-filling a kept run the window had lost).
+     */
+    fun cronSetPinned(runId: String, pinned: Boolean) {
+        if (_cron.value.data == null) return
+        val client = client() ?: run { toast("Hermes Link is off — enable it in Settings"); return }
+        fun flip(to: Boolean) {
+            val b = _cron.value.data ?: return
+            _cron.value = _cron.value.copy(
+                data = b.copy(cards = chat.keryx.core.model.CronPins.withPin(b.cards, runId, to)),
+            )
+        }
+        flip(pinned)
+        scope.launch {
+            client.sessionPin(runId, pinned)
+                .onSuccess {
+                    toast(if (pinned) "Pinned — kept on the gateway" else "Unpinned")
+                    refreshCron()
+                }
+                .onFailure {
+                    flip(!pinned)
+                    toast("${if (pinned) "Pin" else "Unpin"} refused: ${it.message?.take(80)}")
+                }
+        }
     }
 
     /**

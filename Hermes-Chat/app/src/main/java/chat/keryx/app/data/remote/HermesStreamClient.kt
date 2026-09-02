@@ -867,6 +867,8 @@ class HermesStreamClient(
         val lastActive: Double,
         val endedAt: Double?,
         val preview: String,
+        /** The gateway's durable keep flag (Desktop parity) — see [chat.keryx.core.model.CronRun.pinned]. */
+        val pinned: Boolean = false,
     )
 
     /** One transcript entry from `GET /api/sessions/{id}/messages`, preview-shaped. */
@@ -927,13 +929,31 @@ class HermesStreamClient(
     suspend fun sessions(): Result<List<HubSession>> =
         runCatching { HubJson.sessions(apiCall("/api/sessions")) }
 
-    /** Scheduled runs only. The server ignores a `sources` filter (verified live), so the
-     *  filter is ours; the wider limit is because machinery outnumbers conversations. */
+    /**
+     * Scheduled runs only. The api server honours the SINGULAR `source` filter (the plural
+     * `sources` is the dashboard router's and is ignored here — verified live both ways), so
+     * the page is cron from the gateway up: 150 runs, not 150 rows of which some are runs.
+     * `include_pinned` is the server's default on this list, so a kept run that has aged out
+     * of the window is back-filled rather than dropped. The client-side filter stays as the
+     * belt to that brace — an older gateway that ignores `source` still gets a clean page.
+     */
     suspend fun cronSessions(limit: Int = 150): Result<List<HubSession>> =
         runCatching {
-            HubJson.sessions(apiCall("/api/sessions?limit=$limit"))
+            HubJson.sessions(apiCall("/api/sessions?limit=$limit&source=cron"))
                 .filter { it.source == "cron" }
         }
+
+    /**
+     * Set or clear the gateway's durable pin on a session (`PATCH {"pinned": …}`) — the same
+     * keep flag the Desktop sidebar writes; pinned sessions are exempt from auto-archive.
+     */
+    suspend fun sessionPin(sessionId: String, pinned: Boolean): Result<Unit> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("pinned", kotlinx.serialization.json.JsonPrimitive(pinned))
+        }
+        apiCall(sessionPath(sessionId), method = "PATCH", body = payload)
+        Unit
+    }
 
     suspend fun sessionMessages(sessionId: String): Result<List<HubMessage>> =
         runCatching { HubJson.messages(apiCall("/api/sessions/$sessionId/messages")) }
@@ -1561,6 +1581,7 @@ internal object HubJson {
             lastActive = s.dbl("last_active") ?: 0.0,
             endedAt = s.dbl("ended_at"),
             preview = s.str("preview"),
+            pinned = s.bool("pinned"),
         )
 
     // distinctBy: every consumer keys rows by session id (LazyColumn keys included, where a

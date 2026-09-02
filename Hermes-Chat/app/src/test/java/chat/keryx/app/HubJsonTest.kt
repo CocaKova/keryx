@@ -92,6 +92,20 @@ class HubJsonTest {
     }
 
     @Test
+    fun `sessions carry the gateway's pin — absent reads as not pinned`() {
+        // The api server exposes the Desktop keep flag on every list row (verified live,
+        // 2026-09-02). A row from an older gateway that has no such field must parse as
+        // unpinned, never fail: the Runs door would otherwise lose the whole page.
+        val s = HubJson.sessions(obj("""
+            {"object":"list","data":[
+              {"id":"a","source":"cron","title":"Daily Brief · Tue","started_at":1.0,"last_active":9.0,"pinned":true},
+              {"id":"b","source":"cron","title":"Daily Brief · Mon","started_at":1.0,"last_active":8.0,"pinned":false},
+              {"id":"c","source":"cron","title":"Daily Brief · Sun","started_at":1.0,"last_active":7.0}]}
+        """))
+        assertEquals(listOf(true, false, false), s.map { it.pinned })
+    }
+
+    @Test
     fun `messages map role content and tool call count`() {
         val msgs = HubJson.messages(obj("""
             {"object":"list","session_id":"s","data":[
