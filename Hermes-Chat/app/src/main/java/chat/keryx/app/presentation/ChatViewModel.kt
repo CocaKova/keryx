@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -431,7 +432,12 @@ class ChatViewModel(
     }
 
     val hub = HubDelegate(deps)
-    val models = ModelDelegate(deps, transport, { _currentRoom.value?.id }) { sendMessage(it) }
+    val models = ModelDelegate(
+        deps, transport, { _currentRoom.value?.id },
+        sendRoomCommand = { sendMessage(it) },
+        // A switched brain owns a different ladder: re-probe the dial for this session.
+        onSwitched = { refreshReasoningCaps() },
+    )
     val projects = ProjectsDelegate(deps, transport) { id, title -> openSessionById(id, title) }
     val shipyard = ShipyardDelegate(deps)
     val pet = PetDelegate(deps)
@@ -658,6 +664,15 @@ class ChatViewModel(
                 }
             }
         }
+        // Each room is its own session with its own brain: the model catalog and the
+        // reasoning dial both belong to the room you left, so drop one and re-probe the other.
+        viewModelScope.launch {
+            _currentRoom.map { it?.id }.distinctUntilChanged().collect { id ->
+                if (id == null) return@collect
+                models.clear()
+                refreshReasoningCaps()
+            }
+        }
         viewModelScope.launch {
             matrix?.getInvites()?.collectLatest { _invites.value = it }
         }
@@ -760,7 +775,7 @@ class ChatViewModel(
         // The typing indicator is the authoritative "busy" signal; this collector was defined but
         // never started, which is why the banner still died during long silent tool calls.
         observeTyping()
-        hub.refreshReasoningCaps()
+        refreshReasoningCaps()
     }
 
     private fun workStateMessage(messages: List<Message>, latest: Message): Message {
@@ -1875,9 +1890,48 @@ class ChatViewModel(
     }
 
     /** Dynamic reasoning control: rides Hermes' native `/reasoning` command (per-session scope). */
+    /** Re-probe the reasoning dial for the CURRENT room's brain, not the profile default.
+     *  Direct door: the session's live route (the catalog's model + provider, once fetched)
+     *  and its stored id, with the effective level read straight off the live agent. Matrix:
+     *  the global default, as before — a room has no session id the gateway can look up. */
+    fun refreshReasoningCaps() {
+        val roomId = _currentRoom.value?.id
+        val d = direct
+        val catalog = if (d != null) models.catalog.value else null
+        hub.refreshReasoningCaps(
+            model = catalog?.model,
+            provider = catalog?.provider,
+            sessionId = if (d != null) roomId else null,
+            liveCurrent = if (d != null && roomId != null) ({ d.reasoningEffort(roomId).getOrNull() }) else null,
+        )
+    }
+
+    /** A pick from the reasoning menu: `<level>` (this session), `<level> --global` (every
+     *  session), or `show` / `hide` / `reset`. The direct door sets a level through the
+     *  gateway's own `config.set` — it lands on the live agent at once and echoes the
+     *  authoritative value — where the slash text only reaches a worker copy. Either way the
+     *  pill re-probes afterwards instead of waiting for the next tap. */
     fun sendReasoningCommand(arg: String) {
         recordCommandUse("/reasoning")
+        val parts = arg.trim().split(Regex("\\s+"))
+        val level = parts.firstOrNull().orEmpty()
+        val global = parts.drop(1).any { it == "--global" }
+        val d = direct
+        val roomId = _currentRoom.value?.id
+        val isLevel = level.isNotBlank() && level !in setOf("show", "hide", "reset", "status")
+        if (d != null && roomId != null && isLevel) {
+            viewModelScope.launch {
+                d.setReasoningEffort(roomId, level, global)
+                    .onSuccess { v ->
+                        toast(if (global) "Reasoning → ${v.ifBlank { level }} for every session" else "Reasoning → ${v.ifBlank { level }} — this session")
+                        refreshReasoningCaps()
+                    }
+                    .onFailure { toast("Reasoning refused: ${it.message?.take(80)}") }
+            }
+            return
+        }
         sendMessage("/reasoning $arg".trim())
+        viewModelScope.launch { delay(1200); refreshReasoningCaps() }
     }
 
     // --- Busy-turn inputs (the Talaria way: the send button IS the submit tree) ----------------

@@ -114,3 +114,38 @@ became rows of the same plan.
   steer (tap mid-turn → "Steered" toast + local echo), hold → queue, empty → stop, Matrix
   `/steer` echo, picker lists Grok and not Copilot on BOTH doors, Controls chips jump +
   collapse + search + rotation.
+
+## 5. 09-01 evening — the dial belongs to the session (`1501958` → this commit)
+
+Jonny, on a Grok session: "the cloud shows reasoning set to globally forever … I always have
+to click the model and reasoning again to refresh them … does grok really have low medium
+and xhigh only?" Three faults, one root: **the reasoning pill described the profile
+default, not the room's brain.**
+
+- **Gateway** `GET /keryx/capabilities` read config.yaml's `model.provider` (the local
+  custom brain) and declared the local qwen ladder — none/low/medium/xhigh — for every
+  session, Grok included. It now scopes to one brain: `?model=&provider=` (the direct
+  door's live route, from `model.options`), else `?session_id=` (the stored row's
+  `model` + `billing_provider` + last `reasoning_config`), else the global default (the
+  Matrix door, unchanged). Levels come from Hermes's own tables in
+  `agent/reasoning_effort.py` and the provider helpers (Grok 4.6+ = low/medium/high/xhigh,
+  older Grok tops at high; grok-4/grok-4-fast take no dial at all → `mode:"none"`;
+  OpenRouter reads the catalog's `supported_efforts`; Codex/Kimi/GLM/DeepSeek-V4/Ollama
+  Cloud/Meta/Solar/Actual each their own). Response gains `provider` and `scope`
+  (`session`|`global`). "none" always leads the ladder — it is Hermes's disable level.
+- **Menu scope**: every level tap sent `--global`, so one pick in a scratch room rewrote
+  `agent.reasoning_effort` for good. Now a switch row — *This session only* (default) /
+  *Every session*. On the direct door a level goes through `config.set reasoning`
+  (lands on the live agent, echoes the authoritative value) instead of slash text to the
+  worker copy; the Matrix door keeps `/reasoning …`. A `mode:"none"` brain shows "no
+  reasoning dial" and no ladder.
+- **Refresh**: caps re-probe after a level set, after a model pick (`ModelDelegate`
+  `onSwitched`), and on every room switch (which also drops the catalog — it was the last
+  room's). The direct door's `current` is read off the live agent (`config.get reasoning`
+  with the session id), which beats the row that lags a session-scoped set.
+
+Traps: `/api/ws` is served by the **dashboard** process, `/keryx/*` by the gateway — the
+capabilities route cannot see live `_sessions`, hence the pair/row/global ladder. A fresh
+direct-door session has **no row until its first prompt** (upstream's lazy row), so before
+the first turn it reads the global default. Payload synced to all three
+`keryx_stream.py` copies; gateway restarted 20:06, route verified with the Grok row.

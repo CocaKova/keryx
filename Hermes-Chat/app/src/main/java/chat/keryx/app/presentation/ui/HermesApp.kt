@@ -13,6 +13,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Row
@@ -524,6 +525,8 @@ internal fun ReasoningMenu(
                 text = when {
                     caps == null -> "effort persists across sessions"
                     caps.mode == "binary" -> "${caps.model.ifBlank { "local brain" }} · on/off switch"
+                    caps.mode == "none" -> "${caps.model.ifBlank { "model" }} · no reasoning dial"
+                    caps.scope == "session" -> "${caps.model.ifBlank { "model" }} · this session's ladder"
                     else -> "${caps.model.ifBlank { "model" }} · effort scale"
                 },
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
@@ -537,7 +540,14 @@ internal fun ReasoningMenu(
             "none" to "·", "minimal" to "▁", "low" to "▁▃", "medium" to "▁▃▅",
             "high" to "▁▃▅▇", "xhigh" to "▁▃▅▇█", "max" to "█████", "ultra" to "█████",
         )
-        val entries: List<Triple<String, String, String>> = if (!caps?.levels.isNullOrEmpty()) {
+        // Scope of a pick: this session (the gateway's own default for /reasoning) or every
+        // session (--global, written to config.yaml). The old menu sent --global for every
+        // tap, so one pick in a scratch room rewrote the profile default for good.
+        var everySession by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+        val noDial = caps?.mode == "none"
+        val entries: List<Triple<String, String, String>> = if (noDial) {
+            emptyList()
+        } else if (!caps?.levels.isNullOrEmpty()) {
             caps!!.levels.map { arg ->
                 val label = caps.labels[arg] ?: arg.replaceFirstChar { it.uppercase() }
                 val glyph = glyphFor[arg] ?: if (caps.mode == "binary" && arg != "none") "▁▃▅▇" else "·"
@@ -575,7 +585,36 @@ internal fun ReasoningMenu(
                         )
                     }
                 },
-                onClick = { onCommand("$arg --global") },
+                onClick = { onCommand(if (everySession) "$arg --global" else arg) },
+            )
+        }
+        if (noDial) {
+            Text(
+                "This model takes no effort level — Hermes sends none.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        } else {
+            DropdownMenuItem(
+                text = {
+                    androidx.compose.foundation.layout.Row(
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            if (everySession) "Every session" else "This session only",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Switch(
+                            checked = everySession,
+                            onCheckedChange = { everySession = it },
+                            modifier = Modifier.padding(start = 12.dp).height(24.dp),
+                        )
+                    }
+                },
+                onClick = { everySession = !everySession },
             )
         }
         HorizontalDivider(

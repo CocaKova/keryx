@@ -740,28 +740,149 @@ def apply_thinking_kwargs(agent) -> None:
         logger.debug("apply_thinking_kwargs failed", exc_info=True)
 
 
-def _reasoning_capabilities() -> Dict[str, Any]:
-    """Describe the active brain's reasoning dial for the Keryx client.
+# The generic effort ladder — what an OpenAI-compatible cloud wire accepts when no
+# narrower table applies. "none" is Hermes's own disable level (thinking off), so every
+# ladder below is served with it up front regardless of the wire.
+_GENERIC_EFFORTS = ("none", "minimal", "low", "medium", "high", "xhigh")
 
-    Local custom providers are a binary switch (enable_thinking via chat template) — the app
-    should render Off/On. Cloud providers accept the full effort scale. Reads config.yaml
-    fresh on every call so a /model or /reasoning --global change is reflected immediately.
+
+def _effort_levels_for(provider: str, model: str) -> Optional[List[str]]:
+    """The reasoning levels the wire behind (provider, model) accepts, in ladder order.
+
+    Hermes's own tables (``agent/reasoning_effort.py``, the provider plugins, the
+    OpenRouter catalog) are the source of truth — this only picks WHICH table a route reads
+    from, the same way the transports do at send time. Returns None for a model with no
+    reasoning dial at all (the app renders "no dial" rather than a ladder that 400s).
+    Unknown provider → the generic ladder, which is what Hermes itself sends.
     """
-    model = ""
-    provider = ""
+    p = (provider or "").strip().lower()
+    m = (model or "").strip().lower()
+    levels: Optional[Any] = None
+    try:
+        from agent import reasoning_effort as _re
+
+        if p.startswith("xai") or p in ("x-ai", "grok"):
+            from agent.model_metadata import grok_supports_reasoning_effort, is_grok_46_family
+
+            if not grok_supports_reasoning_effort(m):
+                return None
+            levels = _re.XAI_GROK46_EFFORTS if is_grok_46_family(m) else _re.XAI_LEGACY_EFFORTS
+        elif p == "openrouter":
+            from hermes_cli.models import openrouter_model_reasoning_capabilities
+
+            caps = openrouter_model_reasoning_capabilities(m)
+            if caps:
+                if not caps.get("supports_reasoning"):
+                    return None
+                levels = caps.get("supported_efforts") or None
+        elif p in ("openai-codex", "codex"):
+            levels = _re.codex_supported_efforts(m)
+        elif p in ("kimi-coding", "kimi", "moonshot"):
+            levels = _re.kimi_supported_efforts(m)
+        elif p == "copilot":
+            from hermes_cli.models import github_model_reasoning_efforts
+
+            levels = github_model_reasoning_efforts(m) or None
+        elif p == "zai":
+            if any(t in m for t in ("glm-5.3", "glm-5-3", "glm-5p3")):
+                levels = _re.GLM53_EFFORTS
+            elif any(t in m for t in ("glm-5.2", "glm-5-2", "glm-5p2")):
+                levels = _re.GLM52_EFFORTS
+        elif p == "deepseek" and "v4" in m:
+            levels = _re.DEEPSEEK_V4_EFFORTS
+        elif p == "ollama-cloud":
+            levels = _re.OLLAMA_CLOUD_EFFORTS
+        elif p == "meta-ai":
+            levels = _re.META_AI_EFFORTS
+        elif p == "upstage":
+            levels = _re.SOLAR_EFFORTS
+        elif p == "actual":
+            levels = _re.ACTUAL_RELAY_EFFORTS
+    except Exception:
+        logger.debug("effort table lookup failed for %s/%s", provider, model, exc_info=True)
+        levels = None
+    out: List[str] = ["none"]
+    for lv in (levels or _GENERIC_EFFORTS):
+        s = str(lv).strip().lower()
+        if s and s not in out:
+            out.append(s)
+    return out
+
+
+def _session_route(session_id: str) -> Dict[str, Any]:
+    """What state.db persisted for a stored session: its model, billing provider and the
+    reasoning config the agent last ran with. {} when the row is unknown (a fresh direct-door
+    session has no row until its first prompt) — callers fall back to the global config."""
+    sid = str(session_id or "").strip()
+    if not sid:
+        return {}
+    try:
+        from hermes_state import SessionDB
+
+        row = SessionDB().get_session(sid)
+    except Exception:
+        logger.debug("session route lookup failed for %s", sid, exc_info=True)
+        return {}
+    if not row:
+        return {}
+    out: Dict[str, Any] = {
+        "model": str(row.get("model") or "").strip(),
+        "provider": str(row.get("billing_provider") or "").strip().lower(),
+    }
+    mc = row.get("model_config")
+    if isinstance(mc, str):
+        try:
+            mc = json.loads(mc)
+        except Exception:
+            mc = None
+    rc = (mc or {}).get("reasoning_config") if isinstance(mc, dict) else None
+    if isinstance(rc, dict):
+        out["effort"] = "none" if rc.get("enabled") is False else str(rc.get("effort") or "").strip().lower()
+    return out
+
+
+def _reasoning_capabilities(
+    model: Optional[str] = None,
+    provider: Optional[str] = None,
+    session_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Describe a brain's reasoning dial for the Keryx client.
+
+    Which brain: an explicit (model, provider) pair wins (the direct door knows its
+    session's live route from ``model.options``); else the stored session's persisted route
+    (state.db) when ``session_id`` is given; else the global config.yaml default — the
+    pre-2.6.3 behaviour, and still what the Matrix door gets. Reads config.yaml fresh on
+    every call so a /model or /reasoning --global change is reflected immediately.
+
+    Levels come from Hermes's own per-provider effort tables (see ``_effort_levels_for``)
+    — a Grok session gets Grok's ladder, not the local brain's. Local custom providers keep
+    the on-device rules (Mistral-native = binary switch; the patched qwen stack's ladder).
+    """
+    cfg_model = ""
+    cfg_provider = ""
     effort = "medium"
     show = True
     room_profiles: Dict[str, str] = {}
+    local_slugs: set = set()
     try:
         import yaml
         from pathlib import Path
 
         cfg = yaml.safe_load((Path.home() / ".hermes" / "config.yaml").read_text()) or {}
         model_cfg = cfg.get("model") or {}
-        provider = str(model_cfg.get("provider", "") or "").strip().lower()
-        model = str(model_cfg.get("model") or model_cfg.get("name") or "").strip()
+        cfg_provider = str(model_cfg.get("provider", "") or "").strip().lower()
+        cfg_model = str(model_cfg.get("model") or model_cfg.get("name") or "").strip()
         base = str(model_cfg.get("base_url", "") or "").strip()
-        if (provider == "custom" or provider.startswith("custom:")) and base:
+        providers_cfg = cfg.get("providers") or {}
+        if isinstance(providers_cfg, dict):
+            # User-configured endpoints (silas-brain → localhost:8000) are local brains too:
+            # a session billed to that slug must read the local ladder, not a cloud one.
+            local_slugs = {
+                str(k).strip().lower()
+                for k, v in providers_cfg.items()
+                if isinstance(v, dict) and str(v.get("base_url") or "").strip()
+            }
+        if (cfg_provider == "custom" or cfg_provider.startswith("custom:")) and base:
             # Brain hot-swaps (Spire systemd templates) change what's served without touching
             # config.yaml — ask the live endpoint what it actually is.
             try:
@@ -771,14 +892,14 @@ def _reasoning_capabilities() -> Dict[str, Any]:
                     data = json.loads(resp.read().decode())
                 served = [m.get("id", "") for m in data.get("data", []) if isinstance(m, dict)]
                 if served and served[0]:
-                    model = served[0]
+                    cfg_model = served[0]
             except Exception:
                 pass
-        if not model:
-            for entry in (cfg.get("providers") or {}).values():
+        if not cfg_model:
+            for entry in providers_cfg.values() if isinstance(providers_cfg, dict) else ():
                 if isinstance(entry, dict) and str(entry.get("base_url", "")).strip() == base:
-                    model = str(entry.get("model") or entry.get("name") or "").strip()
-                    if model:
+                    cfg_model = str(entry.get("model") or entry.get("name") or "").strip()
+                    if cfg_model:
                         break
         agent_cfg = cfg.get("agent") or {}
         # The global effort lives under model: in current configs (agent: is the legacy spot,
@@ -798,11 +919,39 @@ def _reasoning_capabilities() -> Dict[str, Any]:
     except Exception:
         logger.debug("capabilities config read failed", exc_info=True)
 
-    local = provider == "custom" or provider.startswith("custom:")
+    # Resolve the target brain: explicit pair → stored session → global.
+    scope = "global"
+    model = str(model or "").strip()
+    provider = str(provider or "").strip().lower()
+    if model or provider:
+        scope = "session"
+        model = model or cfg_model
+        provider = provider or cfg_provider
+        # The pair names the brain; the row (when there is one) still knows the level the
+        # session last ran with, which the global default does not.
+        route = _session_route(session_id or "")
+        if route.get("effort"):
+            effort = route["effort"]
+    else:
+        route = _session_route(session_id or "")
+        if route.get("model") or route.get("provider"):
+            scope = "session"
+            model = route.get("model") or cfg_model
+            provider = route.get("provider") or cfg_provider
+            if route.get("effort"):
+                effort = route["effort"]
+        else:
+            model, provider = cfg_model, cfg_provider
+    # A stored session that predates provider stamping ('' billing_provider) ran on the
+    # global default — never mistake it for a cloud route.
+    if not provider:
+        provider = cfg_provider
+
+    local = provider == "custom" or provider.startswith("custom:") or provider in local_slugs
     if local and _is_mistral_native(model):
         # Mistral-native tokenizers accept only none/high on reasoning_effort — for them a
         # binary switch is the honest declaration.
-        reasoning = {
+        reasoning: Dict[str, Any] = {
             "mode": "binary",
             "levels": ["none", "high"],
             "labels": {"none": "Off", "high": "On"},
@@ -820,15 +969,24 @@ def _reasoning_capabilities() -> Dict[str, Any]:
             "current": effort,
         }
     else:
-        reasoning = {
-            "mode": "effort",
-            "levels": ["none", "minimal", "low", "medium", "high", "xhigh"],
-            "labels": {},
-            "current": effort,
-        }
+        levels = _effort_levels_for(provider, model)
+        if levels is None:
+            # No reasoning dial on this wire (grok-4 / grok-4-fast, a non-reasoning
+            # OpenRouter route): Hermes sends no effort at all, so offer none.
+            reasoning = {"mode": "none", "levels": [], "labels": {}, "current": ""}
+        else:
+            reasoning = {
+                "mode": "effort",
+                "levels": levels,
+                "labels": {"none": "Off"},
+                "current": effort,
+            }
     return {
         "model": model,
         "provider": provider,
+        # Whose dial this is: "session" when a session/model was resolved, "global" when
+        # the answer is config.yaml's default (the Matrix door, or a session with no row yet).
+        "scope": scope,
         "reasoning": reasoning,
         "show_reasoning": show,
         "room_profiles": room_profiles,
@@ -996,8 +1154,14 @@ def make_capabilities_handler(check_auth):
         auth_err = check_auth(request)
         if auth_err is not None:
             return auth_err
-        # Config read + live-model probe both block — keep them off the event loop.
-        caps = await asyncio.to_thread(_reasoning_capabilities)
+        # ?model=&provider= (the direct door's live route) or ?session_id= (a stored
+        # session's persisted route) scope the answer to one brain; bare = the global default.
+        q = request.query
+        model = str(q.get("model") or "").strip()[:200]
+        provider = str(q.get("provider") or "").strip()[:64]
+        session_id = str(q.get("session_id") or "").strip()[:200]
+        # Config read + live-model probe + state.db lookup all block — keep them off the loop.
+        caps = await asyncio.to_thread(_reasoning_capabilities, model, provider, session_id)
         return web.json_response(caps)
 
     return handle_keryx_capabilities

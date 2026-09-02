@@ -21,6 +21,9 @@ class ModelDelegate(
     private val transport: ChatTransport,
     private val currentRoomId: () -> String?,
     private val sendRoomCommand: (String) -> Unit,
+    /** Fired once the gateway accepted a switch (now or at the next turn): the session's
+     *  reasoning ladder belongs to the new brain, so the owner re-probes it. */
+    private val onSwitched: () -> Unit = {},
 ) {
     private val scope = deps.scope
     private val hubClient = deps.client
@@ -34,6 +37,10 @@ class ModelDelegate(
 
     /** The choice the gateway asked us to confirm; the same choice tapped again confirms it. */
     private var awaitingConfirm: ModelChoice? = null
+
+    /** Forget the catalog: it described another room's session. The pill falls back to the
+     *  caps probe's model until the picker is opened and re-fetches for this room. */
+    fun clear() { _catalog.value = null }
 
     fun refresh() {
         if (_loading.value) return
@@ -70,10 +77,19 @@ class ModelDelegate(
                             awaitingConfirm = choice
                             toast("${out.message.ifBlank { "This model is expensive." }} Tap it again to confirm.")
                         }
-                        out.deferred -> toast("${out.model} takes over at the next turn")
+                        out.deferred -> {
+                            toast("${out.model} takes over at the next turn")
+                            _catalog.value = _catalog.value?.copy(
+                                model = out.model.ifBlank { choice.name }, provider = choice.provider,
+                            )
+                            onSwitched()
+                        }
                         else -> {
                             toast("${out.model} — this session")
-                            _catalog.value = _catalog.value?.copy(model = out.model.ifBlank { choice.name })
+                            _catalog.value = _catalog.value?.copy(
+                                model = out.model.ifBlank { choice.name }, provider = choice.provider,
+                            )
+                            onSwitched()
                         }
                     }
                 }
