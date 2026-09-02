@@ -347,6 +347,26 @@ object KeryxGlyphs {
         )
     }
 
+    /** A pushpin — the gateway's keep flag on a session. Head, shoulders, needle. */
+    val Pin: ImageVector by lazy {
+        draw(
+            "pin",
+            listOf(
+                "M8.5,2.75 H15.5",
+                "M9.75,2.75 V9 L6.75,12 V13.75 H17.25 V12 L14.25,9 V2.75",
+                "M12,13.75 V21.25",
+            ),
+        )
+    }
+
+    val PinFilled: ImageVector by lazy {
+        draw(
+            "pinFilled",
+            strokes = listOf("M8.5,2.75 H15.5", "M12,13.75 V21.25"),
+            fills = listOf("M9.75,2.75 H14.25 V9 L17.25,12 V13.75 H6.75 V12 L9.75,9 Z"),
+        )
+    }
+
     val Trash: ImageVector by lazy {
         draw(
             "trash",

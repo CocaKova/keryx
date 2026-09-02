@@ -292,6 +292,26 @@ fun HermesApp(viewModel: ChatViewModel) {
                                 )
                             }
                         }
+                        // A scheduled run, open as a room: the pin is right here, where you
+                        // finished reading it. Only over a run the Runs board knows (never over
+                        // a conversation — those pin from the drawer), and it reads the run's
+                        // own flag so the glyph and the shelf never disagree.
+                        currentRoom?.let { room ->
+                            val cronBoard by viewModel.hub.cron.collectAsState()
+                            val board = cronBoard.data
+                            if (board != null && board.isRun(room.id)) {
+                                val pinned = board.isPinned(room.id)
+                                IconButton(onClick = { viewModel.hub.cronSetPinned(room.id, !pinned) }) {
+                                    Icon(
+                                        if (pinned) chat.keryx.app.presentation.ui.components.KeryxGlyphs.PinFilled
+                                        else chat.keryx.app.presentation.ui.components.KeryxGlyphs.Pin,
+                                        contentDescription = if (pinned) "Unpin this run" else "Pin this run",
+                                        tint = if (pinned) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                    )
+                                }
+                            }
+                        }
                         if (currentRoom != null) {
                             // Matrix: a room is a profile, and "new session" there means /new —
                             // one tap sends it, same auto-send the command palette does, so the

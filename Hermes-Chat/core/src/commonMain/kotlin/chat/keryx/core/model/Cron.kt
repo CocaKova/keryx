@@ -12,6 +12,13 @@ data class CronRun(
     val id: String,
     val title: String,
     val timestamp: Long,
+    /**
+     * The gateway's durable "keep" flag on this run's session — the same pin the Desktop
+     * sidebar sets. A pinned run is exempt from the auto-archive sweep and is back-filled
+     * into every session page it has aged out of, so pinning a report is "keep this one",
+     * not merely "sort it first". Server truth; never a phone ledger.
+     */
+    val pinned: Boolean = false,
 )
 
 data class CronJobCard(
@@ -28,6 +35,9 @@ data class CronJobCard(
 
     /** A job that is scheduled but has produced nothing we can see (new, or its runs aged out). */
     val neverRun: Boolean get() = runs.isEmpty()
+
+    /** How many of this job's runs the user has kept. */
+    val pinnedCount: Int get() = runs.count { it.pinned }
 }
 
 /**
@@ -182,4 +192,39 @@ object CronUnreadCalc {
     fun prune(seenIds: Set<String>, known: Set<String>, cap: Int = 400): Set<String> =
         if (seenIds.size <= cap || known.isEmpty()) seenIds
         else seenIds.filterTo(LinkedHashSet()) { it in known }
+}
+
+/**
+ * The runs the user has KEPT — the shelf above the arrivals rail.
+ *
+ * A scheduled report is read once and then buried under the next forty; the one worth coming
+ * back to (the quarterly plan the Monday brief produced, the arXiv sweep that found the paper)
+ * has no address. Pinning gives it one. The flag lives on the gateway (`PATCH /api/sessions/{id}
+ * {"pinned": true}` — the Desktop sidebar's keep flag), so the pin survives a reinstall, shows
+ * in every client, and exempts the transcript from the auto-archive sweep.
+ *
+ * Pure over the cards: the same cards always give the same shelf, and flipping a pin
+ * optimistically is a value operation the delegate can undo when the gateway refuses.
+ */
+object CronPins {
+
+    /** Every pinned run across every job, newest first. */
+    fun of(cards: List<CronJobCard>): List<CronRun> =
+        cards.flatMap { card -> card.runs.filter { it.pinned } }
+            .sortedByDescending { it.timestamp }
+
+    /** Fast membership for row-level glyphs. */
+    fun ids(cards: List<CronJobCard>): Set<String> =
+        cards.flatMapTo(LinkedHashSet()) { card -> card.runs.filter { it.pinned }.map { it.id } }
+
+    /**
+     * The cards with one run's pin set to [pinned] — nothing else moves: card order, run order
+     * and every other run are untouched, so an optimistic flip and its revert are both exact.
+     * A [runId] no card holds returns the cards unchanged.
+     */
+    fun withPin(cards: List<CronJobCard>, runId: String, pinned: Boolean): List<CronJobCard> =
+        cards.map { card ->
+            if (card.runs.none { it.id == runId }) card
+            else card.copy(runs = card.runs.map { if (it.id == runId) it.copy(pinned = pinned) else it })
+        }
 }
