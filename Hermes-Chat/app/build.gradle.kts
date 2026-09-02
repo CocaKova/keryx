@@ -136,8 +136,10 @@ dependencies {
   implementation(libs.ktor.client.okhttp)
   implementation(libs.androidx.sqlite.bundled)
   implementation(libs.markdown.renderer.m3)
-  // 2.6.2 renderer parity: syntax-highlighted code fences (highlights) and inline images (coil3).
-  implementation(libs.markdown.renderer.code)
+  // 2.6.2 renderer parity: syntax-highlighted code fences (the `highlights` tokenizer, driven
+  // by CodeHighlighting — NOT the renderer's code module, whose composable nests a second
+  // horizontalScroll inside ours and crashes) and inline images (coil3).
+  implementation(libs.highlights)
   implementation(libs.markdown.renderer.coil3)
   implementation(libs.coil3.compose)
   implementation(libs.coil3.network.okhttp)

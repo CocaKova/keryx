@@ -594,41 +594,39 @@ private fun ScrollableCodeBlock(code: String, textColor: Color, language: String
         // over short code blocks ("you can only swipe in some areas").
         val codeScroll = rememberScrollState()
         // The web chats' code block: a language tag in the corner and the tokens coloured.
-        // Highlighting rides `highlights` through the renderer's code module; a language it
-        // doesn't know falls back to plain mono, same as before (2.6.2 renderer parity).
+        // The colour is OUR text with the tokenizer's spans laid over it (CodeHighlighting) —
+        // the renderer's own highlighted-code composable brings a second horizontalScroll,
+        // and a scroller inside a scroller is a measure-time crash, not a style choice.
+        // A language the tokenizer doesn't know is plain mono, same as before.
         val onVoid = MaterialTheme.colorScheme.background.luminance() < 0.5f
-        val highlighter = remember(onVoid) {
-            dev.snipme.highlights.Highlights.Builder()
-                .theme(dev.snipme.highlights.model.SyntaxThemes.pastel(darkMode = onVoid))
-        }
         val lang = language?.trim()?.lowercase().orEmpty()
-        val known = lang.isNotBlank() &&
-            dev.snipme.highlights.model.SyntaxLanguage.getByName(lang) != null
+        val coloured = remember(trimmed, lang, onVoid) {
+            val spans = CodeHighlighting.spans(trimmed, lang, darkMode = onVoid)
+            androidx.compose.ui.text.buildAnnotatedString {
+                append(trimmed)
+                for (span in spans) {
+                    addStyle(
+                        androidx.compose.ui.text.SpanStyle(
+                            color = span.rgb?.let { Color(0xFF000000.toInt() or it) } ?: Color.Unspecified,
+                            fontWeight = if (span.bold) FontWeight.Bold else null,
+                        ),
+                        span.start, span.end,
+                    )
+                }
+            }
+        }
         Column(
             modifier = Modifier
                 .horizontalScroll(codeScroll, enabled = codeScroll.maxValue > 0)
                 .padding(start = 10.dp, top = if (lang.isNotBlank()) 22.dp else 10.dp, bottom = 10.dp, end = 34.dp),
         ) {
-            if (known) {
-                com.mikepenz.markdown.compose.elements.MarkdownHighlightedCode(
-                    trimmed,
-                    lang,
-                    highlighter,
-                    androidx.compose.ui.text.TextStyle(
-                        color = textColor.copy(alpha = 0.85f),
-                        fontSize = 12.sp,
-                        fontFamily = FontFamily.Monospace,
-                    ),
-                )
-            } else {
-                Text(
-                    text = trimmed,
-                    color = textColor.copy(alpha = 0.85f),
-                    fontSize = 12.sp,
-                    fontFamily = FontFamily.Monospace,
-                    softWrap = false,
-                )
-            }
+            Text(
+                text = coloured,
+                color = textColor.copy(alpha = 0.85f),
+                fontSize = 12.sp,
+                fontFamily = FontFamily.Monospace,
+                softWrap = false,
+            )
         }
         if (lang.isNotBlank()) {
             Text(

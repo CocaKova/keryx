@@ -132,3 +132,28 @@ Kotlin 2.1 line), `io.coil-kt.coil3:coil-compose` + `coil-network-okhttp` 3.1.0.
   new sidebar glyph and arrow-up send; nothing else was driven). Walk list: door tiles + header theme toggle,
   top bar glyphs, composer row, bubble action bar, a tool run (tinted glyphs, green ✓), a code
   fence with a language, an inline image, `~~x~~`, `$E=mc^2$`.
+
+## 09-02 — CRASH: every fence with a known language killed the app (Jonny: "when I went into my proactive calendar cron it crashed Keryx?")
+
+- **Symptom:** `IllegalStateException: Horizontally scrollable component was measured with an
+  infinity maximum width constraints` at measure time, every time a message with a ```python /
+  ```typescript (any grammar `highlights` knows) fence scrolled into view. The calendar cron's
+  prompt is a 146KB skill dump with 283 fences. Ten crashes in a row on the phone because the
+  app reopens the same session.
+- **Root cause (this pass's renderer parity):** `MarkdownHighlightedCode` from
+  `multiplatform-markdown-renderer-code` wraps its text in its OWN `horizontalScroll`; Keryx's
+  `ScrollableCodeBlock` already scrolls its Column. Scroller inside scroller = infinite width to
+  the inner one = throw. Untagged fences took the plain `Text` branch, which is why the walk
+  yesterday didn't see it. Verified in the library bytecode (`MarkdownHighlightedCode$1` →
+  `ScrollKt.horizontalScroll$default`).
+- **Fix:** `CodeHighlighting` (app, pure, 6 tests) runs the `highlights` tokenizer and hands
+  back clamped spans; the code block builds ONE `AnnotatedString` and draws it with its own
+  `Text` inside its own scroller. Dependency swapped: `markdown-renderer-code` OUT,
+  `dev.snipme:highlights:1.0.0` IN directly. Alias table (`bash`/`sh`→shell, `ts`/`tsx`→
+  typescript, `py`, `js`, `kt`, `rs`…) because the tokenizer matches its enum names only — before
+  this, ```bash fences were never coloured at all.
+- ⚠️ Rule: nothing inside `ScrollableCodeBlock`, `MarkdownTable`, `MermaidDiagram`, the
+  citations bar or the diff panel may bring its own horizontal scroller. A library composable
+  that "renders code" almost certainly does. A JVM-green test proves nothing about measure.
+- Release APK INSTALLED on the phone 09-02 07:42 CT; the calendar run opened and scrolled over
+  ADB, zero crashes in the crash buffer. 593 tests green.
