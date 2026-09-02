@@ -139,6 +139,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                     // Synchronous: the watcher must never see a roster emission for a room
                     // the user is opening before it knows that room is on screen.
                     onOpenRoomChanged = { app.openRoomId = it },
+                    wake = app.wakeWord,
                 ) as T
             }
         }
@@ -155,6 +156,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
         // A notification tap delivers the room id; open it.
         handleNotificationIntent(intent)
         handleAssistIntent(intent)
+        handleWakeSummonIntent(intent)
 
         enableEdgeToEdge()
         setContent {
@@ -188,6 +190,24 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
         setIntent(intent)
         handleNotificationIntent(intent)
         handleAssistIntent(intent)
+        handleWakeSummonIntent(intent)
+    }
+
+    /** "Hey Hermes" fired with the phone dark: the ear's full-screen intent launched us. Light
+     *  the display and show over the keyguard so the Call is on screen without a hand — the
+     *  app's own biometric lock (if on) still gates the chat underneath. */
+    private fun handleWakeSummonIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(chat.keryx.app.notify.WakeEarService.EXTRA_WAKE_SUMMON, false) != true) return
+        if (Build.VERSION.SDK_INT >= 27) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        } else {
+            @Suppress("DEPRECATION")
+            window.addFlags(
+                android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                    android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON,
+            )
+        }
     }
 
     /** The assist gesture (long-press home/power with Keryx as the assist app) summons the

@@ -52,3 +52,8 @@
 # --- UnifiedPush connector (broadcast receivers resolved by name) ---
 -keep class org.unifiedpush.android.connector.** { *; }
 -dontwarn org.unifiedpush.android.connector.**
+
+# --- LiteRT (the ear's on-device wake detector): the interpreter binds its JNI by name. The AAR
+# --- ships consumer rules, but the wake leg is walked rarely — keep it explicit. ---
+-keep class org.tensorflow.lite.** { *; }
+-dontwarn org.tensorflow.lite.**

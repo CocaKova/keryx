@@ -164,6 +164,21 @@ interface SettingsRepository {
     // --- Voice replies (TTS) ---
     /** Speak each finished agent reply in the open chat automatically. Off by default. */
     var ttsAutoSpeak: Boolean
+
+    // --- "Hey Hermes" wake word (2.7, direct door only) ---
+    /** THIS device's opt-in to keep its mic open for the phrase. A mic that never closes is a
+     *  battery and privacy decision per phone; the gateway's own `wake_word.enabled` is the
+     *  server-side truth and is flipped on the same gesture so both agree. */
+    var wakeWordEnabled: Boolean
+    /** Detect on the phone (openWakeWord via LiteRT, no audio leaves the device) instead of
+     *  streaming PCM to the gateway's detector (desktop's way). */
+    var wakeOnDevice: Boolean
+    /** Battery policy for the ear (see WakePolicy): defaults are the nightstand — charging,
+     *  on Wi-Fi, and not forgotten for hours. */
+    var wakeOnlyWhileCharging: Boolean
+    var wakeNotOnCellular: Boolean
+    /** 0 = never auto-off. */
+    var wakeIdleHours: Int
     /** Base URL of any OpenAI-compatible `/v1/audio/speech` server (Kokoro, openedai-speech,
      *  LocalAI, OpenAI…). Bare host, `/v1` base, or full path all accepted. Blank = the
      *  device's built-in voice — spoken replies never require a server. */

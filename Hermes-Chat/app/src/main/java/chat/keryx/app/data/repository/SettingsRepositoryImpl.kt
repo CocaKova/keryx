@@ -271,6 +271,26 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getBoolean("tts_auto_speak", false)
         set(value) = prefs.edit().putBoolean("tts_auto_speak", value).apply()
 
+    override var wakeWordEnabled: Boolean
+        get() = prefs.getBoolean("wake_word_enabled", false)
+        set(value) = prefs.edit().putBoolean("wake_word_enabled", value).apply()
+
+    override var wakeOnDevice: Boolean
+        get() = prefs.getBoolean("wake_on_device", true)
+        set(value) = prefs.edit().putBoolean("wake_on_device", value).apply()
+
+    override var wakeOnlyWhileCharging: Boolean
+        get() = prefs.getBoolean("wake_only_charging", true)
+        set(value) = prefs.edit().putBoolean("wake_only_charging", value).apply()
+
+    override var wakeNotOnCellular: Boolean
+        get() = prefs.getBoolean("wake_not_cellular", true)
+        set(value) = prefs.edit().putBoolean("wake_not_cellular", value).apply()
+
+    override var wakeIdleHours: Int
+        get() = prefs.getInt("wake_idle_hours", 4)
+        set(value) = prefs.edit().putInt("wake_idle_hours", value).apply()
+
     override var ttsUrl: String
         get() = prefs.getString("tts_url", "") ?: ""
         set(value) = prefs.edit().putString("tts_url", value).apply()

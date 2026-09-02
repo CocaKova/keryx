@@ -53,6 +53,8 @@ class ChatViewModel(
     // long enough for the roster to emit the freshly adopted session and the watcher to
     // read it as news the user "isn't looking at" (the cron-run trap, 2.8.1).
     private val onOpenRoomChanged: ((String?) -> Unit)? = null,
+    // The ear (2.7): process-scoped, direct door only; null on Matrix and in plain-JVM tests.
+    private val wake: chat.keryx.app.audio.WakeWordController? = null,
 ) : ViewModel() {
 
     // The two capability surfaces, if this transport has them. Affordances only one side offers
@@ -661,6 +663,38 @@ class ChatViewModel(
     val assistSummon: StateFlow<Int> = _assistSummon.asStateFlow()
     var assistConsumed = 0
     fun summonAssist() { _assistSummon.value += 1 }
+
+    // The wake word's doorway (2.7): `wake.detected` → the ear parks a Summon → this bumps
+    // the counter; HermesApp walks home and opens the Call (in a fresh session when the
+    // gateway asked, `start_new_session`). Same consumed-guard shape as the assist.
+    private val _callSummon = MutableStateFlow(0)
+    val callSummon: StateFlow<Int> = _callSummon.asStateFlow()
+    var callSummonConsumed = 0
+    @Volatile var callSummonNewSession: Boolean = false
+        private set
+    /** The ear's live state for Settings (null = no ear in this process: Matrix door or tests). */
+    val wakeUi: StateFlow<chat.keryx.app.audio.WakeWordController.Ui>? = wake?.ui
+
+    init {
+        val w = wake
+        if (w != null) viewModelScope.launch {
+            w.summon.collect { s ->
+                if (s == null) return@collect
+                callSummonNewSession = s.detection.startNewSession
+                _callSummon.value += 1
+                w.consumeSummon(s.nonce)
+            }
+        }
+    }
+
+    fun setWakeWordEnabled(on: Boolean) { wake?.setEnabled(on) }
+    fun setWakePolicy(policy: chat.keryx.core.model.WakePolicy) { wake?.setPolicy(policy) }
+    fun setWakeOnDevice(on: Boolean) { wake?.setOnDevice(on) }
+
+    /** CallScreen lifecycle → the ear yields the mic before CallAudio opens it, and reclaims
+     *  the lease once the call is over. */
+    fun onCallStarted() { wake?.pauseForVoice() }
+    fun onCallEnded() { wake?.resumeAfterVoice() }
 
     private fun scheduleClearAwaiting(delayMs: Long, force: Boolean = false) {
         quietJob?.cancel()

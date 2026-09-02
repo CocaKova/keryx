@@ -86,6 +86,32 @@ fun HermesApp(viewModel: ChatViewModel) {
             }
         }
     }
+    // The Call (1.22): a voice conversation with the open room's agent. Hoisted here (not in
+    // the top bar) because two doors open it — the phone glyph, and the ear's summon below.
+    var showCall by remember { mutableStateOf(false) }
+    // "Hey Hermes" (2.7): the ear heard the phrase → walk home and open the Call, in a fresh
+    // session when the gateway asked for one (`start_new_session`, default true — desktop
+    // does the same: startFreshSessionDraft then requestVoiceConversationStart).
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        var seen = viewModel.callSummon.value
+        viewModel.callSummon.collect { n ->
+            if (n > seen && n > viewModel.callSummonConsumed) {
+                seen = n
+                viewModel.callSummonConsumed = n
+                nav.home()
+                drawerState.close()
+                if (!viewModel.voice.callReady()) {
+                    viewModel.toast("Heard you — set the STT and TTS endpoints in Settings → Voice to take the call")
+                    return@collect
+                }
+                if (viewModel.callSummonNewSession) {
+                    viewModel.createSession("") { err -> if (err == null) showCall = true else viewModel.toast(err) }
+                } else {
+                    showCall = true
+                }
+            }
+        }
+    }
     val openSpace: (KeryxDest) -> Unit = { dest ->
         focusManager.clearFocus()
         keyboard?.hide()
@@ -398,9 +424,8 @@ fun HermesApp(viewModel: ChatViewModel) {
                             }
                             // Reasoning moved to the composer footer (2.2, the Talaria
                             // treatment) — the dial now lives where the thinking happens.
-                            // The Call (1.22): a voice conversation with this room's agent. Needs
-                            // both voice endpoints; a missing one gets a pointer, not a dead mic.
-                            var showCall by remember { mutableStateOf(false) }
+                            // The Call: needs both voice endpoints; a missing one gets a
+                            // pointer, not a dead mic. (`showCall` is hoisted — the ear opens it too.)
                             IconButton(onClick = {
                                 if (viewModel.voice.callReady()) showCall = true
                                 else viewModel.toast("Set the STT and TTS endpoints in Settings → Voice first")
