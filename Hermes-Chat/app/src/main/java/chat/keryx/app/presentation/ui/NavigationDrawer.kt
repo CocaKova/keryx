@@ -157,6 +157,10 @@ fun NavigationDrawerContent(
                             // pins and read marks set from Desktop, a cron continuation, a
                             // compaction's new id — the drawer opening is the moment to know.
                             viewModel.refreshRoster()
+                            // The Runs door's badge: the board is otherwise only fetched while
+                            // the Runs place polls, so a drawer opened cold would show no count
+                            // even with a dozen reports waiting. Same gate as the door itself.
+                            if (viewModel.hub.reasoningCaps.value != null) viewModel.hub.refreshCron()
                             // Wave hello when the drawer opens, then settle into the idle loop.
                             petGreeting = true
                             kotlinx.coroutines.delay(2200)
@@ -439,7 +443,14 @@ fun NavigationDrawerContent(
                 // Scheduled work reads at floor level (was buried as the hub's 4th tab). Gated
                 // the cheap way: the capabilities probe answering means Hermes Link is alive,
                 // which is the same wire the runs ride.
-                if (caps != null) DrawerDoor(KeryxGlyphs.Watch, "Runs", Modifier.weight(1f)) {
+                // Badged with what has landed since you last looked — the same ledger the
+                // Runs place's arrivals rail reads (baseline + opened-run ids), so the door
+                // and the rail never disagree.
+                val cronBoard by viewModel.hub.cron.collectAsState()
+                if (caps != null) DrawerDoor(
+                    KeryxGlyphs.Watch, "Runs", Modifier.weight(1f),
+                    badge = cronBoard.data?.unread?.total ?: 0,
+                ) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Runs)
                 }
                 DrawerDoor(KeryxGlyphs.Pulse, "Gateway", Modifier.weight(1f)) {
@@ -970,6 +981,8 @@ private fun DrawerDoor(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     modifier: Modifier = Modifier,
+    /** Unread count pinned to the icon's corner; zero draws nothing. */
+    badge: Int = 0,
     onClick: () -> Unit,
 ) {
     Column(
@@ -979,11 +992,50 @@ private fun DrawerDoor(
             .clickable(onClick = onClick)
             .padding(vertical = 8.dp),
     ) {
-        Icon(
-            icon, contentDescription = label,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(22.dp),
-        )
+        // The box is the icon's exact size: the badge overflows its corner and never adds
+        // height, so a badged door's label sits level with its neighbours.
+        Box(modifier = Modifier.size(22.dp)) {
+            Icon(
+                icon, contentDescription = if (badge > 0) "$label, ${DoorBadge.label(badge)} unread" else label,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxSize(),
+            )
+            if (badge > 0) {
+                // The room list's unread pill, shrunk to a corner: same colour, same cap, so
+                // one grammar says "unread" everywhere in the drawer. `required*` sizes ignore
+                // the 22dp box's constraints — "99+" may run wider than the icon.
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 8.dp, y = (-6).dp)
+                        .requiredHeight(16.dp)
+                        .requiredWidthIn(min = 16.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary)
+                        .padding(horizontal = 4.dp),
+                ) {
+                    Text(
+                        text = DoorBadge.label(badge),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false,
+                        // Font padding trimmed, or a 9sp glyph rides a 14dp line and the pill
+                        // is a lozenge rather than a circle.
+                        style = androidx.compose.ui.text.TextStyle(
+                            lineHeight = 10.sp,
+                            platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                            lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                                alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+                                trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.Both,
+                            ),
+                        ),
+                    )
+                }
+            }
+        }
         Spacer(modifier = Modifier.height(3.dp))
         Text(
             label, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
@@ -991,4 +1043,9 @@ private fun DrawerDoor(
             maxLines = 1, softWrap = false,
         )
     }
+}
+
+/** The door badge's text: a count, capped where a wider pill would swallow the icon. */
+internal object DoorBadge {
+    fun label(count: Int): String = if (count > 99) "99+" else count.toString()
 }

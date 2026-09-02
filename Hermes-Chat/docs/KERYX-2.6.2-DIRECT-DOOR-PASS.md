@@ -112,3 +112,18 @@ gained the `unread` field; `SessionRow` gained `unread`. `keryx_stream.py` untou
   pane button; Missions alert row reads the switch-doors line; Settings ▸ Connection shows the
   gateway; Hermes Link title; no E2EE row. Matrix door: unchanged (Quick Rooms, /new glyph,
   invites, leave, avatar).
+
+## 6. 09-02 — the Runs door counts (Jonny: "the cron button doesn't have any notification label")
+
+- `DrawerDoor` takes a `badge: Int`; the Runs door passes `hub.cron.data.unread.total` — the SAME
+  ledger the Runs place's arrivals rail reads (install baseline + opened-run ids), so the door and
+  the rail never disagree. Pill = the room list's unread pill shrunk to the icon's corner, `99+` cap
+  (`DoorBadge.label`, tested).
+- The board was only fetched while the Runs place polled, so the drawer now calls `refreshCron()`
+  on open (gated on `reasoningCaps != null`, the door's own gate).
+- ⚠️ Layout: the icon `Box` is pinned to 22dp and the badge uses `requiredHeight`/`requiredWidthIn`
+  so it overflows the corner without growing the tile — the first cut let the badge add height and
+  the Runs label sat lower than its neighbours. Text trims font padding (`includeFontPadding=false`,
+  `LineHeightStyle.Trim.Both`) or the 9sp count rides a 14dp line and the circle is a lozenge.
+- Release APK INSTALLED on the phone 09-02 05:31 CT (vc74 rebuild), drawer verified over ADB: `1`
+  on Runs, labels level.
