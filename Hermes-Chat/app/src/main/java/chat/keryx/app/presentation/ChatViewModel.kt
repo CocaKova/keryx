@@ -317,6 +317,7 @@ class ChatViewModel(
     /** Direct door: re-pull the session roster (the drawer asks on open — the list is the one
      *  thing another client, a cron run or a compaction can change behind the phone's back). */
     fun refreshRoster() {
+        if (transportIsDirect) bots.refresh()
         val d = direct ?: return
         viewModelScope.launch { runCatching { d.refreshSessionList() } }
     }
@@ -486,6 +487,8 @@ class ChatViewModel(
     val console = ConsoleDelegate(deps)
     val voice = VoiceDelegate(deps)
     val archive = ArchiveDelegate(deps, transport, archiveStore, archiveIndexer) { _currentRoom.value?.id }
+    /** Bot Mode (2.8): the roster of profiles and the door into each one's forever-chat. */
+    val bots = BotsDelegate(deps, transport, hub) { id, title -> openSessionById(id, title) }
 
     // --- Real push (UnifiedPush) — the caller drives PushManager (it needs a Context). ---
     private val _pushEnabled = MutableStateFlow(settingsRepository.pushEnabled)
@@ -1246,6 +1249,8 @@ class ChatViewModel(
         // Warm the member store so sender display names resolve in cold group rooms.
         viewModelScope.launch { matrix?.ensureMembersLoaded(room.id) }
         archive.onRoomOpened()
+        // Opening a bot's forever-chat is looking at it: the roster's news dot clears.
+        bots.touchOpenSession(room.id)
     }
 
     /** Load an older page of history (called when the user scrolls to the top of the timeline). */
@@ -1536,9 +1541,30 @@ class ChatViewModel(
         }
     }
 
-    fun sendMessage(content: String) {
+    fun sendMessage(rawContent: String) {
         val session = _currentRoom.value ?: return
         val replyTo = _replyTarget.value
+        // Bot Mode (2.8), two rules of the forever-chat. `/new` inside a bot's canonical
+        // chat would fork the relationship into a scratch session — rerouted to /compact
+        // (fresh working context, SAME conversation) and said so. And an @mention of
+        // another bot rides with a note naming exactly who the tag means, so the agent can
+        // hand off with its message_agent tool instead of guessing (desktop parity: the
+        // user's words are never forwarded verbatim; the bot composes its own message).
+        val inBotChat = bots.isCanonicalChat(session.id)
+        val content = run {
+            val rerouted = chat.keryx.core.model.BotRoster.reroute(rawContent, inBotChat)
+            if (rerouted != null) {
+                _toasts.tryEmit("This chat never resets — compacting instead. For a throwaway session, start a new one.")
+                return@run rerouted
+            }
+            val roster = bots.roster.value.data
+            if (inBotChat && roster != null && roster.messagingArmed && rawContent.contains('@')) {
+                val mentioned = chat.keryx.core.model.BotRoster.mentions(rawContent, roster.bots)
+                if (mentioned.isNotEmpty()) return@run rawContent + chat.keryx.core.model.BotRoster.mentionNote(mentioned)
+            }
+            rawContent
+        }
+        if (inBotChat) bots.touchOpenSession(session.id)
         _awaitingReply.value = true
         _workStartedAt.value = System.currentTimeMillis()
         _workLabel.value = "Working"

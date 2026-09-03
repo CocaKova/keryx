@@ -56,6 +56,13 @@ interface SettingsRepository {
      *  gateway pins sessions, not jobs, so this ledger is the phone's — see CronTiles. */
     var pinnedCronJobs: List<String>
 
+    /** Bot Mode (2.8): when each bot's chat was last looked at, by profile name — the phone's
+     *  own read mark, since a hidden cross-profile row never reaches the gateway's list call. */
+    var botSeenAt: Map<String, Long>
+
+    /** Bots pinned to the top of the session list, in pin order (a phone ledger, like jobs). */
+    var pinnedBots: List<String>
+
     /** Gateway sessions created as TEMPORARY: they live like any session while the app does,
      *  and the next cold start deletes them from the gateway. Persisted so a killed process
      *  can't strand one — the ledger IS the cleanup order. */

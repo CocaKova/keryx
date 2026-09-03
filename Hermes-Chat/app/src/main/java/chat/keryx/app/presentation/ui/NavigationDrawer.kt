@@ -86,6 +86,25 @@ private fun openCronTile(
     viewModel.rooms.value.firstOrNull { it.id == runId }?.let(onRoomSelected)
 }
 
+/**
+ * A bot tile: its forever-chat when one exists (adopted as a roster row already, so the
+ * host closes the drawer the usual way), else the Bots door — never a dead tap.
+ */
+private fun openBotTile(
+    room: RoomProfile,
+    viewModel: ChatViewModel,
+    onRoomSelected: (RoomProfile) -> Unit,
+    onOpenSpace: (chat.keryx.app.presentation.ui.nav.KeryxDest) -> Unit,
+) {
+    val bot = viewModel.bots.botForSession(room.id)
+    if (bot == null || bot.canonical == null) {
+        onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Bots)
+        return
+    }
+    viewModel.bots.open(bot)
+    viewModel.rooms.value.firstOrNull { it.id == room.id }?.let(onRoomSelected)
+}
+
 @Composable
 fun NavigationDrawerContent(
     viewModel: ChatViewModel,
@@ -98,7 +117,10 @@ fun NavigationDrawerContent(
     // passes the drawer's real visibility so ornament only runs while it can be seen.
     drawerVisible: Boolean = true,
 ) {
-    val rooms by viewModel.rooms.collectAsState()
+    // Bot chats are rows the roster publishes for the floor's sake (select, restore, notify);
+    // the Bots door lists them under their bots, so the session list does not list them twice.
+    val allRooms by viewModel.rooms.collectAsState()
+    val rooms = remember(allRooms) { allRooms.filter { it.source != chat.keryx.app.presentation.BotsDelegate.BOT_SOURCE } }
     val pinnedRoomIds by viewModel.pinnedRoomIds.collectAsState()
     val tempSessionIds by viewModel.temporarySessionIds.collectAsState()
     // "Move to project…" — explicit projects with a folder (membership is cwd).
@@ -323,7 +345,10 @@ fun NavigationDrawerContent(
                 )
             } else emptyList()
             val tileById = cronTiles.associateBy { it.id }
-            val deck = pinned + tileRooms
+            // Pinned bots sit in the same deck: a tile that opens the bot's forever-chat (or
+            // the Bots door for one never opened) — "at the top of the list", same grammar.
+            val botTiles by viewModel.bots.tiles.collectAsState()
+            val deck = pinned + tileRooms + (if (query.isBlank()) botTiles else emptyList())
             // Pinned rooms live in the Quick Rooms deck — don't list them twice.
             // (While searching, show everything that matches.)
             val listRooms = if (query.isBlank()) filtered.filter { it.id !in pinnedRoomIds } else filtered
@@ -355,8 +380,12 @@ fun NavigationDrawerContent(
                             },
                             onRoomClick = { room ->
                                 val tile = tileById[room.id]
-                                if (tile == null) onRoomSelected(room)
-                                else openCronTile(tile, viewModel, onRoomSelected, onOpenSpace)
+                                when {
+                                    room.source == chat.keryx.app.presentation.BotsDelegate.BOT_TILE_SOURCE ->
+                                        openBotTile(room, viewModel, onRoomSelected, onOpenSpace)
+                                    tile == null -> onRoomSelected(room)
+                                    else -> openCronTile(tile, viewModel, onRoomSelected, onOpenSpace)
+                                }
                             },
                             avatarLoader = { viewModel.loadAvatar(it) },
                             // Long-press a Quick Room to pin/unpin it — consistent with the
@@ -365,6 +394,9 @@ fun NavigationDrawerContent(
                             onRoomLongPress = { room ->
                                 val tile = tileById[room.id]
                                 when {
+                                    room.source == chat.keryx.app.presentation.BotsDelegate.BOT_TILE_SOURCE ->
+                                        viewModel.bots.botForSession(room.id)?.let { viewModel.bots.setPinned(it.name, false) }
+                                            ?: viewModel.bots.setPinned(room.id.removePrefix(chat.keryx.app.presentation.BotsDelegate.BOT_TILE_PREFIX), false)
                                     tile == null -> viewModel.togglePin(room.id)
                                     tile.job -> viewModel.hub.cronSetJobPinned(tile.name, false)
                                     else -> viewModel.hub.cronSetPinned(tile.id, false)
@@ -509,6 +541,16 @@ fun NavigationDrawerContent(
                     badge = cronBoard.data?.unread?.total ?: 0,
                 ) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Runs)
+                }
+                // Bot Mode (2.8): the roster of profiles, badged with the bots that have news
+                // since you last looked. Direct door only — on Matrix a room already is a
+                // profile, so the door would open onto the drawer you are standing in.
+                val botsUnread by viewModel.bots.unreadCount.collectAsState()
+                if (viewModel.transportIsDirect) DrawerDoor(
+                    KeryxGlyphs.Robot, "Bots", Modifier.weight(1f),
+                    badge = botsUnread,
+                ) {
+                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Bots)
                 }
                 DrawerDoor(KeryxGlyphs.Pulse, "Gateway", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway)

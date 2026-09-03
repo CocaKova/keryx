@@ -5,26 +5,38 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.Person
 import androidx.core.app.RemoteInput
+import androidx.core.graphics.drawable.IconCompat
 import chat.keryx.app.MainActivity
 import chat.keryx.app.R
+import chat.keryx.core.model.AgentNotice
+import chat.keryx.core.model.Heralds
 
 /**
- * Lightweight local notifications for incoming chat messages. These fire from the in-process Matrix
- * sync (which keeps running while the app is alive / battery-exempt) — not push — so they appear for
- * messages that land while you're in another room or have the app backgrounded. Tapping one opens
- * Keryx straight to that room.
+ * Local notifications for messages that land while you are elsewhere (in another room, or
+ * with the app backgrounded). Tapping one opens Keryx straight to that conversation.
  *
- * Every message notification is actionable: an inline **Reply** (RemoteInput — answer from the
- * lock screen without opening the app), plus one button per ⟦keryx:ask⟧ option when the agent is
- * blocking on a decision. Actions dispatch through [NotificationActionReceiver].
+ * 2.8 — oriented for an AGENT sending messages. A notification is a conversation now, not
+ * a room alert: the speaker is a [Person] (the bot, in its own light; a relayed bot-to-bot
+ * message names the bot that sent it), successive lines stack in one conversation instead
+ * of replacing each other, the conversation title says whose chat it is, and every one of
+ * them is grouped under Keryx so the shade shows one summary instead of a pile. Actions:
+ * an inline **Reply** (answer from the lock screen), one button per ⟦keryx:ask⟧ option when
+ * the agent is blocking on a decision, and **Mark read** on the direct door (the gateway's
+ * own watermark). Actions dispatch through [NotificationActionReceiver].
  */
 object KeryxNotifications {
 
     const val CHANNEL_ID = "keryx_messages"
+    const val GROUP_KEY = "keryx.messages"
+    private const val SUMMARY_ID = 0x4B53 // "KS"
     const val EXTRA_ROOM_ID = "keryx.roomId"
     const val EXTRA_ROOM_NAME = "keryx.roomName"
     const val EXTRA_QUICK_TEXT = "keryx.quickText"
@@ -32,6 +44,12 @@ object KeryxNotifications {
 
     /** Android renders at most 3 action buttons; one is always Reply. */
     private const val MAX_NOTIFICATION_OPTIONS = 2
+
+    /** How many lines one conversation's notification keeps stacked. */
+    private const val HISTORY_MAX = 6
+
+    /** The lines shown per conversation, newest last — what MessagingStyle stacks. */
+    private val history = java.util.concurrent.ConcurrentHashMap<String, ArrayDeque<NotificationCompat.MessagingStyle.Message>>()
 
     fun ensureChannel(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -48,14 +66,21 @@ object KeryxNotifications {
         mgr.createNotificationChannel(channel)
     }
 
-    /** Post (or update) a notification for [roomId]; one per room, replaced as newer messages land.
-     *  [quickActions] adds a one-tap button per agent-offered option (⟦keryx:ask⟧). */
+    /** The reader — "you" in the conversation, so replies you send from the shade file right. */
+    private val me: Person = Person.Builder().setName("You").setKey("me").build()
+
+    /**
+     * Post (or extend) the notification for [roomId] with [notice]: one conversation per
+     * room, lines stacking as they land. [quickActions] adds a one-tap button per agent-
+     * offered option (⟦keryx:ask⟧); [markReadable] offers the gateway read mark.
+     */
     fun notifyMessage(
         context: Context,
         roomId: String,
-        title: String,
-        body: String,
+        notice: AgentNotice,
         quickActions: List<String> = emptyList(),
+        markReadable: Boolean = false,
+        timestamp: Long = System.currentTimeMillis(),
     ) {
         val nm = NotificationManagerCompat.from(context)
         if (!nm.areNotificationsEnabled()) {
@@ -63,33 +88,40 @@ object KeryxNotifications {
             return
         }
 
-        val tapIntent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(EXTRA_ROOM_ID, roomId)
+        val speaker = personFor(context, notice)
+        val line = NotificationCompat.MessagingStyle.Message(notice.line, timestamp, speaker)
+        val lines = history.getOrPut(roomId) { ArrayDeque() }
+        synchronized(lines) {
+            lines.addLast(line)
+            while (lines.size > HISTORY_MAX) lines.removeFirst()
         }
-        val pending = PendingIntent.getActivity(
-            context,
-            roomId.hashCode(),
-            tapIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+        val style = NotificationCompat.MessagingStyle(me)
+            .setConversationTitle(notice.conversation)
+            // A relayed line is a group of voices by definition; a bot's own chat is a 1:1,
+            // which the system draws as a plain conversation with the bot's face.
+            .setGroupConversation(notice.relayed || synchronized(lines) { lines.map { it.person?.key }.distinct().size > 1 })
+        synchronized(lines) { lines.forEach(style::addMessage) }
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_keryx)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setContentTitle(notice.title)
+            .setContentText(notice.line)
+            .setStyle(style)
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(pending)
+            .setGroup(GROUP_KEY)
+            .setShortcutId(roomId)
+            .setWhen(timestamp)
+            .setShowWhen(true)
+            .setContentIntent(tapIntent(context, roomId))
 
         // Decision buttons first (they're the point when present), then the universal Reply.
         quickActions.take(MAX_NOTIFICATION_OPTIONS).forEach { option ->
             val quick = Intent(context, NotificationActionReceiver::class.java).apply {
                 action = NotificationActionReceiver.ACTION_QUICK
                 putExtra(EXTRA_ROOM_ID, roomId)
-                putExtra(EXTRA_ROOM_NAME, title)
+                putExtra(EXTRA_ROOM_NAME, notice.conversation)
                 putExtra(EXTRA_QUICK_TEXT, option)
             }
             builder.addAction(
@@ -108,7 +140,7 @@ object KeryxNotifications {
         val replyIntent = Intent(context, NotificationActionReceiver::class.java).apply {
             action = NotificationActionReceiver.ACTION_REPLY
             putExtra(EXTRA_ROOM_ID, roomId)
-            putExtra(EXTRA_ROOM_NAME, title)
+            putExtra(EXTRA_ROOM_NAME, notice.conversation)
         }
         builder.addAction(
             NotificationCompat.Action.Builder(
@@ -122,49 +154,154 @@ object KeryxNotifications {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
                 ),
             )
-                .addRemoteInput(RemoteInput.Builder(KEY_REMOTE_REPLY).setLabel("Reply").build())
+                .addRemoteInput(RemoteInput.Builder(KEY_REMOTE_REPLY).setLabel("Reply to ${notice.speaker}").build())
                 .setAllowGeneratedReplies(false)
+                .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
+                .setShowsUserInterface(false)
                 .build(),
         )
+        if (markReadable && quickActions.isEmpty()) {
+            val readIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+                action = NotificationActionReceiver.ACTION_MARK_READ
+                putExtra(EXTRA_ROOM_ID, roomId)
+                putExtra(EXTRA_ROOM_NAME, notice.conversation)
+            }
+            builder.addAction(
+                NotificationCompat.Action.Builder(
+                    R.drawable.ic_stat_keryx,
+                    "Mark read",
+                    PendingIntent.getBroadcast(
+                        context,
+                        "read:$roomId".hashCode(),
+                        readIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                    ),
+                )
+                    .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_MARK_AS_READ)
+                    .setShowsUserInterface(false)
+                    .build(),
+            )
+        }
 
         // Stable id per room so a room's notification updates in place instead of stacking.
         runCatching { nm.notify(roomId.hashCode(), builder.build()) }
-            .onSuccess { android.util.Log.i("KeryxNotify", "posted for $roomId: $title — $body") }
+            .onSuccess { android.util.Log.i("KeryxNotify", "posted for $roomId: ${notice.title} — ${notice.line}") }
             .onFailure { android.util.Log.w("KeryxNotify", "notify failed for $roomId: ${it.message}") }
+        postSummary(context, nm)
     }
+
+    /** One summary under every conversation, so the shade collapses them into Keryx. */
+    private fun postSummary(context: Context, nm: NotificationManagerCompat) {
+        val conversations = history.size
+        val summary = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_keryx)
+            .setContentTitle("Keryx")
+            .setContentText(if (conversations == 1) "1 conversation" else "$conversations conversations")
+            .setGroup(GROUP_KEY)
+            .setGroupSummary(true)
+            .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    context, SUMMARY_ID, Intent(context, MainActivity::class.java),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                ),
+            )
+            .build()
+        runCatching { nm.notify(SUMMARY_ID, summary) }
+    }
+
+    private fun tapIntent(context: Context, roomId: String): PendingIntent {
+        val tap = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(EXTRA_ROOM_ID, roomId)
+        }
+        return PendingIntent.getActivity(
+            context,
+            roomId.hashCode(),
+            tap,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    /** The speaker as a Person: name, a stable key, and the sigil in that agent's light. */
+    private fun personFor(context: Context, notice: AgentNotice): Person =
+        Person.Builder()
+            .setName(notice.speaker)
+            .setKey(notice.speakerKey)
+            .setBot(true)
+            .setIcon(sigilIcon(context, notice.speakerKey, notice.speaker))
+            .build()
+
+    private val iconCache = java.util.concurrent.ConcurrentHashMap<String, IconCompat>()
+
+    /**
+     * The herald's staff on a disc of its own colour — the same palette slot the transcript
+     * gives this sender (stable hash of its key), so the shade and the chat agree on who is
+     * who. Drawn once per speaker per process.
+     */
+    private fun sigilIcon(context: Context, key: String, name: String): IconCompat =
+        iconCache.getOrPut(key) {
+            val density = context.resources.displayMetrics.density
+            val px = (48 * density).toInt().coerceAtLeast(48)
+            // "bot:theo" / "agent:juno" hash as "theo" / "juno" — the roster's own key — so a
+            // bot wears one colour in the shade and in the app.
+            val bare = key.substringAfter(':', key).ifBlank { name }
+            val slot = Math.floorMod(Heralds.stableHash(bare), Heralds.PALETTE.size)
+            val (accent, accent2) = Heralds.PALETTE[slot]
+            val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bmp)
+            val disc = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accent2.toInt() }
+            canvas.drawCircle(px / 2f, px / 2f, px / 2f, disc)
+            val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = accent.toInt(); style = Paint.Style.STROKE; strokeWidth = px * 0.06f
+            }
+            canvas.drawCircle(px / 2f, px / 2f, px / 2f - ring.strokeWidth / 2f, ring)
+            val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = accent.toInt(); textSize = px * 0.58f; textAlign = Paint.Align.CENTER
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+            }
+            val y = px / 2f - (text.descent() + text.ascent()) / 2f
+            canvas.drawText(Heralds.SIGIL, px / 2f, y, text)
+            IconCompat.createWithBitmap(bmp)
+        }
 
     /**
      * Repost a room's notification after a notification-action send. Required, not cosmetic: once a
      * RemoteInput action fires, the system pins a spinner on the notification until it is updated
-     * with the same id. Quiet (no re-alert); the agent's next message replaces it as usual.
+     * with the same id. Quiet (no re-alert); the agent's next message replaces it as usual. The
+     * line you sent joins the conversation as you, so the stack reads as the exchange it is.
      */
-    fun notifyActionResult(context: Context, roomId: String, title: String, body: String) {
+    fun notifyActionResult(context: Context, roomId: String, title: String, body: String, mine: Boolean = false) {
         val nm = NotificationManagerCompat.from(context)
         if (!nm.areNotificationsEnabled()) return
-        val tapIntent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(EXTRA_ROOM_ID, roomId)
+        val lines = history.getOrPut(roomId) { ArrayDeque() }
+        if (mine) synchronized(lines) {
+            lines.addLast(NotificationCompat.MessagingStyle.Message(body, System.currentTimeMillis(), me))
+            while (lines.size > HISTORY_MAX) lines.removeFirst()
         }
+        val style = NotificationCompat.MessagingStyle(me).setConversationTitle(title)
+        synchronized(lines) { lines.forEach(style::addMessage) }
+        if (!mine) style.addMessage(NotificationCompat.MessagingStyle.Message(body, System.currentTimeMillis(), null as Person?))
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_keryx)
             .setContentTitle(title)
             .setContentText(body)
+            .setStyle(style)
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
             .setSilent(true)
+            .setGroup(GROUP_KEY)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            .setContentIntent(
-                PendingIntent.getActivity(
-                    context, roomId.hashCode(), tapIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                ),
-            )
+            .setContentIntent(tapIntent(context, roomId))
             .build()
         runCatching { nm.notify(roomId.hashCode(), notification) }
     }
 
     fun clear(context: Context, roomId: String) {
+        history.remove(roomId)
         runCatching { NotificationManagerCompat.from(context).cancel(roomId.hashCode()) }
+        if (history.isEmpty()) runCatching { NotificationManagerCompat.from(context).cancel(SUMMARY_ID) }
     }
 
     // --- Mission alerts (kanban watcher) --------------------------------------------------------

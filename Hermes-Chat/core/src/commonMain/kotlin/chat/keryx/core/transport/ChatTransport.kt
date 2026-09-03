@@ -167,6 +167,43 @@ interface GatewayCapabilities {
      *  id — it joins the local roster under [title] until the server lists it. */
     fun adoptSession(sessionId: String, title: String)
 
+    // ---- Bot Mode (2.8): a Bot is a profile; its one forever conversation is the session on
+    // that profile titled exactly "Bot Chat". The gateway serves every local profile from one
+    // socket (`profile` on the session RPCs), so the roster, the registry lookup and the
+    // create-if-missing all ride the connection this transport already holds. Direct-door
+    // only by nature: a Matrix room already IS a profile there, so the door has no roster.
+
+    /** `profiles.list`: every profile as a roster row, with its canonical chat when it exists. */
+    suspend fun botRoster(): Result<chat.keryx.core.model.BotRosterSnapshot>
+
+    /**
+     * Find or create [bot]'s canonical chat and make it openable by id: the registry lookup
+     * (exact title, hidden rows included) first, and only on a genuine miss a fresh hidden
+     * session that follows the profile's live config, titled eagerly so a second tap adopts
+     * it instead of minting a twin. [kickoff] sends the intro prompt (a newborn bot only).
+     * Fails CLOSED: a lookup error is an error, never "no chat yet".
+     */
+    suspend fun openBotChat(bot: chat.keryx.core.model.BotProfile, kickoff: Boolean = false): Result<chat.keryx.core.model.BotChatRef>
+
+    /** `profiles.configure`: the `hermes-bots` ui_meta block (whole, see [chat.keryx.core.model.BotProfile.meta]) and/or the description. */
+    suspend fun configureBot(name: String, meta: kotlinx.serialization.json.JsonObject?, description: String?): Result<Unit>
+
+    /** `profiles.create`: a new profile, fresh or cloned from [cloneFrom]. */
+    suspend fun createBot(name: String, description: String?, cloneFrom: String?): Result<Unit>
+
+    /** The profile's uploaded avatar bytes, or null when it has none. */
+    suspend fun botAvatar(name: String): Result<ByteArray?>
+
+    /**
+     * Bot chats are hidden rows in OTHER profiles' stores — the session list never carries
+     * them. The delegate that owns the roster publishes them as rooms so they can be
+     * selected, restored after a relaunch and watched for notifications like any row.
+     */
+    fun publishBotRows(rows: List<RoomProfile>)
+
+    /** Stored ids with a turn in flight right now — the "active now" signal for the roster. */
+    fun busySessionIds(): Flow<Set<String>>
+
     // The Shipyard is NOT on this seam: its git routes live on the keryx payload surface
     // (Hermes Link base), which both doors reach the same way — see ShipyardRest. Routing
     // it through the transport left Matrix silently empty and aimed direct at a server

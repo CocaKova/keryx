@@ -112,11 +112,13 @@ class GatewayRest(
         offset: Int = 0,
         sources: List<String> = emptyList(),
         excludeSources: List<String> = emptyList(),
+        profile: String? = null,
     ): Result<List<SessionRow>> =
         get(
             "/api/sessions?limit=${limit.coerceAtMost(100)}&offset=$offset&order=recent" +
                 (if (sources.isEmpty()) "" else "&sources=" + sources.joinToString(",")) +
-                (if (excludeSources.isEmpty()) "" else "&exclude_sources=" + excludeSources.joinToString(","))
+                (if (excludeSources.isEmpty()) "" else "&exclude_sources=" + excludeSources.joinToString(",")) +
+                profileQuery(profile)
         ).map { body ->
             val rows = json.parseToJsonElement(body).jsonObject["sessions"]?.jsonArray ?: JsonArray(emptyList())
             // distinctBy: the drawer (and every other roster consumer) keys rows by session id,
@@ -150,9 +152,11 @@ class GatewayRest(
         limit: Int = MAX_PAGE,
         offset: Int = 0,
         newestFirst: Boolean = true,
+        profile: String? = null,
     ): Result<List<MessageRow>> =
         get(
-            "/api/sessions/$sessionId/messages?" + sessionMessagesQuery(limit, offset, newestFirst)
+            "/api/sessions/$sessionId/messages?" + sessionMessagesQuery(limit, offset, newestFirst) +
+                profileQuery(profile)
         ).map { body ->
             val rows = json.parseToJsonElement(body).jsonObject["messages"]?.jsonArray ?: JsonArray(emptyList())
             rows.mapNotNull { el ->
@@ -235,6 +239,7 @@ class GatewayRest(
         archived: Boolean? = null,
         pinned: Boolean? = null,
         unread: Boolean? = null,
+        profile: String? = null,
     ): Result<Unit> =
         send("PATCH", "/api/sessions/$sessionId", buildString {
             append("{")
@@ -243,12 +248,27 @@ class GatewayRest(
             archived?.let { parts += "\"archived\":$it" }
             pinned?.let { parts += "\"pinned\":$it" }
             unread?.let { parts += "\"unread\":$it" }
+            // The PATCH names its profile in the BODY (the router's SessionRename model),
+            // where GET/DELETE take it as a query — the gateway's own asymmetry, mirrored.
+            profile?.takeIf { it.isNotBlank() }?.let { parts += "\"profile\":${kotlinx.serialization.json.JsonPrimitive(it)}" }
             append(parts.joinToString(","))
             append("}")
         }).map { }
 
-    suspend fun deleteSession(sessionId: String): Result<Unit> =
-        send("DELETE", "/api/sessions/$sessionId", null).map { }
+    suspend fun deleteSession(sessionId: String, profile: String? = null): Result<Unit> =
+        send("DELETE", "/api/sessions/$sessionId" + profileQuery(profile, first = true), null).map { }
+
+    /**
+     * Bot Mode (2.8): a Bot Chat lives in ITS profile's state.db, and the dashboard serves
+     * every local profile from one process — `?profile=<name>` on the session routes opens
+     * that profile's store instead of the launch profile's. Blank/null = the launch profile,
+     * exactly the old request.
+     */
+    private fun profileQuery(profile: String?, first: Boolean = false): String {
+        val p = profile?.trim().orEmpty()
+        if (p.isEmpty()) return ""
+        return (if (first) "?" else "&") + "profile=" + java.net.URLEncoder.encode(p, "UTF-8")
+    }
 
     /**
      * Gateway-native STT (protocol §5.1): the recorded take, base64'd into a data URL.

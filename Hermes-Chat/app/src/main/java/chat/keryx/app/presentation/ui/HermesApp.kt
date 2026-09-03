@@ -220,14 +220,36 @@ fun HermesApp(viewModel: ChatViewModel) {
                             chat.keryx.app.presentation.ui.components.KeryxWordmark(fontSize = 18.sp)
                             currentRoom?.let { room ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
+                                    // Bot Mode (2.8): a bot's forever-chat wears the bot — its
+                                    // sigil in its own light, its name, and the one-word chip
+                                    // that says this conversation never resets.
+                                    val botHere = viewModel.bots.botForSession(room.id)
+                                    if (botHere != null) {
+                                        val light = chat.keryx.app.presentation.ui.components.botLightFor(botHere.name, botHere.label, botHere.isDefault)
+                                        chat.keryx.app.presentation.ui.components.HeraldSigil(light, fontSize = 12.sp)
+                                        Spacer(Modifier.width(4.dp))
+                                    }
                                     Text(
-                                        text = room.name,
+                                        text = if (botHere != null) botHere.label else room.name,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 13.sp,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.weight(1f, fill = false),
                                     )
+                                    if (botHere != null) {
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text = "Bot Chat",
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontSize = 10.sp,
+                                            maxLines = 1,
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(7.dp))
+                                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
+                                                .padding(horizontal = 6.dp, vertical = 1.dp),
+                                        )
+                                    }
                                     // Which agent profile answers in this room (from the gateway's
                                     // room→profile routing map): a small tinted chip by the name.
                                     val caps by viewModel.hub.reasoningCaps.collectAsState()
@@ -440,6 +462,14 @@ fun HermesApp(viewModel: ChatViewModel) {
                     // A cron run lives outside every roster — the title travels so the floor
                     // can name the room it adopts (direct door; Matrix reads in-space).
                     onOpenSession = { id, name -> viewModel.openSessionById(id, name); nav.back() },
+                    onClose = nav::back,
+                )
+                KeryxDest.Bots -> chat.keryx.app.presentation.ui.components.BotsSpace(
+                    viewModel = viewModel,
+                    // A bot's chat is adopted as a roster row by the delegate; landing on the
+                    // floor is the same move a run makes.
+                    onOpened = { nav.back() },
+                    onOpenRuns = { nav.open(KeryxDest.Runs) },
                     onClose = nav::back,
                 )
                 KeryxDest.Missions -> chat.keryx.app.presentation.ui.components.MissionsScreen(

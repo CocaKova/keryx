@@ -140,6 +140,18 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getString("pinned_cron_jobs", "")!!.split('\u001F').filter { it.isNotBlank() }
         set(value) = prefs.edit().putString("pinned_cron_jobs", value.joinToString("\u001F")).apply()
 
+    override var botSeenAt: Map<String, Long>
+        get() = prefs.getString("bot_seen_at", "")!!.split('\u001E').filter { it.isNotBlank() }
+            .mapNotNull { e -> e.split('\u001F').takeIf { it.size == 2 }?.let { (n, t) -> t.toLongOrNull()?.let { n to it } } }
+            .toMap()
+        set(value) = prefs.edit().putString(
+            "bot_seen_at", value.entries.joinToString("\u001E") { (n, t) -> "$n\u001F$t" },
+        ).apply()
+
+    override var pinnedBots: List<String>
+        get() = prefs.getString("pinned_bots", "")!!.split('\u001F').filter { it.isNotBlank() }
+        set(value) = prefs.edit().putString("pinned_bots", value.joinToString("\u001F")).apply()
+
     override var temporarySessionIds: Set<String>
         get() = prefs.getStringSet("temporary_session_ids", emptySet()) ?: emptySet()
         set(value) = prefs.edit().putStringSet("temporary_session_ids", value).apply()
