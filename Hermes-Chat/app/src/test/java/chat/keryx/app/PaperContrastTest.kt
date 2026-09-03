@@ -1,5 +1,6 @@
 package chat.keryx.app
 
+import chat.keryx.app.presentation.ui.components.FlightPlanFloor
 import chat.keryx.app.presentation.ui.components.KeryxToolTint
 import chat.keryx.core.model.Heralds
 import chat.keryx.app.presentation.ui.components.roomLightRaw
@@ -53,6 +54,48 @@ class PaperContrastTest {
     private val void = 0xFF000000L
 
     private val AA = 4.5
+
+    /** The void theme's own numbers (theme/Color.kt), literal for the same reason as the paper's. */
+    private val voidSurface = 0xFF12121AL
+    private val voidInk = 0xFFFFFFFFL
+
+    /** `top` at `alpha` composited over `under` (straight alpha, per channel). */
+    private fun over(top: Long, alpha: Double, under: Long): Long {
+        fun ch(shift: Int): Long {
+            val t = (top shr shift) and 0xFF
+            val u = (under shr shift) and 0xFF
+            return Math.round(t * alpha + u * (1 - alpha)).coerceIn(0, 255)
+        }
+        return 0xFF000000L or (ch(16) shl 16) or (ch(8) shl 8) or ch(0)
+    }
+
+    /**
+     * The flight plan is pinned OVER the transcript: whatever scrolls under it is its backdrop.
+     * So its floor is measured against the worst backdrop each theme can produce — the other
+     * theme's ink, a full-accent bubble — and the faintest line it prints while a plan is
+     * running must still clear AA. (2.8.2: the floor was a 3% tint, and a light bubble
+     * under white text was the whole background.)
+     */
+    @Test
+    fun `flight plan floor keeps its text readable over any transcript`() {
+        val floorAlpha = FlightPlanFloor.ALPHA.toDouble()
+        val lineAlpha = FlightPlanFloor.LINE_ALPHA.toDouble()
+        val amber = 0xFFFFB300L
+        val worstUnderPaper = listOf(void, amber, voidSurface, 0xFF8B5CF6L)
+        val worstUnderVoid = listOf(0xFFFFFFFFL, amber, paper, 0xFF8B5CF6L)
+        for (under in worstUnderPaper) {
+            val floor = over(paperSurface, floorAlpha, under)
+            val text = over(ink, lineAlpha, floor)
+            val c = contrast(text, floor)
+            assertTrue("paper flight plan over ${under.toString(16)} scores $c", c >= AA)
+        }
+        for (under in worstUnderVoid) {
+            val floor = over(voidSurface, floorAlpha, under)
+            val text = over(voidInk, lineAlpha, floor)
+            val c = contrast(text, floor)
+            assertTrue("void flight plan over ${under.toString(16)} scores $c", c >= AA)
+        }
+    }
 
     @Test
     fun `ink and faded ink are readable on parchment`() {

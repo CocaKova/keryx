@@ -85,6 +85,11 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
 
     override fun onStart() {
         super.onStart()
+        // Back in the foreground: the roster is the one thing that moved behind the phone's
+        // back (a turn from Desktop, a cron continuation, a `sessions.changed` the sleeping
+        // socket never delivered). Same cheap pull the drawer makes on open; a no-op before
+        // the transport is up, and on Matrix, where sync keeps the list live.
+        if (::viewModel.isInitialized) viewModel.refreshRoster()
         val enabled = (application as KeryxApp).settingsRepository.biometricLockEnabled
         // No enrolled biometrics AND no device credential → never lock, or the user is walled out.
         if (!enabled || !lockAvailable()) { locked.value = false; return }

@@ -388,10 +388,27 @@ class ChatViewModel(
     )
     val linkHealth: StateFlow<LinkHealth> = _linkHealth.asStateFlow()
 
-    /** The last turn's context occupancy, from the side-channel's finish-line usage frame. */
+    /**
+     * The last turn's context occupancy — the composer's ring. Two feeds, one gauge: the Matrix
+     * side-channel's finish-line `usage` frame, and on the direct door the gateway's own
+     * `usage` that rides `session.info` and `message.complete` (folded into the transport's
+     * [chat.keryx.core.model.SessionMeta], which until 2.8.2 nothing read — the ring simply
+     * never lit on a gateway session). The open room's direct reading wins when there is one.
+     */
     data class ContextUsage(val roomId: String, val used: Long, val max: Long, val model: String)
     private val _contextUsage = MutableStateFlow<ContextUsage?>(null)
-    val contextUsage: StateFlow<ContextUsage?> = _contextUsage.asStateFlow()
+    val contextUsage: StateFlow<ContextUsage?> =
+        combine(
+            _contextUsage,
+            _currentRoom.flatMapLatest { r ->
+                val d = transport as? chat.keryx.app.transport.direct.DirectTransport
+                if (r == null || d == null) flowOf(null)
+                else d.sessionMeta(r.id).map { m ->
+                    m.contextGauge?.let { (used, max) -> ContextUsage(r.id, used, max, m.model) }
+                }
+            },
+        ) { sideChannel, direct -> direct ?: sideChannel }
+            .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     private val _showTelemetry = MutableStateFlow(settingsRepository.showTelemetry)
     val showTelemetry: StateFlow<Boolean> = _showTelemetry.asStateFlow()

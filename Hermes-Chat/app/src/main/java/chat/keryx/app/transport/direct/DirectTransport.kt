@@ -18,6 +18,7 @@ import chat.keryx.core.transport.MatrixCapabilities
 import chat.keryx.core.transport.SessionSearchHit
 import chat.keryx.app.domain.repository.SettingsRepository
 import chat.keryx.core.model.RoomProfile
+import chat.keryx.core.model.RosterOrder
 import chat.keryx.core.model.RoomType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -722,6 +723,7 @@ private const val GHOST_TOOL_ID = "generating"
             // what re-marks a session busy after a reconnect that happened mid-turn (start
             // fired before the socket died; the deltas are the only signal left).
             markBusy(storedId, true)
+            touchSession(storedId) // the agent is speaking here: newest activity, locally known
         }
         when (ev.type) {
             // ---- blocking requests: the agent is STOPPED until one of these is answered ----
@@ -1240,14 +1242,33 @@ private const val GHOST_TOOL_ID = "generating"
     // server list catches up. Without this, "New chat" silently went nowhere.
     private val _pendingNew = MutableStateFlow<List<RoomProfile>>(emptyList())
 
+    /**
+     * The phone's own activity stamps, by stored id: the moment you send into a session or
+     * the agent's turn traffic arrives in one. The server's `last_active` catches up on the
+     * next list pull (`sessions.changed` is floored to one broadcast per 2 s, then a REST
+     * round trip), and a pull can be missed outright while the phone is backgrounded — so the
+     * roster orders by the newest stamp EITHER side knows (see [RosterOrder]) rather than
+     * waiting on the wire to say what the phone just did.
+     */
+    private val _localStamps = MutableStateFlow<Map<String, Long>>(emptyMap())
+
+    private fun touchSession(storedId: String) {
+        val next = RosterOrder.stamp(_localStamps.value, storedId, System.currentTimeMillis())
+        if (next !== _localStamps.value) _localStamps.value = next
+    }
+
     override fun getRooms(): Flow<List<RoomProfile>> =
-        combine(serverRooms(), _pendingNew, _botRows) { server, pending, bots ->
+        combine(serverRooms(), _pendingNew, _botRows, _localStamps) { server, pending, bots, stamps ->
             // A Bot Chat row wins over a server row with the same id (the default profile's
             // forever-chat can be a visible row when it predates the hidden-at-birth rule):
             // one id, one row, and it wears the bot's name rather than "Bot Chat".
             val botIds = bots.mapTo(HashSet()) { it.id }
             val known = server.map { it.id }.toSet() + botIds
-            bots + pending.filterNot { it.id in known } + server.filterNot { it.id in botIds }
+            // Bots keep the roster's head (the Bots door orders them itself); everything else
+            // is one list, newest activity first — a chat minted here and not yet listed, a
+            // row just spoken into, and the gateway's page, in the one order that matters.
+            val conversations = pending.filterNot { it.id in known } + server.filterNot { it.id in botIds }
+            bots + RosterOrder.byActivity(RosterOrder.withLocalStamps(conversations, stamps))
         }
 
     override fun publishBotRows(rows: List<RoomProfile>) {
@@ -1327,6 +1348,7 @@ private const val GHOST_TOOL_ID = "generating"
 
     override suspend fun sendMessage(sessionId: String, content: String) {
         val live = attach(sessionId)
+        touchSession(sessionId) // you spoke here: this row is the newest thing you know of
         // Slash commands are CONSOLE verbs, not conversation — the TUI and desktop both
         // intercept them client-side and run slash.exec. Shipping "/compress" to the model
         // as chat text just gets a polite paragraph about compression. Long timeout:

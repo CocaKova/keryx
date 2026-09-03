@@ -26,6 +26,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -44,11 +46,18 @@ import chat.keryx.core.model.TodoPlan
  *
  * The pulse carries information (a step is in flight), so it keeps moving — and under
  * Battery Saver it holds at the bright end rather than reading as "stopped".
+ *
+ * The strip floats OVER the transcript (it is pinned; the messages scroll beneath it), so it
+ * stands on its own floor: the theme surface at [FlightPlanFloor.ALPHA], not a tint of the
+ * text colour. A 3% tint was the whole floor once, and every bubble that scrolled under the
+ * strip became its background — white on a light bubble, ink on a dark one.
+ * [PaperContrastTest] holds the floor to the same AA bar as the rest of the paper.
  */
 @Composable
 fun FlightPlanStrip(plan: TodoPlan) {
     var open by rememberSaveable { mutableStateOf(false) }
     val onSurface = MaterialTheme.colorScheme.onSurface
+    val floor = MaterialTheme.colorScheme.surface.copy(alpha = FlightPlanFloor.ALPHA)
     val quiet = MaterialTheme.colorScheme.onSurfaceVariant
     val accent = MaterialTheme.colorScheme.primary
     val good = KeryxStatus.good
@@ -74,7 +83,16 @@ fun FlightPlanStrip(plan: TodoPlan) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(onSurface.copy(alpha = 0.03f))
+            .background(floor)
+            // The instrument's lower edge — the one hairline that says "this does not scroll".
+            .drawBehind {
+                drawLine(
+                    color = onSurface.copy(alpha = FlightPlanFloor.EDGE_ALPHA),
+                    start = Offset(0f, size.height),
+                    end = Offset(size.width, size.height),
+                    strokeWidth = 1.dp.toPx(),
+                )
+            }
             .clickable { open = !open }
             .padding(horizontal = 16.dp, vertical = 6.dp)
             .animateContentSize(),
@@ -103,7 +121,7 @@ fun FlightPlanStrip(plan: TodoPlan) {
                     else -> plan.active?.content ?: "next: " +
                         (plan.items.firstOrNull { it.status == "pending" }?.content ?: "—")
                 },
-                color = onSurface.copy(alpha = if (plan.allDone) 0.45f else 0.7f),
+                color = onSurface.copy(alpha = if (plan.allDone) 0.45f else FlightPlanFloor.LINE_ALPHA),
                 fontSize = 11.5.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -148,4 +166,18 @@ fun FlightPlanStrip(plan: TodoPlan) {
             }
         }
     }
+}
+
+/**
+ * How opaque the flight plan's floor is. Pure numbers, held apart from the composable so the
+ * contrast test can do the arithmetic: at [ALPHA] the busiest thing that can scroll under the
+ * strip (a full-accent bubble, an image) contributes too little to move the text off AA.
+ */
+object FlightPlanFloor {
+    /** Surface opacity of the strip's floor. */
+    const val ALPHA = 0.94f
+    /** The bottom hairline's opacity (on the text colour). */
+    const val EDGE_ALPHA = 0.10f
+    /** The collapsed line's text alpha (the faintest text the strip prints while a plan runs). */
+    const val LINE_ALPHA = 0.70f
 }
