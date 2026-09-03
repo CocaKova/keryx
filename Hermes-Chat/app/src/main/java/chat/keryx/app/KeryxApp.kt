@@ -151,6 +151,13 @@ class KeryxApp : Application() {
                         android.util.Log.w("KeryxNotify", "no last message resolved for ${room.id}")
                         continue
                     }
+                    // Asked again AFTER the peek: the peek is a network round trip, and the
+                    // user may have opened this very room while it was in flight (tapping a
+                    // run adopts its session into the roster — the emission that got us here).
+                    if (isForeground && openRoomId == room.id) {
+                        android.util.Log.i("KeryxNotify", "skip ${room.id}: opened while peeking")
+                        continue
+                    }
                     if (last.sender == SenderType.ME) continue
                     // Skip historical messages surfacing during initial sync settle.
                     if (last.timestamp < watchStart - historyGrace) {
@@ -175,6 +182,7 @@ class KeryxApp : Application() {
                         roomId = room.id,
                         notice = notice,
                         quickActions = quickActionsFor(last),
+                        hands = if (last.sender == SenderType.HERMES) MessageParser.phoneActions(last.content) else emptyList(),
                         markReadable = direct != null,
                         timestamp = last.timestamp.takeIf { it > 0 } ?: System.currentTimeMillis(),
                     )

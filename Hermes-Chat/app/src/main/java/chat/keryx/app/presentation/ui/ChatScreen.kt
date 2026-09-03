@@ -60,6 +60,9 @@ import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.ui.components.ChatRenderItem
 import chat.keryx.app.presentation.ui.components.ToolTheaterRun
 import chat.keryx.app.presentation.ui.components.keryxLightSweep
+import chat.keryx.app.presentation.ui.components.KeryxMotion
+import chat.keryx.app.presentation.ui.components.keryxReveal
+import chat.keryx.app.presentation.ui.components.keryxConceal
 import chat.keryx.app.presentation.ui.components.rememberSweepProgress
 import androidx.compose.ui.text.font.FontFamily
 import chat.keryx.app.presentation.ui.components.GroupedTimeline
@@ -113,6 +116,9 @@ private fun normalizeImageBytes(bytes: ByteArray, contentType: String): Pair<Byt
     }.getOrDefault(bytes to contentType)
 }
 
+/** A turn shorter than this ends without the completion tick — you never looked away. */
+private const val COMPLETION_TICK_MIN_MS = 1_500L
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ChatScreen(
@@ -127,6 +133,26 @@ fun ChatScreen(
     val messageTextScale by viewModel.messageTextScale.collectAsState()
     val awaitingReply by viewModel.awaitingReply.collectAsState()
     val liveTurnSigns by viewModel.liveTurnSigns.collectAsState()
+    // The agent finished (2.8.1): the completion tick — defined with the vocabulary in 2.0 and
+    // never fired — lands when a turn you waited on ends. Waited-on means the wait was long
+    // enough to have looked away (an instant echo gets no ceremony), and only for the room on
+    // screen: a turn ending elsewhere is that room's news, not a buzz in your hand.
+    val turnHaptics = chat.keryx.app.presentation.ui.components.LocalKeryxHaptics.current
+    var awaitingSince by remember { mutableStateOf(0L) }
+    var awaitingRoom by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(awaitingReply, currentRoom?.id) {
+        val now = System.currentTimeMillis()
+        val room = currentRoom?.id
+        when {
+            // A room switch mid-wait is not a completion: forget the wait, no tick.
+            room != awaitingRoom -> { awaitingRoom = room; awaitingSince = if (awaitingReply) now else 0L }
+            awaitingReply -> if (awaitingSince == 0L) awaitingSince = now
+            else -> {
+                if (awaitingSince != 0L && now - awaitingSince >= COMPLETION_TICK_MIN_MS) turnHaptics.completion()
+                awaitingSince = 0L
+            }
+        }
+    }
     val typingHumans by viewModel.typingHumans.collectAsState()
     val typingAgentIds by viewModel.typingAgentIds.collectAsState()
     val liveStream by viewModel.liveStream.collectAsState()
@@ -849,7 +875,7 @@ fun ChatScreen(
             }
             // The agent is STOPPED waiting on a human — loudest thing on screen, right above
             // the composer where the answer happens (merge dowry, plan §5).
-            androidx.compose.animation.AnimatedVisibility(visible = pendingApproval != null) {
+            androidx.compose.animation.AnimatedVisibility(visible = pendingApproval != null, enter = keryxReveal(), exit = keryxConceal()) {
                 pendingApproval?.let { approval ->
                     Column {
                         chat.keryx.app.presentation.ui.components.ApprovalCard(approval) {
@@ -859,7 +885,7 @@ fun ChatScreen(
                     }
                 }
             }
-            androidx.compose.animation.AnimatedVisibility(visible = pendingBlocking != null) {
+            androidx.compose.animation.AnimatedVisibility(visible = pendingBlocking != null, enter = keryxReveal(), exit = keryxConceal()) {
                 pendingBlocking?.let { request ->
                     Column {
                         chat.keryx.app.presentation.ui.components.BlockingRequestCard(request) {
@@ -869,7 +895,7 @@ fun ChatScreen(
                     }
                 }
             }
-            androidx.compose.animation.AnimatedVisibility(visible = replyTarget != null) {
+            androidx.compose.animation.AnimatedVisibility(visible = replyTarget != null, enter = keryxReveal(), exit = keryxConceal()) {
                 replyTarget?.let { target ->
                     Column {
                         ReplyBar(target = target, onDismiss = { viewModel.clearReplyTarget() })
@@ -877,7 +903,7 @@ fun ChatScreen(
                     }
                 }
             }
-            androidx.compose.animation.AnimatedVisibility(visible = pendingAttachment != null) {
+            androidx.compose.animation.AnimatedVisibility(visible = pendingAttachment != null, enter = keryxReveal(), exit = keryxConceal()) {
                 pendingAttachment?.let { att ->
                     Column {
                         AttachmentPreview(att, onRemove = { pendingAttachment = null })
@@ -890,6 +916,7 @@ fun ChatScreen(
             val hubBrainsPanel by viewModel.hub.brains.collectAsState()
             val modelCatalog by viewModel.models.catalog.collectAsState()
             val modelCatalogLoading by viewModel.models.loading.collectAsState()
+            val modelRecents by viewModel.models.recents.collectAsState()
             // Desktop's busy-state submit tree, the Talaria way: text typed mid-turn STEERS
             // the live turn (no interrupt), payloads/compacting/blocked QUEUE for the next
             // turn, an empty composer stops. Slash commands keep their console path.
@@ -953,6 +980,7 @@ fun ChatScreen(
                 brains = hubBrainsPanel.data,
                 catalog = modelCatalog,
                 catalogLoading = modelCatalogLoading,
+                modelRecents = modelRecents,
                 onReasoningCommand = { viewModel.sendReasoningCommand(it) },
                 onBrainSelect = { viewModel.hub.brainSelect(it) },
                 onModelSelect = { viewModel.models.select(it) },
@@ -1051,6 +1079,7 @@ private fun Composer(
     brains: chat.keryx.app.data.remote.HermesStreamClient.Brains? = null,
     catalog: chat.keryx.core.model.ModelCatalog? = null,
     catalogLoading: Boolean = false,
+    modelRecents: List<String> = emptyList(),
     onReasoningCommand: (String) -> Unit = {},
     onBrainSelect: (String) -> Unit = {},
     onModelSelect: (chat.keryx.core.model.ModelChoice) -> Unit = {},
@@ -1249,6 +1278,7 @@ private fun Composer(
         brains = brains,
         catalog = catalog,
         catalogLoading = catalogLoading,
+        modelRecents = modelRecents,
         onReasoningCommand = onReasoningCommand,
         onBrainSelect = onBrainSelect,
         onModelSelect = onModelSelect,
@@ -1274,6 +1304,7 @@ private fun ComposerFooter(
     brains: chat.keryx.app.data.remote.HermesStreamClient.Brains?,
     catalog: chat.keryx.core.model.ModelCatalog?,
     catalogLoading: Boolean,
+    modelRecents: List<String>,
     onReasoningCommand: (String) -> Unit,
     onBrainSelect: (String) -> Unit,
     onModelSelect: (chat.keryx.core.model.ModelChoice) -> Unit,
@@ -1291,7 +1322,7 @@ private fun ComposerFooter(
         // Model pill — the live brain by name, ▾ inside the same hit target.
         var modelMenu by remember { mutableStateOf(false) }
         val modelName = (usage?.model ?: "").ifBlank { catalog?.model.orEmpty() }
-            .ifBlank { caps?.model.orEmpty() }.ifBlank { "model" }
+            .ifBlank { caps?.model.orEmpty() }.ifBlank { "model" }.substringAfter('/')
         Box {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -1300,105 +1331,37 @@ private fun ComposerFooter(
                     .clickable { modelMenu = true; onRefreshCaps(); onRefreshCatalog() }
                     .padding(horizontal = 4.dp, vertical = 2.dp),
             ) {
-                Text(
-                    modelName,
-                    fontSize = 10.5.sp,
-                    fontFamily = FontFamily.Monospace,
-                    color = meta,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.widthIn(max = 150.dp),
-                )
+                // The name rises into place when the brain changes — the readout answers the pick.
+                AnimatedContent(
+                    targetState = modelName,
+                    transitionSpec = {
+                        (fadeIn(KeryxMotion.settle) + slideInVertically(KeryxMotion.settleInt) { it / 2 })
+                            .togetherWith(fadeOut(KeryxMotion.leave) + slideOutVertically(KeryxMotion.leaveInt) { -it / 2 })
+                    },
+                    label = "modelPill",
+                ) { name ->
+                    Text(
+                        name,
+                        fontSize = 10.5.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = meta,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.widthIn(max = 150.dp),
+                    )
+                }
                 Text(" ▾", fontSize = 9.sp, color = meta.copy(alpha = 0.7f))
             }
-            DropdownMenu(expanded = modelMenu, onDismissRequest = { modelMenu = false }) {
-                // The gateway's catalog first — every authenticated route, grouped by provider,
-                // the session's live model marked. Picking one re-routes THIS session.
-                val providers = catalog?.usable.orEmpty()
-                if (providers.isEmpty()) DropdownMenuItem(
-                    text = {
-                        Text(
-                            if (catalogLoading) "Reading the catalog…" else "No routes from the gateway",
-                            fontSize = 13.sp, color = meta,
-                        )
-                    },
-                    onClick = { modelMenu = false },
-                )
-                providers.forEach { p ->
-                    Text(
-                        p.name.uppercase(), fontSize = 9.sp, color = meta, letterSpacing = 1.sp,
-                        modifier = Modifier.padding(start = 14.dp, top = 8.dp, bottom = 2.dp),
-                    )
-                    p.models.forEach { m ->
-                        val isActive = catalog?.isCurrent(m) == true
-                        DropdownMenuItem(
-                            text = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        if (isActive) "● " else "  ",
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontFamily = FontFamily.Monospace,
-                                    )
-                                    Text(
-                                        m.name, fontSize = 13.sp, fontFamily = FontFamily.Monospace,
-                                        fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
-                                        color = if (isActive) MaterialTheme.colorScheme.primary else Color.Unspecified,
-                                        maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f, fill = false),
-                                    )
-                                    // Capability tags as words, not emoji (2.6.2 icon pass):
-                                    // a glyph family and a tofu-prone emoji on one row read
-                                    // as two apps.
-                                    val tag = listOfNotNull(
-                                        "fast".takeIf { m.fast },
-                                        "thinks".takeIf { m.reasoning },
-                                    ).joinToString(" · ")
-                                    if (tag.isNotBlank()) Text(
-                                        "  $tag", fontSize = 9.5.sp, color = meta,
-                                        fontFamily = FontFamily.Monospace,
-                                    )
-                                }
-                            },
-                            onClick = { modelMenu = false; if (!isActive) onModelSelect(m) },
-                        )
-                    }
-                }
-                // The Spire brains roster — the machines the operator can swap in under the
-                // gateway (systemd + cooldown). Below the catalog; absent when unconfigured.
-                val roster = brains?.brains.orEmpty()
-                if (roster.isNotEmpty()) Text(
-                    "BRAINS", fontSize = 9.sp, color = meta, letterSpacing = 1.sp,
-                    modifier = Modifier.padding(start = 14.dp, top = 8.dp, bottom = 2.dp),
-                )
-                roster.forEach { b ->
-                    val isActive = b.name == brains?.active
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    if (isActive) "● " else "  ",
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontFamily = FontFamily.Monospace,
-                                )
-                                Column {
-                                    Text(
-                                        b.name, fontSize = 13.sp, fontFamily = FontFamily.Monospace,
-                                        fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
-                                        color = if (isActive) MaterialTheme.colorScheme.primary else Color.Unspecified,
-                                    )
-                                    if (b.description.isNotBlank()) Text(
-                                        b.description, fontSize = 10.sp, color = meta,
-                                        maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                            }
-                        },
-                        onClick = { modelMenu = false; if (!isActive) onBrainSelect(b.name) },
-                    )
-                }
-            }
+            if (modelMenu) chat.keryx.app.presentation.ui.components.ModelPickerSheet(
+                catalog = catalog,
+                loading = catalogLoading,
+                recents = modelRecents,
+                brains = brains,
+                onDismiss = { modelMenu = false },
+                onPick = onModelSelect,
+                onBrainPick = onBrainSelect,
+                onRefresh = { onRefreshCaps(); onRefreshCatalog() },
+            )
         }
         Spacer(modifier = Modifier.width(10.dp))
         // Reasoning pill — the relocated top-bar menu, now living where the thinking happens.

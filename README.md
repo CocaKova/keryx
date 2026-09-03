@@ -33,6 +33,14 @@ of raw model output.
 - **Actionable notifications** — Reply inline from the lock screen; when the agent is blocking
   on a decision it can attach one-tap option buttons (`⟦keryx:ask|Approve|Deny⟧` — a structural
   marker, not keyword sniffing) that also render as reply chips in chat.
+- **Hands** — The agent can hand the phone something to *do*: `⟦keryx:do|navigate|H-E-B Mueller⟧`,
+  `⟦keryx:do|dial|+1…⟧`, `⟦keryx:do|alarm|06:45|flight⟧`, calendar, timer, text, email, search,
+  play, open an app, copy, torch, share. Each renders as a tile in the bubble and a button on the
+  notification that performs the action **on a tap** — the tap is the consent; nothing runs on
+  its own. System intents only: no accessibility service, no dangerous permissions.
+- **A model picker that sorts itself** — This machine first, then cloud logins, then aggregators
+  split by lab with the newest few featured and the tail folded; recents, search, prices and
+  free-tier gating straight from the gateway's catalog.
 - **Self-contained push** — No distributor app required: point Keryx at any ntfy server and it
   holds its own WebSocket subscription (a UnifiedPush distributor, if installed, is
   auto-detected and preferred). Payloads stay `event_id_only` — content never rides the push.

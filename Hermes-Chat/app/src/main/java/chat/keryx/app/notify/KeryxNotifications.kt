@@ -81,6 +81,9 @@ object KeryxNotifications {
         quickActions: List<String> = emptyList(),
         markReadable: Boolean = false,
         timestamp: Long = System.currentTimeMillis(),
+        /** ⟦keryx:do⟧ actions (2.8.1 hands): a button per Intent-shaped action when no decision
+         *  is pending — "Navigate" from the lock screen, with the tap as the consent. */
+        hands: List<chat.keryx.core.model.PhoneAction> = emptyList(),
     ) {
         val nm = NotificationManagerCompat.from(context)
         if (!nm.areNotificationsEnabled()) {
@@ -135,6 +138,24 @@ object KeryxNotifications {
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                     ),
                 ).build(),
+            )
+        }
+        // Hands next (2.8.1), only when no decision is pending: a decision is the point of its
+        // notification, and three buttons is the shade's honest cap.
+        if (quickActions.isEmpty()) hands.mapNotNull { a ->
+            chat.keryx.app.hands.PhoneHands.intentFor(context, a)?.takeIf { it.component != null || a.kind != chat.keryx.core.model.PhoneAction.Kind.OPEN }?.let { a to it }
+        }.take(MAX_NOTIFICATION_OPTIONS).forEach { (a, intent) ->
+            builder.addAction(
+                NotificationCompat.Action.Builder(
+                    R.drawable.ic_stat_keryx,
+                    a.label,
+                    PendingIntent.getActivity(
+                        context,
+                        "hand:$roomId:${a.kind.token}:${a.primary}".hashCode(),
+                        intent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                    ),
+                ).setShowsUserInterface(true).build(),
             )
         }
         val replyIntent = Intent(context, NotificationActionReceiver::class.java).apply {

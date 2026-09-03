@@ -397,8 +397,8 @@ fun ToolTheaterRun(
 
         AnimatedVisibility(
             visible = expanded,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically(),
+            enter = keryxReveal(),
+            exit = keryxConceal(),
         ) {
             Column(modifier = Modifier.padding(top = 6.dp, start = 8.dp)) {
                 // One consolidated reasoning block for the whole run, above the steps — the same

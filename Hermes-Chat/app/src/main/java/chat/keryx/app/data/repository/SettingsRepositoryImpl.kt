@@ -152,6 +152,10 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getString("pinned_bots", "")!!.split('\u001F').filter { it.isNotBlank() }
         set(value) = prefs.edit().putString("pinned_bots", value.joinToString("\u001F")).apply()
 
+    override var recentModels: List<String>
+        get() = prefs.getString("recent_models", "")!!.split('\u001F').filter { it.isNotBlank() }
+        set(value) = prefs.edit().putString("recent_models", value.joinToString("\u001F")).apply()
+
     override var temporarySessionIds: Set<String>
         get() = prefs.getStringSet("temporary_session_ids", emptySet()) ?: emptySet()
         set(value) = prefs.edit().putStringSet("temporary_session_ids", value).apply()

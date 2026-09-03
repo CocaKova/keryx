@@ -1,5 +1,19 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.interaction.InteractionSource
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -201,6 +215,60 @@ object KeryxMotion {
 
     /** The arcane curve, for the rare fade a spring can't carry (color, alpha-only). */
     val arcane = androidx.compose.animation.core.CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
+
+    /** [settle] and [leave] for layout-sized transitions (expand / shrink take an IntSize spring). */
+    val settleSize = spring<IntSize>(dampingRatio = 0.85f, stiffness = 380f)
+    val leaveSize = spring<IntSize>(dampingRatio = 1f, stiffness = 1200f)
+
+    /** The same pair for slides (offset-typed). */
+    val settleInt = spring<androidx.compose.ui.unit.IntOffset>(dampingRatio = 0.85f, stiffness = 380f)
+    val leaveInt = spring<androidx.compose.ui.unit.IntOffset>(dampingRatio = 1f, stiffness = 1200f)
+
+    /** How far a pressed surface sinks: enough to feel the tap, never enough to read as a bug. */
+    const val PRESS_SCALE = 0.965f
+}
+
+/**
+ * The reveal pair (2.8.1): every bar, card, row and disclosure that appears in place enters
+ * with [KeryxMotion.settle] and leaves with [KeryxMotion.leave] — one arrival, one departure,
+ * instead of a dozen `AnimatedVisibility()` defaults each with their own timing.
+ */
+fun keryxReveal(): EnterTransition = fadeIn(KeryxMotion.settle) + expandVertically(KeryxMotion.settleSize)
+fun keryxConceal(): ExitTransition = fadeOut(KeryxMotion.leave) + shrinkVertically(KeryxMotion.leaveSize)
+
+/** The pop pair: chips, badges, tiles — things that appear *as themselves*, not as a row. */
+fun keryxPop(): EnterTransition = fadeIn(KeryxMotion.settle) + scaleIn(KeryxMotion.settle, initialScale = 0.86f)
+fun keryxVanish(): ExitTransition = fadeOut(KeryxMotion.leave) + scaleOut(KeryxMotion.leave, targetScale = 0.9f)
+
+/**
+ * A surface that sinks under the finger: scale toward [KeryxMotion.PRESS_SCALE] while
+ * [interactionSource] is pressed, springing back on release. Pair it with the same source's
+ * `clickable`/`combinedClickable` so the press the ripple sees is the press the scale sees.
+ * Stills to nothing under reduced motion.
+ */
+@Composable
+fun Modifier.keryxPressScale(interactionSource: InteractionSource, scale: Float = KeryxMotion.PRESS_SCALE): Modifier {
+    val reduced by rememberReducedMotion()
+    val pressed by interactionSource.collectIsPressedAsState()
+    val s by animateFloatAsState(
+        targetValue = if (pressed && !reduced) scale else 1f,
+        animationSpec = KeryxMotion.settle,
+        label = "keryxPress",
+    )
+    // Always the same modifier chain: a layer that swapped in and out on press would re-layout.
+    return graphicsLayer { scaleX = s; scaleY = s }
+}
+
+/** [keryxPressScale] with its own click: the tile/door/chip case with nothing else to wire. */
+@Composable
+fun Modifier.keryxPressable(
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+): Modifier {
+    val source = remember { MutableInteractionSource() }
+    return this
+        .keryxPressScale(source)
+        .clickable(interactionSource = source, indication = androidx.compose.material3.ripple(), enabled = enabled, onClick = onClick)
 }
 
 /**
@@ -596,13 +664,36 @@ fun KeryxSheet(
     sheetState: SheetState = rememberModalBottomSheetState(),
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.tertiary
+    // Arrival breath (2.8.1): the sheet's contents rise the last few dp into place behind the
+    // sheet's own slide — the same trailing second layer every space arrives with.
+    val reduced by rememberReducedMotion()
+    val arrival = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        if (reduced) arrival.snapTo(1f) else arrival.animateTo(1f, KeryxMotion.settle)
+    }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = KeryxRadius.sheet, topEnd = KeryxRadius.sheet),
         containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = {
+            // The handle in the app's own light: a short accent hairline, not Material's grey pill.
+            Box(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 6.dp), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier.width(36.dp).size(width = 36.dp, height = 3.dp).clip(CircleShape)
+                        .background(Brush.horizontalGradient(listOf(accent.copy(alpha = 0.7f), accent2.copy(alpha = 0.55f)))),
+                )
+            }
+        },
     ) {
-        Column(Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.fillMaxWidth().graphicsLayer {
+                alpha = 0.4f + 0.6f * arrival.value
+                translationY = (1f - arrival.value) * 10.dp.toPx()
+            },
+        ) {
             if (title != null) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

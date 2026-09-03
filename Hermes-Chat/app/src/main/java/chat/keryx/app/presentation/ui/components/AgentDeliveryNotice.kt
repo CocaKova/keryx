@@ -135,8 +135,8 @@ fun AgentDeliverySentNotice(
             }
             AnimatedVisibility(
                 visible = open,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically(),
+                enter = keryxReveal(),
+                exit = keryxConceal(),
             ) {
                 Text(
                     reply,

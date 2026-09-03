@@ -48,6 +48,11 @@ class ChatViewModel(
     // Whether the app is on screen right now (wired to KeryxApp.isForeground). Null — the
     // plain-JVM test default — reads as foregrounded, so behavior is unchanged where unwired.
     private val isAppForeground: (() -> Boolean)? = null,
+    // The room on screen, told SYNCHRONOUSLY to whoever suppresses notifications for it
+    // (KeryxApp.openRoomId). A flow collector learns of a room switch a dispatch later —
+    // long enough for the roster to emit the freshly adopted session and the watcher to
+    // read it as news the user "isn't looking at" (the cron-run trap, 2.8.1).
+    private val onOpenRoomChanged: ((String?) -> Unit)? = null,
 ) : ViewModel() {
 
     // The two capability surfaces, if this transport has them. Affordances only one side offers
@@ -185,6 +190,12 @@ class ChatViewModel(
 
     private val _currentRoom = MutableStateFlow<RoomProfile?>(null)
     val currentRoom: StateFlow<RoomProfile?> = _currentRoom.asStateFlow()
+
+    /** The ONE writer of the open room: the hook hears it in the same frame the flow does. */
+    private fun setCurrentRoom(room: RoomProfile?) {
+        _currentRoom.value = room
+        onOpenRoomChanged?.invoke(room?.id)
+    }
 
     // How many timeline events to load for the open room; grows as the user scrolls into history.
     private val _timelineLimit = MutableStateFlow(INITIAL_LIMIT)
@@ -479,6 +490,8 @@ class ChatViewModel(
         sendRoomCommand = { sendMessage(it) },
         // A switched brain owns a different ladder: re-probe the dial for this session.
         onSwitched = { refreshReasoningCaps() },
+        readRecents = { settingsRepository.recentModels },
+        writeRecents = { settingsRepository.recentModels = it },
     )
     val projects = ProjectsDelegate(deps, transport) { id, title -> openSessionById(id, title) }
     val shipyard = ShipyardDelegate(deps)
@@ -704,7 +717,7 @@ class ChatViewModel(
                 if (_currentRoom.value == null) {
                     val lastId = settingsRepository.lastRoomId
                     val room = roomList.firstOrNull { it.id == lastId }
-                    if (room != null) _currentRoom.value = room
+                    if (room != null) setCurrentRoom(room)
                 }
             }
         }
@@ -1209,7 +1222,14 @@ class ChatViewModel(
     /** Open a session by id even when the roster does not carry it (a project's session, a
      *  run from another machine): it is adopted locally under [title] first. */
     fun openSessionById(sessionId: String, title: String) {
-        if (_rooms.value.none { it.id == sessionId }) transport.gateway?.adoptSession(sessionId, title)
+        if (_rooms.value.none { it.id == sessionId }) {
+            // Claim the session as "on screen" BEFORE the roster learns of it: adopting
+            // publishes a row stamped now, and the notification watcher would otherwise
+            // read that row as new activity in a session nobody is looking at — and
+            // notify you about the very run you just tapped.
+            onOpenRoomChanged?.invoke(sessionId)
+            transport.gateway?.adoptSession(sessionId, title)
+        }
         openRoomById(sessionId)
     }
 
@@ -1220,7 +1240,7 @@ class ChatViewModel(
     }
 
     fun selectRoom(room: RoomProfile) {
-        _currentRoom.value = room
+        setCurrentRoom(room)
         limitDecayJob?.cancel()
         limitDecayJob = null
         _timelineLimit.value = INITIAL_LIMIT
@@ -1690,7 +1710,7 @@ class ChatViewModel(
                     if (_currentRoom.value?.id == roomId) {
                         val next = _rooms.value.firstOrNull { it.id != roomId }
                         if (next != null) selectRoom(next)
-                        else _currentRoom.value = null
+                        else setCurrentRoom(null)
                     }
                 }
                 ?.onFailure { _toasts.tryEmit("Leave failed: ${it.message?.take(80)}") }
@@ -1782,7 +1802,7 @@ class ChatViewModel(
                     if (_currentRoom.value?.id == sessionId) {
                         val next = _rooms.value.firstOrNull { it.id != sessionId }
                         if (next != null) selectRoom(next)
-                        else _currentRoom.value = null
+                        else setCurrentRoom(null)
                     }
                 }
                 ?.onFailure { _toasts.tryEmit("Delete failed: ${it.message?.take(80)}") }
@@ -1906,7 +1926,7 @@ class ChatViewModel(
     fun logout() {
         viewModelScope.launch {
             settingsRepository.lastRoomId = null
-            _currentRoom.value = null
+            setCurrentRoom(null)
             transport.logout()
         }
     }
