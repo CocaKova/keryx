@@ -110,3 +110,26 @@ screen-width units, `uPhase` uniform, same drift, still stilled by Battery Saver
 backdrop is float until the one dither. The dither is now triangular (two hashes, ±1 LSB) instead
 of a flat 0.8 LSB, and the `fract(sin(…))` hash is replaced by a sine-free one — on mobile GPUs
 `sin()` of pixel-scale arguments degrades into structure, and structured dither is not dither.
+
+## 7. The pin Jonny actually meant: a job at the top of the session list
+
+Jonny: "I more so meant pinning the output of a certain cron job to the top of the session list
+like in the matrix side."
+
+On the Matrix door a job's output lands in a room, and pinning that room puts it in the Quick
+Rooms deck. The direct-door equivalent of that room is the JOB. So: long-press a job card in
+the Runs door → **Pin to top of sessions**. The drawer's pinned deck then carries a tile named
+after the job that always opens the job's NEWEST run (marked read on open), wears the unread dot
+when that run is news, and reads as "here" while that run is the open session. Long-press the
+tile → unpinned. A pinned job with no visible run yet still has a tile; tapping it opens the
+Runs door rather than nothing. On the Matrix door tiles open the Runs door (runs read in-space
+there).
+
+Runs kept on the gateway (§3) ride into the same deck as RUN tiles — one specific output at the
+top — so "pinned" means "at the top of the list" for sessions, jobs and runs alike.
+
+The gateway pins sessions, not jobs, so which jobs are pinned is the phone's ledger
+(`SettingsRepository.pinnedCronJobs`, ordered, keyed by job name — the one stable name a job
+has). `core/model/CronTiles.kt` builds the deck rows purely from cards + ledger + unread
+(`CronTilesTest` ×4); `HubDelegate.cronTiles` recomputes them whenever the board or the ledger
+moves, and seeds job tiles from the ledger before the first fetch so the deck doesn't blink in.

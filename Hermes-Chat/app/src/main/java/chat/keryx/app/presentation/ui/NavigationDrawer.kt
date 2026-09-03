@@ -60,6 +60,32 @@ import chat.keryx.app.presentation.ui.components.KeryxRadius
 import chat.keryx.app.presentation.ui.components.RoomSigilAvatar
 import chat.keryx.app.theme.*
 
+/** The deck rows that are cron tiles, not roster sessions — see [chat.keryx.core.model.CronTiles]. */
+private const val CRON_TILE_SOURCE = "cron-tile"
+
+/**
+ * Open what a cron tile points at. Direct door: the run as a real session (the full renderer),
+ * marked read. Matrix door: runs read in the Runs door, so the tile goes there. A job tile with
+ * nothing to open yet goes to the Runs door too — never a dead tap.
+ */
+private fun openCronTile(
+    tile: chat.keryx.core.model.CronTile,
+    viewModel: ChatViewModel,
+    onRoomSelected: (RoomProfile) -> Unit,
+    onOpenSpace: (chat.keryx.app.presentation.ui.nav.KeryxDest) -> Unit,
+) {
+    val runId = tile.runId
+    if (runId == null || !viewModel.transportIsDirect) {
+        onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Runs)
+        return
+    }
+    viewModel.hub.cronMarkSeen(runId)
+    viewModel.openSessionById(runId, tile.runTitle ?: tile.name)
+    // The run is now a roster row (adopted); hand it to the host so the drawer closes the
+    // same way it does for any selected session.
+    viewModel.rooms.value.firstOrNull { it.id == runId }?.let(onRoomSelected)
+}
+
 @Composable
 fun NavigationDrawerContent(
     viewModel: ChatViewModel,
@@ -279,6 +305,25 @@ fun NavigationDrawerContent(
             val filtered = if (query.isBlank()) rooms
                 else rooms.filter { it.name.contains(query, ignoreCase = true) }
             val pinned = filtered.filter { it.id in pinnedRoomIds }
+            // Scheduled work at the top of the list, Quick-Room style: a pinned JOB is a tile
+            // that follows its newest run; a run kept on the gateway is a tile that IS that
+            // run. Both sit in the deck beside the pinned conversations (Jonny: "pinning the
+            // output of a certain cron job to the top of the session list like on the Matrix
+            // side"). They are rows the roster never carries, so they arrive from the hub.
+            val cronTiles by viewModel.hub.cronTiles.collectAsState()
+            val tileRooms = if (query.isBlank()) cronTiles.map { t ->
+                RoomProfile(
+                    id = t.id,
+                    name = t.label,
+                    type = chat.keryx.core.model.RoomType.DIRECT_MESSAGE,
+                    timestamp = t.timestamp,
+                    source = CRON_TILE_SOURCE,
+                    preview = t.runTitle.orEmpty(),
+                    unread = t.unread,
+                )
+            } else emptyList()
+            val tileById = cronTiles.associateBy { it.id }
+            val deck = pinned + tileRooms
             // Pinned rooms live in the Quick Rooms deck — don't list them twice.
             // (While searching, show everything that matches.)
             val listRooms = if (query.isBlank()) filtered.filter { it.id !in pinnedRoomIds } else filtered
@@ -299,19 +344,31 @@ fun NavigationDrawerContent(
                     item { Spacer(modifier = Modifier.height(14.dp)) }
                 }
 
-                if (pinned.isNotEmpty() && query.isBlank()) {
+                if (deck.isNotEmpty() && query.isBlank()) {
                     item { DrawerSectionHeader(lexicon.pinnedHeader) }
                     item {
                         chat.keryx.app.presentation.ui.components.QuickRoomsDeck(
-                            rooms = pinned,
-                            selectedRoomId = currentRoom?.id,
-                            onRoomClick = { onRoomSelected(it) },
+                            rooms = deck,
+                            // A job tile is "here" while its newest run is the open session.
+                            selectedRoomId = currentRoom?.id?.let { open ->
+                                cronTiles.firstOrNull { it.job && it.runId == open }?.id ?: open
+                            },
+                            onRoomClick = { room ->
+                                val tile = tileById[room.id]
+                                if (tile == null) onRoomSelected(room)
+                                else openCronTile(tile, viewModel, onRoomSelected, onOpenSpace)
+                            },
                             avatarLoader = { viewModel.loadAvatar(it) },
                             // Long-press a Quick Room to pin/unpin it — consistent with the
                             // room list below. Setting a room photo lives on the avatar
                             // long-press in the main list, so the two no longer collide.
                             onRoomLongPress = { room ->
-                                viewModel.togglePin(room.id)
+                                val tile = tileById[room.id]
+                                when {
+                                    tile == null -> viewModel.togglePin(room.id)
+                                    tile.job -> viewModel.hub.cronSetJobPinned(tile.name, false)
+                                    else -> viewModel.hub.cronSetPinned(tile.id, false)
+                                }
                             },
                         )
                     }

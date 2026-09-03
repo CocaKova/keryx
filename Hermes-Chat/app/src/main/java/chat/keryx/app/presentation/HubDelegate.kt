@@ -3,6 +3,7 @@ package chat.keryx.app.presentation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.jsonObject
 
@@ -224,6 +225,45 @@ class HubDelegate(deps: GatewayDeps) {
             ),
         )
     }
+
+    // --- Cron tiles: a job's output at the top of the session list, Quick-Room style ---------
+
+    private val _pinnedJobs = MutableStateFlow(settings.pinnedCronJobs)
+    /** Job names pinned to the drawer's deck, in pin order (phone ledger — see [chat.keryx.core.model.CronTiles]). */
+    val pinnedJobs: StateFlow<List<String>> = _pinnedJobs.asStateFlow()
+
+    fun cronJobPinned(name: String): Boolean = name in _pinnedJobs.value
+
+    fun cronSetJobPinned(name: String, pinned: Boolean) {
+        val now = _pinnedJobs.value
+        val next = if (pinned) (if (name in now) now else now + name) else now - name
+        if (next == now) return
+        _pinnedJobs.value = next
+        settings.pinnedCronJobs = next
+        toast(if (pinned) "$name pinned to the top of your sessions" else "$name unpinned")
+    }
+
+    /**
+     * The deck's cron tiles: pinned jobs (following their newest run) and runs kept on the
+     * gateway. Recomputed whenever the board or the ledger moves, so the tile's unread dot
+     * and the run it opens are always the board's current answer.
+     */
+    val cronTiles: StateFlow<List<chat.keryx.core.model.CronTile>> =
+        kotlinx.coroutines.flow.combine(_cron, _pinnedJobs) { panel, jobs ->
+            val board = panel.data
+            if (board == null) {
+                // Cold start: the ledger's jobs get tiles with nothing to open yet, so the
+                // deck doesn't blink in after the first fetch.
+                jobs.map { name ->
+                    chat.keryx.core.model.CronTile(
+                        id = chat.keryx.core.model.CronTile.jobId(name), name = name, label = name,
+                        runId = null, runTitle = null, timestamp = 0L, unread = false, job = true,
+                    )
+                }
+            } else {
+                chat.keryx.core.model.CronTiles.build(board.cards, jobs, board.unread)
+            }
+        }.stateIn(scope, kotlinx.coroutines.flow.SharingStarted.Eagerly, emptyList())
 
     /**
      * Keep (or release) one run on the gateway. The shelf moves NOW — the pin is a value flip

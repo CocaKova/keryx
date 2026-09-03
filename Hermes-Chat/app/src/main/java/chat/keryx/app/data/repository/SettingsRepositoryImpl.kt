@@ -135,6 +135,11 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getStringSet("cron_seen_ids", emptySet()) ?: emptySet()
         set(value) = prefs.edit().putStringSet("cron_seen_ids", value).apply()
 
+    // A String, not a StringSet: order is the pin order and a StringSet forgets it.
+    override var pinnedCronJobs: List<String>
+        get() = prefs.getString("pinned_cron_jobs", "")!!.split('\u001F').filter { it.isNotBlank() }
+        set(value) = prefs.edit().putString("pinned_cron_jobs", value.joinToString("\u001F")).apply()
+
     override var temporarySessionIds: Set<String>
         get() = prefs.getStringSet("temporary_session_ids", emptySet()) ?: emptySet()
         set(value) = prefs.edit().putStringSet("temporary_session_ids", value).apply()
