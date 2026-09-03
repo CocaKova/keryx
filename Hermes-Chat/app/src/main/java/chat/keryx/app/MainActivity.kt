@@ -131,16 +131,18 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                     transport, settingsRepository, app.archiveStore, app.archiveIndexer,
                     // A background SSE drop must not paint INTERRUPTED (08-25 diagnosis).
                     isAppForeground = { app.isForeground },
+                    // Synchronous: the watcher must never see a roster emission for a room
+                    // the user is opening before it knows that room is on screen.
+                    onOpenRoomChanged = { app.openRoomId = it },
                 ) as T
             }
         }
         viewModel = ViewModelProvider(this, factory)[ChatViewModel::class.java]
 
-        // Keep KeryxApp's "currently open room" in sync so we don't notify for the room on screen,
-        // and clear that room's notification when it's opened.
+        // Clear a room's notification when it's opened. (KeryxApp.openRoomId itself is set
+        // synchronously through the ViewModel hook above — this collector is a dispatch late.)
         lifecycleScope.launch {
             viewModel.currentRoom.collectLatest { room ->
-                app.openRoomId = room?.id
                 room?.id?.let { KeryxNotifications.clear(applicationContext, it) }
             }
         }

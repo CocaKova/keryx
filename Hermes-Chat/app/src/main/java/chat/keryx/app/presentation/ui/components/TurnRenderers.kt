@@ -38,8 +38,8 @@ internal fun WorkingStatusBar(
 ) {
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn() + slideInVertically(initialOffsetY = { -it }),
-        exit = fadeOut() + slideOutVertically(targetOffsetY = { -it }),
+        enter = fadeIn(KeryxMotion.settle) + slideInVertically(KeryxMotion.settleInt) { -it },
+        exit = fadeOut(KeryxMotion.leave) + slideOutVertically(KeryxMotion.leaveInt) { -it },
         modifier = modifier,
     ) {
         var now by remember { mutableStateOf(System.currentTimeMillis()) }

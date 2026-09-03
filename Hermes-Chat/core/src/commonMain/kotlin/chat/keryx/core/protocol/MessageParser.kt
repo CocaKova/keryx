@@ -37,6 +37,10 @@ object MessageParser {
          *  chips (and as notification action buttons on the notification path). */
         data class QuickActions(val options: List<String>) : Segment
 
+        /** Things the agent asked the phone to do via ⟦keryx:do|…⟧ (2.8.1 hands) — rendered
+         *  as tiles that act ON A TAP (and as notification buttons where an Intent can carry it). */
+        data class Hands(val actions: List<chat.keryx.core.model.PhoneAction>) : Segment
+
         /** Automated agent output that is not dialogue: the runtime footer (`model · 42% · ~/dir`),
          *  cron/heartbeat check-ins, background-completion notices. Rendered low-contrast. */
         data class Telemetry(val text: String, val kind: TelemetryKind) : Segment
@@ -569,6 +573,13 @@ object MessageParser {
     // the fallback never swallows trailing text; the chrome gate above is what keeps a mid-message
     // unterminated marker (prose after it) inert.
     private val ASK_MARK = Regex("""⟦keryx:ask\|([^⟧\n]*)(?:⟧|$)""", RegexOption.MULTILINE)
+    // ⟦keryx:do|kind|arg…⟧ — the agent asks the phone to DO something (2.8.1 hands). Agent-
+    // emitted like ask, but not end-of-dialogue: "here's the address ⟦keryx:do|navigate|…⟧,
+    // and about the other thing…" is the natural shape. Code spans are mentions (masked);
+    // a marker that doesn't parse as an action (unknown kind, bad args) stays literal text
+    // — the honest failure, since a person reading it can see what was asked for. Same
+    // optional closer as ask for the same reason (brains stop before ⟧).
+    private val DO_MARK = Regex("""⟦keryx:do\|([^⟧\n]*)(?:⟧|$)""", RegexOption.MULTILINE)
     private val BEACON = Regex("""⟦keryx:v\d+⟧""")
 
     /** Tile cap: the protocol asks brains for 2–4 options, but a brain that offers 5–6 real
@@ -591,6 +602,8 @@ object MessageParser {
         val telemetry: Boolean = false,
         /** ⟦keryx:ask|…⟧ options — the agent is waiting on a decision ([] = none requested). */
         val actions: List<String> = emptyList(),
+        /** ⟦keryx:do|…⟧ actions — what the agent asked the phone to do ([] = nothing). */
+        val hands: List<chat.keryx.core.model.PhoneAction> = emptyList(),
     )
 
     // A markdown inline-code span within one line: a backtick run closed by a matching run.
@@ -646,6 +659,12 @@ object MessageParser {
         }
         var telemetry = false
         TELEM_MARK.findAll(masked).forEach { telemetry = true; edits += it.range to "" }
+        val hands = ArrayList<chat.keryx.core.model.PhoneAction>()
+        DO_MARK.findAll(masked).forEach { m ->
+            val action = chat.keryx.core.model.PhoneAction.parse(m.groupValues[1]) ?: return@forEach
+            if (hands.size < chat.keryx.core.model.PhoneAction.MAX_PER_MESSAGE && action !in hands) hands += action
+            edits += m.range to ""
+        }
         BEACON.findAll(masked).forEach { edits += it.range to "" }
         CITE_INLINE.findAll(masked).forEach {
             edits += it.range to "⁽${superscript(it.groupValues[1].toIntOrNull() ?: 0)}⁾"
@@ -680,12 +699,15 @@ object MessageParser {
             pos = range.last + 1
         }
         out.append(text, pos, text.length)
-        return Keryx(out.toString().trim('\n', ' '), citations, skill, true, telemetry, actions)
+        return Keryx(out.toString().trim('\n', ' '), citations, skill, true, telemetry, actions, hands)
     }
 
     /** The ⟦keryx:ask⟧ options in [content] ([] = none) — for the notification builders, which
      *  need the actions without paying for a full segment parse. */
     fun quickActions(content: String): List<String> = extractKeryx(content).actions
+
+    /** The ⟦keryx:do⟧ actions in [content] ([] = none) — for the notification builders. */
+    fun phoneActions(content: String): List<chat.keryx.core.model.PhoneAction> = extractKeryx(content).hands
 
     // Parsing is pure on [content] and runs on the UI thread for both grouping (ChatScreen) and
     // rendering (MessageContent) — i.e. each message was parsed at least twice and re-parsed on every
@@ -747,6 +769,7 @@ object MessageParser {
             segs.addAll(review)
             keryx.skill?.let { segs.add(it) }
             if (keryx.citations.isNotEmpty()) segs.add(Segment.Citations(keryx.citations))
+            if (keryx.hands.isNotEmpty()) segs.add(Segment.Hands(keryx.hands))
             if (keryx.actions.isNotEmpty()) segs.add(Segment.QuickActions(keryx.actions))
             return segs
         }
@@ -891,6 +914,7 @@ object MessageParser {
         flushAll()
         keryx.skill?.let { segments.add(it) }
         if (keryx.citations.isNotEmpty()) segments.add(Segment.Citations(keryx.citations))
+        if (keryx.hands.isNotEmpty()) segments.add(Segment.Hands(keryx.hands))
         if (keryx.actions.isNotEmpty()) segments.add(Segment.QuickActions(keryx.actions))
         return segments
     }

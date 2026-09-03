@@ -163,6 +163,7 @@ private fun segmentsToParts(segs: List<MessageParser.Segment>): MsgParts {
             is MessageParser.Segment.SkillDistilled -> Unit
             // Decision chips belong to the dialogue bubble, never to a tool-run accordion.
             is MessageParser.Segment.QuickActions -> Unit
+            is MessageParser.Segment.Hands -> Unit
         }
     }
     return MsgParts(entries, reasoning.toString().ifBlank { null })

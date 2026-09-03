@@ -251,6 +251,7 @@ fun MessageContent(
                 is MessageParser.Segment.Mermaid -> MermaidDiagram(segment.code, textColor)
                 is MessageParser.Segment.Citations -> CitationsBar(segment.items, textColor)
                 is MessageParser.Segment.QuickActions -> QuickActionTiles(segment.options, textColor)
+                is MessageParser.Segment.Hands -> HandsTiles(segment.actions, textColor)
                 is MessageParser.Segment.SkillDistilled -> SkillDistilledPill(segment, textColor)
                 is MessageParser.Segment.Telemetry -> TelemetryBlock(segment, textColor)
                 is MessageParser.Segment.ActionOutput ->
@@ -469,7 +470,7 @@ fun ActionOutputCard(
                     .padding(horizontal = 8.dp, vertical = 6.dp),
             )
         }
-        AnimatedVisibility(visible = showRaw, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+        AnimatedVisibility(visible = showRaw, enter = keryxReveal(), exit = fadeOut() + shrinkVertically()) {
             val rawScroll = rememberScrollState()
             Text(
                 text = action.raw,
@@ -541,8 +542,8 @@ internal fun ReasoningCanvas(text: String, baseColor: Color, active: Boolean) {
         }
         AnimatedVisibility(
             visible = expanded,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically(),
+            enter = keryxReveal(),
+            exit = keryxConceal(),
         ) {
             val reasonStyle = MaterialTheme.typography.bodyMedium.copy(
                 fontSize = 13.sp,

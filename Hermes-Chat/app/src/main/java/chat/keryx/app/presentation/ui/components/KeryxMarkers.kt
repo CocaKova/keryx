@@ -78,8 +78,8 @@ fun CitationsBar(items: List<MessageParser.Citation>, baseColor: Color) {
         val current = items.firstOrNull { it.n == selected }
         AnimatedVisibility(
             visible = current != null,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically(),
+            enter = keryxReveal(),
+            exit = keryxConceal(),
         ) {
             current?.let { c ->
                 Column(
@@ -191,6 +191,106 @@ fun QuickActionTiles(options: List<String>, baseColor: Color) {
 }
 
 /**
+ * The hands (2.8.1): tiles for ⟦keryx:do|…⟧ — the agent asked the phone to do something and
+ * each tile does it ON THE TAP. Same family as the decision tiles (the sunset gradient, the
+ * leading badge, the trailing chevron) so "the agent is handing you something" reads as one
+ * grammar — but the badge carries the action's glyph, not the reply arrow, and the trailing
+ * word says where it lands. A tile that could not be carried out says why in a toast and
+ * stays put; a person can always try again or do it by hand.
+ */
+@Composable
+fun HandsTiles(actions: List<chat.keryx.core.model.PhoneAction>, baseColor: Color) {
+    val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.tertiary
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val haptics = LocalKeryxHaptics.current
+    val shape = RoundedCornerShape(14.dp)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .padding(top = 9.dp)
+            .fillMaxWidth(),
+    ) {
+        actions.forEach { action ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(shape)
+                    .background(
+                        Brush.linearGradient(listOf(accent2.copy(alpha = 0.16f), accent.copy(alpha = 0.16f)))
+                    )
+                    .border(
+                        1.dp,
+                        Brush.linearGradient(listOf(accent2.copy(alpha = 0.55f), accent.copy(alpha = 0.55f))),
+                        shape,
+                    )
+                    .keryxPressable {
+                        haptics.commit()
+                        chat.keryx.app.hands.PhoneHands.perform(context, action)?.let { why ->
+                            android.widget.Toast.makeText(context, why, android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .padding(horizontal = 14.dp, vertical = 13.dp),
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(Brush.linearGradient(listOf(accent2, accent))),
+                ) {
+                    androidx.compose.material3.Icon(
+                        handGlyph(action.kind), contentDescription = null, tint = Color.White,
+                        modifier = Modifier.size(13.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.width(11.dp))
+                Text(
+                    action.label,
+                    color = baseColor,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    handWhere(action.kind), color = accent.copy(alpha = 0.75f), fontSize = 9.5.sp,
+                    letterSpacing = 1.sp,
+                )
+            }
+        }
+    }
+}
+
+private fun handGlyph(kind: chat.keryx.core.model.PhoneAction.Kind) = when (kind) {
+    chat.keryx.core.model.PhoneAction.Kind.URL -> KeryxGlyphs.Exit
+    chat.keryx.core.model.PhoneAction.Kind.DIAL -> KeryxGlyphs.Phone
+    chat.keryx.core.model.PhoneAction.Kind.SMS -> KeryxGlyphs.Reply
+    chat.keryx.core.model.PhoneAction.Kind.EMAIL -> KeryxGlyphs.NewChat
+    chat.keryx.core.model.PhoneAction.Kind.CALENDAR -> KeryxGlyphs.Calendar
+    chat.keryx.core.model.PhoneAction.Kind.ALARM -> KeryxGlyphs.Watch
+    chat.keryx.core.model.PhoneAction.Kind.TIMER -> KeryxGlyphs.Hourglass
+    chat.keryx.core.model.PhoneAction.Kind.NAVIGATE -> KeryxGlyphs.Scope
+    chat.keryx.core.model.PhoneAction.Kind.SEARCH -> KeryxGlyphs.Search
+    chat.keryx.core.model.PhoneAction.Kind.PLAY -> KeryxGlyphs.Play
+    chat.keryx.core.model.PhoneAction.Kind.OPEN -> KeryxGlyphs.Stack
+    chat.keryx.core.model.PhoneAction.Kind.COPY -> KeryxGlyphs.Copy
+    chat.keryx.core.model.PhoneAction.Kind.TORCH -> KeryxGlyphs.Sun
+    chat.keryx.core.model.PhoneAction.Kind.SHARE -> KeryxGlyphs.Share
+}
+
+/** The trailing word: where the tap lands. */
+private fun handWhere(kind: chat.keryx.core.model.PhoneAction.Kind) = when (kind) {
+    chat.keryx.core.model.PhoneAction.Kind.COPY -> "CLIPBOARD"
+    chat.keryx.core.model.PhoneAction.Kind.TORCH -> "PHONE"
+    chat.keryx.core.model.PhoneAction.Kind.SHARE -> "SHARE"
+    chat.keryx.core.model.PhoneAction.Kind.OPEN -> "APP"
+    else -> "OPENS"
+}
+
+/**
  * "Skill Distilled" pill shown when SILAS closes its learning loop and saves a new procedural skill.
  * Tap to peek at what it learned; "Open in Skill Forge" (1.8) jumps to the full viewer/editor via
  * [LocalSkillForgeOpener] — the render chain doesn't carry the ViewModel, the CompositionLocal does.
@@ -221,8 +321,8 @@ fun SkillDistilledPill(skill: MessageParser.Segment.SkillDistilled, baseColor: C
         }
         AnimatedVisibility(
             visible = open,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically(),
+            enter = keryxReveal(),
+            exit = keryxConceal(),
         ) {
             Column(
                 modifier = Modifier

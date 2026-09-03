@@ -24,6 +24,9 @@ class ModelDelegate(
     /** Fired once the gateway accepted a switch (now or at the next turn): the session's
      *  reasoning ladder belongs to the new brain, so the owner re-probes it. */
     private val onSwitched: () -> Unit = {},
+    /** The phone's recents ledger (settings-backed); null in plain-JVM tests. */
+    private val readRecents: (() -> List<String>)? = null,
+    private val writeRecents: ((List<String>) -> Unit)? = null,
 ) {
     private val scope = deps.scope
     private val hubClient = deps.client
@@ -34,6 +37,16 @@ class ModelDelegate(
 
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading.asStateFlow()
+
+    private val _recents = MutableStateFlow(readRecents?.invoke().orEmpty())
+    /** `provider|model` keys, newest first — the picker resolves them against the live catalog. */
+    val recents: StateFlow<List<String>> = _recents.asStateFlow()
+
+    private fun remember(choice: ModelChoice) {
+        val next = chat.keryx.core.model.ModelPicker.pushRecent(_recents.value, choice)
+        _recents.value = next
+        writeRecents?.invoke(next)
+    }
 
     /** The choice the gateway asked us to confirm; the same choice tapped again confirms it. */
     private var awaitingConfirm: ModelChoice? = null
@@ -64,6 +77,7 @@ class ModelDelegate(
         if (gw == null) {
             // A room command: the gateway pins the room's session to it and confirms in-line.
             sendRoomCommand("/model ${choice.name} --provider ${choice.provider}")
+            remember(choice)
             awaitingConfirm = null
             return
         }
@@ -78,6 +92,7 @@ class ModelDelegate(
                             toast("${out.message.ifBlank { "This model is expensive." }} Tap it again to confirm.")
                         }
                         out.deferred -> {
+                            remember(choice)
                             toast("${out.model} takes over at the next turn")
                             _catalog.value = _catalog.value?.copy(
                                 model = out.model.ifBlank { choice.name }, provider = choice.provider,
@@ -85,6 +100,7 @@ class ModelDelegate(
                             onSwitched()
                         }
                         else -> {
+                            remember(choice)
                             toast("${out.model} — this session")
                             _catalog.value = _catalog.value?.copy(
                                 model = out.model.ifBlank { choice.name }, provider = choice.provider,

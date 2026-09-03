@@ -190,8 +190,10 @@ fun HermesApp(viewModel: ChatViewModel) {
     ModalNavigationDrawer(
         modifier = Modifier.nestedScroll(drawerAssist),
         drawerState = drawerState,
+        // The scrim carries a breath of the accent: the room dims into the void, not into grey.
+        scrimColor = androidx.compose.ui.graphics.lerp(Color.Black, MaterialTheme.colorScheme.primary, 0.14f).copy(alpha = 0.55f),
         drawerContent = {
-            ModalDrawerSheet {
+            ModalDrawerSheet(drawerShape = DrawerShape, drawerContainerColor = Color.Transparent) {
                 NavigationDrawerContent(
                     viewModel = viewModel,
                     onRoomSelected = { room ->
@@ -202,6 +204,9 @@ fun HermesApp(viewModel: ChatViewModel) {
                     // Visible while open OR mid-swing, so the emblem is alive as it slides in.
                     drawerVisible = drawerState.currentValue == DrawerValue.Open ||
                         drawerState.targetValue == DrawerValue.Open,
+                    // A new session from the drawer's plus lands you IN it: the drawer
+                    // slides away as the ViewModel moves onto the new room.
+                    onConversationCreated = { scope.launch { drawerState.close() } },
                 )
             }
         }

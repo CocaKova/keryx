@@ -63,6 +63,9 @@ interface SettingsRepository {
     /** Bots pinned to the top of the session list, in pin order (a phone ledger, like jobs). */
     var pinnedBots: List<String>
 
+    /** Models picked lately, newest first, as `provider|model` keys (the picker's Recent shelf). */
+    var recentModels: List<String>
+
     /** Gateway sessions created as TEMPORARY: they live like any session while the app does,
      *  and the next cold start deletes them from the gateway. Persisted so a killed process
      *  can't strand one — the ledger IS the cleanup order. */

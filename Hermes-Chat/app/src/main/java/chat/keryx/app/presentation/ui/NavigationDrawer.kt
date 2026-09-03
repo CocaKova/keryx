@@ -1,6 +1,20 @@
 package chat.keryx.app.presentation.ui
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import chat.keryx.app.presentation.ui.components.KeryxMotion
+import chat.keryx.app.presentation.ui.components.keryxPop
+import chat.keryx.app.presentation.ui.components.keryxVanish
+import chat.keryx.app.presentation.ui.components.keryxPressScale
+import chat.keryx.app.presentation.ui.components.keryxPressable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -116,6 +130,9 @@ fun NavigationDrawerContent(
     // offscreen), so anything permanently animated in here would burn frames invisibly. The host
     // passes the drawer's real visibility so ornament only runs while it can be seen.
     drawerVisible: Boolean = true,
+    // The drawer made a new conversation and the ViewModel is moving onto it: the host
+    // closes the drawer so the new room is on screen, not behind the sheet you left.
+    onConversationCreated: () -> Unit = {},
 ) {
     // Bot chats are rows the roster publishes for the floor's sake (select, restore, notify);
     // the Bots door lists them under their bots, so the session list does not list them twice.
@@ -152,6 +169,7 @@ fun NavigationDrawerContent(
     ModalDrawerSheet(
         drawerContainerColor = MaterialTheme.colorScheme.surface,
         drawerContentColor = MaterialTheme.colorScheme.onSurface,
+        drawerShape = DrawerShape,
         modifier = Modifier.width(300.dp)
     ) {
         Column(
@@ -274,12 +292,19 @@ fun NavigationDrawerContent(
                         }
                     )
                 }) {
-                    Icon(
-                        themeGlyph,
-                        contentDescription = themeLabel,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
-                    )
+                    // The glyph turns over rather than snapping: sun to moon is a change of light.
+                    AnimatedContent(
+                        targetState = themeGlyph,
+                        transitionSpec = { keryxPop().togetherWith(keryxVanish()) },
+                        label = "themeGlyph",
+                    ) { glyph ->
+                        Icon(
+                            glyph,
+                            contentDescription = themeLabel,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
                 }
                 // The drawer's ONE new-conversation entry point: DM / create / join, in a sheet.
                 var showNewChat by remember { mutableStateOf(false) }
@@ -295,6 +320,7 @@ fun NavigationDrawerContent(
                     chat.keryx.app.presentation.ui.components.NewChatSheet(
                         viewModel = viewModel,
                         onDismiss = { showNewChat = false },
+                        onCreated = onConversationCreated,
                     )
                 }
             }
@@ -470,6 +496,8 @@ fun NavigationDrawerContent(
                         } else null,
                         avatarLoader = { viewModel.loadAvatar(it) },
                         previewLoader = { viewModel.roomPreview(room.id, room.timestamp) },
+                        // Rows glide to their new place when activity reorders the list.
+                        modifier = Modifier.animateItem(),
                     )
                 }
 
@@ -602,6 +630,7 @@ fun RoomRow(
     onMoveToProject: ((chat.keryx.core.model.ProjectInfo) -> Unit)? = null,
     avatarLoader: suspend (String) -> ByteArray?,
     previewLoader: (suspend () -> String?)? = null,
+    modifier: Modifier = Modifier,
 ) {
     val haptics = chat.keryx.app.presentation.ui.components.LocalKeryxHaptics.current
     // Long-press menu (pin/unpin + the transport's own verbs). Replaced the instant pin toggle
@@ -619,15 +648,25 @@ fun RoomRow(
     val preview by produceState<String?>(initialValue = null, room.id, room.timestamp) {
         value = previewLoader?.invoke()
     }
-    Box {
+    // The selection wash fades between rows instead of jumping, and the row sinks under the
+    // finger (2.8.1) — the ripple and the scale read the same press.
+    val rowFill by animateColorAsState(
+        if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent,
+        label = "roomFill",
+    )
+    val rowPress = remember { MutableInteractionSource() }
+    Box(modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 2.dp)
             .clip(RoundedCornerShape(10.dp))
-            .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent)
+            .background(rowFill)
+            .keryxPressScale(rowPress)
             .combinedClickable(
+                interactionSource = rowPress,
+                indication = androidx.compose.material3.ripple(),
                 onClick = onClick,
                 onLongClick = {
                     haptics.press()
@@ -701,7 +740,9 @@ fun RoomRow(
                     fontSize = 11.sp,
                 )
             }
-            if (room.unreadCount > 0L) {
+            // Unread arrives as itself — a pop, not a pixel switch — and leaves the same way.
+            AnimatedVisibility(visible = room.unreadCount > 0L, enter = keryxPop(), exit = keryxVanish()) {
+                Column {
                 Spacer(modifier = Modifier.height(3.dp))
                 Box(
                     contentAlignment = Alignment.Center,
@@ -717,9 +758,12 @@ fun RoomRow(
                         fontWeight = FontWeight.Bold,
                     )
                 }
-            } else if (room.unread) {
-                // The gateway knows THAT something happened since you looked, not how much:
-                // a watermark, not a count. A dot says exactly that; a "1" would be a lie.
+                }
+            }
+            // The gateway knows THAT something happened since you looked, not how much:
+            // a watermark, not a count. A dot says exactly that; a "1" would be a lie.
+            AnimatedVisibility(visible = room.unreadCount <= 0L && room.unread, enter = keryxPop(), exit = keryxVanish()) {
+                Column {
                 Spacer(modifier = Modifier.height(5.dp))
                 Box(
                     modifier = Modifier
@@ -727,6 +771,7 @@ fun RoomRow(
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary),
                 )
+                }
             }
         }
     }
@@ -1088,7 +1133,7 @@ private fun DrawerDoor(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
+            .keryxPressable(onClick = onClick)
             .padding(vertical = 8.dp),
     ) {
         // The box is the icon's exact size: the badge overflows its corner and never adds
@@ -1099,23 +1144,36 @@ private fun DrawerDoor(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxSize(),
             )
-            if (badge > 0) {
+            // The badge pops in and out as itself; the count inside rolls up as it changes.
+            androidx.compose.animation.AnimatedVisibility(
+                visible = badge > 0,
+                enter = keryxPop(), exit = keryxVanish(),
+                modifier = Modifier.align(Alignment.TopEnd).offset(x = 8.dp, y = (-6).dp),
+            ) {
                 // The room list's unread pill, shrunk to a corner: same colour, same cap, so
                 // one grammar says "unread" everywhere in the drawer. `required*` sizes ignore
                 // the 22dp box's constraints — "99+" may run wider than the icon.
+                var shown by remember { mutableStateOf(badge) }
+                if (badge > 0) shown = badge // keep the last real count through the exit
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = 8.dp, y = (-6).dp)
                         .requiredHeight(16.dp)
                         .requiredWidthIn(min = 16.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary)
                         .padding(horizontal = 4.dp),
                 ) {
+                    AnimatedContent(
+                        targetState = DoorBadge.label(shown),
+                        transitionSpec = {
+                            (fadeIn(KeryxMotion.settle) + slideInVertically(KeryxMotion.settleInt) { it })
+                                .togetherWith(fadeOut(KeryxMotion.leave) + slideOutVertically(KeryxMotion.leaveInt) { -it })
+                        },
+                        label = "doorBadge",
+                    ) { label ->
                     Text(
-                        text = DoorBadge.label(badge),
+                        text = label,
                         color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
@@ -1132,6 +1190,7 @@ private fun DrawerDoor(
                             ),
                         ),
                     )
+                    }
                 }
             }
         }
@@ -1148,3 +1207,6 @@ private fun DrawerDoor(
 internal object DoorBadge {
     fun label(count: Int): String = if (count > 99) "99+" else count.toString()
 }
+
+/** The drawer's own edge: a soft sheet-radius on the side that meets the room, flat at the screen edge. */
+internal val DrawerShape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)

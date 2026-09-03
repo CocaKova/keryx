@@ -133,8 +133,8 @@ fun ReasoningDisclosure(
         }
         AnimatedVisibility(
             visible = open,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically(),
+            enter = keryxReveal(),
+            exit = keryxConceal(),
         ) {
             val scroll = rememberScrollState()
             // Streaming preview follows its own tail — the newest thought is the interesting

@@ -50,6 +50,10 @@ import chat.keryx.app.presentation.ChatViewModel
 fun NewChatSheet(
     viewModel: ChatViewModel,
     onDismiss: () -> Unit,
+    // Fired once, after a conversation was actually made (or joined) — the host uses it to
+    // get out of the way (close the drawer) so the new room is what you land on. A cancel
+    // is only [onDismiss].
+    onCreated: () -> Unit = {},
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     // Which row is expanded: "dm", "room", "join" (one at a time keeps the sheet short).
@@ -60,7 +64,7 @@ fun NewChatSheet(
     fun done(err: String?) {
         busy = false
         error = err
-        if (err == null) onDismiss()
+        if (err == null) { onDismiss(); onCreated() }
     }
 
     KeryxSheet(onDismiss = onDismiss, title = if (viewModel.transportIsDirect) "New session" else "New conversation", sheetState = sheetState) {
@@ -241,7 +245,7 @@ private fun NewChatRow(
                 Text(subtitle, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        AnimatedVisibility(visible = open) {
+        AnimatedVisibility(visible = open, enter = keryxReveal(), exit = keryxConceal()) {
             Column(Modifier.padding(top = 8.dp, start = 32.dp)) { content() }
         }
     }
