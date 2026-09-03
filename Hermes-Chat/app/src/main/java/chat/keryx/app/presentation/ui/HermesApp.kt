@@ -208,9 +208,9 @@ fun HermesApp(viewModel: ChatViewModel) {
     ) {
         // The whole-screen backdrop: the living dusk sky (AGSL on 13+, static aurora before) —
         // bubbles and bars sit on top of it (transparent), so the sky reads as the actual room.
+        // The ambient void (the accent pools adrift behind the chat) rides inside the sky
+        // shader now — one dithered pass, so no gradient edge can survive it.
         Box(modifier = Modifier.fillMaxSize().keryxDuskSky()) {
-        // The ambient void: vast accent glows adrift behind the chat, minutes per pass.
-        chat.keryx.app.presentation.ui.components.AmbientVoid()
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {

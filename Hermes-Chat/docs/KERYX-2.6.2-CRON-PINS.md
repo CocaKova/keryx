@@ -69,3 +69,44 @@ icon family. The Bookmark glyph stays the Archive's (kept MESSAGES); a pin is a 
 4. Desktop parity: a run pinned here shows pinned in the Hermes Desktop sidebar's session
    list and vice-versa (same flag).
 5. Kill Hermes Link (Settings) → long-press → Pin → toast says the link is off, nothing flips.
+
+## 5. The diff feed (same evening)
+
+Jonny: "let's go with the diff feed, but I also don't know what that is."
+
+**What it is.** A daily job produces forty near-identical reports; the reader's question on the
+forty-first is "what does it say that yesterday's didn't". Each job card now answers that in
+one line under the headline — `since last run · +3 new · 1 updated · 2 gone` (or `same as last
+run`, dimmed) — and, opened, lists the new (`+`), changed (`~`) and gone (`−`) lines in the
+report's own words. Arrivals-rail rows wear the short badge (`+3`, `~2`, `−1`) beside the clock.
+
+**How.** `core/model/CronDelta.kt` — `CronDeltaCalc.compute(previous, latest)`: the two newest
+reports' substantive lines (fences, rules, bracketed machine lines and markdown chrome dropped —
+the digest's shape rules) compared by a normalised key: lower-cased, dates / clock times /
+"N ago" folded OUT (a timestamp is not news), numbers kept IN ("3 PRs" → "5 PRs" is news). Exact
+key = kept; leftovers with ≥ 0.6 word-set overlap = the same line changed in place (UPDATED,
+latest wording shown), the rest = added / removed. Lines under 12 chars never make news.
+Deterministic and local on purpose — a brain call per card per poll would answer differently
+each time and be unavailable exactly when the gateway is busy. `CronDeltaTest` ×8.
+
+`HubDelegate` caches the REPORT text per run (`cronReport`) and derives both digest and delta
+from it, so a card that has shown its headline has paid for half its delta already.
+
+## 6. The hard line in the sky (same evening)
+
+Jonny: "the colors in the background go from a darker shade to a lighter shade from the left to
+the right of the screen in a really harsh way, like a hard line" — and, minutes later, "a big
+box is moving across the screen".
+
+Root: the ambient void's two accent pools were a separate `Canvas` of Compose radial gradients
+painted OVER the dithered sky shader. Skia gradients are not dithered; the gaussian tail stepped
+through the last two 8-bit levels above black in ~80 px bands, and on an OLED a two-level step
+next to black is an edge — the pool's boundary read as a hard line, and since the pool drifts on
+a 150 s triangle, as "a box moving". The 08-19 fix dithered the shader and softened the stops;
+it never touched the layer the line was in.
+
+Fix: `AmbientVoid.kt` deleted; the pools are drawn inside `KeryxDuskSky`'s AGSL (gaussian in
+screen-width units, `uPhase` uniform, same drift, still stilled by Battery Saver), so the whole
+backdrop is float until the one dither. The dither is now triangular (two hashes, ±1 LSB) instead
+of a flat 0.8 LSB, and the `fract(sin(…))` hash is replaced by a sine-free one — on mobile GPUs
+`sin()` of pixel-scale arguments degrades into structure, and structured dither is not dither.
