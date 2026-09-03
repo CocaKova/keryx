@@ -12,6 +12,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import chat.keryx.app.KeryxApp
+import kotlinx.coroutines.launch
 
 /**
  * Handles the buttons on a message notification: inline **Reply** (RemoteInput) and the one-tap
@@ -25,6 +26,16 @@ class NotificationActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val roomId = intent.getStringExtra(KeryxNotifications.EXTRA_ROOM_ID) ?: return
         val roomName = intent.getStringExtra(KeryxNotifications.EXTRA_ROOM_NAME) ?: "Keryx"
+        if (intent.action == ACTION_MARK_READ) {
+            // The gateway's own watermark (direct door): the row's dot clears everywhere,
+            // Desktop included. Fire-and-forget on the app scope; the shade entry goes now.
+            val app = context.applicationContext as? KeryxApp
+            KeryxNotifications.clear(context, roomId)
+            app?.appScope?.launch {
+                runCatching { app.transport.gateway?.markSessionRead(roomId, true) }
+            }
+            return
+        }
         val text = when (intent.action) {
             ACTION_QUICK -> intent.getStringExtra(KeryxNotifications.EXTRA_QUICK_TEXT)
             ACTION_REPLY -> RemoteInput.getResultsFromIntent(intent)
@@ -57,6 +68,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
     companion object {
         const val ACTION_REPLY = "chat.keryx.app.notify.REPLY"
         const val ACTION_QUICK = "chat.keryx.app.notify.QUICK"
+        const val ACTION_MARK_READ = "chat.keryx.app.notify.MARK_READ"
     }
 }
 
@@ -85,7 +97,7 @@ class SendTextWorker(
             if (!app.isForeground) app.matrixService.syncStandby(SYNC_JOB_LINGER_MS)
         }
         return if (sent.isSuccess) {
-            KeryxNotifications.notifyActionResult(applicationContext, roomId, roomName, "✓ You: $text")
+            KeryxNotifications.notifyActionResult(applicationContext, roomId, roomName, text, mine = true)
             Result.success()
         } else {
             android.util.Log.w("KeryxNotify", "action send failed: ${sent.exceptionOrNull()?.message}")

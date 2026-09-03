@@ -57,6 +57,9 @@ sealed interface KeryxDest {
     /** Scheduled work, read: the arrivals rail and one card per job (was the hub's Runs tab). */
     data object Runs : KeryxDest { override val route = "runs" }
 
+    /** Bot Mode (2.8): the roster of profiles, each one tap from its forever-chat. Direct door only. */
+    data object Bots : KeryxDest { override val route = "bots" }
+
     /** The server: status, controls, jobs. Half of what used to be the one "Agent Hub". */
     data object Gateway : KeryxDest { override val route = "gateway" }
 
@@ -66,7 +69,7 @@ sealed interface KeryxDest {
     data object Settings : KeryxDest { override val route = "settings" }
 
     companion object {
-        private val all = listOf(Archive, Missions, Projects, Shipyard, Runs, Gateway, Workshop, Settings)
+        private val all = listOf(Archive, Missions, Projects, Shipyard, Runs, Bots, Gateway, Workshop, Settings)
 
         /**
          * Legacy route names that must keep resolving. A saved back stack written by 2.4 — or an

@@ -49,7 +49,7 @@ class KeryxApp : Application() {
     lateinit var archiveIndexer: chat.keryx.app.data.archive.ArchiveSweeper
         private set
 
-    private val appScope = CoroutineScope(Dispatchers.IO)
+    val appScope = CoroutineScope(Dispatchers.IO)
 
     // Foreground + currently-open-room tracking, so we only notify for messages the user isn't
     // already looking at. Updated by the activity lifecycle / the chat screen.
@@ -138,9 +138,13 @@ class KeryxApp : Application() {
                         continue
                     }
                     // Two, not one: the arrival test (2.3 §3) needs the message before this one to
-                    // know whether anybody actually asked for it.
+                    // know whether anybody actually asked for it. On the direct door this is a
+                    // REST peek — getMessages would hydrate AND session.resume the row, one live
+                    // agent on the gateway per notification (the drawer's old trap, 2.6.2).
+                    val direct = transport as? DirectTransport
                     val tail = withTimeoutOrNull(4_000L) {
-                        transport.getMessages(room.id, 2).first { it.isNotEmpty() }
+                        if (direct != null) direct.peekLatest(room.id, 2)
+                        else transport.getMessages(room.id, 2).first { it.isNotEmpty() }
                     }
                     val last = tail?.lastOrNull()
                     if (last == null) {
@@ -153,21 +157,26 @@ class KeryxApp : Application() {
                         android.util.Log.i("KeryxNotify", "skip ${room.id}: historical (${last.timestamp} < $watchStart)")
                         continue
                     }
-                    // An unprompted turn arrives under the herald's own name and sigil, so the
-                    // lock screen says *who* walked in rather than just which room stirred.
-                    val arrived = chat.keryx.app.presentation.ui.components.isArrival(
-                        last,
-                        tail.getOrNull(tail.size - 2),
+                    // The notice is agent-shaped (2.8): the speaker is the bot (a Bot Chat row
+                    // carries its bot's label as the name), or the herald by name on Matrix,
+                    // and a relayed bot-to-bot line names the bot that sent it. An unprompted
+                    // turn (2.3 §3 arrival) still reads as *who* walked in — the speaker.
+                    val isBotChat = room.source == chat.keryx.app.presentation.BotsDelegate.BOT_SOURCE
+                    val notice = chat.keryx.core.model.AgentNotices.compose(
+                        message = if (last.senderName.isBlank() && last.sender == SenderType.HERMES)
+                            last.copy(senderName = heraldName(last)) else last,
+                        conversation = room.name,
+                        botLabel = if (isBotChat) room.name else null,
+                        botHandle = if (isBotChat) (room.heraldIds.firstOrNull() ?: room.id) else null,
                     )
-                    val title = if (arrived) "${chat.keryx.core.model.Heralds.SIGIL} ${heraldName(last)}"
-                    else room.name
-                    android.util.Log.i("KeryxNotify", "new activity in ${room.id} (${room.name}); notifying arrival=$arrived")
+                    android.util.Log.i("KeryxNotify", "new activity in ${room.id} (${room.name}); notifying as ${notice.title}")
                     KeryxNotifications.notifyMessage(
                         context = applicationContext,
                         roomId = room.id,
-                        title = title,
-                        body = notificationSnippet(last),
+                        notice = notice,
                         quickActions = quickActionsFor(last),
+                        markReadable = direct != null,
+                        timestamp = last.timestamp.takeIf { it > 0 } ?: System.currentTimeMillis(),
                     )
                 }
                 baseline = current

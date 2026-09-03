@@ -111,17 +111,10 @@ class PushSyncWorker(
         KeryxNotifications.notifyMessage(
             context = applicationContext,
             roomId = roomId,
-            title = roomName,
-            body = when {
-                message.mediaKind == MediaKind.IMAGE -> "🖼 Photo"
-                message.mediaKind != null -> "📎 ${message.fileName.ifBlank { "Attachment" }}"
-                // extractKeryx: ⟦…⟧ markers must never leak into the banner text.
-                message.content.isNotBlank() ->
-                    MessageParser.extractKeryx(message.content).text
-                        .lineSequence().firstOrNull { it.isNotBlank() }?.trim()?.take(160)
-                        ?: "New message"
-                else -> "New message"
-            },
+            // Agent-shaped (2.8): the speaker is the sender, the room is the conversation;
+            // the line is marker-free (⟦…⟧ never leaks into a banner) and media-aware.
+            notice = chat.keryx.core.model.AgentNotices.compose(message, conversation = roomName),
+            timestamp = message.timestamp.takeIf { it > 0 } ?: System.currentTimeMillis(),
             quickActions = if (message.sender == SenderType.HERMES) {
                 MessageParser.quickActions(message.content)
             } else {

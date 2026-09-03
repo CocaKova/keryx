@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -111,6 +112,18 @@ private const val GHOST_TOOL_ID = "generating"
     private val liveToStored = java.util.concurrent.ConcurrentHashMap<String, String>()
 
     private val stores = java.util.concurrent.ConcurrentHashMap<String, SessionStore>()
+
+    /**
+     * Bot Mode (2.8): stored id → the profile whose state.db holds it. Only sessions that
+     * live OUTSIDE the launch profile are registered (a Bot Chat opened from the roster);
+     * every session-scoped call — resume, hydrate, page, PATCH, DELETE — reads its profile
+     * here and names it on the wire, so a bot's forever-chat resolves in the right store.
+     */
+    private val profileOf = java.util.concurrent.ConcurrentHashMap<String, String>()
+    private fun profileFor(storedId: String): String? = profileOf[storedId]
+
+    /** Roster rows the Bots delegate publishes: canonical chats the session list never carries. */
+    private val _botRows = MutableStateFlow<List<RoomProfile>>(emptyList())
 
     /**
      * Live transcript state for one stored session: REST hydration + a structured streaming
@@ -1141,6 +1154,7 @@ private const val GHOST_TOOL_ID = "generating"
                 put("session_id", JsonPrimitive(storedId))
                 put("cols", JsonPrimitive(100))
                 put("omit_messages", JsonPrimitive(true))
+                profileFor(storedId)?.let { put("profile", JsonPrimitive(it)) }
             })
             val live = res["session_id"]?.jsonPrimitive?.contentOrNull ?: error("resume returned no sid")
             storedToLive[storedId] = live
@@ -1178,7 +1192,7 @@ private const val GHOST_TOOL_ID = "generating"
     private suspend fun hydrate(storedId: String) {
         val st = store(storedId)
         if (st.hydrated) return
-        rest?.messages(storedId, limit = HISTORY_PAGE)?.onSuccess { rows ->
+        rest?.messages(storedId, limit = HISTORY_PAGE, profile = profileFor(storedId))?.onSuccess { rows ->
             // A full page means there is almost certainly more behind it. Being wrong here is
             // cheap and self-correcting: the next page comes back empty and the affordance
             // retires itself.
@@ -1200,7 +1214,7 @@ private const val GHOST_TOOL_ID = "generating"
         val rest = rest ?: error("gateway not connected")
         st.historyLoading(true)
         val rows = try {
-            rest.messages(sessionId, limit = HISTORY_PAGE, offset = st.historyOffset()).getOrThrow()
+            rest.messages(sessionId, limit = HISTORY_PAGE, offset = st.historyOffset(), profile = profileFor(sessionId)).getOrThrow()
         } catch (e: Exception) {
             st.historyLoading(false)
             throw e
@@ -1227,10 +1241,20 @@ private const val GHOST_TOOL_ID = "generating"
     private val _pendingNew = MutableStateFlow<List<RoomProfile>>(emptyList())
 
     override fun getRooms(): Flow<List<RoomProfile>> =
-        combine(serverRooms(), _pendingNew) { server, pending ->
-            val known = server.map { it.id }.toSet()
-            pending.filterNot { it.id in known } + server
+        combine(serverRooms(), _pendingNew, _botRows) { server, pending, bots ->
+            // A Bot Chat row wins over a server row with the same id (the default profile's
+            // forever-chat can be a visible row when it predates the hidden-at-birth rule):
+            // one id, one row, and it wears the bot's name rather than "Bot Chat".
+            val botIds = bots.mapTo(HashSet()) { it.id }
+            val known = server.map { it.id }.toSet() + botIds
+            bots + pending.filterNot { it.id in known } + server.filterNot { it.id in botIds }
         }
+
+    override fun publishBotRows(rows: List<RoomProfile>) {
+        _botRows.value = rows
+    }
+
+    override fun busySessionIds(): Flow<Set<String>> = _busyStored
 
     private fun serverRooms(): Flow<List<RoomProfile>> = combine(_loggedIn, _sessionRows) { ok, rows ->
         if (!ok) emptyList() else rows.map(::toProfile)
@@ -1260,6 +1284,22 @@ private const val GHOST_TOOL_ID = "generating"
     internal val restClient: GatewayRest? get() = rest
 
     /**
+     * The newest [n] messages of a session WITHOUT opening it: a REST page, built through the
+     * same transcript rules the timeline uses, no store, no `session.resume`. What the
+     * notification watcher reads — it must never cost the gateway a live agent per row. A
+     * store that is already hydrated answers from memory instead.
+     */
+    suspend fun peekLatest(sessionId: String, n: Int): List<Message> {
+        stores[sessionId]?.takeIf { it.hydrated }?.messages?.value?.let { held ->
+            if (held.isNotEmpty()) return held.takeLast(n)
+        }
+        val client = rest ?: return emptyList()
+        val rows = client.messages(sessionId, limit = (n * 4).coerceAtLeast(8), profile = profileFor(sessionId))
+            .getOrNull() ?: return emptyList()
+        return chat.keryx.core.protocol.TranscriptBuilder.build(sessionId, rows).takeLast(n)
+    }
+
+    /**
      * The Archive's context view: the transcript around one row. Pages newest-first until the
      * row is in hand with [before] rows of ground beneath it, builds the whole stretch through
      * [TranscriptBuilder] so calls re-pair with their results across page seams, then cuts the
@@ -1270,7 +1310,7 @@ private const val GHOST_TOOL_ID = "generating"
         val target = TranscriptPages.rowIdOf(eventId) ?: return emptyList()
         val walk = TranscriptPages.pageUntil(
             pageSize = HISTORY_PAGE,
-            fetch = { offset -> client.messages(sessionId, limit = HISTORY_PAGE, offset = offset).getOrThrow() },
+            fetch = { offset -> client.messages(sessionId, limit = HISTORY_PAGE, offset = offset, profile = profileFor(sessionId)).getOrThrow() },
             // Enough once the target is in hand and there is at least a page of older rows
             // beneath it to draw the "before" side from.
             enough = { rows ->
@@ -1483,7 +1523,7 @@ private const val GHOST_TOOL_ID = "generating"
         if (row != null) {
             _sessionRows.value = _sessionRows.value.map { if (it.id == sessionId) it.copy(unread = !read) else it }
         }
-        return rest.patchSession(sessionId, unread = !read)
+        return rest.patchSession(sessionId, unread = !read, profile = profileFor(sessionId))
             .onFailure { android.util.Log.w("KeryxGw", "read mark failed for $sessionId: ${it.message}") }
     }
 
@@ -1491,7 +1531,7 @@ private const val GHOST_TOOL_ID = "generating"
         val rest = rest ?: return Result.failure(IllegalStateException("gateway not connected"))
         // Optimistic: the row moves NOW; the refresh that follows is the gateway agreeing.
         _sessionRows.value = _sessionRows.value.map { if (it.id == sessionId) it.copy(pinned = pinned) else it }
-        return rest.patchSession(sessionId, pinned = pinned)
+        return rest.patchSession(sessionId, pinned = pinned, profile = profileFor(sessionId))
             .onSuccess { refreshSessions() }
             .onFailure {
                 android.util.Log.e("KeryxGw", "pin failed for $sessionId", it)
@@ -1562,14 +1602,15 @@ private const val GHOST_TOOL_ID = "generating"
     }
 
     override suspend fun renameSession(sessionId: String, title: String): Result<Unit> =
-        (rest?.patchSession(sessionId, title = title) ?: Result.failure(IllegalStateException("gateway not connected")))
+        (rest?.patchSession(sessionId, title = title, profile = profileFor(sessionId)) ?: Result.failure(IllegalStateException("gateway not connected")))
             .onSuccess { refreshSessions() }
 
     override suspend fun deleteSession(sessionId: String): Result<Unit> = runCatching {
         val rest = rest ?: error("gateway not connected")
-        rest.deleteSession(sessionId).getOrThrow()
+        rest.deleteSession(sessionId, profile = profileFor(sessionId)).getOrThrow()
         // Drop any live mapping + store; then re-pull the list so the row leaves the drawer.
         _pendingNew.value = _pendingNew.value.filterNot { it.id == sessionId }
+        profileOf.remove(sessionId)
         storedToLive.remove(sessionId)?.let { liveToStored.remove(it) }
         stores.remove(sessionId)
         refreshSessions()
@@ -1717,6 +1758,141 @@ private const val GHOST_TOOL_ID = "generating"
             type = RoomType.DIRECT_MESSAGE,
             timestamp = System.currentTimeMillis(),
         )
+    }
+
+    // ---- Bot Mode (2.8) -----------------------------------------------------------------
+
+    override suspend fun botRoster(): Result<chat.keryx.core.model.BotRosterSnapshot> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        // Per-profile skill walks on the gateway side — a slow-ish call, so callers poll it
+        // on a place's cadence, never per keystroke.
+        val res = rpc.request("profiles.list", buildJsonObject {}, timeoutMs = 45_000)
+        chat.keryx.core.model.BotsJson.snapshot(res, System.currentTimeMillis())
+    }
+
+    /** Name the profile on the wire only when it is not the launch profile's own. */
+    private fun JsonObjectBuilder.putProfile(bot: chat.keryx.core.model.BotProfile) {
+        if (!bot.isDefault) put("profile", JsonPrimitive(bot.name))
+    }
+
+    /** Remember which store holds [storedId] so every later call names it. */
+    private fun registerProfile(storedId: String, bot: chat.keryx.core.model.BotProfile) {
+        if (!bot.isDefault) profileOf[storedId] = bot.name
+    }
+
+    override suspend fun openBotChat(
+        bot: chat.keryx.core.model.BotProfile,
+        kickoff: Boolean,
+    ): Result<chat.keryx.core.model.BotChatRef> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        // THE identity lookup: the profile's session titled exactly "Bot Chat", hidden rows
+        // included (canonical chats are born hidden). The gateway answers this with an
+        // indexed WHERE title = ? — window-free, so a busy profile cannot push its
+        // forever-chat past a recency window. A failure here is an ERROR: a swallowed miss
+        // would mint a second Bot Chat while the real one (data intact, hidden) still held
+        // the title — the "my bot lost all context" report, avoided by construction.
+        val listed = rpc.request("session.list", buildJsonObject {
+            putProfile(bot)
+            put("title", JsonPrimitive(chat.keryx.core.model.BotRoster.CANONICAL_TITLE))
+            put("include_hidden", JsonPrimitive(true))
+            put("limit", JsonPrimitive(50))
+        })
+        if (listed["sessions"] !is kotlinx.serialization.json.JsonArray) {
+            error("could not check ${bot.label}'s Bot Chat registry — not starting a new chat")
+        }
+        chat.keryx.core.model.BotsJson.canonicalFromList(listed)?.let { found ->
+            registerProfile(found.id, bot)
+            registerProfile(found.openId, bot)
+            return@runCatching found
+        }
+        // A genuine miss: mint the ONE forever chat. Hidden from the global list at birth;
+        // follow_profile_config so a resume never restores a stale model pin from the row.
+        val created = rpc.request("session.create", buildJsonObject {
+            putProfile(bot)
+            put("title", JsonPrimitive(chat.keryx.core.model.BotRoster.CANONICAL_TITLE))
+            put("hidden", JsonPrimitive(true))
+            put("follow_profile_config", JsonPrimitive(true))
+            put("cols", JsonPrimitive(100))
+        })
+        val live = created["session_id"]?.jsonPrimitive?.contentOrNull ?: error("create returned no sid")
+        val stored = created["stored_session_id"]?.jsonPrimitive?.contentOrNull ?: live
+        storedToLive[stored] = live
+        liveToStored[live] = stored
+        registerProfile(stored, bot)
+        // session.create is lazy — no DB row until the first prompt — and the auto-titler can
+        // beat the deferred title. Writing the title NOW materializes the row under the
+        // canonical name, so a second tap during the intro turn adopts it instead of
+        // minting a twin. "already in use" means another writer won the race: adopt theirs.
+        val titled = runCatching {
+            rpc.request("session.title", buildJsonObject {
+                put("session_id", JsonPrimitive(live))
+                put("title", JsonPrimitive(chat.keryx.core.model.BotRoster.CANONICAL_TITLE))
+            })
+        }
+        titled.exceptionOrNull()?.let { e ->
+            if (e.message?.contains("already in use", ignoreCase = true) == true) {
+                val again = rpc.request("session.list", buildJsonObject {
+                    putProfile(bot)
+                    put("title", JsonPrimitive(chat.keryx.core.model.BotRoster.CANONICAL_TITLE))
+                    put("include_hidden", JsonPrimitive(true))
+                })
+                chat.keryx.core.model.BotsJson.canonicalFromList(again)?.let { winner ->
+                    registerProfile(winner.id, bot); registerProfile(winner.openId, bot)
+                    return@runCatching winner
+                }
+            }
+        }
+        store(stored).hydrated = true // nothing to hydrate yet; the intro turn streams in live
+        if (kickoff || titled.isFailure) {
+            // A newborn introduces itself; and on a gateway without the eager title the
+            // prompt is what persists the row at all.
+            store(stored).localUserMessage(chat.keryx.core.model.BotRoster.KICKOFF)
+            rpc.request("prompt.submit", buildJsonObject {
+                put("session_id", JsonPrimitive(live))
+                put("text", JsonPrimitive(chat.keryx.core.model.BotRoster.KICKOFF))
+            })
+        }
+        chat.keryx.core.model.BotChatRef(id = stored, resolvedId = stored, lastActive = System.currentTimeMillis())
+    }
+
+    override suspend fun configureBot(
+        name: String,
+        meta: kotlinx.serialization.json.JsonObject?,
+        description: String?,
+    ): Result<Unit> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        val res = rpc.request("profiles.configure", buildJsonObject {
+            put("name", JsonPrimitive(name))
+            if (meta != null) put("ui_meta", buildJsonObject { put("hermes-bots", meta) })
+            if (description != null) put("description", JsonPrimitive(description))
+        })
+        val applied = res["applied"] as? kotlinx.serialization.json.JsonObject
+        if (meta != null && applied?.get("ui_meta")?.jsonPrimitive?.contentOrNull == "false") {
+            error("the gateway refused the bot's metadata" +
+                (applied["ui_meta_conflicts"]?.let { " (edited elsewhere — try again)" } ?: ""))
+        }
+    }
+
+    override suspend fun createBot(name: String, description: String?, cloneFrom: String?): Result<Unit> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        rpc.request("profiles.create", buildJsonObject {
+            put("name", JsonPrimitive(name))
+            description?.takeIf { it.isNotBlank() }?.let { put("description", JsonPrimitive(it)) }
+            cloneFrom?.takeIf { it.isNotBlank() }?.let { put("clone_from", JsonPrimitive(it)) }
+        }, timeoutMs = 90_000)
+        Unit
+    }
+
+    override suspend fun botAvatar(name: String): Result<ByteArray?> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        val res = rpc.request("profiles.get_asset", buildJsonObject {
+            put("name", JsonPrimitive(name))
+            put("asset", JsonPrimitive("avatar"))
+        })
+        val data = res["data"]?.jsonPrimitive?.contentOrNull ?: return@runCatching null
+        val b64 = data.substringAfter(",", "")
+        if (b64.isBlank()) null
+        else runCatching { android.util.Base64.decode(b64, android.util.Base64.DEFAULT) }.getOrNull()
     }
 
     suspend fun steerTurn(sessionId: String, text: String): Result<Boolean> = runCatching {

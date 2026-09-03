@@ -440,6 +440,20 @@ fun ChatScreen(
             }
     }
 
+    // 2.8 — parse ahead of the scroll. Every settled, long agent body in the loaded window
+    // gets its markdown tree built off the main thread as soon as it is known, so when the
+    // user swipes up into it the bubble composes from a cache hit instead of a blocking
+    // parse. Bounded by what is loaded; the cache itself is bounded and content-keyed.
+    LaunchedEffect(messages) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            for (m in messages) {
+                if (m.isStreaming || m.sender != SenderType.HERMES) continue
+                if (m.content.length < chat.keryx.app.presentation.ui.components.MarkdownCache.MIN_CHARS) continue
+                chat.keryx.app.presentation.ui.components.MarkdownWarmer.warm(m.content)
+            }
+        }
+    }
+
     // Send a read receipt for the latest message while viewing this room (clears unread).
     LaunchedEffect(currentRoom?.id, messages.lastOrNull()?.id) {
         val roomId = currentRoom?.id
@@ -812,6 +826,27 @@ fun ChatScreen(
                 .fillMaxWidth()
                 .onSizeChanged { composerHeightPx = it.height },
         ) {
+            // Bot Mode (2.8): typing `@` in a bot's chat offers the roster. A tap completes
+            // the handle; on send the ViewModel appends the note that tells the agent whom the
+            // tag means, so it can hand off with message_agent. Only where the tool exists.
+            val mentionRoster = viewModel.bots.roster.collectAsState().value.data
+            val mentionable = remember(currentRoom?.id, mentionRoster) {
+                if (currentRoom != null && mentionRoster != null && mentionRoster.messagingArmed &&
+                    viewModel.bots.isCanonicalChat(currentRoom?.id)
+                ) mentionRoster.bots.filter { !it.hidden } else emptyList()
+            }
+            if (mentionable.isNotEmpty()) {
+                chat.keryx.app.presentation.ui.components.MentionChips(
+                    text = textState.text,
+                    cursor = textState.selection.end,
+                    bots = mentionable,
+                    self = viewModel.bots.botForSession(currentRoom?.id)?.name,
+                    onPick = { replaced, caret ->
+                        textState = TextFieldValue(replaced, selection = TextRange(caret))
+                        viewModel.onComposerTextChanged(replaced)
+                    },
+                )
+            }
             // The agent is STOPPED waiting on a human — loudest thing on screen, right above
             // the composer where the answer happens (merge dowry, plan §5).
             androidx.compose.animation.AnimatedVisibility(visible = pendingApproval != null) {

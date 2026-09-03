@@ -179,15 +179,12 @@ fun MessageContent(
                         else -> segment.text
                     }
                     if (head.isNotBlank()) {
-                        // immediate (sync) parse, NOT the String overload: 0.35 parses async
-                        // (Loading → Success), and the Loading frame renders as an EMPTY box —
-                        // so any content change collapsed the rendered prose to zero height for
-                        // a frame and the bubble yo-yoed ("very very glitchy" streaming,
-                        // device-caught 2026-09-01; 0.26 parsed in composition and never
-                        // flashed). Chat bodies are small and the streaming head is tail-
-                        // windowed, so the blocking parse is the cheap side of the trade.
-                        val mdState = com.mikepenz.markdown.model.rememberMarkdownState(
-                            content = MessageParser.linkifyAutolinks(
+                        // The pre-render chain (TeX → Unicode, dangling fences, autolinks) is
+                        // three regex passes over the whole body. Keyed on the head so a
+                        // recomposition that changes nothing about the text (a reaction
+                        // landing, the TTS pulse) does not run them again (2.8).
+                        val source = remember(head) {
+                            MessageParser.linkifyAutolinks(
                                 MessageParser.closeDanglingFences(
                                     // LaTeX → Unicode (2.6.2): `$E=mc^2$` reads as E = mc²
                                     // instead of raw TeX; fences and code spans are skipped.
@@ -198,10 +195,26 @@ fun MessageContent(
                                     runCatching { chat.keryx.core.protocol.MathUnicode.render(head) }
                                         .getOrDefault(head),
                                 ),
-                            ),
-                            flavour = GFMFlavourDescriptor(),
-                            immediate = true,
-                        )
+                            )
+                        }
+                        // immediate (sync) parse, NOT the String overload: 0.35 parses async
+                        // (Loading → Success), and the Loading frame renders as an EMPTY box —
+                        // so any content change collapsed the rendered prose to zero height for
+                        // a frame and the bubble yo-yoed ("very very glitchy" streaming,
+                        // device-caught 2026-09-01; 0.26 parsed in composition and never
+                        // flashed). The streaming head is tail-windowed, so its blocking parse
+                        // is cheap. A SETTLED body of any length goes through MarkdownCache:
+                        // parsed once (ahead of the scroll when the warmer got there first),
+                        // then a lookup every time the row scrolls back in (2.8).
+                        val mdState = if (!isStreaming && source.length >= MarkdownCache.MIN_CHARS) {
+                            remember(source) { ParsedMarkdownState(MarkdownCache.parse(source)) }
+                        } else {
+                            com.mikepenz.markdown.model.rememberMarkdownState(
+                                content = source,
+                                flavour = GFMFlavourDescriptor(),
+                                immediate = true,
+                            )
+                        }
                         Markdown(
                             markdownState = mdState,
                             colors = markdownColor(text = textColor),

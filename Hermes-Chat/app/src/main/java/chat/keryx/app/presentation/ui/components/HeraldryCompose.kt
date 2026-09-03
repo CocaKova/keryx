@@ -108,6 +108,24 @@ fun HeraldSigil(
 fun heraldAccentFor(key: String): Color = heraldLightFor(key, key).accent
 
 /**
+ * A Bot's light (2.8). Bots are profiles, not Matrix heralds, and on the direct door no
+ * herald ids are configured — so [heraldLightFor] would paint every bot in the theme's
+ * accent and a roster of seven would be seven identical discs. Each bot takes a palette
+ * slot by the stable hash of its profile name (the same slot the notification shade uses),
+ * dressed for the ground it stands on; the default profile — your agent — keeps your own
+ * accents, the way the primary herald does in a 1:1 room.
+ */
+@Composable
+fun botLightFor(name: String, label: String, isDefault: Boolean = name == "default"): HeraldLight {
+    val cs = MaterialTheme.colorScheme
+    if (isDefault) return HeraldLight(label, cs.primary, cs.tertiary, primary = true)
+    val palette = if (cs.background.luminance() < 0.5f) Heralds.PALETTE else Heralds.PALETTE_PAPER
+    val slot = Math.floorMod(Heralds.stableHash(name.lowercase()), palette.size)
+    val (a, a2) = palette[slot]
+    return HeraldLight(label, Color(a.toInt()), Color(a2.toInt()), primary = false)
+}
+
+/**
  * A room avatar that says "an agent lives here": the herald's staff in place of the lettered
  * monogram. See [RoomSigil] for why a single-herald room wears the ROOM's hue and a council
  * wears its members'.

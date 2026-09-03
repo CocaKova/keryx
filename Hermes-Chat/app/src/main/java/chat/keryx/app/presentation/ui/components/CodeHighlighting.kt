@@ -34,6 +34,23 @@ object CodeHighlighting {
     fun spans(code: String, language: String?, darkMode: Boolean): List<Span> {
         val lang = languageOf(language) ?: return emptyList()
         if (code.isEmpty()) return emptyList()
+        // A fence scrolled out of a LazyColumn loses its composition and, with it, every
+        // `remember`; scrolling it back in tokenized the whole block again on the UI thread
+        // — one of the frame drops behind "a long message lags when I swipe up" (2.8).
+        // Cached by the exact (code, grammar, ground) so a re-entry is a map lookup.
+        val key = "${lang.name}\u0000$darkMode\u0000$code"
+        synchronized(spanCache) { spanCache[key] }?.let { return it }
+        val computed = compute(code, lang, darkMode)
+        synchronized(spanCache) { spanCache[key] = computed }
+        return computed
+    }
+
+    private const val SPAN_CACHE_MAX = 256
+    private val spanCache = object : LinkedHashMap<String, List<Span>>(32, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<Span>>) = size > SPAN_CACHE_MAX
+    }
+
+    private fun compute(code: String, lang: SyntaxLanguage, darkMode: Boolean): List<Span> {
         val highlights = runCatching {
             Highlights.Builder()
                 .code(code)
