@@ -197,8 +197,8 @@ vocabulary + sheet), `KeryxMarkers.kt` (HandsTiles), `MessageContent.kt`, `ChatR
   the implicit receiver and refuses — call `androidx.compose.animation.AnimatedVisibility`
   explicitly (the door badge).
 - ⚠️ A `Set<String>` is not `rememberSaveable`; the picker keeps its open folds as one
-  ``-joined string.
-- ⚠️ Kotlin source must spell the separator as the escape `''`: a raw control byte in
+  `\u001F`-joined string.
+- ⚠️ Kotlin source must spell the separator as the escape `'\u001F'`: a raw control byte in
   a char literal compiles but no diff tool will show it.
 - ⚠️ `ModelChoice.lab` is `""` on single-namespace providers; the aggregator test is "≥2
   non-empty labs", so a provider mixing prefixed and bare ids is still an aggregator.
