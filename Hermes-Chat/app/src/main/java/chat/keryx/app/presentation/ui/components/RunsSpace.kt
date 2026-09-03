@@ -534,6 +534,9 @@ private fun RunCard(
     val bad = KeryxStatus.bad
     val haptics = LocalKeryxHaptics.current
     var open by rememberSaveable("runs-${card.name}") { mutableStateOf(false) }
+    var jobMenu by remember { mutableStateOf(false) }
+    val pinnedJobs by viewModel.hub.pinnedJobs.collectAsState()
+    val jobPinned = card.name in pinnedJobs
     val tint = RUN_TINTS[CronHumanize.tintIndex(card.name, RUN_TINTS.size)]
 
     // The newest run's own headline — fetched once per run id (the delegate caches), so a
@@ -549,12 +552,18 @@ private fun RunCard(
         value = if (latest != null && previous != null) viewModel.hub.cronDelta(latest.id, previous.id) else null
     }
 
+    Box {
     Row(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(KeryxRadius.card))
             .background(onSurface.copy(alpha = 0.04f))
-            .clickable { open = !open }
+            // Tap opens the card; a long press is about the JOB — pin it to the top of the
+            // session list, where its newest output then waits every morning.
+            .combinedClickable(
+                onClick = { open = !open },
+                onLongClick = { haptics.press(); jobMenu = true },
+            )
             .animateContentSize()
             .height(IntrinsicSize.Min),
     ) {
@@ -562,6 +571,16 @@ private fun RunCard(
         Box(Modifier.width(3.dp).fillMaxHeight().background(tint.copy(alpha = 0.7f)))
         Column(Modifier.padding(start = 11.dp, end = 14.dp, top = 10.dp, bottom = 10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                if (jobPinned) {
+                    // The job sits at the top of the sessions: say so where its name is.
+                    Icon(
+                        KeryxGlyphs.PinFilled,
+                        contentDescription = "Pinned to sessions",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(11.dp),
+                    )
+                    Spacer(Modifier.width(5.dp))
+                }
                 Text(
                     card.name,
                     fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = onSurface,
@@ -747,6 +766,29 @@ private fun RunCard(
             }
         }
     }
+    DropdownMenu(expanded = jobMenu, onDismissRequest = { jobMenu = false }) {
+        DropdownMenuItem(
+            text = { Text(if (jobPinned) "Unpin from sessions" else "Pin to top of sessions") },
+            leadingIcon = {
+                Icon(
+                    if (jobPinned) KeryxGlyphs.PinFilled else KeryxGlyphs.Pin,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+            },
+            onClick = { jobMenu = false; viewModel.hub.cronSetJobPinned(card.name, !jobPinned) },
+        )
+        card.latest?.let { latest ->
+            DropdownMenuItem(
+                text = { Text("Open newest run") },
+                leadingIcon = {
+                    Icon(KeryxGlyphs.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                },
+                onClick = { jobMenu = false; verbs.open(latest) },
+            )
+        }
+    }
+    } // job-menu anchor
 }
 
 /**

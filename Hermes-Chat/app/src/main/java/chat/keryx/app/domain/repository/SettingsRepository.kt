@@ -52,6 +52,9 @@ interface SettingsRepository {
 
     /** Run ids the user has actually opened (or swept with mark-all-read). */
     var cronSeenIds: Set<String>
+    /** Scheduled jobs pinned to the top of the session list, by job name, in pin order. The
+     *  gateway pins sessions, not jobs, so this ledger is the phone's — see CronTiles. */
+    var pinnedCronJobs: List<String>
 
     /** Gateway sessions created as TEMPORARY: they live like any session while the app does,
      *  and the next cold start deletes them from the gateway. Persisted so a killed process
