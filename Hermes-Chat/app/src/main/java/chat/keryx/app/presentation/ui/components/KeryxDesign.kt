@@ -525,7 +525,6 @@ private fun KeryxSpaceBody(
         if (reduced) arrival.snapTo(1f) else arrival.animateTo(1f, KeryxMotion.settle)
     }
     Box(Modifier.fillMaxSize().keryxDuskSky()) {
-        AmbientVoid()
         Column(
             modifier = modifier
                 .fillMaxSize()

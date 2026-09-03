@@ -261,15 +261,45 @@ class HubDelegate(deps: GatewayDeps) {
      */
     private val cronDigests = java.util.concurrent.ConcurrentHashMap<String, chat.keryx.core.model.CronDigest>()
 
+    /** A run's REPORT text, fetched once per run id ("" = the run has no report, which is
+     *  also final). Null only when the fetch failed — a later ask retries. */
+    private val cronReports = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    private suspend fun cronReport(runId: String): String? {
+        cronReports[runId]?.let { return it }
+        val client = client() ?: return null
+        val messages = client.sessionMessages(runId).getOrNull() ?: return null
+        val report = chat.keryx.core.model.CronHumanize.pickReport(
+            messages.filter { it.role == "assistant" }.map { it.content },
+        ).orEmpty()
+        cronReports[runId] = report
+        return report
+    }
+
     suspend fun cronDigest(runId: String): chat.keryx.core.model.CronDigest? {
         cronDigests[runId]?.let { return it }
-        val client = client() ?: return null
-        return client.sessionMessages(runId).getOrNull()?.let { messages ->
-            val report = chat.keryx.core.model.CronHumanize.pickReport(
-                messages.filter { it.role == "assistant" }.map { it.content },
-            ) ?: return@let chat.keryx.core.model.CronDigest(null, null)
-            chat.keryx.core.model.CronHumanize.digest(report)
-        }?.also { cronDigests[runId] = it }
+        val report = cronReport(runId) ?: return null
+        val digest = if (report.isEmpty()) chat.keryx.core.model.CronDigest(null, null)
+        else chat.keryx.core.model.CronHumanize.digest(report)
+        cronDigests[runId] = digest
+        return digest
+    }
+
+    /**
+     * What [latestId]'s report says that [previousId]'s didn't — the diff feed. Both reports
+     * come through the same cache the headlines use, so a card that has shown its digest has
+     * already paid for half of its delta. Null while either transcript is unfetched, or when
+     * either run has no report to compare (a delta against nothing is not "everything is new").
+     */
+    private val cronDeltas = java.util.concurrent.ConcurrentHashMap<String, chat.keryx.core.model.CronDelta>()
+
+    suspend fun cronDelta(latestId: String, previousId: String): chat.keryx.core.model.CronDelta? {
+        val key = "$latestId|$previousId"
+        cronDeltas[key]?.let { return it }
+        val latest = cronReport(latestId) ?: return null
+        val previous = cronReport(previousId) ?: return null
+        if (latest.isEmpty() || previous.isEmpty()) return null
+        return chat.keryx.core.model.CronDeltaCalc.compute(previous, latest).also { cronDeltas[key] = it }
     }
 
     fun refreshHealth() = _hubHealth.refreshFrom { healthDetailed() }

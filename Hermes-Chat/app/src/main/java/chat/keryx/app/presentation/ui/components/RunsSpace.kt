@@ -295,6 +295,7 @@ private fun NewArrivals(
     val quiet = MaterialTheme.colorScheme.onSurfaceVariant
     // The run's job name gives the row its tint and its address.
     val jobOf = remember(board.cards) { jobIndex(board.cards) }
+    val prevOf = remember(board.cards) { previousIndex(board.cards) }
     Column(
         Modifier
             .fillMaxWidth()
@@ -314,6 +315,7 @@ private fun NewArrivals(
                 titleAlpha = 0.75f,
                 leadLines = 0,
                 unread = true,
+                previous = prevOf[run.id],
                 trailing = if (run.pinned) ({
                     Icon(
                         KeryxGlyphs.PinFilled,
@@ -341,6 +343,10 @@ private fun NewArrivals(
 private fun jobIndex(cards: List<CronJobCard>): Map<String, String> =
     cards.flatMap { c -> c.runs.map { it.id to c.name } }.toMap()
 
+/** run id → the run before it in the same job (newest-first lists), for a row's delta badge. */
+private fun previousIndex(cards: List<CronJobCard>): Map<String, CronRun> =
+    cards.flatMap { c -> c.runs.zipWithNext().map { (run, prev) -> run.id to prev } }.toMap()
+
 /**
  * One headline row — the shelf's and the rail's shared shape: identity bar, job name, when,
  * then the report's own title (and lead, where the row has room for it). Tap opens; a long
@@ -358,9 +364,12 @@ private fun RunHeadlineRow(
     trailing: (@Composable () -> Unit)?,
     viewModel: ChatViewModel,
     verbs: RunVerbs,
+    /** The run before this one in its job, when the row should say what changed since it. */
+    previous: CronRun? = null,
 ) {
     val onSurface = MaterialTheme.colorScheme.onSurface
     val quiet = MaterialTheme.colorScheme.onSurfaceVariant
+    val accent = MaterialTheme.colorScheme.primary
     val haptics = LocalKeryxHaptics.current
     val tint = RUN_TINTS[CronHumanize.tintIndex(jobName, RUN_TINTS.size)]
     var menuOpen by remember { mutableStateOf(false) }
@@ -368,6 +377,10 @@ private fun RunHeadlineRow(
     // nothing on re-composition or poll.
     val digest by produceState<chat.keryx.core.model.CronDigest?>(null, run.id) {
         value = viewModel.hub.cronDigest(run.id)
+    }
+    // "+3" beside the clock: the arrival's news in one glyph, before its headline is read.
+    val delta by produceState<chat.keryx.core.model.CronDelta?>(null, run.id, previous?.id) {
+        value = previous?.let { viewModel.hub.cronDelta(run.id, it.id) }
     }
     Box {
         Row(
@@ -392,6 +405,19 @@ private fun RunHeadlineRow(
                         modifier = Modifier.weight(1f, fill = false),
                     )
                     Spacer(Modifier.width(8.dp))
+                    delta?.badge?.let { badge ->
+                        Text(
+                            badge,
+                            color = accent,
+                            fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
+                            fontFamily = FontFamily.Monospace,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(accent.copy(alpha = 0.12f))
+                                .padding(horizontal = 5.dp, vertical = 1.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                    }
                     Text(
                         whenText,
                         color = quiet.copy(alpha = 0.8f),
@@ -515,6 +541,13 @@ private fun RunCard(
     val digest by produceState<chat.keryx.core.model.CronDigest?>(null, card.latest?.id) {
         value = card.latest?.let { viewModel.hub.cronDigest(it.id) }
     }
+    // The diff feed: what the newest report says that the one before it didn't. Only when
+    // there IS a run before it — a first report has nothing to be measured against.
+    val previous = card.runs.getOrNull(1)
+    val delta by produceState<chat.keryx.core.model.CronDelta?>(null, card.latest?.id, previous?.id) {
+        val latest = card.latest
+        value = if (latest != null && previous != null) viewModel.hub.cronDelta(latest.id, previous.id) else null
+    }
 
     Row(
         Modifier
@@ -618,6 +651,34 @@ private fun RunCard(
                 }
             }
 
+            // Since last run — the line the forty-first report is actually read for. Quiet
+            // when nothing moved; accent-marked when something did. Open the card and the new
+            // and changed lines themselves are listed, in the report's own words.
+            delta?.let { d ->
+                val accent = MaterialTheme.colorScheme.primary
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 5.dp)) {
+                    Box(
+                        Modifier
+                            .size(5.dp)
+                            .clip(CircleShape)
+                            .background(if (d.same) quiet.copy(alpha = 0.35f) else accent),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "since last run · ${d.summary}",
+                        fontSize = 10.5.sp, fontFamily = FontFamily.Monospace,
+                        color = if (d.same) quiet.copy(alpha = 0.7f) else onSurface.copy(alpha = 0.8f),
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (open && !d.same) {
+                    Spacer(Modifier.height(4.dp))
+                    DeltaLines(prefix = "+", lines = d.added, color = accent, max = 6)
+                    DeltaLines(prefix = "~", lines = d.updated, color = onSurface.copy(alpha = 0.7f), max = 4)
+                    DeltaLines(prefix = "−", lines = d.removed, color = quiet.copy(alpha = 0.7f), max = 3)
+                }
+            }
+
             if (open && card.runs.isNotEmpty()) {
                 Spacer(Modifier.height(6.dp))
                 card.runs.take(20).forEach { run ->
@@ -685,6 +746,40 @@ private fun RunCard(
                 }
             }
         }
+    }
+}
+
+/**
+ * One kind of change, listed: a prefix bar in the kind's colour, then the lines in the
+ * report's own words. Past [max] the rest is a count — the card is a card, not the diff.
+ */
+@Composable
+private fun DeltaLines(prefix: String, lines: List<String>, color: Color, max: Int) {
+    if (lines.isEmpty()) return
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    lines.take(max).forEach { line ->
+        Row(modifier = Modifier.padding(start = 2.dp, top = 2.dp)) {
+            Text(
+                prefix,
+                fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold,
+                color = color,
+                modifier = Modifier.width(12.dp),
+            )
+            Text(
+                line,
+                fontSize = 11.5.sp, lineHeight = 15.sp,
+                color = onSurface.copy(alpha = 0.8f),
+                maxLines = 2, overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+    if (lines.size > max) {
+        Text(
+            "$prefix ${lines.size - max} more",
+            fontSize = 10.5.sp, fontFamily = FontFamily.Monospace,
+            color = color.copy(alpha = 0.7f),
+            modifier = Modifier.padding(start = 2.dp, top = 2.dp),
+        )
     }
 }
 
