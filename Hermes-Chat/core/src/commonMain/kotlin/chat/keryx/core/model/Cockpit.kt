@@ -190,4 +190,12 @@ data class SessionMeta(
     /** The reasoning level this session is actually running at ("" until the gateway says).
      *  `session.info` carries it, so a level chosen from desktop or the TUI lands here too. */
     val reasoningEffort: String = "",
-)
+) {
+    /**
+     * The context window as (used, max) — or null until the gateway has said both. The gateway
+     * itself only sends the pair from a real current-window reading (never a cumulative total,
+     * never a post-compaction placeholder), so a half-reading here is "unknown", not "empty".
+     */
+    val contextGauge: Pair<Long, Long>?
+        get() = if (contextUsed > 0L && contextMax > 0L) contextUsed to contextMax else null
+}
