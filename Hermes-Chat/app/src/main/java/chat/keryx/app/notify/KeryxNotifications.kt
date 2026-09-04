@@ -8,7 +8,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.Person
@@ -52,7 +51,6 @@ object KeryxNotifications {
     private val history = java.util.concurrent.ConcurrentHashMap<String, ArrayDeque<NotificationCompat.MessagingStyle.Message>>()
 
     fun ensureChannel(context: Context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val mgr = context.getSystemService(NotificationManager::class.java) ?: return
         if (mgr.getNotificationChannel(CHANNEL_ID) != null) return
         val channel = NotificationChannel(
@@ -355,7 +353,6 @@ object KeryxNotifications {
     fun gateId(sessionId: String): Int = sessionId.hashCode() xor GATE_ID_SALT
 
     fun ensureGateChannel(context: Context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val mgr = context.getSystemService(NotificationManager::class.java) ?: return
         if (mgr.getNotificationChannel(GATE_CHANNEL_ID) != null) return
         val channel = NotificationChannel(
@@ -475,7 +472,6 @@ object KeryxNotifications {
     const val MISSIONS_CHANNEL_ID = "keryx_missions"
 
     fun ensureMissionsChannel(context: Context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val mgr = context.getSystemService(NotificationManager::class.java) ?: return
         if (mgr.getNotificationChannel(MISSIONS_CHANNEL_ID) != null) return
         val channel = NotificationChannel(
