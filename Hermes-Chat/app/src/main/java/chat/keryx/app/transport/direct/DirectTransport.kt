@@ -1413,7 +1413,12 @@ private const val GHOST_TOOL_ID = "generating"
     override suspend fun mediaBytes(sessionId: String, eventId: String): ByteArray? {
         localMediaBytes[eventId]?.let { return it }
         val path = remoteMediaPaths[eventId] ?: recoverRemoteMediaPath(sessionId, eventId) ?: return null
-        return rest?.downloadFile(path)?.getOrElse { e ->
+        val r = rest ?: return null
+        // A MEDIA: value is either a path on the gateway host or an absolute URL the agent
+        // linked. They are fetched two different ways, and asking the file endpoint for a URL
+        // is an HTTP error, not a file.
+        val fetch = if (isAbsoluteUrl(path)) r.downloadUrl(path) else r.downloadFile(path)
+        return fetch.getOrElse { e ->
             android.util.Log.w("KeryxGw", "media download failed for $path: ${e.message}"); null
         }
     }
@@ -1438,6 +1443,10 @@ private const val GHOST_TOOL_ID = "generating"
     // path is remembered here so mediaBytes() can fetch it over /api/files/download.
     private val remoteMediaPaths = java.util.concurrent.ConcurrentHashMap<String, String>()
     private val MEDIA_ID_SEP = "#media:"
+
+    /** `http://` or `https://` — anything else is a path on the gateway host. */
+    private fun isAbsoluteUrl(v: String): Boolean =
+        v.startsWith("http://", ignoreCase = true) || v.startsWith("https://", ignoreCase = true)
 
     /** The transcript row a (possibly synthetic media) id belongs to — what the gateway knows. */
     private fun rowIdOf(eventId: String): String = eventId.substringBefore(MEDIA_ID_SEP)

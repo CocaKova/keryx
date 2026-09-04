@@ -279,7 +279,8 @@ class GatewayRest(
     suspend fun transcribe(audio: ByteArray, mime: String = "audio/mp4"): Result<String> =
         withContext(Dispatchers.IO) {
             runCatching {
-                // minSdk 24: android.util.Base64 (java.util.Base64 needs API 26).
+                // android.util.Base64, not java.util.Base64: both are available at minSdk 26,
+                // and this one has the NO_WRAP flag the header needs.
                 val b64 = android.util.Base64.encodeToString(audio, android.util.Base64.NO_WRAP)
                 val body = """{"data_url":"data:$mime;base64,$b64"}"""
                 val hdr = authHeader()
@@ -365,6 +366,40 @@ class GatewayRest(
             }
         }
     }
+
+    /**
+     * Bytes of an absolute `http(s)` URL an agent handed over as a `MEDIA:` ref — a reaction GIF
+     * it pulled off the web, an image it linked rather than wrote to disk. `/api/files/download`
+     * cannot serve these: it resolves a PATH on the gateway host, and hands back an HTTP error
+     * for anything that starts with a scheme, which is what a linked GIF looked like until now.
+     *
+     * The session token goes ONLY to the gateway's own origin. An agent's `MEDIA:` value is
+     * remote text; sending Keryx's credential along to whatever host it names would hand the
+     * gateway's key to a stranger because a model typed a URL.
+     */
+    suspend fun downloadUrl(url: String): Result<ByteArray> = withContext(Dispatchers.IO) {
+        runCatching {
+            val hdr = if (sameOrigin(url, base)) authHeader() else null
+            val req = Request.Builder()
+                .url(url)
+                .apply { hdr?.let { header(it.first, it.second) } }
+                .build()
+            val dl = client.newBuilder().readTimeout(120, TimeUnit.SECONDS).build()
+            dl.newCall(req).execute().use { resp ->
+                if (!resp.isSuccessful) error("HTTP ${resp.code} for $url")
+                resp.body?.bytes() ?: error("empty body for $url")
+            }
+        }
+    }
+
+    /** Same scheme, host and port — a path prefix is not identity, and neither is a suffix match. */
+    private fun sameOrigin(a: String, b: String): Boolean = runCatching {
+        val x = java.net.URI(a)
+        val y = java.net.URI(b)
+        x.scheme.equals(y.scheme, ignoreCase = true) &&
+            x.host.equals(y.host, ignoreCase = true) &&
+            x.port == y.port
+    }.getOrDefault(false)
 
     /** The auth header for one request: native bearer (rotating) or the legacy token. */
     private suspend fun authHeader(): Pair<String, String>? =

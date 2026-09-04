@@ -1,6 +1,12 @@
 package chat.keryx.app.presentation.ui.components
 
 import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
+import android.graphics.drawable.AnimatedImageDrawable
+import android.graphics.drawable.Drawable
+import android.os.Build
+import android.widget.ImageView
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -8,6 +14,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -19,12 +26,17 @@ import chat.keryx.app.util.saveMediaToDevice
 import chat.keryx.app.util.shareMedia
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.viewinterop.AndroidView
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -53,6 +65,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.remember
+import chat.keryx.core.model.ImageFormat
 import chat.keryx.core.model.MediaKind
 
 /**
@@ -102,6 +115,111 @@ fun decodeSampled(bytes: ByteArray, targetPx: Int, longEdge: Boolean = true): Im
 }.getOrNull()
 
 /**
+ * Whether a moving picture can be played here, and whether these bytes are one.
+ *
+ * Two separate questions, deliberately answered together at the one call site that cares.
+ * [ImageFormat] reads the header; ImageDecoder — the platform's only animator — arrives at
+ * API 28, two releases above minSdk. Below that a GIF is not lost: it falls through to the
+ * still path, where BitmapFactory hands back frame one. A frozen picture is a poor showing
+ * of a reaction GIF, but it is the right picture, and it is not a hole in the transcript.
+ */
+private object AnimatedImageSupport {
+
+    fun canPlay(bytes: ByteArray): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && ImageFormat.mayAnimate(bytes)
+
+    /** Decode to a playable drawable, or null if the header promised more than the file had. */
+    @RequiresApi(Build.VERSION_CODES.P)
+    fun decode(bytes: ByteArray): Drawable? = runCatching {
+        ImageDecoder.decodeDrawable(
+            ImageDecoder.createSource(java.nio.ByteBuffer.wrap(bytes)),
+        ) { decoder, info, _ ->
+            // The same pixel budget the still path keeps — and it matters more here, because
+            // every frame pays it, not one.
+            val edge = maxOf(info.size.width, info.size.height)
+            var sample = 1
+            while (edge / (sample * 2) >= 1_024) sample *= 2
+            decoder.setTargetSampleSize(sample)
+        }
+    }.getOrNull()
+}
+
+/**
+ * A picture that moves: GIF and animated WebP.
+ *
+ * Rendered through an ImageView rather than a Compose painter because Compose has no animated
+ * image type, and AnimatedImageDrawable already owns frame timing, the file's own loop count,
+ * and its own invalidation — reimplementing that in a painter would be a worse clock.
+ *
+ * Nothing is cached here, and that is the point: a decoded animation is every frame of itself,
+ * so it is decoded per call site and released when the bubble leaves. The BYTES behind it are
+ * cached (ChatViewModel.mediaBytesCache), so scrolling back re-decodes without re-downloading.
+ *
+ * It plays under reduced motion. Everywhere else in Keryx motion is chrome and yields; here the
+ * motion IS the message the agent chose to send, and a reaction GIF stopped on its first frame
+ * is a broken image, not a calmer one.
+ *
+ * [constrainAspect] lets the bubble bound its height by the file's own ratio; the fullscreen
+ * viewer turns it off and lets FIT_CENTER letterbox inside the whole screen.
+ */
+@Composable
+private fun AnimatedImage(
+    bytes: ByteArray,
+    contentDescription: String,
+    textColor: Color,
+    modifier: Modifier = Modifier,
+    constrainAspect: Boolean = true,
+) {
+    var drawable by remember(bytes) { mutableStateOf<Drawable?>(null) }
+    var frame by remember(bytes) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(bytes) {
+        withContext(Dispatchers.IO) {
+            // Decoding a whole animation is not a main-thread errand even at this sample size.
+            val d = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) AnimatedImageSupport.decode(bytes) else null
+            // The header promised motion and the decoder disagreed. Show the picture standing
+            // still rather than an empty bubble — the caller has already ruled out its own path.
+            if (d != null) drawable = d else frame = decodeSampled(bytes, targetPx = 1_024)
+        }
+    }
+
+    val moving = drawable
+    val still = frame
+    when {
+        moving != null -> {
+            DisposableEffect(moving) {
+                (moving as? AnimatedImageDrawable)?.start()
+                onDispose { (moving as? AnimatedImageDrawable)?.stop() }
+            }
+            val ratio = remember(moving) {
+                val w = moving.intrinsicWidth.toFloat()
+                val h = moving.intrinsicHeight.toFloat()
+                if (w > 0f && h > 0f) w / h else 1f
+            }
+            AndroidView(
+                factory = { ctx -> ImageView(ctx).apply { scaleType = ImageView.ScaleType.FIT_CENTER } },
+                update = { it.setImageDrawable(moving) },
+                modifier = if (constrainAspect) modifier.aspectRatio(ratio) else modifier,
+            )
+        }
+        still != null -> Image(
+            bitmap = still,
+            contentDescription = contentDescription,
+            contentScale = ContentScale.Fit,
+            modifier = modifier,
+        )
+        else -> Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(width = 200.dp, height = 140.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(textColor.copy(alpha = 0.08f)),
+        ) {
+            Text("\uD83C\uDFAC  loading\u2026", color = textColor.copy(alpha = 0.6f), fontSize = 12.sp)
+        }
+    }
+}
+
+/**
  * Renders a media message: images inline, everything else as a labeled chip.
  * [loadKey] uniquely identifies the media (event id) so the bytes are fetched once;
  * [loader] resolves the bytes (handles plaintext and E2EE-encrypted media in the repository).
@@ -117,19 +235,44 @@ fun MessageMedia(
     if (kind == MediaKind.IMAGE) {
         // Seed from cache so a re-entered bubble shows the image immediately (no placeholder flash).
         val cached = remember(loadKey) { KeryxBitmapCache.get(loadKey) }
+        // Set only for a picture that can move. A GIF cannot live in KeryxBitmapCache — that
+        // cache holds one decoded frame, and one frame is precisely what a GIF is not — so the
+        // source bytes are held instead. Animated files ONLY: keeping every photo's source bytes
+        // alive in composition would undo the whole sampled-decode budget below.
+        var moving by remember(loadKey) { mutableStateOf<ByteArray?>(null) }
         val bitmap by produceState<ImageBitmap?>(initialValue = cached, loadKey) {
             if (cached != null) return@produceState
-            value = loader()?.let { bytes ->
-                // Bubble-sized decode: the render box is ≤260×320dp, so ~1024px on the long edge
-                // covers the densest screens; full-resolution pixels only exist for fullscreen.
-                val decoded = decodeSampled(bytes, targetPx = 1_024)
-                if (decoded != null) KeryxBitmapCache.put(loadKey, decoded)
-                decoded
-            }
+            val bytes = loader() ?: return@produceState
+            if (AnimatedImageSupport.canPlay(bytes)) { moving = bytes; return@produceState }
+            // Bubble-sized decode: the render box is ≤260×320dp, so ~1024px on the long edge
+            // covers the densest screens; full-resolution pixels only exist for fullscreen.
+            value = decodeSampled(bytes, targetPx = 1_024)?.also { KeryxBitmapCache.put(loadKey, it) }
         }
         val bmp = bitmap
+        val animated = moving
         var showFullscreen by androidx.compose.runtime.remember { mutableStateOf(false) }
-        if (bmp != null) {
+        if (animated != null) {
+            AnimatedImage(
+                bytes = animated,
+                contentDescription = fileName.ifBlank { "animated image" },
+                textColor = textColor,
+                modifier = Modifier
+                    .widthIn(max = 260.dp)
+                    .heightIn(max = 320.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { showFullscreen = true },
+            )
+            if (showFullscreen) {
+                // No sharper second decode: unlike a still, the fullscreen copy is the same
+                // file at the same sample budget — every frame pays for resolution here.
+                FullscreenImageViewer(
+                    image = null,
+                    animated = animated,
+                    fileName = fileName.ifBlank { "animated image" },
+                    bytesProvider = loader,
+                ) { showFullscreen = false }
+            }
+        } else if (bmp != null) {
             Image(
                 bitmap = bmp,
                 contentDescription = fileName.ifBlank { "image" },
@@ -355,9 +498,10 @@ private fun FullscreenVideoPlayer(file: java.io.File, fileName: String, onDismis
  */
 @Composable
 private fun FullscreenImageViewer(
-    image: ImageBitmap,
+    image: ImageBitmap?,
     fileName: String,
     bytesProvider: suspend () -> ByteArray?,
+    animated: ByteArray? = null,
     onDismiss: () -> Unit,
 ) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -381,20 +525,33 @@ private fun FullscreenImageViewer(
                 },
             contentAlignment = Alignment.Center,
         ) {
-            Image(
-                bitmap = image,
-                contentDescription = fileName,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer(
-                        scaleX = scale,
-                        scaleY = scale,
-                        translationX = offset.x,
-                        translationY = offset.y,
-                    )
-                    .transformable(transformState),
-            )
+            val zoom = Modifier
+                .fillMaxSize()
+                .graphicsLayer(
+                    scaleX = scale,
+                    scaleY = scale,
+                    translationX = offset.x,
+                    translationY = offset.y,
+                )
+                .transformable(transformState)
+            // A moving picture keeps moving while you pinch it — the transform is a layer over
+            // the view, so the drawable never learns it is being zoomed.
+            if (animated != null) {
+                AnimatedImage(
+                    bytes = animated,
+                    contentDescription = fileName,
+                    textColor = Color.White,
+                    constrainAspect = false,
+                    modifier = zoom,
+                )
+            } else if (image != null) {
+                Image(
+                    bitmap = image,
+                    contentDescription = fileName,
+                    contentScale = ContentScale.Fit,
+                    modifier = zoom,
+                )
+            }
             MediaActionBar(
                 fileName = fileName,
                 kind = MediaKind.IMAGE,

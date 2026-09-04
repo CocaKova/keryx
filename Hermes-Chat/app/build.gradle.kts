@@ -159,6 +159,9 @@ dependencies {
   implementation(libs.markdown.renderer.coil3)
   implementation(libs.coil3.compose)
   implementation(libs.coil3.network.okhttp)
+  // Animated GIF/WebP for the markdown renderer's inline `![](…)` images; the MEDIA:
+  // bubble path animates through the platform decoder in MessageMedia, not through coil.
+  implementation(libs.coil3.gif)
 
   // Room (Removed - Migrating to Matrix Server)
 
