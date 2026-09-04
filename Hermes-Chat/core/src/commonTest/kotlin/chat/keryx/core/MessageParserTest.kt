@@ -225,6 +225,21 @@ class MessageParserTest {
     }
 
     @Test
+    fun jsonFence_thatIsNotAnActionPayload_staysOpaqueLikeAnyOtherFence() {
+        // The ```json branch used to consume only its OPENING line when the payload named no
+        // tool, handing the fence BODY back to the line walker — where the nested-content
+        // guarantee does not hold. This string inside the block matched the friendly-progress
+        // shape ("<glyph> Verbing target"), became a phantom read_file card, and split the code
+        // block into two half-fences around it.
+        val content = "```json\n{\n  \"log\": [\n    \"📖 Reading config.json\",\n" +
+            "    \"done\"\n  ]\n}\n```\nAfter."
+        val segments = MessageParser.parse(content)
+        assertTrue(segments.none { it is MessageParser.Segment.Tools })
+        assertTrue(segments.none { it is MessageParser.Segment.ActionOutput })
+        assertEquals(content, segments.filterIsInstance<MessageParser.Segment.Text>().single().text)
+    }
+
+    @Test
     fun malformedJson_neverThrows() {
         assertEquals(null, MessageParser.tryParseActionOutput("{\"tool\": \"x\", broken"))
         assertEquals(null, MessageParser.tryParseActionOutput("not json at all"))

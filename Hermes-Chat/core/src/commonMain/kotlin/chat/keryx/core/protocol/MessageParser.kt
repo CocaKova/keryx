@@ -848,9 +848,18 @@ object MessageParser {
                         segments.add(action)
                         i = if (closed) j + 1 else j
                     } else {
-                        // Not a tool payload — keep it as ordinary markdown (incl. the fence).
+                        // Not a tool payload — keep the WHOLE fence as ordinary markdown, exactly
+                        // the way every other fence is kept. Appending only the OPENING line here
+                        // handed the fence BODY back to the line walker, where the nested-content
+                        // guarantee the opaque-fence branch exists to make does not hold: a JSON
+                        // string like `"📖 Reading config.json",` matched the friendly-progress
+                        // shape, became a phantom read_file card, and tore the code block in two
+                        // (the text before it flushed as an unclosed fence, the rest as another).
+                        // The fence body was already scanned to [j]; copy it through from there.
                         textBuf.append(line).append('\n')
-                        i++
+                        for (k in i + 1 until j) textBuf.append(lines[k]).append('\n')
+                        if (closed) textBuf.append(lines[j]).append('\n')
+                        i = if (closed) j + 1 else j
                     }
                     continue
                 }

@@ -116,11 +116,25 @@ data class PhoneAction(val kind: Kind, val args: List<String>) {
             }
             val m = Regex("""^(?:(\d+)h)?\s*(?:(\d+)m)?\s*(?:(\d+)s)?$""").find(t) ?: return null
             if (m.groupValues.drop(1).all { it.isEmpty() }) return null
-            val h = m.groupValues[1].toIntOrNull() ?: 0
-            val min = m.groupValues[2].toIntOrNull() ?: 0
-            val sec = m.groupValues[3].toIntOrNull() ?: 0
-            return h * 3600 + min * 60 + sec
+            // Long math, then a bound. `(\d+)` is unbounded, and the old Int arithmetic WRAPPED:
+            // `1200000h` is 4,320,000,000 s, which came back as +25,032,704 — positive, so
+            // [parse]'s `> 0` check accepted it and the phone was handed a 289-day timer. A
+            // duration the clock intent cannot hold (EXTRA_LENGTH is an int) is not a duration.
+            val h = durationPart(m.groupValues[1]) ?: return null
+            val min = durationPart(m.groupValues[2]) ?: return null
+            val sec = durationPart(m.groupValues[3]) ?: return null
+            val total = h * 3600L + min * 60L + sec
+            return if (total <= MAX_TIMER_SECONDS) total.toInt() else null
         }
+
+        /** One `\d+` component of a shorthand duration: absent = 0, present but past what a
+         *  timer can hold = null (which rejects the whole duration). */
+        private fun durationPart(digits: String): Long? =
+            if (digits.isEmpty()) 0L else digits.toLongOrNull()?.takeIf { it <= MAX_TIMER_SECONDS }
+
+        /** The widest duration the clock's `EXTRA_LENGTH` (an int, in seconds) can carry —
+         *  `Int.MAX_VALUE`, spelled out so this stays a compile-time constant. */
+        private const val MAX_TIMER_SECONDS: Long = 2_147_483_647L
 
         fun prettySeconds(total: Int): String {
             val h = total / 3600; val m = (total % 3600) / 60; val s = total % 60

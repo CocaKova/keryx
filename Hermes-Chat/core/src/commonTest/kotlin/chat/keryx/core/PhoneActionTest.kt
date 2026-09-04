@@ -62,6 +62,21 @@ class PhoneActionTest {
     }
 
     @Test
+    fun `a duration too big for a timer is not a duration`() {
+        // 1200000h is 4,320,000,000 s. Int arithmetic wrapped that to +25,032,704 — positive,
+        // so the marker parsed, the tile read "Timer 6953 h 31 min 44 s", and the clock intent
+        // was handed a 289-day timer.
+        assertNull(PhoneAction.timerSeconds("1200000h"))
+        assertNull(PhoneAction.parse("timer|1200000h"))
+        assertNull(PhoneAction.timerSeconds("99999999999999999999h"))
+        assertNull(PhoneAction.parse("timer|99999999999999999999m"))
+        // Everything a person would actually set still reads.
+        assertEquals(3600, PhoneAction.timerSeconds("1h"))
+        assertEquals(86_400, PhoneAction.timerSeconds("24h"))
+        assertEquals("Timer 1 h", PhoneAction.parse("timer|1h")?.label)
+    }
+
+    @Test
     fun `markers in prose become hands and leave the prose clean`() {
         val text = "Roger's office is on Burnet. ⟦keryx:do|navigate|Salt Creek Tech, Burnet Rd, Austin⟧ Want me to ring him first? ⟦keryx:do|dial|+15125550100⟧"
         val k = MessageParser.extractKeryx(text)
