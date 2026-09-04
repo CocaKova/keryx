@@ -3,6 +3,7 @@ package chat.keryx.app.presentation.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -28,9 +29,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 
 /**
  * The model's structured thinking as a quiet scaffold disclosure above the reply — the shape
@@ -137,18 +139,58 @@ fun ReasoningDisclosure(
             exit = keryxConceal(),
         ) {
             val scroll = rememberScrollState()
-            // Streaming preview follows its own tail — the newest thought is the interesting
-            // one. Height-capped so a long think never shoves the transcript around.
-            if (streaming) LaunchedEffect(reasoning.length) { scroll.scrollTo(scroll.maxValue) }
-            Text(
-                reasoning.trim(),
-                fontSize = 12.sp,
-                lineHeight = 17.sp,
-                color = quiet.copy(alpha = 0.62f),
-                modifier = Modifier
-                    .padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
-                    .then(if (streaming) Modifier.heightIn(max = 150.dp).verticalScroll(scroll) else Modifier),
-            )
+            // The streaming preview follows the newest thought — but only from the newest.
+            // Pinning to the tail on every token made a long think unreadable: you could not
+            // scroll back a paragraph without the next word hauling you to the bottom, so the
+            // only way to read a thought was to wait for the model to finish having it. The
+            // transcript has obeyed this law for versions (ChatScreen: follow only at the
+            // bottom, never under a finger); this pane now obeys the same one.
+            // Height-capped so a long think never shoves the transcript around.
+            val following = rememberTailFollow(scroll, reasoning.length, enabled = streaming)
+            val scope = rememberCoroutineScope()
+            Box {
+                Text(
+                    reasoning.trim(),
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp,
+                    color = quiet.copy(alpha = 0.62f),
+                    modifier = Modifier
+                        .padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
+                        .then(if (streaming) Modifier.heightIn(max = 150.dp).verticalScroll(scroll) else Modifier),
+                )
+                // You held your place and the thought went on without you. Say so, and offer the
+                // way back — a pane that has quietly stopped moving is otherwise indistinguishable
+                // from a model that has quietly stopped thinking.
+                // A plain alpha rather than AnimatedVisibility: this Box sits inside a Column,
+                // so the ColumnScope overload wins the implicit receiver and won't compile here.
+                // Reduced motion shows it at once — it is a cue, not a flourish, and it has to
+                // arrive whether or not it is allowed to fade.
+                val cueTarget = if (streaming && !following) 1f else 0f
+                val cueFade by animateFloatAsState(cueTarget, label = "tail_cue")
+                val cueAlpha = if (reduced) cueTarget else cueFade
+                if (cueAlpha > 0.01f) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .alpha(cueAlpha)
+                            .padding(end = 2.dp, bottom = 6.dp)
+                            .clip(RoundedCornerShape(KeryxRadius.chip))
+                            .background(accent.copy(alpha = 0.16f))
+                            .clickable { scope.launch { scroll.animateScrollTo(scroll.maxValue) } }
+                            .padding(horizontal = 9.dp, vertical = 5.dp),
+                    ) {
+                        Text("\u25be", fontSize = 9.5.sp, color = accent.copy(alpha = 0.9f))
+                        Spacer(Modifier.width(5.dp))
+                        Text(
+                            "newest",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = accent.copy(alpha = 0.9f),
+                        )
+                    }
+                }
+            }
         }
     }
 }
