@@ -123,6 +123,25 @@ object ReasoningEffort {
 
     private val CALL_QUIET_LADDER = listOf("none", "minimal", "low")
 
+    /**
+     * Where to go when [current] was refused on [model]: the nearest level BELOW it on the scale
+     * that this model has not already refused, or null when there is nothing left to try.
+     *
+     * The ladder is [LEVELS], deliberately — so a walk-back steps down the scale and can never
+     * silently arrive at `none`. Turning thinking off is a different decision from thinking less,
+     * and it is the user's to make; a brain that refuses even `minimal` gets a plain "it won't go
+     * lower" rather than a quiet lobotomy.
+     *
+     * [rejected] holds [rejectionKey]s learned from dead turns, so a level already known bad on
+     * this model is skipped rather than being walked into a second time — one refusal costs one
+     * turn, not one per rung.
+     */
+    fun fallbackBelow(model: String, current: String, rejected: Set<String>): String? {
+        val idx = LEVELS.indexOf(current.trim().lowercase())
+        if (idx <= 0) return null
+        return LEVELS.take(idx).asReversed().firstOrNull { rejectionKey(model, it) !in rejected }
+    }
+
     /** Key for remembering a refusal: the level is only rejected on THAT model. */
     fun rejectionKey(model: String, level: String): String =
         "${model.trim()}|${level.trim().lowercase()}"

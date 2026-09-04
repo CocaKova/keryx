@@ -92,8 +92,21 @@ class PushSyncWorker(
         val roomId = inputData.getString(KEY_ROOM_ID)
         try {
         // Idempotent restore: no-ops when the process was already alive with a live client.
-        runCatching { app.matrixService.restore(allowInsecure = app.settingsRepository.allowInsecure) }
-            ?: return Result.retry()
+        // The retry guard has to read the CLIENT, not the Result wrapping it: `runCatching {}`
+        // is never null, so the elvis below it could never fire and a restore that failed
+        // walked on to wait out the full sync window against a client that does not exist —
+        // the push was then dropped as a success and never came back.
+        val client = runCatching {
+            app.matrixService.restore(allowInsecure = app.settingsRepository.allowInsecure)
+        }.getOrNull()
+        if (client == null) {
+            // A store on disk means the restore FAILED (a cold-start DB race, a transient
+            // lock) and this push is worth another attempt; no store at all means the install
+            // is signed out of Matrix, where retrying could only spin. Bounded either way.
+            android.util.Log.w("KeryxPush", "no Matrix client for push sync (room=${roomId?.take(12)})")
+            val worthRetrying = app.settingsRepository.matrixSessionOnFile && runAttemptCount < 2
+            return if (worthRetrying) Result.retry() else Result.success()
+        }
         // A warm process may hold a client whose sync the governor already parked — restore()
         // returns that client untouched, so the loop must be woken explicitly for this fetch.
         app.matrixService.syncWake()

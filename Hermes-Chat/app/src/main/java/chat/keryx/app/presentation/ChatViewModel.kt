@@ -332,6 +332,12 @@ class ChatViewModel(
     fun refreshRoster() {
         if (transportIsDirect) bots.refresh()
         val d = direct ?: return
+        // Asking for the list is also the moment to stop waiting out a backoff entered while
+        // the phone slept: the route may be back (tailnet up, wifi joined, plane mode off) and
+        // nothing else tells the socket so — which reads as "the app is broken, reopen it",
+        // and reopening only helps because a fresh process starts its backoff at one second.
+        // Free when the socket is already up; at worst one early connection attempt.
+        d.networkMayHaveChanged()
         viewModelScope.launch { runCatching { d.refreshSessionList() } }
     }
 
@@ -471,6 +477,22 @@ class ChatViewModel(
             },
         ) { matrix, direct -> matrix ?: direct }
             .stateIn(viewModelScope, SharingStarted.Lazily, null)
+
+    /**
+     * A compaction — announced by WHICHEVER door carries it — parks the quiet timer instead of
+     * racing it. The announcement comes once and the work it names has no upper bound, so the
+     * hold is opened here and re-armed on the way out, where quiet counts from the moment the
+     * work actually stopped. The two callers are the two doors and only one exists per process.
+     */
+    private fun noteCompacting(status: chat.keryx.core.model.SessionStatus?) {
+        val nowCompacting = status?.isCompacting == true
+        val wasCompacting = compactingSince != null
+        compactingSince = if (nowCompacting) System.currentTimeMillis() else null
+        // Only while a turn is actually being waited on: scheduleClearAwaiting can never
+        // raise the banner, only settle it, so arming it with nothing awaiting would park a
+        // polling job for the length of the hold to do nothing at the end of it.
+        if ((nowCompacting || wasCompacting) && _awaitingReply.value) scheduleClearAwaiting(NO_REPLY_MS)
+    }
 
     /** The agent is stopped on a question / sudo / secret in the open room (direct path only). */
     val pendingBlocking: StateFlow<chat.keryx.core.model.BlockingRequest?> =
@@ -770,6 +792,29 @@ class ChatViewModel(
         viewModelScope.launch {
             matrix?.getInvites()?.collectLatest { _invites.value = it }
         }
+        // The compaction hold, on the door this app actually runs on. The gateway narrates a
+        // compaction over `status.update`, which the direct transport already keys per session
+        // — but only the Matrix side-channel's `status` frame armed the hold, so a fifteen-
+        // minute compaction still settled the banner at the four-minute mark here. Its own
+        // StateFlow (not `sessionStatus`, which is Lazily-shared and therefore only alive while
+        // some screen collects it): the hold must be armed whether or not anything is drawing.
+        direct?.let { d ->
+            viewModelScope.launch {
+                _currentRoom
+                    .flatMapLatest { r -> if (r == null) flowOf(null) else d.sessionStatus(r.id) }
+                    .collect { noteCompacting(it) }
+            }
+        }
+        // A thinking level the MODEL won't render, walked back instead of died over. The
+        // transport has republished these refusals from three places since the day the channel
+        // was written — "so the level that killed the turn can be walked back instead of killing
+        // the next one too" — and nothing collected them, so the turn just quietly failed, and
+        // the next one, and the next.
+        direct?.let { d ->
+            viewModelScope.launch {
+                d.reasoningRejections().collect { walkBackReasoning() }
+            }
+        }
         viewModelScope.launch {
             messages.collect { msgs ->
                 val last = msgs.lastOrNull()
@@ -948,7 +993,43 @@ class ChatViewModel(
     }
 
     @Volatile
-    var callTurnTap: CallTurnTap? = null
+    private var _callTurnTap: CallTurnTap? = null
+    private var callBridgeJob: Job? = null
+
+    /**
+     * The Call's tap, on either door. The Matrix door feeds it from the tier-1 SSE below; the
+     * direct door has no side channel at all — the turn IS the WS — so setting a tap opens a
+     * bridge off the transport's own [chat.keryx.core.model.TurnEvent] stream, which the
+     * transport has always emitted and nothing has ever read. Without it the Call transcribed,
+     * sent, and then sat in silence until its watchdog gave up, on the one door the app ships on.
+     *
+     * The bridge is scoped to the session the tap was set for: `turnEvents` carries every live
+     * session on this gateway (a cron run, another bot answering), and the Call must voice the
+     * conversation it is in and nothing else.
+     */
+    var callTurnTap: CallTurnTap?
+        get() = _callTurnTap
+        set(value) {
+            _callTurnTap = value
+            callBridgeJob?.cancel()
+            callBridgeJob = null
+            val d = direct ?: return
+            val sessionId = _currentRoom.value?.id ?: return
+            if (value == null) return
+            callBridgeJob = viewModelScope.launch {
+                d.turnEvents().collect { ev ->
+                    if (ev.sessionId != sessionId) return@collect
+                    val tap = _callTurnTap ?: return@collect
+                    when (ev) {
+                        is chat.keryx.core.model.TurnEvent.Delta -> tap.onDelta(ev.text)
+                        // A segment boundary is a pause in speech, exactly as SegmentBreak is.
+                        is chat.keryx.core.model.TurnEvent.Break -> tap.onDelta("\n")
+                        is chat.keryx.core.model.TurnEvent.End ->
+                            if (ev.error) tap.onTurnFailed() else tap.onTurnEnd(ev.finalText)
+                    }
+                }
+            }
+        }
 
 
     // --- Side-channel stream orchestration (tier-1) -------------------------------------------
@@ -1086,10 +1167,7 @@ class ChatViewModel(
                         // exactly once, so the four minutes ran out while the compaction didn't,
                         // and the room went quiet mid-turn. Hold open instead, and re-arm on the
                         // way out so quiet is counted from when the work actually stopped.
-                        val nowCompacting = ev.status?.isCompacting == true
-                        val wasCompacting = compactingSince != null
-                        compactingSince = if (nowCompacting) System.currentTimeMillis() else null
-                        if (nowCompacting || wasCompacting) scheduleClearAwaiting(NO_REPLY_MS)
+                        noteCompacting(ev.status)
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Stop -> {
                         _matrixStatus.value = null
@@ -2040,6 +2118,61 @@ class ChatViewModel(
      *  Direct door: the session's live route (the catalog's model + provider, once fetched)
      *  and its stored id, with the effective level read straight off the live agent. Matrix:
      *  the global default, as before — a room has no session id the gateway can look up. */
+    /**
+     * Levels this process has watched a model refuse. In memory on purpose: the walk-back itself
+     * lands on the gateway, which remembers, so this only has to stop the SAME dead rung being
+     * tried twice inside one run.
+     */
+    private val refusedLevels: MutableSet<String> =
+        java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
+
+    /**
+     * A turn died because the brain refused the thinking level: step down one rung and say so.
+     *
+     * The scale is Hermes'; which rungs a brain can actually render is decided by its chat
+     * template, and nothing knows that list until a real turn dies on it. So the level that
+     * killed this turn is recorded and the next one down is set for this session — never
+     * globally, and never all the way to off (see [ReasoningEffort.fallbackBelow]).
+     *
+     * One dead turn can announce itself on three channels (`message.complete` with an error, the
+     * buffered lifecycle line, the `error` event). `refusedLevels.add` is the gate: the first
+     * announcement to name a rung owns the walk-back, and the other two return — otherwise one
+     * refusal would fall three rungs.
+     */
+    private suspend fun walkBackReasoning() {
+        val d = direct ?: return
+        val roomId = _currentRoom.value?.id ?: return
+        val caps = hub.reasoningCaps.value
+        val model = caps?.model.orEmpty().trim()
+        // Authoritative: what the gateway says is in force right now, not what the pill last drew.
+        val current = d.reasoningEffort(roomId).getOrNull()?.takeIf { it.isNotBlank() }
+            ?: caps?.current.orEmpty()
+        if (current.isBlank()) return
+        if (model.isBlank()) {
+            // Nothing to key the memory on — say the true thing rather than guess a rung.
+            _toasts.tryEmit("This brain refused that thinking level — pick a lower one.")
+            return
+        }
+        if (!refusedLevels.add(chat.keryx.core.model.ReasoningEffort.rejectionKey(model, current))) return
+
+        val label = { level: String ->
+            chat.keryx.core.model.ReasoningEffort.longLabel(level).ifBlank { level }
+        }
+        val next = chat.keryx.core.model.ReasoningEffort.fallbackBelow(model, current, refusedLevels)
+        if (next == null) {
+            _toasts.tryEmit("This brain refused ${label(current)} thinking, and there's nothing lower to try.")
+            return
+        }
+        d.setReasoningEffort(roomId, next, global = false)
+            .onSuccess {
+                _toasts.tryEmit("This brain refused ${label(current)} thinking — dropped to ${label(next)}.")
+                refreshReasoningCaps()
+            }
+            .onFailure {
+                _toasts.tryEmit("This brain refused ${label(current)} thinking; couldn't drop to ${label(next)}.")
+            }
+    }
+
     fun refreshReasoningCaps() {
         val roomId = _currentRoom.value?.id
         val d = direct
