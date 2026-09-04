@@ -63,6 +63,32 @@ data class SessionStatus(val kind: String, val text: String) {
 }
 
 /**
+ * How long the working banner keeps holding when the last thing the gateway said was that it
+ * is compacting.
+ *
+ * A compaction is announced ONCE, at the moment it starts, and then runs for as long as the
+ * summary model takes — up to three passes on a very large session, and there is no beat in
+ * between to renew a timer with. Answering that single announcement with the ordinary
+ * no-reply window is therefore a claim nobody made: 2.8.2 armed four minutes against a
+ * compaction that ran for twelve, so the room sat there looking idle, with no banner and no
+ * reply, for the eight minutes the gateway was still working.
+ *
+ * So the hold is open-ended. [CEILING_MS] is not an estimate of how long compaction takes and
+ * must never be read as one — it is the point past which silence is better explained by a lost
+ * "done" than by work still happening, so a dropped stream cannot strand the banner forever.
+ */
+object CompactionHold {
+    const val CEILING_MS = 1_800_000L
+
+    /** True while a compaction started at [since] should still veto the quiet timer at [now]. */
+    fun holds(since: Long?, now: Long): Boolean = since != null && now - since < CEILING_MS
+
+    /** Milliseconds left on the hold, or 0 once it has lapsed (or was never armed). */
+    fun remaining(since: Long?, now: Long): Long =
+        if (since == null) 0L else (since + CEILING_MS - now).coerceAtLeast(0L)
+}
+
+/**
  * How much of a session's transcript is actually loaded.
  *
  * The gateway pages history (500 rows max per request) and Keryx opens on the NEWEST
