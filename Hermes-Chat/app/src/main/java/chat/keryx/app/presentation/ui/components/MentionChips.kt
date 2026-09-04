@@ -6,6 +6,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -55,8 +56,11 @@ fun MentionChips(
             val light = botLightFor(bot.name, bot.label, bot.isDefault)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
+                // 5dp round a 12sp handle is a 24dp target on a chip rail you tap mid-typing,
+                // with the keyboard up and the row 6dp from its neighbour.
                 modifier = Modifier
                     .padding(end = 6.dp)
+                    .heightIn(min = 40.dp)
                     .clip(RoundedCornerShape(KeryxRadius.chip))
                     .background(light.accent.copy(alpha = 0.14f))
                     .clickable {
@@ -68,7 +72,9 @@ fun MentionChips(
             ) {
                 HeraldSigil(light, fontSize = 11.sp)
                 Spacer(Modifier.width(5.dp))
-                Text("@" + bot.handle, fontSize = 12.sp, color = light.accent, fontWeight = FontWeight.Medium)
+                // The herald palette clears AA at FULL strength on bare paper; a 14% wash of
+                // the same hue underneath lifts the ground and drops every bot to 4.05–4.11:1.
+                Text("@" + bot.handle, fontSize = 12.sp, color = keryxAccentInk(light.accent), fontWeight = FontWeight.Medium)
                 if (bot.label != BotRoster.pretty(bot.name) && bot.label != bot.handle) {
                     Spacer(Modifier.width(5.dp))
                     Text(bot.label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -203,17 +203,19 @@ private fun deckAvatarBase(name: String, accent: Color, highlighted: Boolean): C
 
 @Composable
 private fun MonogramAvatar(name: String, accent: Color, highlighted: Boolean) {
-    val bg = deckAvatarBase(name, accent, highlighted)
+    // The plate is composited (see [roomPlate]) so the letter can be chosen against a real
+    // colour: white on a 70% Material-300 wash measured 1.53–2.45:1 on parchment.
+    val plate = roomPlate(deckAvatarBase(name, accent, highlighted), if (highlighted) 0.95f else 0.7f)
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .size(44.dp)
             .clip(CircleShape)
-            .background(bg.copy(alpha = if (highlighted) 0.95f else 0.7f)),
+            .background(plate),
     ) {
         Text(
             text = monogram(name),
-            color = Color.White,
+            color = contrastColorFor(plate),
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
         )

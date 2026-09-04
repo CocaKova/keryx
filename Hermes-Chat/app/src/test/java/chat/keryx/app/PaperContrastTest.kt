@@ -231,6 +231,48 @@ class PaperContrastTest {
         }
     }
 
+    /**
+     * The accent is the app's one *identity* colour and [KeryxSectionHeader] sets every section
+     * heading in it at 10sp. Raw amber on the paper leaf measures 3.50:1, and inside its own 14%
+     * chip (the Bot Chat / profile badges in the top bar) 2.77:1 — both under the 4.5 small text
+     * needs. `paperAccentInk` presses the hue into the paper until it clears the bar; this holds
+     * it there for the default amber AND for accents a user might pick that start out worse.
+     */
+    @Test
+    fun `the accent stays readable as text on parchment`() {
+        val accents = listOf(
+            0xFFE55A00L, // the default amber — 3.50:1 raw
+            0xFFFFE066L, // a pale yellow: the case a fixed darkening factor would lose
+            0xFF8B5CF6L, // the default dusk (accent 2)
+            0xFF4CAF50L,
+            0xFFFFFFFFL, // the pathological one: pure white can only end up as ink
+        )
+        for (a in accents) {
+            val pressed = argbOf(
+                chat.keryx.app.presentation.ui.components.paperAccentInk(colorOf(a), colorOf(ink))
+            )
+            assertTrue(
+                "accent ${a.toString(16)} presses to ${pressed.toString(16)}, " +
+                    "which scores ${contrast(pressed, paperSurface)} on the leaf",
+                contrast(pressed, paperSurface) >= AA,
+            )
+            // Its own 14% chip is the harder ground, and the one the ceiling is set by.
+            val chip = over(a, 0.14, paperSurface)
+            assertTrue(
+                "accent ${a.toString(16)} scores ${contrast(pressed, chip)} inside its own chip",
+                contrast(pressed, chip) >= AA,
+            )
+        }
+    }
+
+    private fun colorOf(argb: Long) = androidx.compose.ui.graphics.Color(argb.toInt())
+
+    private fun argbOf(c: androidx.compose.ui.graphics.Color): Long =
+        0xFF000000L or
+            (Math.round(c.red * 255f).toLong() shl 16) or
+            (Math.round(c.green * 255f).toLong() shl 8) or
+            Math.round(c.blue * 255f).toLong()
+
     @Test
     fun `the room palette is defined once`() {
         // It lived twice, byte-identical, in the drawer and the deck — harmless while both only

@@ -2,12 +2,13 @@ package chat.keryx.app.presentation.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -23,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.TextStyle
@@ -97,17 +99,7 @@ fun ApprovalCard(
                     "deny" -> "Deny" to MaterialTheme.colorScheme.error
                     else -> choice to MaterialTheme.colorScheme.onSurface
                 }
-                Text(
-                    label,
-                    fontSize = 12.5.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = color,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(6.dp))
-                        .clickable { haptics.commit(); onChoice(choice) }
-                        .padding(horizontal = 12.dp, vertical = 7.dp),
-                )
+                ApprovalButton(label, color) { haptics.commit(); onChoice(choice) }
                 Spacer(Modifier.width(8.dp))
             }
         }
@@ -149,7 +141,9 @@ fun BlockingRequestCard(
                 BlockingKind.SUDO -> "Sudo password needed"
                 BlockingKind.SECRET -> "Credential needed"
             },
-            color = accent,
+            // The only explicit accent left on a section header in the app; the default is
+            // already the ink form, so this was the one that stayed at 3.26:1 on paper.
+            color = keryxAccentInk(accent),
         )
         if (request.prompt.isNotBlank()) {
             Spacer(Modifier.height(6.dp))
@@ -171,18 +165,11 @@ fun BlockingRequestCard(
             // Wrapped rather than a Row: gateway choices are whole phrases, not chips.
             FlowRow {
                 request.choices.forEach { choice ->
-                    Text(
-                        choice,
-                        fontSize = 12.5.sp,
-                        fontWeight = FontWeight.SemiBold,
+                    ApprovalButton(
+                        label = choice,
                         color = onSurface,
-                        modifier = Modifier
-                            .padding(end = 8.dp, bottom = 8.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .border(1.dp, onSurface.copy(alpha = 0.35f), RoundedCornerShape(6.dp))
-                            .clickable { haptics.commit(); onAnswer(choice) }
-                            .padding(horizontal = 12.dp, vertical = 7.dp),
-                    )
+                        modifier = Modifier.padding(end = 8.dp, bottom = 8.dp),
+                    ) { haptics.commit(); onAnswer(choice) }
                 }
             }
             if (request.multiSelect) {
@@ -225,30 +212,55 @@ fun BlockingRequestCard(
 
         Spacer(Modifier.height(8.dp))
         Row {
-            Text(
-                "Send",
-                fontSize = 12.5.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = accent,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .border(1.dp, accent.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
-                    .clickable(enabled = typed.isNotBlank()) { haptics.commit(); onAnswer(typed) }
-                    .padding(horizontal = 14.dp, vertical = 7.dp),
-            )
+            // Send was painted live whatever the field held — full accent, full border — while
+            // `clickable(enabled = typed.isNotBlank())` quietly swallowed the tap. A button that
+            // looks pressable and does nothing is worse than no button: it reads as the app
+            // being broken. It now dims with its own state.
+            ApprovalButton(
+                label = "Send",
+                color = keryxAccentInk(accent),
+                enabled = typed.isNotBlank(),
+            ) { haptics.commit(); onAnswer(typed) }
             Spacer(Modifier.width(8.dp))
-            Text(
-                // Blank IS the answer the gateway reads as "skipped" — it releases the tool
-                // with an empty result rather than leaving the turn parked on the timeout.
-                "Skip",
-                fontSize = 12.5.sp,
-                color = onSurface.copy(alpha = 0.7f),
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .border(1.dp, onSurface.copy(alpha = 0.25f), RoundedCornerShape(6.dp))
-                    .clickable { onAnswer("") }
-                    .padding(horizontal = 14.dp, vertical = 7.dp),
-            )
+            // Blank IS the answer the gateway reads as "skipped" — it releases the tool
+            // with an empty result rather than leaving the turn parked on the timeout.
+            ApprovalButton(label = "Skip", color = onSurface, weight = FontWeight.Normal) {
+                onAnswer("")
+            }
         }
+    }
+}
+
+/**
+ * The card's one button.
+ *
+ * Four families of these lived inline — approval choices, clarify choices, Send, Skip — each
+ * with its own copy of a 6dp corner and `padding(vertical = 7.dp)`, which round a 12.5sp cap is
+ * a **28.6dp** target. This card is the loudest thing on the screen precisely because the agent
+ * has stopped and is waiting on a person, and "Always" sat 8dp from "Deny" at 28dp tall. One
+ * button, 44dp, on the [KeryxRadius.chip] corner the rest of the app's chips use, with the
+ * press-scale 2.8.1 gave every other pressable surface.
+ */
+@Composable
+private fun ApprovalButton(
+    label: String,
+    color: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    weight: FontWeight = FontWeight.SemiBold,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(KeryxRadius.chip)
+    val ink = if (enabled) color else color.copy(alpha = 0.38f)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .defaultMinSize(minHeight = 44.dp)
+            .clip(shape)
+            .border(1.dp, ink.copy(alpha = if (enabled) 0.35f else 0.18f), shape)
+            .keryxPressable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 7.dp),
+    ) {
+        Text(label, fontSize = 12.5.sp, fontWeight = weight, color = ink)
     }
 }

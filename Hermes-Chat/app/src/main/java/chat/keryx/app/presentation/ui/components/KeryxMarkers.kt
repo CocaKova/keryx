@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -55,7 +56,11 @@ fun CitationsBar(items: List<MessageParser.Citation>, baseColor: Color) {
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier.horizontalScroll(rememberScrollState()),
         ) {
-            Text("Sources", color = accent.copy(alpha = 0.7f), fontSize = 11.sp, fontWeight = FontWeight.Medium)
+            // The accent is a light, not an ink: on parchment it caps at 3.50:1 before any
+            // alpha, so every `accent.copy(alpha = …)` label in this file was between 2.16:1
+            // and 2.87:1 there. keryxAccentInk presses the same hue into the paper and hands
+            // the raw accent straight back on the void, so dark mode is untouched.
+            Text("Sources", color = keryxAccentInk(accent), fontSize = 11.sp, fontWeight = FontWeight.Medium)
             items.forEach { c ->
                 val sel = selected == c.n
                 Box(
@@ -96,7 +101,7 @@ fun CitationsBar(items: List<MessageParser.Citation>, baseColor: Color) {
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             c.kind.ifBlank { "source" },
-                            color = accent.copy(alpha = 0.85f),
+                            color = keryxAccentInk(accent),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                         )
@@ -184,7 +189,7 @@ fun QuickActionTiles(options: List<String>, baseColor: Color) {
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("›", color = accent.copy(alpha = 0.85f), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("›", color = keryxAccentInk(accent), fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -255,8 +260,11 @@ fun HandsTiles(actions: List<chat.keryx.core.model.PhoneAction>, baseColor: Colo
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
+                // Where the tap lands — the one word that separates "opens a map" from
+                // "dials a number" on a tile whose whole consent model IS the tap. It was
+                // 2.16:1 on parchment, the least readable string in the family.
                 Text(
-                    handWhere(action.kind), color = accent.copy(alpha = 0.75f), fontSize = 9.5.sp,
+                    handWhere(action.kind), color = keryxAccentInk(accent), fontSize = 9.5.sp,
                     letterSpacing = 1.sp,
                 )
             }
@@ -338,15 +346,17 @@ fun SkillDistilledPill(skill: MessageParser.Segment.SkillDistilled, baseColor: C
                 }
                 Spacer(modifier = Modifier.padding(top = 4.dp))
                 val openForge = LocalSkillForgeOpener.current
+                // 2dp of padding round an 11sp line is a ~17dp target on the panel's only link.
                 Text(
                     "Open in Skill Forge →",
-                    color = accent.copy(alpha = 0.9f),
+                    color = keryxAccentInk(accent),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
+                        .heightIn(min = 40.dp)
+                        .clip(RoundedCornerShape(KeryxRadius.chip))
                         .clickable { openForge(skill.id.ifBlank { skill.name }) }
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                        .padding(horizontal = 8.dp, vertical = 11.dp),
                 )
             }
         }

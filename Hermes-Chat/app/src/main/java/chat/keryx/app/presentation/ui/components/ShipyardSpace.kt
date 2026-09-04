@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -102,16 +103,34 @@ fun ShipyardSpace(
         },
         standalone = false,
     ) {
+        // The failure was a bare red sentence whose only dismissal was knowing the sentence was
+        // tappable. It is a card now — the app's own recipe, tinted by the status that produced
+        // it — and the way out is a glyph you can see and a target you can hit.
         error?.let { msg ->
-            Text(
-                msg,
-                color = KeryxStatus.bad,
-                fontSize = 12.sp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { yard.clearError() }
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            )
+            Box(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+                KeryxCard(tint = KeryxStatus.bad) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            msg,
+                            color = KeryxStatus.bad,
+                            fontSize = 12.sp,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        androidx.compose.material3.IconButton(
+                            onClick = { yard.clearError() },
+                            modifier = Modifier.size(44.dp),
+                        ) {
+                            androidx.compose.material3.Icon(
+                                KeryxGlyphs.Close,
+                                contentDescription = "Dismiss this error",
+                                tint = KeryxStatus.bad,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         val openRepo = repo
@@ -146,8 +165,8 @@ fun ShipyardSpace(
                     Spacer(Modifier.height(8.dp))
                 }
                 when {
-                    d == null -> Text("reading the diff…", fontSize = 12.sp, color = KeryxStatus.idle)
-                    d.diff.isBlank() -> Text("No diff — the file is unchanged in this scope.", fontSize = 12.sp, color = KeryxStatus.idle)
+                    d == null -> Text("reading the diff…", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    d.diff.isBlank() -> Text("No diff — the file is unchanged in this scope.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     else -> {
                         DiffPanel(
                             diff = d.diff,
@@ -200,12 +219,28 @@ private fun RepoRoster(repos: List<ShipyardRepo>, onOpen: (ShipyardRepo) -> Unit
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        // The empty state was the one thing in this list with no shape — a bare paragraph above a
+        // column of bordered cards. It reads as the card that would be here if there were one.
         if (repos.isEmpty()) item {
-            Text(
-                "No repos the gateway will let a phone review. A project's folder or a discovered repo under the gateway user's home appears here.",
-                fontSize = 12.sp,
-                color = KeryxStatus.idle,
-            )
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(KeryxRadius.card))
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.145f),
+                        RoundedCornerShape(KeryxRadius.card),
+                    )
+                    .padding(14.dp),
+            ) {
+                KeryxSectionHeader("Nothing to review")
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "No repos the gateway will let a phone review. A project's folder or a discovered repo under the gateway user's home appears here.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         items(repos, key = { it.path }) { r ->
             val tint = roomLight(r.path)
@@ -224,7 +259,7 @@ private fun RepoRoster(repos: List<ShipyardRepo>, onOpen: (ShipyardRepo) -> Unit
                     r.branch?.let { Text(it, fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
                 Spacer(Modifier.height(4.dp))
-                Text(r.path, fontSize = 11.sp, color = KeryxStatus.idle, maxLines = 1)
+                Text(r.path, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
             }
         }
     }
@@ -264,11 +299,11 @@ private fun RepoReview(
                 status?.let { st ->
                     if (st.ahead > 0) Text("↑${st.ahead}", fontSize = 12.sp, color = KeryxStatus.warn)
                     if (st.behind > 0) Text(" ↓${st.behind}", fontSize = 12.sp, color = KeryxStatus.warn)
-                    if (st.ahead == 0 && st.behind == 0 && !st.detached) Text("in step", fontSize = 11.sp, color = KeryxStatus.idle)
+                    if (st.ahead == 0 && st.behind == 0 && !st.detached) Text("in step", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             shipInfoLine?.let { Text(it, fontSize = 11.sp, color = KeryxStatus.good) }
-            Text(repo.path, fontSize = 10.sp, color = KeryxStatus.idle, maxLines = 1)
+            Text(repo.path, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -290,7 +325,17 @@ private fun RepoReview(
             KeryxSectionHeader(summary, count = null)
         }
         val list = files ?: emptyList()
-        if (hydrating) item { Text("…", color = KeryxStatus.idle) }
+        // Was a literal one-character "…" in the dot palette: 2.83:1 on parchment, and it said
+        // nothing about what was being waited on. The rest of the app's loading voice is a
+        // sentence naming the wait (PanelLoading), so this speaks the same way.
+        if (hydrating) item {
+            Text(
+                "Reading the working tree…",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 10.dp),
+            )
+        }
         items(list, key = { it.path }) { f ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -374,7 +419,7 @@ private fun CommitSheet(
             )
             ctx?.recentSubjects?.takeIf { it.isNotEmpty() }?.let { recent ->
                 Spacer(Modifier.height(10.dp))
-                Text("RECENT", fontSize = 10.sp, letterSpacing = 1.4.sp, color = KeryxStatus.idle)
+                Text("RECENT", fontSize = 10.sp, letterSpacing = 1.4.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 recent.take(4).forEach { s ->
                     Text(s, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
                         modifier = Modifier.padding(top = 2.dp))
@@ -421,13 +466,18 @@ private fun ShipyardChip(
     val shape = RoundedCornerShape(KeryxRadius.chip)
     Box(
         modifier
+            // 6dp of padding around a 10sp cap left these ~25dp tall. They are not decoration —
+            // Stage, Unstage, Commit, Push, Refresh are every action this space has, and a
+            // 25dp target for "Push" is a mis-tap with consequences. 44dp, and the press-scale
+            // 2.8.1 gave every other chip in the app.
+            .defaultMinSize(minHeight = 44.dp)
             .clip(shape)
             .let {
                 if (filled) it.background(tint.copy(alpha = if (enabled) 1f else 0.3f))
                 else it.border(1.dp, tint.copy(alpha = if (enabled) 0.22f else 0.1f), shape)
             }
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+            .keryxPressable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(

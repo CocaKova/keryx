@@ -3,7 +3,11 @@ package chat.keryx.app.presentation.ui.components
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -295,10 +299,27 @@ private fun CurrentBrainCard(current: ModelChoice?, catalog: ModelCatalog?, load
                 current?.let { MetaLine(it, muted = meta) }
             }
             // Refresh turns while the catalog is being read.
-            val spin by animateFloatAsState(if (loading) 360f else 0f, animationSpec = KeryxMotion.glide, label = "catalogSpin")
+            //
+            // It used to be `animateFloatAsState(if (loading) 360f else 0f)`: ONE spring through
+            // 360°, then a dead-still glyph for however long the read actually took — and when
+            // the answer landed it unwound 360 → 0, spinning BACKWARDS to say "done". A slow
+            // gateway showed a frozen icon where the only sign of life was supposed to be. It is
+            // a real loop now, and — because this is information, not ornament — under reduced
+            // motion the glyph stops but takes the accent, so "busy" is still a thing you can see.
+            val reduced by rememberReducedMotion()
+            val spin = if (loading && !reduced) {
+                rememberInfiniteTransition(label = "catalogSpin").animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec = infiniteRepeatable(tween(1100, easing = LinearEasing)),
+                    label = "catalogSpinAngle",
+                ).value
+            } else 0f
             IconButton(onClick = onRefresh, enabled = !loading) {
                 Icon(
-                    KeryxGlyphs.Refresh, contentDescription = "Re-read the catalog", tint = meta,
+                    KeryxGlyphs.Refresh,
+                    contentDescription = if (loading) "Reading the catalog" else "Re-read the catalog",
+                    tint = if (loading) MaterialTheme.colorScheme.primary else meta,
                     modifier = Modifier.size(18.dp).graphicsLayer { rotationZ = spin },
                 )
             }

@@ -3,6 +3,7 @@ package chat.keryx.app.presentation.ui.components
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance
 
 /**
@@ -54,3 +55,21 @@ fun roomLight(name: String): Color {
         alpha = raw.alpha,
     )
 }
+
+/**
+ * A room's light laid down as an **opaque plate** — the ground a monogram or a sigil sits on.
+ *
+ * These are Material 300s, "pitched to be a ground with white on top" — which is true of the hue
+ * and false of what the avatars actually painted. Both the drawer row and the Quick Rooms deck
+ * drew the plate at 70–95% ALPHA and then set the monogram in hard `Color.White`. On the void
+ * that survives; on parchment the wash pulls the plate up toward the paper and the letter goes
+ * with it — the eight deck plates measured **1.53:1 to 2.45:1**, and the drawer's 15sp bold
+ * initial (small text by WCAG's reckoning, so a 4.5 bar) about 1.4:1. Every room in the drawer
+ * was a coloured coin with a smudge on it.
+ *
+ * Composited here instead, so the plate is a real colour that [contrastColorFor] can be asked
+ * about. Same appearance, one honest number underneath it.
+ */
+@Composable
+fun roomPlate(base: Color, alpha: Float): Color =
+    base.copy(alpha = alpha).compositeOver(MaterialTheme.colorScheme.surface)

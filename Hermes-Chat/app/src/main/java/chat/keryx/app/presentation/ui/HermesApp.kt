@@ -242,15 +242,24 @@ fun HermesApp(viewModel: ChatViewModel) {
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.weight(1f, fill = false),
                                     )
+                                    // The two chips below print 10sp of accent on a 14% wash of
+                                    // the same accent. On parchment that is 2.77:1 — the label
+                                    // was there and could not be read. The GROUND keeps the raw
+                                    // accent (it is a light); the TEXT takes keryxAccentInk,
+                                    // which hands the accent straight back on the void.
+                                    val chipInk = chat.keryx.app.presentation.ui.components.keryxAccentInk()
+                                    val chipShape = RoundedCornerShape(
+                                        chat.keryx.app.presentation.ui.components.KeryxRadius.chip
+                                    )
                                     if (botHere != null) {
                                         Spacer(Modifier.width(6.dp))
                                         Text(
                                             text = "Bot Chat",
-                                            color = MaterialTheme.colorScheme.primary,
+                                            color = chipInk,
                                             fontSize = 10.sp,
                                             maxLines = 1,
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(7.dp))
+                                                .clip(chipShape)
                                                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
                                                 .padding(horizontal = 6.dp, vertical = 1.dp),
                                         )
@@ -266,11 +275,11 @@ fun HermesApp(viewModel: ChatViewModel) {
                                         Spacer(Modifier.width(6.dp))
                                         Text(
                                             text = profile.replaceFirstChar { it.uppercase() },
-                                            color = MaterialTheme.colorScheme.primary,
+                                            color = chipInk,
                                             fontSize = 10.sp,
                                             maxLines = 1,
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(7.dp))
+                                                .clip(chipShape)
                                                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
                                                 .padding(horizontal = 6.dp, vertical = 1.dp),
                                         )
@@ -544,19 +553,30 @@ private fun LinkHealthDot(
         chat.keryx.app.presentation.LinkHealth.UNKNOWN -> "Hermes Link: not tested yet"
         else -> "Hermes Link: unreachable — replies fall back to Matrix sync"
     }
+    // The dot is 7dp because it is a whisper. The TAP is not: the click used to sit on the dot
+    // itself — a 7dp target, under 3mm, in a top bar whose neighbours are 48dp icon buttons, so
+    // opening the Gateway from here was a coin toss. The target is the 44dp box; the dot inside
+    // it stays exactly the size it was.
     Box(
         contentAlignment = androidx.compose.ui.Alignment.Center,
-        modifier = Modifier.size(24.dp),
+        modifier = Modifier
+            .size(44.dp)
+            .clip(CircleShape)
+            .clickable(
+                // The dot draws no glyph and carries no text, so without this the link's whole
+                // state was invisible to TalkBack — a control that announced nothing at all.
+                onClickLabel = label,
+                role = androidx.compose.ui.semantics.Role.Button,
+            ) {
+                onClick?.invoke()
+                    ?: android.widget.Toast.makeText(context, label, android.widget.Toast.LENGTH_SHORT).show()
+            },
     ) {
         Box(
             modifier = Modifier
                 .size(7.dp)
                 .clip(CircleShape)
-                .background(color)
-                .clickable {
-                    onClick?.invoke()
-                        ?: android.widget.Toast.makeText(context, label, android.widget.Toast.LENGTH_SHORT).show()
-                },
+                .background(color),
         )
     }
 }

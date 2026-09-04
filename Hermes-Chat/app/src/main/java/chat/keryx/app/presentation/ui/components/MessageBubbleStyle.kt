@@ -27,9 +27,18 @@ data class BubbleAppearance(
     val edgeBrush: Brush? = null,
 )
 
-/** Pick black/white text for maximum contrast against a given background color. */
+/**
+ * Pick ink or white for maximum contrast against a given background colour.
+ *
+ * ⚠️ The crossover is NOT the middle of the luminance range. Contrast is (L+0.05) ratios, so
+ * white and ink tie at L = √(1.05 × 0.05) − 0.05 = **0.1791**, not at 0.5. Splitting at 0.5
+ * handed white to every mid-tone in between — which is exactly where the default accent lives:
+ * amber #E55A00 is L 0.2397, so a Solid bubble printed its own text at **3.62:1** (white) when
+ * ink was sitting right there at 4.73:1. Body text under the 4.5 AA asks for, in the style a
+ * user picks *because* it is the boldest one.
+ */
 fun contrastColorFor(bg: Color): Color =
-    if (bg.luminance() > 0.5f) Color(0xFF1F1B14) else Color.White
+    if (bg.luminance() > 0.1791f) Color(0xFF1F1B14) else Color.White
 
 /**
  * [accent] / [accent2] default to the user's own theme accents. A herald in a council room passes

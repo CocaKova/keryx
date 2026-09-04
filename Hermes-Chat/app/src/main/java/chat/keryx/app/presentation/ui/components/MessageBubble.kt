@@ -12,6 +12,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
@@ -338,9 +339,17 @@ fun MessageBubble(
                     }
                 }
             }
+            // The one flourish in this file with no Battery-Saver gate — the double-tap heart
+            // still bloomed 34sp across the bubble under reduced motion. It carries no
+            // information the reaction chip below doesn't already carry, so it simply doesn't
+            // happen: `snapTo(1f)` retires the animatable without ever drawing a frame.
             if (heartBloomTick > 0) {
+                val bloomReduced by chat.keryx.app.presentation.ui.components.rememberReducedMotion()
                 val bloom = remember(heartBloomTick) { Animatable(0f) }
-                LaunchedEffect(heartBloomTick) { bloom.animateTo(1f, tween(650, easing = LinearOutSlowInEasing)) }
+                LaunchedEffect(heartBloomTick, bloomReduced) {
+                    if (bloomReduced) bloom.snapTo(1f)
+                    else bloom.animateTo(1f, tween(650, easing = LinearOutSlowInEasing))
+                }
                 if (bloom.value < 1f) {
                     Text(
                         "❤️",
@@ -402,16 +411,21 @@ fun MessageBubble(
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 3.dp, start = 4.dp, end = 4.dp)) {
             if (message.timestamp > 0L) {
+                // ⚠️ The secondary ink is tuned to land at 5.24:1 on parchment — there is no
+                // headroom in it. `alpha = 0.7f` spent headroom it did not have and put the
+                // clock at **2.89:1**. 10sp on the transcript is quiet enough on its own.
                 Text(
                     text = formatClock(message.timestamp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 10.sp,
                 )
             }
             if (isMine) {
                 Spacer(modifier = Modifier.width(4.dp))
-                // Sent indicator (Element-style). The message is a real timeline event, so it's delivered.
-                Text("✓", color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f), fontSize = 11.sp)
+                // Sent indicator (Element-style). The message is a real timeline event, so it's
+                // delivered. Accent at 0.8 measured 2.62:1 on paper; keryxAccentInk is the same
+                // hue pressed into it (and the raw accent back again on the void).
+                Text("✓", color = keryxAccentInk(), fontSize = 11.sp)
             }
             if (speaking && onSpeak != null) {
                 Spacer(modifier = Modifier.width(6.dp))
@@ -426,15 +440,24 @@ fun MessageBubble(
                         label = "ttsPulseAlpha",
                     ).value
                 } else 1f
-                Icon(
-                    Icons.AutoMirrored.Filled.VolumeUp,
-                    contentDescription = "Stop speaking",
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = pulse),
+                // The tap was ON the 15dp glyph. Held to 32dp rather than the full 44 on
+                // purpose: this row only exists while speech is playing, and a 44dp box here
+                // would shove every bubble down the moment playback starts. The long-press bar
+                // carries the same stop at full size, so this is the convenience, not the door.
+                Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(15.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { onSpeak() },
-                )
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .clickable(onClickLabel = "Stop speaking") { onSpeak() },
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.VolumeUp,
+                        contentDescription = "Stop speaking",
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = pulse),
+                        modifier = Modifier.size(15.dp),
+                    )
+                }
             }
         }
     }

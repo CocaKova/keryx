@@ -115,10 +115,15 @@ fun ToolTheaterRow(
             Text(
                 when (ok) { true -> "✓"; false -> "✕"; null -> "·" },
                 fontSize = 9.sp,
+                // No alpha on the verdicts. The paper palette is tuned so each status clears
+                // 4.5:1 on parchment EXACTLY (PaperContrastTest pins it), so an 0.8 wash on the
+                // tick dropped it to 3.24:1 while the cross beside it stayed at 4.51 — a run's
+                // successes were fainter than its failures, which is backwards. The unknown mark
+                // is the one that stays quiet, and it is quiet by being a "·".
                 color = when (ok) {
                     false -> KeryxStatus.bad
-                    true -> KeryxStatus.good.copy(alpha = 0.8f)
-                    null -> baseColor.copy(alpha = 0.28f)
+                    true -> KeryxStatus.good
+                    null -> baseColor.copy(alpha = 0.45f)
                 },
                 modifier = Modifier.width(6.dp),
             )
@@ -129,8 +134,10 @@ fun ToolTheaterRow(
             Text(
                 if (isSkill) "✦" else ToolGrammar.glyphOf(call.name),
                 fontSize = 10.sp,
-                color = if (isSkill) accent.copy(alpha = 0.9f)
-                        else KeryxToolTint.forTool(call.name).copy(alpha = 0.9f),
+                // Same reason: KeryxToolTint's paper set is tuned to land ON the 4.5:1 line, so
+                // a 10% wash put four of the eight families under it. The tint is already the
+                // quiet version of itself.
+                color = if (isSkill) accent else KeryxToolTint.forTool(call.name),
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
@@ -189,14 +196,21 @@ fun ToolTheaterRow(
             var showOutput by androidx.compose.runtime.saveable.rememberSaveable(
                 "out:" + call.name + call.context,
             ) { mutableStateOf(false) }
+            // ⚠️ `padding().clickable()` puts the padding OUTSIDE the hit area, so this was a
+            // 9.5sp line of text and nothing else: a **~12dp** target, and the only way into a
+            // tool's payload. Padding moved inside the clickable, and the ink lifted from 0.42
+            // (2.58:1 on parchment — the least readable interactive string in the run) to the
+            // 0.72 the tool's own title beside it already uses.
             Text(
                 if (showOutput) "▾ output" else "▸ output",
                 fontSize = 9.5.sp,
                 fontFamily = FontFamily.Monospace,
-                color = baseColor.copy(alpha = 0.42f),
+                color = baseColor.copy(alpha = 0.72f),
                 modifier = Modifier
-                    .padding(start = 19.dp, top = 1.dp)
-                    .clickable { showOutput = !showOutput },
+                    .padding(start = 15.dp)
+                    .clip(RoundedCornerShape(KeryxRadius.chip))
+                    .clickable { showOutput = !showOutput }
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
             )
             if (showOutput) {
                 Text(
@@ -222,10 +236,12 @@ fun ToolTheaterRow(
                 if (open) "▾ diff" else "▸ diff",
                 fontSize = 9.5.sp,
                 fontFamily = FontFamily.Monospace,
-                color = baseColor.copy(alpha = 0.42f),
+                color = baseColor.copy(alpha = 0.72f),
                 modifier = Modifier
-                    .padding(start = 19.dp, top = 1.dp)
-                    .clickable { open = !open },
+                    .padding(start = 15.dp)
+                    .clip(RoundedCornerShape(KeryxRadius.chip))
+                    .clickable { open = !open }
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
             )
             if (open) {
                 DiffPanel(

@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
@@ -533,12 +534,10 @@ fun ChatScreen(
         if (currentRoom == null) {
             EmptyChat(viewModel = viewModel, modifier = Modifier.align(Alignment.Center))
         }
-        // FLIGHT PLAN: pinned with the instruments — the transcript scrolls, the plan doesn't.
-        flightPlan?.takeIf { it.total > 0 }?.let { plan ->
-            Box(Modifier.align(Alignment.TopCenter).zIndex(1f)) {
-                chat.keryx.app.presentation.ui.components.FlightPlanStrip(plan)
-            }
-        }
+        // The instrument rail (flight plan + working banner) is composed at the END of this Box —
+        // see "TOP INSTRUMENTS" below. Both are pinned to the top edge and both float over the
+        // transcript, so drawing them as two independently-aligned children put them in the same
+        // 28dp of screen.
         // Reserve space at the bottom equal to the (growing) composer height so messages never
         // slide underneath it as the user types a multi-line message.
         val bottomReserve = with(density) { composerHeightPx.toDp() } + 28.dp
@@ -1024,6 +1023,16 @@ fun ChatScreen(
             )
         }
 
+        // TOP INSTRUMENTS — the flight plan and the working banner, stacked.
+        //
+        // They were two separate TopCenter children of this Box and they occupied the SAME
+        // pixels: the plan strip is ~28dp tall with a 94%-opaque floor and rode a zIndex(1f)
+        // above everything, while the cloud banner sits 6dp from the same top edge and stands
+        // ~46dp tall. So exactly when both were live — and a flight plan exists precisely
+        // *because* a turn is running — the plan ate the banner's crown, and an opened plan ate
+        // the banner whole. One column, so the rail reads top-down: the pinned instrument flush
+        // to the edge, the transient cloud beneath it.
+        //
         // Compact top "working" counter: a small spinner + what the agent is doing + elapsed clock,
         // plus a live ≈tok/s readout while side-channel tokens are flowing.
         // Pinned at the top so it stays put for the whole run, unlike the per-message tool labels.
@@ -1035,15 +1044,28 @@ fun ChatScreen(
         // summarizing, in place of a verb it is not doing (2.5.7). Everything else it says stays
         // where it was — the clock keeps counting, the cloud keeps its shape.
         val compacting = sessionStatus?.takeIf { it.isCompacting }
-        WorkingStatusBar(
-            visible = awaitingReply || topTokPerSec > 0f || compacting != null,
-            label = compacting?.headline ?: workLabel,
-            compacting = compacting != null,
-            startedAt = workStartedAt,
-            tokPerSec = topTokPerSec,
-            typingAgentIds = typingAgentIds,
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 6.dp),
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().zIndex(1f),
+        ) {
+            // FLIGHT PLAN: pinned with the instruments — the transcript scrolls, the plan doesn't.
+            // Lifted above its sibling inside the column so the banner slides out from UNDER the
+            // rail rather than across it.
+            flightPlan?.takeIf { it.total > 0 }?.let { plan ->
+                Box(Modifier.zIndex(1f)) {
+                    chat.keryx.app.presentation.ui.components.FlightPlanStrip(plan)
+                }
+            }
+            WorkingStatusBar(
+                visible = awaitingReply || topTokPerSec > 0f || compacting != null,
+                label = compacting?.headline ?: workLabel,
+                compacting = compacting != null,
+                startedAt = workStartedAt,
+                tokPerSec = topTokPerSec,
+                typingAgentIds = typingAgentIds,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+        }
     }
 
     openSubagent?.let { run ->
@@ -1110,7 +1132,7 @@ private fun Composer(
             .clip(composerShape)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f))
             .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f), composerShape)
-            .padding(start = 2.dp, end = 6.dp, top = 2.dp, bottom = 3.dp),
+            .padding(start = 2.dp, end = 4.dp, top = 2.dp, bottom = 0.dp),
     ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -1225,6 +1247,18 @@ private fun Composer(
             else -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.ArrowUp to "Send"
         }
         val armed = textState.text.isNotBlank() || busyAction == "stop"
+        // Idle, the circle was the accent at 55% ALPHA and the arrow on it was hard white. On
+        // parchment that wash composites to #E79961 and white on it measures **2.24:1** — under
+        // the 3:1 WCAG asks even of a graphical object, so the send arrow was a ghost sitting on
+        // a peach coin. The quiet state now composites to an OPAQUE ground (same colour to the
+        // eye, no alpha-on-alpha) and takes the glyph that actually reads on it: 7.4:1 on paper,
+        // 7.5:1 on the void. Armed keeps the white arrow on full accent — 3.62:1, past the bar an
+        // icon is held to, and the button everyone already knows.
+        val sendGround = if (armed) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
+                .compositeOver(MaterialTheme.colorScheme.surfaceVariant)
+        val sendInk = if (armed) Color.White
+            else chat.keryx.app.presentation.ui.components.contrastColorFor(sendGround)
         Box {
             Box(
                 contentAlignment = Alignment.Center,
@@ -1237,7 +1271,7 @@ private fun Composer(
                         rotationZ = -22f * p
                     }
                     .clip(RoundedCornerShape(50))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = if (armed) 1f else 0.55f))
+                    .background(sendGround)
                     .combinedClickable(
                         onClick = {
                             when (busyAction) {
@@ -1263,7 +1297,7 @@ private fun Composer(
                         },
                     ),
             ) {
-                Icon(glyph, contentDescription = label, tint = Color.White, modifier = Modifier.size(24.dp))
+                Icon(glyph, contentDescription = label, tint = sendInk, modifier = Modifier.size(24.dp))
             }
             chat.keryx.app.presentation.ui.components.KeryxPuffBurst(
                 tick = sendPuffTick,
@@ -1315,9 +1349,18 @@ private fun ComposerFooter(
     val usage = contextUsage?.takeIf { roomId != null && it.roomId == roomId }
     if (caps == null && usage == null) return
     val meta = MaterialTheme.colorScheme.onSurfaceVariant
+    // The footer is an instrument readout, but two of its three readouts are the app's most-used
+    // controls after Send — the model picker and the reasoning dial. At `padding(vertical = 2.dp)`
+    // round a 10.5sp line they were **~17dp** tall: a target you aim at rather than hit, on the
+    // control that decides which brain answers. The row is a 40dp band now and the pills fill it,
+    // so the readouts sit exactly where they sat and the taps land. The composer's own bottom
+    // padding is given back to the band so the growth is ~17dp, not 21.
+    val pillShape = RoundedCornerShape(
+        chat.keryx.app.presentation.ui.components.KeryxRadius.chip
+    )
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 6.dp, top = 1.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp).padding(start = 8.dp, end = 4.dp),
     ) {
         // Model pill — the live brain by name, ▾ inside the same hit target.
         var modelMenu by remember { mutableStateOf(false) }
@@ -1327,9 +1370,10 @@ private fun ComposerFooter(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
+                    .heightIn(min = 36.dp)
+                    .clip(pillShape)
                     .clickable { modelMenu = true; onRefreshCaps(); onRefreshCatalog() }
-                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
             ) {
                 // The name rises into place when the brain changes — the readout answers the pick.
                 AnimatedContent(
@@ -1363,7 +1407,7 @@ private fun ComposerFooter(
                 onRefresh = { onRefreshCaps(); onRefreshCatalog() },
             )
         }
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(4.dp))
         // Reasoning pill — the relocated top-bar menu, now living where the thinking happens.
         var reasoningMenu by remember { mutableStateOf(false) }
         val levelLabel = caps?.let { c -> (c.labels[c.current] ?: c.current).ifBlank { "reasoning" } } ?: "reasoning"
@@ -1371,9 +1415,10 @@ private fun ComposerFooter(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
+                    .heightIn(min = 36.dp)
+                    .clip(pillShape)
                     .clickable { reasoningMenu = true; onRefreshCaps() }
-                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
             ) {
                 Text(
                     levelLabel,
