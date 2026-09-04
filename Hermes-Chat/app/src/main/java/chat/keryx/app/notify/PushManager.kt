@@ -1,6 +1,7 @@
 package chat.keryx.app.notify
 
 import android.content.Context
+import chat.keryx.app.BuildConfig
 import chat.keryx.app.KeryxApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +28,11 @@ import org.unifiedpush.android.connector.UnifiedPush
  */
 object PushManager {
 
-    const val APP_ID = "chat.keryx.app.android"
+    // Derived, not hardcoded: the Matrix pusher is keyed by this id, and `setPushers(Remove)`
+    // below deletes by (appId, endpoint). A side-by-side debug build sharing the id could
+    // unregister the daily driver's pusher. Release resolves to the same "chat.keryx.app.android"
+    // it always was; the .debug variant gets its own.
+    const val APP_ID = "${BuildConfig.APPLICATION_ID}.android"
     private val scope = CoroutineScope(Dispatchers.IO)
 
     sealed interface EnableResult {

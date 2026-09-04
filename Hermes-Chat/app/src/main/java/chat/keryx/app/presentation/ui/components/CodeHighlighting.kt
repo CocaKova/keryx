@@ -83,6 +83,14 @@ object CodeHighlighting {
         "rb" to "ruby", "coffee" to "coffeescript",
     )
 
+    /**
+     * Test hook: every fence tag this maps onto a grammar — the aliases people actually write
+     * plus the tokenizer's own names. The on-device render canary walks this, so a grammar or
+     * an alias added above is covered the day it is added.
+     */
+    val knownTags: Set<String>
+        get() = ALIASES.keys + SyntaxLanguage.entries.map { it.name.lowercase() }
+
     private fun languageOf(language: String?): SyntaxLanguage? {
         val name = language?.trim()?.lowercase().orEmpty()
         if (name.isBlank()) return null
