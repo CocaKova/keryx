@@ -30,6 +30,29 @@ import kotlinx.coroutines.withTimeoutOrNull
  */
 class KeryxApp : Application() {
 
+    /**
+     * Teach coil to animate. Inline `![](…gif)` images in agent prose render through the
+     * markdown renderer's coil3 transformer, which decodes a still first frame unless a GIF
+     * decoder is registered — so a linked reaction GIF arrived as a frozen picture.
+     *
+     * Built ON TOP of the default loader rather than replacing it: `.components {}` prepends,
+     * so the network fetcher and every other default stays exactly where it was. The platform
+     * decoder arrives at API 28; below it coil brings its own.
+     */
+    private fun installAnimatedImageDecoder() {
+        coil3.SingletonImageLoader.setSafe { ctx ->
+            coil3.ImageLoader.Builder(ctx)
+                .components {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                        add(coil3.gif.AnimatedImageDecoder.Factory())
+                    } else {
+                        add(coil3.gif.GifDecoder.Factory())
+                    }
+                }
+                .build()
+        }
+    }
+
     private companion object {
         /** How long sync may keep running after the last activity leaves the screen. Long
          *  enough to cover a quick app switch or a share sheet's upload finishing; short
@@ -78,6 +101,7 @@ class KeryxApp : Application() {
     override fun onCreate() {
         super.onCreate()
         CrashLog.install(applicationContext)
+        installAnimatedImageDecoder()
         settingsRepository = SettingsRepositoryImpl(applicationContext)
         matrixService = MatrixService(applicationContext)
         // The login screen's chosen door decides the spine for this whole process life —
