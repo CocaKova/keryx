@@ -24,6 +24,10 @@ import kotlinx.coroutines.launch
 class NotificationActionReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == ACTION_GATE_CHOICE || intent.action == ACTION_GATE_REPLY) {
+            onGateAnswer(context, intent)
+            return
+        }
         val roomId = intent.getStringExtra(KeryxNotifications.EXTRA_ROOM_ID) ?: return
         val roomName = intent.getStringExtra(KeryxNotifications.EXTRA_ROOM_NAME) ?: "Keryx"
         if (intent.action == ACTION_MARK_READ) {
@@ -65,10 +69,128 @@ class NotificationActionReceiver : BroadcastReceiver() {
         )
     }
 
+    /**
+     * The Gate's buttons: a stopped agent answered from the shade. Unlike a message reply this
+     * is NOT a message into the room — it resolves a specific request the gateway is blocked
+     * on, by id, over the direct door's RPC. Handed to a worker for the same reason as the
+     * others: a receiver gets ~10s and no process guarantees, and the socket may be cold.
+     */
+    private fun onGateAnswer(context: Context, intent: Intent) {
+        val sessionId = intent.getStringExtra(KeryxNotifications.EXTRA_GATE_SESSION) ?: return
+        val kind = intent.getStringExtra(KeryxNotifications.EXTRA_GATE_KIND) ?: return
+        val sessionName = intent.getStringExtra(KeryxNotifications.EXTRA_ROOM_NAME) ?: "Keryx"
+        val answer = when (intent.action) {
+            ACTION_GATE_CHOICE -> intent.getStringExtra(KeryxNotifications.EXTRA_GATE_VALUE)
+            ACTION_GATE_REPLY -> RemoteInput.getResultsFromIntent(intent)
+                ?.getCharSequence(KeryxNotifications.KEY_GATE_REPLY)?.toString()
+            else -> null
+        }?.trim()
+        if (answer.isNullOrEmpty()) return
+
+        KeryxNotifications.notifyGateResult(context, sessionId, sessionName, "→ Answering…")
+
+        val work = OneTimeWorkRequestBuilder<GateAnswerWorker>()
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .setInputData(
+                workDataOf(
+                    GateAnswerWorker.KEY_SESSION to sessionId,
+                    GateAnswerWorker.KEY_SESSION_NAME to sessionName,
+                    GateAnswerWorker.KEY_KIND to kind,
+                    GateAnswerWorker.KEY_REQUEST to intent.getStringExtra(KeryxNotifications.EXTRA_GATE_REQUEST),
+                    GateAnswerWorker.KEY_ANSWER to answer,
+                ),
+            )
+            .build()
+        // KEEP, not APPEND: the first answer to a request wins. Two taps on one notice (or a
+        // tap racing a RemoteInput) must not send two answers to a gateway that has already
+        // moved on — the second would resolve nothing, or worse, the NEXT request.
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "keryx-gate-answer-$sessionId", ExistingWorkPolicy.KEEP, work,
+        )
+    }
+
     companion object {
         const val ACTION_REPLY = "chat.keryx.app.notify.REPLY"
         const val ACTION_QUICK = "chat.keryx.app.notify.QUICK"
         const val ACTION_MARK_READ = "chat.keryx.app.notify.MARK_READ"
+        const val ACTION_GATE_CHOICE = "chat.keryx.app.notify.GATE_CHOICE"
+        const val ACTION_GATE_REPLY = "chat.keryx.app.notify.GATE_REPLY"
+    }
+}
+
+/**
+ * Sends one Gate answer over the direct door and settles the notification into the outcome.
+ *
+ * The socket is the interesting part: the process may have been killed since the notice was
+ * posted, so the WS is reconnected and waited for rather than assumed. A gateway that cannot be
+ * reached is a RETRY, not a failure — the request is still waiting on the other side, and the
+ * one thing this must never do is report an answer that never arrived.
+ */
+class GateAnswerWorker(
+    context: Context,
+    params: WorkerParameters,
+) : CoroutineWorker(context, params) {
+
+    override suspend fun doWork(): Result {
+        val app = applicationContext as? KeryxApp ?: return Result.failure()
+        val direct = app.transport as? chat.keryx.app.transport.direct.DirectTransport
+            ?: return Result.failure()
+        val sessionId = inputData.getString(KEY_SESSION) ?: return Result.failure()
+        val name = inputData.getString(KEY_SESSION_NAME) ?: "Keryx"
+        val kind = inputData.getString(KEY_KIND) ?: return Result.failure()
+        val answer = inputData.getString(KEY_ANSWER) ?: return Result.failure()
+
+        direct.connectIfConfigured()
+        if (!direct.awaitConnected(CONNECT_WAIT_MS)) {
+            if (runAttemptCount < MAX_ATTEMPTS) return Result.retry()
+            KeryxNotifications.notifyGateResult(
+                applicationContext, sessionId, name, "⚠️ Couldn't reach the gateway — tap to answer",
+            )
+            return Result.failure()
+        }
+
+        val outcome: kotlin.Result<String> =
+            if (kind == KeryxNotifications.GATE_KIND_APPROVAL) {
+                direct.respondApproval(sessionId, answer).map { resolved ->
+                    // resolved=0 means the wait had already failed closed. Saying "approved"
+                    // there would be a lie about a command that is not going to run.
+                    if (resolved) "Answered — the agent is running again"
+                    else "That request had already timed out"
+                }
+            } else {
+                val blockingKind = chat.keryx.core.model.BlockingKind.entries.firstOrNull { it.name == kind }
+                val requestId = inputData.getString(KEY_REQUEST)
+                if (blockingKind == null || requestId.isNullOrBlank()) return Result.failure()
+                direct.respondBlocking(sessionId, requestId, blockingKind, answer)
+                    .map { "Answered — the agent is running again" }
+            }
+
+        return outcome.fold(
+            onSuccess = { text ->
+                // Usually cancelled a moment later by the Gate watcher, when the request leaves
+                // the pending map — which is the real evidence it landed.
+                KeryxNotifications.notifyGateResult(applicationContext, sessionId, name, text)
+                Result.success()
+            },
+            onFailure = { err ->
+                android.util.Log.w("KeryxGate", "answer failed for $sessionId", err)
+                if (runAttemptCount < MAX_ATTEMPTS) return Result.retry()
+                KeryxNotifications.notifyGateResult(
+                    applicationContext, sessionId, name, "⚠️ Couldn't answer — tap to open",
+                )
+                Result.failure()
+            },
+        )
+    }
+
+    companion object {
+        const val KEY_SESSION = "sessionId"
+        const val KEY_SESSION_NAME = "sessionName"
+        const val KEY_KIND = "kind"
+        const val KEY_REQUEST = "requestId"
+        const val KEY_ANSWER = "answer"
+        private const val CONNECT_WAIT_MS = 12_000L
+        private const val MAX_ATTEMPTS = 2
     }
 }
 

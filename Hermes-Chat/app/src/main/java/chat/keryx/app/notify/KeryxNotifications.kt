@@ -327,6 +327,151 @@ object KeryxNotifications {
 
     // --- Mission alerts (kanban watcher) --------------------------------------------------------
 
+    // --- The Gate: a stopped agent, answerable from the shade ---------------------------------
+    //
+    // The decision half of this has been in :core (ShadeNotices) since G16, unit-tested, with
+    // nothing on Android reading it. Until now an approval or a question raised while you were
+    // in another session — or not in the app at all — made no sound whatsoever: the gateway
+    // waited out `approvals.timeout` and failed CLOSED while the phone sat silent, and the only
+    // evidence was a turn that had quietly refused to happen.
+    //
+    // Its own channel, not the messages one: this is the agent stopped and waiting on you, it
+    // wants to be able to interrupt, and it must be silenceable on its own if it ever gets noisy.
+
+    const val GATE_CHANNEL_ID = "keryx_gate"
+    const val EXTRA_GATE_SESSION = "keryx.gate.session"
+    const val EXTRA_GATE_KIND = "keryx.gate.kind"
+    const val EXTRA_GATE_REQUEST = "keryx.gate.request"
+    const val EXTRA_GATE_VALUE = "keryx.gate.value"
+    const val KEY_GATE_REPLY = "keryx.gate.reply"
+
+    /** "approval" or a [chat.keryx.core.model.BlockingKind] name — which respond call answers it. */
+    const val GATE_KIND_APPROVAL = "approval"
+
+    // A separate id space from the message notification for the same session: the Gate and the
+    // conversation are two different things to be told, and one must never replace the other.
+    private const val GATE_ID_SALT = 0x6A7E
+
+    fun gateId(sessionId: String): Int = sessionId.hashCode() xor GATE_ID_SALT
+
+    fun ensureGateChannel(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val mgr = context.getSystemService(NotificationManager::class.java) ?: return
+        if (mgr.getNotificationChannel(GATE_CHANNEL_ID) != null) return
+        val channel = NotificationChannel(
+            GATE_CHANNEL_ID,
+            "Approvals & questions",
+            NotificationManager.IMPORTANCE_HIGH,
+        ).apply {
+            description = "An agent is stopped, waiting on your answer"
+            enableVibration(true)
+        }
+        mgr.createNotificationChannel(channel)
+    }
+
+    /**
+     * Post the shade's view of a stopped agent. [notice] is rendered VERBATIM — which buttons
+     * exist, whether free text is offered, and how long the notice stays honest are decisions
+     * [chat.keryx.core.model.ShadeNotices] already made and tested; nothing here second-guesses
+     * them. In particular the absence of buttons on a sudo/secret notice is a rule, not an
+     * oversight: a credential typed into a lock-screen RemoteInput is a password echoed onto
+     * the most shoulder-surfable surface the OS has, so those are tap-through to the masked
+     * in-app field.
+     */
+    fun notifyGate(
+        context: Context,
+        sessionId: String,
+        sessionName: String,
+        notice: chat.keryx.core.model.ShadeNotice,
+        kind: String,
+        requestId: String?,
+    ) {
+        val nm = NotificationManagerCompat.from(context)
+        if (!nm.areNotificationsEnabled()) return
+        ensureGateChannel(context)
+
+        fun gateIntent(action: String, value: String?): PendingIntent {
+            val intent = Intent(context, NotificationActionReceiver::class.java).apply {
+                this.action = action
+                putExtra(EXTRA_GATE_SESSION, sessionId)
+                putExtra(EXTRA_GATE_KIND, kind)
+                putExtra(EXTRA_GATE_REQUEST, requestId)
+                putExtra(EXTRA_ROOM_NAME, sessionName)
+                value?.let { putExtra(EXTRA_GATE_VALUE, it) }
+            }
+            return PendingIntent.getBroadcast(
+                context,
+                // Distinct per (session, value) or the system reuses one extras bundle for
+                // every button and each of them answers whatever the first one said.
+                (sessionId + "|" + action + "|" + (value ?: "")).hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        }
+
+        val builder = NotificationCompat.Builder(context, GATE_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_keryx)
+            .setContentTitle(notice.title)
+            .setContentText(notice.body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(notice.body).setSummaryText(sessionName))
+            .setSubText(sessionName)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(tapIntent(context, sessionId))
+            // A notice must die honestly: the gateway fails closed when its wait runs out, and a
+            // button that outlives the wait resolves nothing. The system drops the whole notice.
+            .setTimeoutAfter(notice.timeoutMs)
+
+        notice.actions.forEach { act ->
+            builder.addAction(
+                NotificationCompat.Action.Builder(0, act.label, gateIntent(NotificationActionReceiver.ACTION_GATE_CHOICE, act.wireValue))
+                    .setAllowGeneratedReplies(false)
+                    .build(),
+            )
+        }
+        if (notice.freeTextReply) {
+            val input = RemoteInput.Builder(KEY_GATE_REPLY).setLabel("Answer").build()
+            builder.addAction(
+                NotificationCompat.Action.Builder(0, "Answer", gateIntent(NotificationActionReceiver.ACTION_GATE_REPLY, null))
+                    .addRemoteInput(input)
+                    .setAllowGeneratedReplies(false)
+                    .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
+                    .build(),
+            )
+        }
+        runCatching { nm.notify(gateId(sessionId), builder.build()) }
+    }
+
+    /**
+     * Settle the Gate notification into the outcome of an answer sent from the shade. Required,
+     * not cosmetic: a fired RemoteInput pins a spinner on the notification until it is updated
+     * under the SAME id, so this reuses [gateId]. On success the watcher usually cancels this a
+     * moment later (the request left the pending map, which is the real "it landed"); on failure
+     * nothing clears it, which is exactly where it should stay.
+     */
+    fun notifyGateResult(context: Context, sessionId: String, sessionName: String, text: String) {
+        val nm = NotificationManagerCompat.from(context)
+        if (!nm.areNotificationsEnabled()) return
+        ensureGateChannel(context)
+        val n = NotificationCompat.Builder(context, GATE_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_keryx)
+            .setContentTitle(text)
+            .setSubText(sessionName)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setAutoCancel(true)
+            .setContentIntent(tapIntent(context, sessionId))
+            .build()
+        runCatching { nm.notify(gateId(sessionId), n) }
+    }
+
+    /** The request is answered, expired, or now on screen — the shade lets it go. */
+    fun clearGate(context: Context, sessionId: String) {
+        runCatching { NotificationManagerCompat.from(context).cancel(gateId(sessionId)) }
+    }
+
     const val MISSIONS_CHANNEL_ID = "keryx_missions"
 
     fun ensureMissionsChannel(context: Context) {
