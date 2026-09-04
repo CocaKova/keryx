@@ -15,6 +15,8 @@ import chat.keryx.app.notify.KeryxNotifications
 import chat.keryx.core.protocol.MessageParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -54,9 +56,24 @@ class KeryxApp : Application() {
     // Foreground + currently-open-room tracking, so we only notify for messages the user isn't
     // already looking at. Updated by the activity lifecycle / the chat screen.
     @Volatile private var foregroundCount = 0
-    val isForeground: Boolean get() = foregroundCount > 0
+    private val _foreground = MutableStateFlow(false)
+    val isForeground: Boolean get() = _foreground.value
 
-    @Volatile var openRoomId: String? = null
+    // Backed by a flow, not a plain field, for the Gate: a request you can see must not also
+    // buzz the shade, and — the half a plain field cannot express — one you walk away from
+    // without answering must. Every existing reader and writer is unchanged.
+    private val _openRoom = MutableStateFlow<String?>(null)
+    var openRoomId: String?
+        get() = _openRoom.value
+        set(value) { _openRoom.value = value }
+
+    /** The room being looked at right now: open AND on screen, or nothing. */
+    private val attention: kotlinx.coroutines.flow.Flow<String?> =
+        combine(_openRoom, _foreground) { room, fg -> room.takeIf { fg } }
+
+    /** Session id → display name, kept fresh by the roster watch below so the shade can name
+     *  the room a request came from without a round trip. */
+    @Volatile private var roomNames: Map<String, String> = emptyMap()
 
     override fun onCreate() {
         super.onCreate()
@@ -73,7 +90,7 @@ class KeryxApp : Application() {
         archiveStore = chat.keryx.app.data.archive.ArchiveStore(applicationContext)
         // One store, two producers: the Matrix timeline walk, or the gateway's REST pages.
         archiveIndexer = (transport as? DirectTransport)
-            ?.let { direct -> chat.keryx.app.data.archive.RestArchiveIndexer({ direct.restClient }, archiveStore) }
+            ?.let { direct -> chat.keryx.app.data.archive.RestArchiveIndexer({ direct.restClient }, archiveStore, direct::profileForSession) }
             ?: chat.keryx.app.data.archive.ArchiveIndexer(matrixService, archiveStore)
 
         KeryxNotifications.ensureChannel(applicationContext)
@@ -95,6 +112,7 @@ class KeryxApp : Application() {
         }
 
         observeForNotifications()
+        observeShadeGate()
     }
 
     /** Memory pressure → every registered session cache sheds weight (media bytes, decoded
@@ -120,6 +138,7 @@ class KeryxApp : Application() {
             var baseline: Map<String, Long>? = null
             transport.getRooms().collect { rooms ->
                 val current = rooms.associate { it.id to it.timestamp }
+                roomNames = rooms.associate { it.id to it.name }
                 val prev = baseline
                 if (prev == null) {
                     // First emission after launch is the existing state — don't notify for history.
@@ -192,6 +211,59 @@ class KeryxApp : Application() {
         }
     }
 
+    /**
+     * The Gate: an agent stopped on an approval, a question or a credential, said out loud.
+     *
+     * The decision layer for this has been in :core since G16 — which buttons a request earns,
+     * whether free text is safe, how long the notice stays honest — fully tested and, until now,
+     * read by nothing. The consequence was silence: a request raised while you were in another
+     * session or out of the app made no sound at all, the gateway waited out its timeout and
+     * failed CLOSED, and all you ever saw was a turn that had declined to happen.
+     *
+     * Direct door only, and correctly so: `shadePending` is the gateway's own blocked state.
+     * On Matrix the agent asks in the room and the message notification already carries it.
+     */
+    private fun observeShadeGate() {
+        val direct = transport as? DirectTransport ?: return
+        KeryxNotifications.ensureGateChannel(applicationContext)
+        appScope.launch {
+            // Re-evaluated on BOTH inputs: a request arriving is one reason to post, and the
+            // user leaving the room it is in is the other.
+            var posted = emptyMap<String, String>()
+            combine(direct.shadePending(), attention) { pending, looking -> pending to looking }
+                .collect { (pending, looking) ->
+                    val next = mutableMapOf<String, String>()
+                    for ((sessionId, entry) in pending) {
+                        // The in-app card owns the answer while you are looking at it — and it
+                        // has the masked field a credential must be typed into.
+                        if (sessionId == looking) continue
+                        val notice = chat.keryx.core.model.ShadeNotices.forEntry(entry) ?: continue
+                        // Same precedence the notice was built with: a blocking request outranks
+                        // an approval, so the buttons and the respond call cannot disagree.
+                        val blocking = entry.blocking
+                        val kind = blocking?.kind?.name ?: KeryxNotifications.GATE_KIND_APPROVAL
+                        // Data classes: the whole entry IS the identity of what is being asked.
+                        val signature = entry.toString()
+                        next[sessionId] = signature
+                        if (posted[sessionId] == signature) continue
+                        KeryxNotifications.notifyGate(
+                            context = applicationContext,
+                            sessionId = sessionId,
+                            sessionName = roomNames[sessionId] ?: "Keryx",
+                            notice = notice,
+                            kind = kind,
+                            requestId = blocking?.requestId,
+                        )
+                    }
+                    // Answered anywhere, expired, or now on screen — all one thing to the shade.
+                    for (gone in posted.keys - next.keys) {
+                        KeryxNotifications.clearGate(applicationContext, gone)
+                    }
+                    posted = next
+                }
+        }
+    }
+
     /** A herald's display name, falling back to its MXID localpart. */
     private fun heraldName(m: Message): String = m.senderName
         .takeIf { it.isNotBlank() && !it.startsWith("@") }
@@ -219,10 +291,12 @@ class KeryxApp : Application() {
     private inner class ForegroundTracker : ActivityLifecycleCallbacks {
         override fun onActivityStarted(activity: Activity) {
             if (++foregroundCount == 1) matrixService.syncWake()
+            _foreground.value = true
         }
         override fun onActivityStopped(activity: Activity) {
             foregroundCount = (foregroundCount - 1).coerceAtLeast(0)
             if (foregroundCount == 0) matrixService.syncStandby(SYNC_BACKGROUND_GRACE_MS)
+            _foreground.value = foregroundCount > 0
         }
         override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
         override fun onActivityResumed(activity: Activity) {}
