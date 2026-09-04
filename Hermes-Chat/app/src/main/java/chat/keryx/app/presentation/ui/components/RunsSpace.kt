@@ -408,11 +408,13 @@ private fun RunHeadlineRow(
                     delta?.badge?.let { badge ->
                         Text(
                             badge,
-                            color = accent,
+                            // Accent text on a 12% wash of the same accent is 3.03:1 on
+                            // parchment; the ground stays the light, the label takes the ink.
+                            color = keryxAccentInk(accent),
                             fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
                             fontFamily = FontFamily.Monospace,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
+                                .clip(RoundedCornerShape(KeryxRadius.chip))
                                 .background(accent.copy(alpha = 0.12f))
                                 .padding(horizontal = 5.dp, vertical = 1.dp),
                         )
@@ -592,9 +594,9 @@ private fun RunCard(
                     Text(
                         "$unreadCount new",
                         fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = keryxAccentInk(),
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(KeryxRadius.chip))
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
                             .padding(horizontal = 7.dp, vertical = 2.dp),
                     )

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -147,20 +148,31 @@ fun ArchiveScreen(
             ArchiveTab.entries.forEach { t ->
                 val selected = t == tab
                 val accent = MaterialTheme.colorScheme.primary
-                Text(
-                    t.label,
-                    fontSize = 12.sp,
-                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (selected) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+                // Selection was accent text on a 14% wash of the SAME accent: 2.96:1 on paper,
+                // 4.45:1 on the void — so the one signal telling you which tab you are on was
+                // the least readable thing in the row. Ground keeps the wash, label takes the
+                // ink. And 7dp of padding round a 12sp cap is a 28dp target for the space's
+                // primary navigation; these are 44dp now.
+                Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
+                        .defaultMinSize(minHeight = 44.dp)
                         .clip(RoundedCornerShape(50))
                         .background(
                             if (selected) accent.copy(alpha = 0.14f)
                             else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
                         )
-                        .clickable { tab = t }
-                        .padding(horizontal = 14.dp, vertical = 7.dp),
-                )
+                        .keryxPressable { tab = t }
+                        .padding(horizontal = 16.dp, vertical = 7.dp),
+                ) {
+                    Text(
+                        t.label,
+                        fontSize = 12.sp,
+                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (selected) keryxAccentInk(accent)
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
         when (tab) {
@@ -237,19 +249,23 @@ private fun SearchTab(
             .fillMaxWidth()
             .padding(horizontal = 20.dp),
     )
+    // ⚠️ Empty-state copy is the ONLY thing on screen when it shows, and it is the sentence that
+    // tells you what to do next. It used to be the secondary ink dimmed a further 40%, which on
+    // parchment measures **2.50:1** and on the void 3.40:1 — under AA in both themes. The
+    // secondary ink at full strength (5.65:1 / 7.38:1) IS the quiet voice; it does not need help.
     when {
         query.isBlank() -> Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
                 "Every message the app has ever seen, one search away.",
                 fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         searched && hits.isEmpty() -> Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
                 "Nothing yet for \"${query.trim()}\"",
                 fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         else -> LazyColumn(
@@ -326,12 +342,25 @@ private fun SavedTab(
         entries = viewModel.archive.saved()
         loaded = true
     }
-    if (loaded && entries.isEmpty()) {
+    // Before `loaded` flips, this guard was skipped and an EMPTY LazyColumn rendered — the tab
+    // opened onto a blank sheet with nothing to say for the length of the read. The wait is now
+    // a state of its own, in the same voice as the emptiness it may turn into.
+    if (!loaded) {
+        Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+            Text(
+                "Opening the archive…",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        return
+    }
+    if (entries.isEmpty()) {
         Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
                 "Nothing kept yet. Long-press a message and tap the bookmark.",
                 fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         return
@@ -402,12 +431,24 @@ private fun MediaTab(
         entries = viewModel.archive.media()
         loaded = true
     }
-    if (loaded && entries.isEmpty()) {
+    // Same blank-sheet gap as SavedTab: the guard needed `loaded`, so the unloaded case fell
+    // through to an empty grid.
+    if (!loaded) {
+        Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+            Text(
+                "Looking through what's indexed…",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        return
+    }
+    if (entries.isEmpty()) {
         Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
                 "No photos or files indexed yet.",
                 fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         return
@@ -594,7 +635,7 @@ fun ArchiveContextViewer(
                 Text(
                     "That moment couldn't be loaded (it may predate this login's keys).",
                     fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             return@KeryxSpace
@@ -708,7 +749,7 @@ private fun ContextRow(m: Message, anchor: Boolean, viewModel: ChatViewModel) {
                     java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
                         .format(java.util.Date(m.timestamp)),
                     fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Spacer(Modifier.height(3.dp))

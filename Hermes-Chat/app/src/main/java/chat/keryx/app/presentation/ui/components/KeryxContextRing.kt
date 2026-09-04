@@ -5,6 +5,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -49,10 +50,15 @@ fun KeryxContextRing(used: Long, max: Long, modifier: Modifier = Modifier) {
     var showFigure by remember { mutableStateOf(false) }
     Row(
         verticalAlignment = Alignment.CenterVertically,
+        // The ring is 15dp of drawing; the TAP that reveals "84k / 128k" was 15dp too, wedged in
+        // 3dp of padding at the very corner of the screen — the hardest place on a phone to hit
+        // accurately. The mark stays the size it was; the target rides the composer footer's
+        // own 36dp band.
         modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
+            .heightIn(min = 36.dp)
+            .clip(RoundedCornerShape(KeryxRadius.chip))
             .clickable { showFigure = !showFigure }
-            .padding(horizontal = 3.dp, vertical = 2.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
         if (showFigure) {
             Text(

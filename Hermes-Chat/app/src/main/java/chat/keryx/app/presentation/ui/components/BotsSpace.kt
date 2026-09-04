@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -397,11 +398,14 @@ private fun Chip(text: String, color: Color) {
     Spacer(Modifier.width(6.dp))
     Text(
         text,
-        color = color,
+        // 9sp of a hue on a 14% wash of the SAME hue: 2.96:1 on parchment with the default
+        // accent. The ground is the light, the label is ink pressed out of it — and on the
+        // void keryxAccentInk hands the hue straight back, so dark mode is unchanged.
+        color = keryxAccentInk(color),
         fontSize = 9.sp,
         maxLines = 1,
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(KeryxRadius.chip))
             .background(color.copy(alpha = 0.14f))
             .padding(horizontal = 5.dp, vertical = 1.dp),
     )
@@ -556,17 +560,24 @@ private fun BotEditSheet(
 @Composable
 private fun ClonePill(label: String, selected: Boolean, onClick: () -> Unit) {
     val accent = MaterialTheme.colorScheme.primary
-    Text(
-        label,
-        fontSize = 12.sp,
-        color = if (selected) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+    // Selected read 2.89:1 on paper (accent on a 16% wash of itself), and 5dp of padding
+    // round a 12sp line is a 24dp target on the picker you use to seed a new agent.
+    Box(
+        contentAlignment = Alignment.Center,
         modifier = Modifier
             .padding(end = 6.dp)
+            .defaultMinSize(minHeight = 44.dp)
             .clip(RoundedCornerShape(KeryxRadius.chip))
             .background(if (selected) accent.copy(alpha = 0.16f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 5.dp),
-    )
+            .keryxPressable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 5.dp),
+    ) {
+        Text(
+            label,
+            fontSize = 12.sp,
+            color = if (selected) keryxAccentInk(accent) else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 /** A bot's routines: its `[bot:<name>]` cron jobs, read here, managed in Runs / Jobs. */

@@ -138,6 +138,74 @@ object KeryxStatus {
     val idle: Color @Composable get() = if (onVoid) voidIdle else paperIdle
 }
 
+/**
+ * The accent, made safe to **read**.
+ *
+ * The accent is a light, and a light behaves differently on the two grounds. On the void it is
+ * already legible on its own — the default amber measures 4.9:1 on the deep surface. On
+ * parchment it is a highlighter: amber over `SurfaceLight` measures **3.50:1**, and that is the
+ * colour [KeryxSectionHeader] sets EVERY section heading in the app in, at 10sp. Small text
+ * needs 4.5. Inside a chip whose ground is a 14% wash of the same accent (the Bot Chat and
+ * profile badges) it falls to **2.77:1**.
+ *
+ * So on paper the accent is pressed toward the theme's own ink until it clears the bar, hue
+ * kept — the same move [roomLight] makes for a room's light, and for the same reason: the hue
+ * is the identity, the ground decides only how hard it is pressed. Default amber lands at
+ * ≈#A64606, which reads 5.8:1 on the leaf and 4.6:1 inside its own chip.
+ *
+ * Pressed by measurement rather than by a fixed factor, because the accent is user-chosen: a
+ * flat 60% saves amber and still loses a pale yellow. The loop is a handful of cheap lerps and
+ * runs only in light mode.
+ *
+ * ⚠️ This is the TEXT pass. A fill — a chip's ground, a dot, a rim, a bubble's gilt — keeps the
+ * raw accent: pressing those to ink would put out the light this whole language is built on.
+ */
+@Composable
+fun keryxAccentInk(accent: Color = MaterialTheme.colorScheme.primary): Color {
+    val cs = MaterialTheme.colorScheme
+    if (cs.background.luminance() < 0.5f) return accent
+    return paperAccentInk(accent, cs.onSurface)
+}
+
+/**
+ * [keryxAccentInk]'s arithmetic, without a theme — so PaperContrastTest can hold it to the same
+ * bar it holds every other paper hue to. Straight sRGB channel blending and WCAG's own
+ * luminance, deliberately: this is the number the test measures, not a colour-space opinion.
+ */
+fun paperAccentInk(accent: Color, ink: Color): Color {
+    var c = accent
+    var step = 0
+    // The ceiling is set by the WORST paper ground the accent is asked to be read on — its own
+    // 14% chip, not the bare leaf — so one token covers both call sites.
+    while (wcagLuminance(c) > PAPER_ACCENT_CEILING && step < PAPER_ACCENT_STEPS) {
+        c = Color(
+            red = c.red + (ink.red - c.red) * PAPER_ACCENT_PRESS,
+            green = c.green + (ink.green - c.green) * PAPER_ACCENT_PRESS,
+            blue = c.blue + (ink.blue - c.blue) * PAPER_ACCENT_PRESS,
+            alpha = accent.alpha,
+        )
+        step++
+    }
+    return c
+}
+
+/** WCAG 2.1 relative luminance of an sRGB colour. */
+private fun wcagLuminance(c: Color): Float {
+    fun ch(s: Float): Float =
+        if (s <= 0.03928f) s / 12.92f
+        else Math.pow(((s + 0.055f) / 1.055f).toDouble(), 2.4).toFloat()
+    return 0.2126f * ch(c.red) + 0.7152f * ch(c.green) + 0.0722f * ch(c.blue)
+}
+
+/** Relative luminance at which the accent clears 4.5:1 against a 14% wash of itself on paper. */
+private const val PAPER_ACCENT_CEILING = 0.128f
+
+/** How hard one press moves the hue toward the ink, and how many presses are allowed. Small
+ *  steps so a hue that only just fails is only just darkened; the cap stops a white accent
+ *  (which can never clear the bar) from looping — it lands on ink, which is the honest answer. */
+private const val PAPER_ACCENT_PRESS = 0.12f
+private const val PAPER_ACCENT_STEPS = 24
+
 /** The dusk backdrop every full-screen Keryx space sits on: quiet surface up top melting into a
  *  10% accent-2 glow at the foot. */
 @Composable
@@ -482,7 +550,10 @@ fun KeryxSectionHeader(
     modifier: Modifier = Modifier,
     dotColor: Color? = null,
     count: Int? = null,
-    color: Color = MaterialTheme.colorScheme.primary,
+    // The heading is TEXT, and 10sp of raw accent on parchment is 3.50:1 — under the 4.5 small
+    // text needs, on every section heading in the app. [keryxAccentInk] presses the same hue
+    // into the paper; on the void it hands the accent straight back, so dark mode is untouched.
+    color: Color = keryxAccentInk(),
 ) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
         if (dotColor != null) {

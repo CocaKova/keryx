@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,7 +23,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -51,21 +51,27 @@ fun AgentDeliveryNotice(
 ) {
     val quiet = MaterialTheme.colorScheme.onSurfaceVariant
     val mark = accent ?: quiet
+    // ⚠️ ALPHA ON ALPHA. A layer alpha of 0.85 wrapping text already set at 0.85 is 0.7225 —
+    // and the paper herald palette is tuned to clear AA at FULL strength, so 10.5sp of a
+    // herald's own light landed at 2.79:1 on parchment (3.01:1 for the plain quiet ink). Two
+    // separate decisions to "make it quiet", each reasonable alone, multiplying. One of them
+    // now, and it is the one at full strength: the line is small, mono-weight and short — it is
+    // already quiet without being faint.
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.padding(start = 4.dp, bottom = 2.dp).alpha(0.85f),
+        modifier = modifier.padding(start = 4.dp, bottom = 2.dp),
     ) {
         Text(
             chat.keryx.core.model.Heralds.SIGIL,
             fontSize = 11.sp,
-            color = mark.copy(alpha = 0.85f),
+            color = mark,
         )
         Spacer(Modifier.width(5.dp))
         Text(
             "relayed · ${delivery.sender}",
             fontSize = 10.5.sp,
             fontWeight = FontWeight.Medium,
-            color = mark.copy(alpha = 0.85f),
+            color = mark,
         )
     }
 }
@@ -92,7 +98,9 @@ fun AgentDeliverySentNotice(
     val quiet = MaterialTheme.colorScheme.onSurfaceVariant
     val mark = accent ?: quiet
     var open by rememberSaveable(stateKey) { mutableStateOf(false) }
-    Column(modifier = modifier.fillMaxWidth().padding(vertical = 2.dp).alpha(0.8f)) {
+    // Same stacking as [AgentDeliveryNotice], one step worse: 0.8 × 0.85 = 0.68, and the
+    // disclosure caret below compounded to 0.44 — a 1.86:1 affordance marker on parchment.
+    Column(modifier = modifier.fillMaxWidth().padding(vertical = 2.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 2.dp, vertical = 4.dp),
@@ -100,38 +108,41 @@ fun AgentDeliverySentNotice(
             Text(
                 chat.keryx.core.model.Heralds.SIGIL,
                 fontSize = 12.sp,
-                color = mark.copy(alpha = 0.85f),
+                color = mark,
             )
             Spacer(Modifier.width(8.dp))
             Text(
                 if (pending) "Messaging $target…" else "Messaged $target",
                 fontSize = 11.5.sp,
                 fontWeight = FontWeight.Medium,
-                color = mark.copy(alpha = 0.85f),
+                color = mark,
             )
         }
         if (!pending && reply.isNotBlank()) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
+                // 4dp round a 12sp line is a ~22dp target for the one thing here you can open.
                 modifier = Modifier
+                    .heightIn(min = 40.dp)
                     .clip(RoundedCornerShape(KeryxRadius.chip))
                     .clickable { open = !open }
-                    .padding(horizontal = 2.dp, vertical = 4.dp),
+                    .padding(horizontal = 6.dp, vertical = 4.dp),
             ) {
                 Text(
                     chat.keryx.core.model.Heralds.SIGIL,
                     fontSize = 12.sp,
-                    color = mark.copy(alpha = 0.85f),
+                    color = mark,
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     "Message from $target",
                     fontSize = 11.5.sp,
                     fontWeight = FontWeight.Medium,
-                    color = mark.copy(alpha = 0.85f),
+                    color = mark,
                 )
                 Spacer(Modifier.width(6.dp))
-                Text(if (open) "▾" else "▸", fontSize = 9.5.sp, color = quiet.copy(alpha = 0.55f))
+                // The caret is the affordance — the one glyph that says this row opens.
+                Text(if (open) "▾" else "▸", fontSize = 9.5.sp, color = quiet)
             }
             AnimatedVisibility(
                 visible = open,

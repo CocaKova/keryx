@@ -71,6 +71,7 @@ import chat.keryx.core.model.RoomSigils
 import chat.keryx.core.model.RoomType
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.ui.components.KeryxRadius
+import chat.keryx.app.presentation.ui.components.contrastColorFor
 import chat.keryx.app.presentation.ui.components.RoomSigilAvatar
 import chat.keryx.app.theme.*
 
@@ -753,7 +754,11 @@ fun RoomRow(
                 ) {
                     Text(
                         text = if (room.unreadCount > 99) "99+" else room.unreadCount.toString(),
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        // NOT onPrimary. The scheme's onPrimary follows the THEME (white on the
+                        // void), but this pill's ground is the ACCENT, which does not change with
+                        // the theme — so in dark mode the count was white on amber at 3.62:1,
+                        // under the 4.5 a 10sp figure needs. Ask the ground.
+                        color = contrastColorFor(MaterialTheme.colorScheme.primary),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                     )
@@ -1079,16 +1084,21 @@ private fun RoomAvatar(
         if (sigil != RoomSigil.None) {
             RoomSigilAvatar(sigil = sigil, base = base, size = 34.dp, highlighted = selected)
         } else {
+            // Same plate, same reason as the deck's monogram: a hard-white initial on an 80%
+            // wash of a Material 300 is ~1.4:1 on parchment. Composite, then ask the ground.
+            val plate = chat.keryx.app.presentation.ui.components.roomPlate(
+                base, if (selected) 0.95f else 0.8f,
+            )
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(34.dp)
                     .clip(CircleShape)
-                    .background(base.copy(alpha = if (selected) 0.95f else 0.8f)),
+                    .background(plate),
             ) {
                 Text(
                     text = room.name.trimStart('@', '#', '!').trim().firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "•",
-                    color = Color.White,
+                    color = contrastColorFor(plate),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                 )
@@ -1174,7 +1184,9 @@ private fun DrawerDoor(
                     ) { label ->
                     Text(
                         text = label,
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        // Same ground as the room list's pill, so the same rule: the accent
+                        // decides, not the theme (see RoomRow).
+                        color = contrastColorFor(MaterialTheme.colorScheme.primary),
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
