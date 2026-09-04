@@ -28,6 +28,9 @@ android {
         targetSdk = 36
         versionCode = 79
         versionName = "2.8.3"
+        // The on-device canary (app/src/androidTest) runs on this; without it `connectedCheck`
+        // finds no instrumentation and reports green having run nothing.
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -42,6 +45,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            // The on-device canary installs this variant. Suffixed so a test run can never
+            // replace the app in your pocket: chat.keryx.app.debug sits beside chat.keryx.app.
+            // The FileProvider authority is already ${applicationId}-derived, so the two
+            // coexist without INSTALL_FAILED_CONFLICTING_PROVIDER.
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
             // R8 ON as of 1.19.0 — an isolated commit so it reverts alone if the on-device smoke
             // checklist (login/sync/media/streaming/notifications/hub) finds a keep-rule gap.
