@@ -21,7 +21,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -115,7 +114,9 @@ fun SessionLiveTurn(viewModel: ChatViewModel) {
             // must never take the screen — the full exchange lands in the transcript above
             // when the turn commits (the caller re-pulls messages on "completed").
             val scroll = rememberScrollState()
-            LaunchedEffect(console.transcript) { scroll.scrollTo(scroll.maxValue) }
+            // Rides the tail from the tail only — scroll back into a long run and the next
+            // token leaves you where you are (TailFollow; the same law the transcript keeps).
+            rememberTailFollow(scroll, console.transcript)
             Box(
                 Modifier
                     .padding(top = 6.dp)
