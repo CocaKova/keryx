@@ -24,7 +24,13 @@ object CronHumanize {
 
         // Interval jobs: "every 30m", "every 20160m".
         Regex("""^every\s+(\d+)m$""").find(s)?.let { m ->
-            val mins = m.groupValues[1].toLong()
+            // `(\d+)` is unbounded, so the number is not necessarily a Long: `every
+            // 99999999999999999999m` threw NumberFormatException out of a composable that draws
+            // one line per job card, taking the whole Runs door with it. "Unparseable → the raw
+            // string" is this function's whole contract; a number too big to be a schedule, and a
+            // zero-length interval, are unparseable like anything else.
+            val mins = m.groupValues[1].toLongOrNull() ?: return s
+            if (mins <= 0L) return s
             return when {
                 mins % (60 * 24) == 0L -> {
                     val d = mins / (60 * 24)
