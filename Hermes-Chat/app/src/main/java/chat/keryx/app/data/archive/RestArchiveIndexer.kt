@@ -32,6 +32,13 @@ import kotlinx.coroutines.launch
 class RestArchiveIndexer(
     private val rest: () -> GatewayRest?,
     private val store: ArchiveStore,
+    /**
+     * Which profile's store holds a session. A Bot Chat lives in its own bot's store (2.8 §1)
+     * and every session-scoped call names it; this one did not, so a sweep over a Bot Chat asked
+     * the launch profile for a session it has never held, filed nothing, and left search over
+     * that bot permanently empty while reporting a clean, complete backfill.
+     */
+    private val profileOf: (String) -> String? = { null },
 ) : ArchiveSweeper {
 
     private val _progress = MutableStateFlow<ArchiveIndexer.Progress?>(null)
@@ -72,7 +79,7 @@ class RestArchiveIndexer(
         val ceiling = store.catchupCeiling(sessionId)?.toLongOrNull()
         val walk = TranscriptPages.pageUntil(
             pageSize = MAX_PAGE,
-            fetch = { offset -> client.messages(sessionId, limit = MAX_PAGE, offset = offset).getOrThrow() },
+            fetch = { offset -> client.messages(sessionId, limit = MAX_PAGE, offset = offset, profile = profileOf(sessionId)).getOrThrow() },
             // Enough once the oldest row gathered is at or below what an earlier sweep filed —
             // the block containing the ceiling is then whole.
             enough = { rows -> ceiling != null && rows.first().id <= ceiling },

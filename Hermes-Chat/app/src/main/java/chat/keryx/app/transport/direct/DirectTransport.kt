@@ -123,6 +123,14 @@ private const val GHOST_TOOL_ID = "generating"
     private val profileOf = java.util.concurrent.ConcurrentHashMap<String, String>()
     private fun profileFor(storedId: String): String? = profileOf[storedId]
 
+    /**
+     * The profile that holds [storedId] on the wire, or null for the launch profile's own — for
+     * the collaborators outside this class that make session-scoped REST calls of their own (the
+     * archive sweep). A Bot Chat lives in ITS profile's store; a call that does not name it asks
+     * the wrong store and is answered, truthfully, with nothing.
+     */
+    internal fun profileForSession(storedId: String): String? = profileFor(storedId)
+
     /** Roster rows the Bots delegate publishes: canonical chats the session list never carries. */
     private val _botRows = MutableStateFlow<List<RoomProfile>>(emptyList())
 
@@ -993,6 +1001,9 @@ private const val GHOST_TOOL_ID = "generating"
             "error" -> {
                 markBusy(storedId, false)
                 val text = pStr("message") ?: ""
+                // The turn ended, however it ended: a listener that only hears `message.complete`
+                // waits forever on the turns that die (the Call's channel never closes).
+                _turnEvents.tryEmit(chat.keryx.core.model.TurnEvent.End(storedId, text, error = true))
                 store.streamComplete(finalText = text, error = true)
                 // A turn can die because the MODEL refused the reasoning level (a local
                 // template's supported set is narrower than Hermes' scale, and nothing knows
@@ -1618,7 +1629,9 @@ private const val GHOST_TOOL_ID = "generating"
             return Result.success(Unit)
         }
         val rest = rest ?: return Result.failure(IllegalStateException("gateway not connected"))
-        return rest.patchSession(sessionId, archived = true)
+        // Every session-scoped call names its profile (2.8): a Bot Chat lives in ITS profile's
+        // store, and a PATCH without the name edits the launch profile's store instead.
+        return rest.patchSession(sessionId, archived = true, profile = profileFor(sessionId))
             .onSuccess { refreshSessions() }
             .onFailure { android.util.Log.e("KeryxGw", "archive failed for $sessionId", it) }
     }
