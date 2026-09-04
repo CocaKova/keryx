@@ -49,7 +49,7 @@ class ArchiveStore(context: Context) :
             )"""
         )
         db.execSQL("CREATE INDEX idx_msg_room_ts ON msg(room_id, ts)")
-        // unicode61 tokenizer: proper word breaks beyond ASCII (API 21+, safely below minSdk 24).
+        // unicode61 tokenizer: proper word breaks beyond ASCII (API 21+, safely below minSdk).
         db.execSQL("CREATE VIRTUAL TABLE msg_fts USING fts4(body, tokenize=unicode61)")
         db.execSQL(
             """CREATE TABLE saved (

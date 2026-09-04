@@ -5,7 +5,6 @@ import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaPlayer
-import android.os.Build
 import chat.keryx.app.presentation.CallSentenceChunker
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.TtsText
@@ -244,25 +243,15 @@ class CallController(
         .build()
 
     private fun requestFocus() {
-        if (Build.VERSION.SDK_INT >= 26) {
-            val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                .setAudioAttributes(speechAttributes)
-                .build()
-            focusRequest = req
-            audioManager.requestAudioFocus(req)
-        } else {
-            @Suppress("DEPRECATION")
-            audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
-        }
+        val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(speechAttributes)
+            .build()
+        focusRequest = req
+        audioManager.requestAudioFocus(req)
     }
 
     private fun abandonFocus() {
-        if (Build.VERSION.SDK_INT >= 26) {
-            focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
-        } else {
-            @Suppress("DEPRECATION")
-            audioManager.abandonAudioFocus(null)
-        }
+        focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
         focusRequest = null
     }
 

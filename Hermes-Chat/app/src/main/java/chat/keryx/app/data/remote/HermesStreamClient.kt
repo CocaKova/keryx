@@ -1813,7 +1813,8 @@ internal object HubJson {
 
     /**
      * Parse the gateway's ISO-8601 offset timestamps ("2026-07-07T07:00:00-05:00", optionally with
-     * fractional seconds) to epoch millis without java.time (minSdk 24, no desugaring). Null on any
+     * fractional seconds) to epoch millis without java.time — hand-rolled from when minSdk was 24
+     * and it was the only option; kept because it is allocation-free on a hot parse path. Null on any
      * surprise — callers fall back to showing the raw string.
      */
     fun isoToMillis(iso: String?): Long? {

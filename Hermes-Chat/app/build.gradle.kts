@@ -24,7 +24,12 @@ android {
     compileSdk = 36
     defaultConfig {
         applicationId = "chat.keryx.app"
-        minSdk = 24
+        // 26, not 24: the app uses java.time and named regex groups, both of which exist only
+        // from O. Below it they are not degraded features, they are NoClassDefFoundError and
+        // NoSuchMethodError at the call site — green tests, dead app. Lowering this again means
+        // taking core-library desugaring AND rewriting the named groups, which desugaring does
+        // not cover.
+        minSdk = 26
         targetSdk = 36
         versionCode = 79
         versionName = "2.8.3"

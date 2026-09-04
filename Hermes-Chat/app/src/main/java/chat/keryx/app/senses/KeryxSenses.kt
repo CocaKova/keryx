@@ -10,7 +10,6 @@ import android.location.Geocoder
 import android.location.Location
 import android.location.LocationManager
 import android.os.BatteryManager
-import android.os.Build
 import androidx.core.content.ContextCompat
 import java.util.Locale
 import java.util.concurrent.Callable
@@ -307,24 +306,11 @@ object KeryxSenses {
         return formatBattery(level * 100 / scale, charging)
     }
 
-    /**
-     * `23:10 CDT` in the device's own zone. java.time above API 26; the app has no core-library
-     * desugaring and still supports minSdk 24, so the two older releases take the legacy path.
-     */
+    /** `23:10 CDT` in the device's own zone. */
     private fun readLocalTime(): String? = try {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val now = java.time.ZonedDateTime.now(java.time.ZoneId.systemDefault())
-            val abbr = java.time.format.DateTimeFormatter.ofPattern("zzz", Locale.US).format(now)
-            formatClock(now.hour, now.minute, abbr)
-        } else {
-            val cal = java.util.Calendar.getInstance()
-            val abbr = java.text.SimpleDateFormat("zzz", Locale.US).format(cal.time)
-            formatClock(
-                cal.get(java.util.Calendar.HOUR_OF_DAY),
-                cal.get(java.util.Calendar.MINUTE),
-                abbr,
-            )
-        }
+        val now = java.time.ZonedDateTime.now(java.time.ZoneId.systemDefault())
+        val abbr = java.time.format.DateTimeFormatter.ofPattern("zzz", Locale.US).format(now)
+        formatClock(now.hour, now.minute, abbr)
     } catch (_: Throwable) {
         null
     }
