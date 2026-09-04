@@ -96,6 +96,8 @@ class ChatViewModel(
         // growing agent message) renews the trust; when it runs out, the banner settles even if
         // the flag still says typing.
         private const val TYPING_TRUST_MS = QUIET_LONG_MS
+        // How often a quiet timer parked behind a compaction re-checks whether it is over.
+        private const val COMPACTING_POLL_MS = 1_000L
 
         // --- Side-channel stream tuning ---
         // UI dispatch throttle for the live token buffer: flush to state when either trips.
@@ -599,6 +601,10 @@ class ChatViewModel(
     // or growing message). The typing veto in scheduleClearAwaiting trusts the flag only within
     // TYPING_TRUST_MS of this — the bound that keeps a stale EDU from holding the cloud forever.
     @Volatile private var agentEvidenceAt = 0L
+    // When the gateway last told us it was compacting, or null when it isn't. Unlike typing there
+    // is no repeating beat to renew — the announcement comes once, at the start — so this is a
+    // start time the quiet timer waits out (CompactionHold), not evidence that decays.
+    @Volatile private var compactingSince: Long? = null
     // True once the latest agent message reads as a real answer (not mid-run); used to shorten the
     // typing-stop grace so the working animation dies WITH the delivery, not seconds after it.
     @Volatile private var answerLanded = false
@@ -645,6 +651,20 @@ class ChatViewModel(
             // out — a genuine typing-stop or fresh activity reschedules (cancelling this job),
             // and a flag nothing ever renews stops being believed.
             if (!force) {
+                // A compaction outranks the window this job was armed with: it is announced once
+                // and then runs unannounced for as long as it takes, so counting quiet against it
+                // settles the banner in the middle of live work. Wait it out — the status that
+                // ends the compaction re-arms this job with a window that counts from then.
+                while (true) {
+                    val left = chat.keryx.core.model.CompactionHold
+                        .remaining(compactingSince, System.currentTimeMillis())
+                    if (left <= 0) break
+                    // Sliced, not slept whole: the hold usually ends because the compaction
+                    // ended, and a job parked on a 30-minute delay would settle the banner
+                    // half an hour after the turn it was watching. The poll only ticks while
+                    // a compaction is actually in flight.
+                    delay(minOf(left, COMPACTING_POLL_MS))
+                }
                 while (agentTyping) {
                     val remaining =
                         TYPING_TRUST_MS - (System.currentTimeMillis() - agentEvidenceAt)
@@ -1062,10 +1082,22 @@ class ChatViewModel(
                         _matrixStatus.value = ev.status
                         // Compaction is the turn WORKING, for as long as the summary model
                         // takes; the no-reply timer must not read it as the agent gone quiet.
-                        if (ev.status?.isCompacting == true) scheduleClearAwaiting(NO_REPLY_MS)
+                        // Arming a fixed window here was the bug: the gateway says "compacting"
+                        // exactly once, so the four minutes ran out while the compaction didn't,
+                        // and the room went quiet mid-turn. Hold open instead, and re-arm on the
+                        // way out so quiet is counted from when the work actually stopped.
+                        val nowCompacting = ev.status?.isCompacting == true
+                        val wasCompacting = compactingSince != null
+                        compactingSince = if (nowCompacting) System.currentTimeMillis() else null
+                        if (nowCompacting || wasCompacting) scheduleClearAwaiting(NO_REPLY_MS)
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Stop -> {
                         _matrixStatus.value = null
+                        // The turn is over, so whatever it was compacting is over with it. A drop
+                        // (Failed) deliberately does NOT clear this: the gateway is very likely
+                        // still compacting on the other side of a dead socket, and the hold's own
+                        // ceiling is what bounds that case.
+                        compactingSince = null
                         _linkHealth.value = LinkHealth.OK
                         callTurnTap?.onTurnEnd(ev.finalText)
                         if (ev.finalText.isNullOrBlank() && buf.isBlank() && reasoningBuf.isBlank()) {
@@ -1267,6 +1299,7 @@ class ChatViewModel(
         quietJob?.cancel()
         _awaitingReply.value = false
         _workStartedAt.value = null
+        compactingSince = null
         // The stream is NOT cancelled on a room switch: the overlay is already room-filtered in
         // the UI, so hopping to another room and back mid-turn resumes the live view instead of
         // silently degrading the whole turn to Matrix sync (mobile users switch rooms constantly).
