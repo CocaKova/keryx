@@ -154,6 +154,12 @@ fun MessageContent(
             },
         )
     }
+    // An inline image is the only thing in a bubble with no text to select: 2.9.1 turned a
+    // bare image URL into the picture itself, which took the address off the screen. A tap
+    // hands it back — copy, share, save, open — through the transformer's Modifier, so the
+    // target exists wherever the parser put the image.
+    var tappedImage by remember { mutableStateOf<String?>(null) }
+    val imageTransformer = remember { TappableImageTransformer { tappedImage = it } }
     Column(modifier = modifier) {
         val lastIndex = segments.lastIndex
         segments.forEachIndexed { index, segment ->
@@ -223,7 +229,7 @@ fun MessageContent(
                             components = components,
                             // Inline `![alt](url)` images load through coil3 (2.6.2); the
                             // library's default transformer is a no-op that drew nothing.
-                            imageTransformer = com.mikepenz.markdown.coil3.Coil3ImageTransformerImpl,
+                            imageTransformer = imageTransformer,
                         )
                     }
                     if (fadeTail && tail.isNotEmpty()) FadingStreamText(
@@ -257,6 +263,9 @@ fun MessageContent(
                 is MessageParser.Segment.ActionOutput ->
                     ActionOutputCard(segment, MaterialTheme.colorScheme.primary, textColor)
             }
+        }
+        tappedImage?.let { url ->
+            InlineImageSheet(url = url, onDismiss = { tappedImage = null })
         }
     }
 }
