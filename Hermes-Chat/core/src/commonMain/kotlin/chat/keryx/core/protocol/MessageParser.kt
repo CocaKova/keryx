@@ -276,6 +276,18 @@ object MessageParser {
     // Trailing characters that read as sentence punctuation, not URL: GFM's autolink trim set.
     private const val URL_TRAIL = ".,:;!?\"'”»*"
 
+    // Extensions the renderer's image loader can draw. Matched against the URL PATH only: a
+    // query string is where cache-busters and sizing params live, and `?w=600` must not hide
+    // the `.gif` in front of it.
+    private val IMAGE_EXTENSIONS =
+        setOf("gif", "png", "jpg", "jpeg", "webp", "bmp", "avif", "heic")
+
+    /** Whether a URL names an image the bubble can draw, judged from its path's extension. */
+    private fun looksLikeImage(url: String): Boolean {
+        val name = url.substringBefore('#').substringBefore('?').substringAfterLast('/')
+        return name.contains('.') && name.substringAfterLast('.').lowercase() in IMAGE_EXTENSIONS
+    }
+
     /** Rewrite bare `http(s)://` autolinks as inline `[url](url)` links. The markdown renderer
      *  underlines a GFM autolink but attaches no LinkAnnotation, so a bare URL looked tappable
      *  and wasn't (the 2.6.0 device walk); inline links are the path that provably fires. A URL
@@ -326,7 +338,15 @@ object MessageParser {
                 else -> break
             }
         }
-        if (url.substringAfter("://", "").isBlank()) m.value else "[$url]($url)$trail"
+        if (url.substringAfter("://", "").isBlank()) return@replace m.value
+        // A bare URL that names an image renders AS the image. An agent hands over a GIF by
+        // typing its address in prose far more often than it writes `![](…)`, so 2.9.0's
+        // animation work sat behind a syntax almost nothing produces and every handed-over
+        // GIF stayed a link. The markdown renderer's coil3 transformer draws the destination
+        // and animates it; the URL doubles as alt text, so a load that fails still leaves the
+        // address on screen rather than a blank.
+        val image = if (looksLikeImage(url)) "!" else ""
+        "$image[$url]($url)$trail"
     }
 
     // Every reasoning-tag spelling we accept; a half-typed prefix of one of these at the very end
