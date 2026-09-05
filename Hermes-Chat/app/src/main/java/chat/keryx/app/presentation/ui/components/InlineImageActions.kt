@@ -32,6 +32,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.keryx.app.util.copyMediaToClipboard
 import chat.keryx.app.util.saveMediaToDevice
 import chat.keryx.app.util.shareMedia
 import chat.keryx.core.model.MediaTags
@@ -133,6 +134,25 @@ fun InlineImageSheet(url: String, onDismiss: () -> Unit) {
             )
             Spacer(Modifier.height(8.dp))
 
+            // The image first, the address second. "Copy" on a GIF nearly always means
+            // "put it in a post", and a media-CDN link pasted into X stays a link — X only
+            // expands URLs it has a card for. The file is what posts as a GIF.
+            SheetAction(KeryxGlyphs.Image, if (busy) "Working…" else "Copy image", enabled = !busy) {
+                busy = true
+                scope.launch {
+                    val bytes = fetchBytes(url)
+                    val ok = bytes != null &&
+                        copyMediaToClipboard(context, bytes, name, kind, url)
+                    busy = false
+                    if (ok) {
+                        toast(context, "Image copied — paste it into a post")
+                    } else {
+                        clipboard.setText(AnnotatedString(url))
+                        toast(context, "Couldn't fetch the image — link copied instead")
+                    }
+                    onDismiss()
+                }
+            }
             SheetAction(KeryxGlyphs.Copy, "Copy link", enabled = !busy) {
                 clipboard.setText(AnnotatedString(url))
                 toast(context, "Link copied")

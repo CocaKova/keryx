@@ -96,15 +96,50 @@ suspend fun saveMediaToDevice(
     }.getOrNull()
 }
 
+/** Stage bytes in the FileProvider cache dir and hand back a URI other apps may read. */
+private suspend fun stagedUri(context: Context, bytes: ByteArray, name: String): Uri {
+    val file = withContext(Dispatchers.IO) {
+        val dir = File(context.cacheDir, "media").apply { mkdirs() }
+        File(dir, name.replace(Regex("[^A-Za-z0-9._-]"), "_")).apply { writeBytes(bytes) }
+    }
+    return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+}
+
+/**
+ * Put the media itself on the clipboard, with its address alongside.
+ *
+ * One ClipData.Item can carry both a URI and text, and the description advertises both MIME
+ * types — so a composer that accepts images (X, Signal, Gboard) pastes the FILE, while a
+ * plain text field still gets the URL. Copying a GIF's link and pasting it into X yields a
+ * link, because X only expands URLs it holds a card for and a media-CDN address is not one;
+ * pasting the file is what actually posts a GIF.
+ */
+suspend fun copyMediaToClipboard(
+    context: Context,
+    bytes: ByteArray,
+    fileName: String,
+    kind: MediaKind,
+    address: String?,
+): Boolean = runCatching {
+    val name = sanitized(fileName, kind)
+    val uri = stagedUri(context, bytes, name)
+    val mime = mediaMimeFor(name, kind)
+    val types = if (address != null) arrayOf(mime, "text/plain") else arrayOf(mime)
+    val clip = android.content.ClipData(
+        android.content.ClipDescription(name, types),
+        android.content.ClipData.Item(address, null, uri),
+    )
+    val manager = context.getSystemService(android.content.ClipboardManager::class.java)
+        ?: return@runCatching false
+    manager.setPrimaryClip(clip)
+    true
+}.getOrDefault(false)
+
 /** Stages the bytes in the FileProvider cache dir and opens the system share sheet. */
 suspend fun shareMedia(context: Context, bytes: ByteArray, fileName: String, kind: MediaKind): Boolean {
     return runCatching {
         val name = sanitized(fileName, kind)
-        val file = withContext(Dispatchers.IO) {
-            val dir = File(context.cacheDir, "media").apply { mkdirs() }
-            File(dir, name.replace(Regex("[^A-Za-z0-9._-]"), "_")).apply { writeBytes(bytes) }
-        }
-        val uri: Uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        val uri: Uri = stagedUri(context, bytes, name)
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = mediaMimeFor(name, kind)
             putExtra(Intent.EXTRA_STREAM, uri)
