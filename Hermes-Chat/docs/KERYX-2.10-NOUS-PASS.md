@@ -405,3 +405,20 @@ the spinner would have.
 squash commit `722acd66f6` for nearly any phrase — grep subjects, not bodies. The Settings
 `SettingsAnchor` glow relies on `positionInRoot` minus the scroll column's root Y captured with
 `scrollState.value` — if the page ever gains a sticky header, re-measure.
+
+### Phase D — the numbers (2026-09-05, Jonny's phone, 1440×3120 @600dpi, wireless adb :33273)
+
+Same phone, same session, back to back; 2.9.4 (vc84) first, then 2.10.0 (vc85) installed over it.
+
+| Measure | 2.9.4 | 2.10.0 | Read |
+|---|---|---|---|
+| Cold start, `am start -W` TotalTime, ×3 | 223 · 181 · 181 ms | 182 · 179 · 172 ms | same — the app was never slow to start |
+| PSS after cold start + 6 s | 218 MB | 166 MB | −52 MB; one sample each, take as "not worse" |
+| Idle on the chat floor, frames in 5 s | — | 124 (≈25 fps) | the sky shader, by design, on the floor |
+| Idle CPU on the floor (`top`, one sample) | 21% | 31% | single samples of a 25-fps shader; noise |
+| Scroll, 12 swipes: frames · janky · p50 · p90 | 1013 · 4.6% · 13 ms · 17 ms | 1030 · 5.2% · 15 ms · 17 ms | same within noise (different content under the finger) |
+| Idle with a place covering the floor | — | **not measured** | the dump showed Jonny's terminal in the foreground; input injection stopped there — walk it: open Settings, the floor's sky should hold still (`dumpsys gfxinfo` frames ≈ 0 in 5 s) |
+
+What this says: 2.10 did not regress start, scroll or memory; the two wins it claims — the covered
+sky resting (D2) and the transcript painting from disk (D1) — are the two this run could not
+observe without the screen, so they stay "changed, not live-verified" until the walk.
