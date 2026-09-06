@@ -579,7 +579,7 @@ private fun ChoiceChips(
 
 /** Full-screen redacted gateway-log tail: monospace, newest at the bottom, re-fetchable. */
 @Composable
-private fun GatewayLogViewer(viewModel: ChatViewModel, onDismiss: () -> Unit) {
+internal fun GatewayLogViewer(viewModel: ChatViewModel, onDismiss: () -> Unit) {
     var lines by remember { mutableStateOf(120) }
     var text by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }

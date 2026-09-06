@@ -127,6 +127,13 @@ fun ChatScreen(
     modifier: Modifier = Modifier
 ) {
     val messages by viewModel.messages.collectAsState()
+    // The newest reply — the one exchange the gateway can take back (2.10).
+    val lastAgentId = remember(messages) { messages.lastOrNull { it.sender == SenderType.HERMES }?.id }
+    // The ring, itemised (2.10): a sheet over the chat, opened from the composer's ring.
+    var showContext by remember { mutableStateOf(false) }
+    if (showContext) chat.keryx.app.presentation.ui.components.ContextBreakdownSheet(
+        viewModel = viewModel, onDismiss = { showContext = false },
+    )
     val rooms by viewModel.rooms.collectAsState()
     val currentRoom by viewModel.currentRoom.collectAsState()
     val bubbleStyle by viewModel.bubbleStyle.collectAsState()
@@ -705,7 +712,16 @@ fun ChatScreen(
                                     stateKey = "think-${message.id}",
                                 )
                             }
-                            MessageBubble(
+                            val failure = message.failure
+                            if (failure != null) {
+                                // A failed turn is a card, not a bubble that says "Error:" (2.10).
+                                chat.keryx.app.presentation.ui.components.TurnFailureCard(
+                                    message = message,
+                                    failure = failure,
+                                    viewModel = viewModel,
+                                    textScale = messageTextScale,
+                                )
+                            } else MessageBubble(
                                 message = message,
                                 replyTo = quotedId?.let { byId[it] },
                                 bubbleStyle = bubbleStyle,
@@ -738,6 +754,13 @@ fun ChatScreen(
                                             ttsState.phase != chat.keryx.app.audio.TtsController.Phase.IDLE
                                         if (active) tts.stop() else speakMessage(message)
                                     }
+                                } else null,
+                                // Take back the last exchange (2.10): only the newest reply, only
+                                // on the direct door, never while a turn runs — the gateway
+                                // refuses that anyway, and a button that would be refused is
+                                // not a button.
+                                onUndoTurn = if (viewModel.transportIsDirect && message.id == lastAgentId && !awaitingReply) {
+                                    { viewModel.undoLastTurn() }
                                 } else null,
                                 modifier = Modifier.background(flashColor, RoundedCornerShape(18.dp)),
                             )
@@ -939,6 +962,7 @@ fun ChatScreen(
                 return t
             }
             Composer(
+                onContextTap = if (viewModel.transportIsDirect) ({ showContext = true }) else null,
                 textState = textState,
                 onTextChange = { textState = it; viewModel.onComposerTextChanged(it.text) },
                 onSend = ::doSend,
@@ -1105,6 +1129,7 @@ private fun Composer(
     onRefreshCatalog: () -> Unit = {},
     // The busy tree: null = normal send; "steer" | "queue" | "stop" while a turn runs.
     busyAction: String? = null,
+    onContextTap: (() -> Unit)? = null,
     onSteer: () -> Unit = {},
     onQueue: () -> Unit = {},
     onStop: () -> Unit = {},
@@ -1315,6 +1340,7 @@ private fun Composer(
         onRefreshCaps = onRefreshCaps,
         onRefreshCatalog = onRefreshCatalog,
         busyAction = busyAction,
+        onContextTap = onContextTap,
     )
     } // end composer surface Column
     } // end Column (attach bloom + composer row)
@@ -1341,6 +1367,8 @@ private fun ComposerFooter(
     onRefreshCaps: () -> Unit,
     onRefreshCatalog: () -> Unit,
     busyAction: String?,
+    /** Tap the ring to see what fills it (2.10). Null where the door cannot itemise. */
+    onContextTap: (() -> Unit)? = null,
 ) {
     val usage = contextUsage?.takeIf { roomId != null && it.roomId == roomId }
     if (caps == null && usage == null) return
@@ -1445,7 +1473,15 @@ private fun ComposerFooter(
             )
         }
         Spacer(modifier = Modifier.weight(1f))
-        usage?.let { chat.keryx.app.presentation.ui.components.KeryxContextRing(it.used, it.max) }
+        usage?.let {
+            chat.keryx.app.presentation.ui.components.KeryxContextRing(
+                it.used, it.max,
+                modifier = if (onContextTap != null) Modifier
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .clickable(onClickLabel = "What is in the context window", onClick = onContextTap)
+                else Modifier,
+            )
+        }
     }
 }
 

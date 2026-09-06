@@ -39,6 +39,9 @@ import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import java.net.URI
 
@@ -427,7 +430,13 @@ private const val GHOST_TOOL_ID = "generating"
             publish()
         }
 
-        fun streamComplete(finalText: String, error: Boolean, finalReasoning: String? = null) {
+        fun streamComplete(
+            finalText: String,
+            error: Boolean,
+            finalReasoning: String? = null,
+            /** The gateway's account of a failed turn (2.10) — rides the final message. */
+            failure: chat.keryx.core.model.TurnFailure? = null,
+        ) {
             streaming = false
             agentTyping.value = false
             val now = System.currentTimeMillis()
@@ -441,6 +450,7 @@ private const val GHOST_TOOL_ID = "generating"
                     sender = if (error) SenderType.SYSTEM else SenderType.HERMES,
                     content = fin,
                     timestamp = now,
+                    failure = failure,
                 )
             ) else emptyList()
             // The thought led the turn, so it folds in FIRST — its own scaffold row, exactly
@@ -464,6 +474,9 @@ private const val GHOST_TOOL_ID = "generating"
             reasonBuf = StringBuilder(); reasonStartedAt = 0L; reasonEndedAt = 0L
             publish()
         }
+
+        /** Drop the rows this process life added on its own — a re-read is about to replace them. */
+        fun clearLocal() { local = emptyList(); publish() }
 
         fun localUserMessage(text: String) {
             local = local + Message(
@@ -723,6 +736,19 @@ private const val GHOST_TOOL_ID = "generating"
         val store = stores[storedId] ?: return
         val p = ev.payload
         fun pStr(key: String) = p?.get(key)?.jsonPrimitive?.contentOrNull
+        // A failed turn's descriptor (2.10): `error_surface` {layer, code, retryable} beside the
+        // failure's words. A gateway without it yields a layer-less failure — still a card.
+        fun pFailure(): chat.keryx.core.model.TurnFailure? {
+            if (pStr("status") != "error" && ev.type != "error") return null
+            val surface = p?.get("error_surface") as? kotlinx.serialization.json.JsonObject
+            val words = pStr("error") ?: pStr("message") ?: pStr("text").orEmpty()
+            return chat.keryx.core.model.TurnFailure.fromWire(
+                layer = surface?.get("layer")?.jsonPrimitive?.contentOrNull,
+                code = surface?.get("code")?.jsonPrimitive?.contentOrNull,
+                retryable = surface?.get("retryable")?.jsonPrimitive?.booleanOrNull,
+                message = words.removePrefix("Error: ").trim(),
+            )
+        }
         // The gateway only continues the turn once an approval resolves (any client, or
         // timeout), so ANY further turn traffic for this session means the card is stale.
         if (ev.type.startsWith("message.") || ev.type.startsWith("tool.")) {
@@ -823,6 +849,7 @@ private const val GHOST_TOOL_ID = "generating"
                     // complete carries the turn's reasoning too — authoritative over our
                     // accumulation when present (protocol §3: message.complete {…, reasoning?}).
                     finalReasoning = pStr("reasoning"),
+                    failure = pFailure(),
                 )
                 applyMeta(storedId, p) // usage (incl. context_percent) rides on complete
                 // A turn that died on a refused reasoning level lands here too, with
@@ -1004,7 +1031,7 @@ private const val GHOST_TOOL_ID = "generating"
                 // The turn ended, however it ended: a listener that only hears `message.complete`
                 // waits forever on the turns that die (the Call's channel never closes).
                 _turnEvents.tryEmit(chat.keryx.core.model.TurnEvent.End(storedId, text, error = true))
-                store.streamComplete(finalText = text, error = true)
+                store.streamComplete(finalText = text, error = true, failure = pFailure())
                 // A turn can die because the MODEL refused the reasoning level (a local
                 // template's supported set is narrower than Hermes' scale, and nothing knows
                 // that until a real turn runs). Republish those so the level that killed the
@@ -2119,6 +2146,49 @@ private const val GHOST_TOOL_ID = "generating"
      * `info.stored_session_id` in its OWN response, so the handoff never depends on
      * catching an event. Returns the human summary line for the transcript.
      */
+    /** The window itemised (2.10) — `session.context_breakdown` on the live session. */
+    suspend fun contextBreakdown(sessionId: String): Result<chat.keryx.core.model.ContextBreakdown> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        val live = attach(sessionId)
+        val res = rpc.request("session.context_breakdown", buildJsonObject {
+            put("session_id", JsonPrimitive(live))
+        })
+        val cats = (res["categories"] as? kotlinx.serialization.json.JsonArray).orEmpty().mapNotNull { el ->
+            val o = el as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
+            chat.keryx.core.model.ContextCategory(
+                id = o.strOrNull("id").orEmpty(),
+                label = o.strOrNull("label") ?: o.strOrNull("id").orEmpty(),
+                tokens = o["tokens"]?.jsonPrimitive?.longOrNull ?: 0L,
+            )
+        }
+        chat.keryx.core.model.ContextBreakdown(
+            categories = cats,
+            used = res["context_used"]?.jsonPrimitive?.longOrNull ?: 0L,
+            max = res["context_max"]?.jsonPrimitive?.longOrNull ?: 0L,
+            percent = res["context_percent"]?.jsonPrimitive?.intOrNull ?: 0,
+            model = res.strOrNull("model").orEmpty(),
+        )
+    }
+
+    /**
+     * Take back the last exchange (2.10): `session.undo` drops the last user turn and
+     * everything after it from the gateway's history. The gateway refuses under a running
+     * turn (4009) — the caller reads that as the answer, never retries. Returns how many
+     * messages left; the transcript is re-read so the phone shows what the gateway now holds.
+     */
+    suspend fun undoLastTurn(sessionId: String): Result<Int> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        val live = attach(sessionId)
+        val res = rpc.request("session.undo", buildJsonObject {
+            put("session_id", JsonPrimitive(live))
+        })
+        val removed = res["removed"]?.jsonPrimitive?.intOrNull ?: 0
+        val st = store(sessionId)
+        st.clearLocal()
+        rehydrate(sessionId, st)
+        removed
+    }
+
     private suspend fun compressSession(sessionId: String, focusTopic: String): String {
         val rpc = rpc ?: error("gateway not connected")
         val live = attach(sessionId)

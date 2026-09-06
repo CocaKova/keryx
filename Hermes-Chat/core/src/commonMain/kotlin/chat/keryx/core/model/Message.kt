@@ -32,7 +32,41 @@ data class Message(
     /** Set when this message is really one agent messaging another (2.3 §2) — it renders as an
      *  attributed notice, never as that sender simply speaking. */
     val agentDelivery: AgentDelivery? = null,
+    /** Set when this message IS a failed turn (2.10): the gateway's own account of which layer
+     *  broke. Renders as the failure card, never as a reply that happens to say "Error:". */
+    val failure: TurnFailure? = null,
 )
+
+/**
+ * The gateway's `error_surface` (hermes ≥ 2026.8.21): the layer that failed, a code, and
+ * whether retrying could change anything. [message] is the failure's own words. A gateway that
+ * predates the descriptor sends none — [layer] is then "" and the card renders generically.
+ */
+data class TurnFailure(
+    val layer: String,
+    val code: String,
+    val retryable: Boolean,
+    val message: String,
+) {
+    /** What to call it, by layer — the Desktop's names, in the herald's voice. */
+    val title: String get() = when (layer) {
+        "provider" -> "The provider refused"
+        "endpoint" -> "The endpoint didn't answer"
+        "streaming" -> "The stream dropped"
+        "auth" -> "The provider wants a key"
+        "billing" -> "Out of credit"
+        "gateway" -> "The gateway stumbled"
+        "runtime" -> "The agent couldn't start"
+        "disk" -> "The gateway's disk is full"
+        else -> "The turn failed"
+    }
+
+    companion object {
+        /** The plain-English layer names, for a "Copy details" line. */
+        fun fromWire(layer: String?, code: String?, retryable: Boolean?, message: String): TurnFailure =
+            TurnFailure(layer = layer.orEmpty(), code = code.orEmpty(), retryable = retryable ?: true, message = message)
+    }
+}
 
 /** A single aggregated reaction on a message. */
 data class MessageReaction(
