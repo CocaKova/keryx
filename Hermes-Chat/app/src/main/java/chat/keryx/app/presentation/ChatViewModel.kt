@@ -421,6 +421,17 @@ class ChatViewModel(
     private val _showTelemetry = MutableStateFlow(settingsRepository.showTelemetry)
     val showTelemetry: StateFlow<Boolean> = _showTelemetry.asStateFlow()
 
+    /** The drawer's folded shelves (RosterGroup names) — see [chat.keryx.core.model.RosterGroups]. */
+    private val _collapsedRosterGroups = MutableStateFlow(settingsRepository.collapsedRosterGroups)
+    val collapsedRosterGroups: StateFlow<Set<String>> = _collapsedRosterGroups.asStateFlow()
+
+    fun toggleRosterGroup(name: String) {
+        val next = if (name in _collapsedRosterGroups.value) _collapsedRosterGroups.value - name
+        else _collapsedRosterGroups.value + name
+        _collapsedRosterGroups.value = next
+        settingsRepository.collapsedRosterGroups = next
+    }
+
     // --- Gateway plumbing shared with the delegates ---
 
     /** A configured gateway client, or null when Hermes Link is off/unconfigured. */
