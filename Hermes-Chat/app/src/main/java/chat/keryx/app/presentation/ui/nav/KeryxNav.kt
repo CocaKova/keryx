@@ -86,6 +86,9 @@ sealed interface KeryxDest {
 class KeryxNavState internal constructor(initial: List<KeryxDest>) {
     internal val stack = mutableStateListOf<KeryxDest>().apply { addAll(initial) }
 
+    /** Nothing layered over the floor — the chat is the screen. */
+    val atFloor: Boolean get() = stack.isEmpty()
+
     val current: KeryxDest? get() = stack.lastOrNull()
 
     fun open(dest: KeryxDest) {
