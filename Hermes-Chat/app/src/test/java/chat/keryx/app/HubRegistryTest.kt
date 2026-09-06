@@ -1,7 +1,6 @@
 package chat.keryx.app
 
-import chat.keryx.app.presentation.ui.components.GATEWAY_PANELS
-import chat.keryx.app.presentation.ui.components.WORKSHOP_PANELS
+import chat.keryx.app.presentation.ui.components.GATEWAY_SPOKES
 import chat.keryx.app.presentation.ui.nav.KeryxDest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -9,7 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The gateway spaces' registries and the routes that address them (2.5).
+ * The Gateway's spoke registry and the routes that address the places (2.5, reshaped 2.10).
  *
  * Worth pinning because both are things a future panel gets wrong silently: a duplicated panel id
  * makes the shell's first-visit fetch skip a panel (it dedupes by id, so the second one renders
@@ -18,22 +17,22 @@ import org.junit.Test
  */
 class HubRegistryTest {
 
-    private val panels = GATEWAY_PANELS + WORKSHOP_PANELS
+    private val panels = GATEWAY_SPOKES
 
     @Test
-    fun `the split is the one Jonny chose`() {
+    fun `the spokes are the ones Jonny chose, in reading order`() {
         // Runs left the hub 2026-09-01 ("the crons are hard to get to") — it is the Runs DOOR
         // now (RunsSpace); Jobs stays because managing schedules is server administration.
-        assertEquals(listOf("Status", "Controls", "Jobs"), GATEWAY_PANELS.map { it.label })
-        assertEquals(listOf("Sessions", "Skills", "Tools"), WORKSHOP_PANELS.map { it.label })
+        // 2.10 folded the Workshop back in as spokes: changing the machine first, then reading it.
+        assertEquals(listOf("Controls", "Jobs", "Sessions", "Skills", "Tools"), GATEWAY_SPOKES.map { it.label })
     }
 
     @Test
-    fun `panel ids are unique across both spaces`() {
-        // Across both, not within each: the shell keys its fetched-set by id, and a panel moving
-        // from one space to the other must not collide with something already there.
+    fun `spoke ids are unique and never the landing's`() {
+        // The shell keys its fetched-set by id, and the landing owns "status".
         val ids = panels.map { it.id }
-        assertEquals("Duplicate panel ids: $ids", ids.size, ids.toSet().size)
+        assertEquals("Duplicate spoke ids: $ids", ids.size, ids.toSet().size)
+        assertTrue("status" !in ids)
     }
 
     @Test
@@ -54,8 +53,9 @@ class HubRegistryTest {
         // Every ten seconds, forever, while you are looking at it — so this is a deliberate list,
         // not a default. Skills and tools change on operator action; they stay fetch-once.
         assertEquals(
-            // Runs polls too — inside its own door now (RunsSpace runs the 10s loop itself).
-            setOf("status", "jobs", "sessions"),
+            // Runs polls too — inside its own door now (RunsSpace runs the 10s loop itself);
+            // the landing's health polls on its own, outside this registry.
+            setOf("jobs", "sessions"),
             panels.filter { it.live }.map { it.id }.toSet(),
         )
     }
@@ -64,16 +64,18 @@ class HubRegistryTest {
     fun `every destination resolves from its own route`() {
         for (dest in listOf(
             KeryxDest.Archive, KeryxDest.Missions, KeryxDest.Gateway,
-            KeryxDest.Workshop, KeryxDest.Settings,
+            KeryxDest.Runs, KeryxDest.Bots, KeryxDest.Settings,
         )) {
             assertEquals(dest, KeryxDest.fromRoute(dest.route))
         }
     }
 
     @Test
-    fun `the retired hub route still lands somewhere`() {
-        // A back stack saved by 2.4 says "hub". It must not restore to nothing.
+    fun `the retired routes still land somewhere`() {
+        // A back stack saved by 2.4 says "hub"; one saved by 2.9 says "workshop". Neither may
+        // restore to nothing — both land on the Gateway, where their panels live now.
         assertEquals(KeryxDest.Gateway, KeryxDest.fromRoute("hub"))
+        assertEquals(KeryxDest.Gateway, KeryxDest.fromRoute("workshop"))
     }
 
     @Test
@@ -88,7 +90,7 @@ class HubRegistryTest {
     fun `routes are distinct`() {
         val routes = listOf(
             KeryxDest.Archive, KeryxDest.Missions, KeryxDest.Gateway,
-            KeryxDest.Workshop, KeryxDest.Settings,
+            KeryxDest.Runs, KeryxDest.Bots, KeryxDest.Settings,
         ).map { it.route }
         assertEquals(routes.size, routes.toSet().size)
         assertNotNull(KeryxDest.fromRoute("gateway"))

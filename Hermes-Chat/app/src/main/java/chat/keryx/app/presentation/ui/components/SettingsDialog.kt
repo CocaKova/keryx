@@ -168,38 +168,38 @@ fun SettingsScreen(
 
                     if (section == null) {
                         Spacer(Modifier.height(4.dp))
-                        SettingsHubRow(Icons.Default.Person, "Account",
+                        KeryxHubRow(Icons.Default.Person, "Account",
                             currentUserId ?: "Not signed in") { section = "Account" }
-                        SettingsHubRow(Icons.Default.Memory, "Agent",
+                        KeryxHubRow(Icons.Default.Memory, "Agent",
                             caps?.model?.takeIf { it.isNotBlank() } ?: "Brain, telemetry & alerts") { section = "Agent" }
-                        SettingsHubRow(Icons.Default.Pets, "Companion",
+                        KeryxHubRow(Icons.Default.Pets, "Companion",
                             petInfo?.displayName?.takeIf { it.isNotBlank() } ?: "The drawer mascot") { section = "Companion" }
                         val directDoor = viewModel.transportIsDirect
-                        SettingsHubRow(Icons.Default.Dns, "Connection",
+                        KeryxHubRow(Icons.Default.Dns, "Connection",
                             if (directDoor) viewModel.directGatewayUrl.ifBlank { "Gateway & certificates" }
                             else matrixUrl.ifBlank { "Homeserver & agent" }) { section = "Connection" }
-                        SettingsHubRow(Icons.Default.Bolt, "Hermes Link",
+                        KeryxHubRow(Icons.Default.Bolt, "Hermes Link",
                             when {
                                 directDoor && sideChannelEnabled -> "Missions, Runs & Shipyard linked"
                                 directDoor -> "Missions, Runs & Shipyard off"
                                 sideChannelEnabled -> "Live token streaming on"
                                 else -> "Live token streaming off"
                             }) { section = "Hermes Link" }
-                        SettingsHubRow(Icons.Default.Mic, "Voice",
+                        KeryxHubRow(Icons.Default.Mic, "Voice",
                             listOfNotNull(
                                 if (sttUrl.isNotBlank()) "Dictation" else null,
                                 if (ttsAutoSpeak) "Auto-speak" else null,
                             ).ifEmpty { listOf("Dictation & spoken replies") }.joinToString(" · ")) { section = "Voice" }
-                        SettingsHubRow(Icons.Default.Palette, "Appearance",
+                        KeryxHubRow(Icons.Default.Palette, "Appearance",
                             "Bubbles, text size, accent colors") { section = "Appearance" }
-                        SettingsHubRow(Icons.Default.Lock, "Privacy & Security",
+                        KeryxHubRow(Icons.Default.Lock, "Privacy & Security",
                             listOfNotNull(
                                 if (biometricLockEnabled) "App lock" else null,
                                 if (e2eeEnabled && !directDoor) "E2EE" else null,
                             ).ifEmpty { listOf(if (directDoor) "App lock & senses" else "App lock & encryption") }.joinToString(" · ")) { section = "Privacy & Security" }
-                        SettingsHubRow(Icons.Default.Tune, "Interface",
+                        KeryxHubRow(Icons.Default.Tune, "Interface",
                             "Haptics & loading animation") { section = "Interface" }
-                        SettingsHubRow(Icons.Default.BugReport, "Diagnostics",
+                        KeryxHubRow(Icons.Default.BugReport, "Diagnostics",
                             "Crash log · Keryx v${chat.keryx.app.BuildConfig.VERSION_NAME}") { section = "Diagnostics" }
                     }
 
@@ -320,7 +320,7 @@ fun SettingsScreen(
                             }
                             Spacer(Modifier.height(6.dp))
                             Text(
-                                "Live console — jobs in Gateway; sessions, skills and tools in Workshop.",
+                                "Live console — controls, jobs, sessions, skills and tools live in the Gateway.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 fontSize = 11.sp,
                             )
@@ -871,45 +871,6 @@ fun SettingsSectionHeader(title: String) {
 }
 
 /** One row of the settings hub: icon, title, live subtitle, chevron. */
-@Composable
-private fun SettingsHubRow(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clip(RoundedCornerShape(KeryxRadius.card))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 14.dp),
-    ) {
-        Icon(
-            icon, contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(22.dp),
-        )
-        Spacer(Modifier.width(14.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
-            Text(
-                subtitle, fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            )
-        }
-        Icon(
-            Icons.Default.ChevronRight, contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.size(20.dp),
-        )
-    }
-}
-
 @Composable
 fun SettingsSwitchRow(title: String, subtitle: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(

@@ -60,23 +60,21 @@ sealed interface KeryxDest {
     /** Bot Mode (2.8): the roster of profiles, each one tap from its forever-chat. Direct door only. */
     data object Bots : KeryxDest { override val route = "bots" }
 
-    /** The server: status, controls, jobs. Half of what used to be the one "Agent Hub". */
+    /** The machine (2.10): status on the landing, then spokes — controls, jobs, sessions,
+     *  skills, tools. Was two doors, Gateway and Workshop, from 2.5 to 2.9. */
     data object Gateway : KeryxDest { override val route = "gateway" }
-
-    /** The agent: sessions, skills, tools. The other half. */
-    data object Workshop : KeryxDest { override val route = "workshop" }
 
     data object Settings : KeryxDest { override val route = "settings" }
 
     companion object {
-        private val all = listOf(Archive, Missions, Projects, Shipyard, Runs, Bots, Gateway, Workshop, Settings)
+        private val all = listOf(Archive, Missions, Projects, Shipyard, Runs, Bots, Gateway, Settings)
 
         /**
          * Legacy route names that must keep resolving. A saved back stack written by 2.4 — or an
          * intent someone pinned — still says "hub"; it lands on the Gateway, which is where the
          * panels you were most likely looking at now live. Entries here are never removed.
          */
-        private val aliases = mapOf("hub" to Gateway)
+        private val aliases = mapOf("hub" to Gateway, "workshop" to Gateway)
 
         fun fromRoute(route: String): KeryxDest? =
             all.firstOrNull { it.route == route } ?: aliases[route]

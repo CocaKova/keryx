@@ -34,6 +34,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.requiredWidthIn
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
@@ -46,6 +49,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
@@ -632,6 +636,8 @@ fun KeryxSpace(
     actions: @Composable () -> Unit = {},
     floating: (@Composable () -> Unit)? = null,
     standalone: Boolean = true,
+    /** A spoke inside a hub (2.10): the emblem's seat holds a back arrow to the hub instead. */
+    onBack: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     if (standalone) {
@@ -639,10 +645,76 @@ fun KeryxSpace(
             onDismissRequest = onClose,
             properties = DialogProperties(usePlatformDefaultWidth = false),
         ) {
-            KeryxSpaceBody(title, onClose, modifier, liveSlot, actions, floating, content)
+            KeryxSpaceBody(title, onClose, modifier, liveSlot, actions, floating, onBack, content)
         }
     } else {
-        KeryxSpaceBody(title, onClose, modifier, liveSlot, actions, floating, content)
+        KeryxSpaceBody(title, onClose, modifier, liveSlot, actions, floating, onBack, content)
+    }
+}
+
+/**
+ * A hub's row (2.10): glyph, title, one line of what is behind it, a chevron. Settings' section
+ * list and the Gateway's spokes are the same row — one primitive, so "a place with rooms in it"
+ * reads the same wherever the app has one. [badge] pins a count to the glyph's corner.
+ */
+@Composable
+fun KeryxHubRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    badge: Int = 0,
+    onClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clip(RoundedCornerShape(KeryxRadius.card))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+    ) {
+        Box(modifier = Modifier.size(22.dp)) {
+            Icon(
+                icon, contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.fillMaxSize(),
+            )
+            if (badge > 0) Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 8.dp, y = (-6).dp)
+                    .requiredHeight(16.dp)
+                    .requiredWidthIn(min = 16.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+                    .padding(horizontal = 4.dp),
+            ) {
+                Text(
+                    text = if (badge > 99) "99+" else badge.toString(),
+                    color = contrastColorFor(MaterialTheme.colorScheme.primary),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
+            }
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text(
+                subtitle, fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+        }
+        Icon(
+            KeryxGlyphs.ChevronRight, contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
@@ -654,6 +726,7 @@ private fun KeryxSpaceBody(
     liveSlot: @Composable () -> Unit = {},
     actions: @Composable () -> Unit = {},
     floating: (@Composable () -> Unit)? = null,
+    onBack: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     // Arrival breath (2.0): the space's contents rise the last few dp into place just behind the
@@ -678,7 +751,17 @@ private fun KeryxSpaceBody(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(start = 20.dp, end = 8.dp, top = 6.dp),
             ) {
-                Box(modifier = Modifier.size(44.dp)) {
+                // The emblem's seat: the snake on a hub, the way back on a spoke. Same 44dp,
+                // so the title does not shift when you step in or out.
+                if (onBack != null) {
+                    IconButton(onClick = onBack, modifier = Modifier.size(44.dp)) {
+                        Icon(
+                            androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else Box(modifier = Modifier.size(44.dp)) {
                     BrailleSnakeAnimation(
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.primary,

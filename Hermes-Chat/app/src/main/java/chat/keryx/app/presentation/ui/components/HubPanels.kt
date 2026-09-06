@@ -124,6 +124,9 @@ internal fun StatusTab(
     viewModel: ChatViewModel,
     health: LinkHealth,
     onDismiss: () -> Unit,
+    /** The hub's spokes (2.10), laid after the brain and the last turn — what the machine is
+     *  doing first, then where to go. Null on a landing with none. */
+    spokes: (androidx.compose.foundation.lazy.LazyListScope.() -> Unit)? = null,
 ) {
     val panel by viewModel.hub.health.collectAsState()
     val models by viewModel.hub.models.collectAsState()
@@ -242,6 +245,8 @@ internal fun StatusTab(
                 }
             }
         }
+
+        spokes?.invoke(this)
 
         // Per-platform adapter states from /health/detailed.
         val platforms = panel.data?.platforms.orEmpty()
