@@ -109,6 +109,13 @@ interface GatewayCapabilities {
     /** Soft-hide: the session leaves the list but survives on the gateway. */
     suspend fun archiveSession(sessionId: String): Result<Unit>
 
+    /** The reverse: back onto the list, exactly as it was. */
+    suspend fun unarchiveSession(sessionId: String): Result<Unit>
+
+    /** The archived conversations (scheduled runs excluded), newest first — the drawer's
+     *  Archived shelf reads this on demand; it is never part of the live roster. */
+    suspend fun archivedSessions(): Result<List<RoomProfile>>
+
     /**
      * The gateway's durable pin — the same flag the Desktop sidebar sets. A pinned session is
      * exempt from the auto-archive sweep, so this is "keep", not just "sort first".

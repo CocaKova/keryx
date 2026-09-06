@@ -113,9 +113,12 @@ class GatewayRest(
         sources: List<String> = emptyList(),
         excludeSources: List<String> = emptyList(),
         profile: String? = null,
+        /** The gateway's own vocabulary: `exclude` (default) · `only` · `include`. */
+        archived: String = "exclude",
     ): Result<List<SessionRow>> =
         get(
             "/api/sessions?limit=${limit.coerceAtMost(100)}&offset=$offset&order=recent" +
+                (if (archived == "exclude") "" else "&archived=$archived") +
                 (if (sources.isEmpty()) "" else "&sources=" + sources.joinToString(",")) +
                 (if (excludeSources.isEmpty()) "" else "&exclude_sources=" + excludeSources.joinToString(",")) +
                 profileQuery(profile)

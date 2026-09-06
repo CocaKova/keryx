@@ -81,9 +81,74 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredWidthIn
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.FilterChip
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.setValue
 
 /** The deck rows that are cron tiles, not roster sessions — see [chat.keryx.core.model.CronTiles]. */
 private const val CRON_TILE_SOURCE = "cron-tile"
+
+/** The drawer's lenses (2.10) — saved by name across recreation, never across a process. */
+private const val LENS_NEEDS_YOU = "needs"
+private const val LENS_RUNNING = "running"
+private const val LENS_UNREAD = "unread"
+private const val LENS_ARCHIVED = "archived"
+
+/** A palette hit that is not a room: a place or a command. Same row height as a room row's
+ *  first line, so a mixed result list reads as one list. */
+@Composable
+private fun PaletteRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String?,
+    mono: Boolean = false,
+    onClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .keryxPressable(onClick = onClick)
+            .padding(start = 8.dp, end = 10.dp, top = 10.dp, bottom = 10.dp),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                title,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                fontFamily = if (mono) androidx.compose.ui.text.font.FontFamily.Monospace else null,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+            if (subtitle != null) Text(
+                subtitle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                fontSize = 12.sp,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Icon(
+            KeryxGlyphs.ChevronRight, contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+            modifier = Modifier.size(16.dp),
+        )
+    }
+}
 
 /**
  * Open what a cron tile points at. Direct door: the run as a real session (the full renderer),
@@ -141,6 +206,9 @@ fun NavigationDrawerContent(
     // The drawer made a new conversation and the ViewModel is moving onto it: the host
     // closes the drawer so the new room is on screen, not behind the sheet you left.
     onConversationCreated: () -> Unit = {},
+    // The palette put something in the composer (2.10): the drawer steps aside so you can
+    // see it there.
+    onDismissDrawer: () -> Unit = onConversationCreated,
 ) {
     // Bot chats are rows the roster publishes for the floor's sake (select, restore, notify);
     // the Bots door lists them under their bots, so the session list does not list them twice.
@@ -156,6 +224,13 @@ fun NavigationDrawerContent(
     val isDarkTheme by viewModel.isDarkTheme.collectAsState()
     // The door's own words for its rows — "room" on Matrix, "session" on the gateway.
     val lexicon = viewModel.lexicon
+    // The doors' gates, read once: the footer draws by them and the palette (2.10) offers
+    // by them, so a door you cannot see is never a door you can type your way into.
+    val caps by viewModel.hub.reasoningCaps.collectAsState()
+    val hasProjects by viewModel.projects.hasProjects.collectAsState()
+    val cronBoard by viewModel.hub.cron.collectAsState()
+    val botsUnread by viewModel.bots.unreadCount.collectAsState()
+    val direct = viewModel.transportIsDirect
 
     // Image picker for setting a Quick Room's avatar (server-side m.room.avatar).
     val context = LocalContext.current
@@ -241,6 +316,9 @@ fun NavigationDrawerContent(
                             // the Runs place polls, so a drawer opened cold would show no count
                             // even with a dozen reports waiting. Same gate as the door itself.
                             if (viewModel.hub.reasoningCaps.value != null) viewModel.hub.refreshCron()
+                            // The palette's commands (2.10) — rate-limited inside, so this is
+                            // one fetch a minute at most.
+                            viewModel.hub.refreshGatewayCommands()
                             // Wave hello when the drawer opens, then settle into the idle loop.
                             petGreeting = true
                             kotlinx.coroutines.delay(2200)
@@ -366,16 +444,70 @@ fun NavigationDrawerContent(
                 }
             }
 
-            val filtered = if (query.isBlank()) rooms
-                else rooms.filter { it.name.contains(query, ignoreCase = true) }
-            val pinned = filtered.filter { it.id in pinnedRoomIds }
+            // The filters (2.10, direct door): what needs you, what is running, what is unread,
+            // what you archived. One at a time — a chip is a lens, not a query language — and
+            // they narrow the deck and the shelves alike, so a pinned row the lens excludes is
+            // excluded, not shown twice. The Desktop sidebar's filter menu, as chips.
+            var lens by rememberSaveable { mutableStateOf<String?>(null) }
+            val needsYou by viewModel.needsYouIds.collectAsState()
+            val busy by viewModel.busySessionIds.collectAsState()
+            val archivedRooms by viewModel.archivedRooms.collectAsState()
+            LaunchedEffect(lens, drawerVisible) {
+                if (lens == LENS_ARCHIVED && drawerVisible) viewModel.loadArchivedSessions()
+            }
+            if (direct && query.isBlank()) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(bottom = 8.dp),
+                ) {
+                    listOf(
+                        LENS_NEEDS_YOU to "Needs you",
+                        LENS_RUNNING to "Running",
+                        LENS_UNREAD to "Unread",
+                        LENS_ARCHIVED to "Archived",
+                    ).forEach { (id, label) ->
+                        val count = when (id) {
+                            LENS_NEEDS_YOU -> rooms.count { it.id in needsYou }
+                            LENS_RUNNING -> rooms.count { it.id in busy }
+                            LENS_UNREAD -> rooms.count { it.hasUnread }
+                            else -> 0
+                        }
+                        FilterChip(
+                            selected = lens == id,
+                            onClick = { lens = if (lens == id) null else id },
+                            label = {
+                                Text(
+                                    if (count > 0) "$label · $count" else label,
+                                    fontSize = 12.sp,
+                                )
+                            },
+                            shape = RoundedCornerShape(50),
+                        )
+                    }
+                }
+            }
+            val lensRows = if (lens == LENS_ARCHIVED && query.isBlank()) archivedRooms else rooms
+            val filtered = when {
+                query.isNotBlank() -> rooms.filter {
+                    it.name.contains(query, ignoreCase = true) || it.id.contains(query, ignoreCase = true)
+                }
+                lens == LENS_NEEDS_YOU -> lensRows.filter { it.id in needsYou }
+                lens == LENS_RUNNING -> lensRows.filter { it.id in busy }
+                lens == LENS_UNREAD -> lensRows.filter { it.hasUnread }
+                else -> lensRows
+            }
+            val lensed = lens != null && query.isBlank()
+            val pinned = if (lensed) emptyList() else filtered.filter { it.id in pinnedRoomIds }
             // Scheduled work at the top of the list, Quick-Room style: a pinned JOB is a tile
             // that follows its newest run; a run kept on the gateway is a tile that IS that
             // run. Both sit in the deck beside the pinned conversations (Jonny: "pinning the
             // output of a certain cron job to the top of the session list like on the Matrix
             // side"). They are rows the roster never carries, so they arrive from the hub.
             val cronTiles by viewModel.hub.cronTiles.collectAsState()
-            val tileRooms = if (query.isBlank()) cronTiles.map { t ->
+            val tileRooms = if (query.isBlank() && !lensed) cronTiles.map { t ->
                 RoomProfile(
                     id = t.id,
                     name = t.label,
@@ -390,10 +522,10 @@ fun NavigationDrawerContent(
             // Pinned bots sit in the same deck: a tile that opens the bot's forever-chat (or
             // the Bots door for one never opened) — "at the top of the list", same grammar.
             val botTiles by viewModel.bots.tiles.collectAsState()
-            val deck = pinned + tileRooms + (if (query.isBlank()) botTiles else emptyList())
+            val deck = pinned + tileRooms + (if (query.isBlank() && !lensed) botTiles else emptyList())
             // Pinned rooms live in the Quick Rooms deck — don't list them twice.
-            // (While searching, show everything that matches.)
-            val listRooms = if (query.isBlank()) filtered.filter { it.id !in pinnedRoomIds } else filtered
+            // (While searching or under a lens, show everything that matches.)
+            val listRooms = if (query.isBlank() && !lensed) filtered.filter { it.id !in pinnedRoomIds } else filtered
 
             val invites by viewModel.invites.collectAsState()
 
@@ -403,8 +535,9 @@ fun NavigationDrawerContent(
             // crosses while you sleep is right the next time you look.
             val startOfToday = remember(drawerVisible) { localMidnightMs() }
             val folded by viewModel.collapsedRosterGroups.collectAsState()
+            val commands by viewModel.hub.gatewayCommands.collectAsState()
             val sections = remember(listRooms, startOfToday, query) {
-                if (query.isBlank()) chat.keryx.core.model.RosterGroups.split(listRooms, startOfToday)
+                if (query.isBlank() && !lensed) chat.keryx.core.model.RosterGroups.split(listRooms, startOfToday)
                 else listOf(chat.keryx.core.model.RosterSection(chat.keryx.core.model.RosterGroup.TODAY, listRooms))
             }
 
@@ -460,13 +593,63 @@ fun NavigationDrawerContent(
                     item { Spacer(modifier = Modifier.height(20.dp)) }
                 }
 
+                // The palette (2.10): the one field reaches everything. Places and commands
+                // answer first because there are few of them and they are exact; the rooms
+                // follow. The Desktop's ⌘K, without the keyboard.
                 if (query.isNotBlank()) {
-                    item { DrawerSectionHeader("Results") }
+                    val q = query.trim()
+                    val places = buildList {
+                        add(Triple("Missions", KeryxGlyphs.Board, chat.keryx.app.presentation.ui.nav.KeryxDest.Missions))
+                        if (caps != null) add(Triple("Runs", KeryxGlyphs.Watch, chat.keryx.app.presentation.ui.nav.KeryxDest.Runs))
+                        if (direct) add(Triple("Bots", KeryxGlyphs.Robot, chat.keryx.app.presentation.ui.nav.KeryxDest.Bots))
+                        if (hasProjects) add(Triple("Projects", KeryxGlyphs.Folder, chat.keryx.app.presentation.ui.nav.KeryxDest.Projects))
+                        if (caps?.git == true) add(Triple("Shipyard", KeryxGlyphs.GitBranch, chat.keryx.app.presentation.ui.nav.KeryxDest.Shipyard))
+                        add(Triple("Archive", KeryxGlyphs.Archive, chat.keryx.app.presentation.ui.nav.KeryxDest.Archive))
+                        add(Triple("Gateway", KeryxGlyphs.Pulse, chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway))
+                        add(Triple("Settings", KeryxGlyphs.Sliders, chat.keryx.app.presentation.ui.nav.KeryxDest.Settings))
+                    }.filter { it.first.contains(q, ignoreCase = true) }
+                    if (places.isNotEmpty()) {
+                        item(key = "palette-places") { DrawerSectionHeader("Places") }
+                        items(places, key = { "place-" + it.first }) { (label, glyph, dest) ->
+                            PaletteRow(icon = glyph, title = label, subtitle = null) { onOpenSpace(dest) }
+                        }
+                    }
+                    val cq = q.removePrefix("/")
+                    val hits = if (cq.length < 2) emptyList() else commands.filter { c ->
+                        c.cmd.removePrefix("/").contains(cq, ignoreCase = true) ||
+                            c.aliases.any { it.removePrefix("/").contains(cq, ignoreCase = true) } ||
+                            c.description.contains(cq, ignoreCase = true)
+                    }.take(6)
+                    if (hits.isNotEmpty()) {
+                        item(key = "palette-commands") { DrawerSectionHeader("Commands") }
+                        items(hits, key = { "cmd-" + it.cmd }) { c ->
+                            PaletteRow(
+                                icon = KeryxGlyphs.Routes,
+                                title = c.cmd + (if (c.argsHint.isNotBlank()) " …" else ""),
+                                subtitle = c.description.takeIf { it.isNotBlank() },
+                                mono = true,
+                            ) {
+                                // Into the composer, never straight to the wire: the send is
+                                // the consent, the same law as every other tap in the app.
+                                viewModel.prefillComposer(c.cmd + (if (c.argsHint.isNotBlank()) " " else ""))
+                                onDismissDrawer()
+                            }
+                        }
+                    }
+                    item(key = "results-header") { DrawerSectionHeader(lexicon.listHeader) }
                 }
                 if (filtered.isEmpty()) {
                     item {
                         Text(
-                            text = if (rooms.isEmpty()) lexicon.emptyList else "No matches",
+                            text = when {
+                                query.isNotBlank() -> "No matches"
+                                lens == LENS_ARCHIVED -> "Nothing archived"
+                                lens == LENS_NEEDS_YOU -> "Nothing waiting on you"
+                                lens == LENS_RUNNING -> "Nothing running"
+                                lens == LENS_UNREAD -> "All read"
+                                rooms.isEmpty() -> lexicon.emptyList
+                                else -> "No matches"
+                            },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp,
                             modifier = Modifier.padding(8.dp),
@@ -475,7 +658,7 @@ fun NavigationDrawerContent(
                 }
                 val direct = viewModel.transportIsDirect
                 sections.forEach { section ->
-                    val grouped = query.isBlank()
+                    val grouped = query.isBlank() && !lensed
                     val open = !grouped || section.group.name !in folded
                     if (grouped) item(key = "shelf-${section.group.name}") {
                         DrawerShelfHeader(
@@ -523,6 +706,21 @@ fun NavigationDrawerContent(
                         } else null,
                         onDelete = if (direct) {
                             { viewModel.deleteSession(room.id) }
+                        } else null,
+                        // Archive (2.10): out of the list, still on the gateway; the Archived
+                        // lens brings it back. A row already under that lens offers the reverse.
+                        onArchive = if (direct && lens != LENS_ARCHIVED) {
+                            { viewModel.archiveSession(room.id) }
+                        } else null,
+                        onUnarchive = if (direct && lens == LENS_ARCHIVED) {
+                            { viewModel.unarchiveSession(room.id) }
+                        } else null,
+                        onCopyId = if (direct) {
+                            {
+                                val cm = moveCtx.getSystemService(android.content.ClipboardManager::class.java)
+                                cm?.setPrimaryClip(android.content.ClipData.newPlainText("session id", room.id))
+                                android.widget.Toast.makeText(moveCtx, "Session id copied", android.widget.Toast.LENGTH_SHORT).show()
+                            }
                         } else null,
                         moveTargets = if (direct) moveTargets else emptyList(),
                         onMoveToProject = if (direct) {
@@ -573,7 +771,6 @@ fun NavigationDrawerContent(
             // icon over a small label, the phone-launcher grammar, three to a row so six make
             // two even rows and a seventh still costs a list entry, not a re-layout. The
             // machine went to the strip below.
-            val caps by viewModel.hub.reasoningCaps.collectAsState()
             androidx.compose.foundation.layout.FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -588,7 +785,6 @@ fun NavigationDrawerContent(
                 // probe answering means Hermes Link is alive, which is the same wire the runs
                 // ride. Badged with what has landed since you last looked — the same ledger
                 // the Runs place's arrivals rail reads, so door and rail never disagree.
-                val cronBoard by viewModel.hub.cron.collectAsState()
                 if (caps != null) DrawerDoor(
                     KeryxGlyphs.Watch, "Runs", Modifier.weight(1f),
                     badge = cronBoard.data?.unread?.total ?: 0,
@@ -598,15 +794,13 @@ fun NavigationDrawerContent(
                 // Bot Mode (2.8): the roster of profiles, badged with the bots that have news
                 // since you last looked. Direct door only — on Matrix a room already is a
                 // profile, so the door would open onto the drawer you are standing in.
-                val botsUnread by viewModel.bots.unreadCount.collectAsState()
-                if (viewModel.transportIsDirect) DrawerDoor(
+                if (direct) DrawerDoor(
                     KeryxGlyphs.Robot, "Bots", Modifier.weight(1f),
                     badge = botsUnread,
                 ) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Bots)
                 }
                 // Only where the gateway serves projects.* — the probe is the overview fetch.
-                val hasProjects by viewModel.projects.hasProjects.collectAsState()
                 if (hasProjects) DrawerDoor(KeryxGlyphs.Folder, "Projects", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Projects)
                 }
@@ -800,6 +994,9 @@ fun RoomRow(
     // Gateway-only affordances (the row IS a session) — null on Matrix.
     onRename: ((String) -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
+    onArchive: (() -> Unit)? = null,
+    onUnarchive: (() -> Unit)? = null,
+    onCopyId: (() -> Unit)? = null,
     /** Projects that can claim this session (they have a folder); empty = no menu entry. */
     moveTargets: List<chat.keryx.core.model.ProjectInfo> = emptyList(),
     onMoveToProject: ((chat.keryx.core.model.ProjectInfo) -> Unit)? = null,
@@ -817,7 +1014,8 @@ fun RoomRow(
     var renameOpen by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var moveOpen by remember { mutableStateOf(false) }
-    val hasMenu = onLeave != null || onInvite != null || onRename != null || onDelete != null || onMarkUnread != null
+    val hasMenu = onLeave != null || onInvite != null || onRename != null || onDelete != null || onMarkUnread != null ||
+        onArchive != null || onUnarchive != null
     // Last-message snippet, resolved lazily per row (cached in the VM keyed on room.timestamp so
     // it only refetches after new activity). Keyed on the timestamp so a new message refreshes it.
     val preview by produceState<String?>(initialValue = null, room.id, room.timestamp) {
@@ -984,6 +1182,33 @@ fun RoomRow(
             DropdownMenuItem(
                 text = { Text("Mark as unread") },
                 onClick = { menuOpen = false; onMarkUnread() },
+            )
+        }
+        if (onArchive != null) {
+            DropdownMenuItem(
+                text = {
+                    Column {
+                        Text("Archive")
+                        Text("Off the list, still on the gateway", fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
+                leadingIcon = { Icon(KeryxGlyphs.Archive, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                onClick = { menuOpen = false; onArchive() },
+            )
+        }
+        if (onUnarchive != null) {
+            DropdownMenuItem(
+                text = { Text("Restore to the list") },
+                leadingIcon = { Icon(KeryxGlyphs.Archive, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                onClick = { menuOpen = false; onUnarchive() },
+            )
+        }
+        if (onCopyId != null) {
+            DropdownMenuItem(
+                text = { Text("Copy session id") },
+                leadingIcon = { Icon(KeryxGlyphs.Copy, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                onClick = { menuOpen = false; onCopyId() },
             )
         }
         if (onInvite != null) {
