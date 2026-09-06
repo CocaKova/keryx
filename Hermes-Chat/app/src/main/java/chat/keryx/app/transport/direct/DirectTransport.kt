@@ -1241,6 +1241,9 @@ private const val GHOST_TOOL_ID = "generating"
         val st = store(storedId)
         if (st.hydrated) return
         val rest = rest ?: return
+        // The open's clock (2.10): `adb logcat -s KeryxPerf` reads it on a release build —
+        // Log.w survives R8 where Log.i does not. "Chat load time" is these two lines.
+        val t0 = android.os.SystemClock.uptimeMillis()
         // Paint first (2.10): the page this phone saw last time, off disk, before the wire
         // answers — a session opens on its words, not on a blank. The Desktop's transcript-tail
         // cache ("bot wakes paint at ~0 ms"). The wire's page replaces it the moment it lands,
@@ -1248,6 +1251,7 @@ private const val GHOST_TOOL_ID = "generating"
         if (!st.painted) readCachedPage(storedId)?.let { rows ->
             st.setHistory(rows, more = true)
             st.painted = true
+            android.util.Log.w("KeryxPerf", "open ${storedId.take(8)}: painted ${rows.size} rows from cache in ${android.os.SystemClock.uptimeMillis() - t0} ms")
         }
         rest.messagesRaw(storedId, limit = HISTORY_PAGE, profile = profileFor(storedId)).onSuccess { body ->
             val rows = rest.parseMessages(body)
@@ -1256,7 +1260,11 @@ private const val GHOST_TOOL_ID = "generating"
             // retires itself.
             st.setHistory(rows, more = rows.size >= HISTORY_PAGE)
             st.hydrated = true
+            android.util.Log.w("KeryxPerf", "open ${storedId.take(8)}: wire page ${rows.size} rows in ${android.os.SystemClock.uptimeMillis() - t0} ms" +
+                (if (st.painted) " (cache painted first)" else " (no cache — first open on this phone)"))
             writeCachedPage(storedId, body)
+        }.onFailure {
+            android.util.Log.w("KeryxPerf", "open ${storedId.take(8)}: wire page failed after ${android.os.SystemClock.uptimeMillis() - t0} ms: ${it.message}")
         }
     }
 
