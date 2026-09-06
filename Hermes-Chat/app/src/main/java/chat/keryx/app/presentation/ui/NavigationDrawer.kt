@@ -636,6 +636,17 @@ fun NavigationDrawerContent(
                             }
                         }
                     }
+                    // Settings rows by name (2.10): the hit opens Settings on that row, lit.
+                    val settingHits = chat.keryx.app.presentation.ui.components.SettingsCatalog.search(q, direct).take(5)
+                    if (settingHits.isNotEmpty()) {
+                        item(key = "palette-settings") { DrawerSectionHeader("Settings") }
+                        items(settingHits, key = { "setting-" + it.id }) { e ->
+                            PaletteRow(icon = KeryxGlyphs.Sliders, title = e.title, subtitle = e.section(direct)) {
+                                viewModel.jumpToSetting(e.id)
+                                onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Settings)
+                            }
+                        }
+                    }
                     item(key = "results-header") { DrawerSectionHeader(lexicon.listHeader) }
                 }
                 if (filtered.isEmpty()) {

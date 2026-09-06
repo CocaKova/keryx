@@ -28,6 +28,9 @@ interface SettingsRepository {
     var accentColor2Hex: String
     /** Room ID of the last conversation the user had open, restored on next launch. */
     var lastRoomId: String?
+    /** Reopen that conversation on a cold start (default). Off = every launch begins on the
+     *  drawer, the way the Desktop's `display.resume_last_session: false` does. */
+    var resumeLastRoom: Boolean
     /** Slash commands the user has used most recently (most-recent first), for the command palette. */
     var recentCommands: List<String>
     /** Whether we've already asked the user to exempt the app from battery optimization (ask once). */
