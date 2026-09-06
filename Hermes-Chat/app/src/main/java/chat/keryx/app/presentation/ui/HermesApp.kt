@@ -1,5 +1,6 @@
 package chat.keryx.app.presentation.ui
 
+import androidx.compose.foundation.combinedClickable
 import chat.keryx.app.presentation.ui.components.HeraldConfig
 import chat.keryx.app.presentation.ui.components.LocalHeraldConfig
 import chat.keryx.app.presentation.ui.components.keryxDuskSky
@@ -215,6 +216,9 @@ fun HermesApp(viewModel: ChatViewModel) {
         // bubbles and bars sit on top of it (transparent), so the sky reads as the actual room.
         // The ambient void (the accent pools adrift behind the chat) rides inside the sky
         // shader now — one dithered pass, so no gradient edge can survive it.
+        // The Call is a full-screen overlay drawn over the whole room (below), not a Dialog —
+        // see CallScreen for why. Its state lives here so the top bar can open it.
+        var showCall by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
         Box(modifier = Modifier.fillMaxSize().keryxDuskSky()) {
         Scaffold(
             containerColor = Color.Transparent,
@@ -307,18 +311,43 @@ fun HermesApp(viewModel: ChatViewModel) {
                             viewModel.hub.refreshReasoningCaps()
                             openSpace(KeryxDest.Gateway)
                         })
-                        // Direct door: the rows ARE sessions, so "new session" means a new row —
-                        // the same sheet the drawer's plus opens, reachable without the drawer.
-                        // (It used to send /new here, which resets the OPEN session in place: the
-                        // glyph said "new" and the roster gained nothing.) Offered even with no
-                        // session open — it is how the first one gets made.
+                        // Direct door: the rows ARE sessions, so "new session" means a new row.
+                        // ONE tap makes it and lands you in it — no sheet, no title prompt (the
+                        // first exchange titles it). Long-press for the sheet when you do want a
+                        // title or a temporary session. (It used to send /new here, which resets
+                        // the OPEN session in place: the glyph said "new" and the roster gained
+                        // nothing; then it opened the sheet, which was a form standing between
+                        // you and a blank page.) This is the only new-session glyph on the direct
+                        // door — the drawer's plus is Matrix-only now. Offered even with no
+                        // session open: it is how the first one gets made.
                         if (viewModel.transportIsDirect) {
                             var showNewSession by remember { mutableStateOf(false) }
-                            IconButton(onClick = { showNewSession = true }) {
+                            var creating by remember { mutableStateOf(false) }
+                            val haptics = chat.keryx.app.presentation.ui.components.LocalKeryxHaptics.current
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(androidx.compose.foundation.shape.CircleShape)
+                                    .combinedClickable(
+                                        enabled = !creating,
+                                        onClick = {
+                                            creating = true
+                                            viewModel.createSession("") { err ->
+                                                creating = false
+                                                if (err != null) viewModel.toast("Couldn't start a session: $err")
+                                            }
+                                        },
+                                        onLongClick = {
+                                            haptics.press()
+                                            showNewSession = true
+                                        },
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
                                 Icon(
                                     chat.keryx.app.presentation.ui.components.KeryxGlyphs.NewChat,
-                                    contentDescription = "New session",
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    contentDescription = "New session (hold for options)",
+                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = if (creating) 0.4f else 1f),
                                 )
                             }
                             if (showNewSession) {
@@ -400,7 +429,6 @@ fun HermesApp(viewModel: ChatViewModel) {
                             // treatment) — the dial now lives where the thinking happens.
                             // The Call (1.22): a voice conversation with this room's agent. Needs
                             // both voice endpoints; a missing one gets a pointer, not a dead mic.
-                            var showCall by remember { mutableStateOf(false) }
                             IconButton(onClick = {
                                 if (viewModel.voice.callReady()) showCall = true
                                 else viewModel.toast("Set the STT and TTS endpoints in Settings → Voice first")
@@ -409,13 +437,6 @@ fun HermesApp(viewModel: ChatViewModel) {
                                     chat.keryx.app.presentation.ui.components.KeryxGlyphs.Phone,
                                     contentDescription = "Call",
                                     tint = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                            if (showCall) {
-                                chat.keryx.app.presentation.ui.components.CallScreen(
-                                    viewModel = viewModel,
-                                    roomName = currentRoom?.name ?: "Keryx",
-                                    onDismiss = { showCall = false },
                                 )
                             }
                         }
@@ -450,6 +471,13 @@ fun HermesApp(viewModel: ChatViewModel) {
                     onDismiss = viewModel.hub::closeSkillForge,
                 )
             }
+        }
+        if (showCall) {
+            chat.keryx.app.presentation.ui.components.CallScreen(
+                viewModel = viewModel,
+                roomName = currentRoom?.name ?: "Keryx",
+                onDismiss = { showCall = false },
+            )
         }
         }
     }

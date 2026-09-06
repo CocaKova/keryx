@@ -19,6 +19,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -171,6 +174,11 @@ fun NavigationDrawerContent(
         drawerContainerColor = MaterialTheme.colorScheme.surface,
         drawerContentColor = MaterialTheme.colorScheme.onSurface,
         drawerShape = DrawerShape,
+        // The sheet itself runs edge to edge — under the status bar and the gesture bar — so its
+        // surface reaches the top of the screen instead of stopping short of the notification bar
+        // (which left a strip of dimmed chat showing above it). The CONTENT steps down by the
+        // system-bar insets below, so nothing sits under the clock.
+        windowInsets = WindowInsets(0, 0, 0, 0),
         modifier = Modifier.width(300.dp)
     ) {
         Column(
@@ -184,6 +192,7 @@ fun NavigationDrawerContent(
                         )
                     )
                 )
+                .windowInsetsPadding(WindowInsets.systemBars)
                 .padding(16.dp)
         ) {
             // Profile / identity header — the animated Keryx emblem as the brand/identity mark.
@@ -307,9 +316,11 @@ fun NavigationDrawerContent(
                         )
                     }
                 }
-                // The drawer's ONE new-conversation entry point: DM / create / join, in a sheet.
+                // Matrix's new-conversation entry point: DM / create / join, in a sheet. On the
+                // direct door there is exactly one "new session" and it lives in the top bar over
+                // the chat (2.9.4) — a second plus up here made two glyphs for one act.
                 var showNewChat by remember { mutableStateOf(false) }
-                IconButton(onClick = { showNewChat = true }) {
+                if (!viewModel.transportIsDirect) IconButton(onClick = { showNewChat = true }) {
                     Icon(
                         KeryxGlyphs.Plus,
                         contentDescription = "New chat",

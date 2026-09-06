@@ -772,8 +772,13 @@ object MessageParser {
      *  `groupChatItems`, which is Compose-side and cannot follow this into :core. Not API. */
     var parseUncachedCount = 0L
 
-    private fun parseUncached(content: String, agentChrome: Boolean = true): List<Segment> {
+    /** Markers the PHONE attaches to the user's own message — a senses tail, the Call's
+     *  ⟦keryx:voice⟧ tag. They are addressed to the agent, not the reader. */
+    private val USER_MARKS = Regex("""\s*⟦keryx:(?:sense\|[^⟧\n]*|voice)⟧""")
+
+    private fun parseUncached(raw: String, agentChrome: Boolean = true): List<Segment> {
         parseUncachedCount++
+        val content = if (raw.contains("⟦keryx:")) USER_MARKS.replace(raw, "") else raw
         // Markers first: the keryx plugin may prepend its ⟦keryx:v1⟧ beacon (or scatter citation
         // markers into the reasoning), and the 💭 prelude patterns are start-anchored — extracting
         // reasoning from the raw body made the whole block leak into the answer as prose.

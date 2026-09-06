@@ -38,6 +38,13 @@ class CallAudio {
     /** Call-long room-noise estimate; see [NoiseFloor] for why it must outlive one capture. */
     private val noiseFloor = NoiseFloor()
 
+    /** Set by [finishTake]: the next frame ends the capture, keeping what was voiced so far. */
+    @Volatile private var finishRequested = false
+
+    /** End the take now (mute tapped mid-sentence). Speech already captured is returned as a
+     *  normal take; if nothing had started, the capture simply ends as a non-take. */
+    fun finishTake() { finishRequested = true }
+
     @SuppressLint("MissingPermission") // callers gate on RECORD_AUDIO before starting the call
     suspend fun captureUtterance(context: Context): File? = withContext(Dispatchers.IO) {
         val minBuf = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL, ENCODING)
@@ -47,7 +54,7 @@ class CallAudio {
             max(minBuf, FRAME_SAMPLES * 8),
         )
         if (recorder.state != AudioRecord.STATE_INITIALIZED) {
-            chat.keryx.app.util.KLog.i("KeryxCallVad") { "AudioRecord init FAILED (state=${recorder.state}) — mic unavailable or permission revoked" }
+            android.util.Log.w("KeryxCall", "AudioRecord init FAILED (state=${recorder.state}) — mic unavailable or permission revoked")
             runCatching { recorder.release() }
             return@withContext null
         }
@@ -58,14 +65,21 @@ class CallAudio {
         var speechFrames = 0
         var trailingSilence = 0
         var totalFrames = 0
+        var peakRms = 0.0
+        finishRequested = false
         try {
             recorder.startRecording()
             while (coroutineContext.isActive) {
+                if (finishRequested) {
+                    android.util.Log.w("KeryxCall", "capture finished early (mute)")
+                    break
+                }
                 val n = recorder.read(frame, 0, FRAME_SAMPLES)
                 if (n <= 0) break
                 totalFrames++
                 if (totalFrames > MAX_FRAMES) break
                 val rms = rms(frame, n)
+                if (rms > peakRms) peakRms = rms
                 _level.value = smoothLevel(_level.value, rms)
 
                 noiseFloor.update(rms)
@@ -81,20 +95,26 @@ class CallAudio {
                             speechStarted = true
                             voiced += preroll
                             preroll.clear()
-                            chat.keryx.app.util.KLog.i("KeryxCallVad") {
-                                "speech open: rms=${rms.toInt()} startGate=${startGate.toInt()} endGate=${endGate.toInt()} at=${totalFrames * 30}ms"
-                            }
+                            android.util.Log.w("KeryxCall",
+                                "speech open: rms=${rms.toInt()} startGate=${startGate.toInt()} endGate=${endGate.toInt()} at=${totalFrames * 30}ms")
                         }
                     } else {
                         speechFrames = 0
                     }
                 } else {
                     voiced += frame.copyOf(n)
-                    if (rms < endGate) {
+                    // The end gate rides above the room AND well below the speaker: a quiet room
+                    // (floor ~80 RMS) with a 2400-RMS voice ended on a 140 gate that any breath
+                    // or handling noise re-armed — takes ran to the 45 s cap. Relative to speech,
+                    // 8 % of the loudest voiced frame is decisively "not talking".
+                    val endAt = max(endGate, peakRms * END_OVER_SPEECH_PEAK)
+                    if (rms < endAt) {
                         trailingSilence++
                         if (trailingSilence >= END_SILENCE_FRAMES) break
                     } else {
-                        trailingSilence = 0
+                        // A blip costs three frames of the count, not the whole count: one click
+                        // mid-pause used to restart the 900 ms clock from zero.
+                        trailingSilence = max(0, trailingSilence - 3)
                         speechFrames++
                     }
                 }
@@ -105,10 +125,12 @@ class CallAudio {
             _level.value = 0f
         }
         // A take is real speech only if the voiced stretch outlasts a door slam.
-        chat.keryx.app.util.KLog.i("KeryxCallVad") {
+        // Release-visible on purpose (once per take): the Call failing silently on a phone is
+        // undiagnosable otherwise — `adb logcat -s KeryxCall` tells the whole story.
+        android.util.Log.w("KeryxCall",
             "capture end: started=$speechStarted speechFrames=$speechFrames trailingSilence=$trailingSilence " +
-                "frames=$totalFrames startGate=${noiseFloor.startGate.toInt()} endGate=${noiseFloor.endGate.toInt()}"
-        }
+                "frames=$totalFrames startGate=${noiseFloor.startGate.toInt()} endGate=${noiseFloor.endGate.toInt()} " +
+                "peakRms=${peakRms.toInt()}")
         if (!speechStarted || speechFrames < MIN_SPEECH_FRAMES) return@withContext null
         val wav = File(context.cacheDir, "call_${System.currentTimeMillis()}.wav")
         writeWav(wav, voiced)
@@ -174,10 +196,13 @@ class CallAudio {
         const val CHANNEL = AudioFormat.CHANNEL_IN_MONO
         const val ENCODING = AudioFormat.ENCODING_PCM_16BIT
         const val FRAME_SAMPLES = 480               // 30 ms
-        const val PREROLL_FRAMES = 10               // 300 ms kept from before the gate opened
+        // 690 ms kept from before the gate opened. 300 ms lost the soft start of "But…" / "So…"
+        // (the gate needs 90 ms above 250 RMS to open; a quiet onset can run longer than that).
+        const val PREROLL_FRAMES = 23
         const val START_CONFIRM_FRAMES = 3          // 90 ms above gate = speech, not a click
         const val END_SILENCE_FRAMES = 30           // 900 ms of quiet ends the utterance
         const val MIN_SPEECH_FRAMES = 12            // < 360 ms voiced = noise, discard
+        const val END_OVER_SPEECH_PEAK = 0.08       // end gate is at least 8 % of the loudest voiced frame
         const val MAX_FRAMES = 45 * 1000 / 30       // hard cap: 45 s per utterance
     }
 }

@@ -562,6 +562,10 @@ class ChatViewModel(
 
     fun toast(message: String) { _toasts.tryEmit(message) }
 
+    /** For the Call's log line: the direct door's link state, or "matrix". */
+    fun linkState(): String = direct?.connectionState?.value?.let { it::class.simpleName ?: "?" } ?: "matrix"
+    fun currentRoomId(): String? = _currentRoom.value?.id
+
     /** The transient live response overlay (null = nothing streaming over the side-channel). */
     private val _liveStream = MutableStateFlow<LiveStream?>(null)
     val liveStream: StateFlow<LiveStream?> = _liveStream.asStateFlow()
@@ -1483,7 +1487,22 @@ class ChatViewModel(
         chat.keryx.app.util.CacheRegistry.register(cacheTrimmer)
     }
 
+    // --- The Call (2.9.4): owned here, not by the screen ---------------------------------------
+    // A rotation recreates the Activity and every `remember` in it; a call that lived in the
+    // screen's composition hung up on every turn of the phone. The screen attaches to this one.
+    private var call: chat.keryx.app.audio.CallController? = null
+
+    fun callController(context: android.content.Context): chat.keryx.app.audio.CallController =
+        call ?: chat.keryx.app.audio.CallController(context.applicationContext, this).also { call = it }
+
+    fun endCall() {
+        call?.end()
+        call = null
+    }
+
     override fun onCleared() {
+        call?.end()
+        call = null
         chat.keryx.app.util.CacheRegistry.unregister(cacheTrimmer)
         super.onCleared()
     }

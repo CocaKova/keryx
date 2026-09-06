@@ -135,7 +135,8 @@ object KeryxSenses {
      * it there. Kept in the same `⟦…⟧` family as the other Keryx markers (`ask`, `skill`,
      * `telemetry`) and, like them, never spans a newline.
      */
-    val MARKER_RE = Regex("""\s*⟦keryx:sense\|[^⟧\n]*⟧\s*$""")
+    /** Sense marker, and the Call's ⟦keryx:voice⟧ tag — both ride the user's own message tail. */
+    val MARKER_RE = Regex("""(\s*⟦keryx:(?:sense\|[^⟧\n]*|voice)⟧)+\s*$""")
 
     /**
      * `⟦keryx:sense|battery=22%·charging|local=23:10 CDT|at=Austin TX (±1 km)⟧`, absent parts
