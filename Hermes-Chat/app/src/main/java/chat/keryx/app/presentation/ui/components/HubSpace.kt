@@ -1,6 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
-import androidx.compose.ui.Alignment
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,58 +10,50 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.LinkHealth
-import kotlinx.coroutines.launch
 
 /**
- * The two gateway spaces and the one shell they share.
+ * The Gateway: one place for the machine Keryx is pointed at.
  *
  * Until 2.5 this was a single "Agent Hub" carrying six tabs, and the tab's *index* was the thing
- * the code reasoned about: `when (tab) { 0 -> …; 1 -> … }` appeared five times over (fetch on
- * first visit, the ten-second poll, the header's refresh button, the pager body) plus a
- * `LIVE_TABS = setOf(0, 2, 3)`. Adding a panel meant editing five parallel branches in step and
- * getting every index right; the drift was already there when this was written, with the refresh
- * button pulling reasoning caps that first-visit fetch did not.
+ * the code reasoned about. 2.5 made a panel a value ([HubPanel]) and split the six into two
+ * doors — Gateway (status, controls, jobs) and Workshop (sessions, skills, tools) — because six
+ * tabs in one scrollable row made you read all of them to answer either question.
  *
- * So a panel is now a value, not an index. [HubPanel] carries its own label, its own refresh and
- * its own body, the shell drives all three generically, and adding one is a single entry in a
- * list. The registries below are the only place the app says which panels exist.
+ * 2.10 puts them back under one door without bringing the row back. The landing is what the
+ * machine is doing — status, brain, the last turn — and the rest are **spokes**: a row each,
+ * with one line of what is behind it, opened one at a time with a way back. It is the shape
+ * Settings already has, and the shape the Hermes Desktop gives its own management overlays
+ * (a master list, one detail at a time). Nothing is read that was not asked for; nothing is a
+ * tab you have to know exists.
  *
- * The split into two spaces (2.5) follows from the same honesty: "what is my server doing" and
- * "what has my agent been doing" are different questions asked at different moments, and six tabs
- * in one scrollable row made you read all of them to answer either.
+ * A panel is still a value: [HubPanel] carries its label, its glyph, its ONE definition of
+ * "get current" (first visit, the poll and the header button all call exactly that) and its
+ * body. The registry below is the only place the app says which spokes exist.
  */
 class HubPanelScope(
     val viewModel: ChatViewModel,
@@ -69,152 +63,129 @@ class HubPanelScope(
 )
 
 /**
- * One panel in a gateway space.
+ * One spoke of the Gateway.
  *
  * @param id stable across releases: it names the panel in saved state and is what a deep link
  *   would address. Never rename casually — the label is what you change to re-word the UI.
- * @param live whether the panel's data moves on its own (gateway state, job runs, session
- *   activity) and should re-poll while visible. Panels that only change on operator action stay
- *   fetch-once.
- * @param refresh the panel's ONE definition of "get current". First visit, the poll and the
- *   header button all call exactly this, so they cannot drift apart again.
+ * @param live whether the panel's data moves on its own (job runs, session activity) and should
+ *   re-poll while visible. Panels that only change on operator action stay fetch-once.
+ * @param refresh the panel's ONE definition of "get current".
+ * @param subtitle the spoke row's second line, read off the delegate's current state — a count,
+ *   a model name — so the landing says what is behind each door before you open it.
  */
 data class HubPanel(
     val id: String,
     val label: String,
+    val icon: ImageVector,
     val live: Boolean = false,
     val refresh: (ChatViewModel) -> Unit,
+    val subtitle: @Composable (ChatViewModel) -> String,
     val content: @Composable (HubPanelScope) -> Unit,
 )
 
 private const val HUB_POLL_MS = 10_000L
+private const val LANDING = "status"
 
-/** The server: what it is doing, changing what it does, and the work it runs unattended. */
-val GATEWAY_PANELS: List<HubPanel> = listOf(
-    HubPanel(
-        id = "status",
-        label = "Status",
-        live = true,
-        refresh = { vm -> vm.hub.refreshHealth(); vm.hub.refreshModels(); vm.hub.refreshReasoningCaps() },
-        content = { StatusTab(it.viewModel, it.health, it.closeSpace) },
-    ),
+/** The spokes, in the order the landing lists them: changing the machine, then reading it. */
+val GATEWAY_SPOKES: List<HubPanel> = listOf(
     HubPanel(
         id = "controls",
         label = "Controls",
+        icon = KeryxGlyphs.Sliders,
         refresh = { vm -> vm.hub.refreshConfig(); vm.hub.refreshBrains(); vm.hub.refreshReasoningCaps() },
+        subtitle = { vm ->
+            val caps by vm.hub.reasoningCaps.collectAsState()
+            caps?.model?.takeIf { it.isNotBlank() }?.let { "Brain · $it" } ?: "Brain, knobs, config"
+        },
         content = { ControlsTab(it.viewModel) },
     ),
     HubPanel(
         id = "jobs",
         label = "Jobs",
+        icon = KeryxGlyphs.Calendar,
         live = true,
         refresh = { vm -> vm.hub.refreshJobs() },
+        subtitle = { vm ->
+            val jobs by vm.hub.jobs.collectAsState()
+            jobs.data?.let { "${it.size} scheduled" } ?: "Schedules the agent keeps"
+        },
         content = { JobsTab(it.viewModel) },
     ),
-    // "Runs" left the hub 2026-09-01: reading scheduled work is a floor-level activity, not
-    // server administration, and three taps deep it went unread. It is the Runs door now
-    // (RunsSpace) — Jobs stays here because *managing* schedules is administration.
-)
-
-/** The agent: what it has done, what it knows how to do, and what it can reach. */
-val WORKSHOP_PANELS: List<HubPanel> = listOf(
     HubPanel(
         id = "sessions",
         label = "Sessions",
+        icon = KeryxGlyphs.Stack,
         live = true,
         refresh = { vm -> vm.hub.refreshSessions() },
+        subtitle = { vm ->
+            val sessions by vm.hub.sessions.collectAsState()
+            sessions.data?.let { "${it.size} recent" } ?: "Every transcript, resume or prune"
+        },
         content = { SessionsTab(it.viewModel, it.closeSpace) },
     ),
     HubPanel(
         id = "skills",
         label = "Skills",
+        icon = KeryxGlyphs.Star,
         refresh = { vm -> vm.hub.refreshSkills() },
+        subtitle = { vm ->
+            val skills by vm.hub.skills.collectAsState()
+            skills.data?.let { "${it.size} learned" } ?: "What the agent knows how to do"
+        },
         content = { SkillsTab(it.viewModel) },
     ),
     HubPanel(
         id = "tools",
         label = "Tools",
+        icon = KeryxGlyphs.Plug,
         refresh = { vm -> vm.hub.refreshToolsets() },
+        subtitle = { vm ->
+            val toolsets by vm.hub.toolsets.collectAsState()
+            toolsets.data?.let { t -> "${t.toolsets.size} toolsets" } ?: "What the agent can reach"
+        },
         content = { ToolsTab(it.viewModel) },
     ),
 )
 
 @Composable
-fun GatewaySpace(viewModel: ChatViewModel, health: LinkHealth, onDismiss: () -> Unit) =
-    HubSpace("Gateway", GATEWAY_PANELS, viewModel, health, onDismiss)
-
-@Composable
-fun WorkshopSpace(viewModel: ChatViewModel, health: LinkHealth, onDismiss: () -> Unit) =
-    HubSpace("Workshop", WORKSHOP_PANELS, viewModel, health, onDismiss)
-
-/**
- * A hard fling that runs a panel's LazyColumn into its edge used to spill the leftover velocity
- * into the sheet's own nested-scroll handling — the sheet dragged a few px and sprang back, over
- * and over (the "scroll down hard and the UI glitches up and down" stutter). Swallow everything a
- * fling leaves unconsumed before it reaches the sheet; real finger drags (UserInput) pass through
- * untouched, so swipe-down-to-dismiss still works.
- */
-private val FlingTamer = object : NestedScrollConnection {
-    override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset =
-        if (source == NestedScrollSource.SideEffect) available else Offset.Zero
-    override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity = available
-}
-
-/**
- * The shell both spaces are. Panels fetch on first visit, the volatile ones re-poll gently while
- * visible, and the whole space degrades to cached snapshots offline — the panels themselves keep
- * stale data on screen and float the error above it ([PanelErrorLine]).
- */
-@Composable
-private fun HubSpace(
-    title: String,
-    panels: List<HubPanel>,
-    viewModel: ChatViewModel,
-    health: LinkHealth,
-    onDismiss: () -> Unit,
-) {
+fun GatewaySpace(viewModel: ChatViewModel, health: LinkHealth, onDismiss: () -> Unit) {
     val gatewayUrl by viewModel.gatewayUrl.collectAsState()
-    // 2.1: tabs became pager pages — swipe moves between them. currentPage drives the tab-row
-    // visuals live during a drag; settledPage is what the fetch/poll effects key on, so panels
-    // skimmed past mid-swipe never fire their network refresh.
-    val pagerScope = rememberCoroutineScope()
-    val pagerState = rememberPagerState(pageCount = { panels.size })
-    val settled = panels.getOrNull(pagerState.settledPage)
-    val accent = MaterialTheme.colorScheme.primary
+    // The open spoke, by id — survives recreation so a rotation mid-Jobs stays on Jobs.
+    var spokeId by rememberSaveable { mutableStateOf<String?>(null) }
+    val spoke = GATEWAY_SPOKES.firstOrNull { it.id == spokeId }
+    BackHandler(enabled = spoke != null) { spokeId = null }
 
-    // First visit per opening. Panels may already hold the offline-cache seed (or the last
-    // opening's snapshot) — that renders instantly while this refresh runs behind it, so a space
-    // is never blank and never silently stale. Keyed by panel id, not index: a reordered registry
-    // must not make the shell think it has already fetched something else.
-    val fetched = remember { mutableSetOf<String>() }
-    LaunchedEffect(settled?.id) {
-        val panel = settled ?: return@LaunchedEffect
-        if (!fetched.add(panel.id)) return@LaunchedEffect
-        panel.refresh(viewModel)
+    // The landing's own refresh: health, models, caps — and one pull of each spoke's data, so
+    // the rows can say what is behind them. Once per opening; the spokes re-pull on visit.
+    val refreshLanding: (ChatViewModel) -> Unit = remember {
+        { vm ->
+            vm.hub.refreshHealth(); vm.hub.refreshModels(); vm.hub.refreshReasoningCaps()
+            GATEWAY_SPOKES.forEach { it.refresh(vm) }
+        }
     }
-
-    // Live refresh (1.20): the visible panel re-polls while the space is open — gateway state, job
-    // runs and session activity move without us. repeatOnLifecycle suspends the loop when the app
-    // backgrounds (same discipline as the Missions board poll); changing panel restarts the
-    // effect, so only the panel actually on screen polls.
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    LaunchedEffect(settled?.id, lifecycleOwner) {
-        val panel = settled ?: return@LaunchedEffect
-        if (!panel.live) return@LaunchedEffect
-        lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+    val visibleId = spoke?.id ?: LANDING
+    val fetched = remember { mutableSetOf<String>() }
+    LaunchedEffect(visibleId) {
+        if (!fetched.add(visibleId)) return@LaunchedEffect
+        if (spoke == null) refreshLanding(viewModel) else spoke.refresh(viewModel)
+    }
+    // Live refresh (1.20): what is on screen re-polls while the space is open; the landing's
+    // health is live, and so is any spoke that says so. Suspended while the app backgrounds.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(visibleId, lifecycleOwner) {
+        if (spoke != null && !spoke.live) return@LaunchedEffect
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             while (true) {
                 kotlinx.coroutines.delay(HUB_POLL_MS)
-                panel.refresh(viewModel)
+                if (spoke == null) viewModel.hub.refreshHealth() else spoke.refresh(viewModel)
             }
         }
     }
 
-    // 1.21: the Hub graduated from a bottom sheet to its own full-screen space; 1.23: that space
-    // scaffold (dusk gradient, emblem, letter-spaced title, breathing live line, close X) is the
-    // shared KeryxSpace — a gateway space just supplies its link-health line and refresh action.
     KeryxSpace(
-        title = title,
+        title = spoke?.label ?: "Gateway",
         onClose = onDismiss,
+        onBack = if (spoke != null) ({ spokeId = null }) else null,
         standalone = false,
         liveSlot = {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -235,57 +206,44 @@ private fun HubSpace(
             }
         },
         actions = {
-            IconButton(onClick = { settled?.refresh(viewModel) }) {
+            IconButton(onClick = { if (spoke == null) refreshLanding(viewModel) else spoke.refresh(viewModel) }) {
                 Icon(KeryxGlyphs.Refresh, contentDescription = "Refresh",
                     tint = MaterialTheme.colorScheme.primary)
             }
         },
     ) {
         Spacer(Modifier.height(6.dp))
-
-        val visible = pagerState.currentPage
-        // Three panels fit a phone's width, so the row reads as a whole rather than as a strip you
-        // have to scroll to discover. It stays Scrollable rather than fixed because a fourth panel
-        // (the Hermes update view) is already written and should widen this row, not break it.
-        ScrollableTabRow(
-            selectedTabIndex = visible,
-            edgePadding = 12.dp,
-            containerColor = Color.Transparent,
-            indicator = { positions ->
-                TabRowDefaults.SecondaryIndicator(
-                    Modifier.tabIndicatorOffset(positions[visible]),
-                    color = accent,
-                )
-            },
-            divider = { HorizontalDivider(color = accent.copy(alpha = 0.12f)) },
-        ) {
-            panels.forEachIndexed { i, panel ->
-                Tab(
-                    selected = visible == i,
-                    onClick = { pagerScope.launch { pagerState.animateScrollToPage(i) } },
-                    text = {
-                        Text(panel.label, fontSize = 12.sp,
-                            fontWeight = if (visible == i) FontWeight.SemiBold else FontWeight.Normal)
-                    },
-                    selectedContentColor = accent,
-                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
-        val scope = remember(viewModel, health, onDismiss) {
-            HubPanelScope(viewModel, health, onDismiss)
-        }
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.weight(1f).nestedScroll(FlingTamer),
-            verticalAlignment = Alignment.Top,
+        val scope = remember(viewModel, health, onDismiss) { HubPanelScope(viewModel, health, onDismiss) }
+        // Stepping into a spoke and back is a page turn, not a pager — the same settle/leave
+        // pair every other place uses.
+        AnimatedContent(
+            targetState = spoke,
+            transitionSpec = { keryxPop().togetherWith(keryxVanish()) },
+            label = "gatewaySpoke",
+            modifier = Modifier.fillMaxSize(),
         ) { page ->
             Box(modifier = Modifier.fillMaxSize()) {
-                panels[page].content(scope)
+                if (page == null) {
+                    StatusTab(viewModel, health, onDismiss, spokes = {
+                        gatewaySpokeRows(viewModel) { spokeId = it }
+                    })
+                } else page.content(scope)
             }
         }
     }
+}
+
+/** The spoke rows on the landing — one [KeryxHubRow] each, subtitled from live state. */
+private fun LazyListScope.gatewaySpokeRows(viewModel: ChatViewModel, open: (String) -> Unit) {
+    item(key = "spokes-label") {
+        Spacer(Modifier.height(6.dp))
+        SectionLabel("Rooms of the machine")
+    }
+    items(GATEWAY_SPOKES.size, key = { "spoke-" + GATEWAY_SPOKES[it].id }) { i ->
+        val p = GATEWAY_SPOKES[i]
+        KeryxHubRow(icon = p.icon, title = p.label, subtitle = p.subtitle(viewModel), onClick = { open(p.id) })
+    }
+    item(key = "spokes-gap") { Spacer(Modifier.height(8.dp)) }
 }
 
 /** Link-health → status color, in the shared semantic palette. */

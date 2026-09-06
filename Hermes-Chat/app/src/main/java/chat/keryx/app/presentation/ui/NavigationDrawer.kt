@@ -566,44 +566,28 @@ fun NavigationDrawerContent(
                 }
             }
 
-            // Bottom bar — theme toggle and settings side by side (was two
-            // full-width stacked rows; this halves the footer's height).
             Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
 
-            // The doors. Nine of them now (the Runs door tipped it), and as rows of three
-            // labeled pills the footer had grown to a third of the drawer. Vertical tiles at
-            // five a row — icon over a small label, the phone-launcher grammar — carry the
-            // same nine in two rows at two-thirds the height, and the next door still costs a
-            // list entry, not a re-layout.
+            // The places (2.10). Two kinds of thing used to share one grid of nine: the places
+            // you read daily and the machine you visit on purpose. The grid keeps the places —
+            // icon over a small label, the phone-launcher grammar, three to a row so six make
+            // two even rows and a seventh still costs a list entry, not a re-layout. The
+            // machine went to the strip below.
+            val caps by viewModel.hub.reasoningCaps.collectAsState()
             androidx.compose.foundation.layout.FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
-                maxItemsInEachRow = 4,
+                maxItemsInEachRow = 3,
             ) {
                 DrawerDoor(KeryxGlyphs.Board, "Missions", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Missions)
                 }
-                DrawerDoor(KeryxGlyphs.Archive, "Archive", Modifier.weight(1f)) {
-                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Archive)
-                }
-                // Only where the gateway serves projects.* — the probe is the overview fetch.
-                val hasProjects by viewModel.projects.hasProjects.collectAsState()
-                if (hasProjects) DrawerDoor(KeryxGlyphs.Folder, "Projects", Modifier.weight(1f)) {
-                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Projects)
-                }
-                // Only where the gateway declares `git` (keryx.git.enabled) — a capability, not a probe.
-                val caps by viewModel.hub.reasoningCaps.collectAsState()
-                if (caps?.git == true) DrawerDoor(KeryxGlyphs.GitBranch, "Shipyard", Modifier.weight(1f)) {
-                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Shipyard)
-                }
-                // Scheduled work reads at floor level (was buried as the hub's 4th tab). Gated
-                // the cheap way: the capabilities probe answering means Hermes Link is alive,
-                // which is the same wire the runs ride.
-                // Badged with what has landed since you last looked — the same ledger the
-                // Runs place's arrivals rail reads (baseline + opened-run ids), so the door
-                // and the rail never disagree.
+                // Scheduled work reads at floor level. Gated the cheap way: the capabilities
+                // probe answering means Hermes Link is alive, which is the same wire the runs
+                // ride. Badged with what has landed since you last looked — the same ledger
+                // the Runs place's arrivals rail reads, so door and rail never disagree.
                 val cronBoard by viewModel.hub.cron.collectAsState()
                 if (caps != null) DrawerDoor(
                     KeryxGlyphs.Watch, "Runs", Modifier.weight(1f),
@@ -621,17 +605,90 @@ fun NavigationDrawerContent(
                 ) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Bots)
                 }
-                DrawerDoor(KeryxGlyphs.Pulse, "Gateway", Modifier.weight(1f)) {
-                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway)
+                // Only where the gateway serves projects.* — the probe is the overview fetch.
+                val hasProjects by viewModel.projects.hasProjects.collectAsState()
+                if (hasProjects) DrawerDoor(KeryxGlyphs.Folder, "Projects", Modifier.weight(1f)) {
+                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Projects)
                 }
-                DrawerDoor(KeryxGlyphs.Wrench, "Workshop", Modifier.weight(1f)) {
-                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Workshop)
+                // Only where the gateway declares `git` (keryx.git.enabled) — a capability, not a probe.
+                if (caps?.git == true) DrawerDoor(KeryxGlyphs.GitBranch, "Shipyard", Modifier.weight(1f)) {
+                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Shipyard)
                 }
-                // Settings last: the places you go daily read before the one you visit rarely.
-                DrawerDoor(KeryxGlyphs.Sliders, "Settings", Modifier.weight(1f)) {
-                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Settings)
+                DrawerDoor(KeryxGlyphs.Archive, "Archive", Modifier.weight(1f)) {
+                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Archive)
                 }
             }
+
+            // The status strip (2.10): the machine, in one line — the link's dot, the brain,
+            // the gateway's version — and Settings at its end. The strip IS the Gateway door:
+            // tap the words and you are in the place that is about them (the dashboard's
+            // sidebar footer, with the Desktop's status bar folded into it).
+            val hubHealth by viewModel.hub.health.collectAsState()
+            val linkHealth by viewModel.linkHealth.collectAsState()
+            DrawerStatusStrip(
+                health = linkHealth,
+                model = caps?.model.orEmpty(),
+                version = hubHealth.data?.version.orEmpty(),
+                onOpenGateway = {
+                    viewModel.hub.refreshReasoningCaps()
+                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway)
+                },
+                onOpenSettings = { onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Settings) },
+            )
+        }
+    }
+}
+
+/**
+ * One thin row: dot · brain · version, then the settings glyph. The words are a button to the
+ * Gateway (a 44dp-tall target the width of the drawer, not a dot); the glyph is a button to
+ * Settings. With no link at all it still says what it knows — the link's own state — so the
+ * strip never reads blank.
+ */
+@Composable
+internal fun DrawerStatusStrip(
+    health: chat.keryx.app.presentation.LinkHealth,
+    model: String,
+    version: String,
+    onOpenGateway: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
+    val words = listOfNotNull(
+        model.takeIf { it.isNotBlank() },
+        version.takeIf { it.isNotBlank() }?.let { "hermes $it" },
+    ).joinToString(" · ").ifBlank {
+        chat.keryx.app.presentation.ui.components.linkHealthLabel(health)
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(10.dp))
+                .clickable(onClickLabel = "Open the Gateway", onClick = onOpenGateway)
+                .padding(horizontal = 8.dp, vertical = 12.dp),
+        ) {
+            chat.keryx.app.presentation.ui.components.LinkHealthDot(health = health, compact = true)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = words,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 11.sp,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        IconButton(onClick = onOpenSettings) {
+            Icon(
+                KeryxGlyphs.Sliders,
+                contentDescription = "Settings",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
         }
     }
 }

@@ -760,7 +760,7 @@ private fun RunCard(
                 }
                 if (card.runs.size > 20) {
                     Text(
-                        "${card.runs.size - 20} older runs in Workshop ▸ Sessions",
+                        "${card.runs.size - 20} older runs in Gateway ▸ Sessions",
                         fontSize = 10.5.sp, color = quiet.copy(alpha = 0.6f),
                         modifier = Modifier.padding(top = 2.dp),
                     )
