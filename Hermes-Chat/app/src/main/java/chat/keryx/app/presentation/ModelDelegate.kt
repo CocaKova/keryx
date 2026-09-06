@@ -53,11 +53,23 @@ class ModelDelegate(
 
     /** Forget the catalog: it described another room's session. The pill falls back to the
      *  caps probe's model until the picker is opened and re-fetches for this room. */
-    fun clear() { _catalog.value = null }
+    fun clear() { _catalog.value = null; catalogRoomId = null; fetchedAt = 0L }
 
-    fun refresh() {
+    /** Which room the catalog describes, and when it was read — the picker's TTL (2.10). */
+    private var catalogRoomId: String? = null
+    private var fetchedAt = 0L
+
+    /**
+     * Read the catalog — unless the one held is this room's and younger than [CATALOG_TTL_MS],
+     * in which case the picker opens on it instantly (the Desktop refreshes its catalogs every
+     * twenty minutes and keeps them warm; a picker that re-read the wire on every open paid a
+     * round trip to show the same list). [force] is the picker's own refresh button.
+     */
+    fun refresh(force: Boolean = false) {
         if (_loading.value) return
         val roomId = currentRoomId()
+        val now = System.currentTimeMillis()
+        if (!force && _catalog.value != null && roomId == catalogRoomId && now - fetchedAt < CATALOG_TTL_MS) return
         _loading.value = true
         scope.launch {
             val result = transport.gateway?.let { gw ->
@@ -65,7 +77,7 @@ class ModelDelegate(
                 else Result.failure(IllegalStateException("no session open"))
             } ?: hubClient()?.modelOptions()
                 ?: Result.failure(IllegalStateException("Hermes Link is off"))
-            result.onSuccess { _catalog.value = it }
+            result.onSuccess { _catalog.value = it; catalogRoomId = roomId; fetchedAt = System.currentTimeMillis() }
                 .onFailure { android.util.Log.w("KeryxModel", "catalog: ${it.message}") }
             _loading.value = false
         }
@@ -113,3 +125,6 @@ class ModelDelegate(
         }
     }
 }
+
+/** How long a read catalog stays good for — the Desktop's own cadence. */
+private const val CATALOG_TTL_MS = 20 * 60_000L

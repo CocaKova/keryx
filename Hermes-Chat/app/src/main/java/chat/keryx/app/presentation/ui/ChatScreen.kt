@@ -1005,6 +1005,7 @@ fun ChatScreen(
                 onModelSelect = { viewModel.models.select(it) },
                 onRefreshCaps = { viewModel.refreshReasoningCaps(); viewModel.hub.refreshBrains() },
                 onRefreshCatalog = { viewModel.models.refresh() },
+                onRefreshCatalogHard = { viewModel.models.refresh(force = true) },
             )
         }
 
@@ -1127,6 +1128,8 @@ private fun Composer(
     onModelSelect: (chat.keryx.core.model.ModelChoice) -> Unit = {},
     onRefreshCaps: () -> Unit = {},
     onRefreshCatalog: () -> Unit = {},
+    /** The picker's own refresh button: past the catalog's TTL, straight to the wire. */
+    onRefreshCatalogHard: () -> Unit = onRefreshCatalog,
     // The busy tree: null = normal send; "steer" | "queue" | "stop" while a turn runs.
     busyAction: String? = null,
     onContextTap: (() -> Unit)? = null,
@@ -1339,6 +1342,7 @@ private fun Composer(
         onModelSelect = onModelSelect,
         onRefreshCaps = onRefreshCaps,
         onRefreshCatalog = onRefreshCatalog,
+        onRefreshCatalogHard = onRefreshCatalogHard,
         busyAction = busyAction,
         onContextTap = onContextTap,
     )
@@ -1366,6 +1370,7 @@ private fun ComposerFooter(
     onModelSelect: (chat.keryx.core.model.ModelChoice) -> Unit,
     onRefreshCaps: () -> Unit,
     onRefreshCatalog: () -> Unit,
+    onRefreshCatalogHard: () -> Unit = onRefreshCatalog,
     busyAction: String?,
     /** Tap the ring to see what fills it (2.10). Null where the door cannot itemise. */
     onContextTap: (() -> Unit)? = null,
@@ -1428,7 +1433,7 @@ private fun ComposerFooter(
                 onDismiss = { modelMenu = false },
                 onPick = onModelSelect,
                 onBrainPick = onBrainSelect,
-                onRefresh = { onRefreshCaps(); onRefreshCatalog() },
+                onRefresh = { onRefreshCaps(); onRefreshCatalogHard() },
             )
         }
         Spacer(modifier = Modifier.width(4.dp))
