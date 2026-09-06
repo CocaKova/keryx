@@ -45,7 +45,12 @@ import kotlinx.coroutines.delay
  * Pre-Android-13 devices get static gradient equivalents of both.
  */
 @Composable
-fun Modifier.keryxDuskSky(): Modifier {
+fun Modifier.keryxDuskSky(
+    /** False while something opaque covers this sky (a place, the Call): the pools hold their
+     *  drift and the shader stops re-drawing — 25 frames a second of GPU for a backdrop
+     *  nobody can see was the app's largest idle cost (2.10). Battery Saver stills it too. */
+    animate: Boolean = true,
+): Modifier {
     val bg = MaterialTheme.colorScheme.background
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.tertiary
@@ -69,8 +74,8 @@ fun Modifier.keryxDuskSky(): Modifier {
     var phase by remember { mutableFloatStateOf(0.5f) }
     if (dark) {
         val reduced by rememberReducedMotion()
-        LaunchedEffect(reduced) {
-            if (reduced) return@LaunchedEffect
+        LaunchedEffect(reduced, animate) {
+            if (reduced || !animate) return@LaunchedEffect
             val born = SystemClock.uptimeMillis()
             val periodMs = 150_000f
             while (true) {
