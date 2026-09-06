@@ -1948,6 +1948,52 @@ class ChatViewModel(
         }
     }
 
+    /**
+     * Archive (2.10): the row leaves the list and stays resumable — the gateway's soft-hide,
+     * the Desktop's "Archive". The open session stays open; you are in it, and the next
+     * message would put it straight back anyway. Never a move-off, never a toast of success:
+     * the row leaving is the feedback.
+     */
+    fun archiveSession(sessionId: String) {
+        viewModelScope.launch {
+            gateway?.archiveSession(sessionId)
+                ?.onFailure { _toasts.tryEmit("Couldn't archive: ${it.message?.take(80)}") }
+                ?.onSuccess { _archivedRooms.value = _archivedRooms.value.filterNot { it.id == sessionId } }
+        }
+    }
+
+    fun unarchiveSession(sessionId: String) {
+        viewModelScope.launch {
+            gateway?.unarchiveSession(sessionId)
+                ?.onFailure { _toasts.tryEmit("Couldn't restore: ${it.message?.take(80)}") }
+                ?.onSuccess { _archivedRooms.value = _archivedRooms.value.filterNot { it.id == sessionId } }
+        }
+    }
+
+    /** The Archived shelf's rows — fetched when the shelf is opened, never part of the roster. */
+    private val _archivedRooms = MutableStateFlow<List<RoomProfile>>(emptyList())
+    val archivedRooms: StateFlow<List<RoomProfile>> = _archivedRooms.asStateFlow()
+
+    fun loadArchivedSessions() {
+        viewModelScope.launch {
+            gateway?.archivedSessions()
+                ?.onSuccess { _archivedRooms.value = it }
+                ?.onFailure { _toasts.tryEmit("Couldn't read the archive: ${it.message?.take(80)}") }
+        }
+    }
+
+    /** Stored ids with a decision waiting on you — an approval, a clarify, a secret, a sudo.
+     *  The drawer's "Needs you" filter; the shade already keeps this map for notifications. */
+    val needsYouIds: StateFlow<Set<String>> =
+        (direct?.shadePending() ?: flowOf(emptyMap()))
+            .map { it.keys }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    /** Stored ids with a turn in flight — the drawer's "Running" filter. */
+    val busySessionIds: StateFlow<Set<String>> =
+        (gateway?.busySessionIds() ?: flowOf(emptySet()))
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
     fun deleteSession(sessionId: String) {
         viewModelScope.launch {
             gateway?.deleteSession(sessionId)

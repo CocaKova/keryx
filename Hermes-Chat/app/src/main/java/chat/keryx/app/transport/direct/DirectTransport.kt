@@ -1645,6 +1645,19 @@ private const val GHOST_TOOL_ID = "generating"
             .onFailure { android.util.Log.e("KeryxGw", "archive failed for $sessionId", it) }
     }
 
+    override suspend fun unarchiveSession(sessionId: String): Result<Unit> {
+        val rest = rest ?: return Result.failure(IllegalStateException("gateway not connected"))
+        return rest.patchSession(sessionId, archived = false, profile = profileFor(sessionId))
+            .onSuccess { refreshSessions() }
+            .onFailure { android.util.Log.e("KeryxGw", "unarchive failed for $sessionId", it) }
+    }
+
+    override suspend fun archivedSessions(): Result<List<RoomProfile>> {
+        val rest = rest ?: return Result.failure(IllegalStateException("gateway not connected"))
+        return rest.sessions(limit = 100, excludeSources = listOf(CRON_SOURCE), archived = "only")
+            .map { rows -> rows.map(::toProfile) }
+    }
+
     override suspend fun renameSession(sessionId: String, title: String): Result<Unit> =
         (rest?.patchSession(sessionId, title = title, profile = profileFor(sessionId)) ?: Result.failure(IllegalStateException("gateway not connected")))
             .onSuccess { refreshSessions() }
