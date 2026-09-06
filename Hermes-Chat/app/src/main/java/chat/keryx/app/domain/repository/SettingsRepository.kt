@@ -31,6 +31,9 @@ interface SettingsRepository {
     /** Reopen that conversation on a cold start (default). Off = every launch begins on the
      *  drawer, the way the Desktop's `display.resume_last_session: false` does. */
     var resumeLastRoom: Boolean
+    /** New sessions start on the last model you picked (2.10) — the Desktop's sticky picker.
+     *  Off = the gateway's profile default, every time. */
+    var stickyModel: Boolean
     /** Slash commands the user has used most recently (most-recent first), for the command palette. */
     var recentCommands: List<String>
     /** Whether we've already asked the user to exempt the app from battery optimization (ask once). */

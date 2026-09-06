@@ -26,6 +26,7 @@ enum class SettingsRow(
     AGENT_TELEMETRY("Show telemetry", listOf("check-ins", "footer", "cron"), "Agent", "Agent"),
     AGENT_ALERTS("Mission alerts", listOf("notify", "kanban", "board"), "Agent", "Agent"),
     AGENT_RESUME("Reopen last chat on launch", listOf("resume", "start", "fresh"), "Agent", "Agent"),
+    AGENT_STICKY_MODEL("New sessions use the last model picked", listOf("default model", "sticky", "brain", "new session"), "Agent", null),
     COMPANION_PICK("Companion", listOf("pet", "mascot", "petdex"), "Companion", "Companion"),
     CONNECTION_GATEWAY("Gateway address", listOf("url", "host", "dashboard"), "Gateway", null),
     CONNECTION_INSECURE("Allow self-signed certificates", listOf("tls", "ssl", "https", "cert"), "Gateway", "Connection"),

@@ -500,7 +500,14 @@ fun NavigationDrawerContent(
                 else -> lensRows
             }
             val lensed = lens != null && query.isBlank()
-            val pinned = if (lensed) emptyList() else filtered.filter { it.id in pinnedRoomIds }
+            // A session a project claimed lives in Projects (2.10): the flat list is the Desktop's
+            // recents, and its rule is "scoped sessions stay under their project". The open one
+            // stays visible wherever it is; search and the lenses still see everything.
+            val tree by viewModel.projects.projectsTree.collectAsState()
+            val scoped = if (direct && !lensed && query.isBlank()) tree?.scopedSessionIds.orEmpty() else emptySet()
+            val unscoped = if (scoped.isEmpty()) filtered
+                else filtered.filter { it.id !in scoped || it.id == currentRoom?.id || it.id in pinnedRoomIds }
+            val pinned = if (lensed) emptyList() else unscoped.filter { it.id in pinnedRoomIds }
             // Scheduled work at the top of the list, Quick-Room style: a pinned JOB is a tile
             // that follows its newest run; a run kept on the gateway is a tile that IS that
             // run. Both sit in the deck beside the pinned conversations (Jonny: "pinning the
@@ -525,7 +532,7 @@ fun NavigationDrawerContent(
             val deck = pinned + tileRooms + (if (query.isBlank() && !lensed) botTiles else emptyList())
             // Pinned rooms live in the Quick Rooms deck — don't list them twice.
             // (While searching or under a lens, show everything that matches.)
-            val listRooms = if (query.isBlank() && !lensed) filtered.filter { it.id !in pinnedRoomIds } else filtered
+            val listRooms = if (query.isBlank() && !lensed) unscoped.filter { it.id !in pinnedRoomIds } else filtered
 
             val invites by viewModel.invites.collectAsState()
 
@@ -536,6 +543,8 @@ fun NavigationDrawerContent(
             val startOfToday = remember(drawerVisible) { localMidnightMs() }
             val folded by viewModel.collapsedRosterGroups.collectAsState()
             val commands by viewModel.hub.gatewayCommands.collectAsState()
+            val hasMore by viewModel.hasMoreSessions.collectAsState()
+            val loadingMore by viewModel.loadingMoreSessions.collectAsState()
             val sections = remember(listRooms, startOfToday, query) {
                 if (query.isBlank() && !lensed) chat.keryx.core.model.RosterGroups.split(listRooms, startOfToday)
                 else listOf(chat.keryx.core.model.RosterSection(chat.keryx.core.model.RosterGroup.TODAY, listRooms))
@@ -748,6 +757,33 @@ fun NavigationDrawerContent(
                         // Rows glide to their new place when activity reorders the list.
                         modifier = Modifier.animateItem(),
                     )
+                    }
+                }
+
+                // The next page (2.10): the roster is fifty deep by default and a gateway you
+                // have talked to for weeks holds hundreds. One row, at the end, that asks.
+                if (direct && query.isBlank() && !lensed && hasMore) item(key = "show-older") {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable(enabled = !loadingMore) { viewModel.loadMoreSessions() }
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                    ) {
+                        Icon(
+                            KeryxGlyphs.ChevronDown, contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            if (loadingMore) "Reaching back…" else "Show older ${lexicon.plural}",
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
                     }
                 }
 

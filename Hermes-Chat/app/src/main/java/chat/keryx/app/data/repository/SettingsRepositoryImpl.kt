@@ -71,6 +71,10 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getBoolean("resume_last_room", true)
         set(value) = prefs.edit().putBoolean("resume_last_room", value).apply()
 
+    override var stickyModel: Boolean
+        get() = prefs.getBoolean("sticky_model", true)
+        set(value) = prefs.edit().putBoolean("sticky_model", value).apply()
+
     override var collapsedRosterGroups: Set<String>
         get() = prefs.getStringSet("collapsed_roster_groups", emptySet())?.toSet() ?: emptySet()
         set(value) = prefs.edit().putStringSet("collapsed_roster_groups", value).apply()

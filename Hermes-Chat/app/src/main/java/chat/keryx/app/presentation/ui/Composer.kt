@@ -373,6 +373,9 @@ internal fun ComposerFooter(
     onContextTap: (() -> Unit)? = null,
 ) {
     val usage = contextUsage?.takeIf { roomId != null && it.roomId == roomId }
+    // The pill reads this room's route on arrival (2.10) — within the catalog's TTL this is
+    // free, and a new session's sticky model shows without a tap on the pill.
+    LaunchedEffect(roomId) { if (roomId != null) onRefreshCatalog() }
     if (caps == null && usage == null) return
     val meta = MaterialTheme.colorScheme.onSurfaceVariant
     // The footer is an instrument readout, but two of its three readouts are the app's most-used
