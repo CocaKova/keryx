@@ -16,4 +16,10 @@ interface ArchiveSweeper {
     /** Start (or keep running) a sweep of [roomId]. A sweep already running for the same room
      *  is left alone; one for another room is replaced. */
     fun sweep(scope: CoroutineScope, roomId: String)
+
+    /** Sweep several rooms one after another in one job (2.10, the cross-session Archive).
+     *  Progress reports the whole index, under the room id "*". The default sweeps the first. */
+    fun sweepMany(scope: CoroutineScope, roomIds: List<String>) {
+        roomIds.firstOrNull()?.let { sweep(scope, it) }
+    }
 }

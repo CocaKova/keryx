@@ -88,7 +88,9 @@ fun ArchiveScreen(
     val progress by viewModel.archive.progress.collectAsState()
     val roomId = viewModel.currentRoom.collectAsState().value?.id
     var tab by remember { mutableStateOf(ArchiveTab.SEARCH) }
-    var contextAnchor by remember { mutableStateOf<String?>(null) }
+    // The moment to open: the event and the room it lives in (2.10 — across sessions, a hit
+    // names its own room; the open room is only the fallback).
+    var contextAnchor by remember { mutableStateOf<Pair<String, String?>?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -175,10 +177,16 @@ fun ArchiveScreen(
                 }
             }
         }
+        val rooms by viewModel.rooms.collectAsState()
+        val names = remember(rooms, viewModel.archive.crossSession) {
+            if (viewModel.archive.crossSession) rooms.associate { it.id to it.name } else null
+        }
+        androidx.compose.runtime.CompositionLocalProvider(LocalArchiveRooms provides names) {
         when (tab) {
-            ArchiveTab.SEARCH -> SearchTab(viewModel, progress?.indexed ?: 0) { contextAnchor = it }
-            ArchiveTab.SAVED -> SavedTab(viewModel) { contextAnchor = it }
-            ArchiveTab.MEDIA -> MediaTab(viewModel, roomId) { contextAnchor = it }
+            ArchiveTab.SEARCH -> SearchTab(viewModel, progress?.indexed ?: 0) { contextAnchor = it.eventId to it.roomId }
+            ArchiveTab.SAVED -> SavedTab(viewModel) { contextAnchor = it.eventId to it.roomId }
+            ArchiveTab.MEDIA -> MediaTab(viewModel, roomId) { contextAnchor = it.eventId to it.roomId }
+        }
         }
     }
 
@@ -191,7 +199,7 @@ fun ArchiveScreen(
                     val utc = dateState.selectedDateMillis
                     showDatePicker = false
                     if (utc != null) scope.launch {
-                        viewModel.archive.eventForDate(utcDayToLocalStart(utc))?.let { contextAnchor = it }
+                        viewModel.archive.eventForDate(utcDayToLocalStart(utc))?.let { contextAnchor = it to roomId }
                             ?: viewModel.toast("Nothing indexed yet for that day")
                     }
                 }) { Text("Open") }
@@ -202,8 +210,8 @@ fun ArchiveScreen(
         }
     }
 
-    contextAnchor?.let { anchor ->
-        ArchiveContextViewer(viewModel, anchorId = anchor, onDismiss = { contextAnchor = null })
+    contextAnchor?.let { (anchor, room) ->
+        ArchiveContextViewer(viewModel, anchorId = anchor, roomId = room, onDismiss = { contextAnchor = null })
     }
 }
 
@@ -220,17 +228,20 @@ private fun StatusLine(text: String) {
 private fun SearchTab(
     viewModel: ChatViewModel,
     indexedCount: Int,
-    onOpen: (String) -> Unit,
+    onOpen: (ArchiveStore.Entry) -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
     var hits by remember { mutableStateOf<List<ArchiveStore.Hit>>(emptyList()) }
     var searched by remember { mutableStateOf(false) }
     val myId by viewModel.currentUserId.collectAsState()
 
-    // Results follow the keystrokes, debounced; the index answers fast enough to feel live.
+    // Before a query: the newest things remembered (2.10), so the tab is never a blank page
+    // over a full index. Results follow the keystrokes, debounced.
+    var recent by remember { mutableStateOf<List<ArchiveStore.Entry>>(emptyList()) }
     LaunchedEffect(query, indexedCount) {
         if (query.isBlank()) {
             hits = emptyList(); searched = false
+            recent = viewModel.archive.recent()
             return@LaunchedEffect
         }
         delay(250)
@@ -254,9 +265,35 @@ private fun SearchTab(
     // parchment measures **2.50:1** and on the void 3.40:1 — under AA in both themes. The
     // secondary ink at full strength (5.65:1 / 7.38:1) IS the quiet voice; it does not need help.
     when {
+        query.isBlank() && recent.isNotEmpty() -> LazyColumn(
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            item(key = "recent-label") {
+                Text(
+                    "RECENTLY REMEMBERED",
+                    fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            items(recent, key = { "recent-" + it.eventId }) { e ->
+                KeryxCard(onClick = { onOpen(e) }) {
+                    EntryHeader(e, myId, roomName(e.roomId))
+                    Spacer(Modifier.height(4.dp))
+                    if (e.mediaKind != null) MediaLine(e)
+                    else Text(
+                        e.body.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty(),
+                        fontSize = 13.sp, maxLines = 3, overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+        }
         query.isBlank() -> Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
-                "Every message the app has ever seen, one search away.",
+                if (indexedCount == 0) "Nothing remembered yet — the index fills as sessions are swept."
+                else "Every message the app has ever seen, one search away.",
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -274,8 +311,8 @@ private fun SearchTab(
             modifier = Modifier.fillMaxSize(),
         ) {
             items(hits, key = { it.entry.eventId }) { hit ->
-                KeryxCard(onClick = { onOpen(hit.entry.eventId) }) {
-                    EntryHeader(hit.entry, myId)
+                KeryxCard(onClick = { onOpen(hit.entry) }) {
+                    EntryHeader(hit.entry, myId, roomName(hit.entry.roomId))
                     Spacer(Modifier.height(4.dp))
                     if (hit.entry.mediaKind != null) {
                         MediaLine(hit.entry)
@@ -331,7 +368,7 @@ private fun snippetAnnotated(snippet: String, accent: androidx.compose.ui.graphi
 @Composable
 private fun SavedTab(
     viewModel: ChatViewModel,
-    onOpen: (String) -> Unit,
+    onOpen: (ArchiveStore.Entry) -> Unit,
 ) {
     var entries by remember { mutableStateOf<List<ArchiveStore.Entry>>(emptyList()) }
     var refreshKey by remember { mutableStateOf(0) }
@@ -371,10 +408,10 @@ private fun SavedTab(
         modifier = Modifier.fillMaxSize(),
     ) {
         items(entries, key = { it.eventId }) { e ->
-            KeryxCard(onClick = { onOpen(e.eventId) }) {
+            KeryxCard(onClick = { onOpen(e) }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        EntryHeader(e, myId)
+                        EntryHeader(e, myId, roomName(e.roomId))
                         Spacer(Modifier.height(4.dp))
                         if (e.mediaKind != null) MediaLine(e)
                         if (e.body.isNotBlank()) {
@@ -422,7 +459,7 @@ private fun SavedTab(
 private fun MediaTab(
     viewModel: ChatViewModel,
     roomId: String?,
-    onOpen: (String) -> Unit,
+    onOpen: (ArchiveStore.Entry) -> Unit,
 ) {
     var entries by remember { mutableStateOf<List<ArchiveStore.Entry>>(emptyList()) }
     var loaded by remember { mutableStateOf(false) }
@@ -467,7 +504,7 @@ private fun MediaTab(
 }
 
 @Composable
-private fun MediaCell(e: ArchiveStore.Entry, viewModel: ChatViewModel, onOpen: (String) -> Unit) {
+private fun MediaCell(e: ArchiveStore.Entry, viewModel: ChatViewModel, onOpen: (ArchiveStore.Entry) -> Unit) {
     val shape = RoundedCornerShape(KeryxRadius.chip)
     Box(
         contentAlignment = Alignment.Center,
@@ -475,7 +512,7 @@ private fun MediaCell(e: ArchiveStore.Entry, viewModel: ChatViewModel, onOpen: (
             .aspectRatio(1f)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-            .clickable { onOpen(e.eventId) },
+            .clickable { onOpen(e) },
     ) {
         if (e.mediaKind == MediaKind.IMAGE.name) {
             // Grid-sized decode under an archive-only cache key: the chat's full bubbles keep
@@ -528,11 +565,21 @@ private fun MediaCell(e: ArchiveStore.Entry, viewModel: ChatViewModel, onOpen: (
 
 // --- Shared bits -------------------------------------------------------------------------------
 
+/** Across sessions a card says whose session it came from; on Matrix the room is the screen. */
 @Composable
-private fun EntryHeader(e: ArchiveStore.Entry, myId: String?) {
+private fun roomName(roomId: String): String? {
+    val vm = LocalArchiveRooms.current ?: return null
+    return vm[roomId]
+}
+
+/** Session id → title, provided by the screen for the cards (null on the Matrix door). */
+private val LocalArchiveRooms = androidx.compose.runtime.staticCompositionLocalOf<Map<String, String>?> { null }
+
+@Composable
+private fun EntryHeader(e: ArchiveStore.Entry, myId: String?, roomName: String? = null) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-            text = senderLabel(e.sender, myId),
+            text = senderLabel(e.sender, myId) + (roomName?.let { " · $it" } ?: ""),
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,
@@ -603,6 +650,7 @@ internal fun utcDayToLocalStart(utcMidnight: Long): Long {
 fun ArchiveContextViewer(
     viewModel: ChatViewModel,
     anchorId: String,
+    roomId: String? = null,
     onDismiss: () -> Unit,
 ) {
     var items by remember(anchorId) { mutableStateOf<List<Message>>(emptyList()) }
@@ -612,7 +660,7 @@ fun ArchiveContextViewer(
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(anchorId) {
-        val loadedItems = viewModel.archive.context(anchorId).filter { visibleInContext(it) }
+        val loadedItems = viewModel.archive.context(anchorId, roomId).filter { visibleInContext(it) }
         items = loadedItems
         loading = false
         val anchorIndex = loadedItems.indexOfFirst { it.id == anchorId }
@@ -650,7 +698,7 @@ fun ArchiveContextViewer(
                     val first = items.firstOrNull() ?: return@ReachButton
                     scope.launch {
                         extending = true
-                        val older = viewModel.archive.context(first.id, before = 25, after = 0)
+                        val older = viewModel.archive.context(first.id, roomId, before = 25, after = 0)
                             .filter { visibleInContext(it) }
                         items = (older + items).distinctBy { it.id }.sortedBy { it.timestamp }
                         extending = false
@@ -669,7 +717,7 @@ fun ArchiveContextViewer(
                     val last = items.lastOrNull() ?: return@ReachButton
                     scope.launch {
                         extending = true
-                        val newer = viewModel.archive.context(last.id, before = 0, after = 25)
+                        val newer = viewModel.archive.context(last.id, roomId, before = 0, after = 25)
                             .filter { visibleInContext(it) }
                         items = (items + newer).distinctBy { it.id }.sortedBy { it.timestamp }
                         extending = false

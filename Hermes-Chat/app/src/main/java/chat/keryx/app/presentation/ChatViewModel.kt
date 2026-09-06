@@ -565,7 +565,11 @@ class ChatViewModel(
     val missions = MissionsDelegate(deps) { _rooms.value }
     val console = ConsoleDelegate(deps)
     val voice = VoiceDelegate(deps)
-    val archive = ArchiveDelegate(deps, transport, archiveStore, archiveIndexer) { _currentRoom.value?.id }
+    val archive = ArchiveDelegate(
+        deps, transport, archiveStore, archiveIndexer,
+        currentRoomId = { _currentRoom.value?.id },
+        rosterIds = { _rooms.value.map { it.id } },
+    )
     /** Bot Mode (2.8): the roster of profiles and the door into each one's forever-chat. */
     val bots = BotsDelegate(deps, transport, hub) { id, title -> openSessionById(id, title) }
 

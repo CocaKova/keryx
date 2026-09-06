@@ -68,13 +68,37 @@ class RestArchiveIndexer(
         }
     }
 
-    private suspend fun runSweep(sessionId: String) {
+    override fun sweepMany(scope: CoroutineScope, roomIds: List<String>) {
+        if (roomIds.isEmpty()) return
+        if (job?.isActive == true && _progress.value?.roomId == ALL) return
+        job?.cancel()
+        job = scope.launch(Dispatchers.IO) {
+            var fresh = 0
+            var lastError: String? = null
+            _progress.value = ArchiveIndexer.Progress(ALL, store.count(null), 0, running = true, complete = false)
+            for (id in roomIds) {
+                try {
+                    fresh += runSweep(id, aggregate = true)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    android.util.Log.e("KeryxArchive", "rest sweep failed for $id", e)
+                    lastError = e.message ?: "sweep failed"
+                }
+                _progress.value = ArchiveIndexer.Progress(ALL, store.count(null), fresh, running = true, complete = false, error = lastError)
+            }
+            _progress.value = ArchiveIndexer.Progress(ALL, store.count(null), fresh, running = false, complete = true, error = lastError)
+        }
+    }
+
+    private suspend fun runSweep(sessionId: String, aggregate: Boolean = false): Int {
         val wasComplete = store.backfillComplete(sessionId)
         fun publish(fresh: Int, running: Boolean, complete: Boolean = wasComplete, error: String? = null) {
+            if (aggregate) return // the many-room sweep reports for the whole index itself
             _progress.value = ArchiveIndexer.Progress(sessionId, store.count(sessionId), fresh, running, complete, error)
         }
         publish(0, running = true)
-        val client = rest() ?: run { publish(0, running = false, error = "gateway not connected"); return }
+        val client = rest() ?: run { publish(0, running = false, error = "gateway not connected"); return 0 }
 
         val ceiling = store.catchupCeiling(sessionId)?.toLongOrNull()
         val walk = TranscriptPages.pageUntil(
@@ -90,5 +114,11 @@ class RestArchiveIndexer(
         val complete = wasComplete || walk.exhausted
         if (complete && !wasComplete) store.setBackfillComplete(sessionId)
         publish(fresh, running = false, complete = complete)
+        return fresh
+    }
+
+    private companion object {
+        /** The progress row's room id when the sweep covers the whole index. */
+        const val ALL = "*"
     }
 }
