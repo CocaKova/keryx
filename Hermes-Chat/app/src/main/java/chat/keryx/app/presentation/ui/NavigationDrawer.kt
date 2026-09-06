@@ -503,8 +503,11 @@ fun NavigationDrawerContent(
             // A session a project claimed lives in Projects (2.10): the flat list is the Desktop's
             // recents, and its rule is "scoped sessions stay under their project". The open one
             // stays visible wherever it is; search and the lenses still see everything.
-            val tree by viewModel.projects.projectsTree.collectAsState()
-            val scoped = if (direct && !lensed && query.isBlank()) tree?.scopedSessionIds.orEmpty() else emptySet()
+            // ⚠️ Not the tree's scopedSessionIds — the gateway counts EVERY session as scoped
+            // (auto repo buckets and the "no project" home bucket included), and the first
+            // build of this hid the whole roster. Only projects you made count.
+            val explicitIds by viewModel.projects.explicitSessionIds.collectAsState()
+            val scoped = if (direct && !lensed && query.isBlank()) explicitIds else emptySet()
             val unscoped = if (scoped.isEmpty()) filtered
                 else filtered.filter { it.id !in scoped || it.id == currentRoom?.id || it.id in pinnedRoomIds }
             val pinned = if (lensed) emptyList() else unscoped.filter { it.id in pinnedRoomIds }
