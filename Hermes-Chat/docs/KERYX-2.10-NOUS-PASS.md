@@ -392,7 +392,7 @@ only where it makes sense (6). Plus the long-cron-bubble readability bug he hit 
 | B | flat groups, hub search with scroll-and-glow anchors, `SettingsCatalog` + source-reading test, Gateway page (direct) = Connection + Hermes Link, Interface → Appearance "Feel", About with Copy diagnostics, Sessions (archived + prune), Reopen-last-chat toggle, `KeryxSegmented` (`0b94251`) | B4 rollback (nothing in Settings writes to the gateway — moot); B5 one ConfirmDialog (deferred to E); bubble opacity slider **dropped on purpose** — a translucent fill over the sky defeats the contrast law just restored; `SettingsDialog.kt` decomposition (E) |
 | C | C1 failure card from `error_surface` (+ generic fallback), C2 context breakdown sheet on the ring, C6 undo last exchange with confirm (`c37d6f7`) | C3 jump-to-prompt, C4 find in chat, C5 queue editing, C7 composer recall, C8 bot needs-attention, C9 approval-mode chip — not asked for; resume-snapshot `inflight.error_surface` on reconnect not parsed yet (live frame only) |
 | D | D1 transcript-tail cache (`666450d`), D2 covered sky rests (`ab0ad69`), D3 catalog TTL 20 min (`579bb88`); D5 verified by reading: both indexers run on `Dispatchers.IO` | **Measurements not taken** — no phone on the wire for gfxinfo / cold-start; D4 recomposition scoping needs Layout Inspector on device |
-| E | — | not started: decompose `ChatViewModel.kt` (2,4xx) / `ChatScreen.kt` / `SettingsDialog.kt` / `MessageParser.kt`, zero behaviour change |
+| E | `ChatScreen.kt` 1,922 → 1,184 (`Composer.kt`, `CommandPalette.kt` split out); `SettingsDialog.kt` 1,463 → 1,151 (`SettingsColor.kt`, `SettingsPrimitives.kt`); pure moves, `private` → `internal` on what crossed a file | `ChatViewModel.kt` (2,4xx) and `MessageParser.kt` (1,136) untouched — the ViewModel already delegates by concern and the parser has 700 tests over it; both are a decision, not an afternoon |
 
 **Walk list for Jonny (what to look at on the phone):** drawer shelves fold/unfold and persist ·
 status strip words + tap → Gateway landing → each spoke and back · lenses, Archive then Archived
@@ -402,9 +402,13 @@ tap the ring · long-press the newest reply → Take it back · a cold open pain
 the spinner would have.
 
 ⚠️ Traps found while building: `git log --grep` on `~/.hermes/hermes-agent` matches the giant
-squash commit `722acd66f6` for nearly any phrase — grep subjects, not bodies. The Settings
-`SettingsAnchor` glow relies on `positionInRoot` minus the scroll column's root Y captured with
-`scrollState.value` — if the page ever gains a sticky header, re-measure.
+squash commit `722acd66f6` for nearly any phrase — grep subjects, not bodies (now in the Fable
+handoff §8 too). The settings catalog is an **enum** (`SettingsRow`) and an anchor is
+`SettingsAnchor(SettingsRow.X)` — the compiler holds "anchored ⇒ searchable"; the test holds
+"searchable ⇒ anchored". The `SettingsAnchor` glow relies on `positionInRoot` minus the scroll
+column's root Y captured with `scrollState.value` — if the page ever gains a sticky header,
+re-measure. **Chat load time** is `adb logcat -s KeryxPerf:W` on any release build (vc86+): two
+lines per open, cache paint and wire page, in ms.
 
 ### Phase D — the numbers (2026-09-05, Jonny's phone, 1440×3120 @600dpi, wireless adb :33273)
 
