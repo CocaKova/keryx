@@ -425,6 +425,20 @@ class ChatViewModel(
     private val _collapsedRosterGroups = MutableStateFlow(settingsRepository.collapsedRosterGroups)
     val collapsedRosterGroups: StateFlow<Set<String>> = _collapsedRosterGroups.asStateFlow()
 
+    private val _resumeLastRoom = MutableStateFlow(settingsRepository.resumeLastRoom)
+    val resumeLastRoom: StateFlow<Boolean> = _resumeLastRoom.asStateFlow()
+    fun setResumeLastRoom(on: Boolean) {
+        _resumeLastRoom.value = on
+        settingsRepository.resumeLastRoom = on
+    }
+
+    /** A settings row to land on the next time Settings opens (the drawer palette's doing).
+     *  Consumed on arrival, so a later plain open lands on the hub as ever. */
+    private val _settingsJump = MutableStateFlow<String?>(null)
+    val settingsJump: StateFlow<String?> = _settingsJump.asStateFlow()
+    fun jumpToSetting(id: String) { _settingsJump.value = id }
+    fun consumeSettingsJump() { _settingsJump.value = null }
+
     fun toggleRosterGroup(name: String) {
         val next = if (name in _collapsedRosterGroups.value) _collapsedRosterGroups.value - name
         else _collapsedRosterGroups.value + name
@@ -787,8 +801,9 @@ class ChatViewModel(
                         return@collectLatest
                     }
                 }
-                // Restore the last open conversation once rooms are available.
-                if (_currentRoom.value == null) {
+                // Restore the last open conversation once rooms are available — unless the
+                // user asked every launch to start fresh (Settings → Agent).
+                if (_currentRoom.value == null && settingsRepository.resumeLastRoom) {
                     val lastId = settingsRepository.lastRoomId
                     val room = roomList.firstOrNull { it.id == lastId }
                     if (room != null) setCurrentRoom(room)

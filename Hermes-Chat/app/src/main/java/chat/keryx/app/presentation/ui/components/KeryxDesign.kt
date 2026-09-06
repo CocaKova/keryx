@@ -51,6 +51,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
@@ -649,6 +652,38 @@ fun KeryxSpace(
         }
     } else {
         KeryxSpaceBody(title, onClose, modifier, liveSlot, actions, floating, onBack, content)
+    }
+}
+
+/**
+ * The choice control (2.10): a small, mutually-exclusive set — theme mode, bubble style, text
+ * size — as one segmented row. Replaces the piles of FilterChips that each section grew on its
+ * own; one primitive, so a choice reads the same everywhere it is offered.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun KeryxSegmented(
+    options: List<Pair<String, String>>,
+    selected: String,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
+        options.forEachIndexed { i, (id, label) ->
+            SegmentedButton(
+                selected = id == selected,
+                onClick = { onSelect(id) },
+                shape = SegmentedButtonDefaults.itemShape(index = i, count = options.size),
+                colors = SegmentedButtonDefaults.colors(
+                    activeContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                    activeContentColor = MaterialTheme.colorScheme.onSurface,
+                    inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+                icon = {},
+            ) {
+                Text(label, fontSize = 12.sp, maxLines = 1, softWrap = false)
+            }
+        }
     }
 }
 
