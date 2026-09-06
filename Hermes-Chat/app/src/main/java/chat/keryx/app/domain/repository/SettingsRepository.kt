@@ -12,6 +12,9 @@ interface SettingsRepository {
     var allowInsecure: Boolean
     /** Room IDs the user pinned as Quick Rooms, for fast access when there are many rooms. */
     var pinnedRoomIds: Set<String>
+    /** Drawer shelves the user folded (RosterGroup names). A fold is a preference, not a state:
+     *  it survives the process so "Older" stays put away until you open it again. */
+    var collapsedRosterGroups: Set<String>
     var biometricLockEnabled: Boolean
     var e2eeEnabled: Boolean
     var hapticsEnabled: Boolean

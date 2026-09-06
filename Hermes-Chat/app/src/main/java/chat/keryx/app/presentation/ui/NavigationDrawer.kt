@@ -77,6 +77,10 @@ import chat.keryx.app.presentation.ui.components.KeryxRadius
 import chat.keryx.app.presentation.ui.components.contrastColorFor
 import chat.keryx.app.presentation.ui.components.RoomSigilAvatar
 import chat.keryx.app.theme.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.requiredWidthIn
 
 /** The deck rows that are cron tiles, not roster sessions — see [chat.keryx.core.model.CronTiles]. */
 private const val CRON_TILE_SOURCE = "cron-tile"
@@ -393,6 +397,17 @@ fun NavigationDrawerContent(
 
             val invites by viewModel.invites.collectAsState()
 
+            // The shelves (2.10): Today · Yesterday · This week · Older, each a header you can
+            // fold. Searching flattens them — a result is a result, whenever it happened.
+            // Midnight is measured when the drawer opens, so a shelf boundary the phone
+            // crosses while you sleep is right the next time you look.
+            val startOfToday = remember(drawerVisible) { localMidnightMs() }
+            val folded by viewModel.collapsedRosterGroups.collectAsState()
+            val sections = remember(listRooms, startOfToday, query) {
+                if (query.isBlank()) chat.keryx.core.model.RosterGroups.split(listRooms, startOfToday)
+                else listOf(chat.keryx.core.model.RosterSection(chat.keryx.core.model.RosterGroup.TODAY, listRooms))
+            }
+
             LazyColumn(modifier = Modifier.weight(1f)) {
                 // Pending invitations first — they need a decision, not a scroll hunt.
                 if (invites.isNotEmpty() && query.isBlank()) {
@@ -445,8 +460,8 @@ fun NavigationDrawerContent(
                     item { Spacer(modifier = Modifier.height(20.dp)) }
                 }
 
-                if (listRooms.isNotEmpty() || rooms.isEmpty() || query.isNotBlank()) {
-                    item { DrawerSectionHeader(if (query.isBlank()) lexicon.listHeader else "Results") }
+                if (query.isNotBlank()) {
+                    item { DrawerSectionHeader("Results") }
                 }
                 if (filtered.isEmpty()) {
                     item {
@@ -459,7 +474,20 @@ fun NavigationDrawerContent(
                     }
                 }
                 val direct = viewModel.transportIsDirect
-                items(listRooms, key = { it.id }) { room ->
+                sections.forEach { section ->
+                    val grouped = query.isBlank()
+                    val open = !grouped || section.group.name !in folded
+                    if (grouped) item(key = "shelf-${section.group.name}") {
+                        DrawerShelfHeader(
+                            title = section.group.label,
+                            count = section.rows.size,
+                            unread = section.unread,
+                            expanded = open,
+                            onToggle = { viewModel.toggleRosterGroup(section.group.name) },
+                            modifier = Modifier.animateItem(),
+                        )
+                    }
+                    if (open) items(section.rows, key = { it.id }) { room ->
                     RoomRow(
                         room = room,
                         isSelected = currentRoom?.id == room.id,
@@ -511,6 +539,7 @@ fun NavigationDrawerContent(
                         // Rows glide to their new place when activity reorders the list.
                         modifier = Modifier.animateItem(),
                     )
+                    }
                 }
 
                 // Deep search (direct door): the gateway's FTS over transcript CONTENT — the
@@ -604,6 +633,83 @@ fun NavigationDrawerContent(
                 }
             }
         }
+    }
+}
+
+/** The phone's local midnight, in epoch ms — the one number the shelves need from a clock. */
+internal fun localMidnightMs(now: Long = System.currentTimeMillis()): Long =
+    java.util.Calendar.getInstance().apply {
+        timeInMillis = now
+        set(java.util.Calendar.HOUR_OF_DAY, 0)
+        set(java.util.Calendar.MINUTE, 0)
+        set(java.util.Calendar.SECOND, 0)
+        set(java.util.Calendar.MILLISECOND, 0)
+    }.timeInMillis
+
+/**
+ * A shelf's header: the section voice, then what the shelf holds — its count, and how many of
+ * those are unread — and a chevron that says whether it is open. Folded, the rows are put away,
+ * not hidden: the numbers stay, so nothing waits behind a header you cannot read.
+ */
+@Composable
+internal fun DrawerShelfHeader(
+    title: String,
+    count: Int,
+    unread: Int,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val chevron by animateFloatAsState(if (expanded) 0f else -90f, label = "shelfChevron")
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onToggle)
+            .padding(top = 8.dp, bottom = 8.dp, start = 8.dp, end = 4.dp),
+    ) {
+        Text(
+            text = title.uppercase(),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = count.toString(),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            fontSize = 11.sp,
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        // Folded with unread inside: the same pill the doors wear, so "something new here"
+        // reads the same on a shelf as on a door.
+        AnimatedVisibility(visible = !expanded && unread > 0, enter = keryxPop(), exit = keryxVanish()) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .padding(end = 6.dp)
+                    .requiredHeight(16.dp)
+                    .requiredWidthIn(min = 16.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+                    .padding(horizontal = 4.dp),
+            ) {
+                Text(
+                    text = DoorBadge.label(unread),
+                    color = contrastColorFor(MaterialTheme.colorScheme.primary),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
+            }
+        }
+        Icon(
+            KeryxGlyphs.ChevronDown,
+            contentDescription = if (expanded) "Fold $title" else "Open $title",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            modifier = Modifier.size(16.dp).graphicsLayer { rotationZ = chevron },
+        )
     }
 }
 

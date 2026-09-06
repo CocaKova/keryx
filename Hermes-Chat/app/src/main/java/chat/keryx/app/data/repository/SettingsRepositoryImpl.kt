@@ -67,6 +67,10 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         get() = prefs.getStringSet("pinned_room_ids", emptySet())?.toSet() ?: emptySet()
         set(value) = prefs.edit().putStringSet("pinned_room_ids", value).apply()
 
+    override var collapsedRosterGroups: Set<String>
+        get() = prefs.getStringSet("collapsed_roster_groups", emptySet())?.toSet() ?: emptySet()
+        set(value) = prefs.edit().putStringSet("collapsed_roster_groups", value).apply()
+
     override var biometricLockEnabled: Boolean
         get() = prefs.getBoolean("biometric_lock", false)
         set(value) = prefs.edit().putBoolean("biometric_lock", value).apply()
