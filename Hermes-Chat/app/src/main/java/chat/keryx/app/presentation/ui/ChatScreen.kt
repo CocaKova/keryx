@@ -399,18 +399,14 @@ fun ChatScreen(
         if (ttsUrl.isBlank()) {
             tts.speakSystem(message.id, text)
         } else {
-            val gen = tts.prepare(message.id)
-            val out = java.io.File(context.cacheDir, "tts_reply_${System.currentTimeMillis()}.mp3")
-            viewModel.voice.synthesizeSpeech(text, out) { result ->
-                result.onSuccess { tts.playFile(message.id, gen, it) }
-                    .onFailure { err ->
-                        out.delete()
-                        // Only reset if this fetch is still the active one — a failure arriving
-                        // after the user already started another message must not silence it.
-                        if (tts.state.value.messageId == message.id) tts.stop()
-                        android.widget.Toast.makeText(context, "Speech failed: ${err.message}", android.widget.Toast.LENGTH_LONG).show()
-                    }
-            }
+            // Streams PCM and starts talking on the first bytes; falls back to a whole mp3 for
+            // servers that cannot stream. Failures surface through the controller's onError.
+            tts.speakRemote(
+                message.id,
+                context.cacheDir,
+                openStream = { viewModel.voice.openSpeechStream(text) },
+                synthesizeFile = { file -> viewModel.voice.synthesizeBlocking(text, file) },
+            )
         }
     }
 

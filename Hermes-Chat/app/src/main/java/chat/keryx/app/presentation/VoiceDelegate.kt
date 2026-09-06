@@ -83,6 +83,35 @@ class VoiceDelegate(deps: GatewayDeps) {
     fun setTtsUrl(url: String) {
         _ttsUrl.value = url
         settings.ttsUrl = url
+        ttsStreams = null
+    }
+
+    /** Whether the configured server streams PCM: null = not asked yet, learned on first use. */
+    @Volatile private var ttsStreams: Boolean? = null
+
+    private fun ttsClient(): chat.keryx.app.data.remote.TtsClient? {
+        val url = _ttsUrl.value.trim()
+        if (url.isBlank()) return null
+        return chat.keryx.app.data.remote.TtsClient(url, _ttsApiKey.value.trim(), settings.allowInsecure)
+    }
+
+    /**
+     * Blocking (worker thread). Opens a live PCM stream for [text], or returns null when the
+     * server does not stream — remembered so later calls skip straight to [synthesizeBlocking].
+     * Throws when no endpoint is configured or the server errors.
+     */
+    fun openSpeechStream(text: String): chat.keryx.app.data.remote.TtsClient.PcmStream? {
+        val client = ttsClient() ?: throw IllegalStateException("No TTS endpoint configured")
+        if (ttsStreams == false) return null
+        val stream = client.openStream(text, _ttsVoice.value.trim(), _ttsModel.value.trim())
+        ttsStreams = stream != null
+        return stream
+    }
+
+    /** Blocking (worker thread) mp3 synthesis into [into]. */
+    fun synthesizeBlocking(text: String, into: java.io.File): java.io.File {
+        val client = ttsClient() ?: throw IllegalStateException("No TTS endpoint configured")
+        return client.synthesize(text, _ttsVoice.value.trim(), _ttsModel.value.trim(), into)
     }
 
     fun setTtsApiKey(key: String) {
@@ -119,6 +148,28 @@ class VoiceDelegate(deps: GatewayDeps) {
         }
     }
 
+
+    /**
+     * Blocking (worker thread). Reaches both voice endpoints (`GET …/v1/models`, 4 s) and returns
+     * a one-line problem for the Call screen, or null when both answer. Any HTTP status counts
+     * as reachable — a 404 from a minimal server still proves the host and port are right.
+     */
+    fun probe(): String? {
+        fun reach(label: String, base: String): String? {
+            val url = base.trimEnd('/').let { if (it.endsWith("/v1")) it else "$it/v1" } + "/models"
+            return try {
+                val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                conn.connectTimeout = 4_000; conn.readTimeout = 4_000
+                conn.responseCode; conn.disconnect(); null
+            } catch (e: Exception) {
+                "$label unreachable at $base (${e.javaClass.simpleName.removeSuffix("Exception")})"
+            }
+        }
+        val stt = _sttUrl.value.trim(); val tts = _ttsUrl.value.trim()
+        if (stt.isBlank()) return "no STT endpoint set"
+        if (tts.isBlank()) return "no TTS endpoint set"
+        return reach("ears (STT)", stt) ?: reach("voice (TTS)", tts)
+    }
 
     /** Both voice endpoints are configured — the Call has ears and a mouth. */
     fun callReady(): Boolean = _sttUrl.value.isNotBlank() && _ttsUrl.value.isNotBlank()

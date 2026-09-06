@@ -11,14 +11,18 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import chat.keryx.app.data.remote.TtsClient
 import java.io.File
+import kotlin.concurrent.thread
 
 /**
  * Speaks agent replies aloud. Two engines behind one state machine:
  *
  * - **System** — the device's built-in [TextToSpeech]; needs no server, no config, no network.
- * - **File** — plays an mp3 a `/v1/audio/speech` server synthesized (the caller fetches it via
- *   `TtsClient`; this class only owns playback).
+ * - **Stream** — raw PCM from a `/v1/audio/speech` server, played as it arrives ([PcmPlayer]),
+ *   so a long reply starts talking within a fraction of a second.
+ * - **File** — plays an mp3 a `/v1/audio/speech` server synthesized (for servers that cannot
+ *   stream PCM; the caller fetches it via `TtsClient`, this class only owns playback).
  *
  * Exactly one thing speaks at a time: starting either engine silences the other. All state
  * transitions land on the main thread — [TextToSpeech] progress callbacks arrive on a binder
@@ -53,6 +57,86 @@ class TtsController(
 
     private var player: MediaPlayer? = null
     private var playingFile: File? = null
+
+    // --- Stream engine ------------------------------------------------------------------------
+
+    @Volatile private var pcm: PcmPlayer? = null
+    @Volatile private var pcmStream: TtsClient.PcmStream? = null
+
+    /**
+     * Speak [messageId] from the server, streaming when it can. [openStream] runs on a worker
+     * thread and returns a live PCM stream, or null when the server has no PCM — then
+     * [synthesizeFile] fetches an mp3 into [cacheDir] and the file engine plays it. Either
+     * callback may throw; the message is reported through `onError`.
+     */
+    fun speakRemote(
+        messageId: String,
+        cacheDir: File,
+        openStream: () -> TtsClient.PcmStream?,
+        synthesizeFile: (File) -> File,
+    ) {
+        stop()
+        val gen = ++generation
+        _state.value = State(messageId, Phase.PREPARING)
+        thread(name = "keryx-tts", isDaemon = true) {
+            try {
+                val stream = openStream()
+                if (gen != generation) { stream?.close(); return@thread }
+                if (stream == null) {
+                    val out = File(cacheDir, "tts_reply_${System.currentTimeMillis()}.mp3")
+                    val file = synthesizeFile(out)
+                    main.post { playFile(messageId, gen, file) }
+                    return@thread
+                }
+                streamPcm(messageId, gen, stream)
+            } catch (e: Exception) {
+                main.post {
+                    if (gen == generation) {
+                        abandonFocus()
+                        _state.value = State()
+                        onError("Speech failed: ${e.message}")
+                    }
+                }
+            }
+        }
+    }
+
+    private fun streamPcm(messageId: String, gen: Int, stream: TtsClient.PcmStream) {
+        if (!requestFocus()) {
+            stream.close()
+            main.post { if (gen == generation) { _state.value = State(); onError("Audio unavailable") } }
+            return
+        }
+        val player = PcmPlayer(stream.sampleRate, playbackAttributes)
+        player.onStarted = { main.post { if (gen == generation) _state.value = State(messageId, Phase.SPEAKING) } }
+        pcm = player
+        pcmStream = stream
+        var gotAudio = false
+        try {
+            stream.use { s ->
+                val buf = ByteArray(8192)
+                while (gen == generation) {
+                    val n = s.input.read(buf)
+                    if (n < 0) break
+                    if (n > 0) {
+                        gotAudio = true
+                        if (!player.write(buf, 0, n)) break
+                    }
+                }
+            }
+            if (gen == generation) player.drain()
+        } finally {
+            player.release()
+            if (pcm === player) { pcm = null; pcmStream = null }
+            main.post {
+                if (gen == generation) {
+                    abandonFocus()
+                    _state.value = State()
+                    if (!gotAudio) onError("Speech server sent no audio")
+                }
+            }
+        }
+    }
 
     /** Speak [text] with the device's built-in voice. Silences anything currently speaking. */
     fun speakSystem(messageId: String, text: String) {
@@ -134,6 +218,9 @@ class TtsController(
         pendingUtterance = null
         runCatching { tts?.stop() }
         stopFilePlayback()
+        // Streaming: closing the response tells the server to stop synthesizing too.
+        pcm?.stop()
+        pcmStream?.let { runCatching { it.close() } }
     }
 
     /** [stop] plus engine teardown; call when the hosting screen leaves for good. */

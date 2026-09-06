@@ -653,4 +653,13 @@ class MessageParserTest {
             .flatMap { it.calls }
         assertEquals("delegate_task", calls.single().name)
     }
+
+    @Test
+    fun `phone-attached markers vanish from the user's own message`() {
+        // The Call tags spoken utterances; senses ride the tail. Both are for the agent only.
+        val spoken = MessageParser.parse("Can you hear me? ⟦keryx:voice⟧", agentChrome = false)
+        assertEquals("Can you hear me?", (spoken.single() as MessageParser.Segment.Text).text.trim())
+        val sensed = MessageParser.parse("On my way ⟦keryx:sense|battery=22%|local=23:10 CDT⟧ ⟦keryx:voice⟧", agentChrome = false)
+        assertEquals("On my way", (sensed.single() as MessageParser.Segment.Text).text.trim())
+    }
 }
