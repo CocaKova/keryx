@@ -168,29 +168,45 @@ class ArchiveStore(context: Context) :
         return fresh
     }
 
-    fun count(roomId: String): Int =
-        readableDatabase.rawQuery("SELECT COUNT(*) FROM msg WHERE room_id=?", arrayOf(roomId))
+    // A null [roomId] means every room the index holds (2.10): on the direct door the Archive
+    // reads across sessions, the way the Desktop's Artifacts view does — one place, everything.
+
+    fun count(roomId: String?): Int =
+        (if (roomId == null) readableDatabase.rawQuery("SELECT COUNT(*) FROM msg", null)
+        else readableDatabase.rawQuery("SELECT COUNT(*) FROM msg WHERE room_id=?", arrayOf(roomId)))
             .use { if (it.moveToFirst()) it.getInt(0) else 0 }
 
-    fun search(roomId: String, rawQuery: String, limit: Int = 120): List<Hit> {
+    fun search(roomId: String?, rawQuery: String, limit: Int = 120): List<Hit> {
         val match = buildMatchQuery(rawQuery) ?: return emptyList()
+        val roomClause = if (roomId == null) "" else " AND m.room_id = ?"
+        val args = if (roomId == null) arrayOf(match) else arrayOf(match, roomId)
         return readableDatabase.rawQuery(
             """SELECT m.event_id, m.room_id, m.sender, m.ts, m.media_kind, m.file_name, m.body,
                       snippet(msg_fts, '$SNIP_START', '$SNIP_END', '…', -1, 12) AS snip
                FROM msg_fts f JOIN msg m ON m.rowid = f.docid
-               WHERE msg_fts MATCH ? AND m.room_id = ?
+               WHERE msg_fts MATCH ?$roomClause
                ORDER BY m.ts DESC LIMIT $limit""",
-            arrayOf(match, roomId),
+            args,
         ).use { c ->
             buildList { while (c.moveToNext()) add(Hit(c.entry(), c.getString(7))) }
         }
     }
 
-    fun media(roomId: String, limit: Int = 600): List<Entry> =
+    fun media(roomId: String?, limit: Int = 600): List<Entry> =
         readableDatabase.rawQuery(
             "SELECT event_id, room_id, sender, ts, media_kind, file_name, body FROM msg " +
-                "WHERE room_id=? AND media_kind IS NOT NULL ORDER BY ts DESC LIMIT $limit",
-            arrayOf(roomId),
+                "WHERE " + (if (roomId == null) "" else "room_id=? AND ") +
+                "media_kind IS NOT NULL ORDER BY ts DESC LIMIT $limit",
+            if (roomId == null) null else arrayOf(roomId),
+        ).use { c -> buildList { while (c.moveToNext()) add(c.entry()) } }
+
+    /** The newest things remembered — what the Search tab shows before you have typed. */
+    fun recent(roomId: String?, limit: Int = 80): List<Entry> =
+        readableDatabase.rawQuery(
+            "SELECT event_id, room_id, sender, ts, media_kind, file_name, body FROM msg " +
+                (if (roomId == null) "" else "WHERE room_id=? ") +
+                "ORDER BY ts DESC LIMIT $limit",
+            if (roomId == null) null else arrayOf(roomId),
         ).use { c -> buildList { while (c.moveToNext()) add(c.entry()) } }
 
     /** The event to land on for a given day: the first message on/after [dayStartMillis], falling
@@ -222,11 +238,11 @@ class ArchiveStore(context: Context) :
         readableDatabase.rawQuery("SELECT event_id FROM saved WHERE room_id=?", arrayOf(roomId))
             .use { c -> buildSet { while (c.moveToNext()) add(c.getString(0)) } }
 
-    fun saved(roomId: String): List<Entry> =
+    fun saved(roomId: String?): List<Entry> =
         readableDatabase.rawQuery(
             "SELECT event_id, room_id, sender, ts, media_kind, file_name, body FROM saved " +
-                "WHERE room_id=? ORDER BY saved_at DESC",
-            arrayOf(roomId),
+                (if (roomId == null) "" else "WHERE room_id=? ") + "ORDER BY saved_at DESC",
+            if (roomId == null) null else arrayOf(roomId),
         ).use { c -> buildList { while (c.moveToNext()) add(c.entry()) } }
 
     @Synchronized

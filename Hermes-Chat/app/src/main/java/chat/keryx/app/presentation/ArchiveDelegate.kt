@@ -18,6 +18,8 @@ class ArchiveDelegate(
     private val archiveIndexer: chat.keryx.app.data.archive.ArchiveSweeper?,
     /** The open room, or null — every surface here is scoped to it. */
     private val currentRoomId: () -> String?,
+    /** The roster's session ids, newest first — the cross-session sweep's list (direct door). */
+    private val rosterIds: () -> List<String> = { emptyList() },
 ) {
     private val scope = deps.scope
     private val toast = deps.toast
@@ -42,26 +44,56 @@ class ArchiveDelegate(
 
     /** Kick an index sweep of the open room. First ever run is the big backfill; later runs catch
      *  up on what's new and stop. Safe to call every time the Archive opens. */
+    /**
+     * Cross-session on the direct door (2.10): a gateway session is one conversation, and an
+     * Archive that could only see the open one answered "nothing" to almost every question —
+     * the door opened onto blank tabs. Now the direct door reads the whole index and the sweep
+     * walks the roster, the Desktop's Artifacts rule ("one place, everything the sessions
+     * made"). Matrix keeps the room: its rooms are E2EE and a room is a world.
+     */
+    val crossSession: Boolean get() = transport.gateway != null
+
+    /** The room a read is scoped to — none at all when the Archive spans sessions. */
+    private fun scopeRoom(): String? = if (crossSession) null else currentRoomId()
+
+    /** Kick an index sweep. Direct door: the open session first, then the roster's newest;
+     *  Matrix: the open room. First ever run is the big backfill; later runs catch up. */
     fun startSweep() {
+        if (crossSession) {
+            val ids = (listOfNotNull(currentRoomId()) + rosterIds().take(SWEEP_ROSTER)).distinct()
+            if (ids.isNotEmpty()) archiveIndexer?.sweepMany(scope, ids)
+            return
+        }
         val roomId = currentRoomId() ?: return
         archiveIndexer?.sweep(scope, roomId)
     }
 
     suspend fun search(query: String): List<chat.keryx.app.data.archive.ArchiveStore.Hit> {
-        val roomId = currentRoomId() ?: return emptyList()
         val store = archiveStore ?: return emptyList()
+        val roomId = scopeRoom()
+        if (roomId == null && !crossSession) return emptyList()
         return withContext(Dispatchers.IO) { store.search(roomId, query) }
     }
 
-    suspend fun media(): List<chat.keryx.app.data.archive.ArchiveStore.Entry> {
-        val roomId = currentRoomId() ?: return emptyList()
+    /** What the Search tab shows before a query: the newest things remembered. */
+    suspend fun recent(): List<chat.keryx.app.data.archive.ArchiveStore.Entry> {
         val store = archiveStore ?: return emptyList()
+        val roomId = scopeRoom()
+        if (roomId == null && !crossSession) return emptyList()
+        return withContext(Dispatchers.IO) { store.recent(roomId) }
+    }
+
+    suspend fun media(): List<chat.keryx.app.data.archive.ArchiveStore.Entry> {
+        val store = archiveStore ?: return emptyList()
+        val roomId = scopeRoom()
+        if (roomId == null && !crossSession) return emptyList()
         return withContext(Dispatchers.IO) { store.media(roomId) }
     }
 
     suspend fun saved(): List<chat.keryx.app.data.archive.ArchiveStore.Entry> {
-        val roomId = currentRoomId() ?: return emptyList()
         val store = archiveStore ?: return emptyList()
+        val roomId = scopeRoom()
+        if (roomId == null && !crossSession) return emptyList()
         return withContext(Dispatchers.IO) { store.saved(roomId) }
     }
 
@@ -79,8 +111,8 @@ class ArchiveDelegate(
     }
 
     /** History around an event for the Archive's context view (server-fetches gaps, bounded). */
-    suspend fun context(eventId: String, before: Int = 25, after: Int = 25): List<Message> {
-        val roomId = currentRoomId() ?: return emptyList()
+    suspend fun context(eventId: String, roomId: String? = null, before: Int = 25, after: Int = 25): List<Message> {
+        val roomId = roomId ?: currentRoomId() ?: return emptyList()
         return runCatching { transport.messagesAround(roomId, eventId, before, after) }
             .onFailure { android.util.Log.w("KeryxArchive", "context load failed: ${it.message}") }
             .getOrDefault(emptyList())
@@ -123,3 +155,6 @@ class ArchiveDelegate(
         refreshSavedIds()
     }
 }
+
+/** How many roster sessions the cross-session sweep walks on an Archive open. */
+private const val SWEEP_ROSTER = 30
