@@ -107,7 +107,10 @@ class KeryxApp : Application() {
         // The login screen's chosen door decides the spine for this whole process life —
         // a transport is not hot-swappable under a ViewModel, so switching doors restarts.
         transport = if (settingsRepository.transportMode == "direct") {
-            DirectTransport(settingsRepository, appScope).also { it.connectIfConfigured() }
+            DirectTransport(
+                settingsRepository, appScope,
+                cacheDir = applicationContext.cacheDir.resolve("transcripts"),
+            ).also { it.connectIfConfigured() }
         } else {
             MatrixTransport(matrixService, settingsRepository)
         }

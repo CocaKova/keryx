@@ -156,13 +156,25 @@ class GatewayRest(
         offset: Int = 0,
         newestFirst: Boolean = true,
         profile: String? = null,
-    ): Result<List<MessageRow>> =
+    ): Result<List<MessageRow>> = messagesRaw(sessionId, limit, offset, newestFirst, profile).map(::parseMessages)
+
+    /** The page as the gateway sent it — what the transcript cache keeps (2.10). */
+    suspend fun messagesRaw(
+        sessionId: String,
+        limit: Int = MAX_PAGE,
+        offset: Int = 0,
+        newestFirst: Boolean = true,
+        profile: String? = null,
+    ): Result<String> =
         get(
             "/api/sessions/$sessionId/messages?" + sessionMessagesQuery(limit, offset, newestFirst) +
                 profileQuery(profile)
-        ).map { body ->
+        )
+
+    /** One parser for a page, whether it came off the wire or out of the cache. */
+    fun parseMessages(body: String): List<MessageRow> {
             val rows = json.parseToJsonElement(body).jsonObject["messages"]?.jsonArray ?: JsonArray(emptyList())
-            rows.mapNotNull { el ->
+            return rows.mapNotNull { el ->
                 val o = el.jsonObject
                 MessageRow(
                     id = o["id"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null,
@@ -194,7 +206,7 @@ class GatewayRest(
                         } ?: emptyList(),
                 )
             }
-        }
+    }
 
     /** One hit from the gateway's FTS index: the session, plus the line that matched. */
     data class SearchHit(
