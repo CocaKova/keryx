@@ -426,3 +426,22 @@ Same phone, same session, back to back; 2.9.4 (vc84) first, then 2.10.0 (vc85) i
 What this says: 2.10 did not regress start, scroll or memory; the two wins it claims — the covered
 sky resting (D2) and the transcript painting from disk (D1) — are the two this run could not
 observe without the screen, so they stay "changed, not live-verified" until the walk.
+
+### First walk — 2026-09-05, late (Jonny, vc86)
+
+Three things noticed, all three fixed in vc87 (`b764ae4`, and the commit after it):
+
+1. **"The Archive door's tabs don't populate."** The Archive was per-room by design (Matrix, E2EE:
+   the room is a world) and read the *open* session only — with no session open, or one never
+   swept, every tab was blank. On the direct door it now reads across sessions: search, saved and
+   media over the whole index; the sweep walks the open session then the roster's newest 30;
+   every card says which session it came from and opens that session's own history; the Search
+   tab lists what was remembered most recently before you type. Matrix is unchanged.
+2. **"Project sessions land in recents; the list has a limit."** `ProjectsTree.scopedSessionIds`
+   carried the Desktop's rule and the drawer never applied it. Scoped sessions now stay under
+   Projects (open + pinned stay visible; search and lenses see all). A "Show older sessions" row
+   pages the roster past fifty; a refresh keeps the pages already walked.
+3. **"No default model for new sessions; the pill needs a tap."** New sessions start on the last
+   model picked (session-scoped, never the profile default; a confirm-required model is left to
+   the picker with a toast); the composer pill re-reads the route on room change. Switch under
+   Settings → Agent (direct door).
