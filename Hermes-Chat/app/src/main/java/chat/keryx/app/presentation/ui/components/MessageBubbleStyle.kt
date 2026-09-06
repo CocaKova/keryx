@@ -40,6 +40,43 @@ data class BubbleAppearance(
 fun contrastColorFor(bg: Color): Color =
     if (bg.luminance() > 0.1791f) Color(0xFF1F1B14) else Color.White
 
+/** A text-bearing gradient fill and the one ink that clears AA on every stop of it. */
+data class ReadableGradient(val stops: List<Color>, val textColor: Color)
+
+/** WCAG 2.1 contrast ratio between two opaque colours. */
+fun contrastRatio(a: Color, b: Color): Float {
+    val la = a.luminance()
+    val lb = b.luminance()
+    return (maxOf(la, lb) + 0.05f) / (minOf(la, lb) + 0.05f)
+}
+
+/**
+ * The invariant for any gradient that carries body text: **one text colour, readable on every
+ * stop** — because which stop a given line of text lands on depends on how tall the message is,
+ * and the fill cannot know that. Picks ink or white by the better *worst* stop, then presses each
+ * failing stop toward the text's opposite (white text: darker; ink: lighter) in small steps until
+ * it clears [aa]. A gradient that already reads comes back untouched.
+ */
+fun readableGradient(stops: List<Color>, aa: Float = 4.5f): ReadableGradient {
+    val ink = Color(0xFF1F1B14)
+    val candidates = listOf(ink, Color.White)
+    val text = candidates.maxBy { c -> stops.minOf { contrastRatio(c, it) } }
+    val toward = if (text == Color.White) Color.Black else Color.White
+    val pressed = stops.map { stop ->
+        var c = stop
+        var i = 0
+        while (contrastRatio(text, c) < aa && i < READABLE_STEPS) {
+            c = lerp(c, toward, READABLE_PRESS)
+            i++
+        }
+        c
+    }
+    return ReadableGradient(pressed, text)
+}
+
+private const val READABLE_PRESS = 0.06f
+private const val READABLE_STEPS = 40
+
 /**
  * [accent] / [accent2] default to the user's own theme accents. A herald in a council room passes
  * its own light instead, so the hairline on its bubble is *its* colour (2.3 §1) — the fills stay
@@ -113,13 +150,22 @@ fun bubbleAppearance(
             )
 
         else -> // GRADIENT — accent melting into accent 2, the sunset-dream look
-            if (isMine) BubbleAppearance(
-                brush = Brush.linearGradient(
+            if (isMine) {
+                // The fill spans the whole bubble, so on a tall message (a cron prompt, a pasted
+                // log) whole paragraphs sit on the far stop, not just a corner. The text colour
+                // was chosen against the FIRST stop alone: with the default amber → dusk, white
+                // is 3.62:1 on the amber and ink is 3.4:1 on the dusk end — neither clears AA
+                // everywhere, and a long bubble in dark mode put lines on the losing end. One
+                // ink for every stop, and the stops pressed until it reads (readableGradient).
+                val readable = readableGradient(
                     listOf(accent, lerp(accent, accent2, 0.55f), lerp(accent2, Color.Black, 0.12f))
-                ),
-                textColor = contrastColorFor(accent),
-                border = null,
-            ) else BubbleAppearance(
+                )
+                BubbleAppearance(
+                    brush = Brush.linearGradient(readable.stops),
+                    textColor = readable.textColor,
+                    border = null,
+                )
+            } else BubbleAppearance(
                 brush = Brush.linearGradient(
                     listOf(cs.surfaceVariant, lerp(cs.surfaceVariant, cs.surface, 0.6f))
                 ),
