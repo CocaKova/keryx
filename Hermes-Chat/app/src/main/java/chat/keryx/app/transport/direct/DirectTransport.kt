@@ -92,6 +92,8 @@ private const val GHOST_TOOL_ID = "generating"
          * syntax-highlight work, and tool-card construction before anything paints.
          */
         private const val HISTORY_PAGE = 120
+        /** The roster's page — the REST cap is 100; fifty keeps the first pull light. */
+        private const val SESSION_PAGE = 50
 
         /**
          * The gateway's `source` for a scheduled run. Cron is the one source that is
@@ -1151,13 +1153,49 @@ private const val GHOST_TOOL_ID = "generating"
         refreshSessions()
     }
 
+    /** More pages behind the roster (2.10): the last page the list holds came back full. */
+    private val _hasMoreSessions = MutableStateFlow(false)
+    fun hasMoreSessions(): Flow<Boolean> = _hasMoreSessions
+    private val _loadingMore = MutableStateFlow(false)
+    fun loadingMoreSessions(): Flow<Boolean> = _loadingMore
+
+    /**
+     * The next page of the roster, appended (2.10). The drawer's "show older" row: the first
+     * page is fifty, and a phone that talks to one gateway for weeks has hundreds — a list
+     * that stopped at fifty made every older session unreachable except by search.
+     */
+    suspend fun loadMoreSessions(): Result<Int> {
+        val r = rest ?: return Result.failure(IllegalStateException("gateway not connected"))
+        if (_loadingMore.value) return Result.success(0)
+        _loadingMore.value = true
+        try {
+            val have = _sessionRows.value
+            return r.sessions(limit = SESSION_PAGE, offset = have.size, excludeSources = listOf(CRON_SOURCE))
+                .map { rows ->
+                    val known = have.mapTo(HashSet()) { it.id }
+                    val fresh = rows.filter { !it.archived && it.id !in known }
+                    _sessionRows.value = have + fresh
+                    _hasMoreSessions.value = rows.size >= SESSION_PAGE
+                    fresh.size
+                }
+        } finally {
+            _loadingMore.value = false
+        }
+    }
+
     private suspend fun refreshSessions() {
         val r = rest ?: return
         // Two fetches, not one filtered locally: scheduled runs can outnumber conversations
         // several to one, so a single page would be mostly machinery either way.
-        r.sessions(excludeSources = listOf(CRON_SOURCE)).onSuccess { rows ->
+        r.sessions(limit = SESSION_PAGE, excludeSources = listOf(CRON_SOURCE)).onSuccess { rows ->
             val live = rows.filter { !it.archived }
-            _sessionRows.value = live
+            // A refresh re-reads the first page; pages the drawer already walked past stay
+            // (2.10) — a `sessions.changed` must not fold the list back to fifty under you.
+            val liveIds = live.mapTo(HashSet()) { it.id }
+            val oldest = live.minOfOrNull { it.lastActive } ?: 0L
+            val tail = _sessionRows.value.filter { it.id !in liveIds && it.lastActive < oldest }
+            _sessionRows.value = live + tail
+            if (tail.isEmpty()) _hasMoreSessions.value = rows.size >= SESSION_PAGE
         }
         r.sessions(limit = 100, sources = listOf(CRON_SOURCE)).onSuccess { rows ->
             _cronRows.value = rows.filter { !it.archived }

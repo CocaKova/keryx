@@ -421,6 +421,16 @@ fun SettingsScreen(
                                 checked = resume,
                                 onCheckedChange = { viewModel.setResumeLastRoom(it) },
                             )
+                            if (direct) {
+                                val sticky by viewModel.stickyModel.collectAsState()
+                                SettingsSwitchRow(
+                                    anchor = SettingsRow.AGENT_STICKY_MODEL,
+                                    title = "New sessions use the last model picked",
+                                    subtitle = "Off: every new session starts on the gateway's default",
+                                    checked = sticky,
+                                    onCheckedChange = { viewModel.setStickyModel(it) },
+                                )
+                            }
                         }
                     }
 

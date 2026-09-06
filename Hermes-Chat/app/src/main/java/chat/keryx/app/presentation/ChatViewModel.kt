@@ -559,7 +559,11 @@ class ChatViewModel(
         readRecents = { settingsRepository.recentModels },
         writeRecents = { settingsRepository.recentModels = it },
     )
-    val projects = ProjectsDelegate(deps, transport) { id, title -> openSessionById(id, title) }
+    val projects = ProjectsDelegate(
+        deps, transport,
+        openSession = { id, title -> openSessionById(id, title) },
+        onSessionCreated = { applyStickyModel(it) },
+    )
     val shipyard = ShipyardDelegate(deps)
     val pet = PetDelegate(deps)
     val missions = MissionsDelegate(deps) { _rooms.value }
@@ -1949,11 +1953,42 @@ class ChatViewModel(
         }
     }
 
+    private val _stickyModel = MutableStateFlow(settingsRepository.stickyModel)
+    val stickyModel: StateFlow<Boolean> = _stickyModel.asStateFlow()
+    fun setStickyModel(on: Boolean) {
+        _stickyModel.value = on
+        settingsRepository.stickyModel = on
+    }
+
+    /**
+     * A new session starts on the last model you picked (2.10) — the Desktop's rule ("pick a
+     * model once and the next new chat opens on it"), and the missing "default model for
+     * Keryx". Applies straight to the session, never to the profile default; the pick that
+     * needs confirming (an expensive model) is left to the picker, with a word.
+     */
+    private fun applyStickyModel(sessionId: String) {
+        if (!settingsRepository.stickyModel) return
+        val key = settingsRepository.recentModels.firstOrNull() ?: return
+        val provider = key.substringBefore('|', "").ifBlank { null }
+        val model = key.substringAfter('|', key)
+        if (model.isBlank()) return
+        val gw = gateway ?: return
+        viewModelScope.launch {
+            gw.selectModel(sessionId, model, provider)
+                .onSuccess { out ->
+                    if (out.confirmRequired) _toasts.tryEmit("$model needs confirming — pick it in the model picker")
+                    else models.clear() // the pill re-reads this session's route on arrival
+                }
+                .onFailure { android.util.Log.w("KeryxModel", "sticky model refused: ${it.message}") }
+        }
+    }
+
     fun createSession(title: String, temporary: Boolean = false, onDone: (String?) -> Unit) {
         viewModelScope.launch {
             gateway?.createSession(title.trim().ifBlank { null })
                 ?.onSuccess { sessionId ->
                     if (temporary) markTemporary(sessionId)
+                    applyStickyModel(sessionId)
                     openRoomById(sessionId); onDone(null)
                 }
                 ?.onFailure { onDone(it.message?.take(120) ?: "couldn't create the session") }
@@ -2026,6 +2061,18 @@ class ChatViewModel(
             gateway?.archivedSessions()
                 ?.onSuccess { _archivedRooms.value = it }
                 ?.onFailure { _toasts.tryEmit("Couldn't read the archive: ${it.message?.take(80)}") }
+        }
+    }
+
+    /** The roster's next page (2.10) — the drawer's "show older" row. */
+    val hasMoreSessions: StateFlow<Boolean> =
+        (direct?.hasMoreSessions() ?: flowOf(false)).stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val loadingMoreSessions: StateFlow<Boolean> =
+        (direct?.loadingMoreSessions() ?: flowOf(false)).stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    fun loadMoreSessions() {
+        val d = direct ?: return
+        viewModelScope.launch {
+            d.loadMoreSessions().onFailure { _toasts.tryEmit("Couldn't load older sessions: ${it.message?.take(80)}") }
         }
     }
 

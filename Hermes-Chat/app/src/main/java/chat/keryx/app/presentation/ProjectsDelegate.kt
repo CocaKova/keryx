@@ -24,6 +24,8 @@ class ProjectsDelegate(
     deps: GatewayDeps,
     private val transport: ChatTransport,
     private val openSession: (id: String, title: String) -> Unit,
+    /** A session this door minted (2.10): the sticky model applies before it opens. */
+    private val onSessionCreated: (id: String) -> Unit = {},
 ) {
     private val scope = deps.scope
     private val gateway get() = transport.gateway
@@ -165,7 +167,7 @@ class ProjectsDelegate(
         val cwd = node.path ?: return onDone("this project has no folder")
         scope.launch {
             gw.createSessionIn(null, cwd)
-                .onSuccess { id -> openSession(id, "New session"); onDone(null) }
+                .onSuccess { id -> onSessionCreated(id); openSession(id, "New session"); onDone(null) }
                 .onFailure { onDone(it.message?.take(120) ?: "couldn't create the session") }
         }
     }
