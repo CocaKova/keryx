@@ -374,3 +374,34 @@ the tag, Jonny's call.
   with it. Use the RPC, not the knob.
 - The palette catalog (A3/B2) must be **static per build for settings rows** — a row that only
   exists when a capability is present must carry its gate, or search will open an empty page.
+
+---
+
+## Status — 2026-09-05, late
+
+Jonny's decisions: status strip (1); Gateway and Workshop merged, done properly (2 → hub-and-spoke);
+2.10.0 (3); commit the call polish first (4, `4f8f6b2`); C1 + C2 + C6 (5); Matrix door gets A + B
+only where it makes sense (6). Plus the long-cron-bubble readability bug he hit — fixed first
+(`7667c39`, `readableGradient`: one ink for every stop).
+
+**Built, on `main`, ship gate GREEN (721 tests), version 2.10.0 (vc85), NOT tagged, NOT walked:**
+
+| Phase | Landed | Left / deferred |
+|---|---|---|
+| A | shelves (`2e1bb0c`), status strip + places row + Gateway hub-and-spoke with Workshop folded in (`365c5e6`), drawer-button unread badge (`4be8809`), lenses Needs you · Running · Unread · Archived, Archive/Restore/Copy id, palette with places + commands + settings + session ids (`a565950`) | — |
+| B | flat groups, hub search with scroll-and-glow anchors, `SettingsCatalog` + source-reading test, Gateway page (direct) = Connection + Hermes Link, Interface → Appearance "Feel", About with Copy diagnostics, Sessions (archived + prune), Reopen-last-chat toggle, `KeryxSegmented` (`0b94251`) | B4 rollback (nothing in Settings writes to the gateway — moot); B5 one ConfirmDialog (deferred to E); bubble opacity slider **dropped on purpose** — a translucent fill over the sky defeats the contrast law just restored; `SettingsDialog.kt` decomposition (E) |
+| C | C1 failure card from `error_surface` (+ generic fallback), C2 context breakdown sheet on the ring, C6 undo last exchange with confirm (`c37d6f7`) | C3 jump-to-prompt, C4 find in chat, C5 queue editing, C7 composer recall, C8 bot needs-attention, C9 approval-mode chip — not asked for; resume-snapshot `inflight.error_surface` on reconnect not parsed yet (live frame only) |
+| D | D1 transcript-tail cache (`666450d`), D2 covered sky rests (`ab0ad69`), D3 catalog TTL 20 min (`579bb88`); D5 verified by reading: both indexers run on `Dispatchers.IO` | **Measurements not taken** — no phone on the wire for gfxinfo / cold-start; D4 recomposition scoping needs Layout Inspector on device |
+| E | — | not started: decompose `ChatViewModel.kt` (2,4xx) / `ChatScreen.kt` / `SettingsDialog.kt` / `MessageParser.kt`, zero behaviour change |
+
+**Walk list for Jonny (what to look at on the phone):** drawer shelves fold/unfold and persist ·
+status strip words + tap → Gateway landing → each spoke and back · lenses, Archive then Archived
+→ Restore · type "runs", "/comp", "haptic", a session id into Jump to… · Settings search "vibrate"
+lands lit · Appearance segmented rows · a forced failure (bad model) renders the card with Retry ·
+tap the ring · long-press the newest reply → Take it back · a cold open paints the last page before
+the spinner would have.
+
+⚠️ Traps found while building: `git log --grep` on `~/.hermes/hermes-agent` matches the giant
+squash commit `722acd66f6` for nearly any phrase — grep subjects, not bodies. The Settings
+`SettingsAnchor` glow relies on `positionInRoot` minus the scroll column's root Y captured with
+`scrollState.value` — if the page ever gains a sticky header, re-measure.
