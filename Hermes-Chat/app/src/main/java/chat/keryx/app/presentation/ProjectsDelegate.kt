@@ -62,12 +62,33 @@ class ProjectsDelegate(
     private val _error = MutableStateFlow<String?>(null)
     val projectsError: StateFlow<String?> = _error.asStateFlow()
 
+    /**
+     * Sessions that belong to a project YOU made (2.10) — the ones the drawer's recents list
+     * leaves under Projects. Not the tree's `scopedSessionIds`: the gateway puts every session
+     * in that set, including the auto-detected repo buckets and the "no project" home bucket,
+     * so excluding it emptied the drawer of everything but the open row (the first-walk bug).
+     * Membership of an explicit project is only whole on the drill-in payload, so this reads
+     * one per project after the overview; a handful of small calls, once per drawer open.
+     */
+    private val _explicitSessionIds = MutableStateFlow<Set<String>>(emptySet())
+    val explicitSessionIds: StateFlow<Set<String>> = _explicitSessionIds.asStateFlow()
+
     /** One probe = the door AND the overview. A no-op on Matrix (no gateway seam). */
     fun refreshProjects() {
         val gw = gateway ?: return
         scope.launch {
             gw.projectsTree()
-                .onSuccess { _tree.value = it; _hasProjects.value = true; _error.value = null }
+                .onSuccess { tree ->
+                    _tree.value = tree; _hasProjects.value = true; _error.value = null
+                    val explicit = tree.projects.filter { !it.isAuto && !it.isNoProject }
+                    val ids = HashSet<String>()
+                    for (node in explicit) {
+                        gw.projectSessions(node.id).onSuccess { detail ->
+                            detail?.flatSessions()?.forEach { (room, _) -> ids += room.id }
+                        }
+                    }
+                    _explicitSessionIds.value = ids
+                }
                 .onFailure { if (_hasProjects.value) _error.value = it.message?.take(120) }
             gw.projectsCatalog().onSuccess { _catalog.value = it }
         }
