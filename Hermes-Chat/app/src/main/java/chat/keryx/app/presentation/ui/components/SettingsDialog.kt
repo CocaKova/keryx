@@ -135,9 +135,9 @@ fun SettingsScreen(
             val jump by viewModel.settingsJump.collectAsState()
             LaunchedEffect(jump) {
                 val id = jump ?: return@LaunchedEffect
-                val entry = SettingsCatalog.entries.firstOrNull { it.id == id }
+                val entry = SettingsCatalog.byId(id)
                 val target = entry?.section(direct)
-                if (target != null) { section = target; focusId = id }
+                if (target != null) { section = target; focusId = entry.id }
                 viewModel.consumeSettingsJump()
             }
             val scrollState = rememberScrollState()
@@ -277,7 +277,7 @@ fun SettingsScreen(
                     }
 
                     // --- Account ---
-                    if (section == "Account") SettingsCard("Account", anchor = "account.identity") {
+                    if (section == "Account") SettingsCard("Account", anchor = SettingsRow.ACCOUNT_IDENTITY) {
                         Text(
                             text = currentUserId ?: "Not signed in",
                             color = MaterialTheme.colorScheme.onSurface,
@@ -305,7 +305,7 @@ fun SettingsScreen(
                     // (Phase 4's second door, made a switch: the Matrix session stays in
                     // Trixnity's store, the sealed direct token stays in prefs — flipping the
                     // door just decides which spine the next process life boots.)
-                    if (section == "Account") SettingsCard("Transport", anchor = "account.transport") {
+                    if (section == "Account") SettingsCard("Transport", anchor = SettingsRow.ACCOUNT_TRANSPORT) {
                         val direct = viewModel.transportIsDirect
                         val otherReady =
                             if (direct) viewModel.matrixSessionOnFile else viewModel.directCredentialsOnFile
@@ -400,14 +400,14 @@ fun SettingsScreen(
                         }
                         SettingsCard("Presence") {
                             SettingsSwitchRow(
-                                anchor = "agent.telemetry",
+                                anchor = SettingsRow.AGENT_TELEMETRY,
                                 title = "Show telemetry",
                                 subtitle = "Automated check-ins and the runtime footer as quiet blocks",
                                 checked = showTelemetry,
                                 onCheckedChange = onShowTelemetryChanged,
                             )
                             SettingsSwitchRow(
-                                anchor = "agent.alerts",
+                                anchor = SettingsRow.AGENT_ALERTS,
                                 title = "Mission alerts",
                                 subtitle = "Notify when a mission completes, blocks, or gives up — checked in the background every 15 minutes",
                                 checked = missionAlertsEnabled,
@@ -415,7 +415,7 @@ fun SettingsScreen(
                             )
                             val resume by viewModel.resumeLastRoom.collectAsState()
                             SettingsSwitchRow(
-                                anchor = "agent.resume",
+                                anchor = SettingsRow.AGENT_RESUME,
                                 title = "Reopen last chat on launch",
                                 subtitle = "Off: every cold start begins on the drawer",
                                 checked = resume,
@@ -425,7 +425,7 @@ fun SettingsScreen(
                     }
 
                     // --- Companion (the petdex mascot) ---
-                    if (section == "Companion") SettingsCard("Companion", anchor = "companion.pick") {
+                    if (section == "Companion") SettingsCard("Companion", anchor = SettingsRow.COMPANION_PICK) {
                         LaunchedEffect(Unit) { viewModel.pet.refreshPet() }
                         var showPetPicker by remember { mutableStateOf(false) }
                         if (showPetPicker) {
@@ -466,7 +466,7 @@ fun SettingsScreen(
                     // Direct door: no homeserver, no agent ids, no push gateway — the gateway IS
                     // the connection. What remains is where it lives (set at sign-in; changed by
                     // signing out) and the one switch that applies to it.
-                    if (section == "Gateway") SettingsCard("Gateway", anchor = "connection.gateway") {
+                    if (section == "Gateway") SettingsCard("Gateway", anchor = SettingsRow.CONNECTION_GATEWAY) {
                         Text(
                             text = "Gateway",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -486,14 +486,14 @@ fun SettingsScreen(
                         )
                         Spacer(Modifier.height(12.dp))
                         SettingsSwitchRow(
-                            anchor = "connection.insecure",
+                            anchor = SettingsRow.CONNECTION_INSECURE,
                             title = "Allow self-signed certificates",
                             subtitle = "Only for local / self-hosted gateways",
                             checked = allowInsecure,
                             onCheckedChange = onAllowInsecureChanged,
                         )
                     }
-                    if (section == "Connection") SettingsCard("Connection", anchor = "connection.homeserver") {
+                    if (section == "Connection") SettingsCard("Connection", anchor = SettingsRow.CONNECTION_HOMESERVER) {
                         OutlinedTextField(
                             value = matrixUrl,
                             onValueChange = onMatrixUrlChanged,
@@ -516,7 +516,7 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
-                        SettingsAnchor("connection.heralds") {
+                        SettingsAnchor(SettingsRow.CONNECTION_HERALDS) {
                         HeraldsList(
                             agentMatrixId = agentMatrixId,
                             overrides = viewModel.heraldAccents.collectAsState().value,
@@ -525,14 +525,14 @@ fun SettingsScreen(
                         }
                         Spacer(Modifier.height(8.dp))
                         SettingsSwitchRow(
-                            anchor = "connection.insecure",
+                            anchor = SettingsRow.CONNECTION_INSECURE,
                             title = "Allow self-signed certificates",
                             subtitle = "Only for local / self-hosted servers",
                             checked = allowInsecure,
                             onCheckedChange = onAllowInsecureChanged,
                         )
                         SettingsSwitchRow(
-                            anchor = "connection.push",
+                            anchor = SettingsRow.CONNECTION_PUSH,
                             title = "Push notifications",
                             subtitle = when {
                                 !pushEnabled -> "Off — notifications rely on the in-app sync staying alive"
@@ -561,7 +561,7 @@ fun SettingsScreen(
                         }
 
                         var reauth by remember { mutableStateOf(false) }
-                        SettingsAnchor("connection.reauth") {
+                        SettingsAnchor(SettingsRow.CONNECTION_REAUTH) {
                         TextButton(onClick = { reauth = !reauth }) {
                             Text(if (reauth) "Hide re-authenticate" else "Re-authenticate")
                         }
@@ -613,13 +613,13 @@ fun SettingsScreen(
                     }
 
                     // --- Hermes Link (side-channel streaming) ---
-                    if (section == "Hermes Link" || section == "Gateway") SettingsCard("Hermes Link", anchor = "link.url") {
+                    if (section == "Hermes Link" || section == "Gateway") SettingsCard("Hermes Link", anchor = SettingsRow.LINK_URL) {
                         // The same link serves two jobs by door. On Matrix it is the SSE
                         // side-channel that streams tokens ahead of sync. On the direct door the
                         // websocket already streams; the link is the API server the spaces ride
                         // (Missions, Runs, Shipyard, the Gateway space, the pet).
                         SettingsSwitchRow(
-                            anchor = "link.toggle",
+                            anchor = SettingsRow.LINK_TOGGLE,
                             title = if (viewModel.transportIsDirect) "Hermes Link" else "Live token streaming",
                             subtitle = if (viewModel.transportIsDirect)
                                 "The API server behind Missions, Runs, Shipyard and the Gateway space — chat itself streams over the direct connection"
@@ -666,7 +666,7 @@ fun SettingsScreen(
                     }
 
                     // --- Voice dictation ---
-                    if (section == "Voice") SettingsCard("Voice Dictation", anchor = "voice.stt") {
+                    if (section == "Voice") SettingsCard("Voice Dictation", anchor = SettingsRow.VOICE_STT) {
                         Text(
                             "Adds a mic to the composer: record, transcribe, and the text lands in the " +
                                 "input field. Works with any OpenAI-compatible transcription endpoint — " +
@@ -710,7 +710,7 @@ fun SettingsScreen(
                         )
                     }
 
-                    if (section == "Voice") SettingsCard("Voice Replies", anchor = "voice.tts") {
+                    if (section == "Voice") SettingsCard("Voice Replies", anchor = SettingsRow.VOICE_TTS) {
                         Text(
                             "Reads agent replies aloud — long-press a message and tap the speaker. " +
                                 "Works out of the box with this device's voice; point it at any " +
@@ -774,7 +774,7 @@ fun SettingsScreen(
                     // --- Message Appearance ---
                     if (section == "Appearance") SettingsCard("Look") {
                         val isDark by viewModel.isDarkTheme.collectAsState()
-                        SettingsAnchor("appearance.theme") {
+                        SettingsAnchor(SettingsRow.APPEARANCE_THEME) {
                             SettingsChoiceLabel("Theme")
                             KeryxSegmented(
                                 options = listOf("system" to "System", "light" to "Light", "dark" to "Dark"),
@@ -783,7 +783,7 @@ fun SettingsScreen(
                             )
                         }
                         Spacer(Modifier.height(18.dp))
-                        SettingsAnchor("appearance.bubbles") {
+                        SettingsAnchor(SettingsRow.APPEARANCE_BUBBLES) {
                             SettingsChoiceLabel("Bubbles")
                             KeryxSegmented(
                                 options = BubbleStyles.ALL.map { it to it },
@@ -792,7 +792,7 @@ fun SettingsScreen(
                             )
                         }
                         Spacer(Modifier.height(18.dp))
-                        SettingsAnchor("appearance.text") {
+                        SettingsAnchor(SettingsRow.APPEARANCE_TEXT) {
                             SettingsChoiceLabel("Text size")
                             val sizes = listOf("Small" to 0.85f, "Default" to 1.0f, "Large" to 1.2f)
                             KeryxSegmented(
@@ -802,7 +802,7 @@ fun SettingsScreen(
                             )
                         }
                         Spacer(Modifier.height(18.dp))
-                        SettingsAnchor("appearance.accent") {
+                        SettingsAnchor(SettingsRow.APPEARANCE_ACCENT) {
                         Text("Accent Color", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                         }
                         Spacer(Modifier.height(12.dp))
@@ -848,9 +848,9 @@ fun SettingsScreen(
                     }
 
                     // --- Privacy & Security ---
-                    if (section == "Privacy & Security") SettingsCard("Privacy & Security", anchor = "privacy.lock") {
+                    if (section == "Privacy & Security") SettingsCard("Privacy & Security", anchor = SettingsRow.PRIVACY_LOCK) {
                         SettingsSwitchRow(
-                            anchor = "privacy.lock",
+                            anchor = SettingsRow.PRIVACY_LOCK,
                             title = "Biometric App Lock",
                             subtitle = "Require FaceID/Fingerprint to open Keryx",
                             checked = biometricLockEnabled,
@@ -860,7 +860,7 @@ fun SettingsScreen(
                         if (!viewModel.transportIsDirect) {
                             Spacer(Modifier.height(8.dp))
                             SettingsSwitchRow(
-                                anchor = "privacy.e2ee",
+                                anchor = SettingsRow.PRIVACY_E2EE,
                                 title = "End-to-End Encryption",
                                 subtitle = "Enable Matrix E2EE session management",
                                 checked = e2eeEnabled,
@@ -871,19 +871,19 @@ fun SettingsScreen(
 
                     // Senses owns its own preferences file and needs nothing from this screen, so
                     // it sits next to Privacy rather than taking thirty parameters of plumbing.
-                    if (section == "Privacy & Security") SettingsAnchor("privacy.senses") { chat.keryx.app.senses.SensesSettingsCard() }
+                    if (section == "Privacy & Security") SettingsAnchor(SettingsRow.PRIVACY_SENSES) { chat.keryx.app.senses.SensesSettingsCard() }
 
                     // --- Interface ---
                     if (section == "Appearance") SettingsCard("Feel") {
                         SettingsSwitchRow(
-                            anchor = "appearance.haptics",
+                            anchor = SettingsRow.APPEARANCE_HAPTICS,
                             title = "Haptic Feedback",
                             subtitle = "Vibrate on interactions",
                             checked = hapticsEnabled,
                             onCheckedChange = onHapticsChanged
                         )
                         Spacer(Modifier.height(16.dp))
-                        SettingsAnchor("appearance.loading") {
+                        SettingsAnchor(SettingsRow.APPEARANCE_LOADING) {
                             SettingsChoiceLabel("Loading animation")
                             KeryxSegmented(
                                 options = listOf(
@@ -899,7 +899,7 @@ fun SettingsScreen(
                     }
 
                     // --- Sessions (direct door): what left the list, and the sweep ---
-                    if (section == "Sessions") SettingsCard("Archived", anchor = "sessions.archived") {
+                    if (section == "Sessions") SettingsCard("Archived", anchor = SettingsRow.SESSIONS_ARCHIVED) {
                         val archived by viewModel.archivedRooms.collectAsState()
                         LaunchedEffect(Unit) { viewModel.loadArchivedSessions() }
                         if (archived.isEmpty()) Text(
@@ -933,7 +933,7 @@ fun SettingsScreen(
                             }
                         }
                     }
-                    if (section == "Sessions") SettingsCard("Pruning", anchor = "sessions.prune") {
+                    if (section == "Sessions") SettingsCard("Pruning", anchor = SettingsRow.SESSIONS_PRUNE) {
                         var pruneOpen by remember { mutableStateOf(false) }
                         Text(
                             "Delete old, idle sessions from the gateway in one sweep — previewed before anything goes.",
@@ -947,7 +947,7 @@ fun SettingsScreen(
                         if (pruneOpen) SessionPruneDialog(viewModel = viewModel, onDismiss = { pruneOpen = false })
                     }
 
-                    if (section == "About") SettingsCard("Diagnostics", anchor = "about.crash") {
+                    if (section == "About") SettingsCard("Diagnostics", anchor = SettingsRow.ABOUT_CRASH) {
                         val diagContext = androidx.compose.ui.platform.LocalContext.current
                         var crashText by remember { mutableStateOf(chat.keryx.app.CrashLog.read(diagContext)) }
                         Text(
@@ -979,7 +979,7 @@ fun SettingsScreen(
                             ) { Text("Clear", fontSize = 13.sp) }
                         }
                     }
-                    if (section == "About") SettingsCard("Keryx", anchor = "about.version") {
+                    if (section == "About") SettingsCard("Keryx", anchor = SettingsRow.ABOUT_VERSION) {
                         val aboutContext = androidx.compose.ui.platform.LocalContext.current
                         val lines = listOfNotNull(
                             "App" to "Keryx v${chat.keryx.app.BuildConfig.VERSION_NAME} (${chat.keryx.app.BuildConfig.VERSION_CODE})",
@@ -1026,7 +1026,7 @@ fun SettingsScreen(
  * [anchor] names the group for search — a hit scrolls here and lights the heading.
  */
 @Composable
-private fun SettingsCard(title: String, anchor: String? = null, content: @Composable ColumnScope.() -> Unit) {
+private fun SettingsCard(title: String, anchor: SettingsRow? = null, content: @Composable ColumnScope.() -> Unit) {
     val body: @Composable ColumnScope.() -> Unit = {
         KeryxSectionHeader(title, modifier = Modifier.padding(start = 4.dp, top = 22.dp, bottom = 6.dp))
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp), content = content)
@@ -1061,9 +1061,9 @@ class SettingsFocus(
 val LocalSettingsFocus = staticCompositionLocalOf<SettingsFocus?> { null }
 
 @Composable
-fun SettingsAnchor(id: String, content: @Composable ColumnScope.() -> Unit) {
+fun SettingsAnchor(row: SettingsRow, content: @Composable ColumnScope.() -> Unit) {
     val focus = LocalSettingsFocus.current
-    val wanted = focus?.target == id
+    val wanted = focus?.target == row.id
     val glow = remember { androidx.compose.animation.core.Animatable(0f) }
     var rootY by remember { mutableStateOf<Float?>(null) }
     val density = androidx.compose.ui.platform.LocalDensity.current
@@ -1101,7 +1101,7 @@ fun SettingsSwitchRow(
     subtitle: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    anchor: String? = null,
+    anchor: SettingsRow? = null,
 ) {
     val row: @Composable ColumnScope.() -> Unit = {
         Row(
