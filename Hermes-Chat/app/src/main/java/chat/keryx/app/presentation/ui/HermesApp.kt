@@ -293,12 +293,34 @@ fun HermesApp(viewModel: ChatViewModel) {
                         }
                     },
                     navigationIcon = {
+                        // The drawer button carries what the drawer holds (2.10): how many
+                        // rooms have news you have not looked at — the one you are in
+                        // excepted, you are looking at it. The Desktop's sidebar toggle does
+                        // the same, and for the same reason: a closed drawer must not hide that
+                        // something behind it wants you.
+                        val rooms by viewModel.rooms.collectAsState()
+                        val unreadRooms = remember(rooms, currentRoom?.id) {
+                            rooms.count { it.hasUnread && it.id != currentRoom?.id }
+                        }
                         IconButton(onClick = { focusManager.clearFocus(); scope.launch { drawerState.open() } }) {
-                            Icon(
-                                chat.keryx.app.presentation.ui.components.KeryxGlyphs.Sidebar,
-                                contentDescription = "Menu",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                            )
+                            BadgedBox(badge = {
+                                androidx.compose.animation.AnimatedVisibility(
+                                    visible = unreadRooms > 0,
+                                    enter = chat.keryx.app.presentation.ui.components.keryxPop(),
+                                    exit = chat.keryx.app.presentation.ui.components.keryxVanish(),
+                                ) {
+                                    Badge(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = chat.keryx.app.presentation.ui.components.contrastColorFor(MaterialTheme.colorScheme.primary),
+                                    ) { Text(if (unreadRooms > 99) "99+" else unreadRooms.toString()) }
+                                }
+                            }) {
+                                Icon(
+                                    chat.keryx.app.presentation.ui.components.KeryxGlyphs.Sidebar,
+                                    contentDescription = if (unreadRooms > 0) "Menu, $unreadRooms unread" else "Menu",
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
                         }
                     },
                     actions = {
