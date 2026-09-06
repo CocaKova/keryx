@@ -63,6 +63,9 @@ import java.net.URI
 class DirectTransport(
     private val settings: SettingsRepository,
     private val scope: CoroutineScope,
+    /** Where the last page of each transcript sleeps between process lives (2.10) — the
+     *  app's cache dir, evictable by the system, never a source of truth. Null = no cache. */
+    private val cacheDir: java.io.File? = null,
 ) : ChatTransport, GatewayCapabilities {
 
     /** No Matrix here — the UI's Matrix affordances gate themselves off on exactly this. */
@@ -156,6 +159,8 @@ private const val GHOST_TOOL_ID = "generating"
         val agentTyping = MutableStateFlow(false)
         val history = MutableStateFlow(chat.keryx.core.model.HistoryState())
         var hydrated = false
+        /** The cached page is on screen (a paint, not a hydration — the wire still owes the truth). */
+        var painted = false
 
         /** The agent's own `todo` plan — newest tool result wins, live or hydrated
          *  (every call returns the FULL list, so the latest one is the whole truth). */
@@ -1088,9 +1093,12 @@ private const val GHOST_TOOL_ID = "generating"
     private suspend fun rehydrate(storedId: String, st: SessionStore) {
         val rest = rest ?: return
         val want = st.history.value.loaded.coerceIn(HISTORY_PAGE, 500)
-        val rows = rest.messages(storedId, limit = want).getOrThrow()
+        val body = rest.messagesRaw(storedId, limit = want).getOrThrow()
+        val rows = rest.parseMessages(body)
         st.setHistory(rows, more = rows.size >= want)
         st.hydrated = true
+        // The re-read is the freshest page there is; it is what the next cold open should paint.
+        if (want == HISTORY_PAGE) writeCachedPage(storedId, body)
     }
 
     /**
@@ -1232,12 +1240,46 @@ private const val GHOST_TOOL_ID = "generating"
     private suspend fun hydrate(storedId: String) {
         val st = store(storedId)
         if (st.hydrated) return
-        rest?.messages(storedId, limit = HISTORY_PAGE, profile = profileFor(storedId))?.onSuccess { rows ->
+        val rest = rest ?: return
+        // Paint first (2.10): the page this phone saw last time, off disk, before the wire
+        // answers — a session opens on its words, not on a blank. The Desktop's transcript-tail
+        // cache ("bot wakes paint at ~0 ms"). The wire's page replaces it the moment it lands,
+        // so a message undone or archived elsewhere shows for one round trip, then goes.
+        if (!st.painted) readCachedPage(storedId)?.let { rows ->
+            st.setHistory(rows, more = true)
+            st.painted = true
+        }
+        rest.messagesRaw(storedId, limit = HISTORY_PAGE, profile = profileFor(storedId)).onSuccess { body ->
+            val rows = rest.parseMessages(body)
             // A full page means there is almost certainly more behind it. Being wrong here is
             // cheap and self-correcting: the next page comes back empty and the affordance
             // retires itself.
             st.setHistory(rows, more = rows.size >= HISTORY_PAGE)
             st.hydrated = true
+            writeCachedPage(storedId, body)
+        }
+    }
+
+    private fun cacheFile(storedId: String): java.io.File? =
+        cacheDir?.resolve(storedId.map { if (it.isLetterOrDigit() || it == '-' || it == '_') it else '_' }.joinToString("") + ".json")
+
+    private suspend fun readCachedPage(storedId: String): List<MessageRow>? {
+        val f = cacheFile(storedId) ?: return null
+        val rest = rest ?: return null
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { if (f.isFile) rest.parseMessages(f.readText()).takeIf { it.isNotEmpty() } else null }.getOrNull()
+        }
+    }
+
+    private suspend fun writeCachedPage(storedId: String, body: String) {
+        val f = cacheFile(storedId) ?: return
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                f.parentFile?.mkdirs()
+                val tmp = java.io.File(f.path + ".tmp")
+                tmp.writeText(body)
+                if (!tmp.renameTo(f)) { f.delete(); tmp.renameTo(f) }
+            }.onFailure { android.util.Log.w("KeryxGw", "transcript cache write failed for $storedId: ${it.message}") }
         }
     }
 
