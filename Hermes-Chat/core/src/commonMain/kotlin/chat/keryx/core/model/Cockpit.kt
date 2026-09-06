@@ -225,3 +225,22 @@ data class SessionMeta(
     val contextGauge: Pair<Long, Long>?
         get() = if (contextUsed > 0L && contextMax > 0L) contextUsed to contextMax else null
 }
+
+
+/**
+ * The context window, itemised (2.10): what is eating it, by category — system prompt, tools,
+ * skills, memory, the conversation itself. The gateway's `session.context_breakdown`, the same
+ * payload the Desktop's Context Usage popover reads. Categories arrive in the gateway's order
+ * with their zero rows already dropped.
+ */
+data class ContextBreakdown(
+    val categories: List<ContextCategory>,
+    val used: Long,
+    val max: Long,
+    val percent: Int,
+    val model: String,
+) {
+    val total: Long get() = categories.sumOf { it.tokens }.coerceAtLeast(1L)
+}
+
+data class ContextCategory(val id: String, val label: String, val tokens: Long)

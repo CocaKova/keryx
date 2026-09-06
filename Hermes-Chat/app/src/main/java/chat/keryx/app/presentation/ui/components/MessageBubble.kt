@@ -27,6 +27,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
@@ -105,6 +106,8 @@ fun MessageBubble(
     onReact: (String) -> Unit,
     onQuoteClick: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
+    /** Take back this reply and the message that asked for it (2.10, direct door, last reply only). */
+    onUndoTurn: (() -> Unit)? = null,
     /** True while this message is being read aloud (or its speech is being fetched). */
     speaking: Boolean = false,
     /** Read this message aloud / stop reading it. Null hides the affordance (non-agent senders). */
@@ -121,6 +124,7 @@ fun MessageBubble(
     val herald = if (isAgent) heraldLightFor(message.senderId, message.senderName) else null
     val heraldRim = herald != null && !herald.primary
     var showReactionPicker by remember { mutableStateOf(false) }
+    var confirmUndo by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
 
     val reactions by reactionsFlow.collectAsState(initial = emptyList())
@@ -381,11 +385,28 @@ fun MessageBubble(
                     android.widget.Toast.makeText(copyContext, "Copied", android.widget.Toast.LENGTH_SHORT).show()
                 },
                 onDelete = onDelete?.let { { showReactionPicker = false; confirmDelete = true } },
+                onUndoTurn = onUndoTurn?.let { { showReactionPicker = false; confirmUndo = true } },
                 onSpeak = onSpeak?.let { speak -> { showReactionPicker = false; speak() } },
                 speaking = speaking,
                 kept = kept,
                 onToggleKeep = onToggleKeep?.let { toggle -> { showReactionPicker = false; toggle() } },
                 onDismiss = { showReactionPicker = false },
+            )
+        }
+
+        if (confirmUndo) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { confirmUndo = false },
+                title = { Text("Take back the last exchange?", fontSize = 16.sp) },
+                text = { Text("Your message and this reply leave the session's history on the gateway. The next thing you say continues from before them.", fontSize = 13.sp) },
+                confirmButton = {
+                    TextButton(onClick = { confirmUndo = false; onUndoTurn?.invoke() }) {
+                        Text("Take it back", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { confirmUndo = false }) { Text("Keep") }
+                },
             )
         }
 
@@ -531,6 +552,7 @@ private fun ReactionPickerRow(
     onCopy: () -> Unit,
     onDismiss: () -> Unit,
     onDelete: (() -> Unit)? = null,
+    onUndoTurn: (() -> Unit)? = null,
     onSpeak: (() -> Unit)? = null,
     speaking: Boolean = false,
     kept: Boolean? = null,
@@ -619,6 +641,16 @@ private fun ReactionPickerRow(
                                 if (speaking) KeryxGlyphs.StopSquare else KeryxGlyphs.Volume,
                                 contentDescription = if (speaking) "Stop speaking" else "Read aloud",
                                 tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                    if (onUndoTurn != null) {
+                        IconButton(onClick = onUndoTurn, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                androidx.compose.material.icons.Icons.AutoMirrored.Filled.Undo,
+                                contentDescription = "Take back the last exchange",
+                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
                                 modifier = Modifier.size(20.dp),
                             )
                         }

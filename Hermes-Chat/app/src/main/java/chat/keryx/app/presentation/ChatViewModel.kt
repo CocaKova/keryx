@@ -1969,6 +1969,34 @@ class ChatViewModel(
      * message would put it straight back anyway. Never a move-off, never a toast of success:
      * the row leaving is the feedback.
      */
+    /** Send the last thing you said again — the failure card's Retry. */
+    fun retryLastTurn() {
+        val last = messages.value.lastOrNull { it.sender == SenderType.ME && it.content.isNotBlank() } ?: return
+        sendMessage(last.content)
+    }
+
+    /** The open session's window, itemised (direct door; null elsewhere). */
+    suspend fun contextBreakdown(): Result<chat.keryx.core.model.ContextBreakdown>? {
+        val room = _currentRoom.value ?: return null
+        return direct?.contextBreakdown(room.id)
+    }
+
+    /** Take back the last exchange in the open session (direct door). */
+    fun undoLastTurn() {
+        val room = _currentRoom.value ?: return
+        val d = direct ?: return
+        viewModelScope.launch {
+            d.undoLastTurn(room.id)
+                .onSuccess { n -> _toasts.tryEmit(if (n > 0) "Took back the last exchange" else "Nothing to take back") }
+                .onFailure { e ->
+                    val why = e.message.orEmpty()
+                    _toasts.tryEmit(
+                        if ("busy" in why) "Still working — stop the turn first" else "Couldn't undo: ${why.take(80)}",
+                    )
+                }
+        }
+    }
+
     fun archiveSession(sessionId: String) {
         viewModelScope.launch {
             gateway?.archiveSession(sessionId)
