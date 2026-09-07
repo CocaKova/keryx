@@ -243,10 +243,15 @@ fun SettingsScreen(
                         // One wire, one row (2.10): on the direct door the gateway IS the
                         // connection and Hermes Link is its API server, so they share a page.
                         // Matrix keeps two — the homeserver is one thing, the link another.
-                        if (direct) KeryxHubRow(Icons.Default.Dns, "Gateway",
-                            viewModel.directGatewayUrl.ifBlank { "Address, certificates & Hermes Link" }
-                                .removePrefix("https://").removePrefix("http://") +
-                                (if (sideChannelEnabled) " · linked" else "")) { section = "Gateway" }
+                        if (direct) {
+                            val fleet by viewModel.fleet.collectAsState()
+                            val where = fleet.active?.let { a ->
+                                if (fleet.hasChoice) "${a.name} · ${fleet.size} gateways" else "${a.name} · ${a.hostLabel}"
+                            } ?: viewModel.directGatewayUrl.ifBlank { "Address, certificates & Hermes Link" }
+                                .removePrefix("https://").removePrefix("http://")
+                            KeryxHubRow(Icons.Default.Dns, "Gateways",
+                                where + (if (sideChannelEnabled) " · linked" else "")) { section = "Gateway" }
+                        }
                         else {
                             KeryxHubRow(Icons.Default.Dns, "Connection",
                                 matrixUrl.ifBlank { "Homeserver & agent" }) { section = "Connection" }
@@ -476,24 +481,24 @@ fun SettingsScreen(
                     // Direct door: no homeserver, no agent ids, no push gateway — the gateway IS
                     // the connection. What remains is where it lives (set at sign-in; changed by
                     // signing out) and the one switch that applies to it.
-                    if (section == "Gateway") SettingsCard("Gateway", anchor = SettingsRow.CONNECTION_GATEWAY) {
-                        Text(
-                            text = "Gateway",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 12.sp,
-                        )
-                        Text(
-                            text = viewModel.directGatewayUrl.ifBlank { "Not set" },
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp,
-                        )
-                        Text(
-                            text = "Set when you signed in. To point Keryx at another gateway, sign out from Account and connect again.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
+                    // The fleet (2.11): the Desktop's Settings → Gateways registry. One card holds
+                    // every gateway the phone can reach; the row that used to say "sign out and
+                    // connect again" is now "Add gateway".
+                    if (section == "Gateway") SettingsCard("Gateways", anchor = SettingsRow.CONNECTION_GATEWAY) {
+                        val settingsContext = androidx.compose.ui.platform.LocalContext.current
+                        GatewayRegistry(viewModel, onRelaunch = { relaunchApp(settingsContext) })
+                        val fleet by viewModel.fleet.collectAsState()
+                        if (fleet.hasChoice) {
+                            Spacer(Modifier.height(8.dp))
+                            SettingsSwitchRow(
+                                anchor = SettingsRow.CONNECTION_FLEET_RESUME,
+                                title = "At startup, return to the last-used gateway",
+                                subtitle = if (fleet.resumeLastGateway) "A cold start opens where you left off"
+                                else "A cold start opens on Primary — the Desktop's default",
+                                checked = fleet.resumeLastGateway,
+                                onCheckedChange = viewModel::setResumeLastGateway,
+                            )
+                        }
                         Spacer(Modifier.height(12.dp))
                         SettingsSwitchRow(
                             anchor = SettingsRow.CONNECTION_INSECURE,

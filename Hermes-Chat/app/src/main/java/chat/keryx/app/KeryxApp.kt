@@ -106,15 +106,21 @@ class KeryxApp : Application() {
         matrixService = MatrixService(applicationContext)
         // The login screen's chosen door decides the spine for this whole process life —
         // a transport is not hot-swappable under a ViewModel, so switching doors restarts.
+        // The fleet (2.11): which gateway this process life is on is decided BEFORE the
+        // transport is built — every credential and ledger read below is the active gateway's.
+        val gatewayId = if (settingsRepository.transportMode == "direct") bootGateway() else ""
         transport = if (settingsRepository.transportMode == "direct") {
             DirectTransport(
                 settingsRepository, appScope,
-                cacheDir = applicationContext.cacheDir.resolve("transcripts"),
+                cacheDir = transcriptCacheDir(gatewayId),
             ).also { it.connectIfConfigured() }
         } else {
             MatrixTransport(matrixService, settingsRepository)
         }
-        archiveStore = chat.keryx.app.data.archive.ArchiveStore(applicationContext)
+        archiveStore = chat.keryx.app.data.archive.ArchiveStore(
+            applicationContext,
+            chat.keryx.app.data.archive.ArchiveStore.nameFor(gatewayId, settingsRepository.legacyGatewayId),
+        )
         // One store, two producers: the Matrix timeline walk, or the gateway's REST pages.
         archiveIndexer = (transport as? DirectTransport)
             ?.let { direct -> chat.keryx.app.data.archive.RestArchiveIndexer({ direct.restClient }, archiveStore, direct::profileForSession) }
@@ -140,6 +146,36 @@ class KeryxApp : Application() {
 
         observeForNotifications()
         observeShadeGate()
+    }
+
+    /**
+     * The gateway a direct-door boot lands on, its id committed as the fleet's active row.
+     * A relaunch the app did to itself (a switch, an added gateway) lands on the row it just
+     * chose; a cold start follows the fleet's start-up rule — the last-used gateway by
+     * default on a phone, Primary when the user turned that off. Blank = no fleet (a direct
+     * door never signed in): the login screen.
+     */
+    private fun bootGateway(): String {
+        val fleet = settingsRepository.fleet
+        if (fleet.isEmpty) return ""
+        val target = (if (settingsRepository.consumeFleetSwitch()) fleet.active else null)
+            ?: fleet.bootTarget() ?: return ""
+        if (target.id != fleet.activeId) settingsRepository.commitFleet(fleet.setActive(target.id))
+        return target.id
+    }
+
+    /** Where a gateway's transcript pages sleep: one folder per gateway, so a switch never
+     *  reads another gateway's cached tail for a same-named session. */
+    fun transcriptCacheDir(gatewayId: String): java.io.File =
+        applicationContext.cacheDir.resolve("transcripts").let { if (gatewayId.isBlank()) it else it.resolve(gatewayId) }
+
+    /** A gateway left the fleet: its archive index, its saved messages and its transcript cache
+     *  go with it. The pre-fleet file is shared with Matrix and is never deleted here. */
+    fun purgeGatewayFiles(gatewayId: String) {
+        if (gatewayId.isBlank()) return
+        val db = chat.keryx.app.data.archive.ArchiveStore.nameFor(gatewayId, settingsRepository.legacyGatewayId)
+        if (db != chat.keryx.app.data.archive.ArchiveStore.DEFAULT_DB) runCatching { applicationContext.deleteDatabase(db) }
+        runCatching { transcriptCacheDir(gatewayId).deleteRecursively() }
     }
 
     /** Memory pressure → every registered session cache sheds weight (media bytes, decoded

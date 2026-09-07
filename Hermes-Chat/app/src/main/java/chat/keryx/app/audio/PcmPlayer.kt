@@ -5,7 +5,6 @@ import android.media.AudioFormat
 import android.media.AudioTrack
 import java.io.ByteArrayOutputStream
 import kotlin.math.max
-import kotlin.math.min
 
 /**
  * Plays 16-bit mono PCM as it arrives, so a voice reply starts within a fraction of a second
@@ -41,8 +40,12 @@ import kotlin.math.min
  *    before the sentence replaces a dozen stutters inside it.
  *    A sentence can also collapse AFTER its head passed the check — the brain starting a
  *    tool call mid-sentence drops the server to 0.4x — so when the track runs dry while the
- *    sentence is still arriving, the player re-holds and rebuilds its lead with the rate
- *    re-measured from that moment: one pause, not a storm of 100 ms chops.
+ *    sentence is still arriving, the player re-holds and rebuilds its lead. The arithmetic
+ *    is [SentenceLead]: the rate is measured across the whole sentence (a 250 ms window read
+ *    a bursty server as faster than it was), and a sentence that ran dry stops trusting its
+ *    length estimate — each dry assumes more audio is coming and holds longer, so a slow
+ *    stretch costs a few deliberate pauses, not one chop every 400 ms (the 22:38 call of
+ *    09-05: eleven "ran dry" in one sentence).
  * 5. **The meter reads the play head, not the write.** Bytes go in up to seconds before they are
  *    heard, so a level taken at write time would light the orb ahead of the voice. Each 20 ms of
  *    input is scored as it is written and filed by position; [levelNow] looks up the slot the
@@ -82,6 +85,7 @@ class PcmPlayer(val sampleRate: Int, attributes: AudioAttributes) {
         }
 
     private val cushion = ByteArrayOutputStream()
+    /** Wall time of the current sentence's first byte — the rate's clock. */
     private var firstByteAt = 0L
     /** Bytes are being held back: before playback starts, and again at the head of every later
      *  sentence until the track holds enough lead for it (rule 4). */
@@ -91,6 +95,8 @@ class PcmPlayer(val sampleRate: Int, attributes: AudioAttributes) {
     private var sentenceNo = 0
     /** Input ms of the current sentence already released to the track. */
     private var sentenceReleasedMs = 0L
+    /** Times the current sentence has run the track dry (rule 4, second paragraph). */
+    private var sentenceDries = 0
     @Volatile private var sentenceOpen = false
     @Volatile private var framesWritten = 0L
     @Volatile private var playing = false
@@ -148,6 +154,7 @@ class PcmPlayer(val sampleRate: Int, attributes: AudioAttributes) {
         this.expectedMs = expectedMs
         sentenceNo++
         sentenceReleasedMs = 0L
+        sentenceDries = 0
         sentenceOpen = true
         holding = true
         firstByteAt = 0L
@@ -172,13 +179,16 @@ class PcmPlayer(val sampleRate: Int, attributes: AudioAttributes) {
         }
         if (!holding && playing && sentenceOpen && queuedMs() < DRY_MS) {
             // Ran dry mid-sentence (rule 4, second paragraph): re-hold and rebuild the lead.
-            android.util.Log.w(TAG, "sentence $sentenceNo ran dry after ${sentenceReleasedMs}ms — rebuilding lead")
+            sentenceDries++
+            android.util.Log.w(TAG, "sentence $sentenceNo ran dry after ${sentenceReleasedMs}ms " +
+                "(dry #$sentenceDries) — rebuilding lead")
             holding = true
             cushion.reset()
-            firstByteAt = 0L
         }
         if (holding) {
-            if (cushion.size() == 0) firstByteAt = System.currentTimeMillis()
+            // The sentence's first byte stamps the clock for the whole sentence; a re-hold
+            // does not restart it (a bursty server read as 1.2× over a 250 ms window).
+            if (firstByteAt == 0L) firstByteAt = System.currentTimeMillis()
             cushion.write(data, off, len)
             val haveMs = cushion.size() * 1000L / bytesPerSecond
             // Lead = what the track still has to play + what we are holding. Before the first
@@ -190,19 +200,19 @@ class PcmPlayer(val sampleRate: Int, attributes: AudioAttributes) {
             // Adaptive part: the server runs at about real time, but when the GPU is shared (the
             // brain decoding while Sy speaks) it falls behind — one sentence rendered at 2.3x
             // slower than real time on 09-05 and the track ran dry. Arrival rate so far = audio
-            // ms per wall ms; under 1, hold enough lead to cover the projected remainder.
+            // ms per wall ms across the sentence; under 1, hold enough lead to cover the
+            // projected remainder ([SentenceLead]).
             val elapsed = max(1L, System.currentTimeMillis() - firstByteAt)
-            val rate = haveMs.toDouble() / elapsed
+            val rate = (sentenceReleasedMs + haveMs).toDouble() / elapsed
             val remainingMs = max(0L, expectedMs - sentenceReleasedMs - haveMs)
-            val neededMs = if (rate >= 0.97 || expectedMs <= 0) base
-            else min(MAX_PREBUFFER_MS, (remainingMs * (1.0 - rate) + base).toLong())
+            val neededMs = SentenceLead.neededMs(base, rate, remainingMs, sentenceDries, MAX_PREBUFFER_MS)
             if (lead < neededMs) return true
             val rateText = String.format(java.util.Locale.US, "%.2f", rate)
             if (!playing) {
                 if (!start("cushion ${haveMs}ms rate=$rateText needed=${neededMs}ms")) return false
             } else if (haveMs > base) {
                 android.util.Log.w(TAG, "sentence $sentenceNo held ${haveMs}ms (queued ${queuedMs}ms, " +
-                    "rate=$rateText, needed=${neededMs}ms)")
+                    "rate=$rateText, needed=${neededMs}ms, dries=$sentenceDries)")
             }
             holding = false
             return flushCushion()

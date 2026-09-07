@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -23,7 +24,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -81,6 +81,8 @@ class CallController(
     private var loopJob: Job? = null
     private var turnJob: Job? = null
     private var synthSeq = 0
+    /** The voice's measured pace, learned across the call (touched only on the playback thread). */
+    private val pace = SpeechPace()
 
     fun start() {
         if (loopJob != null) return
@@ -188,10 +190,16 @@ class CallController(
         val chunker = CallSentenceChunker()
         var streamedAny = false
         var deltas = 0
+        // The watchdog's clock and its off switch: every delta is a sign of life, the end
+        // signal retires it.
+        val sentAt = System.currentTimeMillis()
+        val lastLifeAt = java.util.concurrent.atomic.AtomicLong(sentAt)
+        val ended = CompletableDeferred<Unit>()
         viewModel.callTurnTap = object : ChatViewModel.CallTurnTap {
             override fun onDelta(text: String) {
                 if (deltas++ == 0) log("first delta")
                 streamedAny = true
+                lastLifeAt.set(System.currentTimeMillis())
                 chunker.feed(text).forEach { sentences.trySend(it) }
             }
 
@@ -203,6 +211,7 @@ class CallController(
                 }
                 chunker.flush()?.let { sentences.trySend(it) }
                 sentences.close()
+                ended.complete(Unit)
             }
 
             override fun onTurnFailed() {
@@ -210,6 +219,7 @@ class CallController(
                 _ui.update { it.copy(error = "the agent's turn failed") }
                 chunker.flush()?.let { sentences.trySend(it) }
                 sentences.close()
+                ended.complete(Unit)
             }
         }
         try {
@@ -270,21 +280,40 @@ class CallController(
             }
             // Watchdog: every stream path closes the channel, but a wedged gateway must not
             // hold the call hostage — fall back to listening and let the text land in chat.
-            withTimeoutOrNull(TURN_WATCHDOG_MS) {
-                for (audio in ready) {
-                    _ui.update { it.copy(phase = Phase.SPEAKING, speaking = audio.text) }
-                    when (audio) {
-                        is SentenceAudio.Pcm -> playPcm(audio)
-                        is SentenceAudio.Mp3 -> try { play(audio.file) } finally { audio.file.delete() }
+            // It watches the GATEWAY, not the playback: it used to wrap the whole playback loop
+            // with one 300 s clock from the send, so a multi-step run that narrated for four
+            // minutes and then answered at length was cut off mid-answer (09-05, 22:43:55 —
+            // the end signal had arrived 46 s earlier). Now the clock is idle time since the
+            // last delta, the chat's own working banner (typing, compaction hold) keeps it
+            // patient through a long silent tool call, and the end signal retires it; what is
+            // already queued plays out on its own.
+            val watchdog = launch {
+                while (!ended.isCompleted) {
+                    val now = System.currentTimeMillis()
+                    val idle = now - lastLifeAt.get()
+                    val alive = idle < TURN_WATCHDOG_MS || viewModel.awaitingReply.value
+                    if (alive && now - sentAt < TURN_CEILING_MS) {
+                        delay(if (idle < TURN_WATCHDOG_MS) TURN_WATCHDOG_MS - idle else WATCHDOG_POLL_MS)
+                        continue
                     }
+                    log("turn watchdog fired — nothing from the gateway for ${idle / 1000}s " +
+                        "(turn ${(now - sentAt) / 1000}s old)")
+                    _ui.update { it.copy(error = "no reply from the gateway") }
+                    chunker.flush()?.let { sentences.trySend(it) }
+                    sentences.close()
+                    ended.complete(Unit)
                 }
-                pcm?.let { withContext(Dispatchers.IO) { it.drain() } }
-                synth.join()
-            } ?: run {
-                log("turn watchdog fired — no end signal in ${TURN_WATCHDOG_MS / 1000}s")
-                _ui.update { it.copy(error = "no reply from the gateway") }
-                synth.cancel()
             }
+            for (audio in ready) {
+                _ui.update { it.copy(phase = Phase.SPEAKING, speaking = audio.text) }
+                when (audio) {
+                    is SentenceAudio.Pcm -> playPcm(audio)
+                    is SentenceAudio.Mp3 -> try { play(audio.file) } finally { audio.file.delete() }
+                }
+            }
+            pcm?.let { withContext(Dispatchers.IO) { it.drain() } }
+            synth.join()
+            watchdog.cancel()
             meter.cancel()
         } finally {
             _voiceLevel.value = -1f
@@ -316,9 +345,10 @@ class CallController(
             track = PcmPlayer(audio.sampleRate, speechAttributes)
             pcm = track
         }
-        // Rough length of what is coming (Sy runs ~52 ms per character): sizes this sentence's
-        // lead when the server is falling behind real time (PcmPlayer rule 4).
-        track.beginSentence(audio.text.length * MS_PER_CHAR)
+        // Projected length of what is coming, from the pace measured so far this call: sizes
+        // this sentence's lead when the server is falling behind real time (PcmPlayer rule 4).
+        val expectedMs = pace.expectedMs(audio.text.length)
+        track.beginSentence(expectedMs)
         var bytes = 0
         var refused = false
         try {
@@ -327,8 +357,13 @@ class CallController(
                 if (!track.write(chunk, 0, chunk.size)) { refused = true; log("player refused audio after $bytes bytes"); break }
                 bytes += chunk.size
             }
-            if (isActive && !refused) track.endSentence()
-            log("sentence queued: ${bytes / 48}ms of PCM")
+            val audioMs = bytes * 1000L / (audio.sampleRate * 2)
+            if (isActive && !refused) {
+                track.endSentence()
+                pace.learn(audio.text.length, audioMs)
+            }
+            log("sentence queued: ${audioMs}ms of PCM for ${audio.text.length} chars " +
+                "(expected ${expectedMs}ms; pace now ${pace.msPerChar.toInt()} ms/char)")
         } finally {
             // A stopped track (interrupt) or a cancelled turn must not be the track the NEXT
             // sentence finds: release it and let the next one build a fresh player.
@@ -387,11 +422,12 @@ class CallController(
     }
 
     private companion object {
-        /** A tool-heavy turn can stream nothing for a long time — generous, but not infinite. */
+        /** Silence from the gateway this long, with the chat not working either, ends the turn. */
         const val TURN_WATCHDOG_MS = 5 * 60_000L
+        /** However patient the banner is, no single turn holds the call past this. */
+        const val TURN_CEILING_MS = 20 * 60_000L
+        const val WATCHDOG_POLL_MS = 15_000L
         /** Rides at the end of every spoken utterance; stripped by the parser and the echo. */
         const val VOICE_MARKER = "⟦keryx:voice⟧"
-        /** Sy's measured pace on 09-05: 56 chars = 2.96 s, 69 = 3.76 s, 103 = 4.9 s. */
-        const val MS_PER_CHAR = 52L
     }
 }

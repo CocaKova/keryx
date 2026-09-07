@@ -18,8 +18,8 @@ import android.database.sqlite.SQLiteOpenHelper
  * Server-side Matrix search is not an option at all: the rooms are E2EE and Synapse cannot see
  * into them. The phone is the only place the plaintext exists — so the phone carries the index.
  */
-class ArchiveStore(context: Context) :
-    SQLiteOpenHelper(context.applicationContext, "keryx_archive.db", null, 4) {
+class ArchiveStore(context: Context, dbName: String = DEFAULT_DB) :
+    SQLiteOpenHelper(context.applicationContext, dbName, null, 4) {
 
     /** One indexed message. [mediaKind] uses the MediaKind enum name, null for plain text. */
     data class Entry(
@@ -295,6 +295,17 @@ class ArchiveStore(context: Context) :
     }
 
     companion object {
+        const val DEFAULT_DB = "keryx_archive.db"
+
+        /**
+         * The fleet (2.11): one index per gateway — a search on the Ascent must not answer with
+         * the Spark's sessions, and a saved message belongs to the gateway it was read on. The
+         * pre-fleet gateway keeps the original file, so an upgrade loses nothing (Matrix shares
+         * that file too, exactly as before); every gateway added since gets its own.
+         */
+        fun nameFor(gatewayId: String, legacyGatewayId: String): String =
+            if (gatewayId.isBlank() || gatewayId == legacyGatewayId) DEFAULT_DB else "keryx_archive-$gatewayId.db"
+
         // Ornate brackets no one types in chat; a stray real one just over-highlights harmlessly.
         const val SNIP_START = "⟪"
         const val SNIP_END = "⟫"
