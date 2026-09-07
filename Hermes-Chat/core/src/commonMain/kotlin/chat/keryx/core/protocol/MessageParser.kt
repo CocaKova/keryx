@@ -149,6 +149,21 @@ object MessageParser {
         Regex("""^(cron|heartbeat|status update|scheduled task|background (task|process|job))\b""", RegexOption.IGNORE_CASE),
     )
 
+    /**
+     * A note the GATEWAY wrote into the transcript under the user's role (2.11): a truncation
+     * continuation, a background process ending, a resumed-after-interrupt preamble. Hermes
+     * files these as `role: user` because the model must read them as instructions, but they
+     * are not the user's words — rendering them in the user's bubble had Jonny asking why he
+     * "sent" a message about a dead SSH tunnel (device-caught 2026-09-06). Prefix-matched on
+     * the wire's own bracketed forms; nothing a person types starts this way.
+     */
+    fun isGatewayNote(content: String): Boolean {
+        val head = content.trimStart()
+        return GATEWAY_NOTE_PREFIXES.any { head.startsWith(it, ignoreCase = true) }
+    }
+
+    private val GATEWAY_NOTE_PREFIXES = listOf("[System note:", "[System:", "[IMPORTANT:")
+
     /** True when a whole message is automated telemetry rather than dialogue (drives the
      *  low-contrast block render and keeps telemetry from breaking tool-run grouping). */
     fun isTelemetryMessage(content: String): Boolean {

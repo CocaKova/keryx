@@ -869,6 +869,23 @@ fun NavigationDrawerContent(
             // sidebar footer, with the Desktop's status bar folded into it).
             val hubHealth by viewModel.hub.health.collectAsState()
             val linkHealth by viewModel.linkHealth.collectAsState()
+            // The fleet (2.11): with several gateways the foot grows the Desktop's one named
+            // gateway selector. A switch moves the whole workspace, so it relaunches onto the
+            // chosen gateway — the door toggle's own path.
+            val fleet by viewModel.fleet.collectAsState()
+            val fleetContext = LocalContext.current
+            // Direct door only: on Matrix the fleet may exist (doors were crossed) but the
+            // workspace is the homeserver's, and a switch here would relaunch into Matrix again.
+            if (viewModel.transportIsDirect) chat.keryx.app.presentation.ui.components.FleetSelector(
+                fleet = fleet,
+                onSwitch = { id ->
+                    if (viewModel.switchGateway(id)) chat.keryx.app.presentation.ui.components.relaunchApp(fleetContext)
+                },
+                onManage = {
+                    viewModel.jumpToSetting(chat.keryx.app.presentation.ui.components.SettingsRow.CONNECTION_GATEWAY.id)
+                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Settings)
+                },
+            )
             DrawerStatusStrip(
                 health = linkHealth,
                 model = caps?.model.orEmpty(),

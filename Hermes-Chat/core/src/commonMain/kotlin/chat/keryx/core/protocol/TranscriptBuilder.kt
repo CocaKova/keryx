@@ -84,7 +84,8 @@ object TranscriptBuilder {
                         // your voice; the quiet system row is the safe floor. (The todo
                         // re-injection is the FOURTH role:"user"-machinery instance.)
                         isCompactionCarryOver(row.content) || DelegationReport.isReport(row.content) ||
-                            chat.keryx.core.model.TodoPlanParser.isTodoInjection(row.content) ->
+                            chat.keryx.core.model.TodoPlanParser.isTodoInjection(row.content) ||
+                            MessageParser.isGatewayNote(row.content) ->
                             text(roomId, row, SenderType.SYSTEM)
                         else -> text(roomId, row, SenderType.ME)
                     }

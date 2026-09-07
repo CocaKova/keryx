@@ -139,6 +139,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                     // Synchronous: the watcher must never see a roster emission for a room
                     // the user is opening before it knows that room is on screen.
                     onOpenRoomChanged = { app.openRoomId = it },
+                    purgeGatewayFiles = app::purgeGatewayFiles,
                 ) as T
             }
         }

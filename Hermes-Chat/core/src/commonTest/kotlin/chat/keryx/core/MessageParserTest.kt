@@ -325,6 +325,15 @@ class MessageParserTest {
     }
 
     @Test
+    fun gatewayNotes_areNotTheUsersWords() {
+        assertTrue(MessageParser.isGatewayNote("[IMPORTANT: Background process proc_de05 exited (exit code 255). Command: ssh -N -L 19091:127.0.0.1:9090 …]"))
+        assertTrue(MessageParser.isGatewayNote("[System: Your previous response was truncated by the output length limit. Continue exactly where you left off.]"))
+        assertTrue(MessageParser.isGatewayNote("  [System note: Your previous turn was interrupted mid-run — the app or its backend process stopped.]"))
+        assertTrue(!MessageParser.isGatewayNote("Important: the game must run at 60 fps"))
+        assertTrue(!MessageParser.isGatewayNote("[status] gateway healthy"))
+    }
+
+    @Test
     fun subtextLines_becomeTelemetry() {
         val segments = MessageParser.parse("-# quiet aside\n-# second line")
         val telem = segments.filterIsInstance<MessageParser.Segment.Telemetry>().single()

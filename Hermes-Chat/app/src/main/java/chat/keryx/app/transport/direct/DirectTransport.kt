@@ -716,7 +716,7 @@ private const val GHOST_TOOL_ID = "generating"
     // runs in appScope, and the stream must survive whatever a future gateway emits.
     private fun handleEvent(ev: GatewayRpc.GatewayEvent) {
         // Global broadcasts carry no session id.
-        if (ev.type == "sessions.changed") { scope.launch { refreshSessions() }; return }
+        if (ev.type == "sessions.changed") { scope.launch { refreshSessions(); reconcileRuntimes() }; return }
         // A fresh socket. Everything we know may be stale, so this is the resync point.
         if (ev.type == "gateway.ready") { onGatewayReady(); return }
         // ⚠ The gateway can take a live session BACK — idle TTL, LRU eviction, or the
@@ -1180,6 +1180,43 @@ private const val GHOST_TOOL_ID = "generating"
                 }
         } finally {
             _loadingMore.value = false
+        }
+    }
+
+    /**
+     * A session's runtime can change under us without a `session.reclaimed`: an interrupted
+     * turn that Hermes auto-continues comes back as a NEW live sid on the same stored id
+     * (device-caught 2026-09-06 — the phone kept listening on the old sid and its transcript
+     * froze at the last event it had received). `sessions.changed` is the gateway's only
+     * word on it, so on every one we compare what `session.active_list` says a stored session
+     * is running under with what we hold; a mismatch drops the stale lease, re-attaches, and
+     * re-hydrates so the rows that streamed while we were deaf land in the timeline.
+     */
+    private suspend fun reconcileRuntimes() {
+        val rpc = rpc ?: return
+        if (storedToLive.isEmpty()) return
+        val res = runCatching {
+            rpc.request("session.active_list", buildJsonObject { }, timeoutMs = 15_000)
+        }.getOrNull() ?: return
+        val rows = res["sessions"] as? kotlinx.serialization.json.JsonArray ?: return
+        val current = HashMap<String, String>()
+        for (el in rows) {
+            val o = el as? kotlinx.serialization.json.JsonObject ?: continue
+            val stored = o.strOrNull("session_key") ?: continue
+            val live = o.strOrNull("id") ?: continue
+            current[stored] = live
+        }
+        for ((stored, held) in storedToLive.entries.toList()) {
+            val now = current[stored] ?: continue // gone entirely: the reclaim path owns that
+            if (now == held) continue
+            android.util.Log.w("KeryxGw", "runtime rotated for $stored: $held -> $now — re-attaching")
+            storedToLive.remove(stored)
+            liveToStored.remove(held)
+            val st = stores[stored]
+            runCatching { attach(stored) }
+                .onFailure { android.util.Log.w("KeryxGw", "re-attach after rotation failed for $stored", it) }
+            if (st != null) runCatching { rehydrate(stored, st) }
+                .onFailure { android.util.Log.w("KeryxGw", "re-hydrate after rotation failed for $stored", it) }
         }
     }
 

@@ -52,8 +52,34 @@ interface SettingsRepository {
      */
     var transportMode: String
 
-    /** The direct door's session flag: a validated gateway credential is a login. */
+    /** The direct door's session flag: a validated gateway credential is a login. Per gateway
+     *  (2.11): a gateway whose credential never validated lands on the login screen. */
     var directLoggedIn: Boolean
+
+    // --- The fleet (2.11): every gateway this phone can reach, by name ---
+    /** The registry — [chat.keryx.core.model.Fleet]. Empty on a Matrix-only install. Every
+     *  direct-door credential and ledger below is read for the ACTIVE gateway. */
+    var fleet: chat.keryx.core.model.Fleet
+    /** Persist the fleet SYNCHRONOUSLY — a gateway switch relaunches the process on the next
+     *  line, for the same race as [commitTransportDoor]. [switchPending] marks that relaunch
+     *  as a SWITCH, not a cold start: the next boot lands on the fleet's active gateway
+     *  whatever the start-up rule says (a relaunch the app did to itself is not the restart
+     *  the Desktop's "at startup" rule is about). */
+    fun commitFleet(fleet: chat.keryx.core.model.Fleet, switchPending: Boolean = false)
+    /** Read-and-clear the switch mark. True exactly once after a [commitFleet] that set it. */
+    fun consumeFleetSwitch(): Boolean
+    /** The gateway that was the phone's ONLY one before the fleet existed (the 2.10 → 2.11
+     *  migration), or blank. It keeps the pre-fleet archive and saved messages under their
+     *  old file name; every later gateway gets its own. */
+    val legacyGatewayId: String
+    /** A fresh gateway id not on [fleet]. */
+    fun newGatewayIdFor(fleet: chat.keryx.core.model.Fleet): String
+    /** This repository seen through ONE gateway: its credentials and ledgers whatever the active
+     *  gateway is — how a non-active gateway is tested, signed in, or forgotten. */
+    fun forGateway(gatewayId: String): SettingsRepository
+    /** Drop every credential and ledger the phone holds for a gateway (the fleet row is the
+     *  caller's to remove). The gateway itself is untouched. */
+    fun forgetGateway(gatewayId: String)
 
     /** The cron surface's first-sight baseline (epoch ms; 0 = never seen). Runs that predate
      *  it are history, not a backlog — a fresh install must not open on forty unread briefs. */

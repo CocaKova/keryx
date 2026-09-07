@@ -74,6 +74,9 @@ fun LoginScreen(viewModel: ChatViewModel) {
     var directDoor by remember { mutableStateOf(viewModel.transportIsDirect) }
     var directUrl by remember { mutableStateOf(viewModel.directGatewayUrl) }
     var directKey by remember { mutableStateOf(viewModel.directApiKey) }
+    // The fleet (2.11): the device name the gateway wears everywhere. Prefilled from the row
+    // this phone last stood on; blank = derived from the host when the sign-in lands.
+    var directName by remember { mutableStateOf(viewModel.fleet.value.active?.name.orEmpty()) }
 
     val accent = MaterialTheme.colorScheme.primary
     val focusManager = LocalFocusManager.current
@@ -142,6 +145,15 @@ fun LoginScreen(viewModel: ChatViewModel) {
         }
 
         if (directDoor) {
+            OutlinedTextField(
+                value = directName,
+                onValueChange = { directName = it; error = null },
+                label = { Text("Name") },
+                placeholder = { Text("Homelab") },
+                singleLine = true,
+                enabled = !connecting,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            )
             OutlinedTextField(
                 value = directUrl,
                 onValueChange = { directUrl = it; error = null },
@@ -215,16 +227,18 @@ fun LoginScreen(viewModel: ChatViewModel) {
                                 ),
                             )
                         },
-                    ) { ok, needsRestart, message ->
-                        if (!ok) {
-                            connecting = false
-                            error = message ?: "Login failed"
-                        } else if (needsRestart) {
-                            relaunch()
-                        } else {
-                            connecting = false
-                        }
-                    }
+                        onResult = { ok, needsRestart, message ->
+                            if (!ok) {
+                                connecting = false
+                                error = message ?: "Login failed"
+                            } else if (needsRestart) {
+                                relaunch()
+                            } else {
+                                connecting = false
+                            }
+                        },
+                        name = directName.trim(),
+                    )
                 },
                 enabled = !connecting && directUrl.isNotBlank(),
                 modifier = Modifier.fillMaxWidth().height(52.dp).padding(top = 24.dp),

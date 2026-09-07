@@ -931,7 +931,11 @@ fun ChatScreen(
             // the desktop, entered mid-flight, or running across a relaunch never set ours —
             // and a plain send against it would interrupt the work on the direct door.
             val compactingNow = sessionStatus?.isCompacting == true
-            val agentLive = liveStream != null || typingAgentIds.isNotEmpty() || liveTurnSigns
+            // Only THIS room's stream counts: the overlay is app-wide and a turn running in the
+            // session you just left made a fresh session read "steer" until you visited an ended
+            // room and came back (device-caught 2026-09-06, the fleet walk).
+            val agentLive = (liveStream?.roomId != null && liveStream?.roomId == currentRoom?.id) ||
+                typingAgentIds.isNotEmpty() || liveTurnSigns
             val busyNow = awaitingReply || agentLive || compactingNow
             val slashTyped = textState.text.trimStart().startsWith("/")
             val steerable = busyNow && !compactingNow && pendingApproval == null &&

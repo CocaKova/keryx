@@ -53,6 +53,9 @@ class ChatViewModel(
     // long enough for the roster to emit the freshly adopted session and the watcher to
     // read it as news the user "isn't looking at" (the cron-run trap, 2.8.1).
     private val onOpenRoomChanged: ((String?) -> Unit)? = null,
+    // The fleet (2.11): what to do with a removed gateway's files on disk (KeryxApp owns the
+    // paths). No-op in plain-JVM tests.
+    private val purgeGatewayFiles: (String) -> Unit = {},
 ) : ViewModel() {
 
     // The two capability surfaces, if this transport has them. Affordances only one side offers
@@ -967,7 +970,19 @@ class ChatViewModel(
         val hasStructure = !latest.reasoning.isNullOrBlank() || latest.toolCalls.isNotEmpty()
         if (!MessageParser.isRuntimeFooterMessage(latest.content) &&
             (latest.content.isNotBlank() || hasStructure)
-        ) return latest
+        ) {
+            // The direct door's overlay publishes the turn's sealed items (prose, tool calls)
+            // and then the streaming placeholder, which carries the turn's WHOLE thought for
+            // as long as the turn runs. So while a tool executes, `latest` is a blank
+            // placeholder wearing an old thought, and the banner — and the Call's caption —
+            // said "Reasoning" through every tool of a multi-step run (Jonny, 09-05: "I can't
+            // see tool calls, it just says reasoning"). A tool still running is what the agent
+            // is doing NOW; the thought wins only once the newest tool has returned.
+            if (latest.isStreaming && latest.content.isBlank()) {
+                chat.keryx.core.model.WorkState.runningTool(messages, latest)?.let { return it }
+            }
+            return latest
+        }
         return messages.asReversed()
             .asSequence()
             .dropWhile { it.id == latest.id }
@@ -1416,6 +1431,10 @@ class ChatViewModel(
         _awaitingReply.value = false
         _workStartedAt.value = null
         compactingSince = null
+        // The timeline observer re-derives this from the new room's messages — but a fresh
+        // session HAS no messages, so the observer never runs and the old room's "mid-run"
+        // stood until an ended room was visited (2.11 walk: new session read "steer").
+        _liveTurnSigns.value = false
         // The stream is NOT cancelled on a room switch: the overlay is already room-filtered in
         // the UI, so hopping to another room and back mid-turn resumes the live view instead of
         // silently degrading the whole turn to Matrix sync (mobile users switch rooms constantly).
@@ -2118,6 +2137,81 @@ class ChatViewModel(
     val directGatewayUrl: String get() = settingsRepository.directGatewayUrl
     val directApiKey: String get() = settingsRepository.directApiKey
 
+    // --- The fleet (2.11): every gateway this phone can reach, by name ---------------------
+
+    private val _fleet = MutableStateFlow(settingsRepository.fleet)
+    /** The registry. Empty on a Matrix-only phone; one row on a phone that only ever met one gateway. */
+    val fleet: StateFlow<chat.keryx.core.model.Fleet> = _fleet.asStateFlow()
+
+    private fun saveFleet(next: chat.keryx.core.model.Fleet, switchPending: Boolean = false) {
+        settingsRepository.commitFleet(next, switchPending)
+        _fleet.value = next
+    }
+
+    /**
+     * Move the workspace onto another gateway. Everything on screen — sessions, cron, bots,
+     * the Hub, the archive — is that gateway's, and the spine was built for the one we are
+     * on, so the switch takes effect on relaunch (the door toggle's own path). True when the
+     * caller should relaunch; false when there was nothing to do.
+     */
+    fun switchGateway(id: String): Boolean {
+        val f = _fleet.value
+        if (f.byId(id) == null || id == f.activeId) return false
+        saveFleet(f.setActive(id), switchPending = true)
+        return true
+    }
+
+    /** Rename a gateway. Null = done; else the exact violation, the Desktop's way. */
+    fun renameGateway(id: String, name: String): String? =
+        runCatching { saveFleet(_fleet.value.rename(id, name)) }.exceptionOrNull()?.message
+
+    /** "Make primary": the fallback, never the switch. */
+    fun setPrimaryGateway(id: String) = saveFleet(_fleet.value.setPrimary(id))
+
+    fun setResumeLastGateway(on: Boolean) = saveFleet(_fleet.value.copy(resumeLastGateway = on))
+
+    /**
+     * Take a gateway off the fleet and drop everything the phone held for it — sealed
+     * credentials, read-marks, hub cache, archive, transcript cache. The gateway itself is
+     * untouched; add it again any time. The ACTIVE gateway cannot be removed: switch first,
+     * so the workspace is never left standing on a row that no longer exists.
+     */
+    fun removeGateway(id: String): String? {
+        val f = _fleet.value
+        if (f.byId(id) == null) return null
+        if (id == f.activeId) return "Switch to another gateway first"
+        saveFleet(f.remove(id))
+        settingsRepository.forgetGateway(id)
+        purgeGatewayFiles(id)
+        return null
+    }
+
+    /**
+     * The Desktop's Test: is the gateway reachable, and does the credential we hold for it
+     * still open the door? Probes the REST leg unauthenticated, then an authed call with THAT
+     * gateway's credential (not the active one's). Reports a sentence, never a stack.
+     */
+    fun testGateway(id: String, onResult: (ok: Boolean, message: String) -> Unit) {
+        val entry = _fleet.value.byId(id) ?: return onResult(false, "Not on the fleet")
+        viewModelScope.launch {
+            val scoped = settingsRepository.forGateway(id)
+            val insecure = settingsRepository.allowInsecure
+            val rest = chat.keryx.app.transport.direct.GatewayRest(
+                entry.url, scoped.directApiKey, insecure,
+                chat.keryx.app.transport.direct.DirectAuth(scoped, insecure),
+            )
+            val st = rest.status().getOrElse {
+                return@launch onResult(false, "Unreachable: ${it.message?.take(120) ?: "no answer"}")
+            }
+            val version = st.version.takeIf { it.isNotBlank() }?.let { " · hermes $it" }.orEmpty()
+            if (!scoped.directLoggedIn) return@launch onResult(true, "Reachable$version — not signed in yet")
+            rest.validateToken().fold(
+                onSuccess = { onResult(true, "Reachable$version") },
+                onFailure = { onResult(false, "Reachable$version, but the sign-in was refused: ${it.message?.take(100)}") },
+            )
+        }
+    }
+
     /**
      * The login screen's second door (plan §5 Phase 4): a gateway URL and an API key instead
      * of a homeserver. Validates against the gateway, persists the choice, and reports
@@ -2130,12 +2224,41 @@ class ChatViewModel(
         /** Fires the system browser at the gateway's sign-in page (gated gateways only). */
         launchBrowser: (String) -> Unit,
         onResult: (ok: Boolean, needsRestart: Boolean, message: String?) -> Unit,
+        /** The fleet (2.11): the device name for this gateway. Blank = derived from the host. */
+        name: String = "",
     ) {
         viewModelScope.launch {
+            // The fleet row first: a known URL is its existing row (renamed if a name was
+            // typed), a new one is added. The row becomes active so every credential written
+            // by the sign-in below lands under ITS id. If the sign-in fails the fleet is put
+            // back exactly as it was — a gateway that never answered is not registered.
+            val before = _fleet.value
+            val (added, entry) = try {
+                before.add(url, name, { settingsRepository.newGatewayIdFor(before) })
+            } catch (e: chat.keryx.core.model.Fleet.RejectedException) {
+                onResult(false, false, e.message); return@launch
+            }
+            val isNew = before.byId(entry.id) == null
+            val switched = before.activeId.isNotBlank() && before.activeId != entry.id
+            var staged = added.setActive(entry.id)
+            if (!isNew && name.isNotBlank() && !entry.name.equals(name.trim(), ignoreCase = true)) {
+                staged = try { staged.rename(entry.id, name) } catch (e: chat.keryx.core.model.Fleet.RejectedException) {
+                    onResult(false, false, e.message); return@launch
+                }
+            }
+            saveFleet(staged)
+            fun failed(message: String?) {
+                saveFleet(before)
+                if (isNew) settingsRepository.forgetGateway(entry.id)
+                onResult(false, false, message)
+            }
+            val onOk: (Boolean, Boolean, String?) -> Unit = { ok, restart, message ->
+                if (ok) onResult(true, restart || switched, message) else failed(message)
+            }
             val insecure = settingsRepository.allowInsecure
-            val probe = chat.keryx.app.transport.direct.GatewayRest(url, apiKey, insecure)
+            val probe = chat.keryx.app.transport.direct.GatewayRest(entry.url, apiKey, insecure)
             val st = probe.status().getOrElse {
-                onResult(false, false, it.message?.take(160) ?: "Gateway unreachable")
+                failed(it.message?.take(160) ?: "Gateway unreachable")
                 return@launch
             }
             if (!st.authRequired) {
@@ -2144,9 +2267,9 @@ class ChatViewModel(
                     onSuccess = {
                         settingsRepository.directAuthMode =
                             chat.keryx.app.transport.direct.DirectAuth.MODE_TOKEN
-                        commitDirectDoor(url, apiKey, onResult)
+                        commitDirectDoor(entry.url, apiKey, switched, onOk)
                     },
-                    onFailure = { onResult(false, false, it.message?.take(160) ?: "Gateway unreachable") },
+                    onFailure = { failed(it.message?.take(160) ?: "Gateway unreachable") },
                 )
                 return@launch
             }
@@ -2155,19 +2278,19 @@ class ChatViewModel(
             // the SYSTEM browser on the gateway's /login, a loopback listener catching ?code=,
             // then the code+verifier→token exchange. DirectAuth owns the whole dance.
             val auth = chat.keryx.app.transport.direct.DirectAuth(settingsRepository, insecure)
-            val pending = auth.beginLogin(url)
+            val pending = auth.beginLogin(entry.url)
             launchBrowser(pending.authorizeUrl)
             runCatching {
-                auth.awaitLogin(url, pending)
+                auth.awaitLogin(entry.url, pending)
                 settingsRepository.directAuthMode =
                     chat.keryx.app.transport.direct.DirectAuth.MODE_NATIVE
                 // Prove the minted pair actually authenticates before committing the door
                 // (mirrors the token path's validateToken gate).
-                chat.keryx.app.transport.direct.GatewayRest(url, "", insecure, auth)
+                chat.keryx.app.transport.direct.GatewayRest(entry.url, "", insecure, auth)
                     .validateToken().getOrThrow()
             }.fold(
-                onSuccess = { commitDirectDoor(url, null, onResult) },
-                onFailure = { onResult(false, false, it.message?.take(160) ?: "Browser sign-in failed") },
+                onSuccess = { commitDirectDoor(entry.url, null, switched, onOk) },
+                onFailure = { failed(it.message?.take(160) ?: "Browser sign-in failed") },
             )
         }
     }
@@ -2175,16 +2298,22 @@ class ChatViewModel(
     private suspend fun commitDirectDoor(
         url: String,
         apiKey: String?,
+        /** The sign-in landed on a gateway other than the one this process was built for. */
+        switched: Boolean,
         onResult: (Boolean, Boolean, String?) -> Unit,
     ) {
         // One synchronous commit: the caller relaunches the process on our answer,
         // and apply()'s async disk write loses that race (device-caught).
         settingsRepository.commitTransportDoor(url, apiKey, "direct", true)
         val direct = transport as? chat.keryx.app.transport.direct.DirectTransport
-        if (direct != null) {
+        if (direct != null && !switched) {
             direct.login()
             onResult(true, false, null)
         } else {
+            // A door crossing, or a different gateway than the spine was built for (2.11):
+            // mark the relaunch as a switch so the boot lands on this row whatever the
+            // start-up rule says.
+            settingsRepository.commitFleet(_fleet.value, switchPending = true)
             onResult(true, true, null)
         }
     }
