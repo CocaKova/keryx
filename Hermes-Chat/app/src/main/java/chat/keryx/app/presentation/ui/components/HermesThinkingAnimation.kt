@@ -100,6 +100,7 @@ fun HermesThinkingAnimation(
             "Braille" -> BrailleSpinner(primaryColor, secondColor)
             "Dots" -> DotsSpinner(primaryColor, secondColor)
             "ASCII Wave" -> AsciiWaveSpinner()
+            "Ember Drift" -> EmberDriftSpinner(primaryColor, secondColor)
             else -> CaduceusSpinner(primaryColor, secondColor)
         }
         

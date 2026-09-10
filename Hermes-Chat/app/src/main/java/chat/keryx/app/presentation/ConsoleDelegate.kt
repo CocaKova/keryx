@@ -164,7 +164,7 @@ class ConsoleDelegate(deps: GatewayDeps) {
                 }
             }
         }
-        fun beat(ev: TheaterEvent) = _console.update { it.copy(theater = Theater.reduce(it.theater, ev)) }
+        fun beat(ev: TheaterEvent) = _console.update { it.copy(theater = Theater.reduce(it.theater, ev, System.currentTimeMillis())) }
         try {
             events.collect { ev ->
                 when (ev) {

@@ -25,6 +25,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -668,7 +670,16 @@ fun KeryxSegmented(
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
+    // Up to four, the row divides the width evenly. Past that an even division is narrower than
+    // the labels, which are single-line and do not wrap — so the row sizes to its content and
+    // scrolls instead of silently clipping the names.
+    val crowded = options.size > 4
+    val rowModifier = if (crowded) {
+        modifier.horizontalScroll(rememberScrollState())
+    } else {
+        modifier.fillMaxWidth()
+    }
+    SingleChoiceSegmentedButtonRow(modifier = rowModifier) {
         options.forEachIndexed { i, (id, label) ->
             SegmentedButton(
                 selected = id == selected,

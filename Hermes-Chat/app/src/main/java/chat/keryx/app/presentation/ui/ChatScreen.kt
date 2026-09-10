@@ -1082,9 +1082,21 @@ fun ChatScreen(
         }
     }
 
-    openSubagent?.let { run ->
+    openSubagent?.let { picked ->
+        // Re-resolved by key on every recomposition rather than shown as the snapshot that was
+        // tapped: a sheet opened over a FLYING wing has to keep growing as that wing's frames
+        // land, and has to notice the moment it settles so it can fetch the real transcript.
+        // Falls back to the snapshot when the run is no longer in the list (scrolled out of the
+        // window, or a new turn replaced it) — a frozen record beats a sheet that empties.
+        val live = renderItems.asSequence()
+            .filterIsInstance<ChatRenderItem.ToolRun>()
+            .flatMap { it.entries.asSequence() }
+            .filterIsInstance<chat.keryx.app.presentation.ui.components.ToolRunEntry.Delegated>()
+            .map { it.run }
+            .firstOrNull { it.key == picked.key }
+            ?: picked
         chat.keryx.app.presentation.ui.components.SubagentSessionSheet(
-            run = run,
+            run = live,
             fetch = { id -> viewModel.hub.sessionMessages(id) },
             onDismiss = { openSubagent = null },
         )

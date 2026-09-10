@@ -20,6 +20,7 @@ import chat.keryx.app.domain.repository.SettingsRepository
 import chat.keryx.core.model.RoomProfile
 import chat.keryx.core.model.RosterOrder
 import chat.keryx.core.model.RoomType
+import chat.keryx.core.protocol.ForeignFollow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -31,7 +32,11 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -161,6 +166,9 @@ private const val GHOST_TOOL_ID = "generating"
         val agentTyping = MutableStateFlow(false)
         val history = MutableStateFlow(chat.keryx.core.model.HistoryState())
         var hydrated = false
+        /** Open timelines on this store; the foreign-turn follower runs while it is > 0. */
+        var followers = 0
+        var followJob: Job? = null
         /** The cached page is on screen (a paint, not a hydration — the wire still owes the truth). */
         var painted = false
 
@@ -994,6 +1002,10 @@ private const val GHOST_TOOL_ID = "generating"
                             ?: prev.sessionId,
                         depth = pInt("depth") ?: prev.depth,
                         toolCount = pInt("tool_count") ?: prev.toolCount,
+                        // The first frame about a child is when this client learned it exists.
+                        // Stamped once, never moved — see Delegation.elapsedSeconds.
+                        startedAtMs = if (prev.startedAtMs == 0L) System.currentTimeMillis()
+                            else prev.startedAtMs,
                     )
                     when (ev.type) {
                         "subagent.spawn_requested" -> withIdentity.copy(
@@ -1004,14 +1016,33 @@ private const val GHOST_TOOL_ID = "generating"
                             activity = "",
                         )
                         // The child's own tool: name it, with its preview as the object.
-                        "subagent.tool" -> withIdentity.copy(
+                        // Kept twice — once as the live line, once in the record that
+                        // outlives the flight (Theater.trailWith bounds both doors alike).
+                        "subagent.tool" -> {
+                            val beat = chat.keryx.core.model.DelegationBeat(
+                                kind = "tool",
+                                name = pStr("tool_name")?.takeIf { it.isNotBlank() }.orEmpty(),
+                                text = (pStr("tool_preview") ?: text).takeIf { it.isNotBlank() }
+                                    .orEmpty(),
+                            )
+                            withIdentity.copy(
+                                state = chat.keryx.core.model.DelegationState.RUNNING,
+                                activity = beat.line,
+                                trail = chat.keryx.core.model.Theater
+                                    .trailWith(withIdentity.trail, beat),
+                            )
+                        }
+                        // A progress note is something the child chose to say about its work,
+                        // so it is kept; a thinking fragment is texture and is not.
+                        "subagent.progress" -> withIdentity.copy(
                             state = chat.keryx.core.model.DelegationState.RUNNING,
-                            activity = listOfNotNull(
-                                pStr("tool_name")?.takeIf { it.isNotBlank() },
-                                (pStr("tool_preview") ?: text).takeIf { it.isNotBlank() },
-                            ).joinToString(" "),
+                            activity = text.ifBlank { prev.activity },
+                            trail = chat.keryx.core.model.Theater.trailWith(
+                                withIdentity.trail,
+                                chat.keryx.core.model.DelegationBeat("progress", text = text),
+                            ),
                         )
-                        "subagent.thinking", "subagent.progress" -> withIdentity.copy(
+                        "subagent.thinking" -> withIdentity.copy(
                             state = chat.keryx.core.model.DelegationState.RUNNING,
                             activity = text.ifBlank { prev.activity },
                         )
@@ -1450,6 +1481,7 @@ private const val GHOST_TOOL_ID = "generating"
         if (sessionId == GATEWAY_ROOM_ID) return flowOf(emptyList())
         val st = store(sessionId)
         return st.messages.onStart {
+            startFollowing(sessionId, st)
             scope.launch {
                 hydrate(sessionId)
                 // Attach eagerly so live events for a turn started elsewhere still render.
@@ -1461,6 +1493,55 @@ private const val GHOST_TOOL_ID = "generating"
                     loadEarlier(sessionId)
                 }
             }
+        }.onCompletion { stopFollowing(st) }
+    }
+
+    /**
+     * Follow a turn another door started (2.11.1). `attach` only streams what the runtime THIS
+     * phone attached produces; a turn that came in through the browser extension, the terminal
+     * or cron runs in the gateway process and lands rows in the session store with nothing
+     * pushing them here. So while a room is open, its session row is polled — one small GET —
+     * and when the row count grows past what the transcript reflects, with no local turn to
+     * explain it, the newest page is re-read. The timeline then lights the working banner on
+     * its own, exactly as it does for a run it opened onto mid-flight.
+     */
+    private fun startFollowing(storedId: String, st: SessionStore) {
+        st.followers++
+        if (st.followJob?.isActive == true) return
+        st.followJob = scope.launch { followElsewhere(storedId, st) }
+    }
+
+    private fun stopFollowing(st: SessionStore) {
+        st.followers = (st.followers - 1).coerceAtLeast(0)
+        if (st.followers == 0) {
+            st.followJob?.cancel()
+            st.followJob = null
+        }
+    }
+
+    private suspend fun followElsewhere(storedId: String, st: SessionStore) {
+        var state = ForeignFollow.State()
+        var delayMs = ForeignFollow.WARM_POLL_MS
+        while (currentCoroutineContext().isActive) {
+            delay(delayMs)
+            val rest = rest
+            val busy = storedId in _busyStored.value
+            val pulse = if (rest == null || busy) null
+                else rest.sessionPulse(storedId, profileFor(storedId)).getOrNull()
+            val (next, action) = ForeignFollow.step(state, pulse, busyLocally = busy)
+            state = next
+            val now = System.currentTimeMillis()
+            // The typing signal is the banner's authoritative "busy". A local turn owns it
+            // while it runs; between local turns the gateway's own mid-turn label drives it,
+            // so a foreign turn's long silent tool call keeps the banner lit — and a session
+            // that ended (or a label gone stale) lets it settle.
+            if (!busy && pulse != null) st.agentTyping.value = ForeignFollow.isLive(pulse, now)
+            if (action == ForeignFollow.Action.REHYDRATE) {
+                android.util.Log.w("KeryxGw", "follow ${storedId.take(8)}: gateway holds ${pulse?.messageCount} rows, re-reading")
+                runCatching { rehydrate(storedId, st) }
+                    .onFailure { android.util.Log.w("KeryxGw", "follow ${storedId.take(8)}: re-read failed", it) }
+            }
+            delayMs = ForeignFollow.nextDelayMs(pulse, now, action)
         }
     }
 

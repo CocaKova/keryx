@@ -906,6 +906,7 @@ fun SettingsScreen(
                                     "Braille" to "⠋ Braille",
                                     "Dots" to "○ Dots",
                                     "ASCII Wave" to "▅ Wave",
+                                    "Ember Drift" to "✦ Ember",
                                 ),
                                 selected = animationStyle,
                                 onSelect = onAnimationStyleChanged,

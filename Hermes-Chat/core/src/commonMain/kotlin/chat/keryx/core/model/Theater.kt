@@ -20,6 +20,32 @@ package chat.keryx.core.model
  * relay is not persisted — so this live view is the only window onto it. Fields keep their
  * last known value, because each event carries a different subset.
  */
+/**
+ * One thing a subagent did, kept.
+ *
+ * The `subagent.*` frames have always carried the child's whole working history — a `tool`
+ * frame per call it picked up, a `progress` frame per note it filed. [Delegation.activity]
+ * kept only the newest of them and overwrote the rest, so the record streamed onto the phone
+ * and straight back off it: by the time a wing landed, everything it had said on the way was
+ * gone. The parent's own calls have been ring-buffered since 2.4 ([Theater.MAX_BEATS]); this
+ * is the same buffer, for the child.
+ *
+ * Nothing new on the wire — these frames were already arriving and being dropped.
+ */
+data class DelegationBeat(
+    /** "tool" or "progress". Thinking fragments drive the activity line and are NOT kept:
+     *  they are texture, they arrive per delta, and forty of them would evict the actual work. */
+    val kind: String,
+    /** The tool it picked up, when [kind] is "tool". */
+    val name: String = "",
+    /** Its object — the tool's preview, or the progress note itself. */
+    val text: String = "",
+) {
+    /** How the wing and the sheet both say it: name then object, whichever exist. */
+    val line: String get() =
+        if (name.isBlank()) text else if (text.isBlank()) name else "$name $text"
+}
+
 data class Delegation(
     /** `subagent_id` when the gateway sends one, else the per-task fallback key. */
     val key: String,
@@ -33,8 +59,18 @@ data class Delegation(
     val sessionId: String = "",
     val depth: Int = 0,
     val state: DelegationState = DelegationState.RUNNING,
-    /** Newest live line: the tool it just picked up, a thinking fragment, a batch summary. */
+    /** Newest live line: the tool it just picked up, a thinking fragment, a batch summary.
+     *  Cleared when the wing settles — the enduring record is [trail]. */
     val activity: String = "",
+    /** Everything it did, oldest first, capped at [Theater.MAX_TRAIL]. Survives completion,
+     *  because "what did this subagent actually do" is a question asked mostly in the past
+     *  tense. Empty for a wing parsed out of a landed [DelegationReport], which never saw the
+     *  live frames — that one opens its stored session instead. */
+    val trail: List<DelegationBeat> = emptyList(),
+    /** When this client first heard of the wing, by its own clock; 0 when it never did (a
+     *  parsed report, a restart). Not the gateway's start time and not claimed to be: it is
+     *  what lets a flying wing show a ticking elapsed instead of no time at all. */
+    val startedAtMs: Long = 0L,
     val toolCount: Int = 0,
     val summary: String = "",
     val durationSeconds: Double? = null,
@@ -57,6 +93,24 @@ data class Delegation(
 
     /** Every token the child burned — the number that makes delegation cost legible. */
     val totalTokens: Int get() = inputTokens + outputTokens + reasoningTokens
+
+    /**
+     * Seconds on the clock: the gateway's own number once it has landed, this client's count
+     * while it flies.
+     *
+     * `duration_seconds` only rides `subagent.complete`, so until 2.11 a running subagent
+     * showed no time whatsoever — a child five seconds in and one wedged for four minutes read
+     * identically. Falls back to whatever is known when the clock isn't (pass `nowMs = 0`),
+     * so a caller with no clock is never worse off than before.
+     */
+    fun elapsedSeconds(nowMs: Long): Double? = when {
+        !running -> durationSeconds
+        startedAtMs > 0L && nowMs > startedAtMs -> (nowMs - startedAtMs) / 1000.0
+        else -> durationSeconds
+    }
+
+    /** Whether there is anything to show for it — a stored session, or the live record. */
+    val hasRecord: Boolean get() = sessionId.isNotBlank() || trail.isNotEmpty()
 }
 
 /** Gateway `status` on `subagent.complete`, plus the two states inferred from the lifecycle. */
@@ -132,7 +186,16 @@ object Theater {
      */
     const val MAX_BEATS = 40
 
-    fun reduce(state: TheaterState, ev: TheaterEvent): TheaterState = when (ev.phase) {
+    /** The same ceiling for one child's own record. A subagent that ran 200 tools is a
+     *  subagent whose first 160 tools are no longer the question. */
+    const val MAX_TRAIL = 40
+
+    /**
+     * @param nowMs the client's wall clock, for stamping when a wing was first seen. Pass 0
+     *   (the default) to reduce without a clock: every existing caller and every test does,
+     *   and the only thing they lose is the live elapsed counter.
+     */
+    fun reduce(state: TheaterState, ev: TheaterEvent, nowMs: Long = 0L): TheaterState = when (ev.phase) {
         "start" -> state.open(ev)
 
         // Correlated by ORDER, not by id: `tool.completed` carries no call id. The executor
@@ -149,7 +212,7 @@ object Theater {
         // the complete one), so it lands on the row that just closed.
         "diff" -> state.copy(beats = state.beats.attachDiff(ev))
 
-        "sub" -> state.copy(delegations = state.delegations.fold(ev))
+        "sub" -> state.copy(delegations = state.delegations.fold(ev, nowMs))
 
         else -> state
     }
@@ -212,7 +275,7 @@ object Theater {
      * identity folds in once and the kind decides state and activity line — the same reducer
      * Talaria runs over its own wire.
      */
-    private fun List<Delegation>.fold(ev: TheaterEvent): List<Delegation> {
+    private fun List<Delegation>.fold(ev: TheaterEvent, nowMs: Long): List<Delegation> {
         val key = ev.child.ifBlank { "task-${ev.taskIndex ?: 0}" }
         val i = indexOfFirst { it.key == key }
         val prev = if (i >= 0) this[i] else Delegation(key = key)
@@ -224,16 +287,32 @@ object Theater {
             sessionId = ev.sessionId.ifBlank { prev.sessionId },
             depth = ev.depth ?: prev.depth,
             toolCount = ev.toolCount ?: prev.toolCount,
+            // The first frame about a child is when this client learned it exists — stamp it
+            // once and never move it, or the elapsed would reset on every tool it picks up.
+            startedAtMs = if (prev.startedAtMs == 0L && nowMs > 0L) nowMs else prev.startedAtMs,
         )
         val next = when (ev.kind) {
             "spawn_requested" -> withIdentity.copy(state = DelegationState.SPAWNING)
             "start" -> withIdentity.copy(state = DelegationState.RUNNING, activity = "")
-            // The child's own tool: name it, with its preview as the object.
-            "tool" -> withIdentity.copy(
+            // The child's own tool: name it, with its preview as the object. Kept twice —
+            // once as the live line, once in the record that outlives the flight.
+            "tool" -> {
+                val beat = DelegationBeat("tool", ev.name, ev.preview)
+                withIdentity.copy(
+                    state = DelegationState.RUNNING,
+                    activity = beat.line,
+                    trail = withIdentity.trail.append(beat),
+                )
+            }
+            // A progress note is a thing the child chose to say about its work, so it is
+            // kept. A thinking fragment arrives per delta and is texture: it drives the live
+            // line and is deliberately not written down.
+            "progress" -> withIdentity.copy(
                 state = DelegationState.RUNNING,
-                activity = listOf(ev.name, ev.preview).filter { it.isNotBlank() }.joinToString(" "),
+                activity = ev.preview.ifBlank { prev.activity },
+                trail = withIdentity.trail.append(DelegationBeat("progress", text = ev.preview)),
             )
-            "thinking", "progress" -> withIdentity.copy(
+            "thinking" -> withIdentity.copy(
                 state = DelegationState.RUNNING,
                 activity = ev.preview.ifBlank { prev.activity },
             )
@@ -255,6 +334,29 @@ object Theater {
         }
         return if (i >= 0) toMutableList().also { it[i] = next } else this + next
     }
+
+    /**
+     * Add one beat to a child's record, bounded at the tail like the parent's own.
+     *
+     * Blank frames are dropped rather than stored as empty rows, and an exact repeat of the
+     * last beat is dropped too: a producer that re-sends the same progress note (or a `tool`
+     * frame relayed twice by two transports watching one turn) should read as one thing done,
+     * not two.
+     *
+     * Public because the direct door reduces its own wire vocabulary straight into
+     * [Delegation] rather than through [reduce] — the two producers speak different JSON, but
+     * the record they build has to be bounded by one rule, in one place, or the cap silently
+     * means something different depending on which door you came in by.
+     */
+    fun trailWith(trail: List<DelegationBeat>, beat: DelegationBeat): List<DelegationBeat> {
+        if (beat.name.isBlank() && beat.text.isBlank()) return trail
+        if (trail.lastOrNull() == beat) return trail
+        val next = trail + beat
+        return if (next.size > MAX_TRAIL) next.takeLast(MAX_TRAIL) else next
+    }
+
+    private fun List<DelegationBeat>.append(beat: DelegationBeat): List<DelegationBeat> =
+        trailWith(this, beat)
 
     /**
      * Pair a committed message's parsed tool names with the structured beats from the same turn,
