@@ -91,6 +91,16 @@ import androidx.compose.runtime.setValue
 /** The deck rows that are cron tiles, not roster sessions — see [chat.keryx.core.model.CronTiles]. */
 private const val CRON_TILE_SOURCE = "cron-tile"
 
+/**
+ * Roster rows the session list leaves to the door that owns them: a bot's forever-chat (the
+ * Bots door lists it under its bot) and a scheduled run (the Runs door is where you read
+ * reports). Both are real rows everywhere else in the app — this is a list, not a ledger.
+ */
+private val HIDDEN_ROSTER_SOURCES = setOf(
+    chat.keryx.app.presentation.BotsDelegate.BOT_SOURCE,
+    chat.keryx.app.transport.direct.DirectTransport.CRON_SOURCE,
+)
+
 /** The drawer's lenses (2.10) — saved by name across recreation, never across a process. */
 private const val LENS_NEEDS_YOU = "needs"
 private const val LENS_RUNNING = "running"
@@ -210,10 +220,14 @@ fun NavigationDrawerContent(
     // see it there.
     onDismissDrawer: () -> Unit = onConversationCreated,
 ) {
-    // Bot chats are rows the roster publishes for the floor's sake (select, restore, notify);
-    // the Bots door lists them under their bots, so the session list does not list them twice.
+    // The roster publishes rows for the floor's sake — select, restore, notify — and two
+    // kinds of them are read somewhere else in the app: bot chats and scheduled runs
+    // ([HIDDEN_ROSTER_SOURCES]). Opening a report adopts its session, so without this the
+    // session list kept every brief you read, and a busy gateway writes more briefs than
+    // you write messages. Filtered here and nowhere deeper: [viewModel.rooms] still carries
+    // the row, so selecting, restoring and notifying on an open run all still work.
     val allRooms by viewModel.rooms.collectAsState()
-    val rooms = remember(allRooms) { allRooms.filter { it.source != chat.keryx.app.presentation.BotsDelegate.BOT_SOURCE } }
+    val rooms = remember(allRooms) { allRooms.filterNot { it.source in HIDDEN_ROSTER_SOURCES } }
     val pinnedRoomIds by viewModel.pinnedRoomIds.collectAsState()
     val tempSessionIds by viewModel.temporarySessionIds.collectAsState()
     // "Move to project…" — explicit projects with a folder (membership is cwd).
@@ -532,7 +546,12 @@ fun NavigationDrawerContent(
             // Pinned bots sit in the same deck: a tile that opens the bot's forever-chat (or
             // the Bots door for one never opened) — "at the top of the list", same grammar.
             val botTiles by viewModel.bots.tiles.collectAsState()
-            val deck = pinned + tileRooms + (if (query.isBlank() && !lensed) botTiles else emptyList())
+            // distinctBy: a run tile's id IS its session id, so a run that is both kept on
+            // the gateway and answered by you (now a roster row) reaches the deck from both
+            // sides. One row per id, the roster's copy first — the tap still routes through
+            // the tile (tileById is keyed the same way), so nothing about opening it changes.
+            val deck = (pinned + tileRooms + (if (query.isBlank() && !lensed) botTiles else emptyList()))
+                .distinctBy { it.id }
             // Pinned rooms live in the Quick Rooms deck — don't list them twice.
             // (While searching or under a lens, show everything that matches.)
             val listRooms = if (query.isBlank() && !lensed) unscoped.filter { it.id !in pinnedRoomIds } else filtered
