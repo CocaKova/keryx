@@ -293,6 +293,10 @@ class SettingsRepositoryImpl(
         get() = prefs.getStringSet(ledgerKey("cron_seen_ids"), emptySet()) ?: emptySet()
         set(value) = prefs.edit().putStringSet(ledgerKey("cron_seen_ids"), value).apply()
 
+    override var joinedCronSessions: Set<String>
+        get() = prefs.getStringSet(ledgerKey("joined_cron_sessions"), emptySet()) ?: emptySet()
+        set(value) = prefs.edit().putStringSet(ledgerKey("joined_cron_sessions"), value).apply()
+
     // A String, not a StringSet: order is the pin order and a StringSet forgets it.
     override var pinnedCronJobs: List<String>
         get() = prefs.getString(ledgerKey("pinned_cron_jobs"), "")!!.split('\u001F').filter { it.isNotBlank() }

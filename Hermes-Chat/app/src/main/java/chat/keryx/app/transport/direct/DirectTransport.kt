@@ -1180,6 +1180,14 @@ private const val GHOST_TOOL_ID = "generating"
     /** Cron sessions, kept apart from the conversation list (see [CRON_SOURCE]). */
     private val _cronRows = MutableStateFlow<List<GatewayRest.SessionRow>>(emptyList())
 
+    /**
+     * The runs you have answered ([SettingsRepository.joinedCronSessions], read once per
+     * process — a fleet switch relaunches the app). A report you typed into stops being
+     * machinery: [serverRooms] publishes it as a conversation, so the session list carries
+     * it like any other, and keeps carrying it across cold starts.
+     */
+    private val _joinedCron = MutableStateFlow(settings.joinedCronSessions)
+
     suspend fun refreshSessionList() {
         refreshSessions()
     }
@@ -1267,6 +1275,19 @@ private const val GHOST_TOOL_ID = "generating"
         }
         r.sessions(limit = 100, sources = listOf(CRON_SOURCE)).onSuccess { rows ->
             _cronRows.value = rows.filter { !it.archived }
+            // Late recognition: a run adopted before this page landed (a cold start that
+            // opens straight into a report, a run adopted the minute it was written) was
+            // stamped as a conversation. Now that the gateway has named it, the row is
+            // corrected in place — the source is the drawer's whole basis for leaving
+            // machinery out of the session list, and it must not depend on call order.
+            val cronIds = rows.mapTo(HashSet()) { it.id }
+            cronIds -= _joinedCron.value // a run you answered is a conversation, not machinery
+            val pending = _pendingNew.value
+            if (pending.any { it.id in cronIds && it.source != CRON_SOURCE }) {
+                _pendingNew.value = pending.map {
+                    if (it.id in cronIds && it.source != CRON_SOURCE) it.copy(source = CRON_SOURCE) else it
+                }
+            }
         }
     }
 
@@ -1471,9 +1492,21 @@ private const val GHOST_TOOL_ID = "generating"
 
     override fun busySessionIds(): Flow<Set<String>> = _busyStored
 
-    private fun serverRooms(): Flow<List<RoomProfile>> = combine(_loggedIn, _sessionRows) { ok, rows ->
-        if (!ok) emptyList() else rows.map(::toProfile)
-    }.onStart { scope.launch { refreshSessions() } }
+    private fun serverRooms(): Flow<List<RoomProfile>> =
+        combine(_loggedIn, _sessionRows, _cronRows, _joinedCron) { ok, rows, cron, joined ->
+            if (!ok) emptyList()
+            else {
+                // The roster page is cron-free by construction (`exclude_sources`), so a run
+                // you have answered has to be published from the cron page instead — with
+                // the source cleared, because that source is precisely what the session list
+                // filters on. Same row, same id, now a conversation.
+                val listed = rows.mapTo(HashSet()) { it.id }
+                val promoted = cron
+                    .filter { it.id in joined && it.id !in listed }
+                    .map { toProfile(it).copy(source = "") }
+                rows.map(::toProfile) + promoted
+            }
+        }.onStart { scope.launch { refreshSessions() } }
 
     override fun getMessages(sessionId: String, limit: Int): Flow<List<Message>> {
         // Legacy guard: installs from the pseudo-room era may still have "gateway" persisted as
@@ -1593,6 +1626,7 @@ private const val GHOST_TOOL_ID = "generating"
     override suspend fun sendMessage(sessionId: String, content: String) {
         val live = attach(sessionId)
         touchSession(sessionId) // you spoke here: this row is the newest thing you know of
+        joinCronRun(sessionId)  // ... and if this was a report, it is a conversation now
         // Slash commands are CONSOLE verbs, not conversation — the TUI and desktop both
         // intercept them client-side and run slash.exec. Shipping "/compress" to the model
         // as chat text just gets a polite paragraph about compression. Long timeout:
@@ -2047,7 +2081,50 @@ private const val GHOST_TOOL_ID = "generating"
             name = title.ifBlank { "Session" },
             type = RoomType.DIRECT_MESSAGE,
             timestamp = System.currentTimeMillis(),
+            // An adopted row wears the source the GATEWAY gave the session, not a blank one.
+            // The roster's own page is already cron-free ([CRON_SOURCE] is excluded server
+            // side), so a scheduled run only ever reaches the drawer by being adopted — and
+            // a row with no source reads as a conversation, which is how reading one report
+            // put it in the session list and left it there for the rest of the process life.
+            source = adoptedSource(sessionId),
         )
+    }
+
+    /**
+     * What the gateway calls the session being adopted, as far as this transport can tell.
+     * The cron page ([_cronRows], server truth) is the only thing asked: every door into a
+     * run — the drawer's tile, the Runs place, a notification tap, a project drill-in —
+     * adopts through here, so recognising the run once beats stamping it at four call sites.
+     * A miss (the cron page has not landed yet on a cold start, or the run is newer than the
+     * last pull) is corrected by the next [refreshSessions].
+     */
+    private fun adoptedSource(sessionId: String): String =
+        if (sessionId !in _joinedCron.value && _cronRows.value.any { it.id == sessionId }) CRON_SOURCE
+        else ""
+
+    /**
+     * You sent into [sessionId]: if the gateway calls it a scheduled run, the session list
+     * carries it from now on — you are talking to it, and the reason a run is kept out of
+     * that list (a report is machinery you read in the Runs door) stopped being true the
+     * moment you answered.
+     *
+     * Asked of the same oracle [adoptedSource] uses — the cron page — so the promotion covers
+     * exactly the rows the hiding covers: a run too old to be on that page was never stamped
+     * cron and was never hidden, and must not be written into the ledger either.
+     *
+     * Whether a slash verb counts is deliberate: it does. `/compress` or `/model` in a run is
+     * work you are doing in that session, not a report you glanced at.
+     */
+    private fun joinCronRun(sessionId: String) {
+        if (sessionId in _joinedCron.value) return
+        if (_cronRows.value.none { it.id == sessionId }) return
+        val next = _joinedCron.value + sessionId
+        _joinedCron.value = next
+        settings.joinedCronSessions = next
+        // The adopted row is a conversation row as of now — the list must not wait on a pull.
+        _pendingNew.value = _pendingNew.value.map {
+            if (it.id == sessionId && it.source == CRON_SOURCE) it.copy(source = "") else it
+        }
     }
 
     // ---- Bot Mode (2.8) -----------------------------------------------------------------

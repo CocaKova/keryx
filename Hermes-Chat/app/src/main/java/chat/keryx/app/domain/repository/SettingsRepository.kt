@@ -87,6 +87,16 @@ interface SettingsRepository {
 
     /** Run ids the user has actually opened (or swept with mark-all-read). */
     var cronSeenIds: Set<String>
+    /**
+     * Scheduled runs the user has SPOKEN IN. A report is machinery and the session list
+     * leaves it to the Runs door — but answering one turns it into a conversation, and a
+     * conversation belongs in the list. The roster page excludes `source=cron` server side,
+     * so this ledger is the app's only memory of that promotion: without it, a run you are
+     * mid-conversation with would drop out of the list at the next cold start. Gateway-scoped
+     * like every other ledger, and self-limiting — an id the gateway no longer lists among
+     * its runs simply publishes no row.
+     */
+    var joinedCronSessions: Set<String>
     /** Scheduled jobs pinned to the top of the session list, by job name, in pin order. The
      *  gateway pins sessions, not jobs, so this ledger is the phone's — see CronTiles. */
     var pinnedCronJobs: List<String>
