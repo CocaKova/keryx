@@ -2,6 +2,7 @@ package chat.keryx.app.transport.direct
 
 import chat.keryx.core.protocol.MAX_PAGE
 import chat.keryx.core.protocol.MessageRow
+import chat.keryx.core.protocol.SessionPulse
 import chat.keryx.core.protocol.RestToolCall
 import chat.keryx.core.protocol.sessionMessagesQuery
 import kotlinx.coroutines.Dispatchers
@@ -157,6 +158,26 @@ class GatewayRest(
         newestFirst: Boolean = true,
         profile: String? = null,
     ): Result<List<MessageRow>> = messagesRaw(sessionId, limit, offset, newestFirst, profile).map(::parseMessages)
+
+    /**
+     * One session's pulse (2.11.1): the row count, last activity and end state, straight off
+     * `GET /api/sessions/{id}`. What the foreign-turn follower polls — a single small row, never
+     * a transcript page, so tailing a session that another door is driving costs the gateway
+     * almost nothing per tick. The detail route returns the raw row, whose activity column is
+     * `last_activity_at`; the list route's derived `last_active` is accepted too.
+     */
+    suspend fun sessionPulse(sessionId: String, profile: String? = null): Result<SessionPulse> =
+        get("/api/sessions/$sessionId" + profileQuery(profile, first = true)).mapCatching { body ->
+            val o = json.parseToJsonElement(body).jsonObject
+            val lastActive = listOf("last_active", "last_activity_at", "started_at")
+                .map { o.epochMs(it) }.firstOrNull { it > 0L } ?: 0L
+            SessionPulse(
+                messageCount = o["message_count"]?.jsonPrimitive?.longOrNull ?: 0L,
+                lastActiveMs = lastActive,
+                ended = o["ended_at"]?.jsonPrimitive?.doubleOrNull != null,
+                working = !o.str("last_activity_description").isNullOrBlank(),
+            )
+        }
 
     /** The page as the gateway sent it — what the transcript cache keeps (2.10). */
     suspend fun messagesRaw(

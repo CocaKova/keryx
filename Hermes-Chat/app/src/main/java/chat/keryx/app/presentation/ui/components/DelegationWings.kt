@@ -30,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -45,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.keryx.core.model.Delegation
 import chat.keryx.core.model.DelegationState
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 /**
  * A delegation, live: the subagents a turn sent out, and what each is doing right now.
@@ -74,6 +77,18 @@ internal fun DelegationWings(
 ) {
     val accent = MaterialTheme.colorScheme.tertiary
     val flying = runs.count { it.running }
+    // One clock for the whole dispatch, not one per wing, and only while something is actually
+    // flying: a settled run already carries the gateway's own duration and must not hold a
+    // ticker open behind it. Second resolution — this is a "how long has this been going"
+    // reading, not a stopwatch.
+    val ticking = live && flying > 0
+    val now by produceState(0L, ticking) {
+        value = if (ticking) System.currentTimeMillis() else 0L
+        while (ticking && isActive) {
+            delay(1_000)
+            value = System.currentTimeMillis()
+        }
+    }
     Row(Modifier.height(IntrinsicSize.Min).padding(top = 2.dp)) {
         Rail(active = flying > 0 && live, baseColor = baseColor, accent = accent)
         Column {
@@ -91,7 +106,7 @@ internal fun DelegationWings(
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.8.sp,
             )
-            runs.forEach { DelegationWing(it, live, baseColor, onOpen) }
+            runs.forEach { DelegationWing(it, live, now, baseColor, onOpen) }
         }
     }
 }
@@ -100,6 +115,8 @@ internal fun DelegationWings(
 private fun DelegationWing(
     run: Delegation,
     live: Boolean,
+    /** The group clock, or 0 when nothing is flying — see [DelegationWings]. */
+    now: Long,
     baseColor: Color,
     onOpen: ((Delegation) -> Unit)?,
 ) {
@@ -120,8 +137,13 @@ private fun DelegationWing(
                 )
             }
             Spacer(Modifier.width(4.dp))
-            // A landed wing with a session behind it is a door, and should look like one.
-            val canOpen = onOpen != null && run.openable && !run.running
+            // A wing with anything behind it is a door, and should look like one.
+            //
+            // Until 2.11 this also required `!run.running`, which locked the door at exactly
+            // the moment you wanted through it: while a child is flying is when "what is it
+            // doing" is a live question, and afterwards it is a settled one. A running wing
+            // opens onto its trail; a landed one opens onto its stored session.
+            val canOpen = onOpen != null && run.hasRecord
             Text(
                 buildString {
                     // A fan-out's wings are told apart by their 1-based index, matching the
@@ -146,7 +168,7 @@ private fun DelegationWing(
         val meta = buildList {
             if (run.model.isNotBlank()) add(run.model)
             if (run.toolCount > 0) add("${run.toolCount} tool${if (run.toolCount == 1) "" else "s"}")
-            durationLabel(run.durationSeconds)?.let { add(it) }
+            durationLabel(run.elapsedSeconds(now))?.let { add(it) }
             if (run.totalTokens > 0) add("${run.totalTokens / 1000}k tok")
             if (run.filesWrittenN > 0) add("${run.filesWrittenN} written")
             if (interrupted) add("interrupted")

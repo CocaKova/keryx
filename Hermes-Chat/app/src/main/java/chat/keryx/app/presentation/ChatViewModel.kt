@@ -1202,7 +1202,7 @@ class ChatViewModel(
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Tool -> {
                         // Rare next to token deltas (a handful per turn), so it never waits for
                         // the throttle — a tool starting is exactly the beat you want on screen.
-                        theater = chat.keryx.core.model.Theater.reduce(theater, ev.event)
+                        theater = chat.keryx.core.model.Theater.reduce(theater, ev.event, System.currentTimeMillis())
                         dispatch(_liveStream.value?.status ?: LiveStreamStatus.STREAMING)
                     }
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.SegmentBreak -> {

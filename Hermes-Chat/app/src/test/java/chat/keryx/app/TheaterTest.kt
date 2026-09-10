@@ -30,6 +30,10 @@ class TheaterTest {
     private fun run(vararg events: TheaterEvent): TheaterState =
         events.fold(TheaterState()) { acc, e -> Theater.reduce(acc, e) }
 
+    /** Reduce with a clock, one second per event, starting at [from]. */
+    private fun runClocked(from: Long, vararg events: TheaterEvent): TheaterState =
+        events.foldIndexed(TheaterState()) { i, acc, e -> Theater.reduce(acc, e, from + i * 1_000L) }
+
     private fun beats(vararg events: TheaterEvent): List<ToolCall> = run(*events).beats
 
     // --- the ordinary shape --------------------------------------------------------------------
@@ -325,4 +329,157 @@ class TheaterTest {
             Theater.reason("""{"error": "Permission denied\nand then some"}"""),
         )
     }
+
+    // --- the child's own record (2.11) ---------------------------------------------------------
+
+    @Test
+    fun `the trail keeps every tool the child picked up, in order`() {
+        val s = run(
+            sub("start", preview = "goal"),
+            sub("tool", name = "grep", preview = "fn parse_"),
+            sub("tool", name = "read_file", preview = "src/parse.rs"),
+            sub("tool", name = "edit", preview = "src/parse.rs"),
+        )
+        val trail = s.delegations.single().trail
+        assertEquals(listOf("grep", "read_file", "edit"), trail.map { it.name })
+        assertEquals("grep fn parse_", trail.first().line)
+    }
+
+    @Test
+    fun `a thinking fragment drives the live line but is never written down`() {
+        val s = run(
+            sub("tool", name = "read_file", preview = "a.kt"),
+            sub("thinking", preview = "weighing the options"),
+        )
+        val d = s.delegations.single()
+        assertEquals("weighing the options", d.activity)
+        assertEquals(listOf("read_file"), d.trail.map { it.name })
+    }
+
+    @Test
+    fun `a progress note is something the child chose to say, so it is kept`() {
+        val s = run(sub("progress", preview = "halfway through the corpus"))
+        val beat = s.delegations.single().trail.single()
+        assertEquals("progress", beat.kind)
+        assertEquals("halfway through the corpus", beat.text)
+    }
+
+    @Test
+    fun `the trail outlives the flight — completion clears the live line, not the record`() {
+        val s = run(
+            sub("tool", name = "read_file", preview = "a.kt"),
+            TheaterEvent(
+                phase = "sub", kind = "complete", child = "c1", status = "completed",
+                summary = "found it",
+            ),
+        )
+        val d = s.delegations.single()
+        assertEquals("", d.activity)
+        assertEquals("found it", d.summary)
+        assertEquals(listOf("read_file"), d.trail.map { it.name })
+    }
+
+    @Test
+    fun `the trail is capped at the tail, so a marathon child cannot grow it forever`() {
+        var s = TheaterState()
+        repeat(Theater.MAX_TRAIL + 25) { i ->
+            s = Theater.reduce(s, sub("tool", name = "tool$i"))
+        }
+        val trail = s.delegations.single().trail
+        assertEquals(Theater.MAX_TRAIL, trail.size)
+        // The tail is what survives: the newest call is present, the first is gone.
+        assertEquals("tool${Theater.MAX_TRAIL + 24}", trail.last().name)
+        assertTrue(trail.none { it.name == "tool0" })
+    }
+
+    @Test
+    fun `a frame relayed twice reads as one thing done`() {
+        val s = run(
+            sub("tool", name = "read_file", preview = "a.kt"),
+            sub("tool", name = "read_file", preview = "a.kt"),
+        )
+        assertEquals(1, s.delegations.single().trail.size)
+    }
+
+    @Test
+    fun `the same tool on a different file is two things done, not a repeat`() {
+        val s = run(
+            sub("tool", name = "read_file", preview = "a.kt"),
+            sub("tool", name = "read_file", preview = "b.kt"),
+        )
+        assertEquals(2, s.delegations.single().trail.size)
+    }
+
+    @Test
+    fun `a blank frame is dropped rather than stored as an empty row`() {
+        val s = run(sub("start", preview = "goal"), sub("tool"))
+        assertTrue(s.delegations.single().trail.isEmpty())
+    }
+
+    @Test
+    fun `a fan-out keeps each child's record to itself`() {
+        val s = run(
+            sub("tool", child = "a", name = "read_file", preview = "a.kt"),
+            sub("tool", child = "b", name = "web_search", preview = "trixnity"),
+            sub("tool", child = "a", name = "edit", preview = "a.kt"),
+        )
+        val (a, b) = s.delegations
+        assertEquals(listOf("read_file", "edit"), a.trail.map { it.name })
+        assertEquals(listOf("web_search"), b.trail.map { it.name })
+    }
+
+    // --- the elapsed clock ----------------------------------------------------------------------
+
+    @Test
+    fun `a wing is stamped when it is first seen and never re-stamped`() {
+        val s = runClocked(
+            10_000L,
+            sub("start", preview = "goal"),
+            sub("tool", name = "read_file"),
+            sub("tool", name = "edit"),
+        )
+        assertEquals(10_000L, s.delegations.single().startedAtMs)
+    }
+
+    @Test
+    fun `a flying wing counts up from when it was first seen`() {
+        val s = runClocked(10_000L, sub("start", preview = "goal"))
+        assertEquals(30.0, s.delegations.single().elapsedSeconds(40_000L)!!, 0.001)
+    }
+
+    @Test
+    fun `a landed wing shows the gateway's own duration, not the client's count`() {
+        val s = runClocked(
+            10_000L,
+            sub("start", preview = "goal"),
+            TheaterEvent(
+                phase = "sub", kind = "complete", child = "c1", status = "completed",
+                durationSeconds = 4.5,
+            ),
+        )
+        // Hours later, a settled wing still reads 4.5s — the clock stopped when it landed.
+        assertEquals(4.5, s.delegations.single().elapsedSeconds(9_000_000L)!!, 0.001)
+    }
+
+    @Test
+    fun `reducing without a clock leaves the elapsed unknown rather than wrong`() {
+        val d = run(sub("start", preview = "goal")).delegations.single()
+        assertEquals(0L, d.startedAtMs)
+        assertNull(d.elapsedSeconds(40_000L))
+    }
+
+    @Test
+    fun `a wing is a door once it has anything behind it`() {
+        val nothing = run(sub("start", preview = "goal")).delegations.single()
+        assertFalse(nothing.hasRecord)
+        // One tool is enough: that is a record, and it is what the sheet shows while it flies.
+        val watched = run(sub("tool", name = "read_file", preview = "a.kt")).delegations.single()
+        assertTrue(watched.hasRecord)
+        // So is a session id, for a wing this client never watched arrive.
+        val stored = run(
+            TheaterEvent(phase = "sub", kind = "start", child = "c1", sessionId = "sess-1"),
+        ).delegations.single()
+        assertTrue(stored.hasRecord)
+    }
+
 }
