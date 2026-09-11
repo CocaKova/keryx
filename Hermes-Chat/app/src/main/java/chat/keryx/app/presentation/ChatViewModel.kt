@@ -1987,13 +1987,24 @@ class ChatViewModel(
      */
     private fun applyStickyModel(sessionId: String) {
         if (!settingsRepository.stickyModel) return
-        val key = settingsRepository.recentModels.firstOrNull() ?: return
-        val provider = key.substringBefore('|', "").ifBlank { null }
-        val model = key.substringAfter('|', key)
-        if (model.isBlank()) return
+        val recents = settingsRepository.recentModels
+        if (recents.isEmpty()) return
         val gw = gateway ?: return
         viewModelScope.launch {
-            gw.selectModel(sessionId, model, provider)
+            // Resolve the ledger against what the gateway serves NOW. A remembered route the
+            // brain no longer carries (the local model was swapped under the same endpoint)
+            // is skipped, not pinned: the gateway accepts any name for a custom endpoint and the
+            // first turn dies on it later — and every new chat would reopen on the ghost.
+            val catalog = gw.modelOptions(sessionId).getOrElse {
+                android.util.Log.w("KeryxModel", "sticky model: catalog unavailable: ${it.message}")
+                return@launch
+            }
+            val choice = chat.keryx.core.model.ModelPicker.stickyChoice(recents, catalog) ?: return@launch
+            // Already this session's route: nothing to switch, and no "model changed" notice
+            // to inject into a chat that has not started.
+            if (catalog.isCurrent(choice)) return@launch
+            val model = choice.name
+            gw.selectModel(sessionId, model, choice.provider)
                 .onSuccess { out ->
                     if (out.confirmRequired) _toasts.tryEmit("$model needs confirming — pick it in the model picker")
                     else models.clear() // the pill re-reads this session's route on arrival

@@ -689,6 +689,33 @@ def _is_mistral_native(model: str) -> bool:
     return normalized.startswith("mistral") or "/mistral" in normalized
 
 
+def _is_glm53(model: str) -> bool:
+    """True for a GLM-5.3-family model served locally (the MiaAI dual-Spark kit's template)."""
+    m = (model or "").strip().lower()
+    return any(t in m for t in ("glm-5.3", "glm-5-3", "glm-5p3", "glm53"))
+
+
+# The local GLM-5.3 chat template reads ``chat_template_kwargs.reasoning_effort`` and accepts
+# exactly ``low`` / ``high``; anything else (``medium``, ``xhigh``, unset) is served as ``max``
+# — measured 2026-09-11 against the live endpoint (medium == max byte-for-byte). So the honest
+# ladder is low / high / max, and Hermes's own clamp (nearest WEAKER, never escalate) maps the
+# generic levels onto it; ``enable_thinking: false`` is the template's real off switch.
+GLM53_LOCAL_EFFORTS = ("low", "high", "max")
+GLM53_LOCAL_OVERRIDES = {"xhigh": "max", "ultra": "max"}
+
+
+def _glm53_wire_effort(effort: str) -> Optional[str]:
+    """The template level for a Hermes effort word; None when there is nothing to send."""
+    e = (effort or "").strip().lower()
+    if not e:
+        return None
+    try:
+        from agent.reasoning_effort import clamp_effort
+        return clamp_effort(e, GLM53_LOCAL_EFFORTS, GLM53_LOCAL_OVERRIDES)
+    except Exception:
+        return GLM53_LOCAL_OVERRIDES.get(e, e if e in GLM53_LOCAL_EFFORTS else "low")
+
+
 def apply_thinking_kwargs(agent) -> None:
     """Map Hermes' reasoning_config onto the local brain's thinking dial.
 
@@ -733,6 +760,14 @@ def apply_thinking_kwargs(agent) -> None:
         extra = dict(overrides.get("extra_body") or {})
         ctk = dict(extra.get("chat_template_kwargs") or {})
         ctk["enable_thinking"] = enabled
+        if _is_glm53(str(getattr(agent, "model", "") or "")):
+            # GLM-5.3's dial is a graded template kwarg, not just on/off: send the level so the
+            # session's /reasoning pick (or the profile default) is what the brain actually runs.
+            wire = _glm53_wire_effort(str(rc.get("effort") or "")) if enabled else None
+            if wire:
+                ctk["reasoning_effort"] = wire
+            else:
+                ctk.pop("reasoning_effort", None)
         extra["chat_template_kwargs"] = ctk
         overrides["extra_body"] = extra
         agent.request_overrides = overrides
@@ -871,7 +906,10 @@ def _reasoning_capabilities(
         cfg = yaml.safe_load((Path.home() / ".hermes" / "config.yaml").read_text()) or {}
         model_cfg = cfg.get("model") or {}
         cfg_provider = str(model_cfg.get("provider", "") or "").strip().lower()
-        cfg_model = str(model_cfg.get("model") or model_cfg.get("name") or "").strip()
+        # ``model.default`` is the key current configs use; ``model``/``name`` are legacy spellings.
+        cfg_model = str(
+            model_cfg.get("default") or model_cfg.get("model") or model_cfg.get("name") or ""
+        ).strip()
         base = str(model_cfg.get("base_url", "") or "").strip()
         providers_cfg = cfg.get("providers") or {}
         if isinstance(providers_cfg, dict):
@@ -888,7 +926,17 @@ def _reasoning_capabilities(
             try:
                 import urllib.request as _rq
 
-                with _rq.urlopen(base.rstrip("/") + "/models", timeout=2) as resp:
+                # The endpoint may require the provider's key (brain lockdown): send the same
+                # bearer Hermes sends, resolving a ``${VAR}`` reference from the environment.
+                _probe_key = str((providers_cfg.get("custom") or {}).get("api_key") or "").strip() \
+                    if isinstance(providers_cfg, dict) else ""
+                _probe_key = os.path.expandvars(_probe_key)
+                if _probe_key.startswith("${"):
+                    _probe_key = ""
+                _req = _rq.Request(base.rstrip("/") + "/models")
+                if _probe_key:
+                    _req.add_header("Authorization", "Bearer " + _probe_key)
+                with _rq.urlopen(_req, timeout=2) as resp:
                     data = json.loads(resp.read().decode())
                 served = [m.get("id", "") for m in data.get("data", []) if isinstance(m, dict)]
                 if served and served[0]:
@@ -956,6 +1004,14 @@ def _reasoning_capabilities(
             "levels": ["none", "high"],
             "labels": {"none": "Off", "high": "On"},
             "current": "none" if effort == "none" else "high",
+        }
+    elif local and _is_glm53(model):
+        # See GLM53_LOCAL_EFFORTS: the template's real rungs, plus Hermes's thinking-off.
+        reasoning = {
+            "mode": "effort",
+            "levels": ["none", *GLM53_LOCAL_EFFORTS],
+            "labels": {"none": "Off"},
+            "current": effort if effort == "none" else (_glm53_wire_effort(effort) or effort),
         }
     elif local:
         # The local serving stack (patched qwen-family templates) validates effort levels —

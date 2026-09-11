@@ -215,6 +215,19 @@ object ModelPicker {
     }
 
     /** Push a pick onto the recents ledger: newest first, no repeats, capped. */
+    /**
+     * The sticky pick for a new session: the newest recent the live catalog still lists, on a
+     * provider a phone can route to — or null. A remembered route the gateway no longer serves
+     * (the local brain was swapped, a login lapsed) is skipped, never pinned: the gateway takes
+     * any name for a custom endpoint, and the first turn would die on it later.
+     */
+    fun stickyChoice(recents: List<String>, catalog: ModelCatalog): ModelChoice? {
+        if (recents.isEmpty()) return null
+        val byKey = HashMap<String, ModelChoice>()
+        for (m in catalog.usable.flatMap { it.models }) byKey.putIfAbsent(recentKey(m), m)
+        return recents.firstNotNullOfOrNull { byKey[it] }
+    }
+
     fun pushRecent(recents: List<String>, choice: ModelChoice, cap: Int = MAX_RECENTS * 2): List<String> {
         val k = recentKey(choice)
         return (listOf(k) + recents.filterNot { it == k }).take(cap)
