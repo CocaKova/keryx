@@ -125,3 +125,10 @@ under `ArchiveDelegate`. The union bot roster falls out of the same work.
   one; toggle the start-up rule and kill/relaunch.
 - Next: the live switch + union bot roster (§3), once the walk says the relaunch switch feels
   right or wrong.
+- **2.11.4 (vc95), 2026-09-11:** `tools/ship.sh --release` GREEN, 774 tests, installed over adb.
+  A link inside `**bold**` was never tappable: the STRONG annotator in `MessageContent.kt`
+  flattened the node to raw text and claimed it, so the renderer never visited the child link.
+  `**https://…**` is the form agents write most. Now a bold or struck span with inline structure
+  (link, code span, emphasis, autolink) is handed back to the library (`InlineStructure.kt`,
+  `InlineStructureTest`). Walk: tap the bold URL in Sy's "Link test for 2.11.4" message; the
+  bold code span and struck link in the same message must render, not print their markers.
