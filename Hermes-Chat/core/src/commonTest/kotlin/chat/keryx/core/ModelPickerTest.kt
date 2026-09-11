@@ -158,4 +158,31 @@ class ModelPickerTest {
         assertTrue(ModelPicker.plan(null).isEmpty)
         assertNull(ModelPicker.plan(null).current)
     }
+
+    // --- sticky model (2.11.3): the newest recent the gateway still serves, or nothing ------
+
+    @Test
+    fun stickySkipsARecentTheCatalogNoLongerLists() {
+        // The head of the ledger is a model the local endpoint stopped serving (a brain swap);
+        // the next one down is live. Pin that, not the ghost.
+        val recents = listOf("silas-brain|qwen3.8-flash-next", "anthropic|claude-sonnet-5")
+        val pick = ModelPicker.stickyChoice(recents, catalog)
+        assertEquals("claude-sonnet-5", pick?.name)
+        assertEquals("anthropic", pick?.provider)
+    }
+
+    @Test
+    fun stickyIsNullWhenNothingRemembered_Resolves() {
+        assertNull(ModelPicker.stickyChoice(listOf("silas-brain|qwen3.8-flash-next"), catalog))
+        assertNull(ModelPicker.stickyChoice(emptyList(), catalog))
+        // An unauthenticated provider is not a route a phone can take, even if the name matches.
+        assertNull(ModelPicker.stickyChoice(listOf("openrouter|x/y"), catalog))
+    }
+
+    @Test
+    fun stickyKeepsTheCurrentRouteWhenItIsTheNewestRecent() {
+        val pick = ModelPicker.stickyChoice(listOf("silas-brain|qwen3.8-27b", "anthropic|claude-sonnet-5"), catalog)
+        assertEquals("qwen3.8-27b", pick?.name)
+        assertTrue(catalog.isCurrent(pick!!))
+    }
 }
