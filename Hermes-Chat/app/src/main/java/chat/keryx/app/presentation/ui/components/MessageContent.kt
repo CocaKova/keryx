@@ -121,7 +121,9 @@ fun MessageContent(
     val annotator = markdownAnnotator { source, node ->
         // `this` is the AnnotatedString.Builder.
         when (node.type) {
-            MarkdownElementTypes.STRONG -> {
+            // A bold span with a link, code span or emphasis inside goes back to the library:
+            // flattening it to text is what made every `**https://…**` untappable (2.11.4).
+            MarkdownElementTypes.STRONG -> if (node.hasInlineStructure()) false else {
                 val inner = node.getTextInNode(source).toString().trim('*', '_')
                 pushStyle(SpanStyle(fontWeight = FontWeight.Black))
                 append(inner)
@@ -130,7 +132,7 @@ fun MessageContent(
             }
             // GFM ~~strikethrough~~: the flavour parses it, the 0.35 renderer has no element
             // for it and printed the tildes (2.6.2 renderer parity).
-            org.intellij.markdown.flavours.gfm.GFMElementTypes.STRIKETHROUGH -> {
+            org.intellij.markdown.flavours.gfm.GFMElementTypes.STRIKETHROUGH -> if (node.hasInlineStructure()) false else {
                 val inner = node.getTextInNode(source).toString().removePrefix("~~").removeSuffix("~~")
                 pushStyle(SpanStyle(textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough))
                 append(inner)
