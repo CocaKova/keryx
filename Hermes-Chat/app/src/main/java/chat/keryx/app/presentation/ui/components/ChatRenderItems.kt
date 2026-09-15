@@ -191,6 +191,17 @@ fun isTelemetryMessage(m: Message): Boolean {
     return MessageParser.isTelemetryMessage(m.content)
 }
 
+/**
+ * Whether a telemetry-classified agent message gets a row at all (2.11.5). "Show telemetry" off
+ * hides the runtime footer and the automated check-ins — plumbing. The post-turn
+ * self-improvement review ("💾 Self-improvement review: …") is the agent saying what it learned,
+ * and on the direct door it is event-only (never a stored row): a hidden review is a review
+ * lost. It shows whatever the toggle says. Device-caught 2026-09-15 — the toggle went off once
+ * the composer's context ring made the footer redundant, and the reviews went with it.
+ */
+fun showsTelemetryRow(m: Message, showTelemetry: Boolean): Boolean =
+    showTelemetry || MessageParser.isSelfImprovementReview(m.content)
+
 private fun isRuntimeFooterMessage(m: Message): Boolean {
     if (m.sender != SenderType.HERMES || m.mediaKind != null || m.content.isBlank()) return false
     return MessageParser.isRuntimeFooterMessage(m.content)

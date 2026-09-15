@@ -1334,12 +1334,47 @@ private const val GHOST_TOOL_ID = "generating"
             val live = res["session_id"]?.jsonPrimitive?.contentOrNull ?: error("resume returned no sid")
             storedToLive[storedId] = live
             liveToStored[live] = storedId
+            // The ack's `info` IS a session.info for a session the gateway holds live — its
+            // `usage` is the ring's reading. Only session.info EVENTS fed the meta before, and
+            // those arrive at turn end: a room opened in a fresh process sat dark until the
+            // next turn completed (device: "the context ring sometimes disappears", 2026-09-15).
+            // The lazy shape (`lazy: true`, no agent) names the gateway's default model, not
+            // this session's — it carries no usage either, so it is skipped whole.
+            val info = res["info"] as? kotlinx.serialization.json.JsonObject
+            if (info?.get("lazy")?.jsonPrimitive?.booleanOrNull != true) applyMeta(storedId, info)
             // Seed the model NOW: session.info only arrives after a turn completes, so an
             // untouched session had a blank model — which is why the composer's model pill
             // never appeared on a freshly opened chat.
-            scope.launch { seedModelFromActiveList(live, storedId) }
+            scope.launch {
+                seedModelFromActiveList(live, storedId)
+                seedGaugeFromBreakdown(live, storedId)
+            }
             live
         }
+    }
+
+    /**
+     * Light a ring the resume left dark. A cold-resumed agent (gateway restarted since) has no
+     * prompt-token measurement until its first API call, so its session.info carries no
+     * `context_used` at all — but the gateway's anchored figure (`session.context_breakdown`,
+     * the payload the ring's tap sheet already reads) knows the window from the stored usage
+     * anchor. One call, once per attach, only when nothing else lit the gauge first.
+     */
+    private suspend fun seedGaugeFromBreakdown(liveSid: String, storedId: String) {
+        if (meta(storedId).value.contextGauge != null) return
+        val rpc = rpc ?: return
+        val res = runCatching {
+            rpc.request("session.context_breakdown", buildJsonObject {
+                put("session_id", JsonPrimitive(liveSid))
+            }, timeoutMs = 15_000)
+        }.getOrNull() ?: return
+        val flow = meta(storedId)
+        flow.value = flow.value.seedGauge(
+            used = res["context_used"]?.jsonPrimitive?.longOrNull ?: 0L,
+            max = res["context_max"]?.jsonPrimitive?.longOrNull ?: 0L,
+            percent = res["context_percent"]?.jsonPrimitive?.intOrNull ?: 0,
+            model = res.strOrNull("model").orEmpty(),
+        )
     }
 
     /** Fill in a session's model from `session.active_list` (its rows carry `model`). */

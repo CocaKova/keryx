@@ -132,3 +132,19 @@ under `ArchiveDelegate`. The union bot roster falls out of the same work.
   (link, code span, emphasis, autolink) is handed back to the library (`InlineStructure.kt`,
   `InlineStructureTest`). Walk: tap the bold URL in Sy's "Link test for 2.11.4" message; the
   bold code span and struck link in the same message must render, not print their markers.
+- **2.11.5 (vc96), 2026-09-15:** two instruments that went quiet once the footer toggle went off.
+  (1) The self-improvement review showed only with "Show telemetry" on: on the direct door it is
+  a `review.summary` event (never a stored row) filed as a HERMES message, and the review has to
+  be telemetry-shaped to reach the parser with chrome on — so the toggle that hides the runtime
+  footer hid the agent's learning record with it. `showsTelemetryRow` (`ChatRenderItems.kt`,
+  `TelemetryRowGateTest`) lets the review through under either setting. (2) The context ring
+  drank only from `session.info` / `message.complete`, both turn-end events: a room opened in a
+  fresh process, or after a gateway restart, sat dark until the next turn completed. `attach`
+  now folds the resume ack's `info.usage` in, and when that is still dark (a cold-resumed agent
+  has no prompt-token reading until its first call) asks `session.context_breakdown` once — the
+  gateway's usage-anchored figure, the same payload the ring's tap sheet reads.
+  `SessionMeta.seedGauge` (`ContextGaugeTest`) lights a dark gauge only; a completed turn's
+  reading is never overwritten by a seed. Not a Keryx fault: the runtime footer
+  (`model · 42% · ~/dir`) is a messaging-platform decoration — direct-door rows never carry one.
+  Walk: with telemetry off, a turn that saves a memory shows its 💾 row; kill the app, reopen a
+  session, the ring is lit before any message is sent.

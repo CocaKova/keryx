@@ -224,6 +224,21 @@ data class SessionMeta(
      */
     val contextGauge: Pair<Long, Long>?
         get() = if (contextUsed > 0L && contextMax > 0L) contextUsed to contextMax else null
+
+    /**
+     * A reading for a DARK gauge only (2.11.5). The ring is fed by `session.info` and
+     * `message.complete`, which arrive at turn end — so a room opened in a fresh process, or
+     * after a gateway restart, sat dark until the next turn completed. A seed (the resume ack's
+     * usage, or the gateway's anchored `session.context_breakdown` figure) lights it; a gauge a
+     * completed turn already lit keeps its own reading, and a half-reading is still no reading.
+     */
+    fun seedGauge(used: Long, max: Long, percent: Int = 0, model: String = ""): SessionMeta =
+        if (contextGauge != null || used <= 0L || max <= 0L) this
+        else copy(
+            contextUsed = used, contextMax = max,
+            contextPercent = if (percent > 0) percent else (used * 100 / max).toInt(),
+            model = this.model.ifBlank { model },
+        )
 }
 
 
