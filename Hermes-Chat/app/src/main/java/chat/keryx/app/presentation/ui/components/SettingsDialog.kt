@@ -407,7 +407,7 @@ fun SettingsScreen(
                             SettingsSwitchRow(
                                 anchor = SettingsRow.AGENT_TELEMETRY,
                                 title = "Show telemetry",
-                                subtitle = "Automated check-ins and the runtime footer as quiet blocks",
+                                subtitle = "Automated check-ins and the runtime footer as quiet blocks. The self-improvement review always shows",
                                 checked = showTelemetry,
                                 onCheckedChange = onShowTelemetryChanged,
                             )

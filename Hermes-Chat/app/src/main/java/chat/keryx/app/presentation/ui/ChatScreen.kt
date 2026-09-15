@@ -673,7 +673,9 @@ fun ChatScreen(
                             val isTelem = message.sender == SenderType.HERMES &&
                                 chat.keryx.app.presentation.ui.components.isTelemetryMessage(message)
                             if (isTelem) {
-                                if (showTelemetry) TelemetryMessageRow(message, textScale = messageTextScale)
+                                if (chat.keryx.app.presentation.ui.components.showsTelemetryRow(message, showTelemetry)) {
+                                    TelemetryMessageRow(message, textScale = messageTextScale)
+                                }
                                 return@Box
                             }
                             // Live reactions: updates the moment anyone adds/removes one — no manual refresh.
