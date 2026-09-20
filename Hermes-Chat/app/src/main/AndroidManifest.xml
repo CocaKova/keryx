@@ -156,6 +156,18 @@
                 android:value="Maintains the WebSocket that delivers self-hosted push notifications when no UnifiedPush distributor app is installed" />
         </service>
 
+        <!-- The run notice: alive exactly while an agent's turn is in flight. One silent status
+             line instead of an alert per event, and the keep-alive that lets the turn's answer
+             reach a backgrounded phone when it is said rather than at the next unlock. -->
+        <service
+            android:name=".notify.AgentRunService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keeps the gateway WebSocket open while a self-hosted AI agent is mid-task, and shows that task's live status, so its reply is delivered when it finishes" />
+        </service>
+
         <!-- Restarts built-in push after reboot / app update (a distributor app would have
              survived those on its own; without one that job is ours). -->
         <receiver

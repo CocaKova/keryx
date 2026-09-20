@@ -30,6 +30,12 @@ import chat.keryx.core.model.Heralds
  * an inline **Reply** (answer from the lock screen), one button per ⟦keryx:ask⟧ option when
  * the agent is blocking on a decision, and **Mark read** on the direct door (the gateway's
  * own watermark). Actions dispatch through [NotificationActionReceiver].
+ *
+ * 2.11.6 — the shade is colour-coded and a turn is one thing. Every notice wears a colour that
+ * means something before a word is read: a message wears its AGENT's own palette colour (the
+ * same one the transcript gives it), the Gate wears amber (stopped, waiting on you), a failed
+ * turn wears red. And a running turn no longer alerts per event: it is one silent, ongoing
+ * run notice ([notifyRun]/[AgentRunService]) and the alert is the turn's end.
  */
 object KeryxNotifications {
 
@@ -72,10 +78,33 @@ object KeryxNotifications {
      * room, lines stacking as they land. [quickActions] adds a one-tap button per agent-
      * offered option (⟦keryx:ask⟧); [markReadable] offers the gateway read mark.
      */
+    /** Stopped and waiting on you — the transcript's own warn. */
+    val COLOR_GATE: Int get() = chat.keryx.app.presentation.ui.components.KeryxStatus.shadeWarn
+
+    /** A turn that failed — the transcript's own bad. */
+    val COLOR_FAILED: Int get() = chat.keryx.app.presentation.ui.components.KeryxStatus.shadeBad
+
+    /** Several agents at once, or none in particular: Keryx's own verdigris. */
+    const val COLOR_KERYX = 0xFF1E6F8C.toInt()
+
+    /** The palette slot the transcript gives this speaker ("bot:theo" hashes as "theo"). */
+    private fun paletteFor(key: String, name: String = ""): Pair<Long, Long> {
+        val bare = key.substringAfter(':', key).ifBlank { name }
+        return Heralds.PALETTE[Math.floorMod(Heralds.stableHash(bare), Heralds.PALETTE.size)]
+    }
+
+    /** The bright tone: tints the icon, the app name and the action labels. */
+    fun accentFor(key: String, name: String = ""): Int = paletteFor(key, name).first.toInt()
+
+    /** The deep tone: a colorized notice's whole background, legible under white text. */
+    fun deepFor(key: String, name: String = ""): Int = paletteFor(key, name).second.toInt()
+
     fun notifyMessage(
         context: Context,
         roomId: String,
         notice: AgentNotice,
+        /** The turn died rather than answered: red, and said so. */
+        failed: Boolean = false,
         quickActions: List<String> = emptyList(),
         markReadable: Boolean = false,
         timestamp: Long = System.currentTimeMillis(),
@@ -93,7 +122,10 @@ object KeryxNotifications {
         val line = NotificationCompat.MessagingStyle.Message(notice.line, timestamp, speaker)
         val lines = history.getOrPut(roomId) { ArrayDeque() }
         synchronized(lines) {
-            lines.addLast(line)
+            // The same words twice in a row are one line, however they got here twice.
+            if (lines.lastOrNull()?.let { it.text?.toString() == notice.line && it.person?.key == speaker.key } != true) {
+                lines.addLast(line)
+            }
             while (lines.size > HISTORY_MAX) lines.removeFirst()
         }
         val style = NotificationCompat.MessagingStyle(me)
@@ -105,13 +137,16 @@ object KeryxNotifications {
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_keryx)
-            .setContentTitle(notice.title)
+            .setContentTitle(if (failed) "${notice.title} · turn failed" else notice.title)
             .setContentText(notice.line)
             .setStyle(style)
+            .setColor(if (failed) COLOR_FAILED else accentFor(notice.speakerKey, notice.speaker))
             .setAutoCancel(true)
-            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setCategory(if (failed) NotificationCompat.CATEGORY_ERROR else NotificationCompat.CATEGORY_MESSAGE)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setGroup(GROUP_KEY)
+            // One sound per alert, from the conversation — never a second from the summary.
+            .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
             .setShortcutId(roomId)
             .setWhen(timestamp)
             .setShowWhen(true)
@@ -216,8 +251,10 @@ object KeryxNotifications {
             .setSmallIcon(R.drawable.ic_stat_keryx)
             .setContentTitle("Keryx")
             .setContentText(if (conversations == 1) "1 conversation" else "$conversations conversations")
+            .setColor(COLOR_KERYX)
             .setGroup(GROUP_KEY)
             .setGroupSummary(true)
+            .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setContentIntent(
@@ -265,9 +302,7 @@ object KeryxNotifications {
             val px = (48 * density).toInt().coerceAtLeast(48)
             // "bot:theo" / "agent:juno" hash as "theo" / "juno" — the roster's own key — so a
             // bot wears one colour in the shade and in the app.
-            val bare = key.substringAfter(':', key).ifBlank { name }
-            val slot = Math.floorMod(Heralds.stableHash(bare), Heralds.PALETTE.size)
-            val (accent, accent2) = Heralds.PALETTE[slot]
+            val (accent, accent2) = paletteFor(key, name)
             val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bmp)
             val disc = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accent2.toInt() }
@@ -412,6 +447,7 @@ object KeryxNotifications {
             .setContentText(notice.body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(notice.body).setSummaryText(sessionName))
             .setSubText(sessionName)
+            .setColor(COLOR_GATE)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
@@ -467,6 +503,87 @@ object KeryxNotifications {
     /** The request is answered, expired, or now on screen — the shade lets it go. */
     fun clearGate(context: Context, sessionId: String) {
         runCatching { NotificationManagerCompat.from(context).cancel(gateId(sessionId)) }
+    }
+
+    // --- The run notice: one silent, living line for every turn in flight ----------------------
+    //
+    // Its own channel at LOW importance: it never sounds, never peeks, and can be switched off in
+    // system settings without touching the alerts that matter.
+
+    const val RUN_CHANNEL_ID = "keryx_runs"
+    const val RUN_NOTIFICATION_ID = 0x52554E // "RUN"
+    const val EXTRA_RUN_SESSION = "keryx.run.session"
+
+    fun ensureRunChannel(context: Context) {
+        val mgr = context.getSystemService(NotificationManager::class.java) ?: return
+        if (mgr.getNotificationChannel(RUN_CHANNEL_ID) != null) return
+        val channel = NotificationChannel(
+            RUN_CHANNEL_ID,
+            "Agent running",
+            NotificationManager.IMPORTANCE_LOW,
+        ).apply {
+            description = "A silent status line while an agent works: what it is doing and for how long"
+            setShowBadge(false)
+        }
+        mgr.createNotificationChannel(channel)
+    }
+
+    /**
+     * The run notice, drawn. [notice] is rendered verbatim — who, what, how far along are
+     * [chat.keryx.core.model.RunNotices]' decisions. Colorized: the system honours a full
+     * background colour only on a foreground service's notice, which this is, so the working
+     * agent's own colour fills it and "whose turn is that" is answered from across the room.
+     */
+    fun buildRun(context: Context, notice: chat.keryx.core.model.RunNotice): android.app.Notification {
+        ensureRunChannel(context)
+        val session = notice.sessionId
+        val builder = NotificationCompat.Builder(context, RUN_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_keryx)
+            .setContentTitle(notice.title)
+            .setContentText(notice.text)
+            .setSubText(notice.subText.ifBlank { null })
+            .setColor(notice.colorKey?.let { deepFor(it) } ?: COLOR_KERYX)
+            .setColorized(true)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .setWhen(notice.startedAt)
+            .setShowWhen(true)
+            .setUsesChronometer(true)
+            .setProgress(notice.planTotal, notice.planDone, notice.planTotal == 0)
+            .setContentIntent(
+                if (session != null) tapIntent(context, session)
+                else PendingIntent.getActivity(
+                    context, RUN_NOTIFICATION_ID, Intent(context, MainActivity::class.java),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                ),
+            )
+        if (session == null) {
+            val inbox = NotificationCompat.InboxStyle()
+            notice.lines.forEach(inbox::addLine)
+            builder.setStyle(inbox)
+        } else {
+            if (notice.lines.isNotEmpty()) {
+                builder.setStyle(NotificationCompat.BigTextStyle().bigText((listOf(notice.text) + notice.lines).joinToString("\n")))
+            }
+            val stop = Intent(context, NotificationActionReceiver::class.java).apply {
+                action = NotificationActionReceiver.ACTION_STOP_RUN
+                putExtra(EXTRA_RUN_SESSION, session)
+            }
+            builder.addAction(
+                NotificationCompat.Action.Builder(
+                    0, "Stop",
+                    PendingIntent.getBroadcast(
+                        context, "stop:$session".hashCode(), stop,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                    ),
+                ).setShowsUserInterface(false).build(),
+            )
+        }
+        return builder.build()
     }
 
     const val MISSIONS_CHANNEL_ID = "keryx_missions"

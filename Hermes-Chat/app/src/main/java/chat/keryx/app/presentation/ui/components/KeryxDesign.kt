@@ -145,6 +145,13 @@ object KeryxStatus {
     val warn: Color @Composable get() = if (onVoid) voidWarn else paperWarn
     val bad: Color @Composable get() = if (onVoid) voidBad else paperBad
     val idle: Color @Composable get() = if (onVoid) voidIdle else paperIdle
+
+    // The notification shade is a third ground, and not ours: it follows the SYSTEM's theme, not
+    // Keryx's, and SystemUI re-tones whatever `setColor` hands it until it reads on its own
+    // surface. So the shade gets the void hue as a plain ARGB and no paper twin — the same
+    // signals, from the same place, without a theme to ask.
+    val shadeWarn: Int get() = voidWarn.toArgb()
+    val shadeBad: Int get() = voidBad.toArgb()
 }
 
 /**
