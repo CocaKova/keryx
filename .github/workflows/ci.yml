@@ -27,7 +27,14 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # `packages` is set on purpose. The action's default is "tools platform-tools", and `tools`
+      # is an obsolete SDK package the runner's current sdkmanager no longer lists — the step
+      # failed in seconds ("Failed to find package 'tools'") before Gradle ever ran. The action
+      # is here to accept the licences; the Android Gradle Plugin fetches the platform and
+      # build-tools the build actually names.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools"
 
       - name: Cache Gradle
         uses: actions/cache@v4
