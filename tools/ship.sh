@@ -34,25 +34,34 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT="$REPO_ROOT/Hermes-Chat"
 OUT="$PROJECT/build/ship"
 ENV_SH="$HOME/android-buildenv/env.sh"
-# env.sh puts the SDK's platform-tools on PATH, and that adb is an x86_64 binary that cannot
-# run on this arm64 host. The system adb is the working one; name it outright.
-ADB="/usr/bin/adb"
+BUILD_HOST_FILE="${KERYX_BUILD_HOST_FILE:-$HOME/.config/keryx/build-host}"
 
-SMOKE=0; RELEASE=0; DETACH=0; FORCE=0
+SMOKE=0; RELEASE=0; DETACH=0; FORCE=0; LOCAL=0
 for a in "$@"; do case "$a" in
   --smoke) SMOKE=1 ;;
   --release) RELEASE=1 ;;
   --detach) DETACH=1 ;;
   --force) FORCE=1 ;;   # run the canary even though the phone is in use
-  -h|--help) sed -n '2,30p' "${BASH_SOURCE[0]}"; exit 0 ;;
+  --local) LOCAL=1 ;;   # do not hand off to the build host
+  -h|--help) sed -n '2,36p' "${BASH_SOURCE[0]}"; exit 0 ;;
   *) echo "unknown argument: $a" >&2; exit 2 ;;
 esac; done
+
+# A configured build host means this machine is NOT where builds run. Hand off before touching
+# anything; remote-ship.sh brings the verdict, log and APK back to the same paths.
+if [ "$LOCAL" = 0 ] && [ -s "$BUILD_HOST_FILE" ]; then
+  exec "$REPO_ROOT/tools/remote-ship.sh" "$@"
+fi
+
+# The system adb when there is one (on the arm64 Spark the SDK's x86_64 adb cannot execute);
+# otherwise the SDK's own, which is native on an x86_64 build host.
+ADB="/usr/bin/adb"; [ -x "$ADB" ] || ADB="$HOME/android-buildenv/android-sdk/platform-tools/adb"
 
 mkdir -p "$OUT"
 LOG="$OUT/ship.log"
 
 if [ "$DETACH" = 1 ]; then
-  args=(); [ "$SMOKE" = 1 ] && args+=(--smoke); [ "$RELEASE" = 1 ] && args+=(--release)
+  args=(--local); [ "$SMOKE" = 1 ] && args+=(--smoke); [ "$RELEASE" = 1 ] && args+=(--release); [ "$FORCE" = 1 ] && args+=(--force)
   echo "RUNNING" > "$OUT/status"
   nohup "${BASH_SOURCE[0]}" "${args[@]}" >"$LOG" 2>&1 &
   echo "detached pid $! — poll $OUT/status, read $LOG"
