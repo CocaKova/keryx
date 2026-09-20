@@ -15,7 +15,7 @@ of raw model output.
 | Directory | What it is |
 |---|---|
 | `Hermes-Chat/` | The Android app (Jetpack Compose + Trixnity Matrix SDK) |
-| `Hermes-Chat/hermes-plugin/keryx-stream/` | The gateway-side streaming plugin (dual-tier side-channel), also submitted upstream to hermes-agent |
+| `Hermes-Chat/hermes-plugin/keryx-stream/` | The original in-tree gateway patch. **Superseded** by the standalone [keryx-stream](https://github.com/CocaKova/keryx-stream) plugin — see Gateway setup |
 
 ## Highlights
 
@@ -90,22 +90,35 @@ cd Hermes-Chat
 Release builds sign with the debug keystore unless `local.properties` provides
 `keryx.keystore`, `keryx.keystore.password`, `keryx.key.alias`, `keryx.key.password`.
 
-## Gateway setup (for streaming)
+## Gateway setup
 
-Install the plugin into your hermes-agent tree and restart the gateway:
+Chat works against a stock Hermes with nothing installed. The hub panels
+(reasoning dial, Missions, Shipyard, config, skills, pets, update) and live
+streaming on the Matrix door come from the
+[keryx-stream](https://github.com/CocaKova/keryx-stream) plugin — a normal
+Hermes plugin, no core patches:
 
 ```bash
-python3 Hermes-Chat/hermes-plugin/keryx-stream/install.py
+git clone https://github.com/CocaKova/keryx-stream.git
+cd keryx-stream && ./install.sh
+hermes plugins enable keryx-stream
+hermes gateway restart
 ```
 
-Then in Keryx → Settings → **Hermes Link**, set the gateway URL
-(`http://<gateway-host>:8642`), paste your `API_SERVER_KEY`, and hit **Test link**.
-Full details in [`Hermes-Chat/hermes-plugin/keryx-stream/README.md`](Hermes-Chat/hermes-plugin/keryx-stream/README.md).
+Then in Keryx → Settings → Gateways → **Hermes Link**, set the gateway URL to
+the plugin's port (`http://<gateway-host>:8646`), paste your `API_SERVER_KEY`,
+and hit **Test link**. The plugin answers `/keryx/*` itself and relays
+everything else to Hermes' API server, so that one URL is all the app needs.
+
+`Hermes-Chat/hermes-plugin/keryx-stream/install.py` is the older approach — it
+patches the hermes-agent tree in place and no longer applies cleanly to current
+hermes-agent. Use the plugin.
 
 ## Status
 
 Actively developed and released — see [Releases](https://github.com/CocaKova/keryx/releases)
-for the changelog. The streaming plugin was proposed upstream as
-[NousResearch/hermes-agent#57091](https://github.com/NousResearch/hermes-agent/pull/57091), which
-was closed without merging, so this repo is its home: install it on top of any hermes-agent tree
-as shown above.
+for the changelog. The gateway side was first proposed upstream as
+[NousResearch/hermes-agent#57091](https://github.com/NousResearch/hermes-agent/pull/57091); Hermes
+keeps third-party integrations out of core, so it lives as the standalone
+[keryx-stream](https://github.com/CocaKova/keryx-stream) plugin, built on the stream observer hooks
+Hermes ships.
