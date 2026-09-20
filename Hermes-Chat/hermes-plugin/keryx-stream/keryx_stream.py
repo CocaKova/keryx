@@ -704,16 +704,57 @@ GLM53_LOCAL_EFFORTS = ("low", "high", "max")
 GLM53_LOCAL_OVERRIDES = {"xhigh": "max", "ultra": "max"}
 
 
-def _glm53_wire_effort(effort: str) -> Optional[str]:
-    """The template level for a Hermes effort word; None when there is nothing to send."""
+def _is_dsv41(model: str) -> bool:
+    """True for a DeepSeek-V4.1-family model served locally (the MiaAI dual-Spark kit's template)."""
+    m = (model or "").strip().lower()
+    return any(t in m for t in ("deepseek-v4.1", "deepseek-v41", "deepseek_v4.1", "deepseek_v41", "deepseek-v4-1", "dsv41"))
+
+
+# Local (provider ``custom``) brains whose chat template takes a GRADED ``reasoning_effort``
+# kwarg, keyed by template family. Each ladder is what the live kit template actually
+# accepts, measured — not what the model card says:
+#   glm53  low / high; anything else is served as max (2026-09-11).
+#   dsv41  low / high / xhigh / max, or an int 1-100; ``medium`` is HTTP 400 (2026-09-13),
+#          so the generic ladder's medium MUST be clamped (nearest weaker → low), never sent.
+# ``enable_thinking: false`` is the real off switch on both. Adding a family here is the
+# whole job of teaching the dial a new local brain — both the wire and the phone's ladder
+# read this table.
+LOCAL_TEMPLATE_EFFORTS: Dict[str, tuple] = {
+    "glm53": GLM53_LOCAL_EFFORTS,
+    "dsv41": ("low", "high", "xhigh", "max"),
+}
+LOCAL_TEMPLATE_OVERRIDES: Dict[str, Dict[str, str]] = {
+    "glm53": GLM53_LOCAL_OVERRIDES,
+    "dsv41": {"ultra": "max"},
+}
+
+
+def _local_template_family(model: str) -> Optional[str]:
+    """The LOCAL_TEMPLATE_EFFORTS key for a locally served model, or None (on/off only)."""
+    if _is_glm53(model):
+        return "glm53"
+    if _is_dsv41(model):
+        return "dsv41"
+    return None
+
+
+def _local_wire_effort(effort: str, family: str) -> Optional[str]:
+    """The template level for a Hermes effort word on ``family``; None when nothing is sent."""
     e = (effort or "").strip().lower()
     if not e:
         return None
+    supported = LOCAL_TEMPLATE_EFFORTS.get(family) or ()
+    overrides = LOCAL_TEMPLATE_OVERRIDES.get(family) or {}
     try:
         from agent.reasoning_effort import clamp_effort
-        return clamp_effort(e, GLM53_LOCAL_EFFORTS, GLM53_LOCAL_OVERRIDES)
+        return clamp_effort(e, supported, overrides)
     except Exception:
-        return GLM53_LOCAL_OVERRIDES.get(e, e if e in GLM53_LOCAL_EFFORTS else "low")
+        return overrides.get(e, e if e in supported else "low")
+
+
+def _glm53_wire_effort(effort: str) -> Optional[str]:
+    """Back-compat alias: the GLM-5.3 rung for a Hermes effort word."""
+    return _local_wire_effort(effort, "glm53")
 
 
 def apply_thinking_kwargs(agent) -> None:
@@ -760,10 +801,12 @@ def apply_thinking_kwargs(agent) -> None:
         extra = dict(overrides.get("extra_body") or {})
         ctk = dict(extra.get("chat_template_kwargs") or {})
         ctk["enable_thinking"] = enabled
-        if _is_glm53(str(getattr(agent, "model", "") or "")):
-            # GLM-5.3's dial is a graded template kwarg, not just on/off: send the level so the
-            # session's /reasoning pick (or the profile default) is what the brain actually runs.
-            wire = _glm53_wire_effort(str(rc.get("effort") or "")) if enabled else None
+        family = _local_template_family(str(getattr(agent, "model", "") or ""))
+        if family:
+            # A graded local template (GLM-5.3, DeepSeek-V4.1): send the level so the session's
+            # /reasoning pick (or the profile default) is what the brain actually runs, clamped
+            # onto the rungs that template accepts (a stray "medium" would 400 on DeepSeek).
+            wire = _local_wire_effort(str(rc.get("effort") or ""), family) if enabled else None
             if wire:
                 ctk["reasoning_effort"] = wire
             else:
@@ -1005,13 +1048,14 @@ def _reasoning_capabilities(
             "labels": {"none": "Off", "high": "On"},
             "current": "none" if effort == "none" else "high",
         }
-    elif local and _is_glm53(model):
-        # See GLM53_LOCAL_EFFORTS: the template's real rungs, plus Hermes's thinking-off.
+    elif local and _local_template_family(model):
+        # See LOCAL_TEMPLATE_EFFORTS: the template's real rungs, plus Hermes's thinking-off.
+        family = _local_template_family(model) or ""
         reasoning = {
             "mode": "effort",
-            "levels": ["none", *GLM53_LOCAL_EFFORTS],
+            "levels": ["none", *LOCAL_TEMPLATE_EFFORTS[family]],
             "labels": {"none": "Off"},
-            "current": effort if effort == "none" else (_glm53_wire_effort(effort) or effort),
+            "current": effort if effort == "none" else (_local_wire_effort(effort, family) or effort),
         }
     elif local:
         # The local serving stack (patched qwen-family templates) validates effort levels —
