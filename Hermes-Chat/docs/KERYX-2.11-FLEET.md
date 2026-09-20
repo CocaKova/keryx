@@ -148,3 +148,31 @@ under `ArchiveDelegate`. The union bot roster falls out of the same work.
   (`model · 42% · ~/dir`) is a messaging-platform decoration — direct-door rows never carry one.
   Walk: with telemetry off, a turn that saves a memory shows its 💾 row; kill the app, reopen a
   session, the ring is lit before any message is sent.
+- **2.11.6 (vc97), 2026-09-19:** the shade stops shouting. A running turn re-stamps its roster
+  row every 5 s (`RosterOrder.TOUCH_SLACK_MS`), the notification watcher read every re-stamp as
+  new activity, and each one posted a fresh HIGH-importance alert with whatever the latest row
+  was — a buzz every few seconds for one turn, the same line stacked repeatedly. Now a turn is
+  one thing: (1) **the run notice** — `AgentRunService`, a foreground service alive exactly
+  while `DirectTransport.runActivities()` is non-empty, draws ONE silent ongoing line on its own
+  LOW channel ("Agent running"): who is working, the tool that is out in the transcript's own
+  vocabulary ("❯ Running npm test", via `ToolGrammar`), a chronometer, the agent's `todo` plan
+  as a progress bar, a Stop action (`session.interrupt`); several runs are still one notice. It
+  is also the keep-alive `anyAgentBusy` was written for and nothing ever read: the socket stays
+  up so the answer lands when it is said. A foreground start the system refuses (turn begun
+  elsewhere, app backgrounded) falls back to the same notice posted plainly. (2) **One alert per
+  turn** — `AlertPolicy` (`RunNotice.kt`, `RunNoticeTest`): nothing alerts mid-turn, the same
+  message never alerts twice (content key — a live row and its re-read carry different ids),
+  and the turn's `End` event drives the alert (`TurnEvent.End` now fires AFTER the store folds
+  the final message). (3) **Colour** — a message wears its agent's palette colour (same slot as
+  the transcript and the sigil), the Gate wears warn, a failed turn wears bad and says so, the
+  run notice is colorized in the working agent's deep tone; shade hues come from
+  `KeryxStatus.shadeWarn/shadeBad` (PaperContrastTest's no-hand-painted-status rule holds).
+  Walk: send a long tool-using prompt, leave the app → one coloured silent line ticking through
+  tools, no buzzing; one alert when it finishes; Stop from the shade ends the turn quietly.
+  (4) **Who** — no agent name is assumed anywhere: the worker and the alert's speaker are the
+  label of the PROFILE that owns the session (`BotRoster.agentFor` over the install's own
+  `profiles.list`, cached by `DirectTransport.agents()`; fetched once if a turn runs before the
+  Bots door has), coloured by that profile's handle so a plain session and its Bot Chat are one
+  voice. Roster not in yet → the notice names the room ("Working · <title>"), never a guess.
+  ⚠️ Direct door only; a turn run by another client while this phone is not attached has no
+  run notice (no events reach us) and alerts through the roster path, deduped.

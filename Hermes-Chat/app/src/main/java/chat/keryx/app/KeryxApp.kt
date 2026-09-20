@@ -17,6 +17,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -98,6 +101,16 @@ class KeryxApp : Application() {
      *  the room a request came from without a round trip. */
     @Volatile private var roomNames: Map<String, String> = emptyMap()
 
+    /** The roster as last seen, by id — the end-of-turn alert names its room from here. */
+    @Volatile private var roomsById: Map<String, chat.keryx.core.model.RoomProfile> = emptyMap()
+
+    /** Sessions with a turn in flight. Their words are not final, and the run notice is already
+     *  saying they are working — nothing of theirs alerts until the turn ends. */
+    @Volatile private var busySessions: Set<String> = emptySet()
+
+    /** Room id → [chat.keryx.core.model.AlertPolicy.keyOf] the last message alerted for it. */
+    private val lastAlerted = java.util.concurrent.ConcurrentHashMap<String, String>()
+
     override fun onCreate() {
         super.onCreate()
         CrashLog.install(applicationContext)
@@ -146,6 +159,7 @@ class KeryxApp : Application() {
 
         observeForNotifications()
         observeShadeGate()
+        observeRuns()
     }
 
     /**
@@ -202,6 +216,7 @@ class KeryxApp : Application() {
             transport.getRooms().collect { rooms ->
                 val current = rooms.associate { it.id to it.timestamp }
                 roomNames = rooms.associate { it.id to it.name }
+                roomsById = rooms.associateBy { it.id }
                 val prev = baseline
                 if (prev == null) {
                     // First emission after launch is the existing state — don't notify for history.
@@ -219,6 +234,10 @@ class KeryxApp : Application() {
                         android.util.Log.i("KeryxNotify", "skip ${room.id}: foreground & open")
                         continue
                     }
+                    // Turn traffic re-stamps the row every few seconds. That is a turn RUNNING,
+                    // which the run notice already says; the alert is the turn's end
+                    // (observeTurnEnds). Checked before the peek — no round trip for a no.
+                    if (room.id in busySessions) continue
                     // Two, not one: the arrival test (2.3 §3) needs the message before this one to
                     // know whether anybody actually asked for it. On the direct door this is a
                     // REST peek — getMessages would hydrate AND session.resume the row, one live
@@ -240,37 +259,126 @@ class KeryxApp : Application() {
                         android.util.Log.i("KeryxNotify", "skip ${room.id}: opened while peeking")
                         continue
                     }
-                    if (last.sender == SenderType.ME) continue
                     // Skip historical messages surfacing during initial sync settle.
-                    if (last.timestamp < watchStart - historyGrace) {
+                    if (last.sender != SenderType.ME && last.timestamp < watchStart - historyGrace) {
                         android.util.Log.i("KeryxNotify", "skip ${room.id}: historical (${last.timestamp} < $watchStart)")
                         continue
                     }
-                    // The notice is agent-shaped (2.8): the speaker is the bot (a Bot Chat row
-                    // carries its bot's label as the name), or the herald by name on Matrix,
-                    // and a relayed bot-to-bot line names the bot that sent it. An unprompted
-                    // turn (2.3 §3 arrival) still reads as *who* walked in — the speaker.
-                    val isBotChat = room.source == chat.keryx.app.presentation.BotsDelegate.BOT_SOURCE
-                    val notice = chat.keryx.core.model.AgentNotices.compose(
-                        message = if (last.senderName.isBlank() && last.sender == SenderType.HERMES)
-                            last.copy(senderName = heraldName(last)) else last,
-                        conversation = room.name,
-                        botLabel = if (isBotChat) room.name else null,
-                        botHandle = if (isBotChat) (room.heraldIds.firstOrNull() ?: room.id) else null,
-                    )
-                    android.util.Log.i("KeryxNotify", "new activity in ${room.id} (${room.name}); notifying as ${notice.title}")
-                    KeryxNotifications.notifyMessage(
-                        context = applicationContext,
-                        roomId = room.id,
-                        notice = notice,
-                        quickActions = quickActionsFor(last),
-                        hands = if (last.sender == SenderType.HERMES) MessageParser.phoneActions(last.content) else emptyList(),
-                        markReadable = direct != null,
-                        timestamp = last.timestamp.takeIf { it > 0 } ?: System.currentTimeMillis(),
-                    )
+                    alertFor(room, last)
                 }
                 baseline = current
             }
+        }
+        // The turn's end is the alert. The roster cannot be trusted to say so on time — its
+        // stamp is slack-floored and the server's own catches up seconds later — so the
+        // transport's End event drives it, and the roster pass above then finds it already said.
+        val direct = transport as? DirectTransport ?: return
+        appScope.launch {
+            direct.turnEvents().collect { ev ->
+                if (ev !is chat.keryx.core.model.TurnEvent.End) return@collect
+                if (isForeground && openRoomId == ev.sessionId) return@collect
+                // A turn stopped with nothing said (Stop from the shade, an interrupt) is not news.
+                if (ev.finalText.isBlank() && !ev.error) return@collect
+                val room = roomsById[ev.sessionId] ?: return@collect
+                val last = withTimeoutOrNull(4_000L) { direct.peekLatest(ev.sessionId, 2) }?.lastOrNull() ?: return@collect
+                alertFor(room, last, failed = ev.error, turnOver = true)
+            }
+        }
+    }
+
+    /**
+     * Alert for [last] in [room] — if [chat.keryx.core.model.AlertPolicy] says it has earned one.
+     * [turnOver] is the End path's knowledge that the busy mark (cleared in the same breath, on
+     * another thread's clock) no longer applies.
+     */
+    private fun alertFor(room: chat.keryx.core.model.RoomProfile, last: Message, failed: Boolean = false, turnOver: Boolean = false) {
+        val direct = transport as? DirectTransport
+        val verdict = chat.keryx.core.model.AlertPolicy.decide(
+            last = last,
+            busy = !turnOver && room.id in busySessions,
+            lastAlertedKey = lastAlerted[room.id],
+        )
+        when (verdict) {
+            // You spoke: whatever the agent says next is new, even word for word.
+            chat.keryx.core.model.AlertPolicy.Verdict.SILENT_MINE -> { lastAlerted.remove(room.id); return }
+            chat.keryx.core.model.AlertPolicy.Verdict.ALERT -> Unit
+            else -> { android.util.Log.i("KeryxNotify", "skip ${room.id}: $verdict"); return }
+        }
+        lastAlerted[room.id] = chat.keryx.core.model.AlertPolicy.keyOf(last)
+        // The notice is agent-shaped (2.8): the speaker is the bot (a Bot Chat row
+        // carries its bot's label as the name), or the herald by name on Matrix,
+        // and a relayed bot-to-bot line names the bot that sent it. An unprompted
+        // turn (2.3 §3 arrival) still reads as *who* walked in — the speaker.
+        val isBotChat = room.source == chat.keryx.app.presentation.BotsDelegate.BOT_SOURCE
+        // On the direct door the speaker is the agent of the profile that owns the session, by
+        // the name THIS install gave it — a plain session and that profile's Bot Chat are the
+        // same voice, in the same colour.
+        val agent = direct?.agentFor(room.id)
+        val notice = chat.keryx.core.model.AgentNotices.compose(
+            message = (if (last.senderName.isBlank() && last.sender == SenderType.HERMES)
+                last.copy(senderName = agent?.label ?: heraldName(last)) else last)
+                // A turn that died wordlessly still says why.
+                .let { m -> if (failed && m.content.isBlank()) m.copy(content = m.failure?.message?.ifBlank { null } ?: "The turn failed") else m },
+            conversation = room.name,
+            botLabel = if (isBotChat) room.name else null,
+            botHandle = if (isBotChat) (room.heraldIds.firstOrNull() ?: room.id) else agent?.handle,
+        )
+        android.util.Log.i("KeryxNotify", "new activity in ${room.id} (${room.name}); notifying as ${notice.title}")
+        KeryxNotifications.notifyMessage(
+            context = applicationContext,
+            roomId = room.id,
+            notice = notice,
+            quickActions = quickActionsFor(last),
+            hands = if (last.sender == SenderType.HERMES) MessageParser.phoneActions(last.content) else emptyList(),
+            markReadable = direct != null,
+            timestamp = last.timestamp.takeIf { it > 0 } ?: System.currentTimeMillis(),
+            failed = failed,
+        )
+    }
+
+    /**
+     * The run notice: every turn in flight, told as ONE silent line that changes in place.
+     * Repaints are floored to one a second — the system drops a notice updated faster than it
+     * can draw, and a burst of tool calls is not worth a repaint each.
+     */
+    private fun observeRuns() {
+        val direct = transport as? DirectTransport ?: return
+        appScope.launch { direct.busySessionIds().collect { busySessions = it } }
+        // The roster is what names the agent. Usually the Bots door has fetched it already; if
+        // a turn is running and nobody has, ask once — the notice re-draws when it answers.
+        appScope.launch {
+            direct.runActivities().first { it.isNotEmpty() }
+            if (direct.agents().value.isEmpty()) runCatching { direct.botRoster() }
+        }
+        appScope.launch {
+            combine(direct.runActivities(), direct.agents()) { runs, _ -> runs }
+                .map { runs ->
+                    chat.keryx.core.model.RunNotices.compose(runs.values.map { a ->
+                        val room = roomsById[a.sessionId]
+                        val isBot = room?.source == chat.keryx.app.presentation.BotsDelegate.BOT_SOURCE
+                        val agent = direct.agentFor(a.sessionId)
+                        val session = room?.name?.takeIf { it.isNotBlank() } ?: "Keryx"
+                        chat.keryx.core.model.RunSubject(
+                            sessionId = a.sessionId,
+                            agent = agent?.label ?: if (isBot) session else "",
+                            session = session,
+                            // The key the message alert hashes for this same speaker, so one agent is one colour.
+                            colorKey = when {
+                                isBot -> "bot:" + (room?.heraldIds?.firstOrNull() ?: a.sessionId)
+                                agent != null -> "bot:" + agent.handle
+                                else -> "conversation:$session"
+                            },
+                            activity = a,
+                            plan = direct.todoPlanOf(a.sessionId),
+                        )
+                    })
+                }
+                .distinctUntilChanged()
+                .conflate()
+                .collect { notice ->
+                    chat.keryx.app.notify.AgentRunService.sync(applicationContext, notice)
+                    if (notice != null) kotlinx.coroutines.delay(1_000L)
+                }
         }
     }
 

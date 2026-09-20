@@ -826,10 +826,11 @@ private const val GHOST_TOOL_ID = "generating"
                         ?: listOf("once", "deny"),
                 ),
             )
-            "message.start" -> store.streamStart()
+            "message.start" -> { store.streamStart(); noteRun(storedId, ev.type) }
             "message.delta" -> {
                 val t = pStr("text") ?: ""
                 store.streamDelta(t)
+                noteRun(storedId, ev.type)
                 _turnEvents.tryEmit(chat.keryx.core.model.TurnEvent.Delta(storedId, t))
             }
             // The model's thinking, streamed before (and between) answer tokens. `.available`
@@ -839,7 +840,7 @@ private const val GHOST_TOOL_ID = "generating"
             // API call (conversation_loop.py → gateway thinking_callback). Desktop ignores it
             // outright (gateway-event.ts) — folding it in here stamped a kaomoji into the
             // reasoning disclosure once per call (Jonny's live-caught report, 08-15).
-            "reasoning.delta" -> store.streamReasoning(pStr("text") ?: "")
+            "reasoning.delta" -> { store.streamReasoning(pStr("text") ?: ""); noteRun(storedId, ev.type) }
             "thinking.delta" -> { /* spinner status, not thought — working chip covers it */ }
             "reasoning.available" -> store.reasoningAvailable(pStr("text") ?: "")
             "message.interim" -> {
@@ -855,9 +856,6 @@ private const val GHOST_TOOL_ID = "generating"
                 // The turn is over — anything it was waiting on is answered, expired or moot.
                 markBusy(storedId, false)
                 setBlocking(storedId, null)
-                _turnEvents.tryEmit(chat.keryx.core.model.TurnEvent.End(
-                    storedId, pStr("text") ?: "", error = pStr("status") == "error",
-                ))
                 store.streamComplete(
                     finalText = pStr("text") ?: "",
                     error = pStr("status") == "error",
@@ -866,6 +864,11 @@ private const val GHOST_TOOL_ID = "generating"
                     finalReasoning = pStr("reasoning"),
                     failure = pFailure(),
                 )
+                // After the fold, not before: the shade's end-of-turn alert re-reads the
+                // transcript on this event and must find the finished message there.
+                _turnEvents.tryEmit(chat.keryx.core.model.TurnEvent.End(
+                    storedId, pStr("text") ?: "", error = pStr("status") == "error",
+                ))
                 applyMeta(storedId, p) // usage (incl. context_percent) rides on complete
                 // A turn that died on a refused reasoning level lands here too, with
                 // status:"error" and the model's own words (measured live: "HTTP 400:
@@ -933,10 +936,14 @@ private const val GHOST_TOOL_ID = "generating"
             // copying that here would silently demote the review to plain prose.
             "review.summary" -> pStr("text")?.trim()?.takeIf { it.isNotEmpty() }
                 ?.let { store.localReviewSummary(it) }
-            "tool.generating" -> store.toolGenerating(pStr("name") ?: "tool")
+            "tool.generating" -> {
+                store.toolGenerating(pStr("name") ?: "tool")
+                noteRun(storedId, ev.type, toolName = pStr("name") ?: "tool")
+            }
             "tool.start" -> {
                 val name = pStr("name") ?: "tool"
                 val args = p?.get("args") as? kotlinx.serialization.json.JsonObject
+                noteRun(storedId, ev.type, pStr("tool_id").orEmpty(), name, pStr("context") ?: ToolText.contextPreview(name, args))
                 store.toolStart(
                     ToolCall(
                         toolId = pStr("tool_id") ?: "tool-${System.nanoTime()}",
@@ -977,6 +984,8 @@ private const val GHOST_TOOL_ID = "generating"
                     chat.keryx.core.model.TodoPlanParser.parse(resultDisplay)
                         ?.let { store.todoPlan.value = it }
                 }
+                // After the plan: the tally moving is what makes the run notice re-read it.
+                noteRun(storedId, ev.type, pStr("tool_id").orEmpty(), name)
             }
             // ---- delegation ------------------------------------------------------------
             // Every subagent.* event carries the same identity block and adds what only it
@@ -1068,8 +1077,8 @@ private const val GHOST_TOOL_ID = "generating"
                 val text = pStr("message") ?: ""
                 // The turn ended, however it ended: a listener that only hears `message.complete`
                 // waits forever on the turns that die (the Call's channel never closes).
-                _turnEvents.tryEmit(chat.keryx.core.model.TurnEvent.End(storedId, text, error = true))
                 store.streamComplete(finalText = text, error = true, failure = pFailure())
+                _turnEvents.tryEmit(chat.keryx.core.model.TurnEvent.End(storedId, text, error = true))
                 // A turn can die because the MODEL refused the reasoning level (a local
                 // template's supported set is narrower than Hermes' scale, and nothing knows
                 // that until a real turn runs). Republish those so the level that killed the
@@ -1104,6 +1113,7 @@ private const val GHOST_TOOL_ID = "generating"
         // next delta (the blanket turn-traffic rule above). Shade entries stay — a pending
         // approval may still be inside its server-side wait, and its notification carries
         // its own honest timeout.
+        _runs.value = emptyMap()
         _busyStored.value = emptySet()
         scope.launch {
             refreshSessions()
@@ -2169,8 +2179,16 @@ private const val GHOST_TOOL_ID = "generating"
         // Per-profile skill walks on the gateway side — a slow-ish call, so callers poll it
         // on a place's cadence, never per keystroke.
         val res = rpc.request("profiles.list", buildJsonObject {}, timeoutMs = 45_000)
-        chat.keryx.core.model.BotsJson.snapshot(res, System.currentTimeMillis())
+        chat.keryx.core.model.BotsJson.snapshot(res, System.currentTimeMillis()).also { _agents.value = it.bots }
     }
+
+    /** The last roster anyone fetched — the shade names a session's agent from it. */
+    private val _agents = MutableStateFlow<List<chat.keryx.core.model.BotProfile>>(emptyList())
+    fun agents(): StateFlow<List<chat.keryx.core.model.BotProfile>> = _agents
+
+    /** The profile agent behind [storedId] as this install named it, or null if not known yet. */
+    fun agentFor(storedId: String): chat.keryx.core.model.BotProfile? =
+        chat.keryx.core.model.BotRoster.agentFor(_agents.value, profileFor(storedId))
 
     /** Name the profile on the wire only when it is not the launch profile's own. */
     private fun JsonObjectBuilder.putProfile(bot: chat.keryx.core.model.BotProfile) {
@@ -2423,6 +2441,9 @@ private const val GHOST_TOOL_ID = "generating"
                 remove(old); put(newStored, entry)
             }
         }
+        _runs.value[old]?.let { run ->
+            _runs.value = _runs.value - old + (newStored to run.copy(sessionId = newStored))
+        }
         if (old in _busyStored.value) {
             _busyStored.value = _busyStored.value - old + newStored
         }
@@ -2595,7 +2616,26 @@ private const val GHOST_TOOL_ID = "generating"
     private fun markBusy(storedId: String, busy: Boolean) {
         val cur = _busyStored.value
         if (busy == storedId in cur) return // already in the right state; runs per delta
+        // The run's activity is born and dies with the busy mark, activity first: a reader that
+        // wakes on the busy set must already find what the session is doing.
+        _runs.value = if (busy) _runs.value + (storedId to chat.keryx.core.model.RunActivity(storedId, System.currentTimeMillis()))
+            else _runs.value - storedId
         _busyStored.value = if (busy) cur + storedId else cur - storedId
+    }
+
+    // --- what each running turn is doing (drives the shade's run notice) ---------------
+    private val _runs = MutableStateFlow<Map<String, chat.keryx.core.model.RunActivity>>(emptyMap())
+
+    /** Every turn in flight on this socket, by stored id: phase, the tool that is out, the tally. */
+    fun runActivities(): StateFlow<Map<String, chat.keryx.core.model.RunActivity>> = _runs
+
+    /** The agent's own plan for [storedId], if it has written one — the run notice's progress. */
+    fun todoPlanOf(storedId: String): chat.keryx.core.model.TodoPlan? = stores[storedId]?.todoPlan?.value
+
+    private fun noteRun(storedId: String, eventType: String, toolId: String = "", toolName: String = "", toolContext: String = "") {
+        val prev = _runs.value[storedId] ?: return
+        val next = chat.keryx.core.model.RunActivities.reduce(prev, eventType, toolId, toolName, toolContext)
+        if (next !== prev) _runs.value = _runs.value + (storedId to next)
     }
 
     /**

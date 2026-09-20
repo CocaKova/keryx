@@ -130,6 +130,15 @@ object BotRoster {
             .trim('-')
 
     /** "mc-builder" → "Mc Builder"; "theo" → "Theo". A profile name shown before it has a title. */
+    /**
+     * The agent behind a session, from the install's own roster: [profile] is the profile whose
+     * store holds the session, null for the launch profile's own. This is what a notice calls
+     * the agent — whatever THIS install named it, never a name Keryx assumed. Null when the
+     * roster does not know the profile (not fetched yet, or the profile is gone).
+     */
+    fun agentFor(bots: List<BotProfile>, profile: String?): BotProfile? =
+        if (profile.isNullOrBlank()) bots.firstOrNull { it.isDefault } else bots.firstOrNull { it.name == profile }
+
     fun pretty(name: String): String =
         name.split('-', '_').filter { it.isNotBlank() }
             .joinToString(" ") { part -> part.replaceFirstChar { it.uppercase() } }

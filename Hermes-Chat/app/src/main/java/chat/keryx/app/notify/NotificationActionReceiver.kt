@@ -28,6 +28,18 @@ class NotificationActionReceiver : BroadcastReceiver() {
             onGateAnswer(context, intent)
             return
         }
+        if (intent.action == ACTION_STOP_RUN) {
+            // The run notice's Stop: the same interrupt the composer's stop button sends. The
+            // notice comes down on its own when the gateway confirms the turn over.
+            val session = intent.getStringExtra(KeryxNotifications.EXTRA_RUN_SESSION) ?: return
+            val app = context.applicationContext as? KeryxApp ?: return
+            val direct = app.transport as? chat.keryx.app.transport.direct.DirectTransport ?: return
+            app.appScope.launch {
+                direct.interruptTurn(session)
+                    .onFailure { android.util.Log.w("KeryxRun", "stop from the shade failed: ${it.message}") }
+            }
+            return
+        }
         val roomId = intent.getStringExtra(KeryxNotifications.EXTRA_ROOM_ID) ?: return
         val roomName = intent.getStringExtra(KeryxNotifications.EXTRA_ROOM_NAME) ?: "Keryx"
         if (intent.action == ACTION_MARK_READ) {
@@ -115,6 +127,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
         const val ACTION_MARK_READ = "chat.keryx.app.notify.MARK_READ"
         const val ACTION_GATE_CHOICE = "chat.keryx.app.notify.GATE_CHOICE"
         const val ACTION_GATE_REPLY = "chat.keryx.app.notify.GATE_REPLY"
+        const val ACTION_STOP_RUN = "chat.keryx.app.notify.STOP_RUN"
     }
 }
 
