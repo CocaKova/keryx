@@ -74,6 +74,10 @@ An unknown level comes back as RPC error `4002` rather than landing silently.
 
 ## The `/keryx/*` panels
 
+The standalone plugin's own server carries the stream, publish, toolset and health routes; the rest of the
+list below is the wider surface the panels call, and an older plugin simply has no such route. Every one
+of them is 404-tolerant.
+
 Each hub panel maps to plugin routes, all of them fail-soft: a 404 hides the panel.
 
 | Panel | Routes |

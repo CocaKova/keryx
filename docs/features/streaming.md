@@ -19,7 +19,8 @@ closed once the final Matrix event has synced. One URL, per turn and per room:
 GET /keryx/stream?platform=matrix&chat_id=<room-id>
 ```
 
-Bearer-authed with the same key the app uses everywhere. The answer is `200` with
+Bearer-authed with the same token the app uses everywhere, served by the plugin's own HTTP server (its
+own port; see [gateway-setup.md](../gateway-setup.md)). The answer is `200` with
 `text/event-stream`.
 
 ### The frames

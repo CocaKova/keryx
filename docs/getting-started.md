@@ -48,7 +48,7 @@ whole configuration for the plugin path:
 
 | Field | Value |
 |---|---|
-| Gateway URL | `http://<gateway-host>:8642` |
+| Gateway URL | the URL that answers `/keryx/*` for this deployment (`http://<gateway-host>:8646` for a standalone keryx-stream install, `http://<gateway-host>:8642` when the routes ride the gateway's API server) |
 | API key | the gateway's `API_SERVER_KEY` |
 | Live token streaming | on, when the keryx-stream plugin is installed |
 
