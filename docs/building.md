@@ -30,7 +30,7 @@ your pocket.
 
 | Thing | Value |
 |---|---|
-| `versionName` / `versionCode` | `2.11.7` / `98` |
+| `versionName` / `versionCode` | `2.11.8` / `99` |
 | `compileSdk` / `targetSdk` | 36 |
 | `minSdk` | 26 |
 | Kotlin | 2.1.21 |

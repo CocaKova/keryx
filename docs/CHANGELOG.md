@@ -5,7 +5,15 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
-## 2.11.7 · current HEAD (unreleased at write time, versionCode 98)
+## 2.11.8 · versionCode 99
+
+- The composer stands on its own floor: a scrolled-up transcript no longer reads through the
+  placeholder and the model row. Its ground is held to AA by the same contrast test as the flight plan.
+- On the direct door a finished reply no longer fades out beside its own copy. A live turn's rows keep
+  one name from first token to the re-read (`LiveTurnIds`), and no longer parse as gateway row ids.
+- The documentation section: this `docs/` folder, the screenshots, and a README that leads into them.
+
+## 2.11.7 · no tag (versionCode 98)
 
 - A slash command no longer leaves the room reading `steer`, and the command palette sits on the
   composer.
