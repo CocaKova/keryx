@@ -7,7 +7,7 @@ tokens live when the keryx-stream plugin is installed. The app is one APK, no di
 required, and it works against any stock Hermes gateway with nothing extra installed (live
 streaming then just falls back to committed turns).
 
-This folder is the user documentation. The version it describes is 2.11.7.
+This folder is the user documentation. The version it describes is 2.11.8.
 
 ## Pages
 
