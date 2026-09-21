@@ -1,20 +1,40 @@
-# Keryx ⚡
+<p align="center">
+  <img src="docs/img/keryx-icon.png" alt="Keryx" width="112">
+</p>
 
-A dream-styled Android client for [Hermes](https://github.com/NousResearch/hermes-agent) agents, over
-Matrix or straight against the gateway. It turns a shared agent room into a real interface: live token
-streaming, collapsible reasoning, tool-call cards, quiet telemetry, rendered in a deliberate visual
-language instead of a wall of raw model output. Nothing in it is tied to one deployment; any Matrix
-homeserver and any hermes-agent gateway will do.
+<h1 align="center">Keryx</h1>
 
 <p align="center">
-  <img src="docs/img/turn-anatomy.jpg" alt="A finished turn: prompt, reasoning, a tool card with its output, the reply" width="260">
-  <img src="docs/img/drawer.jpg" alt="The drawer: sessions, filters, and the spaces" width="260">
-  <img src="docs/img/gateway-panel.jpg" alt="The Gateway panel: brain, state, and the rooms of the machine" width="260">
+  <b>A dream-styled Android client for <a href="https://github.com/NousResearch/hermes-agent">Hermes</a> agents.</b><br>
+  Live token streaming, folded reasoning, tool cards, and the whole gateway in your pocket.
+</p>
+
+<p align="center">
+  <a href="docs/README.md"><img src="https://img.shields.io/badge/docs-read%20the%20docs-E55A00?style=for-the-badge&logo=readthedocs&logoColor=white" alt="Read the docs"></a>
+  <a href="https://github.com/CocaKova/keryx/releases/latest"><img src="https://img.shields.io/github/v/release/CocaKova/keryx?style=for-the-badge&logo=android&logoColor=white&label=APK&color=3DDC84" alt="Latest release"></a>
+  <a href="https://x.com/jonnykov"><img src="https://img.shields.io/badge/@jonnykov-000000?style=for-the-badge&logo=x&logoColor=white" alt="@jonnykov on X"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/CocaKova/keryx-stream"><img src="https://img.shields.io/badge/gateway%20plugin-keryx--stream-8B5CF6?style=flat-square&logo=github&logoColor=white" alt="keryx-stream plugin"></a>
+  <img src="https://img.shields.io/badge/Android-8.0+-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android 8.0+">
+  <img src="https://img.shields.io/badge/Kotlin-Compose%20Multiplatform-7F52FF?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin, Compose Multiplatform">
+  <img src="https://img.shields.io/badge/Matrix-or%20direct%20to%20gateway-0DBD8B?style=flat-square&logo=matrix&logoColor=white" alt="Matrix or direct to the gateway">
+</p>
+
+<p align="center">
+  <img src="docs/img/turn-anatomy.jpg" align="top" alt="A finished turn: prompt, reasoning, a tool card with its output, the reply" width="260">
+  <img src="docs/img/drawer.jpg" align="top" alt="The drawer: sessions, filters, and the spaces" width="260">
+  <img src="docs/img/gateway-panel.jpg" align="top" alt="The Gateway panel: brain, state, and the rooms of the machine" width="260">
   <br><sub>A turn with its reasoning and tool output open · the drawer · the Gateway panel</sub>
 </p>
 
-Documentation lives in [`docs/`](docs/README.md). Start at
-[getting-started.md](docs/getting-started.md); that page takes you from APK to a live turn.
+Keryx turns a shared agent room into a real interface, rendered in a deliberate visual language
+instead of a wall of raw model output. It works over Matrix or straight against the gateway, and
+nothing in it is tied to one deployment: any Matrix homeserver and any hermes-agent gateway will do.
+
+**[Read the docs →](docs/README.md)** Start at [getting-started.md](docs/getting-started.md); that page
+takes you from APK to a live turn.
 
 ## The pieces
 
@@ -41,6 +61,17 @@ Documentation lives in [`docs/`](docs/README.md). Start at
 - **Places over tabs.** Archive (a local FTS index, so it works with the gateway down), Missions,
   Projects, Shipyard, Runs, Bots, the Gateway hub, the fleet of many gateways on one phone.
 
+## A closer look
+
+<p align="center">
+  <img src="docs/img/steer.jpg" align="top" alt="Steering a running turn from the composer" width="200">
+  <img src="docs/img/reasoning-dial.jpg" align="top" alt="The reasoning dial" width="200">
+  <img src="docs/img/model-picker.jpg" align="top" alt="The model picker" width="200">
+  <img src="docs/img/bots.jpg" align="top" alt="The bot roster" width="200">
+  <br><sub>Steer a running turn · the reasoning dial · the model picker · the bot roster.
+  More in <a href="docs/features/controls.md">controls</a> and <a href="docs/features/spaces.md">spaces</a>.</sub>
+</p>
+
 ## Quick reference
 
 ```bash
@@ -64,3 +95,10 @@ Actively developed and released; see [Releases](https://github.com/CocaKova/kery
 [NousResearch/hermes-agent#57091](https://github.com/NousResearch/hermes-agent/pull/57091); Hermes keeps
 third-party integrations out of core, so it lives as the standalone plugin, built on the stream observer
 hooks Hermes ships.
+
+## Follow along
+
+<p>
+  <a href="https://x.com/jonnykov"><img src="https://img.shields.io/badge/@jonnykov-000000?style=for-the-badge&logo=x&logoColor=white" alt="@jonnykov on X"></a>
+  <a href="https://github.com/CocaKova"><img src="https://img.shields.io/badge/CocaKova-181717?style=for-the-badge&logo=github&logoColor=white" alt="CocaKova on GitHub"></a>
+</p>
