@@ -46,7 +46,7 @@ cd Hermes-Chat && ../tools/ship.sh --release
 
 Gateway side, in four lines: clone [keryx-stream](https://github.com/CocaKova/keryx-stream), run its
 `install.sh`, `hermes plugins enable keryx-stream`, `hermes gateway restart`. Then in
-Settings → **Hermes Link** set the Gateway URL to the plugin's port (`http://<gateway-host>:8642`),
+Settings → **Hermes Link** set the Gateway URL to the plugin's server (`http://<gateway-host>:8646`),
 paste your `API_SERVER_KEY`, and hit **Test link**. The whole walkthrough is in
 [gateway-setup.md](docs/gateway-setup.md).
 
