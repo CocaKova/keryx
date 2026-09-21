@@ -19,6 +19,12 @@ The live and committed halves are the same information. The committed message is
 the side-channel only draws it earlier and adds what the wire has and the text does not, which is
 mostly durations and verdicts.
 
+<p align="center">
+  <img src="../img/chat-folded.jpg" alt="A turn, folded" width="260">
+  <img src="../img/turn-anatomy.jpg" alt="The same turn with reasoning and tool output unfolded" width="260">
+  <br><sub>One turn, folded and unfolded: the <b>Thought</b> disclosure, the tool card, and its output.</sub>
+</p>
+
 ## The reasoning disclosure
 
 The agent's thinking folds into a single collapsible line above the answer, so a long chain of thought

@@ -61,6 +61,11 @@ fallback for comments and non-terminal events.
 A gateway with no kanban board answers these routes with errors the app reads as "missions
 unavailable"; the panel hides and nothing else is affected.
 
+<p align="center">
+  <img src="../img/missions-new.jpg" alt="The New mission dialog" width="260">
+  <br><sub>A new mission: title, brief, assignee, and whether it parks in triage first.</sub>
+</p>
+
 ## Projects
 
 The gateway's native workspace grouping. A project is a workspace (folders on the host); a session
@@ -89,6 +94,11 @@ Bot Mode, direct door only. The roster of the gateway's profiles, each one tap f
 chat, arranged on shelves, with the newest active rows first. The roster is the active gateway's, not a
 union across the fleet.
 
+<p align="center">
+  <img src="../img/bots.jpg" alt="The bot roster" width="260">
+  <br><sub>The roster: one card per Hermes profile, with its last line and brain.</sub>
+</p>
+
 ## Gateway
 
 One door for the machine, with the landing on what it is doing: status, the brain, the last turn. The
@@ -106,6 +116,11 @@ Each panel caches its last gateway answer so it reads offline, and one with a 40
 rather than stubbed. The hub's snapshot store keeps only plain GETs; parameterized paths and per-run
 polls are not cached, so the cache cannot grow without bound.
 
+<p align="center">
+  <img src="../img/gateway-panel.jpg" alt="The Gateway panel" width="260">
+  <br><sub>Gateway: the brain and its state on top, then one row per room of the machine.</sub>
+</p>
+
 ## Shipyard
 
 Git review and shipping over the direct door, gated on the gateway's `git` capability, so on a gateway
@@ -115,6 +130,11 @@ subjects, push, and the PR line says the true thing.
 
 Two things are absent on purpose: revert, which destroys work no git object holds, and create-PR, which
 would open a pull request as the gateway's user.
+
+<p align="center">
+  <img src="../img/shipyard.jpg" alt="The Shipyard on a repo: working tree, stage, commit, push" width="260">
+  <br><sub>The Shipyard on one repo: changed files with their line counts, then stage, commit, push.</sub>
+</p>
 
 ## Settings
 
