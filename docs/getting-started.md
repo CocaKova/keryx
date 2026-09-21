@@ -16,7 +16,7 @@ Grab the newest release from [Releases](https://github.com/CocaKova/keryx/releas
 it. Every release ships a signed APK. With the phone connected over adb:
 
 ```bash
-adb install -r keryx-2.11.7-vc98-release.apk
+adb install -r keryx-2.11.6.apk      # use the file name of the release you downloaded
 ```
 
 A release build signs with the debug certificate unless `local.properties` names a keystore, so a

@@ -37,8 +37,8 @@ Documentation lives in [`docs/`](docs/README.md). Start at
 ## Quick reference
 
 ```bash
-# install
-adb install -r dist/keryx-2.11.7-vc98-release.apk
+# install (the APK from the Releases page)
+adb install -r keryx-<version>.apk
 
 # build (no emulator on arm64 Linux; the on-device canary needs a phone on adb)
 cd Hermes-Chat && ../tools/ship.sh --release
