@@ -46,6 +46,31 @@ object StreamHandoff {
         val n = minOf(a.length, b.length, 160)
         return n >= 48 && a.take(n) == b.take(n)
     }
+
+    /**
+     * A turn that was answered WITHOUT the side-channel ever carrying it: the subscription
+     * opened, nothing came down it, and the agent's reply simply landed in the room.
+     *
+     * That is every gateway-handled slash command (`/new`, `/status`, `/help` — no model call,
+     * so no token, no tool frame and no `stop`) and any gateway that isn't streaming. An open
+     * channel is not evidence of a running turn; only what it carries is. Left unsettled, the
+     * overlay stayed "live" for the room and the composer read "steer" for a turn that had
+     * already ended (device-caught 2026-09-20: `/new`, then the next message steered).
+     *
+     * [carried] is whether the channel has delivered anything but its own open/keepalive.
+     * A reply that ends on a tool call or bare reasoning is work in progress, not an answer —
+     * its frames are about to arrive — so it never settles the turn here.
+     */
+    fun answeredWithoutStreaming(carried: Boolean, isNewAgentMessage: Boolean, body: String): Boolean {
+        if (carried || !isNewAgentMessage) return false
+        if (MessageParser.isTelemetryMessage(body) || normalize(body).isBlank()) return false
+        val tail = MessageParser.parse(body).lastOrNull {
+            it !is MessageParser.Segment.Telemetry &&
+                !(it is MessageParser.Segment.Text && it.text.isBlank())
+        }
+        return tail != null && tail !is MessageParser.Segment.Tools &&
+            tail !is MessageParser.Segment.Thinking && tail !is MessageParser.Segment.ActionOutput
+    }
 }
 
 /** Lifecycle of the tier-1 live stream overlay. */

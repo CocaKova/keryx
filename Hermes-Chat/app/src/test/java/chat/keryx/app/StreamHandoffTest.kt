@@ -115,4 +115,36 @@ class StreamHandoffTest {
         val body = "🧠 recalling context\n⚙️ terminal: \"ls\"\nHere is the answer.\n\nmodel · 12% · ~/x"
         assertEquals("Here is the answer.", StreamHandoff.normalize(body))
     }
+
+    // --- A turn answered without the side-channel carrying it ---------------------------------
+
+    private val newSession = "✨ New session started!\n\n◆ Model: `qwen3.8-27b`\n◆ Provider: custom"
+
+    @Test
+    fun slashCommandReply_onASilentChannel_settlesTheTurn() {
+        // /new: the gateway answers itself — no token, no tool frame, no `stop` ever comes.
+        assertTrue(StreamHandoff.answeredWithoutStreaming(carried = false, isNewAgentMessage = true, body = newSession))
+    }
+
+    @Test
+    fun aChannelThatCarriedAnything_isLeftToItsOwnStop() {
+        assertFalse(StreamHandoff.answeredWithoutStreaming(carried = true, isNewAgentMessage = true, body = newSession))
+    }
+
+    @Test
+    fun onlyAFreshAgentMessage_counts() {
+        // An old message re-emitted by the timeline, or my own echo, says nothing about this turn.
+        assertFalse(StreamHandoff.answeredWithoutStreaming(carried = false, isNewAgentMessage = false, body = newSession))
+    }
+
+    @Test
+    fun telemetryAndBlankBodies_doNotSettle() {
+        assertFalse(StreamHandoff.answeredWithoutStreaming(false, true, "⏳ Working — iteration 5/90"))
+        assertFalse(StreamHandoff.answeredWithoutStreaming(false, true, "   "))
+    }
+
+    @Test
+    fun aReplyEndingInBareReasoning_isStillWorking() {
+        assertFalse(StreamHandoff.answeredWithoutStreaming(false, true, "<think>let me look at the repo first</think>"))
+    }
 }

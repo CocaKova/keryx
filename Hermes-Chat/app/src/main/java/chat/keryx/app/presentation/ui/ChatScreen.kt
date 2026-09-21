@@ -827,9 +827,12 @@ fun ChatScreen(
             visible = commandMenuVisible,
             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
             exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            // Sits on top of the composer as MEASURED, not a guessed 90dp: the composer grows
+            // (the Matrix door's rows, a reply target, a multi-line draft) and a fixed offset
+            // left the palette's lower rows under it, down by the keyboard.
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 90.dp)
+                .padding(bottom = with(density) { composerHeightPx.toDp() } + 8.dp)
         ) {
             CommandPaletteMenu(
                 filter = commandFilter,

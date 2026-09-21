@@ -620,6 +620,9 @@ class ChatViewModel(
     // ~100 ms dispatch tick; now it's only set once at `stop`, and mid-turn segment matching pulls
     // the full text here — i.e. per messages emission, not per token dispatch.
     private var currentStreamFullText: (() -> String)? = null
+    /** Whether this turn's side-channel has delivered anything beyond its own open/keepalive —
+     *  see [StreamHandoff.answeredWithoutStreaming]. */
+    private var streamCarriedTurn = false
 
     // Fingerprint of the last handoff evaluation (stream status + the recent candidate window).
     // maybeHandOffStream runs on EVERY messages emission during a turn and normalizing the
@@ -1097,6 +1100,7 @@ class ChatViewModel(
         streamJob?.cancel()
         streamClearJob?.cancel()
         _liveStream.value = null
+        streamCarriedTurn = false
         val url = _gatewayUrl.value.trim()
         if (!_sideChannelEnabled.value || url.isBlank()) {
             _linkHealth.value = LinkHealth.OFF
@@ -1160,6 +1164,7 @@ class ChatViewModel(
             client.stream(roomId).collect { ev ->
                 if (ev !is chat.keryx.app.data.remote.HermesStreamClient.Event.Delta)
                     chat.keryx.app.util.KLog.i("KeryxSSE") { "event=$ev bufLen=${buf.length}" }
+                if (ev !is chat.keryx.app.data.remote.HermesStreamClient.Event.Opened) streamCarriedTurn = true
                 when (ev) {
                     is chat.keryx.app.data.remote.HermesStreamClient.Event.Opened -> {
                         _linkHealth.value = LinkHealth.LIVE
@@ -1362,6 +1367,13 @@ class ChatViewModel(
                     // part but keep the SSE channel: the post-tool reasoning + answer are still on
                     // their way down this same subscription. `stop` / AWAITING_SYNC ends the turn.
                     if (matched) consumeStreamedSegment?.invoke() ?: run { clearStream(); settleTurn() }
+                } else if (StreamHandoff.answeredWithoutStreaming(
+                        carried = streamCarriedTurn,
+                        isNewAgentMessage = isNewMsg && last.sender == SenderType.HERMES,
+                        body = last.content,
+                    )
+                ) {
+                    clearStream(); settleTurn()
                 }
             }
             LiveStreamStatus.AWAITING_SYNC -> {
