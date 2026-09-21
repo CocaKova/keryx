@@ -82,7 +82,6 @@ class DirectTransport(
     companion object {
         const val GATEWAY_ROOM_ID = "gateway"
 
-        private const val STREAMING_MSG_ID = "streaming"
         /** Placeholder id for a tool.generating card, replaced by the real tool.start. */
         private const val STREAM_PUBLISH_MS = 100L
 private const val GHOST_TOOL_ID = "generating"
@@ -202,6 +201,8 @@ private const val GHOST_TOOL_ID = "generating"
 
         private val items = mutableListOf<TurnItem>()
         private var seq = 0
+        /** Names this turn's rows, live and folded alike — see [LiveTurnIds]. */
+        private var turnTag = 0L
         private var buffer = StringBuilder()
         private var streaming = false
         // The turn's thinking: reasoning.delta/thinking.delta accumulate here (they stream
@@ -272,6 +273,7 @@ private const val GHOST_TOOL_ID = "generating"
         fun streamStart() {
             streaming = true
             items.clear(); buffer = StringBuilder(); seq = 0
+            turnTag = System.currentTimeMillis()
             reasonBuf = StringBuilder(); reasonStartedAt = 0L; reasonEndedAt = 0L
             agentTyping.value = true
             publish()
@@ -455,12 +457,16 @@ private const val GHOST_TOOL_ID = "generating"
             streaming = false
             agentTyping.value = false
             val now = System.currentTimeMillis()
-            val folded = items.mapIndexed { idx, item -> itemMessage(item, "live-$now-$idx", now) }
+            // A turn that completes without a start frame (reconnect mid-turn) still needs a name.
+            if (turnTag == 0L) turnTag = now
+            // Same ids the overlay wore while it streamed: the fold is the SAME rows settling,
+            // and a row that changes its key is a row the list fades out beside its own copy.
+            val folded = items.map { itemMessage(it, LiveTurnIds.item(turnTag, it.seq), now) }
             val fin = finalText.ifBlank { buffer.toString() }.trim()
             val lastSealed = (items.lastOrNull() as? TurnItem.Text)?.text
             val finMsg = if (fin.isNotBlank() && fin != lastSealed) listOf(
                 Message(
-                    id = "live-$now-final",
+                    id = LiveTurnIds.answer(turnTag),
                     roomId = storedId,
                     sender = if (error) SenderType.SYSTEM else SenderType.HERMES,
                     content = fin,
@@ -475,7 +481,7 @@ private const val GHOST_TOOL_ID = "generating"
                 ?: reasonBuf.toString().trim().takeIf { it.isNotEmpty() })
             val thoughtMsg = if (thought != null) listOf(
                 Message(
-                    id = "live-$now-think",
+                    id = LiveTurnIds.thought(turnTag),
                     roomId = storedId,
                     sender = SenderType.HERMES,
                     content = "",
@@ -485,7 +491,7 @@ private const val GHOST_TOOL_ID = "generating"
                 )
             ) else emptyList()
             local = local + thoughtMsg + folded + finMsg
-            items.clear(); buffer = StringBuilder()
+            items.clear(); buffer = StringBuilder(); turnTag = 0L
             reasonBuf = StringBuilder(); reasonStartedAt = 0L; reasonEndedAt = 0L
             publish()
         }
@@ -584,11 +590,12 @@ private const val GHOST_TOOL_ID = "generating"
         private fun publish() {
             val overlay = if (streaming) buildList {
                 val now = System.currentTimeMillis()
-                // Sealed items get seq-stable ids so Compose keys survive re-publishes.
-                items.forEach { add(itemMessage(it, "stream-${it.seq}", now)) }
+                // Sealed items get seq-stable ids so Compose keys survive re-publishes — and
+                // the fold in [streamComplete], which hands the same rows the same names.
+                items.forEach { add(itemMessage(it, LiveTurnIds.item(turnTag, it.seq), now)) }
                 add(
                     Message(
-                        id = STREAMING_MSG_ID,
+                        id = LiveTurnIds.answer(turnTag),
                         roomId = storedId,
                         sender = SenderType.HERMES,
                         content = buffer.toString(),

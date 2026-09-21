@@ -151,7 +151,10 @@ internal fun Composer(
         modifier = Modifier
             .fillMaxWidth()
             .clip(composerShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f))
+            // Floats over the transcript, so it stands on its own floor first and takes its tint
+            // second: the tint alone let whatever scrolled underneath read through the draft.
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = ComposerFloor.ALPHA))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = ComposerFloor.TINT_ALPHA))
             .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f), composerShape)
             .padding(start = 2.dp, end = 4.dp, top = 2.dp, bottom = 0.dp),
     ) {
@@ -739,3 +742,16 @@ private const val WAKE_GLYPH_SP = 15f
  * wake and the emblem are visibly the same alphabet.
  */
 internal val WAKE_DOTS = intArrayOf(0x19, 0x38, 0x34, 0x26, 0x07, 0x0B)
+
+/**
+ * How opaque the composer's ground is. Pure numbers, apart from the composable so the contrast
+ * test can do the arithmetic, the same way [chat.keryx.app.presentation.ui.components.FlightPlanFloor]
+ * does for the strip at the other edge: the composer is pinned OVER the transcript, the list only
+ * reserves room for it at rest, and a scrolled-up transcript passes underneath it.
+ */
+object ComposerFloor {
+    /** Surface opacity of the floor under the tint. */
+    const val ALPHA = 0.94f
+    /** The surfaceVariant tint laid on the floor (the composer's matte look). */
+    const val TINT_ALPHA = 0.72f
+}

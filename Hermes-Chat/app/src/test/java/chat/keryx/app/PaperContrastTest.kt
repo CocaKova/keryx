@@ -1,5 +1,6 @@
 package chat.keryx.app
 
+import chat.keryx.app.presentation.ui.ComposerFloor
 import chat.keryx.app.presentation.ui.components.FlightPlanFloor
 import chat.keryx.app.presentation.ui.components.KeryxToolTint
 import chat.keryx.core.model.Heralds
@@ -94,6 +95,36 @@ class PaperContrastTest {
             val text = over(voidInk, lineAlpha, floor)
             val c = contrast(text, floor)
             assertTrue("void flight plan over ${under.toString(16)} scores $c", c >= AA)
+        }
+    }
+
+    /**
+     * The composer is pinned over the transcript too, at the other edge. The list reserves room
+     * for it only at rest: scrolled up, bubbles pass underneath, and at the tint's 72% alone a
+     * white reply was legible through the placeholder (device-caught 2026-09-21). Its faintest
+     * text is the placeholder, in the theme's secondary ink.
+     */
+    @Test
+    fun `composer ground keeps its placeholder readable over any transcript`() {
+        val floorAlpha = ComposerFloor.ALPHA.toDouble()
+        val tintAlpha = ComposerFloor.TINT_ALPHA.toDouble()
+        val amber = 0xFFFFB300L
+        val paperVariant = 0xFFEBE5D9L
+        val voidVariant = 0xFF1D1D28L
+        val voidFaded = 0xFFA6A0B5L
+        for (under in listOf(void, amber, voidSurface, 0xFF8B5CF6L)) {
+            val ground = over(paperVariant, tintAlpha, over(paperSurface, floorAlpha, under))
+            val c = contrast(fadedInk, ground)
+            assertTrue("paper composer over ${under.toString(16)} scores $c", c >= AA)
+        }
+        for (under in listOf(0xFFFFFFFFL, amber, paper, 0xFF8B5CF6L)) {
+            val ground = over(voidVariant, tintAlpha, over(voidSurface, floorAlpha, under))
+            val c = contrast(voidFaded, ground)
+            assertTrue("void composer over ${under.toString(16)} scores $c", c >= AA)
+            // What scrolls underneath must not READ through: it may move the ground by a hair,
+            // never by enough to be a second line of text behind the draft.
+            val rest = over(voidVariant, tintAlpha, over(voidSurface, floorAlpha, void))
+            assertTrue("a bubble under the void composer shows through", contrast(ground, rest) < 1.15)
         }
     }
 
