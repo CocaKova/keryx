@@ -6,6 +6,13 @@ streaming, collapsible reasoning, tool-call cards, quiet telemetry, rendered in 
 language instead of a wall of raw model output. Nothing in it is tied to one deployment; any Matrix
 homeserver and any hermes-agent gateway will do.
 
+<p align="center">
+  <img src="docs/img/turn-anatomy.jpg" alt="A finished turn: prompt, reasoning, a tool card with its output, the reply" width="260">
+  <img src="docs/img/drawer.jpg" alt="The drawer: sessions, filters, and the spaces" width="260">
+  <img src="docs/img/gateway-panel.jpg" alt="The Gateway panel: brain, state, and the rooms of the machine" width="260">
+  <br><sub>A turn with its reasoning and tool output open · the drawer · the Gateway panel</sub>
+</p>
+
 Documentation lives in [`docs/`](docs/README.md). Start at
 [getting-started.md](docs/getting-started.md); that page takes you from APK to a live turn.
 

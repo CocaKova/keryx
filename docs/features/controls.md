@@ -43,6 +43,11 @@ request on the same socket the stream rides.
 
 The full method list the direct door speaks is in [architecture.md](../architecture.md).
 
+<p align="center">
+  <img src="../img/steer.jpg" alt="The composer in steer mode while a turn runs" width="260">
+  <br><sub>Mid-turn: the composer reads <b>Type to steer this turn…</b>, send becomes stop, and the cloud carries the timer.</sub>
+</p>
+
 ## Model picker
 
 The picker reads the gateway's own catalog (`/keryx/model/options`, with the API server's
@@ -53,6 +58,11 @@ search, and a recents row.
 
 One setting matters here, **New sessions use the last model picked** (on the direct door). Off, a new
 chat opens on the gateway's configured default brain. On, it opens on whatever you last chose.
+
+<p align="center">
+  <img src="../img/model-picker.jpg" alt="The model picker sheet" width="260">
+  <br><sub>The model picker: the brain in use, recents, then every provider the gateway offers.</sub>
+</p>
 
 ## Reasoning dial
 
@@ -71,6 +81,12 @@ probe also reports whose dial it is, `scope: "session"` or `"global"`, so a pick
 that chose a cloud model does not show the global default's ladder.
 
 An unknown level comes back as RPC error `4002` rather than landing silently.
+
+<p align="center">
+  <img src="../img/reasoning-dial.jpg" alt="The reasoning dial opened from the composer" width="260">
+  <img src="../img/controls-panel.jpg" alt="The Controls panel: reasoning ladder and gateway settings" width="260">
+  <br><sub>The dial from the composer, and the same ladder in Gateway → Controls above the gateway settings.</sub>
+</p>
 
 ## The `/keryx/*` panels
 

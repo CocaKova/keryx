@@ -41,6 +41,11 @@ list and the bot roster come along with them.
 The noun changes per door and it never mixes: rooms on Matrix, sessions on the direct door. Both
 doors render the same turn structure. See [concepts.md](concepts.md).
 
+<p align="center">
+  <img src="img/account-transport.jpg" alt="Settings, Account: the signed-in gateway and the Transport switch" width="260">
+  <br><sub>Settings → Account. The Transport block names the door in use and offers the other one.</sub>
+</p>
+
 ## 3. Fill in the Hermes Link
 
 Settings → **Hermes Link** holds the gateway half of the connection. Three fields, and they are the
@@ -61,6 +66,11 @@ If your gateway binds to loopback only and your phone is on mobile data, the pho
 `127.0.0.1` and a raw port does not survive a Tailscale Serve either. Both cases are walked through
 in [gateway-setup.md](gateway-setup.md).
 
+<p align="center">
+  <img src="img/gateway-test-link.jpg" alt="The Gateway panel after a successful Test Hermes Link" width="260">
+  <br><sub>The same probe from the Gateway panel (<b>Test Hermes Link</b>): a good answer reads <code>ok · hermes-agent · &lt;version&gt;</code>.</sub>
+</p>
+
 ## 4. Open a room and send something
 
 The drawer lists rooms (or sessions), with a pinned deck on top. Tap a row and the transcript opens
@@ -76,6 +86,12 @@ A turn you can expect to see:
 With the plugin installed and streaming on, the text of step 4 arrives token by token. Without it,
 you get the same bubble one moment later, once Matrix syncs it. Nothing else changes. That is the
 fallback tier, described in [features/streaming.md](features/streaming.md).
+
+<p align="center">
+  <img src="img/drawer.jpg" alt="The drawer with its session list" width="260">
+  <img src="img/chat-folded.jpg" alt="A turn with reasoning and the tool card folded" width="260">
+  <br><sub>The drawer, and a finished turn with its reasoning and tool card folded.</sub>
+</p>
 
 ## 5. Tell whether it worked
 
@@ -95,3 +111,8 @@ Four checks, in order of how little they ask of you.
 
 The link-health dot in the top bar is the fast summary of all of this: it breathes while tokens flow,
 dims when idle, and goes red when the gateway is unreachable.
+
+<p align="center">
+  <img src="img/context-ring.jpg" alt="The composer with the context figure showing 31k / 262k" width="260">
+  <br><sub>Check 4: the context ring, tapped, next to the model and reasoning pickers.</sub>
+</p>
