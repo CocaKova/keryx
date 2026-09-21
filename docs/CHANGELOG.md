@@ -1,0 +1,142 @@
+# Changelog
+
+Newest first. Built from `git tag`, `git log`, and the version headers in the build-plan notes, with
+each entry's facts cross-checked against the shipped source. Some versions never got a tag; those are
+marked, and their numbers come from the version header in their own plan doc plus the commit that names
+them.
+
+## 2.11.7 · current HEAD (unreleased at write time, versionCode 98)
+
+- A slash command no longer leaves the room reading `steer`, and the command palette sits on the
+  composer.
+- The README sends people to the plugin that works, not the patch that stopped applying.
+- CI sets up the Android SDK without the package that no longer exists on runners.
+- The shade stops shouting: one run notice, one alert per turn, a colour that means something.
+- Builds run on a build host, and the signing key travels with them.
+- The reasoning dial learns DeepSeek-V4.1: graded local templates share one table.
+
+## 2.11.6 · tag `v2.11.6`
+
+- The review shows with the footer off, and the ring is lit when a room opens.
+- A link inside bold opens: structured bold and strike go back to the renderer.
+- A new chat opens on a model the gateway still serves, and the GLM dial is real.
+- A report you read stays in Runs; a report you answer joins the list.
+- A subagent's work is kept, and a room follows a turn it did not start.
+
+## 2.11.0
+
+- **Fleet**, multi-gateway on one phone: a named registry of gateway rows, one Primary, one active,
+  dedup on the normalised URL, unique device names, the selector only when there is a choice, and a
+  cold-start rule that resumes the last-used gateway by default (the phone's answer to a process the OS
+  kills all day). Per-gateway credential and ledger scoping so rows do not cross-contaminate.
+- Call-pace work carried from the 2.10 pass.
+
+## 2.10.0 · no tag
+
+The Nous pass. The settings go flat, searchable and fewer; a settings row cannot be anchored without
+being searchable. The machine gets one door and the drawer gets a floor. The drawer learns to filter,
+archive and jump. The archive reads across sessions on the direct door. Two god files become six. The
+numbers the phase asked for were measured. A failed turn says which layer broke, the ring says what
+fills it, and the last exchange can be taken back. The Gate speaks: a stopped agent, answerable from
+the shade. A call that can be heard. Instruments stop covering each other, and the accent becomes a
+light instead of an ink. The palette was split out of `ChatScreen` with zero behaviour change.
+
+## 2.9.x · tags `v2.9.0`, `v2.9.3`
+
+- The roster gets shelves; one ink for every stop of the sunset; the first walk written down.
+- Project sessions stay in Projects, the roster reaches back, and a new session knows its model.
+- GIF handling settled: tap the picture to get its address, copy the GIF not its address, the address
+  of a GIF is a GIF.
+- The floor rises to where the code already stood.
+
+## 2.8.x · no tags (2.8.0, 2.8.1, 2.8.2, 2.8.3 known from plan-doc headers and commits)
+
+- **Bots (2.8.0)**: a bot is a profile, each one tap from its forever-chat; the Bots door with an
+  active-now strip, activity-ordered roster in each bot's own light, search, pin-to-top tiles, new agent
+  with clone-from, routines. The canonical Bot Chat opens by exact title on the bot's own profile. Every
+  session call names its profile on the wire. `/new` reroutes to `/compact` inside a forever-chat, and
+  `@`-mention chips plus the identification note let a bot hand off.
+- **The hands (2.8.1)**: `⟦keryx:do|kind|args⟧` tiles performing phone acts on a tap, in the bubble and on
+  the lock-screen notice, through system intents only, the tap as the whole consent model. A self-sorting
+  model picker drawn from a pure tested plan (this machine first, cloud logins flat and flagship-first,
+  aggregators split by lab with the tail folded, recents, search, prices, free-tier gating). One motion
+  pass on shared springs. Two bugs closed: a tapped scheduled run stops double-notifying, and a new
+  session from the drawer lands in it.
+- **Instruments (2.8.2)**: the flight plan stands on a real floor at 0.94 surface alpha with a hairline
+  edge, held to WCAG AA over the worst backdrop each theme can produce; the drawer orders by the newest
+  activity the app knows of from either side, with 5 s slack so a token stream never rebuilds the roster;
+  the context ring lights on the direct door off the gateway's own usage.
+- **2.8.3**: the working banner survives a compaction. The hold is open-ended and re-armed when the
+  compaction ends, so quiet is counted from the moment work actually stopped, bounded only so a lost
+  `done` cannot strand the banner forever. A mid-stream drop deliberately does not lift the hold.
+- Long messages stop lagging on the swipe: a settled body's markdown tree is parsed once, warmed off the
+  main thread, and served from a content-keyed cache.
+
+## 2.6.x · tags `v2.6.0`, `v2.6.1` (2.6.2 has no tag)
+
+- The direct door stops speaking Matrix: sessions pin on the gateway, unread is the gateway's read
+  watermark, drawer previews stop hydrating fifty live agents, the top-bar plus opens a real session,
+  and one `DoorLexicon` per door says room or session everywhere the noun appears.
+- The reasoning dial belongs to the session: `/keryx/capabilities` scopes to one brain and reads the
+  provider's own effort tables, so a session gets its model's ladder rather than the local brain's.
+- The Runs door keeps what you keep: a run pins on the gateway (the desktop's keep flag), a Pinned shelf
+  above the arrivals rail, one long-press menu on every row, and the page asks the API server for
+  `source=cron` so 150 rows are 150 runs.
+- Cron tiles: a scheduled job pins to the top of the session list the way a Quick Room does, with the
+  deck as a pure function of cards, ledger and unread.
+- The forty-first report says what changed: each job card reads "since last run · +3 new · 1 updated ·
+  2 gone", with lines compared by key and near-matches counted as updated. The ambient void's accent
+  pools move into the dusk-sky shader so the OLED stops showing a hard edge.
+- Code fences stop crashing the app: the highlighted-code composable's second horizontal scroller was
+  measured at infinite width, which Compose refuses; the colour is now the tokenizer's spans laid over
+  Keryx's own text in Keryx's own scroller (`e1ae954`).
+
+## 2.5.x · tags `v2.5.0` through `v2.5.6`
+
+- The ship gate lands: three verdicts, with AMBER meaning a stage could not run so nothing was learned.
+  The on-device canary covers the crash class the JVM cannot see.
+- The `Math` unicode pass survives Android's regex engine: ICU rejects a bare `}` the JVM accepts, the
+  converter's class-init threw, and every rendered message killed the app with a green test suite
+  (`fd8bf29`).
+- Compression and payloads: every `end` tool frame carries its result, clipped from the middle, with
+  `result_len` the unclipped size. The compaction status mirror gets its own frame kind.
+- The design pass, the direct-door pass, and the steer/picker control pass.
+
+## 2.4.0 · tag `v2.4.0`
+
+- **The tool theater**: each tool as it starts, how long it took, what failed and why, calls fired in one
+  turn grouped on a rail. Subagents get their own wings (goal, model, tool count, duration, token cost,
+  summary). Deliberately quiet, since the committed reply renders the same calls a moment later.
+
+## 2.3.x · no tag
+
+- **The Council**: several agents, one room, each its own light. A stable hue and sigil per agent,
+  carried by the bubble rim, the name and the spinner. A relayed agent renders as an attributed notice;
+  a turn nobody asked for is an *arrival*.
+
+## 2.1.1 / 2.0 · tag `v2.1.1`, no 2.0 tag
+
+- **The dream rebuild.** A single nav spine over the chat floor with a gesture-scrubbed transition, one
+  attention budget for ornaments, the haptic grammar, the assistant doorway, the share target, and the
+  local-first crash log.
+
+## 1.x line · tags `v1.15.1` through `v1.26.2`
+
+- Dual-tier streaming: a transient SSE side-channel with one committed Matrix message per turn, and a
+  smart-throttled edit fallback.
+- The agent-output parser: folded reasoning canvases, grouped tool run cards, Action Output cards, quiet
+  telemetry footers.
+- Markdown that holds up: GFM grids, scrollable code with copy, healed fences.
+- Hermex-native controls: the reasoning menu, the slash palette with recents, steer, the link-health dot.
+- Actionable notifications and the hands markers, with the tap as consent.
+- The self-sorting model picker, off the gateway's catalog.
+- Self-contained push with no distributor app, `event_id_only` payloads.
+- The share-sheet target with MSC2530 captions.
+- The Archive: a local FTS4 index, date jump, media gallery, live context window.
+- The Missions board, the Skill Forge, the session pruner, toolset toggles, the pet endpoints, the Run
+  Console, the Gateway/Workshop panels, and the fleet's precursor plumbing.
+
+## Non-version tags
+
+- `pre-rebase/keryx-2.7-wake-word` — the wake-word tree before the rebase; 2.7 itself carries no tag.
+- `archive/hub-hermes-update` — the hub's hermes-update panel at its archive point.
