@@ -40,8 +40,9 @@ Two notes on those steps.
    plugin list shows it as incompatible; run `hermes plugins compat` and follow its note. A reinstall
    after a `hermes update` is the usual cure, since the update rewrote the tree under it.
 
-`install.sh --copy` copies instead of symlinking, if you prefer an unpacked tree. The package can also
-be installed from PyPI (`pip install keryx-stream`), discovered through its entry point.
+`install.sh --copy` copies instead of symlinking, if you prefer an unpacked tree. From a clone,
+`pip install -e .` also works: the package is discovered through its `hermes_agent.plugins` entry point.
+It is not published on PyPI.
 
 The live-stream half depends on the core's shipped stream observer hooks (`on_stream_start`,
 `on_stream_delta`, `on_stream_end`, `on_interim_message`, plus `pre_tool_call` / `post_tool_call`). On a
@@ -69,7 +70,7 @@ keryx_stream:
 The plugin runs its own small HTTP server on that port, bearer-authed, and does not touch the gateway's
 api_server. The bearer token is a secret, so it comes from the environment: set `KERYX_STREAM_TOKEN`, or
 reuse your existing `API_SERVER_KEY`. Every route except the health one requires the
-`Authorization: Bearer ***` header.
+`Authorization: Bearer <token>` header.
 
 That is what you type into the app. Settings → **Hermes Link**:
 

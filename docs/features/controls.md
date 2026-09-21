@@ -122,7 +122,7 @@ The kinds, straight from the parser:
 | Kind | Shape |
 |---|---|
 | `url` | `url|https://…` |
-| `dial` | `dial|+151****0100` |
+| `dial` | `dial|+15125550100` |
 | `sms` | `sms|+1…|body` |
 | `email` | `email|to|subject|body` |
 | `calendar` | `calendar|title|start|end|where` (ISO date-times, end and where optional) |
