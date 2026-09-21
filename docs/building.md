@@ -60,6 +60,16 @@ it as `RED` reverts good work when a phone is asleep, and one that reads it as `
 nothing tested. `--smoke` installs the debug variant over what is on the connected device, which is
 why it is off by default.
 
+## The build guard
+
+A host that names a build host in `~/.config/keryx/build-host` has said it delegates builds, usually
+because something else owns its memory (a local model server, here). On such a host
+`settings.gradle.kts` refuses to start Gradle when less than 24 GiB is available
+(`KERYX_BUILD_MIN_AVAIL_GIB`), and the error names `tools/ship.sh`, which hands off by itself. It
+exists because a bare `./gradlew test` beside a loaded model server took the server down in under a
+minute. Hosts without that file, the build host and CI included, never see it. `KERYX_BUILD_HERE=1`
+overrides it, for when the other tenant is stopped.
+
 ## The canary
 
 `app/src/androidTest/.../canary/` is not a UI suite. It is a crash gate for the class of bug the JVM
