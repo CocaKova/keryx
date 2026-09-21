@@ -1,124 +1,59 @@
 # Keryx ⚡
 
-**A dream-styled Android client for [Hermes](https://github.com/NousResearch/hermes-agent) agents over Matrix.**
+A dream-styled Android client for [Hermes](https://github.com/NousResearch/hermes-agent) agents, over
+Matrix or straight against the gateway. It turns a shared agent room into a real interface: live token
+streaming, collapsible reasoning, tool-call cards, quiet telemetry, rendered in a deliberate visual
+language instead of a wall of raw model output. Nothing in it is tied to one deployment; any Matrix
+homeserver and any hermes-agent gateway will do.
 
-Keryx (Greek: *κῆρυξ*, "herald") turns any Matrix room shared with a Hermes agent into a
-first-class agent interface: live token streaming, collapsible reasoning, tool-call cards,
-quiet telemetry — all rendered in a deliberately dreamlike visual language instead of a wall
-of raw model output.
-
-> Works with any Matrix homeserver and any hermes-agent gateway. Nothing in the app is tied
-> to a specific deployment.
+Documentation lives in [`docs/`](docs/README.md). Start at
+[getting-started.md](docs/getting-started.md); that page takes you from APK to a live turn.
 
 ## The pieces
 
 | Directory | What it is |
 |---|---|
-| `Hermes-Chat/` | The Android app (Jetpack Compose + Trixnity Matrix SDK) |
-| `Hermes-Chat/hermes-plugin/keryx-stream/` | The original in-tree gateway patch. **Superseded** by the standalone [keryx-stream](https://github.com/CocaKova/keryx-stream) plugin — see Gateway setup |
+| `Hermes-Chat/` | The Android app: `:app` (Compose + Trixnity Matrix SDK) and `:core` (pure KMP) |
+| `Hermes-Chat/hermes-plugin/keryx-stream/` | The gateway half, in-tree. The standalone [keryx-stream](https://github.com/CocaKova/keryx-stream) plugin is the one to install |
+| `tools/` | `ship.sh`, the build gate. Its contract is in [`tools/README.md`](tools/README.md) |
+| `Hermes-Chat/docs/` | Internal build plans and pass notes; user docs are in [`docs/`](docs/README.md) |
 
-## Highlights
+## In short
 
-- **Dual-tier live streaming** — A transient SSE side-channel from the Hermes gateway renders
-  tokens live. The Matrix room receives exactly one final committed message (no `m.replace`
-  homeserver bloat). If no side-channel? Falls back to plain Matrix sync transparently.
-- **A parsing engine for agent output** — `$$` blocks fold into collapsible reasoning
-  canvases. Tool calls group into expandable run cards with success/failure verdicts.
-  Structured JSON becomes "Action Output" cards. Runtime footers and cron check-ins render as
-  low-contrast telemetry, never as chat.
-- **Markdown that holds up** — GFM tables as real grids. Horizontally-scrollable code blocks
-  with copy buttons. Unclosed fences healed mid-stream.
-- **Hermes-native controls** — Reasoning-effort menu (persists via `/reasoning --global`),
-  slash-command palette with recents, steer shortcut, link-health dot in the top bar.
-- **Actionable notifications** — Reply inline from the lock screen; when the agent is blocking
-  on a decision it can attach one-tap option buttons (`⟦keryx:ask|Approve|Deny⟧` — a structural
-  marker, not keyword sniffing) that also render as reply chips in chat.
-- **Hands** — The agent can hand the phone something to *do*: `⟦keryx:do|navigate|H-E-B Mueller⟧`,
-  `⟦keryx:do|dial|+1…⟧`, `⟦keryx:do|alarm|06:45|flight⟧`, calendar, timer, text, email, search,
-  play, open an app, copy, torch, share. Each renders as a tile in the bubble and a button on the
-  notification that performs the action **on a tap** — the tap is the consent; nothing runs on
-  its own. System intents only: no accessibility service, no dangerous permissions.
-- **A model picker that sorts itself** — This machine first, then cloud logins, then aggregators
-  split by lab with the newest few featured and the tail folded; recents, search, prices and
-  free-tier gating straight from the gateway's catalog.
-- **Self-contained push** — No distributor app required: point Keryx at any ntfy server and it
-  holds its own WebSocket subscription (a UnifiedPush distributor, if installed, is
-  auto-detected and preferred). Payloads stay `event_id_only` — content never rides the push.
-- **Share-sheet target** — Send any text, link, image, video, or file from any app straight
-  into a room with an optional note; attachments + note land as one MSC2530-captioned turn.
-- **The Archive** — Full-text search over the room's entire history, powered by a local FTS
-  index the app builds itself (E2EE rooms can't be searched server-side — the phone is the
-  only place the plaintext exists). Jump to any date, keep messages in a Saved list from the
-  long-press menu, browse every photo and file in a gallery; tapping anything opens a live
-  context window around that moment.
-- **The dream look (2.0)** — A living dark: ambient glows drifting at minutes per pass, streams
-  of magic sand pouring off the reply while it's still being written, spring-physics navigation
-  where the back gesture scrubs the page transition under your finger, and one attention budget
-  governing it all — one focal effect at a time, everything else a whisper. Battery Saver
-  stills every ornament.
-- **Assistant doorway (2.0)** — Set Keryx as the device assist app and the long-press gesture
-  summons your agent from any screen, composer ready.
-- **The room is the truth** — The conversation lives in Matrix and on your phone, not in a
-  session. History survives a gateway restart, a reinstall, or the gateway being down entirely;
-  the same room reads the same from the phone, the desktop, or the Archive. A process can end.
-  The room does not.
-- **The Council (2.3)** — Several agents, one room, each its own light. Every agent account gets
-  a stable hue and the herald's sigil, carried by its bubble rim, its name and its spinner, so a
-  room full of agents reads as several lives rather than one voice with different words. One
-  agent relaying another renders as an attributed notice, never as the courier speaking, and a
-  turn nobody asked for is marked as an *arrival* instead of an answer.
-- **The tool theater (2.4)** — While the agent works you see what it is *doing*, not a spinner:
-  each tool as it starts, how long it took, what failed and why, and calls fired in one turn
-  grouped on a rail. Subagents get their own wings — goal, model, tool count, duration, token
-  cost, and the summary each one came back with. A delegated child is not a session you can open
-  and its relay is never stored, so this is the only window onto it. Deliberately quiet: the
-  committed reply renders the same calls properly a moment later.
-- **Local-first diagnostics** — Crash log kept on-device only, shareable from Settings.
+- **Dual-tier live streaming.** A transient SSE side-channel renders tokens live; the room gets one
+  final committed message, so no `m.replace` bloat. No side-channel, and it falls back to the committed
+  turn, transparently.
+- **A parser built for agent output.** Folded reasoning, grouped tool runs with verdicts, structured
+  JSON as cards, footers and cron check-ins as low-contrast telemetry. GFM tables, scrollable code with
+  copy, healed fences, Mermaid.
+- **Two doors, one chrome.** Matrix (rooms, the council's per-agent hues) or the direct gateway door
+  (sessions, projects, runs, bots, the hub panels). One `DoorLexicon` per door says the noun.
+- **Answerable notices.** Reply inline from the lock screen; one-tap option buttons and phone-action
+  tiles ride as structured markers, and the tap is the consent. No distributor app needed: it holds its
+  own ntfy WebSocket, a UnifiedPush distributor is preferred when present.
+- **Places over tabs.** Archive (a local FTS index, so it works with the gateway down), Missions,
+  Projects, Shipyard, Runs, Bots, the Gateway hub, the fleet of many gateways on one phone.
 
-## Installing
-
-Grab the latest APK from [Releases](https://github.com/CocaKova/keryx/releases) and sideload
-it. Every release ships a signed APK.
-
-## Building
+## Quick reference
 
 ```bash
-cd Hermes-Chat
-./gradlew :app:assembleRelease   # JDK 17 + Android SDK 36 (Kotlin 2.1.21)
+# install
+adb install -r dist/keryx-2.11.7-vc98-release.apk
+
+# build (no emulator on arm64 Linux; the on-device canary needs a phone on adb)
+cd Hermes-Chat && ../tools/ship.sh --release
 ```
 
-Release builds sign with the debug keystore unless `local.properties` provides
-`keryx.keystore`, `keryx.keystore.password`, `keryx.key.alias`, `keryx.key.password`.
-
-## Gateway setup
-
-Chat works against a stock Hermes with nothing installed. The hub panels
-(reasoning dial, Missions, Shipyard, config, skills, pets, update) and live
-streaming on the Matrix door come from the
-[keryx-stream](https://github.com/CocaKova/keryx-stream) plugin — a normal
-Hermes plugin, no core patches:
-
-```bash
-git clone https://github.com/CocaKova/keryx-stream.git
-cd keryx-stream && ./install.sh
-hermes plugins enable keryx-stream
-hermes gateway restart
-```
-
-Then in Keryx → Settings → Gateways → **Hermes Link**, set the gateway URL to
-the plugin's port (`http://<gateway-host>:8646`), paste your `API_SERVER_KEY`,
-and hit **Test link**. The plugin answers `/keryx/*` itself and relays
-everything else to Hermes' API server, so that one URL is all the app needs.
-
-`Hermes-Chat/hermes-plugin/keryx-stream/install.py` is the older approach — it
-patches the hermes-agent tree in place and no longer applies cleanly to current
-hermes-agent. Use the plugin.
+Gateway side, in four lines: clone [keryx-stream](https://github.com/CocaKova/keryx-stream), run its
+`install.sh`, `hermes plugins enable keryx-stream`, `hermes gateway restart`. Then in
+Settings → **Hermes Link** set the Gateway URL to the plugin's port (`http://<gateway-host>:8642`),
+paste your `API_SERVER_KEY`, and hit **Test link**. The whole walkthrough is in
+[gateway-setup.md](docs/gateway-setup.md).
 
 ## Status
 
-Actively developed and released — see [Releases](https://github.com/CocaKova/keryx/releases)
-for the changelog. The gateway side was first proposed upstream as
-[NousResearch/hermes-agent#57091](https://github.com/NousResearch/hermes-agent/pull/57091); Hermes
-keeps third-party integrations out of core, so it lives as the standalone
-[keryx-stream](https://github.com/CocaKova/keryx-stream) plugin, built on the stream observer hooks
-Hermes ships.
+Actively developed and released; see [Releases](https://github.com/CocaKova/keryx/releases) and the
+[Changelog](docs/CHANGELOG.md). The gateway half was first proposed upstream as
+[NousResearch/hermes-agent#57091](https://github.com/NousResearch/hermes-agent/pull/57091); Hermes keeps
+third-party integrations out of core, so it lives as the standalone plugin, built on the stream observer
+hooks Hermes ships.
