@@ -7,7 +7,7 @@ tokens live when the keryx-stream plugin is installed. The app is one APK, no di
 required, and it works against any stock Hermes gateway with nothing extra installed (live
 streaming then just falls back to committed turns).
 
-This folder is the user documentation. The version it describes is 2.11.8.
+This folder is the user documentation. The version it describes is 2.12.0.
 
 ## Pages
 
@@ -20,6 +20,7 @@ This folder is the user documentation. The version it describes is 2.11.8.
 | [Streaming](features/streaming.md) | The dual-tier live-stream architecture and what each tier does on the wire |
 | [Controls](features/controls.md) | Command palette, steer, model picker, reasoning dial, share target, assistant doorway |
 | [Notifications and hands](features/notifications-and-hands.md) | The quiet shade, one-tap answers, the `⟦keryx:…⟧` markers, built-in ntfy push |
+| [Tap-In](features/tap-in.md) | The turn in flight, full screen: headline, mind, crew cards for every helper, the rail, instruments |
 | [Spaces](features/spaces.md) | Archive, Missions, Projects, Runs, Bots, the Gateway hub, the Shipyard |
 | [Configuration](configuration.md) | Every settings row, the Hermes Link fields, the gateway env knobs |
 | [Troubleshooting](troubleshooting.md) | Real failures seen in this app, each with cause and fix |

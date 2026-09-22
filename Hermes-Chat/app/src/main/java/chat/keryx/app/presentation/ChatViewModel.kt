@@ -1431,6 +1431,22 @@ class ChatViewModel(
         else pendingOpenRoomId = roomId
     }
 
+    /**
+     * Tap-In asked for from outside the chat (2.12) — the run notice in the shade. A flag,
+     * not an event: the chat screen may not be composed yet when the tap lands, and the flag
+     * waits for it. The screen clears it the moment it opens the door.
+     */
+    private val _tapInRequested = MutableStateFlow(false)
+    val tapInRequested: StateFlow<Boolean> = _tapInRequested.asStateFlow()
+
+    fun requestTapIn(roomId: String) {
+        // Re-selecting the open room would reset the wait it is in the middle of showing.
+        if (_currentRoom.value?.id != roomId) openRoomById(roomId)
+        _tapInRequested.value = true
+    }
+
+    fun consumeTapIn() { _tapInRequested.value = false }
+
     fun selectRoom(room: RoomProfile) {
         setCurrentRoom(room)
         limitDecayJob?.cancel()

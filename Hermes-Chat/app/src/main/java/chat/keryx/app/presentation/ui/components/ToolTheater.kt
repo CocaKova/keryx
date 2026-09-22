@@ -14,6 +14,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -268,6 +269,7 @@ internal fun deliveryTargetOf(call: ToolCall): String? =
  * mid-run "let me correct course" thought no longer fragments the chain), then the tool steps in a
  * height-bounded scroller that always starts at the top — the first (oldest) tool, not the last.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun ToolTheaterRun(
     run: ChatRenderItem.ToolRun,
@@ -287,6 +289,9 @@ fun ToolTheaterRun(
     /** Open a landed subagent's own session. Rode the live stage until 3.1 §A2 retired it; the
      *  wings live in the run now, and so does the way into them. */
     onOpenSubagent: ((chat.keryx.core.model.Delegation) -> Unit)? = null,
+    /** Tap-In (2.12): a long press on the header steps into this run, full screen — live while
+     *  it runs, frozen after. Only the newest run gets one; older runs have no record behind them. */
+    onTapIn: (() -> Unit)? = null,
 ) {
     val accent = MaterialTheme.colorScheme.primary
     // Expand state persists as the group grows (keyed on the stable oldest-message id).
@@ -375,7 +380,11 @@ fun ToolTheaterRun(
                     if (active) accent.copy(alpha = glow) else baseColor.copy(alpha = 0.16f),
                     RoundedCornerShape(10.dp),
                 )
-                .clickable { expanded = !expanded; onToggle(expanded) }
+                .combinedClickable(
+                    onClick = { expanded = !expanded; onToggle(expanded) },
+                    onLongClick = onTapIn,
+                    onLongClickLabel = if (onTapIn != null) "Tap in to this run" else null,
+                )
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
             // The header's glyph strip, each glyph in its family's colour: the run's shape at

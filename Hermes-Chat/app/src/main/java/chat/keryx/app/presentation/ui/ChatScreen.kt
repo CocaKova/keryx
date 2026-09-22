@@ -252,6 +252,20 @@ fun ChatScreen(
     val lastTurnBeats = turnTheater?.beats.orEmpty()
     // A landed subagent the reader asked to see inside (2.4).
     var openSubagent by remember { mutableStateOf<chat.keryx.core.model.Delegation?>(null) }
+    // Tap-In (2.12): the turn in flight, full screen. Opened from the working banner, a long
+    // press on the newest run, or the run notice in the shade; closed by the back gesture. It
+    // reads the same render items the transcript draws, so both doors are already reconciled.
+    var tapInOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val tapInRequested by viewModel.tapInRequested.collectAsState()
+    LaunchedEffect(tapInRequested) {
+        if (tapInRequested) { tapInOpen = true; viewModel.consumeTapIn() }
+    }
+    if (tapInOpen) chat.keryx.app.presentation.tapin.TapInHost(
+        viewModel = viewModel,
+        itemsNewestFirst = renderItems,
+        structured = lastTurnBeats,
+        onClose = { tapInOpen = false },
+    )
 
     // Restore this room's unsent draft when it opens (and swap drafts when switching rooms) so
     // half-typed thoughts survive room hops and app restarts.
@@ -638,6 +652,7 @@ fun ChatScreen(
                             // attaching one turn's diffs to another's calls.
                             structured = if (item.key == newestToolRunKey) lastTurnBeats else emptyList(),
                             onOpenSubagent = { openSubagent = it },
+                            onTapIn = if (item.key == newestToolRunKey) ({ tapInOpen = true }) else null,
                             // The newest item (index 0 under reverseLayout) is "running" while we
                             // still await Hermes' reply; older runs are settled ("Ran N tools").
                             active = index == 0 && awaitingReply,
@@ -1088,6 +1103,7 @@ fun ChatScreen(
                 tokPerSec = topTokPerSec,
                 typingAgentIds = typingAgentIds,
                 modifier = Modifier.padding(top = 6.dp),
+                onTapIn = { tapInOpen = true },
             )
         }
     }
