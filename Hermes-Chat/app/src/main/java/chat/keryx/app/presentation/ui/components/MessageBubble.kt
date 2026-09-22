@@ -108,6 +108,8 @@ fun MessageBubble(
     onDelete: (() -> Unit)? = null,
     /** Take back this reply and the message that asked for it (2.10, direct door, last reply only). */
     onUndoTurn: (() -> Unit)? = null,
+    /** Take the exchange back, then say it again — the Desktop's /retry (2.11.9). Same gate. */
+    onRetry: (() -> Unit)? = null,
     /** True while this message is being read aloud (or its speech is being fetched). */
     speaking: Boolean = false,
     /** Read this message aloud / stop reading it. Null hides the affordance (non-agent senders). */
@@ -381,11 +383,19 @@ fun MessageBubble(
                 onReply = { showReactionPicker = false; onReply() },
                 onCopy = {
                     showReactionPicker = false
-                    clipboard.setText(androidx.compose.ui.text.AnnotatedString(message.content))
+                    // Smart copy (2.11.9): the same normalized prose the bubble drew — markers
+                    // gone, cite refs as superscripts — so what lands on the clipboard matches
+                    // what the eye saw. The raw body is the second-best answer.
+                    clipboard.setText(
+                        androidx.compose.ui.text.AnnotatedString(
+                            chat.keryx.core.protocol.MessageParser.extractKeryx(message.content).text,
+                        ),
+                    )
                     android.widget.Toast.makeText(copyContext, "Copied", android.widget.Toast.LENGTH_SHORT).show()
                 },
                 onDelete = onDelete?.let { { showReactionPicker = false; confirmDelete = true } },
                 onUndoTurn = onUndoTurn?.let { { showReactionPicker = false; confirmUndo = true } },
+                onRetry = onRetry?.let { r -> { showReactionPicker = false; r() } },
                 onSpeak = onSpeak?.let { speak -> { showReactionPicker = false; speak() } },
                 speaking = speaking,
                 kept = kept,
@@ -553,6 +563,7 @@ private fun ReactionPickerRow(
     onDismiss: () -> Unit,
     onDelete: (() -> Unit)? = null,
     onUndoTurn: (() -> Unit)? = null,
+    onRetry: (() -> Unit)? = null,
     onSpeak: (() -> Unit)? = null,
     speaking: Boolean = false,
     kept: Boolean? = null,
@@ -570,6 +581,9 @@ private fun ReactionPickerRow(
         val visible = remember { MutableTransitionState(false).apply { targetState = true } }
         val accent = MaterialTheme.colorScheme.primary
         val accent2 = MaterialTheme.colorScheme.tertiary
+        // Under reduced motion the stagger's 8 frame-clock clients are pure cost: the emoji
+        // start at their final scale instead of popping in one by one (2.11.9).
+        val reduced by chat.keryx.app.presentation.ui.components.rememberReducedMotion()
         AnimatedVisibility(
             visibleState = visible,
             enter = fadeIn(animationSpec = tween(180)) +
@@ -595,14 +609,21 @@ private fun ReactionPickerRow(
                         shape = RoundedCornerShape(22.dp),
                     ),
             ) {
+                // Two stacked rows (2.11.9): the emoji strip over the action strip, hairline
+                // between. One row of 8 emoji + divider + up-to-7 icons clipped the tail icons
+                // (undo/delete — the useful half) on narrow phones; a phone's thumb reads two
+                // short rows faster than one wide one anyway.
+                Column(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                 ) {
                     QUICK_REACTIONS.forEachIndexed { i, emoji ->
-                        var shown by remember { mutableStateOf(false) }
-                        LaunchedEffect(Unit) { kotlinx.coroutines.delay(40L * i); shown = true }
+                        var shown by remember { mutableStateOf(if (reduced) true else false) }
+                        if (!reduced) LaunchedEffect(i) { kotlinx.coroutines.delay(40L * i); shown = true }
                         val scale by animateFloatAsState(
                             targetValue = if (shown) 1f else 0.4f,
                             animationSpec = spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMedium),
@@ -618,7 +639,15 @@ private fun ReactionPickerRow(
                                 .padding(4.dp),
                         )
                     }
-                    Box(modifier = Modifier.width(1.dp).height(22.dp).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)))
+                }
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(1.dp)
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)),
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
                     IconButton(onClick = onReply, modifier = Modifier.size(32.dp)) {
                         Icon(KeryxGlyphs.Reply, contentDescription = "Reply", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     }
@@ -655,6 +684,17 @@ private fun ReactionPickerRow(
                             )
                         }
                     }
+                    if (onRetry != null) {
+                        // Beside the undo it rides on (2.11.9): take it back, say it again.
+                        IconButton(onClick = onRetry, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                KeryxGlyphs.Refresh,
+                                contentDescription = "Take it back and say it again",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
                     if (onDelete != null) {
                         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                             Icon(
@@ -667,11 +707,12 @@ private fun ReactionPickerRow(
                     }
                 }
             }
-        }
-    }
-}
+            }
+            }
+            }
+            }
 
-internal fun replyPreviewText(m: Message): String = when {
+            internal fun replyPreviewText(m: Message): String = when {
     m.content.isNotBlank() -> m.content.lineSequence().firstOrNull { it.isNotBlank() }?.trim() ?: m.content.trim()
     m.mediaKind != null -> "📎 ${m.fileName.ifBlank { "attachment" }}"
     else -> "message"

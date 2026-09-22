@@ -753,6 +753,11 @@ fun ChatScreen(
                                 onUndoTurn = if (viewModel.transportIsDirect && message.id == lastAgentId && !awaitingReply) {
                                     { viewModel.undoLastTurn() }
                                 } else null,
+                                // Retry rides the same gate as the undo (2.11.9): it IS an undo
+                                // with the prompt re-sent, so a refused undo is a refused retry.
+                                onRetry = if (viewModel.transportIsDirect && message.id == lastAgentId && !awaitingReply) {
+                                    { viewModel.retryExchange() }
+                                } else null,
                                 modifier = Modifier.background(flashColor, RoundedCornerShape(18.dp)),
                             )
                             }
