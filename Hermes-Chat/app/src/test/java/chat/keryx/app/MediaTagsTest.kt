@@ -55,4 +55,21 @@ class MediaTagsTest {
         assertEquals(MediaKind.FILE, MediaTags.kindOf("/d/deck.pptx"))
         assertEquals("deck.pptx", MediaTags.nameOf("/d/deck.pptx"))
     }
+
+    /** Device, 2026-09-22: an agent describing the convention grew three dead file chips. */
+    @Test
+    fun `talking about the tag is not a tag`() {
+        val text = "Use `MEDIA:<absolute path>` one per line. In MEDIA: form it's " +
+            "`MEDIA:/home/u/out/keryx-artifact-test.html` — the TUI prints it as text."
+        val s = MediaTags.split(text)
+        assertEquals(listOf("/home/u/out/keryx-artifact-test.html"), s.refs.map { it.path })
+        assertTrue(s.text.contains("`MEDIA:<absolute path>`"))
+        assertTrue(s.text.contains("In MEDIA: form"))
+        assertTrue(s.text.contains("`keryx-artifact-test.html`"))
+        // A whole line that is not an address stays a line.
+        assertTrue(MediaTags.split("MEDIA: none").refs.isEmpty())
+        assertTrue(MediaTags.looksLikeAddress("~/x.png"))
+        assertTrue(MediaTags.looksLikeAddress("C:\\x\\y.png"))
+        assertTrue(MediaTags.looksLikeAddress("https://h/i.webp"))
+    }
 }

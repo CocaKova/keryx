@@ -5,6 +5,12 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.13.1 · versionCode 103
+
+- A `MEDIA:` mention is only a hand-off when its value looks like an address (`/…`, `~/…`, a
+  drive, a URL). An agent describing the convention — "`MEDIA:<absolute path>`", "in MEDIA:
+  form" — had grown dead file chips under its reply (device, the artifact test).
+
 ## 2.13.0 · versionCode 102
 
 - Steer from inside Tap-In: a bar under the space while the turn runs — type to steer, hold to

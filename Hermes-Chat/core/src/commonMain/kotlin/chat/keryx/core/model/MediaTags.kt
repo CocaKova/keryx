@@ -17,7 +17,10 @@ object MediaTags {
 
     data class Split(val text: String, val refs: List<Ref>)
 
-    private const val VALUE = """(`[^`\n]+`|"[^"\n]+"|'[^'\n]+'|\S+)"""
+    // The bare alternative stops at a quote: `MEDIA:/a/b.html` (the whole tag backticked, the
+    // shape an agent writes when it names the tag in prose) used to yield the path WITH its
+    // closing backtick — a card for a file that does not exist.
+    private const val VALUE = """(`[^`\n]+`|"[^"\n]+"|'[^'\n]+'|[^\s`"']+)"""
     private val LINE = Regex("""^[\t ]*[`"']?MEDIA:\s*$VALUE[`"']?[\t ]*$""", RegexOption.MULTILINE)
     private const val GONE = "\u0000"
     private val INLINE = Regex("""[`"']?MEDIA:\s*$VALUE[`"']?""")
@@ -28,6 +31,16 @@ object MediaTags {
 
     fun hasTag(text: String): Boolean = text.contains("MEDIA:")
 
+    /**
+     * Only an address is a tag. The regexes take any non-space run after `MEDIA:`, which is
+     * right for a real hand-off and wrong the moment an agent talks ABOUT the convention —
+     * "`MEDIA:<absolute path>` one per line", "in MEDIA: form" — where `<absolute` and `form`
+     * became file chips that could never download (device, 2026-09-22). A path on the host
+     * starts at its root or the home; a URL names its scheme; Windows names a drive.
+     */
+    private val ADDRESS = Regex("""^(/|~/|[A-Za-z]:[\\/]|https?://)""")
+    fun looksLikeAddress(value: String): Boolean = ADDRESS.containsMatchIn(value.trim())
+
     /** Strip every tag out of [text]; return the prose that remains + the refs, in order. */
     fun split(text: String): Split {
         if (!hasTag(text)) return Split(text, emptyList())
@@ -36,14 +49,17 @@ object MediaTags {
         // whole — so a swallowed line takes its newline with it and the prose above and
         // below still join cleanly (consecutive tag lines included).
         var out = LINE.replace(text) { m ->
-            refs += ref(unquote(m.groupValues[1]))
-            GONE
+            val v = unquote(m.groupValues[1])
+            if (!looksLikeAddress(v)) m.value else { refs += ref(v); GONE }
         }
         if (refs.isNotEmpty()) out = out.lineSequence().filter { it != GONE }.joinToString("\n")
         out = INLINE.replace(out) { m ->
-            val r = ref(unquote(m.groupValues[1]))
-            refs += r
-            "`${r.name}`"
+            val v = unquote(m.groupValues[1])
+            if (!looksLikeAddress(v)) m.value else {
+                val r = ref(v)
+                refs += r
+                "`${r.name}`"
+            }
         }
         return Split(out.trim(), refs)
     }
