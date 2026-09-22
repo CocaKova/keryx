@@ -43,6 +43,8 @@ object KeryxNotifications {
     const val GROUP_KEY = "keryx.messages"
     private const val SUMMARY_ID = 0x4B53 // "KS"
     const val EXTRA_ROOM_ID = "keryx.roomId"
+    /** Tap-In (2.12): the run notice's tap opens the room already inside the turn. */
+    const val EXTRA_TAP_IN = "keryx.tapIn"
     const val EXTRA_ROOM_NAME = "keryx.roomName"
     const val EXTRA_QUICK_TEXT = "keryx.quickText"
     const val KEY_REMOTE_REPLY = "keryx.remoteReply"
@@ -267,14 +269,18 @@ object KeryxNotifications {
         runCatching { nm.notify(SUMMARY_ID, summary) }
     }
 
-    private fun tapIntent(context: Context, roomId: String): PendingIntent {
+    private fun tapIntent(context: Context, roomId: String, tapIn: Boolean = false): PendingIntent {
         val tap = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(EXTRA_ROOM_ID, roomId)
+            if (tapIn) putExtra(EXTRA_TAP_IN, true)
         }
+        // Its own request code when it taps in: FLAG_UPDATE_CURRENT rewrites the extras of any
+        // pending intent with the same code, so sharing the message notice's would make the
+        // last notice built decide what BOTH taps do.
         return PendingIntent.getActivity(
             context,
-            roomId.hashCode(),
+            if (tapIn) roomId.hashCode() xor RUN_NOTIFICATION_ID else roomId.hashCode(),
             tap,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
@@ -555,7 +561,7 @@ object KeryxNotifications {
             .setUsesChronometer(true)
             .setProgress(notice.planTotal, notice.planDone, notice.planTotal == 0)
             .setContentIntent(
-                if (session != null) tapIntent(context, session)
+                if (session != null) tapIntent(context, session, tapIn = true)
                 else PendingIntent.getActivity(
                     context, RUN_NOTIFICATION_ID, Intent(context, MainActivity::class.java),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,

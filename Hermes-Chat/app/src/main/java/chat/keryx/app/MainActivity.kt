@@ -202,7 +202,13 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
     /** If launched/resumed from a message notification, open the room it points at. */
     private fun handleNotificationIntent(intent: Intent?) {
         val roomId = intent?.getStringExtra(KeryxNotifications.EXTRA_ROOM_ID) ?: return
-        if (::viewModel.isInitialized) viewModel.openRoomById(roomId)
+        // The run notice opens the room already tapped in (2.12); a message notice opens the room.
+        val tapIn = intent.getBooleanExtra(KeryxNotifications.EXTRA_TAP_IN, false)
+        if (::viewModel.isInitialized) {
+            if (tapIn) viewModel.requestTapIn(roomId) else viewModel.openRoomById(roomId)
+        }
+        // Consumed: a resume without a new intent must not tap in a second time.
+        intent.removeExtra(KeryxNotifications.EXTRA_TAP_IN)
         KeryxNotifications.clear(applicationContext, roomId)
     }
 

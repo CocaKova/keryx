@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -35,6 +36,8 @@ internal fun WorkingStatusBar(
      *  glance from across the room, since the wait it explains is minutes long. */
     compacting: Boolean = false,
     modifier: Modifier = Modifier,
+    /** Tap-In (2.12): the banner is the door onto the turn in flight. Null leaves it a banner. */
+    onTapIn: (() -> Unit)? = null,
 ) {
     AnimatedVisibility(
         visible = visible,
@@ -57,6 +60,10 @@ internal fun WorkingStatusBar(
             fill = MaterialTheme.colorScheme.surfaceVariant,
             border = accent.copy(alpha = 0.85f),
             border2 = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f),
+            modifier = if (onTapIn != null) Modifier
+                .clip(RoundedCornerShape(24.dp))
+                .clickable(onClickLabel = "Tap in to the turn", onClick = onTapIn)
+            else Modifier,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (council && typingAgentIds.isNotEmpty()) {
@@ -77,6 +84,11 @@ internal fun WorkingStatusBar(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                 )
+                // The door's handle: one glyph, so a tappable banner looks like one.
+                if (onTapIn != null) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("⤢", color = accent, fontSize = 12.sp)
+                }
             }
         }
     }

@@ -5,6 +5,20 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.12.0 · versionCode 101
+
+- Tap-In: tap the working banner, long-press the newest run, or tap the run notice, and the turn
+  in flight opens full screen — headline, mind, crew, rail, instruments. A projection of what the
+  transcript already holds; nothing new on the wire. See [features/tap-in.md](features/tap-in.md).
+- The crew: every helper a turn sends out is a card — kind, role, model, tools, elapsed, tokens, the
+  line it is on while it flies, the summary it lands with — and a door onto its own window.
+
+## 2.11.9 · no tag (versionCode 100)
+
+- The long-press bar copies what the eye saw (markers gone, cite refs as superscripts), stacks into
+  two rows so undo and delete stop clipping on narrow phones, and gains Retry beside Undo — the
+  Desktop's `/retry`: take the exchange back, say it again. The emoji stagger honours reduced motion.
+
 ## 2.11.8 · versionCode 99
 
 - The composer stands on its own floor: a scrolled-up transcript no longer reads through the
