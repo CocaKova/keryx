@@ -380,7 +380,10 @@ private fun walkRange(
             // answer (a steered turn's narration) splits the block mid-group, the continuation
             // run has Notes but no Call. Dropping those runs vanished the output AND every
             // aside folded into their reasoning the moment the room reloaded.
-            if (entries.any { it is ToolRunEntry.Call || it is ToolRunEntry.Note }) {
+            // A run holding ONLY a wing is real too (2.12): the direct door records a landing
+            // as its own message at the moment the child finishes, minutes after the turn that
+            // sent it — a block with nothing else in it. Dropping it lost every late landing.
+            if (entries.any { it is ToolRunEntry.Call || it is ToolRunEntry.Note || it is ToolRunEntry.Delegated }) {
                 out.add(
                     runInsertAt,
                     ChatRenderItem.ToolRun(id, entries.toList(), reasoning.toString().ifBlank { null }, runStartTs),
