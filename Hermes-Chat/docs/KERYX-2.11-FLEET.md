@@ -176,3 +176,14 @@ under `ArchiveDelegate`. The union bot roster falls out of the same work.
   voice. Roster not in yet → the notice names the room ("Working · <title>"), never a guess.
   ⚠️ Direct door only; a turn run by another client while this phone is not attached has no
   run notice (no events reach us) and alerts through the roster path, deduped.
+- **2.11.9 (vc100), 2026-09-21:** the long-press bar got functional. (1) **Smart copy** — the
+  bar's Copy now puts `MessageParser.extractKeryx(content).text` on the clipboard instead of the
+  raw body, so pasted text equals what the eye saw: `⟦…⟧` markers gone, `⟦c1⟧` arriving as ⁽¹⁾
+  (`BubblePassTest`). (2) **Two-row bar** — the 8-emoji strip over the icon strip with a hairline
+  between; one wide row used to clip the tail icons (undo/delete) on narrow phones. (3) **Retry**
+  beside the undo, same gate (direct door, newest agent reply, idle): `retryExchange()` captures
+  the last user prompt *before* the fold, runs `session.undo`, re-sends on success — the Desktop's
+  /retry, app-only, no gateway change. (4) The emoji stagger honours reduced motion (snaps, no
+  eight frame-clock clients). Walk: long-press an agent reply — two-row bar; copy pastes clean
+  prose; Retry on the newest reply takes the exchange back and re-answers; Battery Saver on, the
+  emoji appear without the pop-in.

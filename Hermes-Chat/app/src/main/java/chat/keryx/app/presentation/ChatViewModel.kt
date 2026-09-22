@@ -2078,6 +2078,29 @@ class ChatViewModel(
         }
     }
 
+    /**
+     * The long-press bar's Retry (2.11.9) — the Desktop's /retry: take the last exchange back,
+     * then say the same thing again. The prompt is captured BEFORE the fold, because the undo
+     * drops exactly that message; re-reading after it would land on the one before. Same gate
+     * as the undo at the call site (direct door, newest reply, idle).
+     */
+    fun retryExchange() {
+        val room = _currentRoom.value ?: return
+        val d = direct ?: return
+        val prompt = messages.value.lastOrNull { it.sender == SenderType.ME && it.content.isNotBlank() }
+            ?.content?.takeIf { it.isNotBlank() } ?: return
+        viewModelScope.launch {
+            d.undoLastTurn(room.id)
+                .onSuccess { sendMessage(prompt) }
+                .onFailure { e ->
+                    val why = e.message.orEmpty()
+                    _toasts.tryEmit(
+                        if ("busy" in why) "Still working — stop the turn first" else "Couldn't retry: ${why.take(80)}",
+                    )
+                }
+        }
+    }
+
     fun archiveSession(sessionId: String) {
         viewModelScope.launch {
             gateway?.archiveSession(sessionId)
