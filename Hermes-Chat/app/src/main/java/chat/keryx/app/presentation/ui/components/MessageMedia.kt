@@ -231,8 +231,41 @@ fun MessageMedia(
     fileName: String,
     textColor: Color,
     loader: suspend () -> ByteArray?,
+    /** The room the message lives in — with [loadKey] it names the bytes to the artifact
+     *  viewer (2.13). Null keeps the old chooser behaviour for callers that have no room. */
+    roomId: String? = null,
+    /** The file's address on the gateway host when the message carries one (a `MEDIA:` path
+     *  on the direct door); an `mxc://` or a URL is not one and is left null by the caller. */
+    mediaPath: String? = null,
 ) {
-    if (kind == MediaKind.IMAGE) {
+    if (kind == MediaKind.FILE && chat.keryx.core.model.Artifacts.isArtifactPath(fileName)) {
+        // A page the agent wrote opens in the viewer, not in a chooser (2.13). The bytes reach
+        // the viewer by (room, event) — the same cached download this card would have made —
+        // so the space never pays for a second trip when the first already landed. Without a
+        // host listening (a preview) the card is the old file chip with a better face.
+        val opener = chat.keryx.app.presentation.artifact.LocalArtifactOpener.current
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+        var opening by remember { mutableStateOf(false) }
+        val name = fileName.ifBlank { "page.html" }
+        chat.keryx.app.presentation.artifact.ArtifactCard(name = name, textColor = textColor, busy = opening) {
+            if (opener != null && (roomId != null || mediaPath != null)) {
+                opener.open(
+                    chat.keryx.app.presentation.artifact.ArtifactRef(
+                        path = mediaPath, name = name, roomId = roomId, eventId = roomId?.let { loadKey },
+                    )
+                )
+            } else if (!opening) {
+                opening = true
+                scope.launch {
+                    val bytes = loader()
+                    if (bytes != null) openExternally(context, bytes, name, kind)
+                    else android.widget.Toast.makeText(context, "Couldn't load attachment", android.widget.Toast.LENGTH_SHORT).show()
+                    opening = false
+                }
+            }
+        }
+    } else if (kind == MediaKind.IMAGE) {
         // Seed from cache so a re-entered bubble shows the image immediately (no placeholder flash).
         val cached = remember(loadKey) { KeryxBitmapCache.get(loadKey) }
         // Set only for a picture that can move. A GIF cannot live in KeryxBitmapCache — that
@@ -627,7 +660,8 @@ private fun MediaActionBar(
     }
 }
 
-private suspend fun openExternally(
+/** Stage the bytes and offer the system's "Open with" chooser. Shared with the artifact viewer. */
+internal suspend fun openExternally(
     context: android.content.Context,
     bytes: ByteArray,
     fileName: String,

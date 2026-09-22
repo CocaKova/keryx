@@ -2,4 +2,16 @@
 <resources>
 
     <style name="Theme.HermesChat" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- The note sheet (2.13): a floating dialog over whatever was on screen. The window is
+         transparent because Compose draws the sheet — and its own ground, day or night — so the
+         Light parent decides nothing visible beyond the dim. -->
+    <style name="Theme.HermesChat.Note" parent="android:Theme.Material.Light.Dialog.NoActionBar">
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowMinWidthMajor">92%</item>
+        <item name="android:windowMinWidthMinor">92%</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+    </style>
 </resources>

@@ -2638,4 +2638,71 @@ class ChatViewModel(
         }
     }
 
+    // ---- the crew (2.13): one helper's mind, and a word in its ear ----------------------
+
+    /** Whether a helper can be steered or stopped from here: the subagent RPCs need the
+     *  parent's live transport slot, which only the direct door holds. */
+    val canSteerCrew: Boolean get() = direct != null
+
+    /**
+     * A flying helper's own stream — its thinking, its words, its tools — through the same
+     * store any session uses. Resuming a child's session id opens the gateway's watch window,
+     * which mirrors the child's frames as native deltas on that sid; the transcript rules
+     * then apply unchanged. Finite empty flow on the Matrix door: the room never carries a
+     * child's sid we could resume.
+     */
+    fun crewMessages(childSessionId: String): kotlinx.coroutines.flow.Flow<List<Message>> {
+        val d = direct ?: return kotlinx.coroutines.flow.flowOf(emptyList())
+        if (childSessionId.isBlank()) return kotlinx.coroutines.flow.flowOf(emptyList())
+        return d.getMessages(childSessionId, limit = 200)
+    }
+
+    /** What a helper did before this window opened — the gateway's tail of its live transcript. */
+    suspend fun crewTail(subagentId: String): String {
+        val session = _currentRoom.value ?: return ""
+        val d = direct ?: return ""
+        return d.crewTail(session.id, subagentId).getOrDefault("")
+    }
+
+    /** A word in one helper's ear. It lands on that child's next step; the parent turn and
+     *  the other helpers never see it. "Rejected" is honest: the helper answers to a door
+     *  that isn't this one, or it is already past its last tool batch. */
+    fun steerCrew(subagentId: String, role: String, text: String) {
+        val session = _currentRoom.value ?: return
+        val d = direct ?: return
+        viewModelScope.launch {
+            d.steerCrew(session.id, subagentId, text)
+                .onSuccess { queued ->
+                    if (queued) toast("Steered $role — it sees it on its next step")
+                    else toast("$role didn't take it — it answers to another door, or it's already wrapping up")
+                }
+                .onFailure { toast("Steer failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    /** The helper sheet's handle on all of the above — null on the Matrix door, where the
+     *  sheet keeps its read-only shape. Built per call; it holds nothing but this VM. */
+    fun crewControls(): chat.keryx.app.presentation.ui.components.CrewControls? {
+        if (!canSteerCrew) return null
+        return chat.keryx.app.presentation.ui.components.CrewControls(
+            messages = { id -> crewMessages(id) },
+            tail = { id -> crewTail(id) },
+            steer = { id, role, text -> steerCrew(id, role, text) },
+            stop = { id, role -> stopCrew(id, role) },
+        )
+    }
+
+    /** Stop one helper; the turn that spawned it keeps going and reads the partial result. */
+    fun stopCrew(subagentId: String, role: String) {
+        val session = _currentRoom.value ?: return
+        val d = direct ?: return
+        viewModelScope.launch {
+            d.stopCrew(session.id, subagentId)
+                .onSuccess { found ->
+                    if (found) toast("Stopped $role") else toast("$role had already finished")
+                }
+                .onFailure { toast("Stop failed: ${it.message?.take(80)}") }
+        }
+    }
+
 }

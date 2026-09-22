@@ -20,8 +20,9 @@ This folder is the user documentation. The version it describes is 2.12.0.
 | [Streaming](features/streaming.md) | The dual-tier live-stream architecture and what each tier does on the wire |
 | [Controls](features/controls.md) | Command palette, steer, model picker, reasoning dial, share target, assistant doorway |
 | [Notifications and hands](features/notifications-and-hands.md) | The quiet shade, one-tap answers, the `⟦keryx:…⟧` markers, built-in ntfy push |
-| [Tap-In](features/tap-in.md) | The turn in flight, full screen: headline, mind, crew cards for every helper, the rail, instruments |
-| [Spaces](features/spaces.md) | Archive, Missions, Projects, Runs, Bots, the Gateway hub, the Shipyard |
+| [Tap-In](features/tap-in.md) | The turn in flight, full screen: headline, mind, crew, rail, instruments; steer it, and steer or stop one helper from its own mind |
+| [Spaces](features/spaces.md) | Archive, Missions, Projects, Runs, Bots, the Gateway hub, the Shipyard, the Artifact viewer |
+| [Home screen](features/home-screen.md) | The widget and the Quick Settings tile |
 | [Configuration](configuration.md) | Every settings row, the Hermes Link fields, the gateway env knobs |
 | [Troubleshooting](troubleshooting.md) | Real failures seen in this app, each with cause and fix |
 | [Building](building.md) | Modules, JDK/SDK versions, the ship gate and its three verdicts, signing, CI |

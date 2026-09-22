@@ -1125,6 +1125,7 @@ fun ChatScreen(
             run = live,
             fetch = { id -> viewModel.hub.sessionMessages(id) },
             onDismiss = { openSubagent = null },
+            crew = viewModel.crewControls(),
         )
     }
 }

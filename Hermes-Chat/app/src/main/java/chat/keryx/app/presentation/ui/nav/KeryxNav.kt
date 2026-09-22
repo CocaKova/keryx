@@ -66,6 +66,47 @@ sealed interface KeryxDest {
 
     data object Settings : KeryxDest { override val route = "settings" }
 
+    /**
+     * A page the agent wrote, open in the viewer (2.13). The first place on the stack that
+     * carries arguments, so its route is a query string: `artifact?path=…&name=…&room=…&event=…`,
+     * every value URL-encoded. [path] is the file on the gateway host (the direct door reads it
+     * over REST); [roomId] + [eventId] name the media message whose bytes already came through
+     * the transport (either door), and win when both are present. A restored stack rebuilds the
+     * same viewer from the same route, which is the whole reason the arguments ride in it.
+     */
+    data class Artifact(
+        val path: String?,
+        val name: String,
+        val roomId: String? = null,
+        val eventId: String? = null,
+    ) : KeryxDest {
+        override val route: String
+            get() = buildString {
+                append(ARTIFACT_ROUTE).append('?')
+                append("path=").append(enc(path.orEmpty()))
+                append("&name=").append(enc(name))
+                append("&room=").append(enc(roomId.orEmpty()))
+                append("&event=").append(enc(eventId.orEmpty()))
+            }
+
+        companion object {
+            internal fun parse(route: String): Artifact? {
+                if (!route.startsWith("$ARTIFACT_ROUTE?")) return null
+                val q = route.substringAfter('?').split('&').mapNotNull { kv ->
+                    val k = kv.substringBefore('=')
+                    val v = kv.substringAfter('=', "")
+                    if (k.isBlank()) null else k to dec(v)
+                }.toMap()
+                val path = q["path"].orEmpty().ifBlank { null }
+                val room = q["room"].orEmpty().ifBlank { null }
+                val event = q["event"].orEmpty().ifBlank { null }
+                if (path == null && (room == null || event == null)) return null
+                val name = q["name"].orEmpty().ifBlank { path?.substringAfterLast('/') ?: "artifact" }
+                return Artifact(path = path, name = name, roomId = room, eventId = event)
+            }
+        }
+    }
+
     companion object {
         private val all = listOf(Archive, Missions, Projects, Shipyard, Runs, Bots, Gateway, Settings)
 
@@ -77,9 +118,13 @@ sealed interface KeryxDest {
         private val aliases = mapOf("hub" to Gateway, "workshop" to Gateway)
 
         fun fromRoute(route: String): KeryxDest? =
-            all.firstOrNull { it.route == route } ?: aliases[route]
+            all.firstOrNull { it.route == route } ?: aliases[route] ?: Artifact.parse(route)
     }
 }
+
+private const val ARTIFACT_ROUTE = "artifact"
+private fun enc(v: String): String = java.net.URLEncoder.encode(v, "UTF-8")
+private fun dec(v: String): String = runCatching { java.net.URLDecoder.decode(v, "UTF-8") }.getOrDefault(v)
 
 /** The back stack. [open] brings an already-open place to the front instead of stacking twins. */
 @Stable

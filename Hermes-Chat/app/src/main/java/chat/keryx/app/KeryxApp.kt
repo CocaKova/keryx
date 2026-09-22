@@ -160,6 +160,8 @@ class KeryxApp : Application() {
         observeForNotifications()
         observeShadeGate()
         observeRuns()
+        // The launcher's hands (2.13): the widget card and the tile follow the link from here.
+        chat.keryx.app.widget.HandsSync.observe(this)
     }
 
     /**

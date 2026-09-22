@@ -76,7 +76,16 @@ fun TapInHost(
     }
 
     var helper by remember { mutableStateOf<Delegation?>(null) }
-    TapInScreen(state = state, onClose = onClose, onOpenHelper = { helper = it })
+    // The bar drives the same verbs the chat composer does mid-turn; only the direct door has
+    // them, and there the view-model already toasts the outcome (steered / queued / stopped).
+    val steer = remember(viewModel.canInterruptTurn) {
+        if (!viewModel.canInterruptTurn) null else TapInSteer(
+            onSteer = { viewModel.steerTurn(it) },
+            onQueue = { viewModel.queueMessage(it) },
+            onStop = { viewModel.interruptTurn() },
+        )
+    }
+    TapInScreen(state = state, onClose = onClose, onOpenHelper = { helper = it }, steer = steer)
 
     helper?.let { picked ->
         // Re-resolved by key so a card tapped while flying keeps growing, as the chat's does.
@@ -92,6 +101,7 @@ fun TapInHost(
             run = live,
             fetch = { id -> viewModel.hub.sessionMessages(id) },
             onDismiss = { helper = null },
+            crew = viewModel.crewControls(),
         )
     }
 }

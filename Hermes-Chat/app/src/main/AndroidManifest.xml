@@ -126,6 +126,43 @@
             </intent-filter>
         </activity>
 
+        <!-- The note (2.13): one line to the agent from the Quick Settings tile. A dialog over
+             whatever was on screen, out of Recents, gone once sent. Not exported — only the
+             tile below opens it, from this process. -->
+        <activity
+            android:name=".note.NoteActivity"
+            android:theme="@style/Theme.HermesChat.Note"
+            android:windowSoftInputMode="adjustResize|stateVisible"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleTop"
+            android:exported="false" />
+
+        <!-- The Quick Settings tile (2.13): "Note to agent", lit while the gateway link is up. -->
+        <service
+            android:name=".note.NoteTileService"
+            android:label="@string/note_tile_label"
+            android:icon="@drawable/ic_stat_keryx"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- The home-screen widget (2.13): the agent at a glance, drawn by Glance. -->
+        <receiver
+            android:name=".widget.KeryxWidgetReceiver"
+            android:label="@string/app_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/keryx_widget_info" />
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

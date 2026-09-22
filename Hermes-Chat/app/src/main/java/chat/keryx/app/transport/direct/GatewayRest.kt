@@ -404,6 +404,40 @@ class GatewayRest(
     }
 
     /**
+     * A text file off the gateway host, as the dashboard's spot editor reads it (2.13 artifact
+     * viewer). [truncated] means the server stopped at its preview cap (512 KiB) and [text] is
+     * the head of the file — fetch the whole thing through [downloadFile] then. [language] is
+     * the server's guess from the extension; [mimeType] likewise.
+     */
+    data class ReadText(
+        val text: String,
+        val language: String,
+        val mimeType: String,
+        val byteSize: Long,
+        val truncated: Boolean,
+    )
+
+    /**
+     * `GET /api/fs/read-text?path=` — any absolute path the agent names, gated only by the
+     * dashboard's sensitive-path denylist (`web_routers/files.py`); a `.env` answers 403 with
+     * the server's own sentence, which [send] carries into the failure. The route reads no
+     * `profile` today; it is accepted here so the call shape matches its siblings and the
+     * query is already right the day the server learns it.
+     */
+    suspend fun readText(path: String, profile: String? = null): Result<ReadText> =
+        get("/api/fs/read-text?path=" + java.net.URLEncoder.encode(path, "UTF-8") + profileQuery(profile))
+            .mapCatching { body ->
+                val o = json.parseToJsonElement(body).jsonObject
+                ReadText(
+                    text = o.str("text").orEmpty(),
+                    language = o.str("language") ?: "text",
+                    mimeType = o.str("mimeType") ?: "text/plain",
+                    byteSize = o["byteSize"]?.jsonPrimitive?.longOrNull ?: 0L,
+                    truncated = o.bool("truncated"),
+                )
+            }
+
+    /**
      * Bytes of an absolute `http(s)` URL an agent handed over as a `MEDIA:` ref — a reaction GIF
      * it pulled off the web, an image it linked rather than wrote to disk. `/api/files/download`
      * cannot serve these: it resolves a PATH on the gateway host, and hands back an HTTP error
