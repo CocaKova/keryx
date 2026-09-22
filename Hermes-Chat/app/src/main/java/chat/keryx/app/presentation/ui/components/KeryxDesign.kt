@@ -152,6 +152,18 @@ object KeryxStatus {
     // signals, from the same place, without a theme to ask.
     val shadeWarn: Int get() = voidWarn.toArgb()
     val shadeBad: Int get() = voidBad.toArgb()
+
+    /**
+     * A signal as its two grounds at once, for a surface that has no theme to ask but is asked
+     * by the SYSTEM which ground it is on — the home-screen widget (2.13), which the launcher
+     * draws and re-tints for day or night after we have handed it both. The paper and void
+     * values are the same ones the composable getters pick between; nothing new is chosen here.
+     */
+    data class DayNight(val day: Color, val night: Color)
+    val goodDayNight: DayNight get() = DayNight(paperGood, voidGood)
+    val warnDayNight: DayNight get() = DayNight(paperWarn, voidWarn)
+    val badDayNight: DayNight get() = DayNight(paperBad, voidBad)
+    val idleDayNight: DayNight get() = DayNight(paperIdle, voidIdle)
 }
 
 /**

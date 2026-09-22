@@ -16,6 +16,7 @@ stays composed underneath, so a back gesture returns exactly where you were. Nou
 | Bots | `bots` | direct only | the roster of profiles |
 | Gateway | `gateway` | both | the machine: status plus spokes |
 | Settings | `settings` | both | the app's own configuration |
+| Artifact | `artifact?path=…` | both | a page the agent wrote, rendered |
 
 Two legacy route names still resolve, both to Gateway: `hub` and `workshop`. A saved back stack from
 2.4 or a pinned intent still lands correctly.
@@ -135,6 +136,25 @@ would open a pull request as the gateway's user.
   <img src="../img/shipyard.jpg" alt="The Shipyard on a repo: working tree, stage, commit, push" width="260">
   <br><sub>The Shipyard on one repo: changed files with their line counts, then stage, commit, push.</sub>
 </p>
+
+## Artifact
+
+A page the agent wrote — a mockup, a report, a dashboard it built for you — rendered in the app
+instead of handed to a browser. An `.html` file the agent sends as media becomes a page card
+(`Open · name`), and on the direct door a bare absolute `/…/*.html` path in a reply gets an
+`Open <name>` chip under the bubble. Either opens this space.
+
+How it reads the file: bytes that came through the room first (both doors, the media cache); else,
+on the direct door, the dashboard's `GET /api/fs/read-text?path=` behind the same token as every
+other call, with the whole file fetched when the preview cap (512 KiB) truncates it. The path is
+whatever the agent named, so this reads anything the gateway user can read — the same trust the
+tool calls already carry.
+
+The page runs in a fenced WebView: JavaScript and DOM storage on (a mock with a chart still
+works), file and content access off, no JavaScript bridge into the app, mixed content blocked,
+loaded with no base URL so a relative fetch goes nowhere. A link in the page opens the browser;
+the viewer stays on the page. Actions: save to Downloads, share, open with another app, reload.
+Back returns to the chat.
 
 ## Settings
 

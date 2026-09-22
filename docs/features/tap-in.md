@@ -38,8 +38,26 @@ Top to bottom:
    and diff — so nothing is re-worded. The bead breathes on the open call.
 5. **Saying.** The answer so far, once the first answer token has landed.
 
-An instrument row sits under the list: the context ring with used-of-max, tool count, failures,
+A **steer bar** sits under the list while the turn runs, on the direct door: type and the wheel
+sends it as a steer (the agent reads it on its next step, nothing is interrupted), hold the wheel
+to queue it for after the turn, leave the field empty and the wheel becomes the square — stop.
+The same grammar as the chat composer mid-turn; the bar goes when the turn lands.
+
+An instrument row sits under it: the context ring with used-of-max, tool count, failures,
 crew landed-of-total, and the model.
+
+## A helper's mind
+
+Tap a flying crew card on the direct door and the sheet opens on the child's **own** session, not
+the parent's wire: what ran before you opened it (folded), what it is thinking as it streams,
+what it has done, what it has said. Under it, a steer bar of its own — a word in that one
+helper's ear (`subagent.steer`; the in-flight tool is never cut) and a square that stops that
+helper alone, with a confirm (`subagent.interrupt`; the turn that sent it keeps going and reads
+whatever it had). "It didn't take it" is an honest answer: a helper spawned by a turn another door
+still owns, or one already wrapping up, declines the note rather than pretending to hear it.
+
+Once the helper lands the sheet is the stored transcript, as before. On the Matrix door the sheet
+stays what it was: the trail while flying, the transcript after.
 
 ## Where it comes from
 
@@ -50,9 +68,10 @@ The projection is pure Kotlin (`TapIn.project`, `TurnSlice.of`) and held to the 
 `TapInTest`.
 
 Two wire facts shape it, both from [streaming.md](streaming.md): a child's raw assistant text is
-dropped on the wire, so a crew card shows the child's activity line and summary, never its
-transcript; and tool ends correlate to starts by order, so the rail is FIFO like the transcript's
-run.
+dropped on the **parent's** wire, so a crew card shows the child's activity line and summary; the
+child's mind comes from resuming the child's own session id, which the gateway serves as a watch
+window that mirrors the child's frames as native deltas. And tool ends correlate to starts by
+order, so the rail is FIFO like the transcript's run.
 
 ## Motion
 

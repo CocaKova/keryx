@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -85,6 +86,9 @@ fun TapInScreen(
     onClose: () -> Unit,
     /** Open a helper's window — the existing subagent sheet — when it has a record to show. */
     onOpenHelper: ((Delegation) -> Unit)?,
+    /** The hand on the turn (2.13): steer / hold-to-queue / stop, the chat composer's busy
+     *  grammar. Null where the door can't (Matrix) — the bar is then simply not drawn. */
+    steer: TapInSteer? = null,
 ) {
     val ink = MaterialTheme.colorScheme.onSurface
     val accent = MaterialTheme.colorScheme.primary
@@ -146,9 +150,31 @@ fun TapInScreen(
                 )
             }
         }
-        Instruments(state, ink)
+        // The bar sits between the space and its instruments while the turn runs: a word to
+        // the agent is a thing you do while watching, and the instruments are what you read
+        // after. When the turn lands the bar goes — a stop with nothing to stop, or a steer
+        // into a finished turn, is the chat composer's job, not this screen's.
+        Column(Modifier.fillMaxWidth().imePadding()) {
+            if (steer != null && state.running) {
+                SteerBar(
+                    placeholder = "Type to steer this turn · hold to queue",
+                    onSteer = steer.onSteer,
+                    onStop = steer.onStop,
+                    onQueue = steer.onQueue,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                )
+            }
+            Instruments(state, ink)
+        }
     }
 }
+
+/** What the Tap-In bar can do to the turn it is watching. */
+class TapInSteer(
+    val onSteer: (String) -> Unit,
+    val onQueue: (String) -> Unit,
+    val onStop: () -> Unit,
+)
 
 // --- 1. Headline -------------------------------------------------------------------------------
 

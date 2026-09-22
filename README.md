@@ -60,6 +60,9 @@ takes you from APK to a live turn.
   own ntfy WebSocket, a UnifiedPush distributor is preferred when present.
 - **Places over tabs.** Archive (a local FTS index, so it works with the gateway down), Missions,
   Projects, Shipyard, Runs, Bots, the Gateway hub, the fleet of many gateways on one phone.
+- **A hand on the turn.** Tap in to the agent going, full screen; steer it from there; open a
+  helper's own mind and steer or stop that helper alone. A widget and a Quick Settings tile reach
+  the agent without opening the app; a page the agent wrote renders in the app.
 
 ## A closer look
 

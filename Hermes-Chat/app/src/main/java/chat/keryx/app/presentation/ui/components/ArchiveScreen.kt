@@ -811,6 +811,8 @@ private fun ContextRow(m: Message, anchor: Boolean, viewModel: ChatViewModel) {
                     fileName = m.fileName,
                     textColor = MaterialTheme.colorScheme.onSurface,
                     loader = { viewModel.loadMessageMedia(m.roomId, m.id) },
+                    roomId = m.roomId,
+                    mediaPath = m.mediaUrl?.takeIf { it.startsWith("/") },
                 )
                 if (MessageParser.extractKeryx(m.content).text.isNotBlank() && m.content != m.fileName) {
                     Spacer(Modifier.height(3.dp))

@@ -314,6 +314,11 @@ fun MessageBubble(
                             fileName = message.fileName,
                             textColor = appearance.textColor,
                             loader = mediaLoader,
+                            roomId = message.roomId,
+                            // A `MEDIA:` path on the direct door is the file's address on the
+                            // host; an mxc:// or a linked URL is not, and the viewer reads
+                            // those by their bytes instead (2.13).
+                            mediaPath = message.mediaUrl?.takeIf { it.startsWith("/") },
                         )
                         // MSC2530 caption: the body carries the sender's words (a bare filename
                         // body is just the upload name — not worth a text block).
@@ -340,6 +345,16 @@ fun MessageBubble(
                                 textColor = appearance.textColor,
                                 isStreaming = message.isStreaming,
                                 isAgent = message.sender == SenderType.HERMES,
+                            )
+                        }
+                        // A reply that names a page by its path gets a way to open it (2.13).
+                        // Not while streaming: a half-typed path is not a file yet, the same
+                        // rule the MEDIA: splitter keeps.
+                        if (isAgent && !message.isStreaming) {
+                            chat.keryx.app.presentation.artifact.ArtifactPathChips(
+                                content = message.content,
+                                roomId = message.roomId,
+                                textColor = appearance.textColor,
                             )
                         }
                     }

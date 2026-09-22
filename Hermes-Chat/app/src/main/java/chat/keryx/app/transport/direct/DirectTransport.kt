@@ -2354,6 +2354,51 @@ private const val GHOST_TOOL_ID = "generating"
         Unit
     }
 
+    // --- the crew (2.13): one helper at a time ---------------------------------------
+    // The subagent RPCs are keyed by the PARENT's live sid plus the child's `subagent_id`
+    // (the `Delegation.key` every subagent.* frame already carries). Authority is the
+    // parent session's live transport slot at check time (`_subagent_transport_matches`):
+    // a phone that resumed the parent holds it; a helper spawned by a turn another door
+    // still owns answers `rejected`, and the UI says so rather than pretending.
+
+    /** Queue a note into one flying helper. `true` = queued (not "delivered": a child past
+     *  its last tool batch never reads it — the gateway flags `missed_steer` on the parent). */
+    suspend fun steerCrew(sessionId: String, subagentId: String, text: String): Result<Boolean> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        val live = attach(sessionId)
+        val res = rpc.request("subagent.steer", buildJsonObject {
+            put("session_id", JsonPrimitive(live))
+            put("subagent_id", JsonPrimitive(subagentId))
+            put("text", JsonPrimitive(text))
+        })
+        res.strOrNull("status") == "queued"
+    }
+
+    /** Stop ONE helper (cooperative hard interrupt of that child alone; the parent turn and
+     *  its other helpers go on). `true` = the gateway found a live agent to stop. */
+    suspend fun stopCrew(sessionId: String, subagentId: String): Result<Boolean> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        val live = attach(sessionId)
+        val res = rpc.request("subagent.interrupt", buildJsonObject {
+            put("session_id", JsonPrimitive(live))
+            put("subagent_id", JsonPrimitive(subagentId))
+        })
+        res["found"]?.jsonPrimitive?.booleanOrNull == true
+    }
+
+    /** The last 16 KiB of a helper's live transcript — what it did before this window
+     *  opened. Empty when the gateway has no file for it (a child that just started, or
+     *  one that already cleaned up). */
+    suspend fun crewTail(sessionId: String, subagentId: String): Result<String> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        val live = attach(sessionId)
+        val res = rpc.request("subagent.tail", buildJsonObject {
+            put("session_id", JsonPrimitive(live))
+            put("subagent_id", JsonPrimitive(subagentId))
+        })
+        if (res["available"]?.jsonPrimitive?.booleanOrNull == true) res.strOrNull("text").orEmpty() else ""
+    }
+
     /**
      * Raw JSON-RPC passthrough for the wake lease (`wake.start/stop/pause/resume/status/feed`).
      * The lease is TRANSPORT-bound on the server (owner = this socket), which is why the ear

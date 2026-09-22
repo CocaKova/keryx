@@ -71,6 +71,19 @@ class HubRegistryTest {
     }
 
     @Test
+    fun `an artifact route carries its arguments through a save and restore`() {
+        // The viewer (2.13) is the one place with arguments; a restored stack must rebuild the
+        // same viewer, spaces and ampersands in the path included.
+        val byPath = KeryxDest.Artifact(path = "/home/sy/out/mock v1 & co.html", name = "mock v1 & co.html")
+        assertEquals(byPath, KeryxDest.fromRoute(byPath.route))
+        val byBytes = KeryxDest.Artifact(path = null, name = "page.html", roomId = "!room:x", eventId = "\$ev#media:0")
+        assertEquals(byBytes, KeryxDest.fromRoute(byBytes.route))
+        // A route with nothing to open is not a place.
+        assertEquals(null, KeryxDest.fromRoute("artifact?path=&name=x&room=&event="))
+        assertEquals(null, KeryxDest.fromRoute("artifact"))
+    }
+
+    @Test
     fun `the retired routes still land somewhere`() {
         // A back stack saved by 2.4 says "hub"; one saved by 2.9 says "workshop". Neither may
         // restore to nothing — both land on the Gateway, where their panels live now.

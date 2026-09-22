@@ -1,3 +1,22 @@
 <resources>
     <string name="app_name">Keryx</string>
+
+    <!-- The home-screen widget (2.13). -->
+    <string name="widget_description">The agent at a glance: link, newest session, what it last said, and the turn in flight.</string>
+
+    <!-- The Quick Settings tile and its note sheet (2.13). Generic "agent" until the roster names one. -->
+    <string name="note_tile_label">Note to agent</string>
+    <string name="note_tile_label_to">Note to %1$s</string>
+    <string name="note_tile_live">live</string>
+    <string name="note_tile_offline">offline</string>
+    <string name="note_placeholder">One line to the agent…</string>
+    <string name="note_target_prefix">to</string>
+    <string name="note_change_target">Change session</string>
+    <string name="note_no_sessions">No session yet</string>
+    <string name="note_send">Send</string>
+    <string name="note_sent_to">Sent to %1$s</string>
+    <string name="note_send_failed">Send failed</string>
+    <string name="note_locked">Locked</string>
+    <string name="note_unlock">Unlock</string>
+    <string name="note_unlock_title">Unlock Keryx</string>
 </resources>

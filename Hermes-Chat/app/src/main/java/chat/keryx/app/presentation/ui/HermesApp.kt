@@ -178,8 +178,17 @@ fun HermesApp(viewModel: ChatViewModel) {
         }
     }
 
+    // The way from a media card or a prose chip to the artifact viewer (2.13). Provided above
+    // the nav host, not around the chat alone, so the Archive's media rows open it too.
+    // Remembered so every bubble reading the local is not recomposed each time this screen is.
+    val artifactOpener = remember(nav, viewModel.transportIsDirect) {
+        chat.keryx.app.presentation.artifact.ArtifactOpener(canReadPaths = viewModel.transportIsDirect) { ref ->
+            openSpace(KeryxDest.Artifact(path = ref.path, name = ref.name, roomId = ref.roomId, eventId = ref.eventId))
+        }
+    }
     CompositionLocalProvider(
         chat.keryx.app.presentation.ui.components.LocalKeryxHaptics provides keryxHaptics,
+        chat.keryx.app.presentation.artifact.LocalArtifactOpener provides artifactOpener,
         LocalHeraldConfig provides HeraldConfig(
             ids = chat.keryx.core.model.Heralds.parseIds(heraldIds),
             overrides = heraldAccents,
@@ -548,6 +557,12 @@ fun HermesApp(viewModel: ChatViewModel) {
                     onDismiss = nav::back,
                 )
                 KeryxDest.Settings -> chat.keryx.app.presentation.ui.components.SettingsPlace(
+                    viewModel = viewModel,
+                    onClose = nav::back,
+                )
+                // A page the agent wrote (2.13): the one place that carries its own arguments.
+                is KeryxDest.Artifact -> chat.keryx.app.presentation.artifact.ArtifactSpace(
+                    dest = dest,
                     viewModel = viewModel,
                     onClose = nav::back,
                 )

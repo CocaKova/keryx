@@ -31,8 +31,8 @@ android {
         // not cover.
         minSdk = 26
         targetSdk = 36
-        versionCode = 101
-        versionName = "2.12.0"
+        versionCode = 102
+        versionName = "2.13.0"
         // The on-device canary (app/src/androidTest) runs on this; without it `connectedCheck`
         // finds no instrumentation and reports green having run nothing.
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -138,6 +138,10 @@ dependencies {
   implementation(libs.androidx.work.runtime)
   // Real background push for normal messages (UnifiedPush distributor -> PushService wake).
   implementation(libs.unifiedpush.connector)
+  // The home-screen widget (2.13): Glance draws it as RemoteViews from a composable; material3
+  // is only the day/night colour bridge, so the widget wears the app's own tokens.
+  implementation(libs.androidx.glance.appwidget)
+  implementation(libs.androidx.glance.material3)
 
   // Instrumented tests: jUnit rules and runners
   androidTestImplementation(libs.androidx.test.core)

@@ -80,6 +80,9 @@ class AgentRunService : Service() {
         fun sync(context: Context, notice: RunNotice?) {
             val app = context.applicationContext
             current = notice
+            // The home-screen widget (2.13) follows the run: it floors its own repaints, so a
+            // burst of notices costs one draw, and a run's end is never the one it drops.
+            chat.keryx.app.widget.KeryxWidget.refresh(app)
             val nm = NotificationManagerCompat.from(app)
             if (notice == null) {
                 // ⚠️ Never stopService between startForegroundService and startForeground: the

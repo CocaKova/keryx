@@ -1,6 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,16 +15,22 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,11 +40,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.keryx.app.data.remote.HermesStreamClient.HubMessage
+import chat.keryx.app.presentation.tapin.CrewMind
 import chat.keryx.core.model.Delegation
 import chat.keryx.core.model.DelegationBeat
 import chat.keryx.core.model.DelegationState
+import chat.keryx.core.model.Message
 import chat.keryx.core.model.ToolGrammar
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.isActive
 
 /**
@@ -60,12 +70,28 @@ import kotlinx.coroutines.isActive
  * session the moment the wing settles. Before this the sheet could only be opened after the
  * fact, which is the wrong half of a delegation to be able to watch.
  */
+/**
+ * What the direct door can do with a flying helper (2.13). Null on the Matrix door, where the
+ * sheet stays what it was: a trail while flying, a transcript once landed.
+ *
+ * `messages` opens the child's own session — the gateway's watch window — so the sheet can
+ * show the helper's mind and not just its tool names; `tail` is what ran before the window
+ * opened; `steer` and `stop` address that one helper, never the parent turn.
+ */
+class CrewControls(
+    val messages: (childSessionId: String) -> Flow<List<Message>>,
+    val tail: suspend (subagentId: String) -> String,
+    val steer: (subagentId: String, role: String, text: String) -> Unit,
+    val stop: (subagentId: String, role: String) -> Unit,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SubagentSessionSheet(
     run: Delegation,
     fetch: suspend (String) -> Result<List<HubMessage>>,
     onDismiss: () -> Unit,
+    crew: CrewControls? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
@@ -114,9 +140,45 @@ fun SubagentSessionSheet(
             Spacer(Modifier.padding(top = 10.dp))
 
             if (run.running) {
-                // No stored session exists yet — the child writes its transcript when it lands.
-                // What we have is what we watched arrive, and it is still arriving.
-                TrailList(run.trail, live = true)
+                // The direct door can open the child's own session while it flies (2.13): the
+                // gateway's watch window mirrors its thinking, words and tools as native
+                // deltas on that sid. Until anything has come through, the trail the parent
+                // wire gave us is still the truer thing to show than a blank.
+                val watch = crew?.takeIf { run.sessionId.isNotBlank() }
+                if (watch == null) {
+                    TrailList(run.trail, live = true)
+                    return@Column
+                }
+                val role = remember(run.goal) { chat.keryx.app.presentation.tapin.TapIn.roleOf(run.goal) }
+                val childMessages by remember(run.sessionId) { watch.messages(run.sessionId) }
+                    .collectAsState(initial = emptyList())
+                val earlier by produceState("", run.key) { value = watch.tail(run.key) }
+                val mind = remember(childMessages, earlier) { CrewMind.of(childMessages, earlier) }
+                var confirmStop by remember { mutableStateOf(false) }
+                Column(Modifier.fillMaxWidth().heightIn(max = 460.dp)) {
+                    if (mind.empty) {
+                        TrailList(run.trail, live = true)
+                    } else {
+                        CrewMindView(mind, trail = run.trail, modifier = Modifier.weight(1f, fill = false))
+                    }
+                }
+                Spacer(Modifier.padding(top = 10.dp))
+                chat.keryx.app.presentation.tapin.SteerBar(
+                    placeholder = "A word in ${role.ifBlank { "this helper" }}'s ear…",
+                    onSteer = { text -> watch.steer(run.key, role.ifBlank { "the helper" }, text) },
+                    onStop = { confirmStop = true },
+                )
+                if (confirmStop) {
+                    AlertDialog(
+                        onDismissRequest = { confirmStop = false },
+                        title = { Text("Stop ${role.ifBlank { "this helper" }}?") },
+                        text = { Text("Only this helper stops. The turn that sent it keeps going and reads whatever it had so far.") },
+                        confirmButton = {
+                            TextButton(onClick = { confirmStop = false; watch.stop(run.key, role.ifBlank { "the helper" }) }) { Text("Stop it") }
+                        },
+                        dismissButton = { TextButton(onClick = { confirmStop = false }) { Text("Keep going") } },
+                    )
+                }
                 return@Column
             }
 
@@ -197,6 +259,122 @@ fun SubagentSessionSheet(
                             )
                         }
                     },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * A flying helper's mind (2.13), top to bottom: what ran before the window opened (folded),
+ * what it is thinking (tail-followed while it streams), what it has done, what it has said.
+ *
+ * The trail is still drawn under the tools when the mirror has fewer of them than the parent
+ * wire reported — a window opened late missed the early calls, and the parent counted them.
+ */
+@Composable
+private fun CrewMindView(mind: CrewMind, trail: List<DelegationBeat>, modifier: Modifier = Modifier) {
+    val base = MaterialTheme.colorScheme.onSurface
+    val accent = MaterialTheme.colorScheme.tertiary
+    val listState = rememberLazyListState()
+    var earlierOpen by remember { mutableStateOf(false) }
+    // Follow the thought only while it grows, as the trail does — never scroll a reader.
+    LaunchedEffect(mind.thinking.length, mind.saying.length, mind.streaming) {
+        val last = listState.layoutInfo.totalItemsCount - 1
+        if (mind.streaming && last >= 0) listState.animateScrollToItem(last, scrollOffset = Int.MAX_VALUE / 4)
+    }
+    LazyColumn(
+        state = listState,
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (mind.earlier.isNotBlank()) item(key = "earlier") {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(base.copy(alpha = 0.04f))
+                    .clickable { earlierOpen = !earlierOpen }
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+            ) {
+                Text(
+                    if (earlierOpen) "Before you opened this" else "Before you opened this · tap to read",
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = base.copy(alpha = 0.55f),
+                )
+                if (earlierOpen) {
+                    Text(
+                        mind.earlier,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = base.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
+                }
+            }
+        }
+        if (mind.thinking.isNotBlank()) item(key = "thinking") {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp)) {
+                Text(
+                    if (mind.streaming) "Thinking" else "Thought",
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = if (mind.streaming) accent else base.copy(alpha = 0.55f),
+                )
+                Text(
+                    mind.thinking,
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp,
+                    color = base.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 3.dp),
+                )
+            }
+        }
+        if (mind.tools.isNotEmpty()) item(key = "tools") {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp)) {
+                Text("Did", fontSize = 10.5.sp, fontWeight = FontWeight.Medium, color = base.copy(alpha = 0.55f))
+                mind.tools.forEachIndexed { i, call ->
+                    val newest = mind.streaming && i == mind.tools.lastIndex && call.status == chat.keryx.core.model.ToolStatus.EXECUTING
+                    Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                        Text(
+                            ToolGrammar.glyphOf(call.name),
+                            fontSize = 11.sp,
+                            color = if (newest) accent else base.copy(alpha = 0.45f),
+                            modifier = Modifier.width(20.dp),
+                        )
+                        Text(
+                            ToolGrammar.title(call.name, call.context, running = newest),
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = if (newest) FontWeight.SemiBold else FontWeight.Normal,
+                            color = base.copy(alpha = if (newest) 0.95f else 0.75f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                val missed = trail.count { it.kind == "tool" } - mind.tools.size
+                if (missed > 0) {
+                    Text(
+                        "+ $missed before the window opened",
+                        fontSize = 10.5.sp,
+                        color = base.copy(alpha = 0.45f),
+                        modifier = Modifier.padding(top = 4.dp, start = 20.dp),
+                    )
+                }
+            }
+        }
+        if (mind.saying.isNotBlank()) item(key = "saying") {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp)) {
+                Text("Said", fontSize = 10.5.sp, fontWeight = FontWeight.Medium, color = base.copy(alpha = 0.55f))
+                Text(
+                    mind.saying,
+                    fontSize = 12.5.sp,
+                    lineHeight = 17.sp,
+                    color = base.copy(alpha = 0.85f),
+                    modifier = Modifier.padding(top = 3.dp),
                 )
             }
         }

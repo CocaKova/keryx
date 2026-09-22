@@ -5,6 +5,23 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.13.0 · versionCode 102
+
+- Steer from inside Tap-In: a bar under the space while the turn runs — type to steer, hold to
+  queue, empty to stop — the chat composer's grammar, in the view built for watching.
+- A helper's mind: tap a flying crew card on the direct door and the sheet opens on the child's
+  own session (the gateway's watch window mirrors its thinking, words and tools), with what ran
+  before folded above. Under it, a word in that helper's ear (`subagent.steer`) and a square that
+  stops that helper alone (`subagent.interrupt`), with a confirm. Before this the card could only
+  show tool names — the parent wire drops a child's text on purpose. See
+  [features/tap-in.md](features/tap-in.md).
+- Home screen: a widget (link, last session and reply, the run in flight; tap → the session, or
+  Tap-In while it runs) and a Quick Settings tile that floats a one-line note to the agent over
+  whatever you were doing. See [features/home-screen.md](features/home-screen.md).
+- Artifact viewer: an `.html` the agent wrote — sent as media, or named by path on the direct door
+  — opens in a fenced WebView inside the app, with save, share and open-with. See
+  [features/spaces.md](features/spaces.md#artifact).
+
 ## 2.12.0 · versionCode 101
 
 - Tap-In: tap the working banner, long-press the newest run, or tap the run notice, and the turn
