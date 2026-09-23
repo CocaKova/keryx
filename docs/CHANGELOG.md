@@ -5,6 +5,19 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.13.5 · versionCode 107
+
+- Stop settles the turn. The gateway's `message.complete` is the end of a turn whatever the
+  last row looks like; a stopped turn folds as a thought with no answer, which the message walk
+  read as mid-run and held the banner and the thinking disclosure for the whole long quiet
+  window. The direct door now settles on the completion itself, and a Stop that gets no
+  completion at all (a turn interrupted in its build window) seals the stream locally after 4 s.
+- The pill tells the truth about a sticky pick. With sticky model on (the default: a new chat
+  opens on the model you picked last), the switch ran a second after the session was made, and
+  the pill kept the pre-switch model — "it showed qwen, then used grok". An applied switch now
+  writes the session's model at once, and the opening says so: "Opened on grok-4.5 — your last
+  pick (sticky model, in Settings)".
+
 ## 2.13.4 · versionCode 106
 
 - A reply made of `- key: value` bullets no longer folds into the tool run above it. The

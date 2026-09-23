@@ -90,6 +90,9 @@ class ChatViewModel(
         // Bridge after Hermes stops typing — long enough to hand off to the final message's settle,
         // short enough that the banner doesn't loiter once it's genuinely done.
         private const val TYPING_STOP_GRACE_MS = 5_000L
+        // After the gateway's own end-of-turn, how long the message walk refuses to relight the
+        // banner off the fold that ends the same turn.
+        private const val TURN_END_GRACE_MS = 2_000L
         // Typing stopped and the answer is already rendered: the turn is over — settle fast.
         private const val ANSWER_SETTLED_MS = 350L
         // How long a typing=true flag keeps its veto with NO other sign of life. Matrix typing is
@@ -868,6 +871,19 @@ class ChatViewModel(
             viewModelScope.launch {
                 d.reasoningRejections().collect { walkBackReasoning() }
             }
+            // The gateway's `message.complete` is the turn's end, whatever the last row looks
+            // like. A stopped turn folds as a thought with no answer under it, and the message
+            // walk reads that shape as mid-run — more is coming — so the banner and the
+            // thinking disclosure hung for the whole long quiet window after every Stop
+            // (device, 2026-09-23; "a long-running bug"). The End event is authoritative on
+            // this door: settle on it, for the room on screen.
+            viewModelScope.launch {
+                d.turnEvents().collect { ev ->
+                    if (ev is chat.keryx.core.model.TurnEvent.End && ev.sessionId == _currentRoom.value?.id) {
+                        settleTurnNow()
+                    }
+                }
+            }
         }
         viewModelScope.launch {
             messages.collect { msgs ->
@@ -953,9 +969,12 @@ class ChatViewModel(
                 val openedMidRun = firstEval && stateMessage.id !in settledWorkIds &&
                     (System.currentTimeMillis() - stateMessage.timestamp) < WORKING_RECENT_MS
 
+                // The direct door just said this turn ended: its fold is not a run that started
+                // elsewhere, however mid-run its last row reads.
+                val justEnded = System.currentTimeMillis() - turnEndedAt < TURN_END_GRACE_MS
                 when {
                     _awaitingReply.value -> scheduleClearAwaiting(window)
-                    midRun && (liveActivity || openedMidRun) -> {
+                    midRun && (liveActivity || openedMidRun) && !justEnded -> {
                         // The agent is working but we didn't initiate it (app opened / room switched
                         // mid-run, or a run started elsewhere). Light up the cloud + quips.
                         _awaitingReply.value = true
@@ -1309,6 +1328,25 @@ class ChatViewModel(
     private fun settleTurn() {
         answerLanded = true
         scheduleClearAwaiting(ANSWER_SETTLED_MS, force = true)
+    }
+
+    /** When the direct door's turn ended, by the gateway's own word (`message.complete`). */
+    @Volatile private var turnEndedAt = 0L
+
+    /**
+     * The gateway said the turn is over: settle at once, no window. A scheduled clear could be
+     * cancelled by the fold that lands in the same instant (the message walk reads a thought
+     * with no answer as mid-run and re-arms the long window — the post-Stop hang), so this
+     * clears directly and stamps the moment, and the walk's "run started elsewhere" relight
+     * stands down for [TURN_END_GRACE_MS] after it.
+     */
+    private fun settleTurnNow() {
+        turnEndedAt = System.currentTimeMillis()
+        answerLanded = true
+        quietJob?.cancel()
+        _awaitingReply.value = false
+        _workStartedAt.value = null
+        workStateId?.let { settledWorkIds.add(it) }
     }
 
     /**
@@ -2045,7 +2083,12 @@ class ChatViewModel(
             gw.selectModel(sessionId, model, choice.provider)
                 .onSuccess { out ->
                     if (out.confirmRequired) _toasts.tryEmit("$model needs confirming — pick it in the model picker")
-                    else models.clear() // the pill re-reads this session's route on arrival
+                    else {
+                        models.clear() // the pill re-reads this session's route on arrival
+                        // Never silent: a chat that opens on a model other than the gateway's
+                        // says so, and says why, so a surprise on the first turn is impossible.
+                        _toasts.tryEmit("Opened on $model — your last pick (sticky model, in Settings)")
+                    }
                 }
                 .onFailure { android.util.Log.w("KeryxModel", "sticky model refused: ${it.message}") }
         }
