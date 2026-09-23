@@ -58,6 +58,22 @@ class MediaTagsTest {
 
     /** Device, 2026-09-22: an agent describing the convention grew three dead file chips. */
     @Test
+    fun `an apostrophe inside a path is the path's, one at the end is the tag's quote`() {
+        assertEquals(
+            listOf("/home/sy/o'brien.png"),
+            MediaTags.split("Here:\nMEDIA:/home/sy/o'brien.png\n").refs.map { it.path },
+        )
+        assertEquals(
+            listOf("/home/sy/o'brien.png"),
+            MediaTags.split("the portrait is MEDIA:/home/sy/o'brien.png for you").refs.map { it.path },
+        )
+        assertEquals(
+            listOf("/a/b.png"),
+            MediaTags.split("see 'MEDIA:/a/b.png' above").refs.map { it.path },
+        )
+    }
+
+    @Test
     fun `talking about the tag is not a tag`() {
         val text = "Use `MEDIA:<absolute path>` one per line. In MEDIA: form it's " +
             "`MEDIA:/home/u/out/keryx-artifact-test.html` — the TUI prints it as text."

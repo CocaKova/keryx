@@ -134,7 +134,6 @@
             android:theme="@style/Theme.HermesChat.Note"
             android:windowSoftInputMode="adjustResize|stateVisible"
             android:excludeFromRecents="true"
-            android:noHistory="true"
             android:launchMode="singleTop"
             android:exported="false" />
 

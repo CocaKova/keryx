@@ -19,8 +19,9 @@ object MediaTags {
 
     // The bare alternative stops at a quote: `MEDIA:/a/b.html` (the whole tag backticked, the
     // shape an agent writes when it names the tag in prose) used to yield the path WITH its
-    // closing backtick — a card for a file that does not exist.
-    private const val VALUE = """(`[^`\n]+`|"[^"\n]+"|'[^'\n]+'|[^\s`"']+)"""
+    // closing backtick — a card for a file that does not exist. An apostrophe may sit INSIDE a
+    // bare path (`/home/sy/o'brien.png`), never at its end, where it is a closing quote.
+    private const val VALUE = """(`[^`\n]+`|"[^"\n]+"|'[^'\n]+'|[^\s`"']+(?:'[^\s`"']+)*)"""
     private val LINE = Regex("""^[\t ]*[`"']?MEDIA:\s*$VALUE[`"']?[\t ]*$""", RegexOption.MULTILINE)
     private const val GONE = "\u0000"
     private val INLINE = Regex("""[`"']?MEDIA:\s*$VALUE[`"']?""")

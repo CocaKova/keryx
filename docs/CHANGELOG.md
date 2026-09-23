@@ -5,6 +5,14 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.13.3 · versionCode 105
+
+- The Quick Settings note survives its own unlock on Android 8–10. There a PIN or pattern unlock
+  is the system's confirm-credential screen, a separate activity; the note was `noHistory`, so
+  being covered by it finished the note. It now finishes itself on leaving, except to unlock.
+- A `MEDIA:` path may hold an apostrophe (`/home/sy/o'brien.png`); only a trailing one is the
+  tag's closing quote. 2.13.1's quote fix had cut such paths at the apostrophe.
+
 ## 2.13.2 · versionCode 104
 
 - A new session no longer opens on "Compressing context". The agent's turn-1 notice that it had
