@@ -82,14 +82,15 @@ fun ArtifactSpace(
 
     // The transport's own REST leg, only where a path can be read — never a second client
     // with its own auth rotation beside the one the door already holds.
-    val rest = remember(app, viewModel.transportIsDirect) {
+    // Read per load, not remembered: a gateway switch or re-dial builds a new client, and a
+    // remembered one kept Reload pointed at the old address for good.
+    fun rest() =
         if (!viewModel.transportIsDirect) null
         else (app?.transport as? chat.keryx.app.transport.direct.DirectTransport)?.restClient
-    }
 
     val page by produceState<Page>(initialValue = Page.Loading, dest, reloadTick) {
         value = Page.Loading
-        value = load(dest, rest, fetchMedia = { room, event -> viewModel.loadMessageMedia(room, event) })
+        value = load(dest, rest(), fetchMedia = { room, event -> viewModel.loadMessageMedia(room, event) })
     }
 
     var busy by remember { mutableStateOf(false) }
@@ -245,12 +246,18 @@ private fun ArtifactWebView(html: String, modifier: Modifier = Modifier) {
                 settings.displayZoomControls = false
                 webViewClient = object : WebViewClient() {
                     // The page may link out; the viewer does not follow. The browser gets the
-                    // link, the artifact stays where the eye left it.
+                    // link, the artifact stays where the eye left it — but only a link a finger
+                    // chose, to the web or to mail. The page is agent-written and may carry text
+                    // it read off the web: a script or meta-refresh navigating to `tel:`,
+                    // `market:` or an app's deep link fired that intent the moment it opened.
                     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                         val url = request?.url ?: return false
                         if (!request.isForMainFrame) return false
-                        runCatching {
-                            ctx.startActivity(Intent(Intent.ACTION_VIEW, url).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        val scheme = url.scheme?.lowercase()
+                        if (request.hasGesture() && scheme in setOf("http", "https", "mailto")) {
+                            runCatching {
+                                ctx.startActivity(Intent(Intent.ACTION_VIEW, url).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                            }
                         }
                         return true
                     }

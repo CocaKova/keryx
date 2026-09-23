@@ -863,6 +863,10 @@ private const val GHOST_TOOL_ID = "generating"
                 // The turn is over — anything it was waiting on is answered, expired or moot.
                 markBusy(storedId, false)
                 setBlocking(storedId, null)
+                // Status lines are transient and only `ready` used to clear them, so one that
+                // never got its `ready` (a heartbeat, a goal verdict, a done edge) outlived the
+                // turn and headlined Tap-In for every turn after it.
+                statusFlow(storedId).value = null
                 store.streamComplete(
                     finalText = pStr("text") ?: "",
                     error = pStr("status") == "error",
@@ -913,8 +917,14 @@ private const val GHOST_TOOL_ID = "generating"
                 // session hit vLLM's image cap and the phone showed dead air). Persist them
                 // as a quiet SYSTEM row; benign statuses (⏳ spinners, compaction — its own
                 // kind) stay off the transcript.
-                if (kind in setOf("lifecycle", "status") &&
-                    (text.startsWith("❌") || text.startsWith("⚠️") || text.startsWith("⚠"))
+                // A ❌ under a compaction tag is the compaction failing, and still a failure. A
+                // ⚠ there is not: the gateway tags the session-start "compression model …
+                // auto-lowered" notice `compacting`, and that is config advice repeating on
+                // every new session, not a turn's failure.
+                val generic = kind in setOf("lifecycle", "status")
+                val compaction = kind in setOf("compacting", "compressing")
+                if ((generic || compaction) && text.startsWith("❌") ||
+                    generic && (text.startsWith("⚠️") || text.startsWith("⚠"))
                 ) {
                     store.localSystemMessage(text)
                     // ⚠️ This is the ONLY channel a refused reasoning level travels on for a
@@ -1000,10 +1010,18 @@ private const val GHOST_TOOL_ID = "generating"
             "subagent.spawn_requested", "subagent.start", "subagent.thinking",
             "subagent.tool", "subagent.progress", "subagent.complete",
             -> {
+                pStr("child_session_id")?.takeIf { it.isNotBlank() }?.let { child ->
+                    if (ev.type == "subagent.complete") {
+                        flyingChildren.remove(child)
+                        if (releaseOnLanding.remove(child)) releaseWatch(child)
+                    } else {
+                        flyingChildren.add(child)
+                    }
+                }
                 // subagent_id is optional on the wire (older emitters omit it); the task
                 // index is the stable fallback within one dispatch.
                 val key = pStr("subagent_id")?.takeIf { it.isNotBlank() }
-                    ?: "task-${pStr("task_index") ?: "0"}"
+                    ?: "${chat.keryx.core.model.Delegation.FALLBACK_PREFIX}${pStr("task_index") ?: "0"}"
                 fun pInt(k: String) = pStr(k)?.toDoubleOrNull()?.toInt()
                 fun pList(k: String) = (p?.get(k) as? kotlinx.serialization.json.JsonArray)
                     ?.mapNotNull { it.jsonPrimitive.contentOrNull }
@@ -1590,6 +1608,44 @@ private const val GHOST_TOOL_ID = "generating"
      * explain it, the newest page is re-read. The timeline then lights the working banner on
      * its own, exactly as it does for a run it opened onto mid-flight.
      */
+    /**
+     * A helper's watch window (2.13): the child's own session, resumed so the gateway mirrors
+     * its frames onto it. The resume is let go when the last reader stops — the sheet closed,
+     * or the helper landed and the sheet switched to its transcript. Held forever, every helper
+     * ever watched stayed a live session on the gateway for the life of the process, the same
+     * one-live-session-per-row cost [peekPreview] exists to avoid.
+     */
+    fun watchChild(childSessionId: String, limit: Int = 200): Flow<List<Message>> =
+        getMessages(childSessionId, limit).onCompletion { releaseWatch(childSessionId) }
+
+    /** Child sessions whose helper has not landed, and the watches waiting on that landing. */
+    private val flyingChildren = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    private val releaseOnLanding = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+    private fun releaseWatch(childSessionId: String) {
+        // Never while it flies: `session.close` finalizes the session this phone resumed —
+        // it ends the stored row and interrupts delegations filed under it — and the helper
+        // is still writing there. A sheet closed mid-flight lets go when the helper lands.
+        if (childSessionId in flyingChildren) {
+            releaseOnLanding.add(childSessionId)
+            return
+        }
+        scope.launch {
+            // Past any resume still in flight, so there is a mapping to let go of.
+            val live = attachMutex.withLock {
+                // Something else still reads it (the room itself, a second sheet): keep it.
+                if ((stores[childSessionId]?.followers ?: 0) > 0) return@launch
+                storedToLive.remove(childSessionId)?.also { liveToStored.remove(it) }
+            } ?: return@launch
+            stores.remove(childSessionId)
+            statusFlows.remove(childSessionId)
+            val rpc = rpc ?: return@launch
+            runCatching {
+                rpc.request("session.close", buildJsonObject { put("session_id", JsonPrimitive(live)) }, timeoutMs = 10_000)
+            }.onFailure { android.util.Log.w("KeryxGw", "closing watch window for $childSessionId failed", it) }
+        }
+    }
+
     private fun startFollowing(storedId: String, st: SessionStore) {
         st.followers++
         if (st.followJob?.isActive == true) return

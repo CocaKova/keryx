@@ -35,6 +35,21 @@ class SessionStatusTest {
     }
 
     @Test
+    fun `a warning the gateway tagged compacting is not a compaction`() {
+        // The agent's session-start feasibility notice, verbatim shape (conversation_compression.py);
+        // the gateway's substring classifier tags it "compacting" because it mentions compression.
+        val notice = "⚠ Compression model qwen3.8-27b (spark) context is 229,376 tokens, but the main model " +
+            "qwen3.8-27b's compression threshold was 256,000 tokens. Auto-lowered this session's " +
+            "threshold to 229,376 tokens so compression can run.\n  To make this permanent, edit config.yaml"
+        val s = SessionStatus.of("compacting", notice)
+        assertFalse(s.isCompacting)
+        assertEquals("lifecycle", s.kind)
+        assertFalse(SessionStatus.of("compressing", "❌ compression failed").isCompacting)
+        // Real progress under the same tag is untouched.
+        assertTrue(SessionStatus.of("compacting", "🗜️ Compacting context — summarizing earlier conversation").isCompacting)
+    }
+
+    @Test
     fun `the headline carries the size of the job`() {
         assertEquals(
             "Compressing context (~123k tokens)",

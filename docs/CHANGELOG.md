@@ -5,6 +5,30 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.13.2 · versionCode 104
+
+- A new session no longer opens on "Compressing context". The agent's turn-1 notice that it had
+  lowered the compression threshold ("⚠ Compression model … Auto-lowered …") reaches the phone
+  tagged `compacting` by the gateway, and no `ready` follows it. A warning or error is never
+  compaction progress now, whatever its tag; a turn ending clears the status line; Tap-In's
+  headline takes a compaction only, not any status line that happened to stick.
+- Tap-In's Mind region fades its older thought by masking the text, not by painting a
+  `surface`-coloured band over the dusk sky — the band read as a bar across the cloud.
+- The home-screen widget no longer freezes on a stale frame ("working" after the turn ended):
+  Glance recomposes a live session on refresh without re-reading, so the facts now come in
+  through a flow the card collects.
+- Retry re-sends the newest prompt only when it is plain text, and only when the undo actually
+  took a turn back. An uncaptioned image no longer lets an older question stand in for it.
+- A helper's steer / stop / tail are bound to the room the sheet was opened from, and the sheet
+  closes when the room changes under it. A wing the gateway never named (no `subagent_id`) can
+  be watched but not addressed.
+- A watched helper's session is let go (`session.close`) once the helper has landed and the last
+  reader stops — never while it flies, since closing finalizes the session it is writing to.
+- The artifact viewer hands off only links a finger tapped, to `http`, `https` or `mailto`; a
+  script or meta-refresh can no longer fire `tel:`, `market:` or an app deep link. It reads the
+  gateway client per load, so Reload follows a gateway switch.
+- `~/out/page.html` in prose no longer makes a dead `/out/page.html` chip.
+
 ## 2.13.1 · versionCode 103
 
 - A `MEDIA:` mention is only a hand-off when its value looks like an address (`/…`, `~/…`, a

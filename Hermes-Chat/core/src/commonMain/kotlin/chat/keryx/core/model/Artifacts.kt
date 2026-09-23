@@ -24,7 +24,7 @@ object Artifacts {
      * `.html.bak` do not.
      */
     private val BARE = Regex(
-        """(?<![\w/:.])(/(?:[\w.@+~\-]+/)*[\w.@+~\-]+\.(?:html|htm))(?![\w/]|\.\w)""",
+        """(?<![\w/:.~])(/(?:[\w.@+~\-]+/)*[\w.@+~\-]+\.(?:html|htm))(?![\w/]|\.\w)""",
         RegexOption.IGNORE_CASE,
     )
 

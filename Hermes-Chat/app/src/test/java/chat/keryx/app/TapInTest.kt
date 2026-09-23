@@ -49,9 +49,17 @@ class TapInTest {
     // --- headline precedence -------------------------------------------------------------------
 
     @Test
-    fun `the gateway's status line is the headline when it has one`() {
+    fun `a compaction is the headline while it runs`() {
         val s = project(status = SessionStatus("compressing", "Compressing context ~92,000 tokens"), calls = listOf(call("read_file", ToolStatus.EXECUTING)))
         assertEquals("Compressing context (~92k tokens)", s.headline)
+    }
+
+    @Test
+    fun `a status that is not a compaction does not take the headline`() {
+        val s = project(status = SessionStatus("heartbeat", "♥ heartbeat #3 firing…"), calls = listOf(call("read_file", ToolStatus.EXECUTING)))
+        assertEquals("Reading a.txt", s.headline)
+        val w = project(status = SessionStatus.of("compacting", "⚠ Compression model x context is 229,376 tokens. Auto-lowered this session's threshold"), calls = listOf(call("read_file", ToolStatus.EXECUTING)))
+        assertEquals("Reading a.txt", w.headline)
     }
 
     @Test

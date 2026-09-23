@@ -36,9 +36,18 @@ data class SessionStatus(val kind: String, val text: String) {
          * retry / idle lines reach it still tagged `lifecycle`, and the side-channel classifies
          * on the gateway. Either way the app decides by the line itself when the tag is generic:
          * every routine compression template the agent emits opens with one of three glyphs.
+         *
+         * A warning or error is never progress, whatever its tag. The gateway re-tags any
+         * lifecycle line containing "compress" as `compacting`, which catches the agent's
+         * session-start notice ("⚠ Compression model … Auto-lowered this session's threshold …
+         * so compression can run"). Taken at its tag, every new session opened on "Compressing
+         * context" for a compaction that never ran, and no `ready` came to clear it.
          */
         fun of(kind: String, text: String): SessionStatus {
             val t = text.trim()
+            if (kind == "compacting" || kind == "compressing") {
+                if (t.startsWith("⚠") || t.startsWith("❌")) return SessionStatus("lifecycle", t)
+            }
             val k = if (kind == "lifecycle" || kind == "status") {
                 if (t.startsWith("📦") || t.startsWith("🗜") || t.startsWith("💤") ||
                     t.contains("Compacting context")
