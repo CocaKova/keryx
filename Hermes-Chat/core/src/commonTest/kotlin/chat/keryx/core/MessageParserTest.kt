@@ -671,4 +671,34 @@ class MessageParserTest {
         val sensed = MessageParser.parse("On my way ⟦keryx:sense|battery=22%|local=23:10 CDT⟧ ⟦keryx:voice⟧", agentChrome = false)
         assertEquals("On my way", (sensed.single() as MessageParser.Segment.Text).text.trim())
     }
+
+    /**
+     * Device, 2026-09-23: a reply of `- key: value` bullets folded whole into the tool run above
+     * it. One line — `package: \`a\` → PyPI \`b\` + engine \`c\`` — started and ended with a
+     * backtick, and the glyph-less fallback took it for a fully quoted tool argument.
+     */
+    @Test
+    fun bulletedKeyValueProse_isNotATool() {
+        val content = "done. official local Comfy MCP is wired.\n\n" +
+            "**ComfyUI**\n" +
+            "- was: `v0.36.0-20-g5ba116a4` (detached master tip)\n" +
+            "- now: **`v0.37.1`** at `~/comfyui`\n" +
+            "- guide: https://docs.comfy.org/agent-tools/mcp\n" +
+            "- package: `Comfy-Org/comfy-mcp` → PyPI `comfy-mcp 0.10.0` + engine `comfy-cli 1.20.0`\n" +
+            "- wrapper: `~/.hermes/scripts/comfy-mcp.sh` (pins `COMFY_BIN`)\n" +
+            "- verified: `hermes mcp test comfy-mcp` → connected, 39 tools\n" +
+            "# note: headings are prose too\n" +
+            "> quote: \"and so are quotes\""
+        val segs = MessageParser.parse(content)
+        assertTrue(segs.none { it is MessageParser.Segment.Tools }, "prose parsed as tools: $segs")
+    }
+
+    @Test
+    fun glyphlessRepeat_stillATool() {
+        val tools = MessageParser.parse("terminal: \"ls -la | grep `x`\"")
+            .filterIsInstance<MessageParser.Segment.Tools>().single().calls
+        assertEquals("terminal", tools.single().name)
+        // The same line under a bullet is a list item, not a repeat.
+        assertTrue(MessageParser.parse("- terminal: \"ls -la\"").none { it is MessageParser.Segment.Tools })
+    }
 }
