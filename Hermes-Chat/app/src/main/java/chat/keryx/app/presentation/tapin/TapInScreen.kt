@@ -41,12 +41,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.keryx.app.presentation.ui.components.KeryxBreathingDot
@@ -225,30 +231,39 @@ private fun Headline(state: TapInState, ink: Color, accent: Color, reduced: Bool
 
 @Composable
 private fun Mind(mind: String, ink: Color, reduced: Boolean) {
-    val surface = MaterialTheme.colorScheme.surface
     Column {
         KeryxSectionHeader("Mind")
         Spacer(Modifier.height(6.dp))
-        Box {
-            Text(
-                mind,
-                fontSize = 13.sp,
-                lineHeight = 19.sp,
-                fontStyle = FontStyle.Italic,
-                color = ink.copy(alpha = 0.72f),
-                modifier = Modifier.fillMaxWidth().padding(start = 2.dp),
-            )
-            // Older thought fades upward into the ground — the window is a tail, and it should
-            // look like one. A gradient, not motion, so it costs nothing under reduced motion.
-            if (!reduced) Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(22.dp)
-                    .background(Brush.verticalGradient(0f to surface, 1f to surface.copy(alpha = 0f))),
-            )
-        }
+        Text(
+            mind,
+            fontSize = 13.sp,
+            lineHeight = 19.sp,
+            fontStyle = FontStyle.Italic,
+            color = ink.copy(alpha = 0.72f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 2.dp)
+                // Older thought fades upward — the window is a tail, and it should look like
+                // one. The text's own alpha is masked, not a band painted over it: the space
+                // sits on the dusk sky, whose drifting pools no flat colour matches, so a
+                // `surface` gradient read as a bar laid across the cloud.
+                .then(if (reduced) Modifier else Modifier.tailFade(22.dp)),
+        )
     }
 }
+
+/** Fades this content's top [height] to transparent, over whatever ground is behind it. */
+private fun Modifier.tailFade(height: Dp): Modifier = this
+    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+    .drawWithContent {
+        drawContent()
+        val fade = height.toPx().coerceAtMost(size.height / 2f)
+        drawRect(
+            brush = Brush.verticalGradient(0f to Color.Transparent, fade to Color.Black, startY = 0f, endY = fade),
+            size = Size(size.width, fade),
+            blendMode = BlendMode.DstIn,
+        )
+    }
 
 // --- 3. Crew -----------------------------------------------------------------------------------
 

@@ -139,6 +139,16 @@ class ChatViewModel(
         /** True when a timeline event [echo] is the homeserver copy of the optimistic [sent] text.
          *  Reply sends come back wrapped (quote-fallback prefix), so an exact match OR the echo
          *  ending with the sent text both count. */
+        /**
+         * What Retry re-sends: the newest prompt, and only when it is plain text. An image or a
+         * file cannot be re-sent from its transcript row, and skipping past it to an older
+         * text prompt re-asked a question the undone exchange never contained.
+         */
+        fun retryPromptOf(msgs: List<Message>): String? =
+            msgs.lastOrNull { it.sender == SenderType.ME }
+                ?.takeIf { it.mediaKind == null }
+                ?.content?.takeIf { it.isNotBlank() }
+
         fun pendingEchoMatches(echo: String, sent: String): Boolean {
             val e = echo.trim()
             val s = sent.trim()
@@ -2103,11 +2113,15 @@ class ChatViewModel(
     fun retryExchange() {
         val room = _currentRoom.value ?: return
         val d = direct ?: return
-        val prompt = messages.value.lastOrNull { it.sender == SenderType.ME && it.content.isNotBlank() }
-            ?.content?.takeIf { it.isNotBlank() } ?: return
+        val prompt = retryPromptOf(messages.value) ?: return
         viewModelScope.launch {
             d.undoLastTurn(room.id)
-                .onSuccess { sendMessage(prompt) }
+                .onSuccess { removed ->
+                    // Nothing taken back means the exchange is still there: re-sending would
+                    // ask the same thing twice.
+                    if (removed > 0) sendMessage(prompt)
+                    else _toasts.tryEmit("Nothing to retry — the gateway had no turn to take back")
+                }
                 .onFailure { e ->
                     val why = e.message.orEmpty()
                     _toasts.tryEmit(
@@ -2654,24 +2668,22 @@ class ChatViewModel(
     fun crewMessages(childSessionId: String): kotlinx.coroutines.flow.Flow<List<Message>> {
         val d = direct ?: return kotlinx.coroutines.flow.flowOf(emptyList())
         if (childSessionId.isBlank()) return kotlinx.coroutines.flow.flowOf(emptyList())
-        return d.getMessages(childSessionId, limit = 200)
+        return d.watchChild(childSessionId)
     }
 
     /** What a helper did before this window opened — the gateway's tail of its live transcript. */
-    suspend fun crewTail(subagentId: String): String {
-        val session = _currentRoom.value ?: return ""
+    suspend fun crewTail(parentSessionId: String, subagentId: String): String {
         val d = direct ?: return ""
-        return d.crewTail(session.id, subagentId).getOrDefault("")
+        return d.crewTail(parentSessionId, subagentId).getOrDefault("")
     }
 
     /** A word in one helper's ear. It lands on that child's next step; the parent turn and
      *  the other helpers never see it. "Rejected" is honest: the helper answers to a door
      *  that isn't this one, or it is already past its last tool batch. */
-    fun steerCrew(subagentId: String, role: String, text: String) {
-        val session = _currentRoom.value ?: return
+    fun steerCrew(parentSessionId: String, subagentId: String, role: String, text: String) {
         val d = direct ?: return
         viewModelScope.launch {
-            d.steerCrew(session.id, subagentId, text)
+            d.steerCrew(parentSessionId, subagentId, text)
                 .onSuccess { queued ->
                     if (queued) toast("Steered $role — it sees it on its next step")
                     else toast("$role didn't take it — it answers to another door, or it's already wrapping up")
@@ -2681,23 +2693,26 @@ class ChatViewModel(
     }
 
     /** The helper sheet's handle on all of the above — null on the Matrix door, where the
-     *  sheet keeps its read-only shape. Built per call; it holds nothing but this VM. */
-    fun crewControls(): chat.keryx.app.presentation.ui.components.CrewControls? {
-        if (!canSteerCrew) return null
+     *  sheet keeps its read-only shape. Built per call; it holds nothing but this VM.
+     *
+     *  Bound to [parentSessionId], the room the helper was opened from — never read from the
+     *  open room at press time: a notice tap that switched rooms under an open sheet sent A's
+     *  helper id with B's session, and the gateway's refusal read as "another door". */
+    fun crewControls(parentSessionId: String?): chat.keryx.app.presentation.ui.components.CrewControls? {
+        if (!canSteerCrew || parentSessionId.isNullOrBlank()) return null
         return chat.keryx.app.presentation.ui.components.CrewControls(
             messages = { id -> crewMessages(id) },
-            tail = { id -> crewTail(id) },
-            steer = { id, role, text -> steerCrew(id, role, text) },
-            stop = { id, role -> stopCrew(id, role) },
+            tail = { id -> crewTail(parentSessionId, id) },
+            steer = { id, role, text -> steerCrew(parentSessionId, id, role, text) },
+            stop = { id, role -> stopCrew(parentSessionId, id, role) },
         )
     }
 
     /** Stop one helper; the turn that spawned it keeps going and reads the partial result. */
-    fun stopCrew(subagentId: String, role: String) {
-        val session = _currentRoom.value ?: return
+    fun stopCrew(parentSessionId: String, subagentId: String, role: String) {
         val d = direct ?: return
         viewModelScope.launch {
-            d.stopCrew(session.id, subagentId)
+            d.stopCrew(parentSessionId, subagentId)
                 .onSuccess { found ->
                     if (found) toast("Stopped $role") else toast("$role had already finished")
                 }

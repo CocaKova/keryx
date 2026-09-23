@@ -1,7 +1,6 @@
 package chat.keryx.app.widget
 
 import android.content.Context
-import androidx.glance.appwidget.updateAll
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -25,7 +24,7 @@ class WidgetRefreshWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        runCatching { KeryxWidget().updateAll(applicationContext) }
+        runCatching { KeryxWidget.repaint(applicationContext) }
             .onFailure { android.util.Log.w("KeryxWidget", "periodic refresh failed: ${it.message}") }
         return Result.success()
     }

@@ -152,7 +152,10 @@ fun SubagentSessionSheet(
                 val role = remember(run.goal) { chat.keryx.app.presentation.tapin.TapIn.roleOf(run.goal) }
                 val childMessages by remember(run.sessionId) { watch.messages(run.sessionId) }
                     .collectAsState(initial = emptyList())
-                val earlier by produceState("", run.key) { value = watch.tail(run.key) }
+                // Steer, stop and the tail all address the helper by the gateway's own id; a wing
+                // that arrived without one can still be watched, just not spoken to.
+                val addressable = run.hasGatewayId
+                val earlier by produceState("", run.key) { if (addressable) value = watch.tail(run.key) }
                 val mind = remember(childMessages, earlier) { CrewMind.of(childMessages, earlier) }
                 var confirmStop by remember { mutableStateOf(false) }
                 Column(Modifier.fillMaxWidth().heightIn(max = 460.dp)) {
@@ -162,6 +165,7 @@ fun SubagentSessionSheet(
                         CrewMindView(mind, trail = run.trail, modifier = Modifier.weight(1f, fill = false))
                     }
                 }
+                if (!addressable) return@Column
                 Spacer(Modifier.padding(top = 10.dp))
                 chat.keryx.app.presentation.tapin.SteerBar(
                     placeholder = "A word in ${role.ifBlank { "this helper" }}'s ear…",

@@ -20,6 +20,12 @@ class ArtifactsTest {
     }
 
     @Test
+    fun home_relative_path_is_not_cut_to_a_dead_absolute_one() {
+        // "~/out/mock.html" is not "/out/mock.html": the tail alone reads a file that isn't there.
+        assertEquals(emptyList<String>(), Artifacts.findArtifactPaths("Saved to ~/out/mock.html and `~/a/b.htm`."))
+    }
+
+    @Test
     fun bare_path_in_prose_is_found() {
         assertEquals(
             listOf("/home/sy/out/salt-creek-mock-v1.html"),

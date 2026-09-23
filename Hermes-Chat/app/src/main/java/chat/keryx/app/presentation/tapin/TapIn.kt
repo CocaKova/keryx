@@ -19,7 +19,7 @@ import chat.keryx.core.model.ToolGrammar
 data class TapInState(
     /** The agent is still working on this turn. */
     val running: Boolean,
-    /** The one line, large: the gateway's status while it has one (a compaction above all),
+    /** The one line, large: a compaction while the gateway reports one,
      *  else the open call in the shared grammar's present tense, else the working label. */
     val headline: String,
     /** Under the headline: the turn's shape in numbers, or the crew's count when there is one. */
@@ -113,9 +113,8 @@ object TapIn {
     }
 
     /**
-     * The gateway's own status wins (it is the one long operation worth a headline — a
-     * compaction, a wait on a question), then the newest open call in the present tense, then
-     * the label the working banner already shows. A settled turn says so, and says how it went.
+     * A compaction wins (it is the one long operation worth a headline), then the newest open
+     * call in the present tense, then the label the working banner already shows. A settled turn says so, and says how it went.
      */
     fun headlineOf(
         running: Boolean,
@@ -128,7 +127,9 @@ object TapIn {
             val failed = calls.count { it.failed } + crew.count { it.failed }
             return if (failed > 0) "Landed · $failed failed" else "Landed"
         }
-        status?.headline?.takeIf { it.isNotBlank() }?.let { return it }
+        // Only a compaction: every other status line (a heartbeat, a goal verdict, a warning)
+        // is a one-off with no end edge, and it held the headline over the work that followed.
+        status?.takeIf { it.isCompacting }?.headline?.takeIf { it.isNotBlank() }?.let { return it }
         calls.lastOrNull { it.running }?.let {
             return ToolGrammar.title(it.name, ToolGrammar.targetOf(it.name, it.context), running = true)
         }

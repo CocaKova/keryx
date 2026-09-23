@@ -91,6 +91,16 @@ data class Delegation(
 
     val running: Boolean get() = state == DelegationState.SPAWNING || state == DelegationState.RUNNING
 
+    /** The gateway named this helper. Only then can `subagent.steer` / `interrupt` / `tail`
+     *  find it — a fallback key is ours, and addressing it earns a refusal that reads as
+     *  someone else's fault. */
+    val hasGatewayId: Boolean get() = key.isNotBlank() && !key.startsWith(FALLBACK_PREFIX)
+
+    companion object {
+        /** The key a wing gets when its frames carry no `subagent_id`: this prefix + the task index. */
+        const val FALLBACK_PREFIX = "task-"
+    }
+
     /** Every token the child burned — the number that makes delegation cost legible. */
     val totalTokens: Int get() = inputTokens + outputTokens + reasoningTokens
 
@@ -276,7 +286,7 @@ object Theater {
      * Talaria runs over its own wire.
      */
     private fun List<Delegation>.fold(ev: TheaterEvent, nowMs: Long): List<Delegation> {
-        val key = ev.child.ifBlank { "task-${ev.taskIndex ?: 0}" }
+        val key = ev.child.ifBlank { "${Delegation.FALLBACK_PREFIX}${ev.taskIndex ?: 0}" }
         val i = indexOfFirst { it.key == key }
         val prev = if (i >= 0) this[i] else Delegation(key = key)
         val withIdentity = prev.copy(

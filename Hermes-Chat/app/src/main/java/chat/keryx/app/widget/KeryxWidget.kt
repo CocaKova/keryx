@@ -5,6 +5,8 @@ import android.content.Intent
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,6 +58,7 @@ import chat.keryx.app.theme.TextSecondaryLight
 import chat.keryx.core.model.Heralds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -80,16 +83,16 @@ import java.time.format.FormatStyle
 class KeryxWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val state = withContext(Dispatchers.IO) { runCatching { WidgetSnapshot.read(context) }.getOrNull() }
-            ?: WidgetState.empty(WidgetState.Link.OFFLINE)
-        val accent = (context.applicationContext as? KeryxApp)
-            ?.settingsRepository?.accentColorHex
-            ?.let { runCatching { Color(android.graphics.Color.parseColor(it)) }.getOrNull() }
-            ?: HermesAmber
-        val stamp = runCatching { LocalTime.now().format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)) }.getOrDefault("")
+        val first = photograph(context)
         provideContent {
-            GlanceTheme(colors = colorsFor(accent)) {
-                Card(state, stamp)
+            // Collected, not captured: Glance keeps a session composing for a while after it
+            // draws, and `updateAll` on a live session only recomposes — it never runs this
+            // function again. A frame read once up here stayed on the home screen ("working",
+            // an old stamp) after the turn it showed had ended, however often it was refreshed.
+            val frame by frames.collectAsState()
+            val shown = frame ?: first
+            GlanceTheme(colors = colorsFor(shown.accent)) {
+                Card(shown.state, shown.stamp)
             }
         }
     }
@@ -192,7 +195,31 @@ class KeryxWidget : GlanceAppWidget() {
             if (state.tapIn) putExtra(KeryxNotifications.EXTRA_TAP_IN, true)
         }
 
+    /** What one repaint shows, read together so the card and its stamp cannot disagree. */
+    private class Frame(val state: WidgetState, val accent: Color, val stamp: String)
+
     companion object {
+        /** The newest [Frame]; every live session composes from it. */
+        private val frames = MutableStateFlow<Frame?>(null)
+
+        private suspend fun photograph(context: Context): Frame {
+            val state = withContext(Dispatchers.IO) { runCatching { WidgetSnapshot.read(context) }.getOrNull() }
+                ?: WidgetState.empty(WidgetState.Link.OFFLINE)
+            val accent = (context.applicationContext as? KeryxApp)
+                ?.settingsRepository?.accentColorHex
+                ?.let { runCatching { Color(android.graphics.Color.parseColor(it)) }.getOrNull() }
+                ?: HermesAmber
+            val stamp = runCatching { LocalTime.now().format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)) }.getOrDefault("")
+            return Frame(state, accent, stamp).also { frames.value = it }
+        }
+
+        /** Re-reads the facts, then redraws: a live session recomposes from the new frame, a
+         *  closed one starts over in [provideGlance]. The worker's path too. */
+        internal suspend fun repaint(context: Context) {
+            photograph(context)
+            KeryxWidget().updateAll(context)
+        }
+
         /** Repaints are floored: the run path asks once a second and RemoteViews are not free. */
         private const val MIN_GAP_MS = 4_000L
 
@@ -211,14 +238,14 @@ class KeryxWidget : GlanceAppWidget() {
             val wait = MIN_GAP_MS - (now - lastAt)
             if (wait <= 0) {
                 lastAt = now
-                app.appScope.launch { runCatching { KeryxWidget().updateAll(app) } }
+                app.appScope.launch { runCatching { repaint(app) } }
                 return
             }
             if (pending?.isActive == true) return
             pending = app.appScope.launch {
                 delay(wait)
                 lastAt = System.currentTimeMillis()
-                runCatching { KeryxWidget().updateAll(app) }
+                runCatching { repaint(app) }
             }
         }
     }

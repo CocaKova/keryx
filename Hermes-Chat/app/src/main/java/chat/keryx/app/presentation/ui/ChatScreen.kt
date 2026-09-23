@@ -252,6 +252,12 @@ fun ChatScreen(
     val lastTurnBeats = turnTheater?.beats.orEmpty()
     // A landed subagent the reader asked to see inside (2.4).
     var openSubagent by remember { mutableStateOf<chat.keryx.core.model.Delegation?>(null) }
+    // The room the open helper belongs to. A room switch under the sheet (a notice tap) closes
+    // it: every run it could re-resolve against, and every verb it sends, belong to that room.
+    var openSubagentRoom by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(currentRoom?.id) {
+        if (openSubagentRoom != null && openSubagentRoom != currentRoom?.id) openSubagent = null
+    }
     // Tap-In (2.12): the turn in flight, full screen. Opened from the working banner, a long
     // press on the newest run, or the run notice in the shade; closed by the back gesture. It
     // reads the same render items the transcript draws, so both doors are already reconciled.
@@ -651,7 +657,7 @@ fun ChatScreen(
                             // record is of one turn, and putting it on an older run would be
                             // attaching one turn's diffs to another's calls.
                             structured = if (item.key == newestToolRunKey) lastTurnBeats else emptyList(),
-                            onOpenSubagent = { openSubagent = it },
+                            onOpenSubagent = { openSubagent = it; openSubagentRoom = currentRoom?.id },
                             onTapIn = if (item.key == newestToolRunKey) ({ tapInOpen = true }) else null,
                             // The newest item (index 0 under reverseLayout) is "running" while we
                             // still await Hermes' reply; older runs are settled ("Ran N tools").
@@ -770,7 +776,9 @@ fun ChatScreen(
                                 } else null,
                                 // Retry rides the same gate as the undo (2.11.9): it IS an undo
                                 // with the prompt re-sent, so a refused undo is a refused retry.
-                                onRetry = if (viewModel.transportIsDirect && message.id == lastAgentId && !awaitingReply) {
+                                onRetry = if (viewModel.transportIsDirect && message.id == lastAgentId && !awaitingReply &&
+                                    ChatViewModel.retryPromptOf(messages) != null
+                                ) {
                                     { viewModel.retryExchange() }
                                 } else null,
                                 modifier = Modifier.background(flashColor, RoundedCornerShape(18.dp)),
@@ -1125,7 +1133,7 @@ fun ChatScreen(
             run = live,
             fetch = { id -> viewModel.hub.sessionMessages(id) },
             onDismiss = { openSubagent = null },
-            crew = viewModel.crewControls(),
+            crew = viewModel.crewControls(openSubagentRoom),
         )
     }
 }
