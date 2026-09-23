@@ -82,6 +82,19 @@ class NoteActivity : androidx.fragment.app.FragmentActivity() {
     private val locked = mutableStateOf(false)
     private val sending = mutableStateOf(false)
 
+    // True while the unlock prompt is up. On API 26–29 a PIN/pattern unlock is the system's
+    // own confirm-credential ACTIVITY, which stops this one — so leaving is not "stopped".
+    private var unlocking = false
+
+    /**
+     * Gone the moment you leave it — except to unlock it. This was `noHistory`, which finished
+     * the sheet as soon as the credential screen covered it: the note vanished mid-unlock.
+     */
+    override fun onStop() {
+        super.onStop()
+        if (!unlocking && !isChangingConfigurations) finish()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val app = application as KeryxApp
@@ -121,12 +134,20 @@ class NoteActivity : androidx.fragment.app.FragmentActivity() {
     }
 
     private fun promptUnlock() {
+        unlocking = true
         val prompt = androidx.biometric.BiometricPrompt(
             this,
             androidx.core.content.ContextCompat.getMainExecutor(this),
             object : androidx.biometric.BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
+                    unlocking = false
                     locked.value = false
+                }
+
+                // Cancelled, locked out, or dismissed: the sheet stays on its locked pane, and
+                // leaving it from here finishes it as usual.
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    unlocking = false
                 }
             },
         )
