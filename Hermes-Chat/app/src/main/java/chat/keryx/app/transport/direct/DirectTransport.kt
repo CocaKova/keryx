@@ -85,6 +85,8 @@ class DirectTransport(
         /** Placeholder id for a tool.generating card, replaced by the real tool.start. */
         private const val STREAM_PUBLISH_MS = 100L
 private const val GHOST_TOOL_ID = "generating"
+/** How long a Stop waits for the gateway's own `message.complete` before sealing the stream itself. */
+private const val INTERRUPT_SEAL_MS = 4_000L
 
         /**
          * Transcript rows per history page. Well under the server's 500 cap on purpose:
@@ -205,6 +207,7 @@ private const val GHOST_TOOL_ID = "generating"
         private var turnTag = 0L
         private var buffer = StringBuilder()
         private var streaming = false
+        val isStreaming: Boolean get() = streaming
         // The turn's thinking: reasoning.delta/thinking.delta accumulate here (they stream
         // BEFORE answer tokens, so this is often the first life the turn shows). Duration is
         // measured delta-to-delta — the gateway doesn't persist one.
@@ -2092,7 +2095,17 @@ private const val GHOST_TOOL_ID = "generating"
             put("session_id", JsonPrimitive(live))
             put("confirm_expensive_model", JsonPrimitive(confirm))
         }, timeoutMs = 60_000)
-        chat.keryx.core.model.ModelSwitchOutcome.parse(res)
+        val out = chat.keryx.core.model.ModelSwitchOutcome.parse(res)
+        // The pill reads this session's meta, and the meta was seeded from the resume — the
+        // model the session had BEFORE this switch. Nothing rewrote it on an applied switch,
+        // so a fresh chat carried on wearing the gateway default while the sticky pick ran
+        // its turns (device, 2026-09-23: "it showed qwen, then used grok"). A deferred switch
+        // is still the next turn's model, so it counts; only a refusal-pending-confirm does not.
+        if (!out.confirmRequired) {
+            val flow = meta(sessionId)
+            flow.value = flow.value.copy(model = out.model.ifBlank { model })
+        }
+        out
     }
 
     // The Shipyard moved off this seam to ShipyardRest (Hermes Link base) — this door's
@@ -2775,6 +2788,21 @@ private const val GHOST_TOOL_ID = "generating"
         rpc.request("session.interrupt", buildJsonObject {
             put("session_id", JsonPrimitive(live))
         })
+        // The stop is cooperative and the turn's own `message.complete` is what seals the
+        // stream — usually within a second. A turn interrupted in its build window (running,
+        // no agent yet) ends with no completion at all, and the thought kept streaming on the
+        // phone with nothing left to seal it. Give the gateway its say, then seal ourselves.
+        scope.launch {
+            delay(INTERRUPT_SEAL_MS)
+            val st = stores[sessionId] ?: return@launch
+            if (!st.isStreaming) return@launch
+            android.util.Log.w("KeryxGw", "stop ${sessionId.take(8)}: no message.complete after ${INTERRUPT_SEAL_MS} ms, sealing locally")
+            st.streamComplete(finalText = "", error = false)
+            markBusy(sessionId, false)
+            setBlocking(sessionId, null)
+            statusFlow(sessionId).value = null
+            _turnEvents.tryEmit(chat.keryx.core.model.TurnEvent.End(sessionId, "", error = false))
+        }
         Unit
     }
 
