@@ -5,6 +5,16 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.13.4 · versionCode 106
+
+- A reply made of `- key: value` bullets no longer folds into the tool run above it. The
+  glyph-less tool line (`terminal: "…"`, Hermes' emoji-less repeat) now needs one quoted span
+  matched to its own closing mark and never sits under a bullet; a line such as
+  `` - package: `a` → PyPI `b` + engine `c` `` — first and last characters backticks — had passed
+  as a fully quoted argument, and one such line made the whole answer a "tool message". A tool
+  glyph must also be a real symbol now, so `# note:` and `> quote:` stay prose. Parser bug from
+  the Matrix era, surfaced by the shape of one reply; not a 2.13 regression.
+
 ## 2.13.3 · versionCode 105
 
 - The Quick Settings note survives its own unlock on Android 8–10. There a PIN or pattern unlock

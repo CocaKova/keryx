@@ -86,8 +86,15 @@ object MessageParser {
     // Fallback for when Hermes drops the leading glyph (notably repeated `terminal` calls): a bare
     // `name: "args"` line where the WHOLE argument is quote-wrapped. The full-line quoting is the
     // strong tool signal that keeps this from firing on ordinary prose like `note: something`.
+    //
+    // ONE quoted span, matched to its own closing mark: `package: \`a\` → PyPI \`b\` + engine
+    // \`c 1.20\`` starts with a backtick and ends with one, and under `.*` that read as a tool
+    // named "package" — and the whole reply it sat in folded into the run above it (device,
+    // 2026-09-23). Inner marks of the OTHER kinds stay allowed (a shell command in "…" holds
+    // backticks and apostrophes); the same mark may not recur, so a prose line with several
+    // code spans cannot pass as one quoted argument.
     private val TOOL_LINE_NOGLYPH =
-        Regex("""^([a-z][a-z0-9]*(?:_[a-z0-9]+)*):\s*(["“`].*["”`])$""")
+        Regex("""^([a-z][a-z0-9]*(?:_[a-z0-9]+)*):\s*("[^"]*"|“[^”]*”|`[^`]*`)$""")
 
     // The gateway's edited progress messages can settle on a TRUNCATED tool line — glyph, tool
     // name, an ellipsis instead of the args, optionally a repeat marker: `⚙️ brain_store...`,
@@ -855,7 +862,10 @@ object MessageParser {
             val line = lines[i]
             val next = lines.getOrNull(i + 1)
             val trimmed = line.trimStart(' ', '\t', '*', '-', '•')
-            val tool = if (agentChrome) parseTool(trimmed) else null
+            // A bullet before a bare `name: "args"` line is prose: Hermes' emoji-less tool
+            // repeats are never bulleted, and a `- key: "value"` list is (device, 2026-09-23).
+            val bulleted = trimmed.length != line.trimStart(' ', '\t').length
+            val tool = if (agentChrome) parseTool(trimmed, bulleted) else null
             val headerTool = if (agentChrome) parseHeaderTool(lines, i) else null
             // Only the message's LAST non-blank line can be the runtime footer.
             val isLastContentLine = lines.drop(i + 1).all { it.isBlank() }
@@ -976,13 +986,25 @@ object MessageParser {
         null -> ToolStatus.UNKNOWN
     }
 
+    /**
+     * Whether a line's leading token is the glyph Hermes puts before a tool name. A real
+     * emoji or symbol (anything at or past U+2000 — ⚙️ 🔧 📖 ✅ ❌ ✓ ✖), never a word, and never
+     * an ASCII markdown marker: `-`, `*`, `+`, `>`, `#`, a numbered `1.` — those open bullets,
+     * quotes and headings, and a `- key: value` list is the commonest prose shape there is.
+     */
+    private fun isToolGlyph(token: String): Boolean =
+        token.isNotEmpty() && !token.first().isLetterOrDigit() && token.any { it.code >= 0x2000 }
+
     /** Parse a single line as a tool call, or null if it isn't one. */
-    private fun parseTool(trimmed: String): ToolCall? {
+    private fun parseTool(trimmed: String, bulleted: Boolean = false): ToolCall? {
         val line = trimmed.trim()
         TOOL_LINE.matchEntire(line)?.let { m ->
             val (emoji, name, rawArgs) = m.destructured
-            // Reject prose: the leading glyph must be a symbol/emoji, not a word.
-            if (!emoji.first().isLetterOrDigit()) {
+            // Reject prose: the leading glyph must be a real symbol/emoji — not a word, and not
+            // an ASCII markdown marker. `- was: v0.36` is a bullet, and a reply made of
+            // seven such bullets was a "tool message" whole, folded into the run above it
+            // (device, 2026-09-23). The gerund branch below had this guard; this one did not.
+            if (isToolGlyph(emoji)) {
                 val glyph = emoji.trimEnd('️')
                 val ok = when {
                     glyph in FAIL_GLYPHS -> false
@@ -993,15 +1015,15 @@ object MessageParser {
                 return ToolCall(name = name, context = args, status = statusOf(verdict ?: ok))
             }
         }
-        // Glyph-less fallback (e.g. an emoji-less `terminal: "…"` repeat).
-        TOOL_LINE_NOGLYPH.matchEntire(line)?.let { m ->
+        // Glyph-less fallback (e.g. an emoji-less `terminal: "…"` repeat) — never for a bullet.
+        if (!bulleted) TOOL_LINE_NOGLYPH.matchEntire(line)?.let { m ->
             val (args, verdict) = stripTrailingVerdict(cleanArgs(m.groupValues[2]))
             return ToolCall(name = m.groupValues[1], context = args, status = statusOf(verdict))
         }
         // Truncated progress form: `⚙️ brain_store...` — the tool's identity without its args.
         TOOL_LINE_TRUNCATED.matchEntire(line)?.let { m ->
             val (emoji, name) = m.destructured
-            if (!emoji.first().isLetterOrDigit()) {
+            if (isToolGlyph(emoji)) {
                 return ToolCall(name = name, context = "…", status = ToolStatus.UNKNOWN)
             }
         }
@@ -1087,7 +1109,7 @@ object MessageParser {
         val header = lines[start].trimStart(' ', '\t', '*', '-', '•').trim()
         val m = TOOL_HEADER.matchEntire(header) ?: return null
         val emoji = m.groupValues[1]
-        if (emoji.first().isLetterOrDigit()) return null // prose, not a tool glyph
+        if (!isToolGlyph(emoji)) return null // prose or a markdown marker, not a tool glyph
         // Next non-blank line must open a code fence.
         var j = start + 1
         while (j < lines.size && lines[j].isBlank()) j++
