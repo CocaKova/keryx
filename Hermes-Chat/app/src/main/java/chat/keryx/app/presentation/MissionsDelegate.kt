@@ -57,23 +57,27 @@ class MissionsDelegate(
         }
     }
 
-    /** The room mission alerts land in: whichever the user has (last) open. Matrix only — the
-     *  gateway's kanban notifier delivers as a native message to a (platform, chat_id), and on
-     *  the direct door the open row is a gateway session, not a chat any adapter can reach.
-     *  Subscribing it would file a Matrix delivery to a session id: an alert that never lands,
-     *  kept alive until the task ends. Null here keeps the switch honest and off. */
-    fun alertRoom(): String? = if (settings.transportMode == "direct") null else settings.lastRoomId
+    /** The chat mission alerts land in: whichever the user has (last) open, on either door.
+     *  Matrix: the room, reached by the gateway's kanban notifier as a native message. Gateway:
+     *  the SESSION — the gateway's per-session notification poller (`session_notifications.py`)
+     *  reads subscriptions keyed `platform="tui", chat_id=<session id>` and hands the event to
+     *  that session as a turn, so the agent reports it in the chat. Until 2.13.8 the direct door
+     *  returned null here on the belief that no adapter could reach a session; the poller can. */
+    fun alertRoom(): String? = settings.lastRoomId
+
+    /** The notifier platform for [alertRoom] on this door. */
+    fun alertPlatform(): String = if (settings.transportMode == "direct") "tui" else "matrix"
 
     /** Why alerts are unavailable, in the door's own words. */
     val alertUnavailableReason: String
-        get() = if (settings.transportMode == "direct") "Mission alerts land in a Matrix room — switch doors to use them"
+        get() = if (settings.transportMode == "direct") "Open a session first — alerts land in the chat you last had open"
         else "Open a room first — alerts land in a Matrix room"
 
     fun alertRoomName(): String? =
         alertRoom()?.let { id -> rooms().firstOrNull { it.id == id }?.name ?: id }
 
-    /** Toggle "alert when this ends". On subscribes the current alert room; off removes every
-     *  subscription the app can see for the task — they may point at rooms opened earlier. */
+    /** Toggle "alert when this ends". On subscribes the current alert chat; off removes every
+     *  subscription the app can see for the task — they may point at chats opened earlier. */
     fun kanbanSetAlert(taskId: String, enabled: Boolean) {
         val client = client() ?: return
         scope.launch {
@@ -82,7 +86,7 @@ class MissionsDelegate(
                     toast(alertUnavailableReason)
                     return@launch
                 }
-                client.kanbanSubscribe(taskId, room)
+                client.kanbanSubscribe(taskId, room, alertPlatform())
                     .onFailure { toast("Alert failed: ${it.message?.take(80)}") }
             } else {
                 _kanbanSubs.value[taskId].orEmpty().forEach { sub ->
@@ -106,7 +110,7 @@ class MissionsDelegate(
                 .onSuccess { taskId ->
                     toast("Mission created${if (triage) " (triage)" else ""}")
                     val room = alertRoom()
-                    if (notify && room != null) client.kanbanSubscribe(taskId, room)
+                    if (notify && room != null) client.kanbanSubscribe(taskId, room, alertPlatform())
                     refreshKanban()
                 }
                 .onFailure { toast("Create failed: ${it.message?.take(80)}") }
