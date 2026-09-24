@@ -5,6 +5,17 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.13.8 · versionCode 110
+
+- Mission alerts work on the gateway door. The switch had been off there on the belief that
+  no adapter could reach a gateway session; the gateway's own per-session poller can — it
+  reads subscriptions keyed `platform=tui, chat_id=<session id>` and hands the event to that
+  session as a turn, so the agent reports the mission's end in the chat you last had open
+  (at once if it is open, on its next resume if not). The Matrix door is unchanged.
+- A pinned cron job and a pinned bot are gateway rows, and now only sit in the gateway
+  roster. The hub keeps them across doors, so a pinned job tile ("Bi-Weekly Date Night")
+  showed at the top of the Matrix list too, where its tap opened nothing.
+
 ## 2.13.7 · versionCode 109
 
 - A photo you sent comes back as a photo. The gateway stores a composer image as the caption

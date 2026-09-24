@@ -530,8 +530,12 @@ fun NavigationDrawerContent(
             // run. Both sit in the deck beside the pinned conversations (Jonny: "pinning the
             // output of a certain cron job to the top of the session list like on the Matrix
             // side"). They are rows the roster never carries, so they arrive from the hub.
+            // ⚠️ Gateway rows only: a cron tile opens a gateway session and a bot tile a
+            // gateway bot chat. The hub keeps them across doors (its state is the gateway's),
+            // so without this gate a pinned job sat at the top of the MATRIX roster too — a
+            // tile whose tap goes nowhere on that door (Jonny, 2026-09-24: the date-night pin).
             val cronTiles by viewModel.hub.cronTiles.collectAsState()
-            val tileRooms = if (query.isBlank() && !lensed) cronTiles.map { t ->
+            val tileRooms = if (direct && query.isBlank() && !lensed) cronTiles.map { t ->
                 RoomProfile(
                     id = t.id,
                     name = t.label,
@@ -550,7 +554,7 @@ fun NavigationDrawerContent(
             // the gateway and answered by you (now a roster row) reaches the deck from both
             // sides. One row per id, the roster's copy first — the tap still routes through
             // the tile (tileById is keyed the same way), so nothing about opening it changes.
-            val deck = (pinned + tileRooms + (if (query.isBlank() && !lensed) botTiles else emptyList()))
+            val deck = (pinned + tileRooms + (if (direct && query.isBlank() && !lensed) botTiles else emptyList()))
                 .distinctBy { it.id }
             // Pinned rooms live in the Quick Rooms deck — don't list them twice.
             // (While searching or under a lens, show everything that matches.)

@@ -786,11 +786,15 @@ class HermesStreamClient(
         HubJson.subs(kanbanCall("/keryx/kanban/subs"))
     }
 
-    /** Subscribe [roomId] to [taskId]'s terminal events: the gateway notifier then delivers a
-     *  real Matrix message into that room when the mission ends — no polling involved. */
-    suspend fun kanbanSubscribe(taskId: String, roomId: String): Result<Unit> = runCatching {
+    /** Subscribe a chat to [taskId]'s terminal events. `matrix` + a room id: the gateway
+     *  notifier delivers a real Matrix message into that room when the mission ends. `tui` + a
+     *  gateway SESSION id: the gateway's per-session notification poller
+     *  (`tui_gateway/session_notifications.py`, keyed `platform="tui", chat_id=<session id>`)
+     *  hands the event to that session as a turn, so the agent reports it in the chat — the
+     *  moment the session is open; a closed one gets it on its next resume. No polling here. */
+    suspend fun kanbanSubscribe(taskId: String, roomId: String, platform: String = "matrix"): Result<Unit> = runCatching {
         val payload = kotlinx.serialization.json.buildJsonObject {
-            put("platform", kotlinx.serialization.json.JsonPrimitive("matrix"))
+            put("platform", kotlinx.serialization.json.JsonPrimitive(platform))
             put("chat_id", kotlinx.serialization.json.JsonPrimitive(roomId))
         }
         kanbanCall("/keryx/kanban/task/$taskId/subscribe", post = payload)
