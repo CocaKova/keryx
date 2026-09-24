@@ -65,6 +65,30 @@ object MediaTags {
         return Split(out.trim(), refs)
     }
 
+    // ---- `@image:<path>` — the USER's attachments, as Hermes persists them --------------
+    // A photo sent from the composer goes up as bytes (`image.attach_bytes`); what the
+    // gateway stores in the transcript is the caption plus one `@image:<path>` line per file,
+    // path quoted when it holds spaces (`session_history._build_persist_message_with_image_refs`,
+    // desktop `directive-text.tsx` renders them as thumbnails). The live echo bubble shows the
+    // bytes it just sent, but a reloaded session only has these lines — and until 2.13.7 they
+    // were shown as text, an absolute path under the caption (device, 2026-09-24).
+    private val IMAGE_REF_LINE = Regex("""^[\t ]*@image:\s*$VALUE[\t ]*$""", RegexOption.MULTILINE)
+
+    fun hasImageRef(text: String): Boolean = text.contains("@image:")
+
+    /** Strip every whole-line `@image:` directive out of [text]; the refs come back in order.
+     *  Only an address counts (a sentence about the convention stays prose). */
+    fun splitImageRefs(text: String): Split {
+        if (!hasImageRef(text)) return Split(text, emptyList())
+        val refs = ArrayList<Ref>()
+        var out = IMAGE_REF_LINE.replace(text) { m ->
+            val v = unquote(m.groupValues[1])
+            if (!looksLikeAddress(v)) m.value else { refs += ref(v); GONE }
+        }
+        if (refs.isNotEmpty()) out = out.lineSequence().filter { it != GONE }.joinToString("\n")
+        return Split(out.trim(), refs)
+    }
+
     fun kindOf(path: String): MediaKind {
         val ext = path.substringBefore('?').substringBefore('#').substringAfterLast('.', "").lowercase()
         return when (ext) {

@@ -1810,8 +1810,9 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         sendMessage(sessionId, content)
     }
 
-    // Uploaded-image bytes by local message id — serves the echo bubble's loader. History
-    // images (a reloaded session) have no byte source yet; they render as file chips.
+    // Uploaded-image bytes by local message id — serves the echo bubble's loader. A reloaded
+    // session has no bytes; its user photos come back as `@image:<path>` lines, which
+    // expandMediaTags lifts into media rows fetched over /api/files/download like MEDIA: files.
     private val localMediaBytes = java.util.concurrent.ConcurrentHashMap<String, ByteArray>()
 
     override suspend fun mediaBytes(sessionId: String, eventId: String): ByteArray? {
@@ -1856,17 +1857,26 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     private fun rowIdOf(eventId: String): String = eventId.substringBefore(MEDIA_ID_SEP)
 
     /**
-     * Split every finished agent message that carries MEDIA tags into its prose plus one
-     * media message per file. Streaming text is left alone (a half-typed path is not a file
-     * yet); user/system rows never carry the convention. Ids are stable per (message, index)
-     * so Compose keys survive re-publishes and the bitmap cache hits.
+     * Split every message that carries a file reference into its prose plus one media message
+     * per file: a finished agent message's `MEDIA:<path>` tags, and a user message's
+     * `@image:<path>` lines — the form the gateway persists a composer photo in, so a reloaded
+     * session used to show the caption with an absolute path under it where the picture had
+     * been (device, 2026-09-24). Streaming text is left alone (a half-typed path is not a
+     * file yet). Ids are stable per (message, index) so Compose keys survive re-publishes and
+     * the bitmap cache hits; the media rows keep the sender so a user photo stays on the
+     * user's side.
      */
     private fun expandMediaTags(list: List<Message>): List<Message> {
-        if (list.none { it.sender == SenderType.HERMES && !it.isStreaming && it.mediaKind == null && MediaTags.hasTag(it.content) }) return list
+        fun carries(m: Message): Boolean = !m.isStreaming && m.mediaKind == null && when (m.sender) {
+            SenderType.HERMES -> MediaTags.hasTag(m.content)
+            SenderType.ME -> MediaTags.hasImageRef(m.content)
+            else -> false
+        }
+        if (list.none(::carries)) return list
         return buildList(list.size + 4) {
             for (m in list) {
-                if (m.sender != SenderType.HERMES || m.isStreaming || m.mediaKind != null || !MediaTags.hasTag(m.content)) { add(m); continue }
-                val split = MediaTags.split(m.content)
+                if (!carries(m)) { add(m); continue }
+                val split = if (m.sender == SenderType.ME) MediaTags.splitImageRefs(m.content) else MediaTags.split(m.content)
                 if (split.refs.isEmpty()) { add(m); continue }
                 if (split.text.isNotBlank() || m.toolCalls.isNotEmpty() || m.reasoning != null) add(m.copy(content = split.text))
                 split.refs.forEachIndexed { i, ref ->
@@ -1874,7 +1884,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                     remoteMediaPaths[id] = ref.path
                     add(
                         Message(
-                            id = id, roomId = m.roomId, sender = SenderType.HERMES,
+                            id = id, roomId = m.roomId, sender = m.sender,
                             content = "", timestamp = m.timestamp,
                             senderId = m.senderId, senderName = m.senderName,
                             mediaUrl = ref.path, mediaKind = ref.kind, fileName = ref.name,

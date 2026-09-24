@@ -5,6 +5,15 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.13.7 · versionCode 109
+
+- A photo you sent comes back as a photo. The gateway stores a composer image as the caption
+  plus one `@image:<path>` line per file; Keryx lifted only the agent's `MEDIA:` tags into
+  media bubbles, so a reloaded session showed your caption with an absolute path under it
+  where the picture had been. Those lines are now lifted the same way (thumbnail on your
+  side, fetched over `/api/files/download`); a sentence *about* the convention stays prose.
+  The live echo bubble was already right; only the reload was wrong.
+
 ## 2.13.6 · versionCode 108
 
 - The agent's questions reach the phone again. Since hermes `ebe8cda8` (2026-09-13) a clarify,
