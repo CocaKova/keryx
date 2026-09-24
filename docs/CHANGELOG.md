@@ -5,6 +5,18 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.13.9 · versionCode 111
+
+- A mission alert reports into a conversation, never into machinery. 2.13.8 subscribed
+  whatever row was last open; the first alert Jonny set bound to the mission's own worker
+  transcript, which he had just been reading — a report that would land where nobody looks.
+  The gateway door now skips worker, cron, subagent, bot and one-shot rows for the newest
+  conversation.
+- "Alert when this ends" on the gateway door also arms the phone. A chat subscription only
+  reaches the shade while that chat is open; the background mission watcher (Settings ▸
+  Mission alerts, every 15 minutes) is what rings with the app closed — and it was off.
+  Switching a card's alert on, or creating a mission with notify, turns it on and says so.
+
 ## 2.13.8 · versionCode 110
 
 - Mission alerts work on the gateway door. The switch had been off there on the belief that
