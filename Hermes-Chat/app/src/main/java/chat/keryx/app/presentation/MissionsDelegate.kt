@@ -63,10 +63,39 @@ class MissionsDelegate(
      *  reads subscriptions keyed `platform="tui", chat_id=<session id>` and hands the event to
      *  that session as a turn, so the agent reports it in the chat. Until 2.13.8 the direct door
      *  returned null here on the belief that no adapter could reach a session; the poller can. */
-    fun alertRoom(): String? = settings.lastRoomId
+    fun alertRoom(): String? {
+        val last = settings.lastRoomId
+        if (settings.transportMode != "direct") return last
+        // The last-open row on the gateway door may be machinery, not a conversation: the
+        // worker transcript of the very mission being watched, a cron report, a bot's chat.
+        // 2.13.8 subscribed whatever was last open, and Jonny's first alert bound to the card's
+        // own worker session ("Post 1 · summarize … #2") because he had just read it — a report
+        // that would land in a transcript nobody reopens. A machine row is skipped for the
+        // newest conversation instead; an unknown row (not in the list yet) is trusted.
+        val list = rooms()
+        val lastRow = list.firstOrNull { it.id == last }
+        if (last != null && (lastRow == null || lastRow.isConversation())) return last
+        return list.filter { it.isConversation() }.maxByOrNull { it.timestamp }?.id
+    }
+
+    private fun RoomProfile.isConversation(): Boolean = source.lowercase() !in MACHINE_SOURCES
 
     /** The notifier platform for [alertRoom] on this door. */
     fun alertPlatform(): String = if (settings.transportMode == "direct") "tui" else "matrix"
+
+    /**
+     * A per-mission alert on the gateway door reports into a chat — which only reaches the
+     * phone's shade while that chat is open. The background mission watcher
+     * ([chat.keryx.app.notify.MissionAlertsWorker], Settings ▸ Mission alerts) is what rings
+     * with the app closed; switching a card's alert on arms it too, so "alert me" means the
+     * phone, not just the transcript. Needs a Context to schedule the work, hence the caller.
+     */
+    fun armPhoneAlerts(context: android.content.Context) {
+        if (settings.transportMode != "direct" || settings.missionAlertsEnabled) return
+        setAlertsEnabled(true)
+        chat.keryx.app.notify.MissionAlertsWorker.setEnabled(context, true)
+        toast("Mission alerts on — the phone rings when a mission ends (Settings ▸ Mission alerts)")
+    }
 
     /** Why alerts are unavailable, in the door's own words. */
     val alertUnavailableReason: String
@@ -161,4 +190,13 @@ class MissionsDelegate(
         _missionAlertsEnabled.value = enabled
     }
 
+    companion object {
+        /** Gateway session `source` values that are machinery, never a chat to report into:
+         *  kanban worker transcripts, scheduled runs, subagents, bots, one-shot tool runs. */
+        val MACHINE_SOURCES: Set<String> = setOf(
+            "kanban", "cron", "subagent", "bot", "oneshot", "tool",
+            chat.keryx.app.transport.direct.DirectTransport.CRON_SOURCE,
+            BotsDelegate.BOT_SOURCE,
+        )
+    }
 }

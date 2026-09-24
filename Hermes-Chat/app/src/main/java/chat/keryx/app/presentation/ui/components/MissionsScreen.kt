@@ -266,12 +266,14 @@ fun MissionsScreen(
     }
 
     if (createOpen) {
+        val createCtx = androidx.compose.ui.platform.LocalContext.current
         MissionCreateDialog(
             profiles = missionAssignees(caps?.roomProfiles.orEmpty()),
             canNotify = viewModel.missions.alertRoom() != null,
             notifyUnavailableReason = viewModel.missions.alertUnavailableReason,
             onCreate = { title, assignee, body, triage, notify ->
                 viewModel.missions.kanbanCreate(title, assignee, body, triage, notify)
+                if (notify) viewModel.missions.armPhoneAlerts(createCtx)
                 createOpen = false
             },
             onDismiss = { createOpen = false },
@@ -483,6 +485,7 @@ private fun MissionDetailSheet(
                     val subs by viewModel.missions.kanbanSubs.collectAsState()
                     val subscribed = subs[taskId]?.isNotEmpty() == true
                     val roomName = viewModel.missions.alertRoomName()
+                    val alertCtx = androidx.compose.ui.platform.LocalContext.current
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Outlined.Notifications,
@@ -507,7 +510,12 @@ private fun MissionDetailSheet(
                         Switch(
                             checked = subscribed,
                             enabled = subscribed || roomName != null,
-                            onCheckedChange = { viewModel.missions.kanbanSetAlert(taskId, it) },
+                            onCheckedChange = { on ->
+                                viewModel.missions.kanbanSetAlert(taskId, on)
+                                // "Alert me" on the gateway door means the phone, not only the
+                                // chat: arm the background watcher too (no-op when already on).
+                                if (on) viewModel.missions.armPhoneAlerts(alertCtx)
+                            },
                         )
                     }
                     Spacer(Modifier.height(6.dp))
