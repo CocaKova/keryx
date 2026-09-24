@@ -124,8 +124,9 @@ fun BlockingRequestCard(
     val accent = MaterialTheme.colorScheme.primary
     val onSurface = MaterialTheme.colorScheme.onSurface
     val haptics = LocalKeryxHaptics.current
-    // Keyed on the request so a second question never inherits the first one's typing.
-    var typed by remember(request.requestId) { mutableStateOf("") }
+    // Keyed on the request AND the question: a batch walks several questions under one request
+    // id, and the second must never inherit the first one's typing.
+    var typed by remember(request.requestId, request.questionId) { mutableStateOf("") }
 
     Column(
         Modifier
@@ -137,7 +138,10 @@ fun BlockingRequestCard(
     ) {
         KeryxSectionHeader(
             when (request.kind) {
-                BlockingKind.CLARIFY -> "Hermes is asking"
+                // A batch is walked one question at a time; say where in it this one sits.
+                BlockingKind.CLARIFY ->
+                    if (request.total > 1) "Hermes is asking · ${request.ordinal} of ${request.total}"
+                    else "Hermes is asking"
                 BlockingKind.SUDO -> "Sudo password needed"
                 BlockingKind.SECRET -> "Credential needed"
             },

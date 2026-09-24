@@ -73,6 +73,25 @@ class GatewayRpc(
     /** One `method:"event"` frame: `params.type` + `params.session_id` + `params.payload`. */
     data class GatewayEvent(val type: String, val sessionId: String, val payload: JsonObject?)
 
+    /**
+     * One server→client request: the backend asking THIS client a question (`clarify`,
+     * `approval`, `sudo`, `secret`, …) and blocking until a response frame carrying [id] comes
+     * back — the agent's turn is stopped inside a tool call until then. The id is a string
+     * (`srq-<12 hex>`) so it never collides with our own integer request ids; that is how the
+     * two directions are told apart on one socket (hermes `tui_gateway/server_requests.py`).
+     */
+    data class ServerRequest(val id: String, val method: String, val params: JsonObject)
+
+    /** What one inbound frame is. Pure, so the split is testable without a socket. */
+    sealed interface Inbound {
+        data class Event(val event: GatewayEvent) : Inbound
+        data class Request(val request: ServerRequest) : Inbound
+        /** A response to one of OUR requests, keyed by the integer id we minted. */
+        data class Response(val id: Long, val result: JsonObject?, val error: JsonObject?) : Inbound
+        /** A notification we don't model, or a frame with neither id nor method. */
+        data object Ignored : Inbound
+    }
+
     class RpcException(val code: Int, message: String) : Exception("rpc $code: $message")
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -108,6 +127,11 @@ class GatewayRpc(
     // we buffer generously and let backpressure suspend emit() only in pathological cases.
     private val _events = MutableSharedFlow<GatewayEvent>(extraBufferCapacity = 512)
     val events: SharedFlow<GatewayEvent> = _events.asSharedFlow()
+
+    // Questions the backend is waiting on. Rare and never bursty; the buffer only has to cover a
+    // reconnect replay of every open request at once.
+    private val _serverRequests = MutableSharedFlow<ServerRequest>(extraBufferCapacity = 64)
+    val serverRequests: SharedFlow<ServerRequest> = _serverRequests.asSharedFlow()
 
     private val nextId = AtomicLong(1)
     private val pending = java.util.concurrent.ConcurrentHashMap<Long, CompletableDeferred<JsonObject>>()
@@ -227,29 +251,73 @@ class GatewayRpc(
     }
 
     private fun route(frame: JsonObject) {
-        val method = frame["method"]?.jsonPrimitive?.contentOrNull
-        if (method == "event") {
-            val params = frame["params"]?.jsonObject ?: return
-            val type = params["type"]?.jsonPrimitive?.contentOrNull ?: return
-            val sessionId = params["session_id"]?.jsonPrimitive?.contentOrNull ?: ""
-            val payload = params["payload"] as? JsonObject
-            if (type == "gateway.ready") {
-                reachedReady = true
-                _state.value = ConnState.Ready(payload?.get("skin") as? JsonObject)
+        when (val inbound = classify(frame)) {
+            is Inbound.Event -> {
+                val ev = inbound.event
+                if (ev.type == "gateway.ready") {
+                    reachedReady = true
+                    _state.value = ConnState.Ready(ev.payload?.get("skin") as? JsonObject)
+                    // Say so on EVERY fresh socket: the backend keeps the flag per connection,
+                    // and without it every clarify/approval/sudo for our sessions fails in the
+                    // same millisecond it is asked (the wire pinned on 09-24: three clarify calls,
+                    // each back empty in 20 ms). An older backend answers -32601; ignored.
+                    advertiseCapabilities()
+                }
+                _events.tryEmit(ev)
             }
-            _events.tryEmit(GatewayEvent(type, sessionId, payload))
-            return
+            is Inbound.Request -> _serverRequests.tryEmit(inbound.request)
+            is Inbound.Response -> {
+                val waiter = pending.remove(inbound.id) ?: return
+                val error = inbound.error
+                if (error != null) {
+                    val code = error["code"]?.jsonPrimitive?.longOrNull?.toInt() ?: -1
+                    val msg = error["message"]?.jsonPrimitive?.contentOrNull ?: "unknown error"
+                    waiter.completeExceptionally(RpcException(code, msg))
+                } else {
+                    waiter.complete(inbound.result ?: JsonObject(emptyMap()))
+                }
+            }
+            Inbound.Ignored -> Unit
         }
-        val id = frame["id"]?.jsonPrimitive?.longOrNull ?: return
-        val waiter = pending.remove(id) ?: return
-        val error = frame["error"] as? JsonObject
-        if (error != null) {
-            val code = error["code"]?.jsonPrimitive?.longOrNull?.toInt() ?: -1
-            val msg = error["message"]?.jsonPrimitive?.contentOrNull ?: "unknown error"
-            waiter.completeExceptionally(RpcException(code, msg))
-        } else {
-            waiter.complete(frame["result"] as? JsonObject ?: JsonObject(emptyMap()))
+    }
+
+    /**
+     * Tell the backend this connection answers server→client requests. Fire-and-forget: the
+     * ack lists the request methods it may send, which we don't need, and a failure only means
+     * an older backend that still speaks `*.request` events — those are handled as before.
+     */
+    private fun advertiseCapabilities() {
+        scope?.launch {
+            runCatching {
+                request("client.capabilities", buildJsonObject { put("server_requests", JsonPrimitive(true)) })
+            }
         }
+    }
+
+    /** Answer a [ServerRequest] with [result]. False when the socket is gone (the backend will
+     *  time the request out on its own; a reconnect replays it). */
+    fun respondToRequest(id: String, result: JsonObject): Boolean {
+        val ws = socket ?: return false
+        return ws.send(buildJsonObject {
+            put("jsonrpc", JsonPrimitive("2.0"))
+            put("id", JsonPrimitive(id))
+            put("result", result)
+        }.toString())
+    }
+
+    /** Refuse a [ServerRequest] this app has no surface for. `-32601` is the JSON-RPC
+     *  method-not-found code, which the backend reads as "no handler here" and fails the
+     *  tool fast instead of waiting out the deadline. */
+    fun declineRequest(id: String, message: String = "not supported by this client"): Boolean {
+        val ws = socket ?: return false
+        return ws.send(buildJsonObject {
+            put("jsonrpc", JsonPrimitive("2.0"))
+            put("id", JsonPrimitive(id))
+            put("error", buildJsonObject {
+                put("code", JsonPrimitive(-32601))
+                put("message", JsonPrimitive(message))
+            })
+        }.toString())
     }
 
     /**
@@ -291,6 +359,33 @@ class GatewayRpc(
 
     companion object {
         fun tokenQuery(token: String): String = "token=" + URLEncoder.encode(token, "UTF-8")
+
+        /**
+         * Which of the three things one frame is. JSON-RPC is peer-to-peer on this socket:
+         * `method:"event"` is a notification; a `method` with a STRING `id` is the backend
+         * asking us (`srq-…`, [ServerRequest]); an integer `id` with no method is the answer to
+         * something we sent. Before 2.13.6 the string-id case fell through the integer parse
+         * and was dropped on the floor — the backend then waited on an answer that could
+         * never come, and with no capability handshake, didn't even wait.
+         */
+        fun classify(frame: JsonObject): Inbound {
+            val method = frame["method"]?.jsonPrimitive?.contentOrNull
+            val idPrim = frame["id"] as? JsonPrimitive
+            if (method == "event") {
+                val params = frame["params"]?.jsonObject ?: return Inbound.Ignored
+                val type = params["type"]?.jsonPrimitive?.contentOrNull ?: return Inbound.Ignored
+                val sessionId = params["session_id"]?.jsonPrimitive?.contentOrNull ?: ""
+                return Inbound.Event(GatewayEvent(type, sessionId, params["payload"] as? JsonObject))
+            }
+            if (method != null) {
+                if (idPrim == null || !idPrim.isString) return Inbound.Ignored
+                return Inbound.Request(
+                    ServerRequest(idPrim.content, method, frame["params"] as? JsonObject ?: JsonObject(emptyMap())),
+                )
+            }
+            val id = idPrim?.longOrNull ?: return Inbound.Ignored
+            return Inbound.Response(id, frame["result"] as? JsonObject, frame["error"] as? JsonObject)
+        }
 
         /** Failure codes no retry can heal: the credential (or Host boundary) is rejected
          *  as configured. HTTP 401/403 = upgrade rejected before accept (what a gated
