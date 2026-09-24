@@ -148,19 +148,26 @@ data class BlockingRequest(
     val multiSelect: Boolean = false,
     /** Secret only: the env var the value will be stored as (e.g. `OPENROUTER_API_KEY`). */
     val envVar: String = "",
+    /** Batch clarify only: which question of the batch this card shows (`q0`, `q1`, …); the
+     *  answer is locked per question (`clarify.lock`) and the last lock resolves the request. */
+    val questionId: String = "",
+    /** Batch clarify only: 1-based position and size, for the "2 of 4" line. 0 = not a batch. */
+    val ordinal: Int = 0,
+    val total: Int = 0,
 )
 
 enum class BlockingKind {
-    /** `clarify.request` — the agent is asking you a question mid-task. */
+    /** `clarify` — the agent is asking you a question mid-task. */
     CLARIFY,
 
-    /** `sudo.request` — a terminal command needs the host's sudo password. */
+    /** `sudo` — a terminal command needs the host's sudo password. */
     SUDO,
 
-    /** `secret.request` — a skill wants a credential stored in the gateway's env. */
+    /** `secret` — a skill wants a credential stored in the gateway's env. */
     SECRET;
 
-    /** Wire prefix: the event is `<wire>.request`, the answer `<wire>.respond`. */
+    /** Wire name. Current gateways ask as a JSON-RPC request with this `method` and take a
+     *  response frame back; older ones emit `<wire>.request` and take `<wire>.respond`. */
     val wire: String
         get() = when (this) {
             CLARIFY -> "clarify"
@@ -186,6 +193,10 @@ data class ApprovalRequest(
     val command: String,
     val description: String,
     val choices: List<String>,
+    /** The server→client request id (`srq-…`) when the gateway asked as a JSON-RPC request;
+     *  blank on the older `approval.request` event. Rides along on `approval.respond` so the
+     *  gateway settles exactly this entry, and names the card a `request.cancel` withdraws. */
+    val requestId: String = "",
 )
 
 /** One scheduled job (`cron.manage {action: list}`), fields straight off the wire. */

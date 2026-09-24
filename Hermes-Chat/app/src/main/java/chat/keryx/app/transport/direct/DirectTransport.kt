@@ -120,6 +120,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     private var rpc: GatewayRpc? = null
     private var rest: GatewayRest? = null
     private var pumpJob: Job? = null
+    /** Collector for the backend's questions to us (clarify / approval / sudo / secret). */
+    private var requestJob: Job? = null
     private val attachMutex = Mutex()
 
     private val _loggedIn = MutableStateFlow(settings.directLoggedIn)
@@ -660,6 +662,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         if (url.isBlank()) return
         rpc?.close()
         pumpJob?.cancel()
+        requestJob?.cancel()
         stateJob?.cancel()
         storedToLive.clear(); liveToStored.clear()
         // One DirectAuth for both halves: REST bearer rotation and per-connect WS tickets
@@ -669,6 +672,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         rpc = GatewayRpc(url, { auth.wsCredentialQuery(url) }, settings.allowInsecure).also { r ->
             r.connect(scope)
             pumpJob = scope.launch { r.events.collect(::onEvent) }
+            requestJob = scope.launch { r.serverRequests.collect(::onServerRequest) }
             stateJob = scope.launch {
                 r.state.collect { st ->
                     _linkState.value = when (st) {
@@ -789,6 +793,17 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             // Unlike approvals these carry a request_id and can expire server-side, so they
             // clear on their own `.expire` twin (or when the turn moves on) — never on the
             // blanket message.*/tool.* rule above, which would wipe the card mid-question.
+            // The backend withdrew a question it asked as a JSON-RPC request (timeout, the turn
+            // was interrupted, the session closed, or another surface answered it). Only the
+            // card wearing THAT id comes down — never a newer question asked in its place.
+            "request.cancel" -> {
+                val rid = pStr("id") ?: return
+                batches.remove(rid)
+                if (blockingFlow(storedId).value?.requestId == rid) setBlocking(storedId, null)
+                if (approvalFlow(storedId).value?.requestId == rid) setApproval(storedId, null)
+            }
+            // ---- legacy blocking events (gateways before hermes ebe8cda8, 2026-09-13) ----
+            // Current gateways ask these as server→client requests; see onServerRequest.
             "clarify.request" -> setBlocking(
                 storedId,
                 chat.keryx.core.model.BlockingRequest(
@@ -1372,6 +1387,17 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             val live = res["session_id"]?.jsonPrimitive?.contentOrNull ?: error("resume returned no sid")
             storedToLive[storedId] = live
             liveToStored[live] = storedId
+            // Questions the backend is still waiting on for this session (asked while we were
+            // away, or before this process existed). The ack lists them as sent, plus the batch
+            // answers it already holds, so the card comes back exactly where it was.
+            (res["open_requests"] as? kotlinx.serialization.json.JsonArray)
+                ?.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
+                ?.forEach { o ->
+                    val id = o["id"]?.jsonPrimitive?.contentOrNull ?: return@forEach
+                    val method = o["method"]?.jsonPrimitive?.contentOrNull ?: return@forEach
+                    val params = o["params"] as? kotlinx.serialization.json.JsonObject ?: return@forEach
+                    onServerRequest(GatewayRpc.ServerRequest(id, method, params))
+                }
             // The ack's `info` IS a session.info for a session the gateway holds live — its
             // `usage` is the ring's reading. Only session.info EVENTS fed the meta before, and
             // those arrive at turn end: a room opened in a fresh process sat dark until the
@@ -2816,14 +2842,107 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     fun pendingBlocking(sessionId: String): Flow<chat.keryx.core.model.BlockingRequest?> =
         blockingFlow(sessionId)
 
+    // --- server→client requests: the backend asking US -------------------------------------
+    // Since hermes ebe8cda8 (2026-09-13) a clarify / approval / sudo / secret is a JSON-RPC
+    // request FROM the gateway (`{id:"srq-…", method, params}`), answered with a response frame
+    // carrying that id, and the backend only sends them to a client that said
+    // `client.capabilities {server_requests:true}` — otherwise the tool fails in the same
+    // millisecond it is called. Keryx 2.13.5 and earlier did neither: it parsed only integer
+    // ids, so the frame was dropped, and it never advertised, so the gateway never waited.
+    // Sy's 09-24 session asked three times and got three empty answers, each back in 20 ms.
+
+    /** Open batch clarifies, by request id: a batch is shown one question at a time. */
+    private val batches = java.util.concurrent.ConcurrentHashMap<String, ClarifyBatch>()
+
+    private fun onServerRequest(req: GatewayRpc.ServerRequest) = runCatching { handleServerRequest(req) }
+        .onFailure { android.util.Log.e("KeryxGw", "server request ${req.method} mishandled", it) }
+        .let { }
+
+    private fun handleServerRequest(req: GatewayRpc.ServerRequest) {
+        val p = req.params
+        fun pStr(key: String) = p[key]?.jsonPrimitive?.contentOrNull
+        fun pList(key: String) = (p[key] as? kotlinx.serialization.json.JsonArray)
+            ?.mapNotNull { it.jsonPrimitive.contentOrNull } ?: emptyList()
+        val live = pStr("session_id").orEmpty()
+        val storedId = liveToStored[live]
+        if (storedId == null) {
+            // A session this process never opened (another surface's), or one whose live id we
+            // lost. Leave the request open: the backend keeps waiting for whichever client can
+            // answer, and our own reconnect replays it once the session is attached again.
+            android.util.Log.w("KeryxGw", "server request ${req.method} for unknown live session $live")
+            return
+        }
+        when (req.method) {
+            "clarify" -> {
+                val batch = ClarifyBatch.fromParams(req.id, p)
+                if (batch != null) {
+                    val first = batch.current()
+                    if (first == null) {
+                        // Every question already locked (a replay after our own last lock raced
+                        // the disconnect). Nothing left to show; the server resolves it.
+                        batches.remove(req.id)
+                    } else {
+                        batches[req.id] = batch
+                        setBlocking(storedId, first)
+                    }
+                } else {
+                    val question = pStr("question").orEmpty()
+                    if (question.isBlank()) { rpc?.declineRequest(req.id, "empty clarify"); return }
+                    val choices = pList("choices")
+                    setBlocking(
+                        storedId,
+                        chat.keryx.core.model.BlockingRequest(
+                            kind = chat.keryx.core.model.BlockingKind.CLARIFY,
+                            requestId = req.id,
+                            prompt = question,
+                            choices = choices,
+                            multiSelect = pStr("multi_select") == "true" && choices.isNotEmpty(),
+                        ),
+                    )
+                }
+            }
+            "sudo" -> setBlocking(
+                storedId,
+                chat.keryx.core.model.BlockingRequest(
+                    kind = chat.keryx.core.model.BlockingKind.SUDO,
+                    requestId = req.id,
+                    prompt = "A command on the host needs your sudo password.",
+                ),
+            )
+            "secret" -> setBlocking(
+                storedId,
+                chat.keryx.core.model.BlockingRequest(
+                    kind = chat.keryx.core.model.BlockingKind.SECRET,
+                    requestId = req.id,
+                    prompt = pStr("prompt").orEmpty(),
+                    envVar = pStr("env_var").orEmpty(),
+                ),
+            )
+            "approval" -> setApproval(
+                storedId,
+                chat.keryx.core.model.ApprovalRequest(
+                    command = pStr("command").orEmpty(),
+                    description = pStr("description").orEmpty(),
+                    choices = pList("choices").ifEmpty { listOf("once", "deny") },
+                    requestId = req.id,
+                ),
+            )
+            // Desktop-only bridges (terminal.read, preview.act, vault prompts, the tour): no
+            // surface for them on a phone. Say so at once — -32601 fails the tool fast with a
+            // clear reason instead of stalling the agent for the whole deadline.
+            else -> rpc?.declineRequest(req.id)
+        }
+    }
+
     /**
-     * Answer whatever the agent is blocked on. The respond methods key off `request_id`
-     * alone (no session scope), and each reads its answer from its own parameter — hence
-     * [BlockingKind.answerKey]. An empty [answer] is the wire's "skipped", which the
-     * gateway handles gracefully, so Skip is just a blank answer rather than a silent drop.
+     * Answer whatever the agent is blocked on. A current gateway asked as a JSON-RPC request
+     * (`srq-…` id): the answer is a response frame with that id — `{answer}` for one clarify
+     * question, `{value}` for sudo / secret — or, for a batch clarify, one `clarify.lock` per
+     * question, the last of which resolves the request. An older gateway asked with a
+     * `<kind>.request` event and takes `<kind>.respond`, keyed off its own `request_id`.
      *
-     * A stale card resolves as `{"status":"expired"}` instead of erroring (every one of
-     * these sets allow_expired), so answering late is safe — it is simply ignored.
+     * An empty [answer] is the wire's "skipped" either way, so Skip is a blank answer rather
+     * than a silent drop. Answering late is safe: a settled request is ignored (`expired`).
      */
     suspend fun respondBlocking(
         sessionId: String,
@@ -2832,19 +2951,57 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         answer: String,
     ): Result<Unit> = runCatching {
         val rpc = rpc ?: error("gateway not connected")
-        rpc.request("${kind.wire}.respond", buildJsonObject {
-            put("request_id", JsonPrimitive(requestId))
-            put(kind.answerKey, JsonPrimitive(answer))
-        })
-        if (blockingFlow(sessionId).value?.requestId == requestId) setBlocking(sessionId, null)
+        val batch = batches[requestId]
+        when {
+            batch != null -> {
+                val qid = batch.current()?.questionId ?: error("batch already answered")
+                val res = rpc.request("clarify.lock", buildJsonObject {
+                    put("request_id", JsonPrimitive(requestId))
+                    put("question_id", JsonPrimitive(qid))
+                    put("answer", JsonPrimitive(answer))
+                })
+                batch.lock(qid, answer)
+                if (res["status"]?.jsonPrimitive?.contentOrNull == "expired") {
+                    batches.remove(requestId)
+                    setBlocking(sessionId, null)
+                    return@runCatching
+                }
+                (res["remaining"] as? kotlinx.serialization.json.JsonArray)
+                    ?.mapNotNull { it.jsonPrimitive.contentOrNull }
+                    ?.let(batch::syncRemaining)
+                val next = batch.current()
+                if (next == null) batches.remove(requestId)
+                setBlocking(sessionId, next)
+            }
+            requestId.startsWith("srq-") -> {
+                val key = if (kind == chat.keryx.core.model.BlockingKind.CLARIFY) "answer" else "value"
+                if (!rpc.respondToRequest(requestId, buildJsonObject { put(key, JsonPrimitive(answer)) })) {
+                    error("gateway socket send failed")
+                }
+                if (blockingFlow(sessionId).value?.requestId == requestId) setBlocking(sessionId, null)
+            }
+            else -> {
+                rpc.request("${kind.wire}.respond", buildJsonObject {
+                    put("request_id", JsonPrimitive(requestId))
+                    put(kind.answerKey, JsonPrimitive(answer))
+                })
+                if (blockingFlow(sessionId).value?.requestId == requestId) setBlocking(sessionId, null)
+            }
+        }
     }
 
     suspend fun respondApproval(sessionId: String, choice: String): Result<Boolean> = runCatching {
         val rpc = rpc ?: error("gateway not connected")
         val live = attach(sessionId)
+        // `approval.respond` outlived the protocol change on purpose: the approval queue owns
+        // the wait (timeout, /approve all, coalescing) and settling the entry withdraws the
+        // server request. `request_id` pins the exact entry when the gateway asked as a request;
+        // the notification path has only the session and relies on the queue's own lookup.
         val res = rpc.request("approval.respond", buildJsonObject {
             put("session_id", JsonPrimitive(live))
             put("choice", JsonPrimitive(choice))
+            approvalFlow(sessionId).value?.requestId?.takeIf { it.isNotBlank() }
+                ?.let { put("request_id", JsonPrimitive(it)) }
         })
         setApproval(sessionId, null)
         // resolved=0 means the wait already failed closed (approvals.timeout) — the caller
@@ -2921,6 +3078,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     override suspend fun logout() {
         rpc?.close(); rpc = null
         pumpJob?.cancel()
+        requestJob?.cancel()
         stateJob?.cancel()
         _linkState.value = chat.keryx.core.model.LinkState.DISCONNECTED
         settings.directLoggedIn = false

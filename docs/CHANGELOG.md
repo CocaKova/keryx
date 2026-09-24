@@ -5,6 +5,22 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.13.6 · versionCode 108
+
+- The agent's questions reach the phone again. Since hermes `ebe8cda8` (2026-09-13) a clarify,
+  approval, sudo or secret prompt is a JSON-RPC request *from* the gateway — a frame with a
+  string id (`srq-…`) that wants a response frame back — and the gateway only sends one to a
+  client that has said `client.capabilities {server_requests: true}`. Keryx parsed only integer
+  ids, so the frame fell on the floor, and it never advertised, so the gateway did not even wait:
+  every clarify came back empty in 20 ms, and the agent read that as "you skipped it" (Sy's 09-24
+  session, three times over). The socket now tells the gateway on every `gateway.ready` that it
+  answers, routes string-id frames to the cards, answers with response frames, takes a batch of
+  questions one card at a time (`clarify.lock` per question, "2 of 4" in the header), honours
+  `request.cancel`, and replays the questions still open on reconnect (`session.resume`'s
+  `open_requests`). Desktop-only bridges (terminal read, browser preview, vault prompts, the
+  tour) are declined at once with `-32601` so the agent is not stalled for the deadline. The
+  old `*.request` / `*.respond` pair still works for a gateway older than the change.
+
 ## 2.13.5 · versionCode 107
 
 - Stop settles the turn. The gateway's `message.complete` is the end of a turn whatever the
