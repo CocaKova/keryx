@@ -483,7 +483,7 @@ internal fun ComposerFooter(
         Spacer(modifier = Modifier.weight(1f))
         usage?.let {
             chat.keryx.app.presentation.ui.components.KeryxContextRing(
-                it.used, it.max,
+                it.used, it.max, compactAt = it.compactAt,
                 modifier = if (onContextTap != null) Modifier
                     .clip(androidx.compose.foundation.shape.CircleShape)
                     .clickable(onClickLabel = "What is in the context window", onClick = onContextTap)

@@ -158,6 +158,10 @@ fun ChatScreen(
     val workStartedAt by viewModel.workStartedAt.collectAsState()
     val workLabel by viewModel.workLabel.collectAsState()
     val sessionStatus by viewModel.sessionStatus.collectAsState()
+    // The compaction banner's size and "usually ~N s" (2.13.11): the ring's reading is what is
+    // being summarized, and this phone's own record of the brain says how long that takes.
+    val contextUsageNow by viewModel.contextUsage.collectAsState()
+    val compactionTypical by viewModel.compactionTypicalSeconds.collectAsState()
     val replyTarget by viewModel.replyTarget.collectAsState()
     val savedIds by viewModel.archive.savedIds.collectAsState()
     val listState = rememberLazyListState()
@@ -689,6 +693,12 @@ fun ChatScreen(
                                 )
                                 return@Box
                             }
+                            // A compaction's handoff row: the summary of everything above it. A
+                            // divider, not a wall of the agent's notes in its own voice (2.13.11).
+                            if (chat.keryx.core.protocol.CompactionCarryOver.isCarryOver(message.content)) {
+                                chat.keryx.app.presentation.ui.components.CompactionDivider(message)
+                                return@Box
+                            }
                             // Automated telemetry never gets a chat bubble: it renders as a quiet,
                             // low-contrast block (or nothing at all when telemetry is hidden).
                             val isTelem = message.sender == SenderType.HERMES &&
@@ -1107,7 +1117,10 @@ fun ChatScreen(
             }
             WorkingStatusBar(
                 visible = awaitingReply || topTokPerSec > 0f || compacting != null,
-                label = compacting?.headline ?: workLabel,
+                label = compacting?.headline(
+                    fallbackTokens = contextUsageNow?.takeIf { it.roomId == currentRoom?.id }?.used,
+                    typicalSeconds = compactionTypical,
+                ) ?: workLabel,
                 compacting = compacting != null,
                 startedAt = workStartedAt,
                 tokPerSec = topTokPerSec,
