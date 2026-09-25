@@ -20,8 +20,13 @@ them.
   trigger (`usage.compact_at`, a SILAS gateway patch), a full ring means the next call compacts,
   and the figure reads "31k to compaction". A stock gateway gets the ring it always had.
 - The ring moves during a turn. Its reading arrived only when a turn ended, so a long agent run
-  showed its starting number the whole way through. The open chat re-reads it every 15 s while
-  a turn runs there.
+  showed its starting number the whole way through. The open chat re-reads it the moment the
+  number can have moved: when a model response lands (a tool starts), when a compaction ends,
+  and just after you send; every 15 s as a floor.
+- After a compaction the ring drops at once. The gateway stops reporting a reading until the next
+  model call answers, so the ring held the full reading that triggered the compaction for that
+  whole call. The gateway now reports its own estimate of the compacted size in that gap
+  (`SILAS_POST_COMPACTION_ESTIMATE`).
 - The compaction banner says how big the job is and how long it usually takes: "Compressing
   context (~141k tokens) · usually ~41 s". A compaction is one summarizing call with no progress
   of its own, so the phone keeps the last five durations it watched per model and shows the

@@ -89,6 +89,12 @@ class DirectTransport(
         /** How often the open room re-reads its usage while a turn runs there (2.13.11). */
         private const val USAGE_POLL_MS = 15_000L
 
+        /** The floor between event-driven usage reads: one per model response is plenty. */
+        private const val USAGE_NUDGE_MS = 3_000L
+
+        /** After a send, when the gateway's preflight has seeded a fresh session's reading. */
+        private const val USAGE_AFTER_SEND_MS = 2_500L
+
         /** Placeholder id for a tool.generating card, replaced by the real tool.start. */
         private const val STREAM_PUBLISH_MS = 100L
 private const val GHOST_TOOL_ID = "generating"
@@ -940,6 +946,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 statusFlow(storedId).value =
                     if (kind == "ready" || text.isBlank()) null
                     else chat.keryx.core.model.SessionStatus.of(kind, text)
+                // A compaction just finished: the ring still shows the reading that triggered it
+                // (a full ring) until someone asks. The gateway has its post-compaction estimate
+                // from this moment (SILAS_POST_COMPACTION_ESTIMATE); ask now.
+                if (kind == "compacted") nudgeUsage(storedId, minGapMs = 0L)
                 // Failure-shaped status lines are the agent's OWN error report ("❌
                 // Non-retryable error (HTTP 400): …" — run_agent buffers retry chatter and
                 // replays it via status_callback("lifecycle", …) only when the turn actually
@@ -989,6 +999,9 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 noteRun(storedId, ev.type, toolName = pStr("name") ?: "tool")
             }
             "tool.start" -> {
+                // A tool only starts after the model response that called it has landed, and
+                // that response is what moves the gateway's context reading.
+                nudgeUsage(storedId)
                 val name = pStr("name") ?: "tool"
                 val args = p?.get("args") as? kotlinx.serialization.json.JsonObject
                 noteRun(storedId, ev.type, pStr("tool_id").orEmpty(), name, pStr("context") ?: ToolText.contextPreview(name, args))
@@ -1739,7 +1752,6 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     private suspend fun followElsewhere(storedId: String, st: SessionStore) {
         var state = ForeignFollow.State()
         var delayMs = ForeignFollow.WARM_POLL_MS
-        var lastUsagePoll = 0L
         while (currentCoroutineContext().isActive) {
             delay(delayMs)
             // Off screen nobody reads the banner or the transcript (2.13.10): the room stays
@@ -1762,10 +1774,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             // The ring's reading arrives at turn END — a forty-minute agent run showed the
             // number it started with the whole way through, and the compaction in the middle
             // came from nowhere (2.13.11). While a turn runs here, ask for it.
-            if (busy && now - lastUsagePoll >= USAGE_POLL_MS) {
-                lastUsagePoll = now
-                pollUsage(storedId)
-            }
+            if (busy) nudgeUsage(storedId, minGapMs = USAGE_POLL_MS)
             if (action == ForeignFollow.Action.REHYDRATE) {
                 android.util.Log.w("KeryxGw", "follow ${storedId.take(8)}: gateway holds ${pulse?.messageCount} rows, re-reading")
                 runCatching { rehydrate(storedId, st) }
@@ -1773,6 +1782,25 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             }
             delayMs = ForeignFollow.nextDelayMs(pulse, now, action)
         }
+    }
+
+    /** When each session's usage was last asked for — the throttle every usage read shares. */
+    private val lastUsageReadAt = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
+    /**
+     * Re-read [storedId]'s usage because something just moved it (2.13.11): a model response
+     * landed, a compaction ended, a message went out. Only for a room someone is looking at,
+     * and at most once per [minGapMs] — a timer alone left the ring a whole model call plus
+     * up to 23 s behind (device, 09-25).
+     */
+    private fun nudgeUsage(storedId: String, minGapMs: Long = USAGE_NUDGE_MS) {
+        val st = stores[storedId] ?: return
+        if (st.followers <= 0 || !foreground.value) return
+        val now = System.currentTimeMillis()
+        val last = lastUsageReadAt[storedId] ?: 0L
+        if (now - last < minGapMs) return
+        lastUsageReadAt[storedId] = now
+        scope.launch { pollUsage(storedId) }
     }
 
     /**
@@ -1876,11 +1904,18 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         }
         // The live session's stored id, not the one the room asked with: attach may have just
         // learned the room's session was compacted into a continuation (2.13.11).
-        store(liveToStored[live] ?: sessionId).localUserMessage(content)
+        val stored = liveToStored[live] ?: sessionId
+        store(stored).localUserMessage(content)
         rpc?.request("prompt.submit", buildJsonObject {
             put("session_id", JsonPrimitive(live))
             put("text", JsonPrimitive(content))
         }) ?: error("gateway not connected")
+        // The gateway's preflight seeds a fresh session's reading before its first model call
+        // answers; without this the ring stayed dark (or on last turn's number) until then.
+        scope.launch {
+            delay(USAGE_AFTER_SEND_MS)
+            nudgeUsage(liveToStored[live] ?: stored, minGapMs = 0L)
+        }
     }
 
     override suspend fun sendReply(sessionId: String, content: String, replyToEventId: String) {
