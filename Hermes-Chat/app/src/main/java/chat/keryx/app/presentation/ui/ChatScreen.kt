@@ -857,10 +857,12 @@ fun ChatScreen(
             exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
             // Sits on top of the composer as MEASURED, not a guessed 90dp: the composer grows
             // (the Matrix door's rows, a reply target, a multi-line draft) and a fixed offset
-            // left the palette's lower rows under it, down by the keyboard.
+            // left the palette's lower rows under it, down by the keyboard. The measure is
+            // taken inside the composer column's own 16dp padding, so that goes back on before
+            // the 8dp gap — without it the palette sat 8dp into the text box (2.13.10).
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = with(density) { composerHeightPx.toDp() } + 8.dp)
+                .padding(bottom = with(density) { composerHeightPx.toDp() } + 16.dp + 8.dp)
         ) {
             CommandPaletteMenu(
                 filter = commandFilter,

@@ -18,6 +18,9 @@ them.
 - A reconnect re-reads only the chat you have open (and any whose turn was running). Other
   chats you touched this session reload when you open them, instead of all at once.
 - The Runs and Bots places stop their fast polls when the app leaves the screen.
+- The command palette sits clear of the text box. Typing `/` put its bottom 8dp inside the
+  composer: the composer's height was measured inside its own padding, and the palette never
+  added that padding back.
 
 ## 2.13.9 · versionCode 111
 
