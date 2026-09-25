@@ -126,6 +126,7 @@ class KeryxApp : Application() {
             DirectTransport(
                 settingsRepository, appScope,
                 cacheDir = transcriptCacheDir(gatewayId),
+                foreground = _foreground,
             ).also { it.connectIfConfigured() }
         } else {
             MatrixTransport(matrixService, settingsRepository)

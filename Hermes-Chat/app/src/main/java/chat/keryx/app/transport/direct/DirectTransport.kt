@@ -71,6 +71,10 @@ class DirectTransport(
     /** Where the last page of each transcript sleeps between process lives (2.10) — the
      *  app's cache dir, evictable by the system, never a source of truth. Null = no cache. */
     private val cacheDir: java.io.File? = null,
+    /** Whether Keryx is on screen (KeryxApp's activity count). Off screen, work nobody can
+     *  see waits: the follow poll pauses and roster refreshes are spaced out (2.13.10).
+     *  Defaults to "always on screen" so plain-JVM tests behave as before. */
+    private val foreground: StateFlow<Boolean> = MutableStateFlow(true),
 ) : ChatTransport, GatewayCapabilities {
 
     /** No Matrix here — the UI's Matrix affordances gate themselves off on exactly this. */
@@ -98,6 +102,12 @@ private const val INTERRUPT_SEAL_MS = 4_000L
          * syntax-highlight work, and tool-card construction before anything paints.
          */
         private const val HISTORY_PAGE = 120
+
+        /** Floors between roster refreshes driven by `sessions.changed` (2.13.10). A running
+         *  turn anywhere moves the store every ~2 s; on screen the drawer keeps that pace,
+         *  off screen the roster only feeds notifications, which can wait half a minute. */
+        private const val LIST_REFRESH_FLOOR_FG_MS = 2_000L
+        private const val LIST_REFRESH_FLOOR_BG_MS = 30_000L
         /** The roster's page — the REST cap is 100; fifty keeps the first pull light. */
         private const val SESSION_PAGE = 50
 
@@ -738,7 +748,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     // runs in appScope, and the stream must survive whatever a future gateway emits.
     private fun handleEvent(ev: GatewayRpc.GatewayEvent) {
         // Global broadcasts carry no session id.
-        if (ev.type == "sessions.changed") { scope.launch { refreshSessions(); reconcileRuntimes() }; return }
+        if (ev.type == "sessions.changed") { onSessionsChanged(); return }
         // A fresh socket. Everything we know may be stale, so this is the resync point.
         if (ev.type == "gateway.ready") { onGatewayReady(); return }
         // ⚠ The gateway can take a live session BACK — idle TTL, LRU eviction, or the
@@ -1133,6 +1143,13 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         }
     }
 
+    /** `sessions.changed` → one roster refresh per floor; see [RefreshCoalescer]. */
+    private val listRefresh = RefreshCoalescer(
+        scope, foreground, LIST_REFRESH_FLOOR_FG_MS, LIST_REFRESH_FLOOR_BG_MS,
+    ) { refreshSessions(); reconcileRuntimes() }
+
+    private fun onSessionsChanged() = listRefresh.poke()
+
     /**
      * A socket just went live. Re-sync everything, because a reconnect is the one moment
      * where what we hold is guaranteed suspect.
@@ -1148,6 +1165,9 @@ private const val INTERRUPT_SEAL_MS = 4_000L
      * holding them means the next send addresses a session that no longer exists.
      */
     private fun onGatewayReady() {
+        // Taken before the busy marks are wiped below: a turn that was running when the
+        // socket dropped is one whose end still has to reach the notification watcher.
+        val wasBusy = _busyStored.value
         storedToLive.clear()
         liveToStored.clear()
         stores.values.forEach { it.releaseFlyingWings() }
@@ -1163,6 +1183,14 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             // Re-open what the user actually has open. Sessions are only in `stores` once
             // something opened them, so this is bounded by what this run has touched.
             stores.entries.toList().forEach { (storedId, st) ->
+                // Only what someone is reading, or whose turn was in flight (2.13.10). Every
+                // other store just forgets it was hydrated: reopening it re-reads one page —
+                // painted from the store it already holds — instead of this reconnect pulling
+                // the transcript of every chat touched since launch.
+                if (st.followers == 0 && storedId !in wasBusy) {
+                    st.hydrated = false
+                    return@forEach
+                }
                 runCatching { rehydrate(storedId, st) }
                     .onFailure { android.util.Log.w("KeryxGw", "resync failed for $storedId", it) }
                 // Re-lease so live events flow again without waiting for the user to type.
@@ -1694,6 +1722,11 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         var delayMs = ForeignFollow.WARM_POLL_MS
         while (currentCoroutineContext().isActive) {
             delay(delayMs)
+            // Off screen nobody reads the banner or the transcript (2.13.10): the room stays
+            // open in the ViewModel, so without this the poll ran every 20 s all night —
+            // each pulse the full session record, system prompt and all. Back on screen it
+            // polls at once, so a foreign turn that moved meanwhile shows on the first frame.
+            if (!foreground.value) foreground.first { it }
             val rest = rest
             val busy = storedId in _busyStored.value
             val pulse = if (rest == null || busy) null

@@ -36,7 +36,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -57,6 +56,9 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.core.model.BotProfile
 import chat.keryx.core.model.BotRoster
@@ -100,10 +102,17 @@ fun BotsSpace(
 
     // The place's own cadence: rosters move on the gateway's clock (a bot's last word, a
     // desktop edit), and profiles.list is the one call that knows.
-    DisposableEffect(Unit) {
-        val job = bots.poll(15_000)
-        viewModel.hub.refreshJobs()
-        onDispose { job.cancel() }
+    // On screen only: the place is what wants the fast pulse, and a Bots place left open
+    // behind the launcher has no one to show it to (the roster's own slow pulse keeps
+    // notifications honest meanwhile).
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(Unit) { viewModel.hub.refreshJobs() }
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            // poll() lives in the ViewModel's scope, not this block's: cancel it by hand.
+            val job = bots.poll(15_000)
+            try { job.join() } finally { job.cancel() }
+        }
     }
     // "Active now" is a 90 s window: keep a clock so chips retire without a refetch.
     val now by produceState(System.currentTimeMillis()) {

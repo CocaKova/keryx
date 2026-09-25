@@ -5,6 +5,20 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.13.10 · versionCode 112
+
+- Quiet in the pocket. Measured on 2.13.9: sitting in the background with no agent running,
+  Keryx downloaded about 25 MB an hour, around the clock. Two causes, both gone:
+  - The session list was re-downloaded every minute. The gateway's own heartbeat looked like a
+    session change; that is fixed on the gateway, and Keryx now folds a burst of change
+    notices into one refresh — every 2 s on screen, every 30 s off screen, and the moment you
+    come back.
+  - The last open chat kept polling every 20 s while the app was off screen, each poll the
+    full session record. It pauses off screen and checks the instant you return.
+- A reconnect re-reads only the chat you have open (and any whose turn was running). Other
+  chats you touched this session reload when you open them, instead of all at once.
+- The Runs and Bots places stop their fast polls when the app leaves the screen.
+
 ## 2.13.9 · versionCode 111
 
 - A mission alert reports into a conversation, never into machinery. 2.13.8 subscribed

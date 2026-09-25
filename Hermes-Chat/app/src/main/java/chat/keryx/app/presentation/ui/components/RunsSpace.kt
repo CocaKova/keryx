@@ -53,6 +53,9 @@ import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.core.model.CronHumanize
 import chat.keryx.core.model.CronJobCard
 import chat.keryx.core.model.CronRun
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
@@ -83,10 +86,15 @@ fun RunsSpace(
     var openSession by remember { mutableStateOf<HubSession?>(null) }
 
     // The tab's poll cadence, kept: runs land on the gateway's clock, not the user's.
-    LaunchedEffect(Unit) {
-        while (isActive) {
-            viewModel.hub.refreshCron()
-            delay(10_000)
+    // Only while the app is on screen: a Runs tab left open in the background polled
+    // 150 rows every 10 s for as long as the process lived (2.13.10 battery audit).
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (isActive) {
+                viewModel.hub.refreshCron()
+                delay(10_000)
+            }
         }
     }
 
