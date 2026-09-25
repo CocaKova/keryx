@@ -566,11 +566,65 @@ class HermesStreamClient(
         val modelOverride: String = "",
         val providerOverride: String = "",
         val reasoningEffort: String = "",
+        /** Why a blocked card stopped: needs_input / capability (the owner's move) or
+         *  dependency / transient (it clears itself). Blank on older gateways. */
+        val blockKind: String = "",
+        /** What the card is asking for, in the worker's words: the block reason, or the review
+         *  ask. Board cards carry an excerpt, the detail call the whole text. */
+        val ask: String = "",
+        /** Newest run handoff summary (excerpt on the board, full on detail). */
+        val latestSummary: String = "",
+        /** Waiting on its owner — a review, or a block no worker will clear by itself. */
+        val needsYou: Boolean = false,
+        /** Worst live diagnostic on the card; count 0 = none. Stale = all of them outlived. */
+        val diagCount: Int = 0,
+        val diagSeverity: String = "",
+        val diagStale: Boolean = false,
+        /** Detail only: how many times this card has bounced blocked → unblocked. */
+        val blockRecurrences: Int = 0,
     )
 
     data class KanbanComment(val author: String, val body: String, val createdAt: Long)
 
-    data class KanbanEvent(val id: Long, val taskId: String, val kind: String, val createdAt: Long)
+    /** [detail] is the payload's one readable line — a block reason, a handoff summary, the
+     *  status it landed in — so an event row says what happened, not only that it did. */
+    data class KanbanEvent(
+        val id: Long,
+        val taskId: String,
+        val kind: String,
+        val createdAt: Long,
+        val detail: String = "",
+        val runId: Long? = null,
+    )
+
+    /** One attempt at the mission (`task_runs`): who ran it, how it ended, what it handed off. */
+    data class KanbanRun(
+        val id: Long,
+        val profile: String,
+        val status: String,
+        val outcome: String,
+        val summary: String,
+        val error: String,
+        val startedAt: Long,
+        val endedAt: Long?,
+        val durationSeconds: Long?,
+    )
+
+    /** One distress signal, from the same rules `hermes kanban diag` runs. [stale] = a crash or
+     *  failure streak a later run has already outlived — history, rendered dimmed. */
+    data class KanbanDiagnostic(
+        val kind: String,
+        val severity: String,
+        val title: String,
+        val detail: String,
+        /** The suggested first step's label, e.g. "Check logs: hermes kanban log t_…". */
+        val suggestedAction: String,
+        val stale: Boolean,
+    )
+
+    data class KanbanLink(val id: String, val title: String, val status: String)
+
+    data class KanbanAttachment(val id: Long, val filename: String, val contentType: String, val size: Long)
 
     /** The whole board: tasks grouped by raw gateway status (column layout is the app's call). */
     data class KanbanBoard(val board: String, val tasks: Map<String, List<KanbanTask>>)
@@ -579,31 +633,18 @@ class HermesStreamClient(
         val task: KanbanTask,
         val comments: List<KanbanComment>,
         val events: List<KanbanEvent>,
+        val runs: List<KanbanRun> = emptyList(),
+        val diagnostics: List<KanbanDiagnostic> = emptyList(),
+        val parents: List<KanbanLink> = emptyList(),
+        val children: List<KanbanLink> = emptyList(),
+        val attachments: List<KanbanAttachment> = emptyList(),
     )
 
-    private fun kanbanTaskOf(o: kotlinx.serialization.json.JsonObject): KanbanTask {
-        fun s(k: String) = (o[k] as? JsonPrimitive)?.contentOrNull.orEmpty()
-        fun l(k: String) = (o[k] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
-        return KanbanTask(
-            id = s("id"),
-            title = s("title"),
-            assignee = s("assignee"),
-            status = s("status"),
-            priority = l("priority")?.toInt() ?: 0,
-            createdBy = s("created_by"),
-            createdAt = l("created_at") ?: 0L,
-            startedAt = l("started_at"),
-            completedAt = l("completed_at"),
-            consecutiveFailures = l("consecutive_failures")?.toInt() ?: 0,
-            bodyExcerpt = s("body_excerpt"),
-            body = s("body"),
-            result = s("result"),
-            lastFailureError = s("last_failure_error"),
-            modelOverride = s("model_override"),
-            providerOverride = s("provider_override"),
-            reasoningEffort = s("reasoning_effort"),
-        )
-    }
+    /** What `POST /task/{id}/reply` did: the comment always lands; [unblocked] says whether the
+     *  card went back to work, [status] where it is now. */
+    data class KanbanReply(val unblocked: Boolean, val status: String)
+
+    private fun kanbanTaskOf(o: kotlinx.serialization.json.JsonObject): KanbanTask = HubJson.kanbanTask(o)
 
     private suspend fun kanbanCall(
         path: String,
@@ -694,29 +735,7 @@ class HermesStreamClient(
     }
 
     suspend fun kanbanTask(taskId: String): Result<KanbanDetail> = runCatching {
-        val obj = kanbanCall("/keryx/kanban/task/$taskId")
-        KanbanDetail(
-            task = kanbanTaskOf(obj["task"] as kotlinx.serialization.json.JsonObject),
-            comments = (obj["comments"] as? kotlinx.serialization.json.JsonArray)
-                ?.mapNotNull { el ->
-                    val c = el as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
-                    KanbanComment(
-                        author = (c["author"] as? JsonPrimitive)?.content.orEmpty(),
-                        body = (c["body"] as? JsonPrimitive)?.content.orEmpty(),
-                        createdAt = (c["created_at"] as? JsonPrimitive)?.content?.toLongOrNull() ?: 0L,
-                    )
-                }.orEmpty(),
-            events = (obj["events"] as? kotlinx.serialization.json.JsonArray)
-                ?.mapNotNull { el ->
-                    val e = el as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
-                    KanbanEvent(
-                        id = (e["id"] as? JsonPrimitive)?.content?.toLongOrNull() ?: 0L,
-                        taskId = taskId,
-                        kind = (e["kind"] as? JsonPrimitive)?.content.orEmpty(),
-                        createdAt = (e["created_at"] as? JsonPrimitive)?.content?.toLongOrNull() ?: 0L,
-                    )
-                }.orEmpty(),
-        )
+        HubJson.kanbanDetail(kanbanCall("/keryx/kanban/task/$taskId"), taskId)
     }
 
     /** Create a mission. [triage] parks it spec-first; false lets the dispatcher pick it up. */
@@ -761,6 +780,44 @@ class HermesStreamClient(
         }
         kanbanCall("/keryx/kanban/task/$taskId/comment", post = payload)
         Unit
+    }
+
+    /**
+     * Answer a card that asked for something: the comment lands in the owner's name, and with
+     * [unblock] the card goes back to work so its next run reads the answer. A gateway whose
+     * plugin predates the route (404) gets a plain comment instead — the answer still lands,
+     * the card just stays where it is, and [KanbanReply.unblocked] says so.
+     */
+    suspend fun kanbanReply(taskId: String, body: String, unblock: Boolean): Result<KanbanReply> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("body", kotlinx.serialization.json.JsonPrimitive(body))
+            put("unblock", kotlinx.serialization.json.JsonPrimitive(unblock))
+        }
+        try {
+            HubJson.kanbanReply(kanbanCall("/keryx/kanban/task/$taskId/reply", post = payload))
+        } catch (e: GatewayError) {
+            if (e.httpStatus != 404) throw e
+            kanbanComment(taskId, body).getOrThrow()
+            KanbanReply(unblocked = false, status = "")
+        }
+    }
+
+    /** Approve a card awaiting review — it completes, [note] as the closing summary. */
+    suspend fun kanbanApprove(taskId: String, note: String): Result<String> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            if (note.isNotBlank()) put("note", kotlinx.serialization.json.JsonPrimitive(note))
+        }
+        val obj = kanbanCall("/keryx/kanban/task/$taskId/approve", post = payload)
+        (obj["status"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+    }
+
+    /** Send a review back to its implementer with [reason]; returns where the card landed. */
+    suspend fun kanbanRequestChanges(taskId: String, reason: String): Result<String> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("reason", kotlinx.serialization.json.JsonPrimitive(reason))
+        }
+        val obj = kanbanCall("/keryx/kanban/task/$taskId/request-changes", post = payload)
+        (obj["status"] as? JsonPrimitive)?.contentOrNull.orEmpty()
     }
 
     /** One page of the incremental event feed; pass [cursor] back as `since` next poll. */
@@ -1613,16 +1670,127 @@ internal object HubJson {
      *  answer omits one so the watcher never accidentally rewinds to 0 and re-alerts history. */
     fun events(obj: kotlinx.serialization.json.JsonObject, since: Long): HermesStreamClient.KanbanEventsPage =
         HermesStreamClient.KanbanEventsPage(
-            events = obj.objs("events").map { e ->
-                HermesStreamClient.KanbanEvent(
-                    id = e.long("id"),
-                    taskId = e.str("task_id"),
-                    kind = e.str("kind"),
-                    createdAt = e.long("created_at"),
-                )
-            },
+            events = obj.objs("events").map { e -> kanbanEvent(e, e.str("task_id")) },
             cursor = obj.dbl("cursor")?.toLong() ?: since,
         )
+
+    private fun kanbanEvent(e: kotlinx.serialization.json.JsonObject, taskId: String): HermesStreamClient.KanbanEvent =
+        HermesStreamClient.KanbanEvent(
+            id = e.long("id"),
+            taskId = taskId,
+            kind = e.str("kind"),
+            createdAt = e.long("created_at"),
+            detail = eventDetail(e["payload"]),
+            runId = e.dbl("run_id")?.toLong(),
+        )
+
+    /** The payload's one readable line. Payloads are free-form per event kind; these are the
+     *  keys that carry words (reason, summary) before the ones that carry state. */
+    private fun eventDetail(payload: kotlinx.serialization.json.JsonElement?): String {
+        val p = payload as? kotlinx.serialization.json.JsonObject ?: return ""
+        for (key in listOf("reason", "summary", "error", "note")) {
+            p.strOrNull(key)?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
+        }
+        val status = p.strOrNull("status") ?: p.strOrNull("resume_status")
+        val author = p.strOrNull("author")
+        return listOfNotNull(author?.let { "by $it" }, status?.let { "→ $it" }).joinToString(" ")
+    }
+
+    /** A task card — the board's summary shape, or the detail call's full one. Every field
+     *  degrades to its blank on an older gateway that never sent it. */
+    fun kanbanTask(o: kotlinx.serialization.json.JsonObject): HermesStreamClient.KanbanTask {
+        fun l(k: String) = o.dbl(k)?.toLong()
+        val diag = o["diagnostics"] as? kotlinx.serialization.json.JsonObject
+        return HermesStreamClient.KanbanTask(
+            id = o.str("id"),
+            title = o.str("title"),
+            assignee = o.str("assignee"),
+            status = o.str("status"),
+            priority = l("priority")?.toInt() ?: 0,
+            createdBy = o.str("created_by"),
+            createdAt = l("created_at") ?: 0L,
+            startedAt = l("started_at"),
+            completedAt = l("completed_at"),
+            consecutiveFailures = l("consecutive_failures")?.toInt() ?: 0,
+            bodyExcerpt = o.str("body_excerpt"),
+            body = o.str("body"),
+            result = o.str("result"),
+            lastFailureError = o.str("last_failure_error"),
+            modelOverride = o.str("model_override"),
+            providerOverride = o.str("provider_override"),
+            reasoningEffort = o.str("reasoning_effort"),
+            blockKind = o.str("block_kind"),
+            ask = o.strOrNull("ask") ?: o.str("ask_excerpt"),
+            latestSummary = o.strOrNull("latest_summary") ?: o.str("latest_summary_excerpt"),
+            needsYou = o.bool("needs_you"),
+            diagCount = diag?.long("count")?.toInt() ?: 0,
+            diagSeverity = diag?.str("severity").orEmpty(),
+            diagStale = diag?.bool("stale") ?: false,
+            blockRecurrences = l("block_recurrences")?.toInt() ?: 0,
+        )
+    }
+
+    fun kanbanDetail(obj: kotlinx.serialization.json.JsonObject, taskId: String): HermesStreamClient.KanbanDetail {
+        val diags = obj.objs("diagnostics").map { d ->
+            val actions = d.objs("actions")
+            HermesStreamClient.KanbanDiagnostic(
+                kind = d.str("kind"),
+                severity = d.str("severity"),
+                title = d.str("title"),
+                detail = d.str("detail"),
+                suggestedAction = (actions.firstOrNull { it.bool("suggested") } ?: actions.firstOrNull())
+                    ?.str("label").orEmpty(),
+                stale = d.bool("stale"),
+            )
+        }
+        val task = kanbanTask(obj["task"] as? kotlinx.serialization.json.JsonObject ?: error("no task in response"))
+        fun links(key: String) = obj.objs(key).map {
+            HermesStreamClient.KanbanLink(id = it.str("id"), title = it.str("title"), status = it.str("status"))
+        }
+        return HermesStreamClient.KanbanDetail(
+            // The detail answer carries the diagnostics as a list, not the board's badge: derive
+            // the badge here so the sheet and the card can share one renderer.
+            task = if (diags.isEmpty()) task else task.copy(
+                diagCount = diags.size,
+                diagSeverity = worstSeverity(diags.filterNot { it.stale }.ifEmpty { diags }),
+                diagStale = diags.all { it.stale },
+            ),
+            comments = obj.objs("comments").map { c ->
+                HermesStreamClient.KanbanComment(author = c.str("author"), body = c.str("body"), createdAt = c.long("created_at"))
+            },
+            events = obj.objs("events").map { kanbanEvent(it, taskId) },
+            runs = obj.objs("runs").map { r ->
+                HermesStreamClient.KanbanRun(
+                    id = r.long("id"),
+                    profile = r.str("profile"),
+                    status = r.str("status"),
+                    outcome = r.str("outcome"),
+                    summary = r.str("summary"),
+                    error = r.str("error"),
+                    startedAt = r.long("started_at"),
+                    endedAt = r.dbl("ended_at")?.toLong(),
+                    durationSeconds = r.dbl("duration_seconds")?.toLong(),
+                )
+            },
+            diagnostics = diags,
+            parents = links("parents"),
+            children = links("children"),
+            attachments = obj.objs("attachments").map { a ->
+                HermesStreamClient.KanbanAttachment(
+                    id = a.long("id"), filename = a.str("filename"),
+                    contentType = a.str("content_type"), size = a.long("size"),
+                )
+            },
+        )
+    }
+
+    private val SEVERITIES = listOf("warning", "error", "critical")
+
+    private fun worstSeverity(diags: List<HermesStreamClient.KanbanDiagnostic>): String =
+        diags.maxByOrNull { SEVERITIES.indexOf(it.severity) }?.severity.orEmpty()
+
+    fun kanbanReply(obj: kotlinx.serialization.json.JsonObject): HermesStreamClient.KanbanReply =
+        HermesStreamClient.KanbanReply(unblocked = obj.bool("unblocked"), status = obj.str("status"))
 
     fun pruneResult(obj: kotlinx.serialization.json.JsonObject): HermesStreamClient.PruneResult =
         HermesStreamClient.PruneResult(

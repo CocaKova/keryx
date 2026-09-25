@@ -56,7 +56,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.keryx.app.presentation.ui.components.KeryxBreathingDot
-import chat.keryx.app.presentation.ui.components.KeryxCard
+import chat.keryx.app.presentation.ui.components.KeryxRunCard
 import chat.keryx.app.presentation.ui.components.KeryxContextRing
 import chat.keryx.app.presentation.ui.components.KeryxMotion
 import chat.keryx.app.presentation.ui.components.KeryxRadius
@@ -317,77 +317,38 @@ private fun CrewCard(member: CrewMember, live: Boolean, now: Long, ink: Color, o
         else -> null
     }
     val canOpen = onOpen != null && run.hasRecord
-    KeryxCard(
+    val meta = buildList {
+        if (run.model.isNotBlank()) add(run.model)
+        if (run.toolCount > 0) add("${run.toolCount} tool${if (run.toolCount == 1) "" else "s"}")
+        run.elapsedSeconds(if (flying) now else 0L)?.takeIf { it > 0.0 }?.let { add(TapIn.clock((it * 1000).toLong())) }
+        if (run.totalTokens > 0) add("${TapIn.compact(run.totalTokens.toLong())} tok")
+        if (run.filesWrittenN > 0) add("${run.filesWrittenN} written")
+        if (member.interrupted) add("interrupted")
+    }
+    // While it flies: the newest line it sent, breathing. Once it lands: what it came back
+    // with — the summary IS the deliverable, so it gets the room the wing never had.
+    KeryxRunCard(
+        glyph = member.glyph,
+        title = buildString {
+            if (member.ordinal > 0) append("[${member.ordinal}] ")
+            append(member.role)
+        },
+        ink = ink,
         modifier = Modifier.width(236.dp).alpha(if (run.running || live.not()) 1f else 0.82f),
-        onClick = if (canOpen) ({ onOpen!!(run) }) else null,
         tint = tint,
         breathing = flying,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(member.glyph, fontSize = 16.sp, color = tint ?: ink.copy(alpha = 0.7f))
-            Spacer(Modifier.width(8.dp))
-            Text(
-                buildString {
-                    if (member.ordinal > 0) append("[${member.ordinal}] ")
-                    append(member.role)
-                },
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = ink,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            if (canOpen) Text("↗", fontSize = 11.sp, color = ink.copy(alpha = 0.45f))
-        }
-        Spacer(Modifier.height(6.dp))
-        val meta = buildList {
-            if (run.model.isNotBlank()) add(run.model)
-            if (run.toolCount > 0) add("${run.toolCount} tool${if (run.toolCount == 1) "" else "s"}")
-            run.elapsedSeconds(if (flying) now else 0L)?.takeIf { it > 0.0 }?.let { add(TapIn.clock((it * 1000).toLong())) }
-            if (run.totalTokens > 0) add("${TapIn.compact(run.totalTokens.toLong())} tok")
-            if (run.filesWrittenN > 0) add("${run.filesWrittenN} written")
-            if (member.interrupted) add("interrupted")
-        }
-        if (meta.isNotEmpty()) {
-            Text(
-                meta.joinToString(" · "),
-                fontSize = 10.sp,
-                fontFamily = FontFamily.Monospace,
-                color = ink.copy(alpha = 0.5f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(Modifier.height(6.dp))
-        }
-        // While it flies: the newest line it sent, breathing. Once it lands: what it came back
-        // with — the summary IS the deliverable, so it gets the room the wing never had.
-        if (run.running) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                KeryxBreathingDot(color = tint ?: ink, alive = flying, size = 5.dp)
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    run.activity.ifBlank { if (run.state == chat.keryx.core.model.DelegationState.SPAWNING) "spawning…" else "working…" },
-                    fontSize = 11.5.sp,
-                    color = ink.copy(alpha = 0.7f),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        } else {
-            val summary = run.summary.ifBlank { run.trail.lastOrNull()?.line.orEmpty() }
-            if (summary.isNotBlank()) {
-                Text(
-                    MessageParser.extractKeryx(summary).text.trim(),
-                    fontSize = 11.5.sp,
-                    lineHeight = 16.sp,
-                    color = if (member.failed) KeryxStatus.bad else ink.copy(alpha = 0.78f),
-                    maxLines = 5,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
+        meta = meta,
+        activity = if (run.running) {
+            run.activity.ifBlank { if (run.state == chat.keryx.core.model.DelegationState.SPAWNING) "spawning…" else "working…" }
+        } else null,
+        alive = flying,
+        summary = if (run.running) "" else
+            run.summary.ifBlank { run.trail.lastOrNull()?.line.orEmpty() }
+                .takeIf { it.isNotBlank() }
+                ?.let { MessageParser.extractKeryx(it).text.trim() }.orEmpty(),
+        summaryColor = if (member.failed) KeryxStatus.bad else ink.copy(alpha = 0.78f),
+        onOpen = if (canOpen) ({ onOpen!!(run) }) else null,
+    )
 }
 
 // --- 4. Rail -----------------------------------------------------------------------------------
