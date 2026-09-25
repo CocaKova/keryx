@@ -34,11 +34,17 @@ import androidx.compose.ui.unit.sp
  * fills, and *bolds* as it goes — a whisper-thin thread at an empty window, a solid band as
  * compaction nears. Accent while comfortable, amber past three quarters, red past nine tenths.
  * Tap toggles the exact figure ("84k / 128k") beside the ring.
+ *
+ * With [compactAt] (the gateway's auto-compaction trigger, 2.13.11) the ring measures the way
+ * to THAT, not to the model's window: full means "the next call compacts". Against the window
+ * the ring stood at ~60% the moment a session compacted, and the compaction looked like it came
+ * from nowhere. The figure then reads "31k to compaction".
  */
 @Composable
-fun KeryxContextRing(used: Long, max: Long, modifier: Modifier = Modifier) {
+fun KeryxContextRing(used: Long, max: Long, modifier: Modifier = Modifier, compactAt: Long = 0L) {
     if (used <= 0L || max <= 0L) return
-    val frac = (used.toFloat() / max.toFloat()).coerceIn(0f, 1f)
+    val toCompaction = chat.keryx.core.model.CompactionGauge.of(used, compactAt.takeIf { it in 1..max })
+    val frac = toCompaction?.fraction ?: (used.toFloat() / max.toFloat()).coerceIn(0f, 1f)
     val sweep by animateFloatAsState(frac * 360f, spring(stiffness = 60f, dampingRatio = 1f), label = "ctxSweep")
     val color = when {
         frac > 0.90f -> KeryxStatus.bad
@@ -62,7 +68,10 @@ fun KeryxContextRing(used: Long, max: Long, modifier: Modifier = Modifier) {
     ) {
         if (showFigure) {
             Text(
-                "${used / 1000}k / ${max / 1000}k",
+                toCompaction?.let { g ->
+                    if (g.left > 0L) "${used / 1000}k · ${(g.left + 999) / 1000}k to compaction"
+                    else "${used / 1000}k · compacts next"
+                } ?: "${used / 1000}k / ${max / 1000}k",
                 fontSize = 9.5.sp,
                 fontFamily = FontFamily.Monospace,
                 color = meta,

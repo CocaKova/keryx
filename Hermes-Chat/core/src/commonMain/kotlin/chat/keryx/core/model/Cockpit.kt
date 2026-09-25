@@ -22,8 +22,22 @@ data class SessionStatus(val kind: String, val text: String) {
     val tokens: Long? get() = TOKENS.find(text)?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull()
 
     /** What the working banner says while this holds: the state, and the size of the job. */
-    val headline: String get() = when {
-        isCompacting -> tokens?.let { "Compressing context (~${compact(it)} tokens)" } ?: "Compressing context"
+    val headline: String get() = headline()
+
+    /**
+     * The banner line with what the app knows beside the gateway's words (2.13.11). The
+     * gateway's own compaction line names no size ("🗜️ Compacting context — summarizing
+     * earlier conversation…"), so [fallbackTokens] — the ring's last reading, which is what is
+     * being summarized — stands in when the line has none. [typicalSeconds] is how long this
+     * brain's compactions have taken before: a compaction is ONE summarizing call with no
+     * progress of its own to report, so "usually ~40 s" is the honest version of a progress bar.
+     */
+    fun headline(fallbackTokens: Long? = null, typicalSeconds: Int? = null): String = when {
+        isCompacting -> {
+            val size = tokens ?: fallbackTokens?.takeIf { it > 0L }
+            val base = size?.let { "Compressing context (~${compact(it)} tokens)" } ?: "Compressing context"
+            typicalSeconds?.takeIf { it > 0 }?.let { "$base · usually ~${duration(it)}" } ?: base
+        }
         else -> text
     }
 
@@ -60,6 +74,11 @@ data class SessionStatus(val kind: String, val text: String) {
         private fun tenths(n: Long, unit: Long): String {
             val t = (n * 10 + unit / 2) / unit
             return if (t % 10 == 0L) "${t / 10}" else "${t / 10}.${t % 10}"
+        }
+
+        private fun duration(seconds: Int): String = when {
+            seconds < 90 -> "$seconds s"
+            else -> "${(seconds + 30) / 60} min"
         }
 
         private fun compact(n: Long): String = when {
@@ -236,6 +255,15 @@ data class SessionMeta(
     /** The reasoning level this session is actually running at ("" until the gateway says).
      *  `session.info` carries it, so a level chosen from desktop or the TUI lands here too. */
     val reasoningEffort: String = "",
+    /**
+     * The token count at which the gateway auto-compacts this session (`usage.compact_at`),
+     * or 0 when it has not said. NOT a fraction of [contextMax]: per-model floors and the
+     * summarizer's own window move it — measured 136,500 and then 182,000 on one brain in one
+     * day, against a 327,680 window. Measured against the window, the ring read ~60% at the
+     * moment a session compacted, which is why compaction always looked like it came from
+     * nowhere (2.13.11).
+     */
+    val compactAt: Long = 0L,
 ) {
     /**
      * The context window as (used, max) — or null until the gateway has said both. The gateway
@@ -245,6 +273,10 @@ data class SessionMeta(
     val contextGauge: Pair<Long, Long>?
         get() = if (contextUsed > 0L && contextMax > 0L) contextUsed to contextMax else null
 
+    /** The trigger, when the gateway named one that fits inside the window it named. */
+    val compactionTrigger: Long?
+        get() = compactAt.takeIf { it > 0L && (contextMax <= 0L || it <= contextMax) }
+
     /**
      * A reading for a DARK gauge only (2.11.5). The ring is fed by `session.info` and
      * `message.complete`, which arrive at turn end — so a room opened in a fresh process, or
@@ -252,13 +284,33 @@ data class SessionMeta(
      * usage, or the gateway's anchored `session.context_breakdown` figure) lights it; a gauge a
      * completed turn already lit keeps its own reading, and a half-reading is still no reading.
      */
-    fun seedGauge(used: Long, max: Long, percent: Int = 0, model: String = ""): SessionMeta =
-        if (contextGauge != null || used <= 0L || max <= 0L) this
-        else copy(
+    fun seedGauge(used: Long, max: Long, percent: Int = 0, model: String = "", compactAt: Long = 0L): SessionMeta =
+        if (contextGauge != null || used <= 0L || max <= 0L) {
+            // A lit gauge keeps its reading, but a trigger it never had is still news.
+            if (this.compactAt <= 0L && compactAt > 0L) copy(compactAt = compactAt) else this
+        } else copy(
             contextUsed = used, contextMax = max,
             contextPercent = if (percent > 0) percent else (used * 100 / max).toInt(),
             model = this.model.ifBlank { model },
+            compactAt = if (compactAt > 0L) compactAt else this.compactAt,
         )
+}
+
+/**
+ * How far a session is toward its next auto-compaction (2.13.11) — the ring's reading when the
+ * gateway names its trigger. [fraction] is used/trigger, clamped to 0..1: a full ring means
+ * "the next call compacts", not "the model's window is full". [left] is tokens to go (0 once
+ * past the trigger, which happens: the check runs before the NEXT call, so a turn can overshoot).
+ */
+data class CompactionGauge(val used: Long, val trigger: Long) {
+    val fraction: Float get() = if (trigger <= 0L) 0f else (used.toFloat() / trigger.toFloat()).coerceIn(0f, 1f)
+    val left: Long get() = (trigger - used).coerceAtLeast(0L)
+
+    companion object {
+        /** From a (used, max) reading plus the trigger — null when either half is unknown. */
+        fun of(used: Long, trigger: Long?): CompactionGauge? =
+            if (used > 0L && trigger != null && trigger > 0L) CompactionGauge(used, trigger) else null
+    }
 }
 
 
@@ -279,3 +331,65 @@ data class ContextBreakdown(
 }
 
 data class ContextCategory(val id: String, val label: String, val tokens: Long)
+
+/**
+ * How long this phone has watched a brain's compactions take (2.13.11): the "usually ~40 s"
+ * beside the banner. Measured on the phone, banner up to banner down, because that is the wait
+ * the person actually sits through — and kept per model, because the same summary is a 40 s
+ * call on one brain and minutes on another.
+ */
+object CompactionTimings {
+    /** The shortest pause worth recording: under it the banner was a flicker, not a wait. */
+    const val MIN_SECONDS = 3
+
+    /** The longest: past it the banner outlived its compaction (a dropped `ready`), not a sample. */
+    const val MAX_SECONDS = 30 * 60
+
+    /** Samples kept per model. */
+    const val KEEP = 5
+
+    /** [samples] with [seconds] recorded, newest last, trimmed to [KEEP] — or unchanged when out of range. */
+    fun record(samples: List<Int>, seconds: Int): List<Int> =
+        if (seconds < MIN_SECONDS || seconds > MAX_SECONDS) samples else (samples + seconds).takeLast(KEEP)
+
+    /** The median sample, or null with none — one slow outlier must not become "usually". */
+    fun typical(samples: List<Int>): Int? {
+        if (samples.isEmpty()) return null
+        val s = samples.sorted()
+        return if (s.size % 2 == 1) s[s.size / 2] else (s[s.size / 2 - 1] + s[s.size / 2]) / 2
+    }
+
+    /** Wire form for a settings string: "41,38,52". Unparseable entries are dropped. */
+    fun decode(raw: String?): List<Int> =
+        raw.orEmpty().split(',').mapNotNull { it.trim().toIntOrNull() }.takeLast(KEEP)
+
+    fun encode(samples: List<Int>): String = samples.joinToString(",")
+}
+
+/**
+ * A session's compaction lineage, as the direct door sees it (2.13.11). Compaction ends a
+ * session and continues it under a new id; the gateway follows that lineage itself on
+ * `session.resume` and reports where it landed. These are the two decisions the transport makes
+ * about it, pure so they can be pinned.
+ */
+object CompactionLineage {
+    /**
+     * The session a resume actually landed in, when it is not the one asked for — else null.
+     * `session_key` first (the id the gateway's live session is keyed by), `resumed` as the
+     * older name for the same thing.
+     */
+    fun rotatedTip(asked: String, sessionKey: String?, resumed: String?): String? =
+        (sessionKey?.takeIf { it.isNotBlank() } ?: resumed?.takeIf { it.isNotBlank() })
+            ?.takeIf { it != asked }
+
+    /** Where [id] continues today through any number of compactions; a cycle stops, not spins. */
+    fun follow(id: String, forward: (String) -> String?): String {
+        var cur = id
+        val seen = mutableSetOf(cur)
+        while (true) {
+            val next = forward(cur) ?: return cur
+            if (!seen.add(next)) return cur
+            cur = next
+        }
+    }
+}

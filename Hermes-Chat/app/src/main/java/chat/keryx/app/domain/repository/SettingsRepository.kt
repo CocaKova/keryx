@@ -28,6 +28,10 @@ interface SettingsRepository {
     var accentColor2Hex: String
     /** Room ID of the last conversation the user had open, restored on next launch. */
     var lastRoomId: String?
+    /** Seconds this phone has watched [model]'s compactions take, newest last (2.13.11) —
+     *  the banner's "usually ~40 s". See [chat.keryx.core.model.CompactionTimings]. */
+    fun compactionSeconds(model: String): List<Int>
+    fun recordCompactionSeconds(model: String, seconds: Int)
     /** Reopen that conversation on a cold start (default). Off = every launch begins on the
      *  drawer, the way the Desktop's `display.resume_last_session: false` does. */
     var resumeLastRoom: Boolean

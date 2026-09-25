@@ -69,4 +69,20 @@ class SessionStatusTest {
     fun `a non-compaction status headlines as its own words`() {
         assertEquals("⚠ disk full", SessionStatus.of("warning", "⚠ disk full").headline)
     }
+
+    // 2.13.11 — the gateway's compaction line names no size; the banner borrows the ring's.
+
+    @Test
+    fun `the banner borrows the ring's reading when the line names no size`() {
+        val live = SessionStatus.of("compacting", "🗜️ Compacting context — summarizing earlier conversation so I can continue...")
+        assertEquals("Compressing context", live.headline)
+        assertEquals("Compressing context (~141k tokens)", live.headline(fallbackTokens = 141_413))
+        assertEquals("Compressing context (~141k tokens) · usually ~41 s", live.headline(141_413, typicalSeconds = 41))
+        assertEquals("Compressing context · usually ~3 min", live.headline(null, typicalSeconds = 170))
+        // The line's own count wins over the ring's.
+        val sized = SessionStatus.of("compacting", "⠋ compressing 42 messages (~92,000 tok)…")
+        assertEquals("Compressing context (~92k tokens)", sized.headline(fallbackTokens = 141_413))
+        // Not a compaction: the text, untouched.
+        assertEquals("⏳ Working…", SessionStatus.of("lifecycle", "⏳ Working…").headline(141_413, 41))
+    }
 }
