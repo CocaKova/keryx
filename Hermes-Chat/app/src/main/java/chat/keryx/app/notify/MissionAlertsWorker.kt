@@ -58,20 +58,42 @@ class MissionAlertsWorker(
         // Cap a burst: if a swarm finished 20 tasks since the last check, the freshest few tell
         // the story — the board itself has the rest.
         for (event in alerts.takeLast(MAX_ALERTS_PER_CHECK)) {
-            val title = client.kanbanTask(event.taskId).getOrNull()?.task?.title
-                ?.takeIf { it.isNotBlank() } ?: event.taskId
-            val line = when (event.kind) {
-                "completed" -> "Mission complete"
-                "blocked" -> "Mission blocked — it needs something from you"
-                else -> "Mission gave up"
-            }
-            KeryxNotifications.notifyMission(applicationContext, event.taskId, title, line)
+            val task = client.kanbanTask(event.taskId).getOrNull()?.task
+            val title = task?.title?.takeIf { it.isNotBlank() } ?: event.taskId
+            KeryxNotifications.notifyMission(applicationContext, event.taskId, title, alertLine(event, task))
         }
         settings.missionEventsCursor = page.cursor
         return Result.success()
     }
 
     companion object {
+        /**
+         * The shade's one line, in the worker's own words where it left any: a block says WHY
+         * ("needs your yes: publish …") instead of "it needs something from you", which sent
+         * Jonny to a terminal to find out. The event's own payload first (it is what fired),
+         * then the card's current ask, then the fixed fallback. A block that clears itself
+         * (waiting on a run, a parent) says so, so it never reads as a summons.
+         */
+        internal fun alertLine(
+            event: HermesStreamClient.KanbanEvent,
+            task: HermesStreamClient.KanbanTask?,
+        ): String {
+            val words = event.detail.ifBlank {
+                if (event.kind == "blocked") task?.ask.orEmpty() else task?.latestSummary.orEmpty()
+            }.trim().replace(Regex("\\s+"), " ")
+            val selfClearing = task?.blockKind in setOf("dependency", "transient")
+            val head = when (event.kind) {
+                "completed" -> "Mission complete"
+                "blocked" -> if (selfClearing) "Mission paused" else "Mission blocked — needs you"
+                else -> "Mission gave up"
+            }
+            if (words.isEmpty()) {
+                return if (event.kind == "blocked" && !selfClearing) "Mission blocked — it needs something from you" else head
+            }
+            return "$head: ${words.take(ALERT_WORDS)}${if (words.length > ALERT_WORDS) "…" else ""}"
+        }
+
+        private const val ALERT_WORDS = 180
         private const val WORK_NAME = "mission_alerts"
         private const val FULL_PAGE = 200
         private const val MAX_ALERTS_PER_CHECK = 5

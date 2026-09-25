@@ -155,6 +155,54 @@ class MissionsDelegate(
         }
     }
 
+    /** Answer a card that asked for something; [unblock] sends it back to work. Toasts where
+     *  the card landed so "did that do anything?" never needs a refresh to answer. */
+    fun kanbanReply(taskId: String, body: String, unblock: Boolean, onDone: () -> Unit = {}) {
+        val client = client() ?: return
+        scope.launch {
+            client.kanbanReply(taskId, body, unblock)
+                .onSuccess { r ->
+                    toast(
+                        when {
+                            r.unblocked -> "Answered — back to ${r.status.ifBlank { "work" }}"
+                            unblock -> "Answered — the card stays put (gateway can't unblock yet)"
+                            else -> "Answered"
+                        },
+                    )
+                    onDone()
+                    refreshKanban()
+                }
+                .onFailure { toast("Reply failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    /** The review verdict, yes: the card completes. [note] is optional. */
+    fun kanbanApprove(taskId: String, note: String, onDone: () -> Unit = {}) {
+        val client = client() ?: return
+        scope.launch {
+            client.kanbanApprove(taskId, note)
+                .onSuccess { toast("Approved — mission done"); onDone(); refreshKanban() }
+                .onFailure { toast(verdictFailure("Approve", it)) }
+        }
+    }
+
+    /** The review verdict, no: back to the implementer with [reason]. */
+    fun kanbanRequestChanges(taskId: String, reason: String, onDone: () -> Unit = {}) {
+        val client = client() ?: return
+        scope.launch {
+            client.kanbanRequestChanges(taskId, reason)
+                .onSuccess { status -> toast("Changes requested — back to ${status.ifBlank { "the implementer" }}"); onDone(); refreshKanban() }
+                .onFailure { toast(verdictFailure("Request changes", it)) }
+        }
+    }
+
+    /** A 404 on a verdict route is a gateway plugin older than 2.14, not a missing card. */
+    private fun verdictFailure(what: String, e: Throwable): String =
+        if ((e as? chat.keryx.app.data.remote.HermesStreamClient.GatewayError)?.httpStatus == 404 &&
+            e.message?.contains("unknown task") != true
+        ) "$what needs the 2.14 gateway plugin"
+        else "$what failed: ${e.message?.take(80)}"
+
     /** Pin (blank = clear) the mission's model override; takes effect on its next dispatch. */
     fun kanbanSetModel(taskId: String, model: String, onDone: () -> Unit = {}) {
         val client = client() ?: return

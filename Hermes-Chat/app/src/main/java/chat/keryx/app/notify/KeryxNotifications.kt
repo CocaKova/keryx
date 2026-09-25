@@ -627,6 +627,8 @@ object KeryxNotifications {
             .setSmallIcon(R.drawable.ic_stat_keryx)
             .setContentTitle(title)
             .setContentText(body)
+            // 2.14: the line carries the worker's reason now — let the shade open it up.
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setContentIntent(pending)

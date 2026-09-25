@@ -1328,6 +1328,9 @@ def make_stream_handler(check_auth):
 # Kanban board (Keryx 1.6 "Missions") — read/create/comment over the agent's
 # task board. State TRANSITIONS (complete/block/claim) stay agent-side on
 # purpose: the dispatcher owns those; the phone reads, creates, and comments.
+# Exceptions since 2.14, all verdicts that are the owner's job by design: /reply
+# may unblock a card waiting on its owner, /approve and /request-changes close
+# or bounce a card awaiting review — through the same kanban_db calls the CLI uses.
 #
 # The pure helpers below take an open sqlite connection and return plain
 # dicts, so they unit-test against a temp board without aiohttp or a gateway.
@@ -1340,19 +1343,33 @@ def make_stream_handler(check_auth):
 # from runtime identity: a forged author like "hermes-system" would read as a
 # system directive in future worker context.
 KANBAN_ACTOR = "keryx"
+# Author of a /reply — the answer to a card that asked its owner for something.
+# Also fixed server-side: the app is the owner's own device, so a reply from
+# it reads to the next worker as the human's word, never as a caller's claim.
+KANBAN_OWNER = "jonny"
 
 # Fields safe + useful for the app. Excludes claim locks, workspace paths,
 # idempotency keys — dispatcher internals the phone has no business rendering.
 _KANBAN_SUMMARY_FIELDS = (
     "id", "title", "assignee", "status", "priority", "created_by",
     "created_at", "started_at", "completed_at", "consecutive_failures",
+    "block_kind",
 )
 _KANBAN_DETAIL_FIELDS = _KANBAN_SUMMARY_FIELDS + (
     "body", "result", "last_failure_error", "goal_mode", "max_runtime_seconds",
     "last_heartbeat_at", "workspace_kind", "project_id",
     # v0.20 per-task overrides — settable from the phone via /task/{id}/settings.
     "model_override", "provider_override", "reasoning_effort",
+    "block_recurrences", "max_retries", "skills",
 )
+
+# Card excerpts: enough for two lines on a phone; the detail sheet has the rest.
+_KANBAN_EXCERPT = 240
+# Kinds a worker parks by itself and clears by itself — not the owner's job.
+_KANBAN_SELF_CLEARING_BLOCKS = ("dependency", "transient")
+# A crash/failure streak is history once a later run ended some other way.
+_KANBAN_FAILURE_DIAGS = ("repeated_crashes", "repeated_failures")
+_KANBAN_FAILED_OUTCOMES = ("crashed", "timed_out", "spawn_failed", "gave_up")
 
 
 def _kanban_connect(board: Optional[str] = None):
@@ -1371,33 +1388,219 @@ def _task_dict(task: Any, fields: Tuple[str, ...]) -> Dict[str, Any]:
     return d
 
 
+def _excerpt(text: Optional[str]) -> Optional[str]:
+    if not text:
+        return None
+    text = text.strip()
+    return text if len(text) <= _KANBAN_EXCERPT else text[: _KANBAN_EXCERPT - 1].rstrip() + "…"
+
+
+def _placeholders(ids: List[str]) -> str:
+    return ",".join("?" * len(ids))
+
+
+def _latest_event_payloads(conn: Any, task_ids: List[str], kind: str) -> Dict[str, Dict[str, Any]]:
+    """{task_id: payload of its newest [kind] event} in one query."""
+    if not task_ids:
+        return {}
+    rows = conn.execute(
+        f"SELECT task_id, payload FROM task_events WHERE kind = ? AND task_id IN ({_placeholders(task_ids)}) "
+        "ORDER BY id ASC",
+        (kind, *task_ids),
+    ).fetchall()
+    out: Dict[str, Dict[str, Any]] = {}
+    for r in rows:
+        payload = r["payload"]
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except Exception:
+                payload = {"reason": payload}
+        out[r["task_id"]] = payload if isinstance(payload, dict) else {}
+    return out
+
+
+def _kanban_diagnostics(kb: Any, conn: Any, task_ids: List[str]) -> Dict[str, List[Dict[str, Any]]]:
+    """{task_id: [diagnostic]} — the same rules `hermes kanban diag` and the
+    dashboard run (hermes_cli.kanban_diagnostics), three aggregate queries.
+    Each diagnostic gains `stale`: a crash/failure streak that a later run has
+    already outlived, so the phone can dim it instead of crying wolf. Never
+    raises — a missing module or a broken rule costs the badge, not the board."""
+    if not task_ids:
+        return {}
+    try:
+        from hermes_cli import kanban_diagnostics as kd
+        from hermes_cli.config import load_config
+
+        cfg = kd.config_from_runtime_config(load_config())
+        ph = _placeholders(task_ids)
+        rows = conn.execute(f"SELECT * FROM tasks WHERE id IN ({ph})", tuple(task_ids)).fetchall()
+
+        def by_task(table: str) -> Dict[str, list]:
+            grouped: Dict[str, list] = {tid: [] for tid in task_ids}
+            for row in conn.execute(
+                f"SELECT * FROM {table} WHERE task_id IN ({ph}) ORDER BY id", tuple(task_ids)
+            ).fetchall():
+                grouped.setdefault(row["task_id"], []).append(row)
+            return grouped
+
+        events, runs = by_task("task_events"), by_task("task_runs")
+        graphs = kb.task_graph_contexts(conn, task_ids) if hasattr(kb, "task_graph_contexts") else {}
+        out: Dict[str, List[Dict[str, Any]]] = {}
+        for r in rows:
+            tid = r["id"]
+            diags = kd.compute_task_diagnostics(r, events[tid], runs[tid], config=cfg, graph=graphs.get(tid))
+            if not diags:
+                continue
+            last_run = runs[tid][-1] if runs[tid] else None
+            outlived = bool(
+                last_run is not None
+                and last_run["outcome"] is not None
+                and last_run["outcome"] not in _KANBAN_FAILED_OUTCOMES
+            )
+            items = []
+            for d in diags:
+                item = d.to_dict()
+                item["stale"] = outlived and item.get("kind") in _KANBAN_FAILURE_DIAGS
+                items.append(item)
+            out[tid] = items
+        return out
+    except Exception:
+        logger.debug("keryx kanban diagnostics unavailable", exc_info=True)
+        return {}
+
+
+def _diag_badge(diags: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """{count, severity, stale} for a card — severity of the worst live one."""
+    if not diags:
+        return None
+    order = ("warning", "error", "critical")
+    live = [d for d in diags if not d.get("stale")]
+    pool = live or diags
+    worst = max(pool, key=lambda d: order.index(d["severity"]) if d.get("severity") in order else -1)
+    return {"count": len(diags), "severity": worst.get("severity"), "stale": not live}
+
+
+def _needs_you(status: str, block_kind: Optional[str]) -> bool:
+    """The card is waiting on its owner: a review, or a block no worker will
+    clear by itself (needs_input / capability / an unkinded manual block)."""
+    if status == "review":
+        return True
+    return status == "blocked" and block_kind not in _KANBAN_SELF_CLEARING_BLOCKS
+
+
+def _review_digests(conn: Any, task_ids: List[str]) -> Dict[str, str]:
+    """{task_id: body of its newest "REVIEW DIGEST" comment} — the lane-autonomy digest a
+    worker posts beside kanban_request_review, which says more than the handoff line."""
+    if not task_ids:
+        return {}
+    rows = conn.execute(
+        f"SELECT task_id, body FROM task_comments WHERE task_id IN ({_placeholders(task_ids)}) "
+        "AND UPPER(SUBSTR(LTRIM(body), 1, 13)) = 'REVIEW DIGEST' ORDER BY id ASC",
+        tuple(task_ids),
+    ).fetchall()
+    return {r["task_id"]: r["body"] for r in rows}
+
+
+def _ask_of(
+    status: str, blocked: Dict[str, Any], review: Dict[str, Any], summary: Optional[str],
+    digest: Optional[str] = None,
+) -> Optional[str]:
+    """What the card is asking for, in the worker's own words."""
+    if status == "blocked":
+        return (blocked.get("reason") or "").strip() or None
+    if status == "review":
+        if digest:
+            return digest.strip()
+        asked = (review.get("summary") or "").strip()
+        # A one-character handoff ('x') is a CLI slip; the run summary says more.
+        return asked if len(asked) > 3 else (summary or asked or None)
+    return None
+
+
 def kanban_board_snapshot(kb: Any, conn: Any) -> Dict[str, Any]:
     """Tasks grouped by raw status. Column layout is the client's decision —
     grouping by status here means a future status never breaks old apps."""
     tasks = kb.list_tasks(conn, include_archived=False, order_by="priority")
+    ids = [t.id for t in tasks]
+    summaries = kb.latest_summaries(conn, ids) if hasattr(kb, "latest_summaries") else {}
+    waiting = [t.id for t in tasks if t.status in ("blocked", "review")]
+    blocked = _latest_event_payloads(conn, waiting, "blocked")
+    review = _latest_event_payloads(conn, waiting, "review_requested")
+    digests = _review_digests(conn, [t.id for t in tasks if t.status == "review"])
+    diags = _kanban_diagnostics(kb, conn, ids)
     by_status: Dict[str, list] = {}
     for t in tasks:
-        by_status.setdefault(t.status, []).append(_task_dict(t, _KANBAN_SUMMARY_FIELDS))
+        d = _task_dict(t, _KANBAN_SUMMARY_FIELDS)
+        summary = summaries.get(t.id)
+        d["latest_summary_excerpt"] = _excerpt(summary)
+        d["ask_excerpt"] = _excerpt(
+            _ask_of(t.status, blocked.get(t.id, {}), review.get(t.id, {}), summary, digests.get(t.id))
+        )
+        d["needs_you"] = _needs_you(t.status, getattr(t, "block_kind", None))
+        d["diagnostics"] = _diag_badge(diags.get(t.id, []))
+        by_status.setdefault(t.status, []).append(d)
     return {
         "board": kb.get_current_board(),
         "tasks": by_status,
         "counts": {s: len(v) for s, v in by_status.items()},
+        "needs_you": sum(1 for v in by_status.values() for d in v if d["needs_you"]),
     }
+
+
+def _run_dict(r: Any) -> Dict[str, Any]:
+    ended = getattr(r, "ended_at", None)
+    return {
+        "id": r.id, "profile": r.profile, "status": r.status, "outcome": r.outcome,
+        "summary": r.summary, "error": r.error,
+        "started_at": r.started_at, "ended_at": ended,
+        "duration_seconds": (ended - r.started_at) if ended and r.started_at else None,
+    }
+
+
+def _link_rows(kb: Any, conn: Any, ids: List[str]) -> List[Dict[str, Any]]:
+    out = []
+    for tid in ids:
+        t = kb.get_task(conn, tid)
+        out.append({"id": tid, "title": t.title if t else tid, "status": t.status if t else None})
+    return out
 
 
 def kanban_task_detail(kb: Any, conn: Any, task_id: str) -> Optional[Dict[str, Any]]:
     task = kb.get_task(conn, task_id)
     if task is None:
         return None
+    detail = _task_dict(task, _KANBAN_DETAIL_FIELDS)
+    summary = kb.latest_summary(conn, task_id) if hasattr(kb, "latest_summary") else None
+    blocked = _latest_event_payloads(conn, [task_id], "blocked").get(task_id, {})
+    review = _latest_event_payloads(conn, [task_id], "review_requested").get(task_id, {})
+    detail["latest_summary"] = summary
+    digest = _review_digests(conn, [task_id]).get(task_id) if task.status == "review" else None
+    detail["ask"] = _ask_of(task.status, blocked, review, summary, digest)
+    detail["block_reason"] = (blocked.get("reason") or None) if task.status == "blocked" else None
+    detail["needs_you"] = _needs_you(task.status, getattr(task, "block_kind", None))
+    runs = kb.list_runs(conn, task_id) if hasattr(kb, "list_runs") else []
+    attachments = kb.list_attachments(conn, task_id) if hasattr(kb, "list_attachments") else []
     return {
-        "task": _task_dict(task, _KANBAN_DETAIL_FIELDS),
+        "task": detail,
         "comments": [
             {"id": c.id, "author": c.author, "body": c.body, "created_at": c.created_at}
             for c in kb.list_comments(conn, task_id)
         ],
         "events": [
-            {"id": e.id, "kind": e.kind, "payload": e.payload, "created_at": e.created_at}
+            {"id": e.id, "kind": e.kind, "payload": e.payload, "created_at": e.created_at,
+             "run_id": getattr(e, "run_id", None)}
             for e in kb.list_events(conn, task_id)[-50:]
+        ],
+        "runs": [_run_dict(r) for r in runs],
+        "diagnostics": _kanban_diagnostics(kb, conn, [task_id]).get(task_id, []),
+        "parents": _link_rows(kb, conn, kb.parent_ids(conn, task_id)),
+        "children": _link_rows(kb, conn, kb.child_ids(conn, task_id)),
+        # stored_path stays server-side: the phone renders names, not host paths.
+        "attachments": [
+            {"id": a.id, "filename": a.filename, "content_type": a.content_type,
+             "size": a.size, "uploaded_by": a.uploaded_by, "created_at": a.created_at}
+            for a in attachments
         ],
     }
 
@@ -1429,6 +1632,83 @@ def kanban_create(kb: Any, conn: Any, payload: Dict[str, Any]) -> Dict[str, Any]
 def kanban_comment(kb: Any, conn: Any, task_id: str, body: str) -> Dict[str, Any]:
     cid = kb.add_comment(conn, task_id, author=KANBAN_ACTOR, body=body)
     return {"task_id": task_id, "comment_id": cid}
+
+
+def kanban_reply(kb: Any, conn: Any, task_id: str, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """The owner answers a card that asked for something: a comment in the
+    owner's name, then — if asked — unblock, so the next run reads the answer.
+    The one state transition the phone makes, and only blocked → its resume
+    phase through kanban_db.unblock_task (the same call `hermes kanban
+    unblock` makes). None = unknown task."""
+    text = str(payload.get("body") or "").strip()
+    if not text:
+        raise ValueError("body is required")
+    task = kb.get_task(conn, task_id)
+    if task is None:
+        return None
+    cid = kb.add_comment(conn, task_id, author=KANBAN_OWNER, body=text)
+    unblocked = False
+    if payload.get("unblock") and task.status in ("blocked", "scheduled"):
+        unblocked = bool(kb.unblock_task(conn, task_id))
+    after = kb.get_task(conn, task_id)
+    return {
+        "task_id": task_id, "comment_id": cid, "unblocked": unblocked,
+        "status": after.status if after else None,
+    }
+
+
+def kanban_approve(kb: Any, conn: Any, task_id: str, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """The owner's review verdict, yes: a card awaiting review → done through
+    kanban_db.complete_task (the call `hermes kanban complete` makes; `review` is
+    the status it accepts "for human approval"). The note lands as the closing
+    run's summary and, when given, as a comment in the owner's name. Only a
+    card IN review: a reviewer run in flight is its reviewer's to close."""
+    task = kb.get_task(conn, task_id)
+    if task is None:
+        return None
+    if task.status != "review":
+        raise ValueError(f"only a card awaiting review can be approved (this one is {task.status})")
+    note = str(payload.get("note") or "").strip()
+    if note:
+        kb.add_comment(conn, task_id, author=KANBAN_OWNER, body=f"APPROVED: {note}")
+    ok = bool(kb.complete_task(conn, task_id, summary=note or "Approved by the owner from Keryx"))
+    if not ok:
+        raise ValueError("could not complete: a parent card reopened, or the card moved on")
+    after = kb.get_task(conn, task_id)
+    return {"task_id": task_id, "completed": True, "status": after.status if after else None}
+
+
+def kanban_request_changes(kb: Any, conn: Any, task_id: str, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """The owner's review verdict, no: back to the implementer with a reason.
+    Two review shapes, the same two paths the CLI has:
+    - a reviewer run in flight (running, claimed from review) → kanban_db.request_changes,
+      exactly `hermes kanban request-changes <id> <reason>`;
+    - a card parked in `review` (nobody claimed it) → kanban_db.reopen_review_task plus a
+      "CHANGES REQUESTED: …" comment, exactly `hermes kanban reopen-review <id> --reason`,
+      because request_changes refuses a card with no active review run."""
+    task = kb.get_task(conn, task_id)
+    if task is None:
+        return None
+    reason = str(payload.get("reason") or "").strip()
+    if not reason:
+        raise ValueError("reason is required (what has to change before re-review)")
+    if task.status == "review":
+        redact = getattr(kb, "redact_review_value", None)
+        clean = str(redact(reason)).strip() if redact else reason
+        if not kb.reopen_review_task(conn, task_id):
+            raise ValueError("could not reopen: the card left review")
+        kb.add_comment(conn, task_id, author=KANBAN_OWNER, body=f"CHANGES REQUESTED: {clean}")
+        routed = None
+    else:
+        ok, detail = kb.request_changes(conn, task_id, reason=reason)
+        if not ok:
+            raise ValueError(f"cannot request changes: {detail or 'not in review'}")
+        routed = detail
+    after = kb.get_task(conn, task_id)
+    return {
+        "task_id": task_id, "status": after.status if after else None,
+        "assignee": after.assignee if after else None, "routed_to": routed,
+    }
 
 
 def kanban_task_settings(kb: Any, conn: Any, task_id: str, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -3876,6 +4156,24 @@ def register_keryx_routes(router: Any, check_auth) -> None:
             raise ValueError("body is required")
         return 200, kanban_comment(kb, conn, request.match_info["task_id"], text)
 
+    def _reply(kb, conn, request, body):
+        out = kanban_reply(kb, conn, request.match_info["task_id"], body)
+        if out is None:
+            return 404, {"error": {"message": "unknown task"}}
+        return 200, out
+
+    def _approve(kb, conn, request, body):
+        out = kanban_approve(kb, conn, request.match_info["task_id"], body)
+        if out is None:
+            return 404, {"error": {"message": "unknown task"}}
+        return 200, out
+
+    def _request_changes(kb, conn, request, body):
+        out = kanban_request_changes(kb, conn, request.match_info["task_id"], body)
+        if out is None:
+            return 404, {"error": {"message": "unknown task"}}
+        return 200, out
+
     def _settings(kb, conn, request, body):
         out = kanban_task_settings(kb, conn, request.match_info["task_id"], body)
         if out is None:
@@ -3902,6 +4200,9 @@ def register_keryx_routes(router: Any, check_auth) -> None:
     router.add_get("/keryx/kanban/task/{task_id}", _make_kanban_handler(check_auth, _detail))
     router.add_post("/keryx/kanban/task", _make_kanban_handler(check_auth, _create))
     router.add_post("/keryx/kanban/task/{task_id}/comment", _make_kanban_handler(check_auth, _comment))
+    router.add_post("/keryx/kanban/task/{task_id}/reply", _make_kanban_handler(check_auth, _reply))
+    router.add_post("/keryx/kanban/task/{task_id}/approve", _make_kanban_handler(check_auth, _approve))
+    router.add_post("/keryx/kanban/task/{task_id}/request-changes", _make_kanban_handler(check_auth, _request_changes))
     router.add_post("/keryx/kanban/task/{task_id}/settings", _make_kanban_handler(check_auth, _settings))
     router.add_get("/keryx/kanban/events", _make_kanban_handler(check_auth, _events))
     router.add_get("/keryx/kanban/subs", _make_kanban_handler(check_auth, _subs))

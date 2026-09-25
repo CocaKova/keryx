@@ -683,7 +683,7 @@ private fun ScrollableCodeBlock(code: String, textColor: Color, language: String
 /** Chat-tuned markdown typography: headings are only slightly larger than body so a stray
  *  `#` line never blows up into a giant title inside a small message bubble. */
 @Composable
-private fun chatMarkdownTypography() = markdownTypography(
+internal fun chatMarkdownTypography() = markdownTypography(
     h1 = MaterialTheme.typography.bodyLarge.copy(fontSize = MaterialTheme.typography.bodyLarge.fontSize * 1.4f, fontWeight = FontWeight.Bold),
     h2 = MaterialTheme.typography.bodyLarge.copy(fontSize = MaterialTheme.typography.bodyLarge.fontSize * 1.25f, fontWeight = FontWeight.Bold),
     h3 = MaterialTheme.typography.bodyLarge.copy(fontSize = MaterialTheme.typography.bodyLarge.fontSize * 1.15f, fontWeight = FontWeight.Bold),
