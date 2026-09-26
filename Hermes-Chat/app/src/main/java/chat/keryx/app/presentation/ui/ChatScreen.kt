@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.focus.FocusRequester
@@ -50,7 +51,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -178,10 +178,10 @@ fun ChatScreen(
     var pendingAttachment by remember { mutableStateOf<PendingAttachment?>(null) }
     var composerHeightPx by remember { mutableStateOf(0) }
 
-    fun stageFromUri(uri: android.net.Uri?, fallbackType: String) {
-        if (uri == null) return
+    fun stageFromUri(uri: android.net.Uri?, fallbackType: String): Boolean {
+        if (uri == null) return false
         val rawBytes = runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
-            ?: return
+            ?: return false
         // Trust the resolver's mime: the gallery hands out videos too now, and a video forced
         // through the image normalizer would come out corrupted.
         val rawType = context.contentResolver.getType(uri) ?: fallbackType
@@ -189,6 +189,16 @@ fun ChatScreen(
         val (bytes, type) = if (isImage) normalizeImageBytes(rawBytes, rawType) else rawBytes to rawType
         val name = queryDisplayName(context, uri)
         pendingAttachment = PendingAttachment(bytes, name, type, isImage = isImage)
+        return true
+    }
+
+    // A pasted image (long-press → Paste, the keyboard's clipboard strip, a GIF/sticker from the
+    // keyboard, a drag from another app) lands in the same attachment chip as a gallery pick.
+    // False = not an image, so the field is left to handle it as it would anything else.
+    fun stagePastedImage(uri: android.net.Uri): Boolean {
+        val type = context.contentResolver.getType(uri) ?: return false
+        if (!type.startsWith("image")) return false
+        return stageFromUri(uri, fallbackType = type)
     }
 
     val galleryPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -198,8 +208,28 @@ fun ChatScreen(
         stageFromUri(uri, fallbackType = "application/octet-stream")
     }
 
-    // Composer state
-    var textState by remember { mutableStateOf(TextFieldValue("")) }
+    // Composer state. A TextFieldState (2.13.12), not a TextFieldValue: only the state-based field
+    // can take content from the keyboard and the clipboard, which is how a pasted image gets in.
+    val composerField = rememberTextFieldState()
+    // What the ViewModel last heard. Programmatic writes report synchronously (the draft is keyed to
+    // the room they happen in); the collector below reports typing, and skips what was already said.
+    val composerReported = remember { object { var text = "" } }
+    fun setComposer(text: String, caret: Int = text.length) {
+        composerField.edit {
+            replace(0, length, text)
+            selection = TextRange(caret.coerceIn(0, text.length))
+        }
+        composerReported.text = text
+        viewModel.onComposerTextChanged(text)
+    }
+    LaunchedEffect(composerField) {
+        snapshotFlow { composerField.text.toString() }.collect { t ->
+            if (t != composerReported.text) {
+                composerReported.text = t
+                viewModel.onComposerTextChanged(t)
+            }
+        }
+    }
     val commandMenuVisible by viewModel.commandMenuVisible.collectAsState()
     val recentCommands by viewModel.recentCommands.collectAsState()
     val commandFilter by viewModel.commandFilter.collectAsState()
@@ -282,8 +312,7 @@ fun ChatScreen(
     LaunchedEffect(currentRoom?.id) {
         val roomId = currentRoom?.id ?: return@LaunchedEffect
         val draft = viewModel.draftFor(roomId)
-        textState = TextFieldValue(draft, selection = TextRange(draft.length))
-        viewModel.onComposerTextChanged(draft)
+        setComposer(draft)
     }
 
     // Dream dissolve on room switch: the timeline re-materializes through a soft blur+fade while
@@ -313,8 +342,7 @@ fun ChatScreen(
     // Drop a Steer (or other) prefill into the composer and focus it.
     LaunchedEffect(composerPrefill) {
         composerPrefill?.let { prefill ->
-            textState = TextFieldValue(prefill, selection = TextRange(prefill.length))
-            viewModel.onComposerTextChanged(prefill)
+            setComposer(prefill)
             runCatching { focusRequester.requestFocus() }
             viewModel.consumeComposerPrefill()
         }
@@ -339,11 +367,10 @@ fun ChatScreen(
     fun insertTranscript(transcript: String) {
         val t = transcript.trim()
         if (t.isEmpty()) return
-        val base = textState.text
+        val base = composerField.text.toString()
         val sep = if (base.isEmpty() || base.endsWith(" ") || base.endsWith("\n")) "" else " "
         val merged = base + sep + t
-        textState = TextFieldValue(merged, selection = TextRange(merged.length))
-        viewModel.onComposerTextChanged(merged)
+        setComposer(merged)
     }
 
     fun startDictation() {
@@ -520,7 +547,7 @@ fun ChatScreen(
     fun doSend() {
         tts.stop()
         val attachment = pendingAttachment
-        val text = textState.text
+        val text = composerField.text.toString()
         // Text sent alongside an attachment rides in the same event as its caption (one Matrix
         // event, one agent turn) — except slash commands, which must reach the gateway as text.
         val caption = text.takeIf { attachment != null && it.isNotBlank() && !it.startsWith("/") }
@@ -540,8 +567,7 @@ fun ChatScreen(
                     ?: text
                 viewModel.sendMessage(outgoing)
             }
-            textState = TextFieldValue("")
-            viewModel.onComposerTextChanged("")
+            setComposer("")
         }
     }
 
@@ -882,15 +908,13 @@ fun ChatScreen(
                     if (takesArgs) {
                         // Fill the composer and let the user type arguments (palette hides on the space).
                         val withSpace = "$command "
-                        textState = TextFieldValue(withSpace, selection = TextRange(withSpace.length))
-                        viewModel.onComposerTextChanged(withSpace)
+                        setComposer(withSpace)
                         runCatching { focusRequester.requestFocus() }
                     } else {
                         // No arguments -> send immediately and clear.
                         viewModel.recordCommandUse(command)
                         viewModel.sendMessage(command)
-                        textState = TextFieldValue("")
-                        viewModel.onComposerTextChanged("")
+                        setComposer("")
                     }
                 }
             )
@@ -915,13 +939,12 @@ fun ChatScreen(
             }
             if (mentionable.isNotEmpty()) {
                 chat.keryx.app.presentation.ui.components.MentionChips(
-                    text = textState.text,
-                    cursor = textState.selection.end,
+                    text = composerField.text.toString(),
+                    cursor = composerField.selection.end,
                     bots = mentionable,
                     self = viewModel.bots.botForSession(currentRoom?.id)?.name,
                     onPick = { replaced, caret ->
-                        textState = TextFieldValue(replaced, selection = TextRange(caret))
-                        viewModel.onComposerTextChanged(replaced)
+                        setComposer(replaced, caret)
                     },
                 )
             }
@@ -982,36 +1005,35 @@ fun ChatScreen(
             val agentLive = (liveStream?.roomId != null && liveStream?.roomId == currentRoom?.id) ||
                 typingAgentIds.isNotEmpty() || liveTurnSigns
             val busyNow = awaitingReply || agentLive || compactingNow
-            val slashTyped = textState.text.trimStart().startsWith("/")
+            val slashTyped = composerField.text.trimStart().startsWith("/")
             val steerable = busyNow && !compactingNow && pendingApproval == null &&
                 pendingBlocking == null && pendingAttachment == null && !slashTyped
             val busyAction = when {
                 !busyNow -> null
                 slashTyped -> null // slash runs inline even mid-turn
-                textState.text.isBlank() && pendingAttachment == null ->
+                composerField.text.isBlank() && pendingAttachment == null ->
                     if (viewModel.canInterruptTurn) "stop" else null
                 steerable -> "steer"
                 else -> "queue"
             }
             fun takeComposerText(): String {
-                val t = textState.text.trim()
-                textState = TextFieldValue("")
-                viewModel.onComposerTextChanged("")
+                val t = composerField.text.toString().trim()
+                setComposer("")
                 return t
             }
             Composer(
                 onContextTap = if (viewModel.transportIsDirect) ({ showContext = true }) else null,
-                textState = textState,
-                onTextChange = { textState = it; viewModel.onComposerTextChanged(it.text) },
+                composerField = composerField,
+                onPasteImage = ::stagePastedImage,
                 onSend = ::doSend,
                 busyAction = busyAction,
                 onSteer = {
-                    if (textState.text.isNotBlank()) viewModel.steerTurn(takeComposerText())
+                    if (composerField.text.isNotBlank()) viewModel.steerTurn(takeComposerText())
                 },
                 onQueue = {
                     if (pendingAttachment != null) {
                         viewModel.toast("Attachments can't queue — send after this turn finishes")
-                    } else if (textState.text.isNotBlank()) {
+                    } else if (composerField.text.isNotBlank()) {
                         viewModel.queueMessage(takeComposerText())
                     }
                 },

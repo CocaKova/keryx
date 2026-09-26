@@ -50,7 +50,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.foundation.content.MediaType
+import androidx.compose.foundation.content.consume
+import androidx.compose.foundation.content.contentReceiver
+import androidx.compose.foundation.content.hasMediaType
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -98,8 +103,9 @@ internal data class PendingAttachment(
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 internal fun Composer(
-    textState: TextFieldValue,
-    onTextChange: (TextFieldValue) -> Unit,
+    composerField: TextFieldState,
+    /** A pasted/inserted image; true = staged as the attachment (consumed), false = not ours. */
+    onPasteImage: (android.net.Uri) -> Boolean = { false },
     onSend: () -> Unit,
     onPickGallery: () -> Unit,
     onPickFile: () -> Unit,
@@ -179,10 +185,20 @@ internal fun Composer(
             }
         }
         OutlinedTextField(
-            value = textState,
-            onValueChange = onTextChange,
+            state = composerField,
             modifier = Modifier
                 .weight(1f)
+                // Images offered to the field — clipboard paste, the keyboard's clipboard strip or
+                // image/GIF insert, drag-and-drop — become the attachment instead of URI text. One
+                // attachment slot: the first image wins and any others in the same clip are dropped.
+                .contentReceiver { content ->
+                    if (!content.hasMediaType(MediaType.Image)) return@contentReceiver content
+                    var staged = false
+                    content.consume { item ->
+                        val uri = item.uri ?: return@consume false
+                        if (staged) true else onPasteImage(uri).also { staged = it }
+                    }
+                }
                 .focusRequester(focusRequester)
                 .onFocusChanged { focus ->
                     if (focus.isFocused && hasMessages && atBottom()) onFocusedAtBottom()
@@ -202,7 +218,7 @@ internal fun Composer(
                 )
             },
             shape = RoundedCornerShape(24.dp),
-            maxLines = 6,
+            lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 6),
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
@@ -270,7 +286,7 @@ internal fun Composer(
             // Arrow-up, the desktop's send — never a paper plane among hand-drawn glyphs.
             else -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.ArrowUp to "Send"
         }
-        val armed = textState.text.isNotBlank() || busyAction == "stop"
+        val armed = composerField.text.isNotBlank() || busyAction == "stop"
         // Idle, the circle was the accent at 55% ALPHA and the arrow on it was hard white. On
         // parchment that wash composites to #E79961 and white on it measures **2.24:1** — under
         // the 3:1 WCAG asks even of a graphical object, so the send arrow was a ghost sitting on
@@ -299,11 +315,11 @@ internal fun Composer(
                     .combinedClickable(
                         onClick = {
                             when (busyAction) {
-                                "steer" -> { if (textState.text.isNotBlank()) sendHaptics.commit(); onSteer() }
-                                "queue" -> { if (textState.text.isNotBlank()) sendHaptics.commit(); onQueue() }
+                                "steer" -> { if (composerField.text.isNotBlank()) sendHaptics.commit(); onSteer() }
+                                "queue" -> { if (composerField.text.isNotBlank()) sendHaptics.commit(); onQueue() }
                                 "stop" -> { sendHaptics.commit(); onStop() }
                                 else -> {
-                                    if (textState.text.isNotBlank()) {
+                                    if (composerField.text.isNotBlank()) {
                                         sendPuffTick++
                                         sendHaptics.commit()
                                     }
