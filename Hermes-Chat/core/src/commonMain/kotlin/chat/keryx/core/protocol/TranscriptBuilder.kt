@@ -103,7 +103,12 @@ object TranscriptBuilder {
                     // — but its tool_calls below are real work that really ran, so only the
                     // prose is suppressed. Dropping the whole row would vanish the tools.
                     if (row.content.isNotBlank() && !DisplayKind.hidesText(row.displayKind)) {
-                        out += text(roomId, row, SenderType.HERMES).copy(reasoning = thought)
+                        // The compaction handoff lands as role:"assistant" too (measured
+                        // 2026-09-25, a cron session compacted mid-turn): the summary of
+                        // everything before it, not a thing the agent said to you. The system
+                        // voice; the timeline draws it as the compaction divider (2.13.11).
+                        out += if (isCompactionCarryOver(row.content)) text(roomId, row, SenderType.SYSTEM)
+                        else text(roomId, row, SenderType.HERMES).copy(reasoning = thought)
                     } else if (thought != null) {
                         out += Message(
                             id = "think-${row.id}",
@@ -156,10 +161,7 @@ object TranscriptBuilder {
         return out
     }
 
-    /** The gateway's compaction preamble, verified on the wire:
-     *  "[CONTEXT COMPACTION — REFERENCE ONLY] Earlier turns were compacted…". */
-    private fun isCompactionCarryOver(content: String): Boolean =
-        content.trimStart().startsWith("[CONTEXT COMPACTION")
+    private fun isCompactionCarryOver(content: String): Boolean = CompactionCarryOver.isCarryOver(content)
 
     private fun text(roomId: String, row: MessageRow, sender: SenderType) = Message(
         id = row.id.toString(),
@@ -292,3 +294,25 @@ object ToolText {
         }.getOrDefault(argumentsJson)
     }
 }
+
+/**
+ * The row a compaction leaves at the top of the continued session: the summary of every turn
+ * before it. The gateway writes it as role "user" or role "assistant" depending on the path
+ * that compacted; either way it is machinery, and the timeline draws it as a divider — the one
+ * mark a compaction leaves once its live banner is gone (2.13.11).
+ */
+object CompactionCarryOver {
+    /** The gateway's compaction preamble, verified on the wire:
+     *  "[CONTEXT COMPACTION — REFERENCE ONLY] Earlier turns were compacted…". */
+    fun isCarryOver(content: String): Boolean = content.trimStart().startsWith("[CONTEXT COMPACTION")
+
+    /** The summary itself, preamble and its boilerplate paragraph stripped — what the divider
+     *  shows when opened. Falls back to the whole text when the shape is not the known one. */
+    fun summary(content: String): String {
+        val t = content.trim()
+        val marker = t.indexOf("\n\n")
+        val body = if (marker > 0 && t.startsWith("[CONTEXT COMPACTION")) t.substring(marker).trim() else t
+        return body.ifBlank { t }
+    }
+}
+

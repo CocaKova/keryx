@@ -138,6 +138,24 @@ class TranscriptBuilderTest {
     }
 
     @Test
+    fun `an assistant-role carry-over is the system voice too`() {
+        // Measured 2026-09-25: a cron session compacted mid-turn stored its handoff as
+        // role:"assistant". As an agent bubble it was several thousand words in Sy's voice.
+        val summary = "[CONTEXT COMPACTION — REFERENCE ONLY] Earlier turns were compacted into the " +
+            "summary below. Historical only.\n\n## Goal\nRestore TweetLoop."
+        val msgs = TranscriptBuilder.build("s1", listOf(
+            row(1, "assistant", summary, reasoning = "notes"),
+            row(2, "assistant", "An ordinary reply."),
+        ))
+        assertEquals(SenderType.SYSTEM, msgs[0].sender)
+        assertEquals(SenderType.HERMES, msgs[1].sender)
+        // The divider opens on the summary, not the boilerplate that introduces it.
+        assertEquals("## Goal\nRestore TweetLoop.", chat.keryx.core.protocol.CompactionCarryOver.summary(summary))
+        assertTrue(chat.keryx.core.protocol.CompactionCarryOver.isCarryOver("  " + summary))
+        assertFalse(chat.keryx.core.protocol.CompactionCarryOver.isCarryOver("A reply about [CONTEXT COMPACTION]"))
+    }
+
+    @Test
     fun `one assistant row's calls share a batch id, separate rows do not`() {
         val rows = listOf(
             row(2, "assistant", "", toolCalls = listOf(
