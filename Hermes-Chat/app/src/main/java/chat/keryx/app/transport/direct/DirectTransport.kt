@@ -86,6 +86,15 @@ class DirectTransport(
     companion object {
         const val GATEWAY_ROOM_ID = "gateway"
 
+        /** How often the open room re-reads its usage while a turn runs there (2.13.11). */
+        private const val USAGE_POLL_MS = 15_000L
+
+        /** The floor between event-driven usage reads: one per model response is plenty. */
+        private const val USAGE_NUDGE_MS = 3_000L
+
+        /** After a send, when the gateway's preflight has seeded a fresh session's reading. */
+        private const val USAGE_AFTER_SEND_MS = 2_500L
+
         /** Placeholder id for a tool.generating card, replaced by the real tool.start. */
         private const val STREAM_PUBLISH_MS = 100L
 private const val GHOST_TOOL_ID = "generating"
@@ -937,6 +946,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 statusFlow(storedId).value =
                     if (kind == "ready" || text.isBlank()) null
                     else chat.keryx.core.model.SessionStatus.of(kind, text)
+                // A compaction just finished: the ring still shows the reading that triggered it
+                // (a full ring) until someone asks. The gateway has its post-compaction estimate
+                // from this moment (SILAS_POST_COMPACTION_ESTIMATE); ask now.
+                if (kind == "compacted") nudgeUsage(storedId, minGapMs = 0L)
                 // Failure-shaped status lines are the agent's OWN error report ("❌
                 // Non-retryable error (HTTP 400): …" — run_agent buffers retry chatter and
                 // replays it via status_callback("lifecycle", …) only when the turn actually
@@ -986,6 +999,9 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 noteRun(storedId, ev.type, toolName = pStr("name") ?: "tool")
             }
             "tool.start" -> {
+                // A tool only starts after the model response that called it has landed, and
+                // that response is what moves the gateway's context reading.
+                nudgeUsage(storedId)
                 val name = pStr("name") ?: "tool"
                 val args = p?.get("args") as? kotlinx.serialization.json.JsonObject
                 noteRun(storedId, ev.type, pStr("tool_id").orEmpty(), name, pStr("context") ?: ToolText.contextPreview(name, args))
@@ -1401,7 +1417,9 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         stores[sessionId]?.takeIf { it.hydrated }?.messages?.value?.lastOrNull()
 
     /** Resolve stored id → live sid, resuming the session on the gateway if needed. */
-    private suspend fun attach(storedId: String): String {
+    private suspend fun attach(requestedId: String): String {
+        // A parent compaction rotated out is not a session any more; its continuation is.
+        val storedId = forwarded(requestedId)
         storedToLive[storedId]?.let { return it }
         return attachMutex.withLock {
             storedToLive[storedId]?.let { return it }
@@ -1415,6 +1433,17 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             val live = res["session_id"]?.jsonPrimitive?.contentOrNull ?: error("resume returned no sid")
             storedToLive[storedId] = live
             liveToStored[live] = storedId
+            // Resuming a session compaction rotated out resumes its TIP: the gateway follows
+            // the lineage (tui_gateway `_resume_follow_tip`) and says where it landed in
+            // `session_key` / `resumed`. Mapped under the id we asked for, this phone read
+            // the dead parent's transcript while the turn streamed into the tip — the message
+            // you sent vanished on the next re-read and came back only when the turn ended
+            // (device, 2026-09-25). Rotate now, the same handoff a mid-turn compaction gets.
+            chat.keryx.core.model.CompactionLineage.rotatedTip(
+                asked = storedId,
+                sessionKey = res["session_key"]?.jsonPrimitive?.contentOrNull,
+                resumed = res["resumed"]?.jsonPrimitive?.contentOrNull,
+            )?.let { tip -> maybeRotateStored(live, tip) }
             // Questions the backend is still waiting on for this session (asked while we were
             // away, or before this process existed). The ack lists them as sent, plus the batch
             // answers it already holds, so the card comes back exactly where it was.
@@ -1433,13 +1462,14 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             // The lazy shape (`lazy: true`, no agent) names the gateway's default model, not
             // this session's — it carries no usage either, so it is skipped whole.
             val info = res["info"] as? kotlinx.serialization.json.JsonObject
-            if (info?.get("lazy")?.jsonPrimitive?.booleanOrNull != true) applyMeta(storedId, info)
+            if (info?.get("lazy")?.jsonPrimitive?.booleanOrNull != true) applyMeta(liveToStored[live] ?: storedId, info)
             // Seed the model NOW: session.info only arrives after a turn completes, so an
             // untouched session had a blank model — which is why the composer's model pill
             // never appeared on a freshly opened chat.
+            val current = liveToStored[live] ?: storedId
             scope.launch {
-                seedModelFromActiveList(live, storedId)
-                seedGaugeFromBreakdown(live, storedId)
+                seedModelFromActiveList(live, current)
+                seedGaugeFromBreakdown(live, current)
             }
             live
         }
@@ -1453,7 +1483,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
      * anchor. One call, once per attach, only when nothing else lit the gauge first.
      */
     private suspend fun seedGaugeFromBreakdown(liveSid: String, storedId: String) {
-        if (meta(storedId).value.contextGauge != null) return
+        val known = meta(storedId).value
+        if (known.contextGauge != null && known.compactAt > 0L) return
         val rpc = rpc ?: return
         val res = runCatching {
             rpc.request("session.context_breakdown", buildJsonObject {
@@ -1466,6 +1497,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             max = res["context_max"]?.jsonPrimitive?.longOrNull ?: 0L,
             percent = res["context_percent"]?.jsonPrimitive?.intOrNull ?: 0,
             model = res.strOrNull("model").orEmpty(),
+            compactAt = res["compact_at"]?.jsonPrimitive?.longOrNull ?: 0L,
         )
     }
 
@@ -1739,6 +1771,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             // so a foreign turn's long silent tool call keeps the banner lit — and a session
             // that ended (or a label gone stale) lets it settle.
             if (!busy && pulse != null) st.agentTyping.value = ForeignFollow.isLive(pulse, now)
+            // The ring's reading arrives at turn END — a forty-minute agent run showed the
+            // number it started with the whole way through, and the compaction in the middle
+            // came from nowhere (2.13.11). While a turn runs here, ask for it.
+            if (busy) nudgeUsage(storedId, minGapMs = USAGE_POLL_MS)
             if (action == ForeignFollow.Action.REHYDRATE) {
                 android.util.Log.w("KeryxGw", "follow ${storedId.take(8)}: gateway holds ${pulse?.messageCount} rows, re-reading")
                 runCatching { rehydrate(storedId, st) }
@@ -1746,6 +1782,41 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             }
             delayMs = ForeignFollow.nextDelayMs(pulse, now, action)
         }
+    }
+
+    /** When each session's usage was last asked for — the throttle every usage read shares. */
+    private val lastUsageReadAt = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
+    /**
+     * Re-read [storedId]'s usage because something just moved it (2.13.11): a model response
+     * landed, a compaction ended, a message went out. Only for a room someone is looking at,
+     * and at most once per [minGapMs] — a timer alone left the ring a whole model call plus
+     * up to 23 s behind (device, 09-25).
+     */
+    private fun nudgeUsage(storedId: String, minGapMs: Long = USAGE_NUDGE_MS) {
+        val st = stores[storedId] ?: return
+        if (st.followers <= 0 || !foreground.value) return
+        val now = System.currentTimeMillis()
+        val last = lastUsageReadAt[storedId] ?: 0L
+        if (now - last < minGapMs) return
+        lastUsageReadAt[storedId] = now
+        scope.launch { pollUsage(storedId) }
+    }
+
+    /**
+     * The live session's usage, mid-turn (`session.usage` — the same `_get_usage` payload
+     * `message.complete` carries, cheap: no prompt rebuild). Feeds the ring through
+     * [applyMeta] exactly as a finished turn would.
+     */
+    private suspend fun pollUsage(storedId: String) {
+        val live = storedToLive[storedId] ?: return
+        val rpc = rpc ?: return
+        val usage = runCatching {
+            rpc.request("session.usage", buildJsonObject {
+                put("session_id", JsonPrimitive(live))
+            }, timeoutMs = 10_000)
+        }.getOrNull() ?: return
+        applyMeta(liveToStored[live] ?: storedId, buildJsonObject { put("usage", usage) })
     }
 
     /** The REST client while the door is open — the Archive's producer reads through it. */
@@ -1806,14 +1877,14 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         // the new session id through an event we might miss; session.compress returns it.
         val compressVerb = trimmed.substringBefore(' ')
         if (compressVerb == "/compress" || compressVerb == "/compact") {
-            store(sessionId).localUserMessage(content)
+            store(liveToStored[live] ?: sessionId).localUserMessage(content)
             val note = compressSession(sessionId, trimmed.substringAfter(' ', "").trim())
             store(liveToStored[live] ?: sessionId).localSystemMessage(note)
             return
         }
         if (trimmed.startsWith("/") && trimmed.length > 1 && !trimmed.startsWith("//")) {
             val rpc = rpc ?: error("gateway not connected")
-            store(sessionId).localUserMessage(content)
+            store(liveToStored[live] ?: sessionId).localUserMessage(content)
             // Compression runs the model over the whole context — on a deep session with a
             // local brain that is legitimately many minutes, not a hang.
             val slashTimeout =
@@ -1831,11 +1902,20 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             store(liveToStored[live] ?: sessionId).localSystemMessage(out.ifBlank { "✓ $trimmed" })
             return
         }
-        store(sessionId).localUserMessage(content)
+        // The live session's stored id, not the one the room asked with: attach may have just
+        // learned the room's session was compacted into a continuation (2.13.11).
+        val stored = liveToStored[live] ?: sessionId
+        store(stored).localUserMessage(content)
         rpc?.request("prompt.submit", buildJsonObject {
             put("session_id", JsonPrimitive(live))
             put("text", JsonPrimitive(content))
         }) ?: error("gateway not connected")
+        // The gateway's preflight seeds a fresh session's reading before its first model call
+        // answers; without this the ring stayed dark (or on last turn's number) until then.
+        scope.launch {
+            delay(USAGE_AFTER_SEND_MS)
+            nudgeUsage(liveToStored[live] ?: stored, minGapMs = 0L)
+        }
     }
 
     override suspend fun sendReply(sessionId: String, content: String, replyToEventId: String) {
@@ -2612,6 +2692,13 @@ private const val INTERRUPT_SEAL_MS = 4_000L
 
     fun rotationOrigin(sessionId: String): String? = rotationOrigins[sessionId]
 
+    /** Parent -> continuation, the reverse of [rotationOrigins]: where a rotated-out id went. */
+    private val rotationForward = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    /** The session [sessionId] continues as today — itself unless compaction rotated it out. */
+    fun forwarded(sessionId: String): String =
+        chat.keryx.core.model.CompactionLineage.follow(sessionId) { rotationForward[it] }
+
     private fun maybeRotateStored(liveSid: String, newStored: String) {
         val old = liveToStored[liveSid] ?: return
         if (old == newStored) return
@@ -2619,6 +2706,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         storedToLive.remove(old)
         storedToLive[newStored] = liveSid
         rotationOrigins[newStored] = old
+        rotationForward[old] = newStored
         // Carry live runtime state across; the transcript re-hydrates fresh under the new
         // id (REST serves the compaction summary + carried turns — exactly what happened).
         metaFlows[old]?.let { metaFlows.putIfAbsent(newStored, it) }
@@ -3085,6 +3173,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 ?.toDoubleOrNull()?.toLong() ?: cur.contextUsed,
             contextMax = usage?.get("context_max")?.jsonPrimitive?.contentOrNull
                 ?.toDoubleOrNull()?.toLong() ?: cur.contextMax,
+            // The auto-compaction trigger (a SILAS gateway patch, 2026-09-25): absent on a
+            // stock gateway, and then the ring reads against the window as it always did.
+            compactAt = usage?.get("compact_at")?.jsonPrimitive?.contentOrNull
+                ?.toDoubleOrNull()?.toLong() ?: cur.compactAt,
             // A level picked on ANY surface (desktop's model menu, the TUI's /reasoning) rides
             // home on session.info — so the pill tells the truth about a session this app
             // didn't configure. Blank means "the gateway didn't say", which must not erase a

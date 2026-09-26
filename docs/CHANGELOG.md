@@ -5,6 +5,36 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.13.11 · versionCode 113
+
+- A chat follows its own compaction. Compaction ends a session and continues it under a new
+  id, and two gaps kept the phone on the old one:
+  - Opening a compacted chat resumed its continuation on the gateway, which says so in the
+    reply (`session_key`); Keryx filed it under the old id anyway. The turn streamed into the
+    new session while the transcript was read from the old one, so a message you sent vanished
+    on the next refresh and came back only when the turn ended.
+  - A compaction noticed mid-turn was announced inside the app and nothing listened, so the
+    open chat kept the old session. It now moves to the continuation in place, turn and all.
+- The context ring measures the way to compaction. It was drawn against the model's whole
+  window, so it read about 60% the moment a session compacted. With a gateway that reports its
+  trigger (`usage.compact_at`, a SILAS gateway patch), a full ring means the next call compacts,
+  and the figure reads "31k to compaction". A stock gateway gets the ring it always had.
+- The ring moves during a turn. Its reading arrived only when a turn ended, so a long agent run
+  showed its starting number the whole way through. The open chat re-reads it the moment the
+  number can have moved: when a model response lands (a tool starts), when a compaction ends,
+  and just after you send; every 15 s as a floor.
+- After a compaction the ring drops at once. The gateway stops reporting a reading until the next
+  model call answers, so the ring held the full reading that triggered the compaction for that
+  whole call. The gateway now reports its own estimate of the compacted size in that gap
+  (`SILAS_POST_COMPACTION_ESTIMATE`).
+- The compaction banner says how big the job is and how long it usually takes: "Compressing
+  context (~141k tokens) · usually ~41 s". A compaction is one summarizing call with no progress
+  of its own, so the phone keeps the last five durations it watched per model and shows the
+  median, and says nothing until it has one.
+- A compaction leaves a mark. The summary row at the top of a continued session was an agent
+  bubble several thousand words long when the gateway stored it as the assistant. It is a
+  divider now, "🗜 Context compacted · 09:56", and a tap opens the summary.
+
 ## 2.13.10 · versionCode 112
 
 - Quiet in the pocket. Measured on 2.13.9: sitting in the background with no agent running,

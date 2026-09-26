@@ -419,7 +419,11 @@ class ChatViewModel(
      * [chat.keryx.core.model.SessionMeta], which until 2.8.2 nothing read — the ring simply
      * never lit on a gateway session). The open room's direct reading wins when there is one.
      */
-    data class ContextUsage(val roomId: String, val used: Long, val max: Long, val model: String)
+    data class ContextUsage(
+        val roomId: String, val used: Long, val max: Long, val model: String,
+        /** The auto-compaction trigger when the gateway names it (2.13.11), else 0. */
+        val compactAt: Long = 0L,
+    )
     private val _contextUsage = MutableStateFlow<ContextUsage?>(null)
     val contextUsage: StateFlow<ContextUsage?> =
         combine(
@@ -428,11 +432,23 @@ class ChatViewModel(
                 val d = transport as? chat.keryx.app.transport.direct.DirectTransport
                 if (r == null || d == null) flowOf(null)
                 else d.sessionMeta(r.id).map { m ->
-                    m.contextGauge?.let { (used, max) -> ContextUsage(r.id, used, max, m.model) }
+                    m.contextGauge?.let { (used, max) ->
+                        ContextUsage(r.id, used, max, m.model, m.compactionTrigger ?: 0L)
+                    }
                 }
             },
         ) { sideChannel, direct -> direct ?: sideChannel }
             .stateIn(viewModelScope, SharingStarted.Lazily, null)
+
+    /** Bumped when a compaction's length is recorded, so [compactionTypicalSeconds] re-reads. */
+    private val _compactionSamples = MutableStateFlow(0)
+
+    /** How long the open room's brain has usually taken to compact, on this phone (2.13.11). */
+    val compactionTypicalSeconds: StateFlow<Int?> =
+        combine(contextUsage.map { it?.model.orEmpty() }.distinctUntilChanged(), _compactionSamples) { model, _ ->
+            model.takeIf { it.isNotBlank() }
+                ?.let { chat.keryx.core.model.CompactionTimings.typical(settingsRepository.compactionSeconds(it)) }
+        }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     private val _showTelemetry = MutableStateFlow(settingsRepository.showTelemetry)
     val showTelemetry: StateFlow<Boolean> = _showTelemetry.asStateFlow()
@@ -529,10 +545,53 @@ class ChatViewModel(
         val nowCompacting = status?.isCompacting == true
         val wasCompacting = compactingSince != null
         compactingSince = if (nowCompacting) System.currentTimeMillis() else null
+        timeCompaction(nowCompacting)
         // Only while a turn is actually being waited on: scheduleClearAwaiting can never
         // raise the banner, only settle it, so arming it with nothing awaiting would park a
         // polling job for the length of the hold to do nothing at the end of it.
         if ((nowCompacting || wasCompacting) && _awaitingReply.value) scheduleClearAwaiting(NO_REPLY_MS)
+    }
+
+    // The banner's first frame for the compaction in progress, and the room it was in. Not
+    // [compactingSince]: every heartbeat line re-arms that, and a sample measured from the last
+    // heartbeat would say a forty-second compaction took five.
+    private var compactionStartedAt: Long? = null
+    private var compactionRoomId: String? = null
+
+    /** Records how long the banner was up, per brain, when a compaction ends in the room it began in. */
+    private fun timeCompaction(nowCompacting: Boolean) {
+        val room = _currentRoom.value?.id
+        if (nowCompacting) {
+            if (compactionStartedAt == null || compactionRoomId != room) {
+                compactionStartedAt = System.currentTimeMillis()
+                compactionRoomId = room
+            }
+            return
+        }
+        val started = compactionStartedAt ?: return
+        compactionStartedAt = null
+        // A room switch mid-compaction is not the compaction ending; nor is a rotation, which
+        // is the compaction's own handoff and keeps the room — [followRotation] carries it.
+        if (compactionRoomId != room) return
+        val model = contextUsage.value?.model.orEmpty()
+        val seconds = ((System.currentTimeMillis() - started) / 1000L).toInt()
+        settingsRepository.recordCompactionSeconds(model, seconds)
+        _compactionSamples.value++
+    }
+
+    /**
+     * The open room's session was compacted into a continuation (2.13.11). The transport has
+     * already moved the live runtime, the busy mark and the stream over; the room follows, or it
+     * keeps reading the parent — a transcript that stopped at the compaction — while the turn
+     * streams into the tip. Keeps the open room's wait as it is: this is the same conversation.
+     */
+    private fun followRotation(old: String, new: String) {
+        val cur = _currentRoom.value ?: return
+        if (cur.id != old) return
+        val next = _rooms.value.firstOrNull { it.id == new } ?: cur.copy(id = new)
+        if (compactionRoomId == old) compactionRoomId = new
+        setCurrentRoom(next)
+        settingsRepository.lastRoomId = new
     }
 
     /** The agent is stopped on a question / sudo / secret in the open room (direct path only). */
@@ -860,6 +919,14 @@ class ChatViewModel(
                 _currentRoom
                     .flatMapLatest { r -> if (r == null) flowOf(null) else d.sessionStatus(r.id) }
                     .collect { noteCompacting(it) }
+            }
+        }
+        // Compaction continues a session under a new id. The transport has announced it since
+        // the direct door was written (efa7908) and nothing listened, so the open room kept the
+        // dead parent (2.13.11).
+        direct?.let { d ->
+            viewModelScope.launch {
+                d.sessionRotations().collect { (old, new) -> followRotation(old, new) }
             }
         }
         // A thinking level the MODEL won't render, walked back instead of died over. The
@@ -1473,7 +1540,9 @@ class ChatViewModel(
         openRoomById(sessionId)
     }
 
-    fun openRoomById(roomId: String) {
+    fun openRoomById(requestedId: String) {
+        // A notification for a session that has since compacted opens its continuation.
+        val roomId = direct?.forwarded(requestedId) ?: requestedId
         val room = _rooms.value.firstOrNull { it.id == roomId }
         if (room != null) selectRoom(room)
         else pendingOpenRoomId = roomId

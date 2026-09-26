@@ -264,6 +264,16 @@ class SettingsRepositoryImpl(
         get() = prefs.getString(ledgerKey("last_room_id"), null)
         set(value) = prefs.edit().putString(ledgerKey("last_room_id"), value).apply()
 
+    // Per brain, not per gateway: the same model summarizes at the same speed wherever it runs.
+    override fun compactionSeconds(model: String): List<Int> =
+        chat.keryx.core.model.CompactionTimings.decode(prefs.getString("compaction_s_$model", null))
+
+    override fun recordCompactionSeconds(model: String, seconds: Int) {
+        if (model.isBlank()) return
+        val next = chat.keryx.core.model.CompactionTimings.record(compactionSeconds(model), seconds)
+        prefs.edit().putString("compaction_s_$model", chat.keryx.core.model.CompactionTimings.encode(next)).apply()
+    }
+
     override var recentCommands: List<String>
         // Stored as a newline-joined string to keep order (SharedPreferences sets are unordered).
         get() = prefs.getString("recent_commands", "")?.split('\n')?.filter { it.isNotBlank() } ?: emptyList()
