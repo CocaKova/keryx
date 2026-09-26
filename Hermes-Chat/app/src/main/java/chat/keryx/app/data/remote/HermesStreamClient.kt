@@ -820,6 +820,33 @@ class HermesStreamClient(
         (obj["status"] as? JsonPrimitive)?.contentOrNull.orEmpty()
     }
 
+    /** Where an owner move left the card. */
+    data class KanbanMoved(val status: String, val assignee: String)
+
+    /**
+     * One owner move on a card (`POST /task/{id}/action`): unblock, promote, reclaim, reassign,
+     * block, complete, archive — each the kanban_db call its `hermes kanban` verb makes. [note]
+     * lands first as an owner comment (required for block); [assignee] only for reassign. A
+     * refusal comes back as a [GatewayError] in the gateway's own words.
+     */
+    suspend fun kanbanAction(
+        taskId: String,
+        action: String,
+        note: String = "",
+        assignee: String = "",
+    ): Result<KanbanMoved> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("action", kotlinx.serialization.json.JsonPrimitive(action))
+            if (note.isNotBlank()) put("note", kotlinx.serialization.json.JsonPrimitive(note))
+            if (assignee.isNotBlank()) put("assignee", kotlinx.serialization.json.JsonPrimitive(assignee))
+        }
+        val obj = kanbanCall("/keryx/kanban/task/$taskId/action", post = payload)
+        KanbanMoved(
+            status = (obj["status"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+            assignee = (obj["assignee"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+        )
+    }
+
     /** One page of the incremental event feed; pass [cursor] back as `since` next poll. */
     data class KanbanEventsPage(val events: List<KanbanEvent>, val cursor: Long)
 

@@ -196,6 +196,26 @@ class MissionsDelegate(
         }
     }
 
+    /** An owner move on a card ([CardMove]); toasts where it landed, or the gateway's refusal. */
+    fun kanbanAction(
+        taskId: String,
+        move: chat.keryx.app.presentation.ui.components.CardMove,
+        note: String = "",
+        assignee: String = "",
+        onDone: () -> Unit = {},
+    ) {
+        val client = client() ?: return
+        scope.launch {
+            client.kanbanAction(taskId, move.verb, note, assignee)
+                .onSuccess { r ->
+                    toast(move.landed(r.status, r.assignee))
+                    onDone()
+                    refreshKanban()
+                }
+                .onFailure { toast(verdictFailure(move.label, it)) }
+        }
+    }
+
     /** A 404 on a verdict route is a gateway plugin older than 2.14, not a missing card. */
     private fun verdictFailure(what: String, e: Throwable): String =
         if ((e as? chat.keryx.app.data.remote.HermesStreamClient.GatewayError)?.httpStatus == 404 &&

@@ -342,6 +342,7 @@ fun MissionsScreen(
         MissionDetailSheet(
             taskId = tid,
             viewModel = viewModel,
+            profiles = missionAssignees(caps?.roomProfiles.orEmpty()),
             onOpenTask = { openTaskId = it },
             onDismiss = { openTaskId = null },
         )
@@ -556,6 +557,7 @@ private fun missionAge(task: KanbanTask): String {
 private fun MissionDetailSheet(
     taskId: String,
     viewModel: ChatViewModel,
+    profiles: List<String>,
     onOpenTask: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -629,6 +631,18 @@ private fun MissionDetailSheet(
                                 onApprove = { note -> viewModel.missions.kanbanApprove(taskId, note) { reload++ } },
                                 onRequestChanges = { reason ->
                                     viewModel.missions.kanbanRequestChanges(taskId, reason) { reload++ }
+                                },
+                            )
+                        }
+                        // Every other move the CLI has — start, unblock, stop a stuck run, hand to
+                        // another profile, pause, mark done, archive — sits right under the ask.
+                        if (movesFor(t.status).isNotEmpty()) item(key = "moves") {
+                            CardMovesPanel(
+                                status = t.status,
+                                currentAssignee = t.assignee,
+                                profiles = profiles,
+                                onMove = { move, note, assignee ->
+                                    viewModel.missions.kanbanAction(taskId, move, note, assignee) { reload++ }
                                 },
                             )
                         }
