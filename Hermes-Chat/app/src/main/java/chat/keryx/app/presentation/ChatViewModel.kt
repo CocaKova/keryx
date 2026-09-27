@@ -758,6 +758,9 @@ class ChatViewModel(
     // settled id never relights the banner; genuinely new activity has a new id, and the typing
     // indicator can always light it regardless.
     private val settledWorkIds = HashSet<String>()
+    /** Work rows of turns the gateway itself ended (`message.complete`): a stopped turn's fold
+     *  reads mid-run forever, and every later walk that lands on it must still say "over". */
+    private val endedTurnWorkIds = HashSet<String>()
     private var workStateId: String? = null
 
     // A short label of what the agent is currently doing, for the top counter ("Reasoning",
@@ -1009,7 +1012,23 @@ class ChatViewModel(
                 val stateMessage = workStateMessage(msgs, last)
                 workStateId = stateMessage.id
                 val window = updateWorkStateFrom(stateMessage)
-                val midRun = window == QUIET_LONG_MS
+                // The direct door just said this turn ended (`message.complete` → settleTurnNow):
+                // its fold is a finished turn, however mid-run its last row reads. A stopped turn
+                // folds as a thought, or a trailing tool call, with no answer under it; read as
+                // mid-run, this sign kept the composer on "steer" for every message after a Stop
+                // (device, 2026-09-27). The banner had settled on the End since 09-23, but the
+                // composer counts every live-turn sign, and this one was never stood down — and a
+                // later telemetry row (the post-turn review) re-walks to the same folded message,
+                // so the turn's work row is remembered as ended, not just the 2 s after.
+                val justEnded = System.currentTimeMillis() - turnEndedAt < TURN_END_GRACE_MS
+                if (justEnded && window == QUIET_LONG_MS) endedTurnWorkIds.add(stateMessage.id)
+                // Opening a room (launch, switch) whose last row is an old tool call or bare thought
+                // is an ENDED turn, not a live one — a stopped session re-read as "steer" on every
+                // relaunch. Same recency rule the banner's openedMidRun uses; a run that really is
+                // in flight from elsewhere still shows through the typing signal and the overlay.
+                val recentWork = System.currentTimeMillis() - stateMessage.timestamp < WORKING_RECENT_MS
+                val midRun = window == QUIET_LONG_MS && stateMessage.id !in endedTurnWorkIds &&
+                    (!firstEval || recentWork)
                 answerLanded = !midRun
                 _liveTurnSigns.value = midRun || last.isStreaming
 
@@ -1036,9 +1055,7 @@ class ChatViewModel(
                 val openedMidRun = firstEval && stateMessage.id !in settledWorkIds &&
                     (System.currentTimeMillis() - stateMessage.timestamp) < WORKING_RECENT_MS
 
-                // The direct door just said this turn ended: its fold is not a run that started
-                // elsewhere, however mid-run its last row reads.
-                val justEnded = System.currentTimeMillis() - turnEndedAt < TURN_END_GRACE_MS
+                // `justEnded` (above): the direct door's own fold is not a run that started elsewhere.
                 when {
                     _awaitingReply.value -> scheduleClearAwaiting(window)
                     midRun && (liveActivity || openedMidRun) && !justEnded -> {
@@ -1413,7 +1430,10 @@ class ChatViewModel(
         quietJob?.cancel()
         _awaitingReply.value = false
         _workStartedAt.value = null
-        workStateId?.let { settledWorkIds.add(it) }
+        // Every live-turn sign stands down, not just the banner's: the composer reads this one
+        // too, and a stopped turn's fold would otherwise keep it lit (steer-after-Stop, 09-27).
+        _liveTurnSigns.value = false
+        workStateId?.let { settledWorkIds.add(it); endedTurnWorkIds.add(it) }
     }
 
     /**
