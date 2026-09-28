@@ -5,7 +5,48 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
-## 2.13.11 · versionCode 113
+## 2.14.0 · versionCode 117
+
+Missions becomes a place you can act from, and Runs a place you can fix from. Carries 2.13.11
+(compaction) and 2.13.12 (paste images), neither of which was released alone.
+
+- Missions says what it needs. A blocked card used to arrive as a red dot. The board now has a
+  pinned "Needs you" lane, and each card shows its ask, whose move it is and a diagnostics badge.
+  The sheet opens on "What it needs from you", with the ask and an answer box: Reply & unblock,
+  or Approve / Request changes for a card in review. Below that are the runs, the diagnostics
+  (the rules `hermes kanban diag` runs), parent/child chips that walk the graph, and a folded
+  event log. A mission alert in the shade carries the block reason.
+- Your moves. A "Your moves" row under the ask offers what the card's status allows: Start it,
+  Unblock (no reply needed), Stop this run, Hand to…, Pause (with a reason the next run reads),
+  Mark done, Archive. Anything that ends a run, closes a card or needs a reason or a profile asks
+  first. The toast says where the card landed, or the gateway's refusal in its own words.
+- Sweep the board: long-press to select several cards, archive them together, or "Clear done".
+- A needs-you orb on the drawer door and a badge on the top-bar menu count the cards waiting on
+  you. While the app is open, the board and mission alerts are checked every 60 s, not only by
+  the 15-minute background worker; a mission notice opens its card.
+- A run card opens that worker's transcript, read-only and live, with Open in chat.
+- Runs sorts itself: Needs attention, Recent, Quiet, with search, filter chips and a Cards/List
+  switch (List once there are more than 12 jobs). Script-only jobs fold into a "Background
+  scripts" shelf unless they are failing. A job's sheet shows the whole error with its one-line
+  gist, and offers Copy, Ask agent to fix (a new chat with the brief filled in), Run now,
+  Pause/Resume, Pin and Delete.
+- A stopped turn stands the composer down. After Stop, every later message went out as a steer
+  and never landed, because one live-turn sign was never cleared.
+- A pasted image becomes the attachment (2.13.12): long-press Paste, the keyboard's clipboard
+  strip, a keyboard GIF or sticker, or a drag from another app lands in the same chip as a
+  gallery pick.
+- The working cloud has its scallops back (2.12's clip cut them off), and the composer shows a
+  rim on focus and a shimmer while a turn runs.
+- Fixes: a notice clears when you return to its chat; the archive sweep skips sessions the
+  gateway no longer has; sheets stop bouncing on a fling.
+- Gateway: Missions' ask, verdicts and diagnostics need keryx-stream 0.4.0. Your moves and the
+  worker transcript need keryx-stream 0.5.0; on 0.4.0 a move answers "not found".
+
+## 2.13.12 · versionCode 114 (not released alone; shipped in 2.14.0)
+
+- A pasted image becomes the attachment. See 2.14.0.
+
+## 2.13.11 · versionCode 113 (not released alone; shipped in 2.14.0)
 
 - A chat follows its own compaction. Compaction ends a session and continues it under a new
   id, and two gaps kept the phone on the old one:
