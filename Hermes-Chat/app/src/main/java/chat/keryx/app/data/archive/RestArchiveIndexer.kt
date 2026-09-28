@@ -82,6 +82,10 @@ class RestArchiveIndexer(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
+                    // A roster id whose session is gone (rotated out by compaction, deleted,
+                    // another profile's) answers 404. That is not a failure of the index — the
+                    // header read "HTTP 404 for …" while every other session filed fine.
+                    if (isGone(e)) continue
                     android.util.Log.e("KeryxArchive", "rest sweep failed for $id", e)
                     lastError = e.message ?: "sweep failed"
                 }
@@ -117,8 +121,11 @@ class RestArchiveIndexer(
         return fresh
     }
 
-    private companion object {
+    internal companion object {
         /** The progress row's room id when the sweep covers the whole index. */
         const val ALL = "*"
+
+        /** The gateway's "no such session" — [GatewayRest] words it `HTTP 404 for <path>`. */
+        fun isGone(e: Throwable): Boolean = e.message?.startsWith("HTTP 404") == true
     }
 }

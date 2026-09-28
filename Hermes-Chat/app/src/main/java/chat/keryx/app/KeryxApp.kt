@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -97,6 +98,13 @@ class KeryxApp : Application() {
     private val attention: kotlinx.coroutines.flow.Flow<String?> =
         combine(_openRoom, _foreground) { room, fg -> room.takeIf { fg } }
 
+    /** Resumed, not merely started — the run notice's gaze (see [observeRuns]). */
+    private val _resumed = MutableStateFlow(false)
+
+    /** Every run as it would be told with nobody watching — what [ForegroundTracker.onActivityPaused]
+     *  puts back up the instant the gaze leaves. */
+    @Volatile private var fullRunNotice: chat.keryx.core.model.RunNotice? = null
+
     /** Session id → display name, kept fresh by the roster watch below so the shade can name
      *  the room a request came from without a round trip. */
     @Volatile private var roomNames: Map<String, String> = emptyMap()
@@ -161,6 +169,11 @@ class KeryxApp : Application() {
         observeForNotifications()
         observeShadeGate()
         observeRuns()
+        // A message notice for the room you walk back into is read: clearing only on a room
+        // CHANGE left it standing whenever Keryx came back to the room it was already on.
+        appScope.launch {
+            attention.filterNotNull().collect { KeryxNotifications.clear(applicationContext, it) }
+        }
         // The launcher's hands (2.13): the widget card and the tile follow the link from here.
         chat.keryx.app.widget.HandsSync.observe(this)
     }
@@ -353,10 +366,11 @@ class KeryxApp : Application() {
             direct.runActivities().first { it.isNotEmpty() }
             if (direct.agents().value.isEmpty()) runCatching { direct.botRoster() }
         }
+        val gaze = combine(_openRoom, _resumed) { room, resumed -> room.takeIf { resumed } }
         appScope.launch {
-            combine(direct.runActivities(), direct.agents()) { runs, _ -> runs }
-                .map { runs ->
-                    chat.keryx.core.model.RunNotices.compose(runs.values.map { a ->
+            combine(direct.runActivities(), direct.agents(), gaze) { runs, _, looking -> runs to looking }
+                .map { (runs, looking) ->
+                    val subjects = runs.values.map { a ->
                         val room = roomsById[a.sessionId]
                         val isBot = room?.source == chat.keryx.app.presentation.BotsDelegate.BOT_SOURCE
                         val agent = direct.agentFor(a.sessionId)
@@ -374,11 +388,20 @@ class KeryxApp : Application() {
                             activity = a,
                             plan = direct.todoPlanOf(a.sessionId),
                         )
-                    })
+                    }
+                    val full = chat.keryx.core.model.RunNotices.compose(subjects)
+                    fullRunNotice = full
+                    // The turn you are watching is already on screen, live; the shade saying so
+                    // too was the notice "still there" inside a running session. Only the watched
+                    // one is dropped — another session's run still gets its line.
+                    full to chat.keryx.core.model.RunNotices.compose(subjects.filter { it.sessionId != looking })
                 }
                 .distinctUntilChanged()
                 .conflate()
-                .collect { notice ->
+                .collect { (full, watched) ->
+                    // Re-read the gaze at draw time: a filtered notice decided while resumed but
+                    // drawn after onPause would take down the run onPause just put back up.
+                    val notice = if (_resumed.value) watched else full
                     chat.keryx.app.notify.AgentRunService.sync(applicationContext, notice)
                     if (notice != null) kotlinx.coroutines.delay(1_000L)
                 }
@@ -473,8 +496,15 @@ class KeryxApp : Application() {
             _foreground.value = foregroundCount > 0
         }
         override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
-        override fun onActivityResumed(activity: Activity) {}
-        override fun onActivityPaused(activity: Activity) {}
+        override fun onActivityResumed(activity: Activity) { _resumed.value = true }
+        override fun onActivityPaused(activity: Activity) {
+            _resumed.value = false
+            // Put the watched run back up NOW, synchronously, while the activity is still
+            // visible: Android 12+ refuses a foreground-service start once Keryx is in the
+            // background, and the async pipeline would land a beat after onStop — the run would
+            // lose its keep-alive exactly when you walk away from it.
+            fullRunNotice?.let { chat.keryx.app.notify.AgentRunService.sync(applicationContext, it) }
+        }
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
         override fun onActivityDestroyed(activity: Activity) {}
     }

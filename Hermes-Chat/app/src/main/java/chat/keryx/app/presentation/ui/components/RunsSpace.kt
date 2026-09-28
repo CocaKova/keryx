@@ -1,10 +1,17 @@
 package chat.keryx.app.presentation.ui.components
 
+import android.content.Context
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +22,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,6 +34,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -34,6 +43,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -42,8 +52,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,6 +70,13 @@ import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.core.model.CronHumanize
 import chat.keryx.core.model.CronJobCard
 import chat.keryx.core.model.CronRun
+import chat.keryx.core.model.CronFilter
+import chat.keryx.core.model.CronHealth
+import chat.keryx.core.model.CronJobFacts
+import chat.keryx.core.model.CronRow
+import chat.keryx.core.model.CronSection
+import chat.keryx.core.model.CronTick
+import chat.keryx.core.model.CronTriage
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
@@ -66,10 +90,23 @@ import kotlinx.coroutines.isActive
  * The layout is Talaria's CronSpace, the second harvest from that donor: a shelf of the runs
  * you KEPT first (pinned on the gateway — the report worth coming back to has an address), then
  * an arrivals rail — what landed since you last looked, each report wearing its own headline
- * so it can be READ here rather than merely counted — then one card per job. You don't
- * converse with the Daily Brief; on the direct door a run opens as a real room (the full
- * renderer), on the Matrix door in the transcript reader. Jobs (hub) still manages the
- * schedules; this reads their work.
+ * so it can be READ here rather than merely counted — then the jobs. You don't converse with
+ * the Daily Brief; on the direct door a run opens as a real room (the full renderer), on the
+ * Matrix door in the transcript reader. Jobs (hub) still manages the schedules; this reads
+ * their work.
+ *
+ * 2.14 — the page for A LOT of jobs (Jonny's gateway: 24, seven of them failing). One card per
+ * job, newest first, sank the failures (a failed script dispatch writes no session, so those
+ * jobs read as "no runs yet" and sorted last) and made every job cost a card's height. Now:
+ *  - a control strip that stays put above the list — search (name, newest headline, schedule
+ *    in words), filter chips with counts (only the ones that would match), Cards ↔ List;
+ *  - the jobs triaged into Needs attention → Recent (24 h) → Quiet (folded, a count), by
+ *    STATE rather than cadence — the failures span three cadences, and they belong together
+ *    ([CronTriage]'s header has the numbers);
+ *  - List mode: one ~52dp row per job — status dot, name, last/next run, the last eight
+ *    outcomes as ticks — that opens in place to the same run list the card has;
+ *  - the arrivals rail folds to one summary line past [CronTriage.RAIL_FOLD_AT] unread.
+ * The shelf, the rail, the cards and every menu are unchanged underneath.
  *
  * Every run row here answers a long press with the same small menu: keep it / release it, and
  * read it when it's new. The pin is the gateway's own keep flag (Desktop parity), so a report
@@ -111,7 +148,62 @@ fun RunsSpace(
         open = ::openRun,
         setPinned = { run, pinned -> viewModel.hub.cronSetPinned(run.id, pinned) },
         markRead = { run -> viewModel.hub.cronMarkSeen(run.id) },
+        askFix = { card, job ->
+            // A fresh chat rather than the open one: a repair is its own thread, and the brief
+            // lands in the composer, not sent — you read what the agent is about to be told.
+            viewModel.createSession("Fix cron: ${card.name}") { err ->
+                if (err == null) {
+                    viewModel.prefillComposer(fixBrief(job))
+                    onClose()
+                }
+            }
+        },
     )
+
+    // --- The viewer's controls ---------------------------------------------------------------
+    // Density is a standing preference (how THIS person likes to scan), so it outlives the
+    // screen: its own tiny prefs file, like Senses keeps — a view knob, nothing the account or
+    // the gateway ledger should carry. Unset = decided by the data: past a dozen jobs the list
+    // is the better first impression; below it the cards' headlines earn their height.
+    val context = LocalContext.current
+    val viewPrefs = remember(context) {
+        context.applicationContext.getSharedPreferences(RUNS_VIEW_PREFS, Context.MODE_PRIVATE)
+    }
+    var densityPref by remember(viewPrefs) { mutableStateOf(viewPrefs.getString(KEY_DENSITY, null)) }
+    // Search and filter are the visit's, not the viewer's: coming back to a filtered page you
+    // don't remember filtering is how a failing job hides for a week.
+    var query by rememberSaveable("runs-query") { mutableStateOf("") }
+    var filterName by rememberSaveable("runs-filter") { mutableStateOf(CronFilter.ALL.name) }
+    val filter = CronFilter.entries.firstOrNull { it.name == filterName } ?: CronFilter.ALL
+    var railOpen by rememberSaveable("runs-rail-open") { mutableStateOf(false) }
+    var attentionOpen by rememberSaveable("runs-sec-attention") { mutableStateOf(true) }
+    var recentOpen by rememberSaveable("runs-sec-recent") { mutableStateOf(true) }
+    var quietOpen by rememberSaveable("runs-sec-quiet") { mutableStateOf(false) }
+    var scriptsOpen by rememberSaveable("runs-sec-scripts") { mutableStateOf(false) }
+
+    // Triage once per board (a poll or a read-mark makes a new board); the clock is taken with
+    // it, so "Recent" moves when the data does and never mid-scroll.
+    val rows = remember(board) {
+        board?.let { b ->
+            CronTriage.rows(b.cards, factsOf(b.jobsByName), b.unread, System.currentTimeMillis())
+        }.orEmpty()
+    }
+    val nowMs = remember(board) { System.currentTimeMillis() }
+    val compact = densityPref?.let { it == DENSITY_LIST } ?: (rows.size > COMPACT_AUTO_AT)
+
+    // Headlines for search, job name → newest report title. Filled by ONE sequential walk,
+    // only while a query is typed — never a fetch per row. The delegate caches digests, so in
+    // Cards mode (which already fetched every newest headline) the walk is free.
+    val headlines = remember { mutableStateMapOf<String, String>() }
+    val searching = query.isNotBlank()
+    val latestIds = remember(board) { board?.cards?.map { it.latest?.id }.orEmpty() }
+    LaunchedEffect(searching, latestIds) {
+        if (!searching) return@LaunchedEffect
+        board?.cards?.forEach { card ->
+            val latest = card.latest ?: return@forEach
+            viewModel.hub.cronDigest(latest.id)?.title?.let { headlines[card.name] = it }
+        }
+    }
 
     openSession?.let { session ->
         SessionTranscript(
@@ -126,15 +218,39 @@ fun RunsSpace(
         return
     }
 
+    val counts = remember(rows) { CronTriage.counts(rows) }
+    val railFolded = board != null && CronTriage.foldRail(board.unread.total)
+    // Narrowing = looking for a job. The shelf and the rail answer other questions, so they
+    // step aside; and Quiet opens, since a hit you can't see is not a hit.
+    val narrowing = filter != CronFilter.ALL || searching
+
     KeryxSpace(
         title = "Runs",
         onClose = onClose,
         standalone = false,
+        liveSlot = {
+            // The page's answer before its first row: how many, how many broken.
+            if (rows.isNotEmpty()) {
+                val failing = counts[CronFilter.FAILING] ?: 0
+                Text(
+                    buildString {
+                        // Short enough to survive beside "Mark N read": the chips carry the rest.
+                        append("${rows.size} jobs")
+                        if (failing > 0) append(" · $failing failing")
+                    },
+                    fontSize = 10.5.sp, fontFamily = FontFamily.Monospace,
+                    color = if (failing > 0) KeryxStatus.bad else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+            }
+        },
         actions = {
             // Only where there is something to clear: a permanent "mark all read" on a quiet
             // screen is a button that does nothing, which teaches people not to press buttons.
+            // Folded, the rail's own summary line carries it — one button, not two (unless
+            // a filter has hidden that line).
             val unread = board?.unread
-            if (unread != null && unread.any) {
+            if (unread != null && unread.any && (!railFolded || narrowing)) {
                 TextButton(onClick = { viewModel.hub.cronMarkAllSeen() }) {
                     Text("Mark ${unread.total} read", fontSize = 12.sp)
                 }
@@ -152,45 +268,155 @@ fun RunsSpace(
                     modifier = Modifier.padding(32.dp),
                 )
             }
-            else -> LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                // What you chose to keep, above what merely arrived: a pin is a decision the
-                // user already made, and the screen should honour it before asking for another.
-                if (board.pinned.isNotEmpty()) {
-                    item(key = "pinned-shelf") {
-                        PinnedShelf(board = board, viewModel = viewModel, verbs = verbs)
+            else -> {
+                // Outside the list, so it never scrolls away: with two hundred rows, the way
+                // to narrow them has to be where your thumb already is.
+                RunsControls(
+                    query = query,
+                    onQuery = { query = it },
+                    filter = filter,
+                    counts = counts,
+                    offered = CronTriage.offeredFilters(counts, filter),
+                    onFilter = { filterName = it.name },
+                    compact = compact,
+                    onCompact = { list ->
+                        val v = if (list) DENSITY_LIST else DENSITY_CARDS
+                        densityPref = v
+                        viewPrefs.edit().putString(KEY_DENSITY, v).apply()
+                    },
+                )
+                val visible = CronTriage.visible(rows, filter, query, headlines)
+                val unreadIds = board.unread.ids
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 10.dp),
+                ) {
+                    // What you chose to keep, above what merely arrived: a pin is a decision the
+                    // user already made, and the screen should honour it before asking for another.
+                    if (!narrowing && board.pinned.isNotEmpty()) {
+                        item(key = "pinned-shelf") {
+                            PinnedShelf(board = board, viewModel = viewModel, verbs = verbs)
+                        }
                     }
-                }
-                // What came in while you weren't looking, before anything else on the screen.
-                // The cards answer "what does this gateway do"; this answers "what do I have
-                // to read", which is a different question and the one you arrive with.
-                if (board.unread.any) {
-                    item(key = "new-rail") {
-                        NewArrivals(board = board, viewModel = viewModel, verbs = verbs)
+                    // What came in while you weren't looking, before anything else on the screen.
+                    // The jobs answer "what does this gateway do"; this answers "what do I have
+                    // to read", which is a different question and the one you arrive with.
+                    if (!narrowing && board.unread.any) {
+                        if (railFolded) {
+                            item(key = "new-summary") {
+                                RailSummary(
+                                    board = board,
+                                    open = railOpen,
+                                    onToggle = { railOpen = !railOpen },
+                                    onMarkAll = { viewModel.hub.cronMarkAllSeen() },
+                                )
+                            }
+                        }
+                        if (!railFolded || railOpen) {
+                            item(key = "new-rail") {
+                                NewArrivals(board = board, viewModel = viewModel, verbs = verbs)
+                            }
+                        }
                     }
-                }
-                items(board.cards, key = { it.name }) { card ->
-                    RunCard(
-                        card = card,
-                        job = board.jobsByName[card.name],
-                        unreadCount = board.unread.countFor(card.name),
-                        isNew = { board.unread.isNew(it) },
-                        viewModel = viewModel,
-                        verbs = verbs,
-                    )
+                    if (visible.isEmpty()) {
+                        item(key = "runs-none") {
+                            Text(
+                                if (searching) "No job matches “${query.trim()}”."
+                                else "No ${filter.label.lowercase()} jobs.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 12.5.sp,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 16.dp),
+                            )
+                        }
+                    }
+                    for (block in CronTriage.sections(visible)) {
+                        val section = block.section
+                        val open = narrowing || when (section) {
+                            CronSection.ATTENTION -> attentionOpen
+                            CronSection.RECENT -> recentOpen
+                            CronSection.SCRIPTS -> scriptsOpen
+                            CronSection.QUIET -> quietOpen
+                        }
+                        item(key = "sec-${section.name}") {
+                            SectionHead(
+                                section = section,
+                                count = block.rows.size,
+                                open = open,
+                                onToggle = if (narrowing) null else ({
+                                    when (section) {
+                                        CronSection.ATTENTION -> attentionOpen = !attentionOpen
+                                        CronSection.RECENT -> recentOpen = !recentOpen
+                                        CronSection.SCRIPTS -> scriptsOpen = !scriptsOpen
+                                        CronSection.QUIET -> quietOpen = !quietOpen
+                                    }
+                                    Unit
+                                }),
+                            )
+                        }
+                        if (open) {
+                            items(block.rows, key = { "job-${it.name}" }) { row ->
+                                // A script has no reports to headline, so a card would be a
+                                // tall box saying "no runs yet": scripts are always rows.
+                                if (compact || section == CronSection.SCRIPTS) {
+                                    CompactRunRow(
+                                        row = row,
+                                        unreadIds = unreadIds,
+                                        nowMs = nowMs,
+                                        viewModel = viewModel,
+                                        verbs = verbs,
+                                    )
+                                } else {
+                                    RunCard(
+                                        card = row.card,
+                                        job = board.jobsByName[row.name],
+                                        unreadCount = row.unread,
+                                        isNew = { board.unread.isNew(it) },
+                                        viewModel = viewModel,
+                                        verbs = verbs,
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+/** The view prefs file and its one knob. Values are words, so a future third density reads. */
+private const val RUNS_VIEW_PREFS = "keryx_runs_view"
+private const val KEY_DENSITY = "density"
+private const val DENSITY_CARDS = "cards"
+private const val DENSITY_LIST = "list"
+
+/** With no saved choice, more jobs than this opens in List mode. */
+private const val COMPACT_AUTO_AT = 12
+
+/** The app's job rows → :core's facts. By name, like every other pairing on this page. */
+private fun factsOf(jobs: Map<String, HubJob>): Map<String, CronJobFacts> =
+    jobs.mapValues { (_, j) ->
+        CronJobFacts(
+            enabled = j.enabled,
+            state = j.state,
+            lastStatus = j.lastStatus,
+            lastError = j.lastError,
+            lastRunAt = j.lastRunAt,
+            nextRunAt = j.nextRunAt,
+            schedule = j.scheduleDisplay,
+            scriptOnly = j.scriptOnly,
+            failureStreak = j.failureStreak,
+        )
+    }
+
 /** What a run row can do — one bundle so every row (shelf, rail, card) offers the same verbs. */
 private class RunVerbs(
     val open: (CronRun) -> Unit,
     val setPinned: (CronRun, Boolean) -> Unit,
     val markRead: (CronRun) -> Unit,
+    /** Hand a failing job to the agent: a fresh chat, the brief in the composer. */
+    val askFix: (CronJobCard, HubJob) -> Unit,
 )
 
 /** How many arrivals the rail reads out loud before it stops counting. Past a dozen unread
@@ -661,6 +887,13 @@ private fun RunCard(
                 }
             }
 
+            // Why it failed, in the scheduler's words — the card sits under "Needs attention"
+            // now, and a heading that says so without saying what is half an answer.
+            job?.takeIf { it.enabled }?.lastError?.takeIf { it.isNotBlank() }?.let { err ->
+                FailureLine(err, maxLines = if (open) 4 else 1)
+                FailureActions(card, job, viewModel, verbs, onDetails = { jobMenu = true })
+            }
+
             // The newest run's own words — title and lead, never the prompt that produced it.
             val d = digest
             if (!card.neverRun && d?.title != null) {
@@ -710,94 +943,18 @@ private fun RunCard(
 
             if (open && card.runs.isNotEmpty()) {
                 Spacer(Modifier.height(6.dp))
-                card.runs.take(20).forEach { run ->
-                    var menuOpen by remember(run.id) { mutableStateOf(false) }
-                    Box {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .combinedClickable(
-                                    onClick = { verbs.open(run) },
-                                    onLongClick = { haptics.press(); menuOpen = true },
-                                )
-                                .padding(horizontal = 4.dp, vertical = 5.dp),
-                        ) {
-                            // The unread dot dies the moment the run is opened — the ledger, visible.
-                            Box(
-                                Modifier
-                                    .size(5.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (isNew(run.id)) MaterialTheme.colorScheme.primary
-                                        else Color.Transparent,
-                                    ),
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                // The gateway titles runs "<job> · <when>"; the job half is the card.
-                                run.title.substringAfter(" · ", run.title),
-                                fontSize = 12.sp, color = onSurface.copy(alpha = 0.8f),
-                                maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f),
-                            )
-                            if (run.pinned) {
-                                Icon(
-                                    KeryxGlyphs.PinFilled,
-                                    contentDescription = "Pinned",
-                                    tint = onSurface.copy(alpha = 0.45f),
-                                    modifier = Modifier.size(10.dp),
-                                )
-                                Spacer(Modifier.width(6.dp))
-                            }
-                            Text(
-                                relativeWhen(run.timestamp),
-                                fontSize = 10.sp, fontFamily = FontFamily.Monospace,
-                                color = quiet.copy(alpha = 0.6f),
-                            )
-                        }
-                        RunMenu(
-                            expanded = menuOpen,
-                            onDismiss = { menuOpen = false },
-                            run = run,
-                            unread = isNew(run.id),
-                            verbs = verbs,
-                        )
-                    }
-                }
-                if (card.runs.size > 20) {
-                    Text(
-                        "${card.runs.size - 20} older runs in Gateway ▸ Sessions",
-                        fontSize = 10.5.sp, color = quiet.copy(alpha = 0.6f),
-                        modifier = Modifier.padding(top = 2.dp),
-                    )
-                }
+                RunList(card = card, isNew = isNew, verbs = verbs)
             }
         }
     }
-    DropdownMenu(expanded = jobMenu, onDismissRequest = { jobMenu = false }) {
-        DropdownMenuItem(
-            text = { Text(if (jobPinned) "Unpin from sessions" else "Pin to top of sessions") },
-            leadingIcon = {
-                Icon(
-                    if (jobPinned) KeryxGlyphs.PinFilled else KeryxGlyphs.Pin,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                )
-            },
-            onClick = { jobMenu = false; viewModel.hub.cronSetJobPinned(card.name, !jobPinned) },
-        )
-        card.latest?.let { latest ->
-            DropdownMenuItem(
-                text = { Text("Open newest run") },
-                leadingIcon = {
-                    Icon(KeryxGlyphs.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
-                },
-                onClick = { jobMenu = false; verbs.open(latest) },
-            )
-        }
-    }
+    JobMenu(
+        expanded = jobMenu,
+        onDismiss = { jobMenu = false },
+        card = card,
+        jobPinned = jobPinned,
+        viewModel = viewModel,
+        verbs = verbs,
+    )
     } // job-menu anchor
 }
 
@@ -853,4 +1010,774 @@ private fun keptWhen(ts: Long): String {
     if (ageDays < 1) return relativeWhen(ts)
     val pattern = if (ageDays < 365) "MMM d" else "MMM d, yyyy"
     return java.text.SimpleDateFormat(pattern, java.util.Locale.getDefault()).format(java.util.Date(ts))
+}
+
+// --- 2.14: the page for A LOT of jobs ------------------------------------------------------------
+
+/**
+ * A job's runs, newest first — the list a card opens to, and the list a List-mode row opens to.
+ * One composable so the two densities can't drift: same unread dot, same pin glyph, same menu.
+ */
+@Composable
+private fun RunList(
+    card: CronJobCard,
+    isNew: (String) -> Boolean,
+    verbs: RunVerbs,
+) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val quiet = MaterialTheme.colorScheme.onSurfaceVariant
+    val haptics = LocalKeryxHaptics.current
+    card.runs.take(20).forEach { run ->
+        var menuOpen by remember(run.id) { mutableStateOf(false) }
+        Box {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .combinedClickable(
+                        onClick = { verbs.open(run) },
+                        onLongClick = { haptics.press(); menuOpen = true },
+                    )
+                    .padding(horizontal = 4.dp, vertical = 5.dp),
+            ) {
+                // The unread dot dies the moment the run is opened — the ledger, visible.
+                Box(
+                    Modifier
+                        .size(5.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isNew(run.id)) MaterialTheme.colorScheme.primary
+                            else Color.Transparent,
+                        ),
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    // The gateway titles runs "<job> · <when>"; the job half is the card.
+                    run.title.substringAfter(" · ", run.title),
+                    fontSize = 12.sp, color = onSurface.copy(alpha = 0.8f),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                if (run.pinned) {
+                    Icon(
+                        KeryxGlyphs.PinFilled,
+                        contentDescription = "Pinned",
+                        tint = onSurface.copy(alpha = 0.45f),
+                        modifier = Modifier.size(10.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                }
+                Text(
+                    relativeWhen(run.timestamp),
+                    fontSize = 10.sp, fontFamily = FontFamily.Monospace,
+                    color = quiet.copy(alpha = 0.6f),
+                )
+            }
+            RunMenu(
+                expanded = menuOpen,
+                onDismiss = { menuOpen = false },
+                run = run,
+                unread = isNew(run.id),
+                verbs = verbs,
+            )
+        }
+    }
+    if (card.runs.size > 20) {
+        Text(
+            "${card.runs.size - 20} older runs in Gateway ▸ Sessions",
+            fontSize = 10.5.sp, color = quiet.copy(alpha = 0.6f),
+            modifier = Modifier.padding(top = 2.dp),
+        )
+    }
+}
+
+/**
+ * The job's sheet — about the JOB, not a run (long-press any job, or "Details" on a failing one).
+ * It was a two-item menu (pin, open newest) and a failing job offered nothing to DO: the red
+ * line said what broke and the page stopped there (Jonny 09-27: "the need attention crons I
+ * can't really do anything with"). Now the whole error, and the verbs the gateway already had —
+ * run it now, pause/resume, delete — plus the one that fixes what the phone can't: hand the
+ * failure to the agent. Shared by both densities.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun JobMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    card: CronJobCard,
+    jobPinned: Boolean,
+    viewModel: ChatViewModel,
+    verbs: RunVerbs,
+) {
+    if (!expanded) return
+    val board by viewModel.hub.cron.collectAsState()
+    val job = board.data?.jobsByName?.get(card.name)
+    val quiet = MaterialTheme.colorScheme.onSurfaceVariant
+    var confirmDelete by remember { mutableStateOf(false) }
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    // Full height from the start: half-open, the verbs sat under the fold and the first back
+    // only collapsed the sheet (device walk 09-27).
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    KeryxSheet(onDismiss = onDismiss, title = card.name, sheetState = sheetState) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
+            if (job != null) {
+                val paused = !job.enabled || job.state.equals("paused", ignoreCase = true)
+                Text(
+                    buildString {
+                        append(CronHumanize.schedule(job.scheduleDisplay))
+                        append(" · ")
+                        append(
+                            when {
+                                paused -> "paused"
+                                job.state.equals("completed", ignoreCase = true) -> "finished"
+                                else -> job.state.ifBlank { "scheduled" }
+                            },
+                        )
+                        if (job.scriptOnly) append(" · script, no transcript")
+                    },
+                    fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = quiet,
+                )
+                val err = job.lastError?.takeIf { it.isNotBlank() }
+                if (err != null) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        if (job.failureStreak > 1) "FAILED ${job.failureStreak} RUNS IN A ROW" else "LAST RUN FAILED",
+                        fontSize = 10.sp, letterSpacing = 1.5.sp, color = KeryxStatus.bad,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        CronTriage.errorGist(err),
+                        fontSize = 13.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    // The whole error, selectable: the one-line clip on the card is a pointer,
+                    // this is the thing itself — what gets pasted into an issue or a chat.
+                    androidx.compose.foundation.text.selection.SelectionContainer {
+                        Text(
+                            err.take(ERROR_SHOWN),
+                            fontSize = 11.5.sp, lineHeight = 16.sp, fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 220.dp)
+                                .clip(RoundedCornerShape(KeryxRadius.field))
+                                .verticalScroll(rememberScrollState())
+                                .background(KeryxStatus.bad.copy(alpha = 0.08f))
+                                .padding(10.dp),
+                        )
+                    }
+                    TextButton(onClick = { clipboard.setText(androidx.compose.ui.text.AnnotatedString(err)) }) {
+                        Icon(KeryxGlyphs.Copy, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Copy error", fontSize = 12.sp)
+                    }
+                    SheetAction(KeryxGlyphs.Wrench, "Ask the agent to fix it", "A new chat with the job and its error, ready to send") {
+                        onDismiss(); verbs.askFix(card, job)
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                SheetAction(KeryxGlyphs.Play, "Run now", if (err != null) "Try it again — the error clears if it passes" else "Fire it once, off schedule") {
+                    onDismiss(); viewModel.hub.jobAction(job.id, "run")
+                }
+                SheetAction(
+                    if (paused) KeryxGlyphs.Play else KeryxGlyphs.StopSquare,
+                    if (paused) "Resume" else "Pause",
+                    if (paused) "Back on its schedule" else "Stops firing until you resume it",
+                ) {
+                    onDismiss(); viewModel.hub.jobAction(job.id, if (paused) "resume" else "pause")
+                }
+            }
+            SheetAction(
+                if (jobPinned) KeryxGlyphs.PinFilled else KeryxGlyphs.Pin,
+                if (jobPinned) "Unpin from sessions" else "Pin to top of sessions",
+                null,
+            ) { onDismiss(); viewModel.hub.cronSetJobPinned(card.name, !jobPinned) }
+            card.latest?.let { latest ->
+                SheetAction(KeryxGlyphs.ChevronRight, "Open newest run", null) { onDismiss(); verbs.open(latest) }
+            }
+            if (job != null) {
+                SheetAction(KeryxGlyphs.Trash, "Delete job", "Removes the schedule; past runs stay", tint = KeryxStatus.bad) {
+                    confirmDelete = true
+                }
+            }
+        }
+    }
+    if (confirmDelete && job != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Delete “${card.name}”?") },
+            text = { Text("The job stops for good. Its past runs stay readable.") },
+            confirmButton = {
+                TextButton(onClick = { confirmDelete = false; onDismiss(); viewModel.hub.jobDelete(job.id) }) {
+                    Text("Delete", color = KeryxStatus.bad)
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep") } },
+        )
+    }
+}
+
+/** One verb in the job sheet: glyph, label, what it will do. */
+@Composable
+private fun SheetAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    detail: String?,
+    tint: Color = MaterialTheme.colorScheme.onSurface,
+    onClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(KeryxRadius.field))
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(14.dp))
+        Column {
+            Text(label, fontSize = 14.sp, color = tint)
+            if (detail != null) Text(detail, fontSize = 11.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/**
+ * What a failing job offers without a long-press: the two verbs that usually settle it, and the
+ * door to the rest. Sits under the red line on both densities — a heading that says "needs
+ * attention" and then offers nothing to do with the attention was the complaint.
+ */
+@Composable
+private fun FailureActions(card: CronJobCard, job: HubJob?, viewModel: ChatViewModel, verbs: RunVerbs, onDetails: () -> Unit) {
+    if (job == null) return
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(top = 6.dp).horizontalScroll(rememberScrollState()),
+    ) {
+        FailureChip(KeryxGlyphs.Play, "Run now") { viewModel.hub.jobAction(job.id, "run") }
+        FailureChip(KeryxGlyphs.Wrench, "Fix with agent") { verbs.askFix(card, job) }
+        FailureChip(null, "Details") { onDetails() }
+    }
+}
+
+@Composable
+private fun FailureChip(icon: androidx.compose.ui.graphics.vector.ImageVector?, label: String, onClick: () -> Unit) {
+    val accent = MaterialTheme.colorScheme.primary
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .height(30.dp)
+            .clip(RoundedCornerShape(KeryxRadius.chip))
+            .border(1.dp, accent.copy(alpha = 0.45f), RoundedCornerShape(KeryxRadius.chip))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp),
+    ) {
+        if (icon != null) {
+            Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(13.dp))
+            Spacer(Modifier.width(5.dp))
+        }
+        Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
+/** The job sheet shows this much of an error; a traceback past it is a copy, not a read. */
+private const val ERROR_SHOWN = 4000
+
+/** The scheduler's own failure text, in the verdict colour. Mono, because it IS machine text. */
+@Composable
+private fun FailureLine(error: String, maxLines: Int) {
+    Row(verticalAlignment = Alignment.Top, modifier = Modifier.padding(top = 4.dp)) {
+        Icon(
+            KeryxGlyphs.Warning,
+            contentDescription = null,
+            tint = KeryxStatus.bad,
+            modifier = Modifier.padding(top = 1.dp).size(11.dp),
+        )
+        Spacer(Modifier.width(5.dp))
+        Text(
+            // The cause, not the wrapper: the full text lives in the job sheet.
+            CronTriage.errorGist(error).ifBlank { error.trim() },
+            fontSize = 10.5.sp, lineHeight = 14.sp, fontFamily = FontFamily.Monospace,
+            color = KeryxStatus.bad,
+            maxLines = maxLines, overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/**
+ * The control strip: search, then the filter chips and the density switch on one line. Sits
+ * above the list, not in it — narrowing is the thing you do FROM the bottom of a long page.
+ */
+@Composable
+private fun RunsControls(
+    query: String,
+    onQuery: (String) -> Unit,
+    filter: CronFilter,
+    counts: Map<CronFilter, Int>,
+    offered: List<CronFilter>,
+    onFilter: (CronFilter) -> Unit,
+    compact: Boolean,
+    onCompact: (Boolean) -> Unit,
+) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val quiet = MaterialTheme.colorScheme.onSurfaceVariant
+    val focus = LocalFocusManager.current
+    Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp)) {
+        // A 40dp field rather than the 56dp OutlinedTextField: on this page the strip is
+        // chrome above the list, and every dp it takes is a row it hides. The density switch
+        // rides beside it: sharing the chip row, it squeezed the chips until the last one was
+        // cut in half on a phone (device walk 09-27).
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(40.dp)
+                    .clip(RoundedCornerShape(KeryxRadius.field))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
+                        RoundedCornerShape(KeryxRadius.field),
+                    )
+                    .padding(start = 12.dp, end = 4.dp),
+            ) {
+                Icon(
+                    KeryxGlyphs.Search,
+                    contentDescription = null,
+                    tint = quiet,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+                Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                    if (query.isEmpty()) {
+                        Text(
+                            "Find a job, a headline, a schedule…",
+                            fontSize = 13.sp, color = quiet.copy(alpha = 0.7f),
+                            maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    BasicTextField(
+                        value = query,
+                        onValueChange = onQuery,
+                        singleLine = true,
+                        textStyle = TextStyle(fontSize = 13.sp, color = onSurface),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = { onQuery("") }, modifier = Modifier.size(32.dp)) {
+                        Icon(KeryxGlyphs.Close, contentDescription = "Clear search", modifier = Modifier.size(14.dp))
+                    }
+                }
+            }
+            Spacer(Modifier.width(8.dp))
+            DensitySwitch(compact = compact, onCompact = onCompact)
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        ) {
+            offered.forEach { f ->
+                FilterPill(
+                    filter = f,
+                    count = counts[f] ?: 0,
+                    selected = f == filter,
+                    onClick = { onFilter(if (f == filter) CronFilter.ALL else f) },
+                )
+            }
+        }
+    }
+}
+
+/** A filter chip: verdict dot, label, count. Tapping the lit chip goes back to All. */
+@Composable
+private fun FilterPill(filter: CronFilter, count: Int, selected: Boolean, onClick: () -> Unit) {
+    val dot: Color? = when (filter) {
+        CronFilter.ALL -> null
+        CronFilter.UNREAD -> MaterialTheme.colorScheme.primary
+        CronFilter.FAILING -> KeryxStatus.bad
+        CronFilter.PAUSED, CronFilter.NEVER_RUN -> KeryxStatus.idle
+    }
+    val lit = MaterialTheme.colorScheme.primary
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(RoundedCornerShape(KeryxRadius.chip))
+            .background(
+                if (selected) lit.copy(alpha = 0.16f)
+                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+            )
+            .border(
+                1.dp,
+                if (selected) lit.copy(alpha = 0.55f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
+                RoundedCornerShape(KeryxRadius.chip),
+            )
+            .keryxPressable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+    ) {
+        if (dot != null) {
+            Box(Modifier.size(6.dp).clip(CircleShape).background(dot))
+            Spacer(Modifier.width(6.dp))
+        }
+        Text(
+            filter.label, fontSize = 11.sp, letterSpacing = 0.4.sp, maxLines = 1,
+            color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(5.dp))
+        Text(
+            "$count", fontSize = 10.5.sp, fontFamily = FontFamily.Monospace, maxLines = 1,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+        )
+    }
+}
+
+/** Cards ↔ List — two words, not two glyphs: nobody should have to guess which icon is dense. */
+@Composable
+private fun DensitySwitch(compact: Boolean, onCompact: (Boolean) -> Unit) {
+    val lit = MaterialTheme.colorScheme.primary
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(KeryxRadius.chip))
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(KeryxRadius.chip)),
+    ) {
+        listOf(false to "Cards", true to "List").forEach { (isList, label) ->
+            val on = isList == compact
+            Text(
+                label,
+                fontSize = 11.sp, maxLines = 1,
+                color = if (on) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
+                modifier = Modifier
+                    .background(if (on) lit.copy(alpha = 0.18f) else Color.Transparent)
+                    .clickable { if (!on) onCompact(isList) }
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+            )
+        }
+    }
+}
+
+/** A shelf's heading: verdict dot, the section voice, a count, and a fold chevron when it folds. */
+@Composable
+private fun SectionHead(
+    section: CronSection,
+    count: Int,
+    open: Boolean,
+    onToggle: (() -> Unit)?,
+) {
+    val dot = when (section) {
+        CronSection.ATTENTION -> KeryxStatus.bad
+        CronSection.RECENT -> KeryxStatus.good
+        CronSection.SCRIPTS, CronSection.QUIET -> KeryxStatus.idle
+    }
+    val quiet = MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(KeryxRadius.chip))
+            .let { if (onToggle != null) it.clickable(onClick = onToggle) else it }
+            .padding(top = 6.dp, bottom = 2.dp, start = 2.dp, end = 4.dp),
+    ) {
+        KeryxSectionHeader(
+            section.label,
+            dotColor = dot,
+            count = count,
+            // Attention speaks in its verdict; the other two in the page's ordinary ink.
+            color = if (section == CronSection.ATTENTION) KeryxStatus.bad else quiet,
+        )
+        Spacer(Modifier.weight(1f))
+        if (onToggle != null) {
+            Text(
+                if (open) "▾" else "▸ show",
+                color = quiet.copy(alpha = 0.6f), fontSize = 11.sp,
+            )
+        }
+    }
+}
+
+/**
+ * The arrivals rail, folded to one line — past [CronTriage.RAIL_FOLD_AT] unread, a column of
+ * headlines above the jobs pushes every job off the first screen (and launches a headline
+ * fetch per row). The line says how much and from how many jobs; tap unfolds the rail.
+ */
+@Composable
+private fun RailSummary(
+    board: chat.keryx.app.presentation.HubDelegate.CronBoard,
+    open: Boolean,
+    onToggle: () -> Unit,
+    onMarkAll: () -> Unit,
+) {
+    val accent = MaterialTheme.colorScheme.primary
+    val quiet = MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(KeryxRadius.card))
+            .background(accent.copy(alpha = 0.05f))
+            .border(1.dp, accent.copy(alpha = 0.22f), RoundedCornerShape(KeryxRadius.card))
+            .clickable(onClick = onToggle)
+            .padding(start = 12.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
+    ) {
+        Box(Modifier.size(7.dp).clip(CircleShape).background(accent))
+        Spacer(Modifier.width(8.dp))
+        Text(
+            "${board.unread.total} new · ${board.unread.byJob.size} jobs",
+            color = keryxAccentInk(accent),
+            fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold,
+            maxLines = 1, overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false),
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(if (open) "▾" else "▸", color = quiet.copy(alpha = 0.6f), fontSize = 11.sp)
+        Spacer(Modifier.weight(1f))
+        TextButton(onClick = onMarkAll) {
+            Text("Mark read", fontSize = 12.sp)
+        }
+    }
+}
+
+/**
+ * One job as one line (~52dp): status dot, name, when it last ran and when it runs next, the
+ * last eight outcomes as ticks, the unread count. Tap opens it in place — the failure text,
+ * the newest headline, then the same run list a card opens to; long-press is the job menu.
+ *
+ * No headline fetch while closed: at two hundred rows a `produceState` per row is two hundred
+ * transcript fetches for a page that only needed names. It starts when the row is opened.
+ */
+@Composable
+private fun CompactRunRow(
+    row: CronRow,
+    unreadIds: Set<String>,
+    nowMs: Long,
+    viewModel: ChatViewModel,
+    verbs: RunVerbs,
+) {
+    val card = row.card
+    val facts = row.facts
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val quiet = MaterialTheme.colorScheme.onSurfaceVariant
+    val haptics = LocalKeryxHaptics.current
+    // Same key as the card's, so a job opened in one density is still open in the other.
+    var open by rememberSaveable("runs-${card.name}") { mutableStateOf(false) }
+    var jobMenu by remember { mutableStateOf(false) }
+    val pinnedJobs by viewModel.hub.pinnedJobs.collectAsState()
+    val jobPinned = card.name in pinnedJobs
+    val tint = RUN_TINTS[CronHumanize.tintIndex(card.name, RUN_TINTS.size)]
+    val failed = row.health == CronHealth.FAILED
+    val ticks = remember(card, facts, unreadIds) { CronTriage.strip(card, facts, unreadIds) }
+
+    val dotColor = when (row.health) {
+        CronHealth.FAILED -> KeryxStatus.bad
+        CronHealth.RUNNING -> MaterialTheme.colorScheme.primary
+        CronHealth.OK -> KeryxStatus.good
+        CronHealth.PAUSED, CronHealth.IDLE -> KeryxStatus.idle
+    }
+    // The meta line, most urgent word first so an ellipsis eats the schedule, never the verdict.
+    val meta = buildList {
+        when (row.health) {
+            CronHealth.FAILED -> add("failed ${CronTriage.ago(row.lastActivity, nowMs)}")
+            CronHealth.RUNNING -> add("running now")
+            CronHealth.PAUSED -> {
+                add(if (facts?.state.equals("completed", ignoreCase = true)) "done" else "paused")
+                if (row.lastActivity > 0L) add("last ${CronTriage.ago(row.lastActivity, nowMs)}")
+            }
+            CronHealth.IDLE -> add("never run")
+            CronHealth.OK -> add(CronTriage.ago(row.lastActivity, nowMs))
+        }
+        if (row.health != CronHealth.PAUSED) {
+            facts?.nextRunAt?.let { CronHumanize.nextIn(it, nowMs) }?.let { add(it) }
+        }
+        facts?.schedule?.let { CronHumanize.schedule(it) }?.takeIf { it.isNotBlank() }?.let { add(it) }
+        if (!card.scheduled) add("job no longer scheduled")
+    }
+
+    Box {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(KeryxRadius.field))
+                // A failing row carries a breath of its verdict, so the shelf reads as red
+                // from across the room, not only its dots.
+                .background(if (failed) KeryxStatus.bad.copy(alpha = 0.06f) else onSurface.copy(alpha = 0.04f))
+                .combinedClickable(
+                    onClick = { open = !open },
+                    onLongClick = { haptics.press(); jobMenu = true },
+                )
+                .animateContentSize()
+                .height(IntrinsicSize.Min),
+        ) {
+            // The job's identity bar, thinner than the card's: here the status dot is the loud one.
+            Box(Modifier.width(2.dp).fillMaxHeight().background(tint.copy(alpha = 0.6f)))
+            Column(Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 52.dp)
+                        .padding(start = 10.dp, end = 10.dp, top = 6.dp, bottom = 6.dp),
+                ) {
+                    KeryxBreathingDot(color = dotColor, alive = row.health == CronHealth.RUNNING, size = 8.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (jobPinned) {
+                                Icon(
+                                    KeryxGlyphs.PinFilled,
+                                    contentDescription = "Pinned to sessions",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(10.dp),
+                                )
+                                Spacer(Modifier.width(4.dp))
+                            }
+                            Text(
+                                card.name,
+                                fontSize = 13.5.sp, fontWeight = FontWeight.Medium,
+                                color = onSurface.copy(alpha = if (row.health == CronHealth.PAUSED) 0.6f else 0.95f),
+                                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        Text(
+                            meta.joinToString(" · "),
+                            fontSize = 10.sp, fontFamily = FontFamily.Monospace,
+                            color = if (failed) KeryxStatus.bad else quiet.copy(alpha = 0.8f),
+                            maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 1.dp),
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    OutcomeStrip(ticks)
+                    if (row.unread > 0) {
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "${row.unread}",
+                            fontSize = 10.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Monospace,
+                            color = keryxAccentInk(),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(KeryxRadius.chip))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                .padding(horizontal = 5.dp, vertical = 1.dp),
+                        )
+                    }
+                    Spacer(Modifier.width(6.dp))
+                    Text(if (open) "▾" else "▸", color = quiet.copy(alpha = 0.6f), fontSize = 11.sp)
+                }
+                if (open) {
+                    Column(Modifier.padding(start = 12.dp, end = 10.dp, bottom = 8.dp)) {
+                        if (failed) {
+                            facts?.lastError?.takeIf { it.isNotBlank() }?.let { FailureLine(it, maxLines = 4) }
+                            FailureActions(card, viewModel.hub.cron.collectAsState().value.data?.jobsByName?.get(card.name), viewModel, verbs, onDetails = { jobMenu = true })
+                        }
+                        OpenedHeadline(card = card, viewModel = viewModel)
+                        if (card.runs.isNotEmpty()) {
+                            Spacer(Modifier.height(4.dp))
+                            RunList(card = card, isNew = { it in unreadIds }, verbs = verbs)
+                        } else if (!failed) {
+                            Text(
+                                "No transcripts on the gateway for this job.",
+                                fontSize = 11.sp, color = quiet.copy(alpha = 0.7f),
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        JobMenu(
+            expanded = jobMenu,
+            onDismiss = { jobMenu = false },
+            card = card,
+            jobPinned = jobPinned,
+            viewModel = viewModel,
+            verbs = verbs,
+        )
+    }
+}
+
+/** The newest report's headline and lead — composed only inside an OPENED list row, so its
+ *  fetch is paid for by the one row you asked about. The delegate caches it after that. */
+@Composable
+private fun OpenedHeadline(card: CronJobCard, viewModel: ChatViewModel) {
+    val latest = card.latest ?: return
+    val digest by produceState<chat.keryx.core.model.CronDigest?>(null, latest.id) {
+        value = viewModel.hub.cronDigest(latest.id)
+    }
+    val d = digest ?: return
+    val title = d.title ?: return
+    Text(
+        title,
+        fontSize = 12.5.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+        maxLines = 2, overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(top = 4.dp),
+    )
+    d.lead?.let {
+        Text(
+            it,
+            fontSize = 11.5.sp, lineHeight = 15.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+            maxLines = 3, overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 1.dp),
+        )
+    }
+}
+
+/**
+ * The last [CronTriage.STRIP_MAX] outcomes as ticks, newest at the right edge: accent = unread,
+ * verdict red = failed, faded good = delivered. Fixed width, right-aligned, so every row's
+ * newest tick sits in the same column and a streak reads DOWN the page as well as across.
+ */
+@Composable
+private fun OutcomeStrip(ticks: List<CronTick>) {
+    val good = KeryxStatus.good
+    val bad = KeryxStatus.bad
+    val accent = MaterialTheme.colorScheme.primary
+    val failedCount = ticks.count { it.failed }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.End),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .width((CronTriage.STRIP_MAX * 5).dp)
+            .semantics {
+                contentDescription = if (ticks.isEmpty()) "No runs yet"
+                else "Last ${ticks.size} runs" + (if (failedCount > 0) ", $failedCount failed" else "")
+            },
+    ) {
+        ticks.forEach { t ->
+            Box(
+                Modifier
+                    .width(3.dp)
+                    .height(if (t.failed) 14.dp else 11.dp)
+                    .clip(RoundedCornerShape(1.dp))
+                    .background(
+                        when {
+                            t.failed -> bad
+                            t.unread -> accent
+                            else -> good.copy(alpha = 0.5f)
+                        },
+                    ),
+            )
+        }
+    }
+}
+
+/** The brief a failing job hands the agent: what it is, how it fails, and what "fixed" means. */
+private fun fixBrief(job: HubJob): String = buildString {
+    append("The scheduled job “${job.name}” (id ${job.id}, ${job.scheduleDisplay}")
+    if (job.scriptOnly) append(", script job")
+    append(") is failing")
+    if (job.failureStreak > 1) append(" — ${job.failureStreak} runs in a row")
+    append(". Last error:\n\n```\n")
+    append(job.lastError.orEmpty().take(1500).trim())
+    append("\n```\n\nFind out why and fix it. Check the job with the cronjob tool and whatever it runs; ")
+    append("when it's fixed, trigger one run and confirm it passes. Tell me what was wrong and what you changed.")
 }

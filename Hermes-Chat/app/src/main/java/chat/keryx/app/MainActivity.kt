@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import chat.keryx.app.notify.KeryxNotifications
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
@@ -153,6 +154,17 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
             }
         }
 
+        // The Missions pulse (2.14.1): while Keryx is on screen, refresh the board for the
+        // drawer's needs-you orb and run the mission watcher's check every minute, so a mission
+        // ending rings in a minute rather than at WorkManager's 15-minute floor. STARTED-scoped:
+        // it starts with the app on screen and is cancelled the moment it leaves — the worker
+        // covers the rest, and nothing here keeps the process or the radio up.
+        lifecycleScope.launch {
+            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                viewModel.missions.pulse(applicationContext)
+            }
+        }
+
         // A notification tap delivers the room id; open it.
         handleNotificationIntent(intent)
         handleAssistIntent(intent)
@@ -201,6 +213,13 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
 
     /** If launched/resumed from a message notification, open the room it points at. */
     private fun handleNotificationIntent(intent: Intent?) {
+        // A mission alert (2.14.1) opens Missions on its card. Consumed like Tap-In: a resume
+        // re-delivering the same intent must not pop the sheet back open after it was closed.
+        intent?.getStringExtra(KeryxNotifications.EXTRA_MISSION_TASK)?.let { taskId ->
+            if (::viewModel.isInitialized) viewModel.missions.requestOpenTask(taskId)
+            intent.removeExtra(KeryxNotifications.EXTRA_MISSION_TASK)
+            return
+        }
         val roomId = intent?.getStringExtra(KeryxNotifications.EXTRA_ROOM_ID) ?: return
         // The run notice opens the room already tapped in (2.12); a message notice opens the room.
         val tapIn = intent.getBooleanExtra(KeryxNotifications.EXTRA_TAP_IN, false)

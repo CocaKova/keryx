@@ -60,10 +60,20 @@ internal fun WorkingStatusBar(
             fill = MaterialTheme.colorScheme.surfaceVariant,
             border = accent.copy(alpha = 0.85f),
             border2 = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f),
-            modifier = if (onTapIn != null) Modifier
-                .clip(RoundedCornerShape(24.dp))
-                .clickable(onClickLabel = "Tap in to the turn", onClick = onTapIn)
-            else Modifier,
+            // No clip: the cloud's scallops, glow and thought trail are drawn PAST the banner's
+            // box on purpose, and the 2.12 rounded-rect clip (added for the tap-in ripple) sheared
+            // them off. The press answers with a sink instead of a ripple, which needs no bounds.
+            modifier = if (onTapIn != null) {
+                val source = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                Modifier
+                    .keryxPressScale(source, scale = 0.96f)
+                    .clickable(
+                        interactionSource = source,
+                        indication = null,
+                        onClickLabel = "Tap in to the turn",
+                        onClick = onTapIn,
+                    )
+            } else Modifier,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (council && typingAgentIds.isNotEmpty()) {

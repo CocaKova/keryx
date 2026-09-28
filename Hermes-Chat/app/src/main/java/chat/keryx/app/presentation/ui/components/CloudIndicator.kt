@@ -87,7 +87,10 @@ fun CloudBanner(
     Box(
         modifier = modifier
             .graphicsLayer { translationY = sin(bobT * PI.toFloat()) * 2.5f.dp.toPx() }
-            .drawBehind { drawCloudBanner(orbit, breath, fill, border, border2) }
+            .drawBehind {
+                drawCloudBanner(orbit, breath, fill, border, border2)
+                drawThoughtTrail(bobT, breath, fill, border)
+            }
             // Insets so the label clears the scalloped edge.
             .padding(horizontal = 26.dp, vertical = 15.dp),
         contentAlignment = Alignment.Center,
@@ -165,12 +168,48 @@ private fun DrawScope.drawCloudBanner(
 
     // Rim: accent→accent2 left-to-right, sampled per bump (cheap gradient over the silhouette).
     fun rimColor(at: Offset): Color = lerp(border, border2, (at.x / w).coerceIn(0f, 1f))
+
+    // Glow (2.14): the same silhouette, grown and faint, breathing with the bumps — the cloud
+    // lit from inside rather than sitting flat on the page. Two passes read as a soft falloff
+    // without a blur (RenderEffect costs a layer per frame on a banner that animates forever).
+    val glow = 0.10f + 0.06f * sin(breath * PI.toFloat())
+    scale(1.16f, 1.34f, pivot = Offset(w / 2f, cy)) { silhouette { rimColor(it).copy(alpha = glow * 0.5f) } }
+    scale(1.07f, 1.15f, pivot = Offset(w / 2f, cy)) { silhouette { rimColor(it).copy(alpha = glow) } }
+
     silhouette(::rimColor)
     val rim = 1.6f.dp.toPx()
     val sx = ((w - 2f * rim) / w).coerceIn(0f, 1f)
     val sy = ((h - 2f * rim) / h).coerceIn(0f, 1f)
     // Fill: mostly [fill], kissed by the rim gradient so the inside isn't flat — like light
-    // grazing the cloud from its colored edge. Kept subtle to preserve label contrast.
-    fun fillColor(at: Offset): Color = lerp(fill, rimColor(at), 0.10f)
+    // grazing the cloud from its colored edge — and lit from above (2.14): brighter crown,
+    // faintly shaded belly, the one cue that turns a flat shape into a volume. Both kept subtle
+    // to preserve label contrast in either theme.
+    val crown = lerp(fill, Color.White, 0.07f)
+    val belly = lerp(fill, Color.Black, 0.05f)
+    fun fillColor(at: Offset): Color =
+        lerp(lerp(crown, belly, (at.y / h).coerceIn(0f, 1f)), rimColor(at), 0.10f)
     scale(sx, sy, pivot = Offset(w / 2f, cy)) { silhouette(::fillColor) }
+}
+
+/**
+ * The thought trail (2.14): two small puffs trailing down-left from the cloud, toward the agent's
+ * side of the chat — the comic-strip grammar that says "thinking", not "loading". They light in
+ * turn with the bob, so the thought reads as rising from the speaker into the cloud.
+ */
+private fun DrawScope.drawThoughtTrail(bobT: Float, breath: Float, fill: Color, border: Color) {
+    val h = size.height
+    val w = size.width
+    val r = h * 0.30f
+    val rim = 1.4f.dp.toPx()
+    val puffs = listOf(
+        // (centre, radius, phase) — the larger puff hugs the cloud, the smaller strays further.
+        Triple(Offset(w * 0.11f, h + r * 0.62f), r * 0.30f, 0f),
+        Triple(Offset(w * 0.045f, h + r * 1.30f), r * 0.17f, 0.5f),
+    )
+    for ((c, rad, phase) in puffs) {
+        val lit = 0.55f + 0.45f * sin(((bobT + phase) % 1f) * PI.toFloat())
+        val grow = 1f + 0.06f * sin((breath + phase) * 2f * PI.toFloat())
+        drawCircle(border.copy(alpha = border.alpha * lit), radius = rad * grow, center = c)
+        drawCircle(fill, radius = (rad * grow - rim).coerceAtLeast(0f), center = c)
+    }
 }

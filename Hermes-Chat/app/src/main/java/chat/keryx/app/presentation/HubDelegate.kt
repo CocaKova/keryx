@@ -567,7 +567,12 @@ class HubDelegate(deps: GatewayDeps) {
         val client = client() ?: return
         scope.launch {
             client.jobAction(jobId, action)
-                .onSuccess { refreshJobs() }
+                .onSuccess {
+                    // Said out loud: from the Runs page a run fires in the background and the
+                    // card only changes when it lands, so a silent tap read as a dead button.
+                    toast(when (action) { "run" -> "Running now"; "pause" -> "Paused"; "resume" -> "Resumed"; else -> "Done" })
+                    refreshJobs(); refreshCron()
+                }
                 .onFailure { toast("Job $action failed: ${it.message?.take(80)}") }
         }
     }
@@ -576,7 +581,7 @@ class HubDelegate(deps: GatewayDeps) {
         val client = client() ?: return
         scope.launch {
             client.jobDelete(jobId)
-                .onSuccess { toast("Job deleted"); refreshJobs() }
+                .onSuccess { toast("Job deleted"); refreshJobs(); refreshCron() }
                 .onFailure { toast("Delete failed: ${it.message?.take(80)}") }
         }
     }

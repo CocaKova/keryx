@@ -508,3 +508,122 @@ private fun ChildTurn(m: HubMessage) {
     }
 }
 
+/**
+ * Any stored session, read-only, by id (2.14.1) — the Missions run deck's "View session ›". A
+ * kanban worker is a gateway session like a landed subagent is, so it gets the same rows
+ * ([ChildTurn]) instead of a second renderer; what it lacks is a [Delegation] to be described
+ * by, hence this adapter over a plain id, a [title] and a [meta] line.
+ *
+ * [live] = the run is still going: the transcript is re-fetched every [LIVE_REFRESH_MS] while
+ * the sheet is open, and follows its tail only while the reader is already at the end. A failed
+ * re-fetch keeps the last good transcript on screen. [onOpenInChat] adds the one verb this
+ * sheet offers beyond reading — carrying on in the chat is the Sessions door's job, so here it
+ * is a way out, never an in-place composer.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SessionTranscriptSheet(
+    sessionId: String,
+    title: String,
+    meta: String,
+    live: Boolean,
+    fetch: suspend (String) -> Result<List<HubMessage>>,
+    onDismiss: () -> Unit,
+    onOpenInChat: (() -> Unit)? = null,
+) {
+    val state by produceState<Result<List<HubMessage>>?>(initialValue = null, sessionId, live) {
+        while (isActive) {
+            val next = fetch(sessionId)
+            // A blip mid-watch must not wipe what is on screen; only a first load shows the error.
+            if (next.isSuccess || value?.isSuccess != true) value = next
+            if (!live) break
+            delay(LIVE_REFRESH_MS)
+        }
+    }
+    KeryxSheet(onDismiss = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp).padding(bottom = 24.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (live) {
+                    KeryxBreathingDot(color = MaterialTheme.colorScheme.primary, alive = true, size = 8.dp)
+                    Spacer(Modifier.width(8.dp))
+                }
+                Text(
+                    title,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                if (onOpenInChat != null) {
+                    TextButton(onClick = onOpenInChat) { Text("Open in chat", fontSize = 12.sp) }
+                }
+            }
+            if (meta.isNotBlank()) {
+                Text(
+                    meta,
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+            Spacer(Modifier.padding(top = 10.dp))
+            when (val result = state) {
+                null -> Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 12.dp),
+                ) {
+                    CircularProgressIndicator(
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.width(16.dp).heightIn(min = 16.dp, max = 16.dp),
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text("Opening the session…", fontSize = 12.sp)
+                }
+                else -> result.fold(
+                    onSuccess = { messages ->
+                        if (messages.isEmpty()) {
+                            Text(
+                                if (live) "Nothing written yet — it fills in as the worker goes."
+                                else "The gateway has no stored transcript for this session.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        } else {
+                            val listState = rememberLazyListState()
+                            // Follow the tail only for a reader already there: a live transcript
+                            // that yanks you down mid-read is the chat-that-jumps bug again.
+                            var atEnd by remember { mutableStateOf(true) }
+                            LaunchedEffect(messages.size) {
+                                if (live && atEnd) listState.scrollToItem(messages.lastIndex)
+                            }
+                            LaunchedEffect(listState) {
+                                androidx.compose.runtime.snapshotFlow { !listState.canScrollForward }
+                                    .collect { atEnd = it }
+                            }
+                            LazyColumn(
+                                state = listState,
+                                modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                items(messages) { m -> ChildTurn(m) }
+                            }
+                        }
+                    },
+                    onFailure = { e ->
+                        Text(
+                            "Couldn't open it — ${e.message?.take(120) ?: "unknown error"}",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    },
+                )
+            }
+        }
+    }
+}
+
+/** How often a live run's transcript is re-read while its sheet is open. */
+private const val LIVE_REFRESH_MS = 4_000L

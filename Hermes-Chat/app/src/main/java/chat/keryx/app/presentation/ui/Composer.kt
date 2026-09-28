@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
+import chat.keryx.app.presentation.ui.components.keryxShimmerBorder
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.TransformOrigin
@@ -153,6 +154,22 @@ internal fun Composer(
     // One hairline surface holds everything (the Talaria treatment): near-square, matte,
     // gilt-adjacent border — the input row on top, the status footer beneath.
     val composerShape = RoundedCornerShape(14.dp)
+    // The rim tells state (2.14): a neutral hairline at rest, the accent→accent2 gilt when the
+    // field has focus ("you are writing here"), and while a turn runs, the slow shimmer the live
+    // cards wear — the bar you type into is visibly the one the agent is working behind.
+    var focused by remember { mutableStateOf(false) }
+    val focusGlow by animateFloatAsState(
+        targetValue = if (focused) 1f else 0f,
+        animationSpec = chat.keryx.app.presentation.ui.components.KeryxMotion.settle,
+        label = "composerFocus",
+    )
+    val restRim = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f)
+    val rimBrush = Brush.horizontalGradient(
+        listOf(
+            lerp(restRim, MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), focusGlow),
+            lerp(restRim, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f), focusGlow),
+        ),
+    )
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -161,7 +178,14 @@ internal fun Composer(
             // second: the tint alone let whatever scrolled underneath read through the draft.
             .background(MaterialTheme.colorScheme.surface.copy(alpha = ComposerFloor.ALPHA))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = ComposerFloor.TINT_ALPHA))
-            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f), composerShape)
+            .then(
+                if (busyAction != null) Modifier.keryxShimmerBorder(
+                    active = true,
+                    baseColor = lerp(restRim, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), focusGlow),
+                    shape = composerShape,
+                )
+                else Modifier.border(1.dp, rimBrush, composerShape)
+            )
             .padding(start = 2.dp, end = 4.dp, top = 2.dp, bottom = 0.dp),
     ) {
     Row(
@@ -201,6 +225,7 @@ internal fun Composer(
                 }
                 .focusRequester(focusRequester)
                 .onFocusChanged { focus ->
+                    focused = focus.isFocused
                     if (focus.isFocused && hasMessages && atBottom()) onFocusedAtBottom()
                 },
             placeholder = {
@@ -299,6 +324,11 @@ internal fun Composer(
                 .compositeOver(MaterialTheme.colorScheme.surfaceVariant)
         val sendInk = if (armed) Color.White
             else chat.keryx.app.presentation.ui.components.contrastColorFor(sendGround)
+        // Armed, the coin takes a whisper of accent2 across its face (2.14) — never more than a
+        // third of the way, so the white arrow keeps the contrast measured above on both stops.
+        val sendBrush = if (armed) Brush.linearGradient(
+            listOf(sendGround, lerp(sendGround, MaterialTheme.colorScheme.tertiary, 0.33f)),
+        ) else androidx.compose.ui.graphics.SolidColor(sendGround)
         Box {
             Box(
                 contentAlignment = Alignment.Center,
@@ -311,7 +341,7 @@ internal fun Composer(
                         rotationZ = -22f * p
                     }
                     .clip(RoundedCornerShape(50))
-                    .background(sendGround)
+                    .background(sendBrush)
                     .combinedClickable(
                         onClick = {
                             when (busyAction) {
@@ -337,7 +367,18 @@ internal fun Composer(
                         },
                     ),
             ) {
-                Icon(glyph, contentDescription = label, tint = sendInk, modifier = Modifier.size(24.dp))
+                // Send → steer → queue → stop is one button changing its mind; the glyph pops
+                // into the new one instead of snapping, so the change itself is noticed.
+                AnimatedContent(
+                    targetState = glyph,
+                    transitionSpec = {
+                        chat.keryx.app.presentation.ui.components.keryxPop()
+                            .togetherWith(chat.keryx.app.presentation.ui.components.keryxVanish())
+                    },
+                    label = "sendGlyph",
+                ) { g ->
+                    Icon(g, contentDescription = label, tint = sendInk, modifier = Modifier.size(24.dp))
+                }
             }
             chat.keryx.app.presentation.ui.components.KeryxPuffBurst(
                 tick = sendPuffTick,

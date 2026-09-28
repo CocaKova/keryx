@@ -594,6 +594,9 @@ object KeryxNotifications {
 
     const val MISSIONS_CHANNEL_ID = "keryx_missions"
 
+    /** The card a mission alert is about; its tap opens Missions on that card's sheet (2.14.1). */
+    const val EXTRA_MISSION_TASK = "keryx.mission.task"
+
     fun ensureMissionsChannel(context: Context) {
         val mgr = context.getSystemService(NotificationManager::class.java) ?: return
         if (mgr.getNotificationChannel(MISSIONS_CHANNEL_ID) != null) return
@@ -614,12 +617,18 @@ object KeryxNotifications {
         val nm = NotificationManagerCompat.from(context)
         if (!nm.areNotificationsEnabled()) return
 
+        // 2.14.1: the tap lands on the card, not just the app — "Mission blocked — needs you"
+        // is a summons, and the answer box is on the card's sheet.
         val tapIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(EXTRA_MISSION_TASK, taskId)
         }
         val pending = PendingIntent.getActivity(
             context,
-            taskId.hashCode(),
+            // One PendingIntent per task: a shared request code with UPDATE_CURRENT would
+            // rewrite every earlier alert's extra to the newest card. Salted so a task id can
+            // never collide with a room tap's code (those hash the bare room id).
+            "mission:$taskId".hashCode(),
             tapIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )

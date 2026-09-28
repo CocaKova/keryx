@@ -5,6 +5,11 @@ import chat.keryx.app.presentation.ui.components.HeraldConfig
 import chat.keryx.app.presentation.ui.components.LocalHeraldConfig
 import chat.keryx.app.presentation.ui.components.keryxDuskSky
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -92,6 +97,14 @@ fun HermesApp(viewModel: ChatViewModel) {
         keyboard?.hide()
         scope.launch { drawerState.close() }
         nav.open(dest)
+    }
+
+    // A mission alert's tap (2.14.1): walk to Missions; the board opens the card's sheet and
+    // consumes the request itself, so it survives the screen not being composed yet.
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        viewModel.missions.openTaskRequest.collect { taskId ->
+            if (taskId != null) openSpace(KeryxDest.Missions)
+        }
     }
 
     // The drawer can be opened by swipe, not just the menu button — the moment the gesture commits
@@ -313,10 +326,39 @@ fun HermesApp(viewModel: ChatViewModel) {
                         val unreadRooms = remember(rooms, currentRoom?.id) {
                             rooms.count { it.hasUnread && it.id != currentRoom?.id }
                         }
+                        // Something behind the drawer WAITS on you (2.14): a decision held in
+                        // another session, or a mission blocked on your word. That is not news,
+                        // it is a summons — so it wears the warm status colour, breathes, and the
+                        // glyph gives one small nudge when the count rises. The room you are in is
+                        // excepted: its request is already on screen.
+                        val waiting by viewModel.needsYouIds.collectAsState()
+                        val missionsWaiting by viewModel.missions.needsYouCount.collectAsState()
+                        val urgent = waiting.count { it != currentRoom?.id } + missionsWaiting
+                        val nudge = remember { Animatable(0f) }
+                        var lastUrgent by remember { mutableStateOf(0) }
+                        val reducedNudge by chat.keryx.app.presentation.ui.components.rememberReducedMotion()
+                        LaunchedEffect(urgent) {
+                            if (urgent > lastUrgent && !reducedNudge) {
+                                nudge.snapTo(1f)
+                                nudge.animateTo(0f, spring(dampingRatio = 0.25f, stiffness = Spring.StiffnessMediumLow))
+                            }
+                            lastUrgent = urgent
+                        }
+                        val orb = chat.keryx.app.presentation.ui.components.breathingAlpha(active = urgent > 0, low = 0.45f, periodMillis = 2200)
                         IconButton(onClick = { focusManager.clearFocus(); scope.launch { drawerState.open() } }) {
                             BadgedBox(badge = {
                                 androidx.compose.animation.AnimatedVisibility(
-                                    visible = unreadRooms > 0,
+                                    visible = urgent > 0,
+                                    enter = chat.keryx.app.presentation.ui.components.keryxPop(),
+                                    exit = chat.keryx.app.presentation.ui.components.keryxVanish(),
+                                ) {
+                                    Badge(
+                                        containerColor = chat.keryx.app.presentation.ui.components.KeryxStatus.warn.copy(alpha = orb),
+                                        contentColor = chat.keryx.app.presentation.ui.components.contrastColorFor(chat.keryx.app.presentation.ui.components.KeryxStatus.warn),
+                                    ) { Text(if (urgent > 9) "9+" else urgent.toString()) }
+                                }
+                                androidx.compose.animation.AnimatedVisibility(
+                                    visible = urgent == 0 && unreadRooms > 0,
                                     enter = chat.keryx.app.presentation.ui.components.keryxPop(),
                                     exit = chat.keryx.app.presentation.ui.components.keryxVanish(),
                                 ) {
@@ -328,8 +370,13 @@ fun HermesApp(viewModel: ChatViewModel) {
                             }) {
                                 Icon(
                                     chat.keryx.app.presentation.ui.components.KeryxGlyphs.Sidebar,
-                                    contentDescription = if (unreadRooms > 0) "Menu, $unreadRooms unread" else "Menu",
+                                    contentDescription = when {
+                                        urgent > 0 -> "Menu, $urgent waiting on you"
+                                        unreadRooms > 0 -> "Menu, $unreadRooms unread"
+                                        else -> "Menu"
+                                    },
                                     tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.graphicsLayer { rotationZ = 14f * nudge.value },
                                 )
                             }
                         }

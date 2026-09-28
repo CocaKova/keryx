@@ -608,6 +608,10 @@ class HermesStreamClient(
         val startedAt: Long,
         val endedAt: Long?,
         val durationSeconds: Long?,
+        /** The worker's own gateway session (2.14.1) — its transcript, readable while the run is
+         *  live. Null on a gateway that predates the field, or a run that never got a session
+         *  (a spawn failure): the run card then stays what it was, a card with nothing behind it. */
+        val sessionId: String? = null,
     )
 
     /** One distress signal, from the same rules `hermes kanban diag` runs. [stale] = a crash or
@@ -626,8 +630,14 @@ class HermesStreamClient(
 
     data class KanbanAttachment(val id: Long, val filename: String, val contentType: String, val size: Long)
 
-    /** The whole board: tasks grouped by raw gateway status (column layout is the app's call). */
-    data class KanbanBoard(val board: String, val tasks: Map<String, List<KanbanTask>>)
+    /** The whole board: tasks grouped by raw gateway status (column layout is the app's call).
+     *  [needsYou] is the gateway's own top-level count of cards waiting on their owner — null on
+     *  a plugin that never sent one, where the app counts the cards' flags itself. */
+    data class KanbanBoard(
+        val board: String,
+        val tasks: Map<String, List<KanbanTask>>,
+        val needsYou: Int? = null,
+    )
 
     data class KanbanDetail(
         val task: KanbanTask,
@@ -643,8 +653,6 @@ class HermesStreamClient(
     /** What `POST /task/{id}/reply` did: the comment always lands; [unblocked] says whether the
      *  card went back to work, [status] where it is now. */
     data class KanbanReply(val unblocked: Boolean, val status: String)
-
-    private fun kanbanTaskOf(o: kotlinx.serialization.json.JsonObject): KanbanTask = HubJson.kanbanTask(o)
 
     private suspend fun kanbanCall(
         path: String,
@@ -722,16 +730,7 @@ class HermesStreamClient(
     }
 
     suspend fun kanbanBoard(): Result<KanbanBoard> = runCatching {
-        val obj = kanbanCall("/keryx/kanban/board")
-        KanbanBoard(
-            board = (obj["board"] as? JsonPrimitive)?.content ?: "default",
-            tasks = (obj["tasks"] as? kotlinx.serialization.json.JsonObject)
-                ?.mapValues { (_, v) ->
-                    (v as? kotlinx.serialization.json.JsonArray)
-                        ?.mapNotNull { (it as? kotlinx.serialization.json.JsonObject)?.let(::kanbanTaskOf) }
-                        .orEmpty()
-                }.orEmpty(),
-        )
+        HubJson.kanbanBoard(kanbanCall("/keryx/kanban/board"))
     }
 
     suspend fun kanbanTask(taskId: String): Result<KanbanDetail> = runCatching {
@@ -938,6 +937,11 @@ class HermesStreamClient(
         val repeatCompleted: Int,
         /** What the agent is told each run — carried so the edit dialog can prefill. */
         val prompt: String = "",
+        /** A script job (`no_agent`, or a `script` with no agent turn): it runs, but leaves no
+         *  transcript — so the Runs page can't show it runs, only its status. */
+        val scriptOnly: Boolean = false,
+        /** Consecutive failed runs, as the scheduler counts them. */
+        val failureStreak: Int = 0,
     )
 
     /** One persisted Hermes session from `GET /api/sessions` (epoch-seconds timestamps). */
@@ -1649,6 +1653,8 @@ internal object HubJson {
                 repeatCompleted = (j["repeat"] as? kotlinx.serialization.json.JsonObject)
                     ?.long("completed")?.toInt() ?: 0,
                 prompt = j.str("prompt"),
+                scriptOnly = j.bool("no_agent"),
+                failureStreak = j.long("failure_streak").toInt(),
             )
         }
 
@@ -1757,6 +1763,20 @@ internal object HubJson {
         )
     }
 
+    /** The board answer. Pure (moved out of the client in 2.14.1) so the needs-you count's
+     *  fallback is unit-testable: the top-level `needs_you` wins when the plugin sends it. */
+    fun kanbanBoard(obj: kotlinx.serialization.json.JsonObject): HermesStreamClient.KanbanBoard =
+        HermesStreamClient.KanbanBoard(
+            board = (obj["board"] as? JsonPrimitive)?.content ?: "default",
+            tasks = (obj["tasks"] as? kotlinx.serialization.json.JsonObject)
+                ?.mapValues { (_, v) ->
+                    (v as? kotlinx.serialization.json.JsonArray)
+                        ?.mapNotNull { (it as? kotlinx.serialization.json.JsonObject)?.let { t -> kanbanTask(t) } }
+                        .orEmpty()
+                }.orEmpty(),
+            needsYou = obj.dbl("needs_you")?.toInt(),
+        )
+
     fun kanbanDetail(obj: kotlinx.serialization.json.JsonObject, taskId: String): HermesStreamClient.KanbanDetail {
         val diags = obj.objs("diagnostics").map { d ->
             val actions = d.objs("actions")
@@ -1797,6 +1817,8 @@ internal object HubJson {
                     startedAt = r.long("started_at"),
                     endedAt = r.dbl("ended_at")?.toLong(),
                     durationSeconds = r.dbl("duration_seconds")?.toLong(),
+                    // String or JSON null; absent on older gateways. Blank reads as none.
+                    sessionId = r.strOrNull("session_id")?.trim()?.takeIf { it.isNotEmpty() },
                 )
             },
             diagnostics = diags,

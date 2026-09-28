@@ -67,6 +67,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
@@ -872,6 +873,26 @@ private fun KeryxSpaceBody(
 // --- Sheet chrome ------------------------------------------------------------------------------
 
 /**
+ * A hard fling in a sheet's list used to reach the top with velocity left over; the sheet took
+ * it, dragged a few px and sprang back — the bounce (1.13 fixed it in the Hub; the Hub's rewrite
+ * dropped it and the Missions card sheet grew it back). Swallow what a fling or its overscroll
+ * side effect leaves; a real finger drag (UserInput) still passes through, so swipe-down closes.
+ */
+private val SheetFlingTamer = object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+    override fun onPostScroll(
+        consumed: androidx.compose.ui.geometry.Offset,
+        available: androidx.compose.ui.geometry.Offset,
+        source: androidx.compose.ui.input.nestedscroll.NestedScrollSource,
+    ): androidx.compose.ui.geometry.Offset =
+        if (source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.SideEffect) available
+        else androidx.compose.ui.geometry.Offset.Zero
+    override suspend fun onPostFling(
+        consumed: androidx.compose.ui.unit.Velocity,
+        available: androidx.compose.ui.unit.Velocity,
+    ): androidx.compose.ui.unit.Velocity = available
+}
+
+/**
  * The one bottom-sheet shell: [KeryxRadius.sheet] corners, surface color, an optional
  * letter-spaced title row in the section voice. Every ModalBottomSheet in the app wears this.
  */
@@ -908,7 +929,7 @@ fun KeryxSheet(
         },
     ) {
         Column(
-            Modifier.fillMaxWidth().graphicsLayer {
+            Modifier.fillMaxWidth().nestedScroll(SheetFlingTamer).graphicsLayer {
                 alpha = 0.4f + 0.6f * arrival.value
                 translationY = (1f - arrival.value) * 10.dp.toPx()
             },

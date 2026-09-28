@@ -1,7 +1,9 @@
 package chat.keryx.app.presentation.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,11 +27,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -57,6 +62,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.repeatOnLifecycle
 import chat.keryx.app.data.remote.HermesStreamClient.KanbanDetail
+import chat.keryx.app.data.remote.HermesStreamClient.KanbanRun
 import chat.keryx.app.data.remote.HermesStreamClient.KanbanTask
 import chat.keryx.app.presentation.ChatViewModel
 import kotlinx.coroutines.delay
@@ -144,6 +150,44 @@ internal fun sectionStartIndices(sections: List<Pair<String, Int>>): Map<String,
 }
 
 /**
+ * "Select all" on a lane header, as a toggle: adds the lane's cards to [selected], or — when
+ * every one of them is already in — takes them all back out. Other lanes' picks are untouched.
+ */
+internal fun toggleLane(selected: Set<String>, lane: List<KanbanTask>): Set<String> {
+    val ids = lane.map { it.id }
+    return if (ids.isNotEmpty() && selected.containsAll(ids)) selected - ids.toSet() else selected + ids
+}
+
+/** Every card the Done lane shows — what "Clear done" archives. Empty when there is no lane. */
+internal fun doneLaneIds(sections: List<MissionSection>): List<String> =
+    sections.firstOrNull { it.key == "done" }?.cards?.map { it.id }.orEmpty()
+
+/** The picks that still exist: a card archived or moved off the board since it was ticked
+ *  must not be counted, or archived a second time. Keeps [selected]'s own order. */
+internal fun liveSelection(selected: Set<String>, sections: List<MissionSection>): Set<String> {
+    val onBoard = sections.flatMap { s -> s.cards.map { it.id } }.toHashSet()
+    return selected.filterTo(LinkedHashSet()) { it in onBoard }
+}
+
+/** The one-time "ring me" hint: the gateway door only (where the watcher is the phone's ear),
+ *  only while alerts are off, and never again once dismissed or acted on. */
+internal fun showAlertsHint(direct: Boolean, alertsOn: Boolean, dismissed: Boolean): Boolean =
+    direct && !alertsOn && !dismissed
+
+/** The transcript sheet's meta line for a run: who, how it ended (or that it is live), how long. */
+internal fun runSessionMeta(run: KanbanRun, nowSeconds: Long): String {
+    val live = run.endedAt == null
+    return listOfNotNull(
+        run.profile.ifBlank { null },
+        if (live) "running" else run.outcome.ifBlank { run.status }.replace('_', ' ').ifBlank { null },
+        runLength(run.durationSeconds ?: if (live) nowSeconds - run.startedAt else null),
+    ).joinToString(" · ")
+}
+
+private const val ALERTS_HINT_PREFS = "keryx_missions_ui"
+private const val ALERTS_HINT_DISMISSED = "alerts_hint_dismissed"
+
+/**
  * Missions — the agent's kanban board, phone-shaped: vertical status sections instead of
  * horizontal swimlanes. Reads + additive writes only (create missions, comment); the dispatcher
  * owns state transitions, so cards move columns on refresh, never by drag.
@@ -165,6 +209,40 @@ fun MissionsScreen(
     val subs by viewModel.missions.kanbanSubs.collectAsState()
     var createOpen by remember { mutableStateOf(false) }
     var openTaskId by remember { mutableStateOf<String?>(null) }
+    val bulk by viewModel.missions.bulkProgress.collectAsState()
+    val alertsOn by viewModel.missions.alertsEnabled.collectAsState()
+    val haptics = LocalKeryxHaptics.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    // Bulk clean-up (2.14.1): long-press a card to start picking; taps toggle while picking.
+    // Back steps out of picking before it leaves the board (this handler registers after the
+    // nav host's, so it wins the dispatch).
+    var selecting by remember { mutableStateOf(false) }
+    var selected by remember { mutableStateOf<Set<String>>(emptySet()) }
+    val exitSelection = { selecting = false; selected = emptySet() }
+    androidx.activity.compose.BackHandler(enabled = selecting) { exitSelection() }
+    /** Ids awaiting the archive confirm, and whether they came from "Clear done". */
+    var pendingArchive by remember { mutableStateOf<Pair<List<String>, Boolean>?>(null) }
+
+    // A mission alert's tap (2.14.1): the host walked here; open that card and consume it.
+    val openRequest by viewModel.missions.openTaskRequest.collectAsState()
+    LaunchedEffect(openRequest) {
+        val requested = openRequest ?: return@LaunchedEffect
+        exitSelection()
+        openTaskId = requested
+        viewModel.missions.consumeOpenTask()
+    }
+
+    // The "ring me" hint's once-ness lives in the phone's own prefs, not the synced settings:
+    // it is about this install having been told, nothing the agent or another device needs.
+    val hintPrefs = remember(context) {
+        context.getSharedPreferences(ALERTS_HINT_PREFS, android.content.Context.MODE_PRIVATE)
+    }
+    var hintDismissed by remember { mutableStateOf(hintPrefs.getBoolean(ALERTS_HINT_DISMISSED, false)) }
+    val dismissHint = {
+        hintDismissed = true
+        hintPrefs.edit().putBoolean(ALERTS_HINT_DISMISSED, true).apply()
+    }
 
     // Fresh on open, then a gentle poll while (and only while) this screen is composed AND the
     // app is actually on screen — the dispatcher moves cards without us, and 20s is plenty for a
@@ -173,10 +251,18 @@ fun MissionsScreen(
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
-            viewModel.missions.refreshKanban()
-            while (true) {
-                delay(20_000L)
+            // While this loop lives the board is on screen: the mission watchers (the pulse and
+            // the worker) stay quiet — this screen already shows every move they would ring
+            // about. The finally clears it on background and on leaving alike.
+            viewModel.missions.setBoardOnScreen(true)
+            try {
                 viewModel.missions.refreshKanban()
+                while (true) {
+                    delay(20_000L)
+                    viewModel.missions.refreshKanban()
+                }
+            } finally {
+                viewModel.missions.setBoardOnScreen(false)
             }
         }
     }
@@ -185,6 +271,12 @@ fun MissionsScreen(
     val sections = missionSections(tasks)
     val runningCount = tasks["running"]?.size ?: 0
     val needsCount = sections.firstOrNull { it.key == NEEDS_YOU }?.cards?.size ?: 0
+    val chosen = liveSelection(selected, sections)
+    val toggle = { id: String ->
+        selected = if (id in selected) selected - id else selected + id
+        // Unticking the last card ends the picking — an empty bar is a mode with nothing in it.
+        if (liveSelection(selected, sections).isEmpty()) exitSelection()
+    }
 
     KeryxSpace(
         title = "Missions",
@@ -213,7 +305,9 @@ fun MissionsScreen(
             }
         },
         actions = {
-            IconButton(onClick = { viewModel.missions.refreshKanban() }, enabled = !refreshing) {
+            // While picking, the selection bar under the title is the toolbar; refresh would
+            // reshuffle the very cards being picked.
+            if (!selecting) IconButton(onClick = { viewModel.missions.refreshKanban() }, enabled = !refreshing) {
                 Icon(
                     Icons.Default.Refresh,
                     contentDescription = "Refresh",
@@ -224,21 +318,24 @@ fun MissionsScreen(
         },
         floating = {
             // The sunset-thread action: the app's two accents on the one create affordance.
-            val accent = MaterialTheme.colorScheme.primary
-            val accent2 = MaterialTheme.colorScheme.tertiary
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Brush.linearGradient(listOf(accent, accent2)))
-                    .clickable { createOpen = true },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = "New mission",
-                    tint = contrastColorFor(accent),
-                )
+            // Hidden while picking — creating a card mid-selection has no meaning.
+            if (!selecting) {
+                val accent = MaterialTheme.colorScheme.primary
+                val accent2 = MaterialTheme.colorScheme.tertiary
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Brush.linearGradient(listOf(accent, accent2)))
+                        .clickable { createOpen = true },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "New mission",
+                        tint = contrastColorFor(accent),
+                    )
+                }
             }
         },
     ) {
@@ -246,8 +343,29 @@ fun MissionsScreen(
         val scope = rememberCoroutineScope()
         val starts = sectionStartIndices(sections.map { it.key to it.cards.size })
 
+        // The selection bar replaces the lane chips while picking, and shows a running bulk
+        // archive's progress either way ("Clear done" archives without entering picking).
+        if (selecting || bulk != null) {
+            SelectionBar(
+                count = chosen.size,
+                selecting = selecting,
+                progress = bulk,
+                onArchive = { pendingArchive = chosen.toList() to false },
+                onCancel = exitSelection,
+            )
+        } else if (showAlertsHint(viewModel.transportIsDirect, alertsOn, hintDismissed)) {
+            AlertsHintRow(
+                onTurnOn = {
+                    viewModel.missions.setAlertsEnabled(true)
+                    chat.keryx.app.notify.MissionAlertsWorker.setEnabled(context, true)
+                    dismissHint()
+                },
+                onDismiss = dismissHint,
+            )
+        }
+
         // Lane-jump chips: one per non-empty section, tap scrolls to that lane's header.
-        if (sections.size > 1) {
+        if (sections.size > 1 && !selecting) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -303,19 +421,47 @@ fun MissionsScreen(
                     val status = section.key
                     val cards = section.cards
                     item(key = "hdr-$status") {
-                        KeryxSectionHeader(
-                            label = section.label,
-                            dotColor = statusColor(status),
-                            count = cards.size,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 14.dp, bottom = 2.dp),
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 2.dp),
+                        ) {
+                            KeryxSectionHeader(
+                                label = section.label,
+                                dotColor = statusColor(status),
+                                count = cards.size,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f),
+                            )
+                            when {
+                                selecting -> LaneAction(
+                                    if (cards.all { it.id in chosen }) "Unselect lane" else "Select all",
+                                ) {
+                                    selected = toggleLane(selected, cards)
+                                    if (liveSelection(selected, sections).isEmpty()) exitSelection()
+                                }
+                                // The swarm's leftovers, in one move: every finished card off
+                                // the board. Behind a confirm that states the count.
+                                status == "done" && bulk == null -> LaneAction("Clear done") {
+                                    pendingArchive = doneLaneIds(sections) to true
+                                }
+                            }
+                        }
                     }
                     items(cards, key = { it.id }) { task ->
                         MissionCard(
                             task = task,
                             subscribed = subs[task.id]?.isNotEmpty() == true,
-                            onClick = { openTaskId = task.id },
+                            selecting = selecting,
+                            selected = task.id in chosen,
+                            onClick = { if (selecting) toggle(task.id) else openTaskId = task.id },
+                            onLongClick = {
+                                if (selecting) toggle(task.id)
+                                else {
+                                    haptics.press()
+                                    selecting = true
+                                    selected = setOf(task.id)
+                                }
+                            },
                         )
                     }
                 }
@@ -345,7 +491,153 @@ fun MissionsScreen(
             profiles = missionAssignees(caps?.roomProfiles.orEmpty()),
             onOpenTask = { openTaskId = it },
             onDismiss = { openTaskId = null },
+            // A worker's session carried on in the chat: the board steps aside for the floor.
+            onOpenSession = { sessionId, title ->
+                openTaskId = null
+                viewModel.openSessionById(sessionId, title)
+                onDismissRequest()
+            },
         )
+    }
+
+    pendingArchive?.let { (ids, clearDone) ->
+        val allCards = tasks.values.flatten()
+        val running = allCards.count { it.id in ids && it.status == "running" }
+        val n = ids.size
+        val noun = if (n == 1) "mission" else "missions"
+        AlertDialog(
+            onDismissRequest = { pendingArchive = null },
+            title = { Text(if (clearDone) "Clear $n done $noun?" else "Archive $n $noun?") },
+            text = {
+                Text(
+                    buildString {
+                        append(if (clearDone) "Every card in Done comes off the board." else "They come off the board.")
+                        if (running > 0) append(
+                            " $running of them ${if (running == 1) "is" else "are"} running — " +
+                                "${if (running == 1) "its worker stops" else "their workers stop"}.",
+                        )
+                    },
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingArchive = null
+                    viewModel.missions.kanbanArchiveMany(ids) { exitSelection() }
+                }) { Text("Archive $n", color = KeryxStatus.bad) }
+            },
+            dismissButton = { TextButton(onClick = { pendingArchive = null }) { Text("Cancel") } },
+        )
+    }
+}
+
+/** A lane header's one verb, in the header's own small voice. */
+@Composable
+private fun LaneAction(label: String, onClick: () -> Unit) {
+    Text(
+        label,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = keryxAccentInk(),
+        maxLines = 1,
+        modifier = Modifier
+            .clip(RoundedCornerShape(KeryxRadius.chip))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    )
+}
+
+/**
+ * The picking toolbar (2.14.1): cancel, how many are ticked, Archive — and, while a bulk archive
+ * runs, its progress in place of the verb. Shown for "Clear done" too, which never enters
+ * picking, so every bulk job reports the same way.
+ */
+@Composable
+private fun SelectionBar(
+    count: Int,
+    selecting: Boolean,
+    progress: chat.keryx.app.presentation.MissionsDelegate.BulkProgress?,
+    onArchive: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    val accent = MaterialTheme.colorScheme.primary
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(KeryxRadius.card))
+            .background(accent.copy(alpha = 0.10f))
+            .padding(horizontal = 6.dp, vertical = 4.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (selecting) {
+                IconButton(onClick = onCancel, enabled = progress == null) {
+                    Icon(KeryxGlyphs.Close, contentDescription = "Cancel selection", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            } else Spacer(Modifier.width(10.dp))
+            Text(
+                when {
+                    progress != null -> "Archiving ${progress.done} of ${progress.total}…" +
+                        (if (progress.failed > 0) " · ${progress.failed} failed" else "")
+                    else -> "$count selected"
+                },
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            if (selecting && progress == null) {
+                TextButton(onClick = onArchive, enabled = count > 0) {
+                    Text("Archive", color = if (count > 0) KeryxStatus.bad else MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        if (progress != null) {
+            LinearProgressIndicator(
+                progress = { if (progress.total == 0) 0f else progress.done.toFloat() / progress.total },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+                color = accent,
+            )
+        }
+    }
+}
+
+/** "Ring me when missions finish" — the gateway door's one-time nudge toward the watcher. */
+@Composable
+private fun AlertsHintRow(onTurnOn: () -> Unit, onDismiss: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(KeryxRadius.card))
+            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.08f))
+            .clickable(onClick = onTurnOn)
+            .padding(start = 12.dp, top = 4.dp, bottom = 4.dp),
+    ) {
+        Icon(
+            Icons.Outlined.Notifications,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.tertiary,
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text("Ring me when missions finish", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Text(
+                "A notification when a mission completes, blocks, or gives up",
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        TextButton(onClick = onTurnOn) { Text("Turn on", fontSize = 12.sp) }
+        IconButton(onClick = onDismiss) {
+            Icon(
+                KeryxGlyphs.Close,
+                contentDescription = "Dismiss",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp),
+            )
+        }
     }
 }
 
@@ -389,14 +681,29 @@ private fun statusColor(status: String): Color = when (status) {
 }
 
 @Composable
-private fun MissionCard(task: KanbanTask, subscribed: Boolean, onClick: () -> Unit) {
+private fun MissionCard(
+    task: KanbanTask,
+    subscribed: Boolean,
+    selecting: Boolean,
+    selected: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+) {
     val color = if (task.needsYou) statusColor(NEEDS_YOU) else statusColor(task.status)
     val running = task.status == "running"
+    val accent = MaterialTheme.colorScheme.primary
+    val shape = RoundedCornerShape(KeryxRadius.card)
     KeryxCard(
-        onClick = onClick,
-        tint = if (running || task.needsYou || task.status == "blocked") color else null,
-        breathing = running,
-        modifier = if (task.status == "done") Modifier.alpha(0.55f) else Modifier,
+        // The card's own click is off: the long press lives on the modifier, clipped to the
+        // card's shape so the ripple does not square its corners.
+        onClick = null,
+        tint = if (selected) accent else if (running || task.needsYou || task.status == "blocked") color else null,
+        // The gleam stills while picking: a travelling border would fight the selection ring.
+        breathing = running && !selecting,
+        modifier = (if (task.status == "done" && !selected) Modifier.alpha(0.55f) else Modifier)
+            .clip(shape)
+            .then(if (selected) Modifier.border(2.dp, accent, shape) else Modifier)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
         // The lane rail: every card carries its status color on the left edge, so a lane reads
         // as a lane even while scrolling past section boundaries.
@@ -411,7 +718,10 @@ private fun MissionCard(task: KanbanTask, subscribed: Boolean, onClick: () -> Un
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (running) {
+                    if (selecting) {
+                        SelectMark(selected, accent)
+                        Spacer(Modifier.width(8.dp))
+                    } else if (running) {
                         KeryxBreathingDot(color = color, alive = true, size = 8.dp)
                         Spacer(Modifier.width(6.dp))
                     }
@@ -498,6 +808,28 @@ private fun MissionCard(task: KanbanTask, subscribed: Boolean, onClick: () -> Un
     }
 }
 
+/** The pick mark on a card while selecting: a hollow ring, or the accent disc with a check. */
+@Composable
+private fun SelectMark(selected: Boolean, accent: Color) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(18.dp)
+            .clip(CircleShape)
+            .then(
+                if (selected) Modifier.background(accent)
+                else Modifier.border(1.5.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f), CircleShape),
+            ),
+    ) {
+        if (selected) Icon(
+            Icons.Default.Check,
+            contentDescription = "Selected",
+            tint = contrastColorFor(accent),
+            modifier = Modifier.size(13.dp),
+        )
+    }
+}
+
 /** A status word with its dot: the dot carries the hue, the words stay in body ink so they
  *  read at 10sp on either ground (contrast is the text's job, not the wash's). */
 @Composable
@@ -560,8 +892,11 @@ private fun MissionDetailSheet(
     profiles: List<String>,
     onOpenTask: (String) -> Unit,
     onDismiss: () -> Unit,
+    onOpenSession: (sessionId: String, title: String) -> Unit,
 ) {
     var detail by remember(taskId) { mutableStateOf<KanbanDetail?>(null) }
+    /** The run whose worker session is open in the transcript sheet (2.14.1). */
+    var watchRun by remember(taskId) { mutableStateOf<KanbanRun?>(null) }
     var loadError by remember(taskId) { mutableStateOf<String?>(null) }
     var reload by remember { mutableStateOf(0) }
     LaunchedEffect(taskId, reload) {
@@ -664,7 +999,7 @@ private fun MissionDetailSheet(
                             }
                             items(d.diagnostics.size, key = { "diag-$it" }) { i -> DiagnosticRow(d.diagnostics[i]) }
                         }
-                        if (d.runs.isNotEmpty()) item(key = "runs") { RunDeck(d.runs) }
+                        if (d.runs.isNotEmpty()) item(key = "runs") { RunDeck(d.runs) { watchRun = it } }
                         if (t.latestSummary.isNotBlank() && !sameWords(t.latestSummary, t.ask)) item(key = "summary") {
                             Column {
                                 KeryxSectionHeader(label = "Latest handoff", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -778,6 +1113,26 @@ private fun MissionDetailSheet(
                 }
             }
         }
+    }
+
+    // The worker's own session, read-only (2.14.1). Live while its run is, re-read every few
+    // seconds; "Open in chat" hands the session to the floor for anything beyond reading.
+    watchRun?.let { run ->
+        val sid = run.sessionId ?: return@let
+        val cardTitle = detail?.task?.title?.ifBlank { null } ?: taskId
+        val sessionTitle = "$cardTitle · run #${run.id}"
+        SessionTranscriptSheet(
+            sessionId = sid,
+            title = sessionTitle,
+            meta = runSessionMeta(run, System.currentTimeMillis() / 1000L),
+            live = run.endedAt == null,
+            fetch = { id -> viewModel.hub.sessionMessages(id) },
+            onDismiss = { watchRun = null },
+            onOpenInChat = {
+                watchRun = null
+                onOpenSession(sid, sessionTitle)
+            },
+        )
     }
 }
 
@@ -1047,9 +1402,10 @@ private fun DiagnosticRow(diag: chat.keryx.app.data.remote.HermesStreamClient.Ka
     }
 }
 
-/** The run history as a crew deck, newest first — the same card Tap-In draws a helper with. */
+/** The run history as a crew deck, newest first — the same card Tap-In draws a helper with.
+ *  A run whose worker session the gateway named (2.14.1) opens it: [onOpenRun]. */
 @Composable
-private fun RunDeck(runs: List<chat.keryx.app.data.remote.HermesStreamClient.KanbanRun>) {
+private fun RunDeck(runs: List<KanbanRun>, onOpenRun: (KanbanRun) -> Unit) {
     val ink = MaterialTheme.colorScheme.onSurface
     val newestFirst = runs.sortedByDescending { it.id }
     Column {
@@ -1068,23 +1424,40 @@ private fun RunDeck(runs: List<chat.keryx.app.data.remote.HermesStreamClient.Kan
                     else -> null
                 }
                 val summary = run.summary.ifBlank { run.error }
-                KeryxRunCard(
-                    glyph = runGlyph(outcome, live),
-                    title = "#${run.id} · ${run.profile.ifBlank { "worker" }}",
-                    ink = ink,
-                    modifier = Modifier.width(236.dp),
-                    tint = tint,
-                    breathing = live,
-                    meta = listOfNotNull(
-                        outcome.replace('_', ' '),
-                        runLength(run.durationSeconds ?: if (live) (System.currentTimeMillis() / 1000L) - run.startedAt else null),
-                        missionClock(run.startedAt),
-                    ),
-                    activity = if (live) "working…" else null,
-                    alive = live,
-                    summary = chat.keryx.core.protocol.MessageParser.extractKeryx(summary).text.trim(),
-                    summaryColor = if (failed) KeryxStatus.bad else ink.copy(alpha = 0.78f),
-                )
+                val openable = run.sessionId != null
+                Column(Modifier.width(236.dp)) {
+                    KeryxRunCard(
+                        glyph = runGlyph(outcome, live),
+                        title = "#${run.id} · ${run.profile.ifBlank { "worker" }}",
+                        ink = ink,
+                        modifier = Modifier.width(236.dp),
+                        tint = tint,
+                        breathing = live,
+                        meta = listOfNotNull(
+                            outcome.replace('_', ' '),
+                            runLength(run.durationSeconds ?: if (live) (System.currentTimeMillis() / 1000L) - run.startedAt else null),
+                            missionClock(run.startedAt),
+                        ),
+                        activity = if (live) "working…" else null,
+                        alive = live,
+                        summary = chat.keryx.core.protocol.MessageParser.extractKeryx(summary).text.trim(),
+                        summaryColor = if (failed) KeryxStatus.bad else ink.copy(alpha = 0.78f),
+                        onOpen = if (openable) ({ onOpenRun(run) }) else null,
+                    )
+                    // The quiet way in, under the card: an older gateway sends no session id and
+                    // the deck looks exactly as it did.
+                    if (openable) Text(
+                        if (live) "Watch session ›" else "View session ›",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = keryxAccentInk(),
+                        modifier = Modifier
+                            .padding(top = 2.dp)
+                            .clip(RoundedCornerShape(KeryxRadius.chip))
+                            .clickable { onOpenRun(run) }
+                            .padding(horizontal = 6.dp, vertical = 4.dp),
+                    )
+                }
             }
         }
     }

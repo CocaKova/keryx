@@ -57,6 +57,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.lerp
@@ -851,7 +852,20 @@ fun NavigationDrawerContent(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 maxItemsInEachRow = 3,
             ) {
-                DrawerDoor(KeryxGlyphs.Board, "Missions", Modifier.weight(1f)) {
+                // The needs-you orb (2.14.1): cards waiting on you, board-wide — warm and
+                // breathing, so it never reads as one more unread count. Fresh on every drawer
+                // open (one quiet GET), and kept current meanwhile by the on-screen pulse.
+                val missionsNeedYou by viewModel.missions.needsYouCount.collectAsState()
+                LaunchedEffect(drawerVisible) {
+                    if (drawerVisible) viewModel.missions.refreshKanbanQuietly()
+                }
+                DrawerDoor(
+                    KeryxGlyphs.Board, "Missions", Modifier.weight(1f),
+                    badge = missionsNeedYou,
+                    urgent = true,
+                    // The drawer composes while closed: the glow only breathes while it's seen.
+                    alive = drawerVisible,
+                ) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Missions)
                 }
                 // Scheduled work reads at floor level. Gated the cheap way: the capabilities
@@ -1626,8 +1640,24 @@ private fun DrawerDoor(
     modifier: Modifier = Modifier,
     /** Unread count pinned to the icon's corner; zero draws nothing. */
     badge: Int = 0,
+    /**
+     * The count is a summons, not news (2.14.1 — the Missions door's "needs you"): the badge
+     * becomes a warm [chat.keryx.app.presentation.ui.components.KeryxStatus.warn] orb with a
+     * slow glow breathing behind it, so "3 cards wait on you" never reads as "3 unread".
+     */
+    urgent: Boolean = false,
+    /** Whether the urgent glow may move; the host passes the drawer's real visibility.
+     *  Reduced motion stills it regardless (breathingAlpha's own rule). */
+    alive: Boolean = true,
     onClick: () -> Unit,
 ) {
+    val orb = if (urgent) chat.keryx.app.presentation.ui.components.KeryxStatus.warn
+        else MaterialTheme.colorScheme.primary
+    // Only the urgent door asks for a breath: breathingAlpha registers a power-saver listener,
+    // and the other doors have no use for one. (`urgent` is fixed per call site.)
+    val glow = if (urgent) chat.keryx.app.presentation.ui.components.breathingAlpha(
+        active = alive && badge > 0, low = 0.15f, periodMillis = 2400,
+    ) else 1f
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
@@ -1639,7 +1669,12 @@ private fun DrawerDoor(
         // height, so a badged door's label sits level with its neighbours.
         Box(modifier = Modifier.size(22.dp)) {
             Icon(
-                icon, contentDescription = if (badge > 0) "$label, ${DoorBadge.label(badge)} unread" else label,
+                icon,
+                contentDescription = when {
+                    badge <= 0 -> label
+                    urgent -> "$label, ${DoorBadge.label(badge)} need${if (badge == 1) "s" else ""} you"
+                    else -> "$label, ${DoorBadge.label(badge)} unread"
+                },
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxSize(),
             )
@@ -1659,8 +1694,19 @@ private fun DrawerDoor(
                     modifier = Modifier
                         .requiredHeight(16.dp)
                         .requiredWidthIn(min = 16.dp)
+                        // The urgent orb's halo: drawn behind the pill and outside its bounds
+                        // (nothing up the chain clips), so the glow breathes without moving
+                        // the count or the label under it.
+                        .then(
+                            if (urgent) Modifier.drawBehind {
+                                drawCircle(
+                                    color = orb.copy(alpha = 0.45f * glow),
+                                    radius = size.minDimension / 2f + 3.5.dp.toPx(),
+                                )
+                            } else Modifier,
+                        )
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
+                        .background(orb)
                         .padding(horizontal = 4.dp),
                 ) {
                     AnimatedContent(
@@ -1674,8 +1720,8 @@ private fun DrawerDoor(
                     Text(
                         text = label,
                         // Same ground as the room list's pill, so the same rule: the accent
-                        // decides, not the theme (see RoomRow).
-                        color = contrastColorFor(MaterialTheme.colorScheme.primary),
+                        // decides, not the theme (see RoomRow). The urgent orb: its own hue.
+                        color = contrastColorFor(orb),
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
