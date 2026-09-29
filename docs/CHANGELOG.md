@@ -5,6 +5,16 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.14.1 · versionCode 118
+
+Hotfix.
+
+- A chat you have read stays read. When a reply streamed in, the read mark was sent as soon as
+  the reply started and never again, because the finished reply kept the same message id. The
+  gateway then saw the answer land after your last read, and the session showed unread until the
+  app was restarted, however many times you opened it. The mark now waits for the reply to
+  finish, and opening a session the gateway still calls unread always marks it read.
+
 ## 2.14.0 · versionCode 117
 
 Missions becomes a place you can act from, and Runs a place you can fix from. Carries 2.13.11
