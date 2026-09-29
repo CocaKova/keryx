@@ -525,10 +525,14 @@ fun ChatScreen(
     }
 
     // Send a read receipt for the latest message while viewing this room (clears unread).
-    LaunchedEffect(currentRoom?.id, messages.lastOrNull()?.id) {
+    // Not while the tail is still streaming: a live reply keeps one id from its first token
+    // to its fold, so a mark taken mid-turn is the only one that id ever gets — and the
+    // gateway's watermark would sit before the answer it then called "read". Keying on the
+    // streaming flag re-asks the moment the reply settles.
+    val tail = messages.lastOrNull()
+    LaunchedEffect(currentRoom?.id, tail?.id, tail?.isStreaming) {
         val roomId = currentRoom?.id
-        val lastId = messages.lastOrNull()?.id
-        if (roomId != null && lastId != null) viewModel.markRoomRead(roomId, lastId)
+        if (roomId != null && tail != null && !tail.isStreaming) viewModel.markRoomRead(roomId, tail.id)
     }
 
     // Tap a reply-quote → sail to the original message and flash it briefly.

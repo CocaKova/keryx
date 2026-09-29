@@ -2078,7 +2078,11 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     override suspend fun markRead(sessionId: String, eventId: String) {
         // One stamp per newest message: the screen re-asks on every recomposition of the
         // same tail, and the gateway's answer to a repeat is a write that changes nothing.
-        if (readStamps[sessionId] == eventId) return
+        // Unless the gateway still calls the row unread — then the last stamp did not hold
+        // (activity landed after it without a new tail id), and opening the session is
+        // exactly the moment to write it again.
+        val gatewayUnread = _sessionRows.value.firstOrNull { it.id == sessionId }?.unread == true
+        if (readStamps[sessionId] == eventId && !gatewayUnread) return
         readStamps[sessionId] = eventId
         markSessionRead(sessionId, read = true)
     }
