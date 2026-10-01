@@ -74,8 +74,8 @@ class ModelPickerTest {
     @Test
     fun `private endpoints are recognised and public ones are not`() {
         for (u in listOf(
-            "http://localhost:8000/v1", "http://127.0.0.1:1234", "http://192.168.1.253:8642/v1",
-            "http://10.1.2.3", "http://172.20.0.5:11434", "http://100.101.102.103:8000", "http://spark:8000/v1",
+            "http://localhost:8000/v1", "http://127.0.0.1:1234", "http://192.168.1.10:8642/v1",
+            "http://10.1.2.3", "http://172.20.0.5:11434", "http://100.100.1.2:8000", "http://spark:8000/v1",
             "https://my-box.tail1234.ts.net/v1", "http://brain.local:8000", "http://[::1]:8000",
         )) assertTrue(ModelPicker.isPrivateEndpoint(u), u)
         for (u in listOf(

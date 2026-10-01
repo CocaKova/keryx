@@ -85,7 +85,7 @@ No Glance, no `TileService` anywhere in the app yet (manifest audited); both are
 
 ## Part C — Artifact viewer
 
-The agent writes HTML (mockups, reports, the Acme Co kind). Today an `.html` path in a
+The agent writes HTML (mockups, reports, client pages). Today an `.html` path in a
 reply is a `MEDIA:` file card that opens externally, or plain text.
 
 - **Fetch**: dashboard REST `GET /api/fs/read-text?path=<abs>` (token-gated, returns `text`,

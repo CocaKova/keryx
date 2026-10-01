@@ -25,9 +25,9 @@ class CronGroupingTest {
             listOf(
                 run("Daily Brief · Aug 14 07:06"),
                 run("Daily Brief · Aug 13 07:04"),
-                run("Localpeer inbox scan · Aug 14 01:01"),
+                run("Inbox scan · Aug 14 01:01"),
             ),
-            listOf("Daily Brief", "Localpeer inbox scan"),
+            listOf("Daily Brief", "Inbox scan"),
         )
         assertEquals(2, cards.size)
         assertEquals(2, cards.first { it.name == "Daily Brief" }.runCount)

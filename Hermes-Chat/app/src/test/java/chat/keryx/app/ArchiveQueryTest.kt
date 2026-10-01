@@ -72,7 +72,7 @@ class ArchiveQueryTest {
 
     @Test
     fun `plain prose passes through whole`() {
-        val body = "The Palworld server is up on 192.168.1.247."
+        val body = "The Palworld server is up on 192.168.1.50."
         assertEquals(body, ArchiveIndexer.searchableText(body, fromMe = false))
     }
 

@@ -407,7 +407,7 @@ fun MissionsScreen(
             )
             sections.isEmpty() -> MissionsEmptyState(
                 line1 = "No missions on the board",
-                line2 = "Give SILAS a mission with the + button — triage parks it for spec-first, otherwise the dispatcher picks it up.",
+                line2 = "Give your agent a mission with the + button — triage parks it for spec-first, otherwise the dispatcher picks it up.",
             )
             else -> LazyColumn(
                 state = listState,
@@ -1289,7 +1289,7 @@ private fun AlertToggle(taskId: String, viewModel: ChatViewModel) {
             Text("Alert when this ends", fontSize = 13.sp)
             Text(
                 when {
-                    subscribed -> "SILAS pushes a message the moment it completes or blocks"
+                    subscribed -> "The agent pushes a message the moment it completes or blocks"
                     roomName != null -> "Lands in $roomName as a real message — no polling"
                     else -> viewModel.missions.alertUnavailableReason
                 },

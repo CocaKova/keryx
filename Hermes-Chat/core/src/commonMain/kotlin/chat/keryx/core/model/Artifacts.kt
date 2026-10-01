@@ -1,7 +1,7 @@
 package chat.keryx.core.model
 
 /**
- * An artifact is a page the agent wrote — a mockup, a report, the Acme Co kind — and it
+ * An artifact is a page the agent wrote — a mockup, a report, a client page — and it
  * arrives in the transcript one of two ways: as a `MEDIA:<path>.html` line (already lifted into
  * a media message by [MediaTags]) or as a bare absolute path in the prose ("saved it to
  * `/home/sy/out/mock-v1.html`"). Both should open in the viewer, not in a system file chooser.

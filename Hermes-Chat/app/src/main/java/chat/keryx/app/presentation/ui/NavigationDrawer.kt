@@ -534,7 +534,7 @@ fun NavigationDrawerContent(
             // ⚠️ Gateway rows only: a cron tile opens a gateway session and a bot tile a
             // gateway bot chat. The hub keeps them across doors (its state is the gateway's),
             // so without this gate a pinned job sat at the top of the MATRIX roster too — a
-            // tile whose tap goes nowhere on that door (Jonny, 2026-09-24: the date-night pin).
+            // tile whose tap goes nowhere on that door (found on device, 2026-09-24).
             val cronTiles by viewModel.hub.cronTiles.collectAsState()
             val tileRooms = if (direct && query.isBlank() && !lensed) cronTiles.map { t ->
                 RoomProfile(

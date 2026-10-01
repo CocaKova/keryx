@@ -39,9 +39,9 @@ class MediaTagsImageRefTest {
 
     @Test
     fun quotedPathWithSpaces_isUnquoted() {
-        val s = MediaTags.splitImageRefs("@image:\"/home/sy/Pictures/my mom.jpg\"")
-        assertEquals("/home/sy/Pictures/my mom.jpg", s.refs.single().path)
-        assertEquals("my mom.jpg", s.refs.single().name)
+        val s = MediaTags.splitImageRefs("@image:\"/home/sy/Pictures/my dog.jpg\"")
+        assertEquals("/home/sy/Pictures/my dog.jpg", s.refs.single().path)
+        assertEquals("my dog.jpg", s.refs.single().name)
     }
 
     @Test

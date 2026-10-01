@@ -118,7 +118,7 @@ under `ArchiveDelegate`. The union bot roster falls out of the same work.
 ## 5. Status
 
 - Built 2026-09-06: `tools/ship.sh --release` **GREEN, 743 tests**, vc89 installed on the phone over
-  adb `192.168.1.182:35061` (`dist/keryx-2.11.0-fleet.apk`).
+  adb `<phone-ip>:<port>` (`dist/keryx-2.11.0-fleet.apk`).
 - **NOT walked.** The walk: open Settings → Gateways (one row, migrated, named after its
   host, Active + Primary); Add gateway → a second dashboard URL; the drawer grows the selector;
   switch → relaunch → the other gateway's sessions; Test on each; Rename; Remove the non-active

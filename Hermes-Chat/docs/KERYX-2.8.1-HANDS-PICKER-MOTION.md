@@ -160,7 +160,7 @@ exact-token rule, "real values never placeholders", and that nothing happens wit
 direct-door WS (durable since 3.0 Phase 4) and the phone answers — read a notification, take
 a photo, report location, screen context via a `VoiceInteractionService` assist session —
 behind a per-kind grant model (The Gate's shape). Wake word (2.7, unmerged) + hands + Call
-mode = "hey hermes, navigate to Sam's" with a spoken confirm. Also worth its own line:
+mode = "hey hermes, navigate to the office" with a spoken confirm. Also worth its own line:
 Keryx as the ROLE_ASSISTANT app (long-press power) — the ACTION_ASSIST door exists today and
 only focuses the composer.
 

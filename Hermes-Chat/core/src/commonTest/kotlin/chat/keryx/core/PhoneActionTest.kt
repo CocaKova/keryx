@@ -78,12 +78,12 @@ class PhoneActionTest {
 
     @Test
     fun `markers in prose become hands and leave the prose clean`() {
-        val text = "Sam's office is on Burnet. ⟦keryx:do|navigate|Example Co, 100 Main St, Springfield⟧ Want me to ring him first? ⟦keryx:do|dial|+15125550100⟧"
+        val text = "Sam's office is on Main St. ⟦keryx:do|navigate|Example Co, 100 Main St, Springfield⟧ Want me to ring him first? ⟦keryx:do|dial|+15125550100⟧"
         val k = MessageParser.extractKeryx(text)
         assertEquals(2, k.hands.size)
         assertEquals(PhoneAction.Kind.NAVIGATE, k.hands[0].kind)
         assertEquals(PhoneAction.Kind.DIAL, k.hands[1].kind)
-        assertEquals("Sam's office is on Burnet.  Want me to ring him first?", k.text)
+        assertEquals("Sam's office is on Main St.  Want me to ring him first?", k.text)
         assertTrue(k.actions.isEmpty())
         // Rendered: a Hands segment rides with the message.
         val segs = MessageParser.parse(text)
