@@ -131,3 +131,6 @@ data class LiveStream(
      *  the mirror, which is exactly the pre-2.4 overlay. */
     val theater: chat.keryx.core.model.TheaterState = chat.keryx.core.model.TheaterState(),
 )
+
+/** One file on its way out (2.16 multi-attachment). */
+class OutgoingFile(val bytes: ByteArray, val name: String, val contentType: String)

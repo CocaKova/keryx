@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,6 +14,8 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -91,10 +94,10 @@ internal fun ArrivalMark(message: Message) {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 /** Settled real tok/s of finished turns, by message id and answer text (2.16; core TokenRate). */
 val LocalTurnRates = androidx.compose.runtime.compositionLocalOf<Map<String, Double>> { emptyMap() }
 
+@OptIn(ExperimentalFoundationApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun MessageBubble(
     message: Message,
@@ -139,6 +142,9 @@ fun MessageBubble(
     var showReactionPicker by remember { mutableStateOf(false) }
     var confirmUndo by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    // Select text (2.16): the long-press belongs to the action bar, so selection gets its own
+    // sheet where every gesture is the text's.
+    var selectOpen by remember { mutableStateOf(false) }
 
     val reactions by reactionsFlow.collectAsState(initial = emptyList())
 
@@ -425,6 +431,7 @@ fun MessageBubble(
                 onUndoTurn = onUndoTurn?.let { { showReactionPicker = false; confirmUndo = true } },
                 onRetry = onRetry?.let { r -> { showReactionPicker = false; r() } },
                 onBranch = onBranch?.let { b -> { showReactionPicker = false; b() } },
+                onSelect = if (message.content.isNotBlank()) ({ showReactionPicker = false; selectOpen = true }) else null,
                 onEdit = onEdit?.let { e -> { showReactionPicker = false; e() } },
                 onSpeak = onSpeak?.let { speak -> { showReactionPicker = false; speak() } },
                 speaking = speaking,
@@ -448,6 +455,22 @@ fun MessageBubble(
                     TextButton(onClick = { confirmUndo = false }) { Text("Keep") }
                 },
             )
+        }
+
+        if (selectOpen) {
+            KeryxSheet(onDismiss = { selectOpen = false }, title = "Select text") {
+                androidx.compose.foundation.text.selection.SelectionContainer {
+                    Text(
+                        chat.keryx.core.protocol.MessageParser.extractKeryx(message.content).text,
+                        fontSize = KeryxType.body,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .padding(horizontal = 18.dp, vertical = 8.dp)
+                            .heightIn(max = 520.dp)
+                            .verticalScroll(rememberScrollState()),
+                    )
+                }
+            }
         }
 
         if (confirmDelete) {
@@ -615,6 +638,7 @@ private fun ReactionPickerRow(
     onRetry: (() -> Unit)? = null,
     onBranch: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
+    onSelect: (() -> Unit)? = null,
     onSpeak: (() -> Unit)? = null,
     speaking: Boolean = false,
     kept: Boolean? = null,
@@ -741,6 +765,16 @@ private fun ReactionPickerRow(
                             Icon(
                                 KeryxGlyphs.Refresh,
                                 contentDescription = "Take it back and say it again",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                    if (onSelect != null) {
+                        IconButton(onClick = onSelect, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                androidx.compose.material.icons.Icons.Filled.TextFields,
+                                contentDescription = "Select text",
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp),
                             )

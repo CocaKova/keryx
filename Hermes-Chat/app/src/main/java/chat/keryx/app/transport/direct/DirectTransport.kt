@@ -2180,6 +2180,51 @@ private const val INTERRUPT_SEAL_MS = 4_000L
      * submits empty text (an image-only turn is legitimate vision input); if the gateway
      * rejects that, the attach note ("[User attached image: …]") goes instead.
      */
+    /**
+     * Several attachments, one turn (2.16): every image is staged with `image.attach_bytes` and
+     * every file with `file.attach`, then ONE `prompt.submit` carries the caption and the file
+     * refs — the staged images ride along with it. A single file takes the one-file path.
+     */
+    suspend fun sendAttachments(sessionId: String, files: List<chat.keryx.app.presentation.OutgoingFile>, caption: String?) {
+        if (files.size == 1) {
+            val f = files.single()
+            return sendAttachment(sessionId, f.bytes, f.name, f.contentType, caption)
+        }
+        val rpc = rpc ?: error("gateway not connected")
+        val live = attach(sessionId)
+        val refs = ArrayList<String>()
+        val notes = ArrayList<String>()
+        files.forEachIndexed { i, f ->
+            val b64 = android.util.Base64.encodeToString(f.bytes, android.util.Base64.NO_WRAP)
+            val echoCaption = if (i == 0) caption.orEmpty() else ""
+            if (f.contentType.startsWith("image/")) {
+                val res = rpc.request("image.attach_bytes", buildJsonObject {
+                    put("session_id", JsonPrimitive(live))
+                    put("content_base64", JsonPrimitive(b64))
+                    if (f.name.isNotBlank()) put("filename", JsonPrimitive(f.name))
+                }, timeoutMs = 60_000)
+                notes += res["text"]?.jsonPrimitive?.contentOrNull ?: "[image attached]"
+                val echoId = store(sessionId).localUserImage(echoCaption, f.name)
+                localMediaBytes[echoId] = f.bytes
+            } else {
+                val res = rpc.request("file.attach", buildJsonObject {
+                    put("session_id", JsonPrimitive(live))
+                    put("data_url", JsonPrimitive("data:${f.contentType};base64,$b64"))
+                    if (f.name.isNotBlank()) put("name", JsonPrimitive(f.name))
+                }, timeoutMs = 120_000)
+                refs += res["ref_text"]?.jsonPrimitive?.contentOrNull ?: error("file.attach answered without a ref")
+                store(sessionId).localUserFile(echoCaption, f.name.ifBlank { res["name"]?.jsonPrimitive?.contentOrNull ?: "file" })
+            }
+        }
+        val text = (listOfNotNull(caption?.takeIf { it.isNotBlank() }) + refs).joinToString("\n\n")
+        rpc.request("prompt.submit", buildJsonObject {
+            put("session_id", JsonPrimitive(live))
+            // Images only and no caption: the gateway's own attach note stands in, so the turn
+            // is never an empty prompt.
+            put("text", JsonPrimitive(text.ifBlank { notes.joinToString("\n") }))
+        })
+    }
+
     override suspend fun sendAttachment(sessionId: String, bytes: ByteArray, fileName: String, contentType: String, caption: String?) {
         val rpc = rpc ?: error("gateway not connected")
         val live = attach(sessionId)

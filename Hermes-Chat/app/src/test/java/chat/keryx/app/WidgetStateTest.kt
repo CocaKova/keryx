@@ -183,4 +183,14 @@ class WidgetStateTest {
         assertEquals("4m", WidgetState.clock(4 * 60 + 30))
         assertEquals("2h", WidgetState.clock(2 * 3600 + 59))
     }
+
+    // --- needs you (2.16) -------------------------------------------------------------------
+
+    @Test
+    fun needsYou_saysHowManyAndNothingWhenNone() {
+        val none = WidgetState.from(LinkState.CONNECTED, null, emptyList(), emptyMap(), now)
+        assertEquals(null, none.needsLine)
+        val two = WidgetState.from(LinkState.CONNECTED, null, emptyList(), emptyMap(), now, needsYou = 2)
+        assertEquals("2 waiting on you", two.needsLine)
+    }
 }

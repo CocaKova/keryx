@@ -2,4 +2,6 @@
 <paths>
     <!-- Downloaded media is staged here before handing it to an external viewer. -->
     <cache-path name="media" path="media/" />
+    <!-- The system camera writes a shot here for the composer (2.16). -->
+    <cache-path name="camera" path="camera/" />
 </paths>

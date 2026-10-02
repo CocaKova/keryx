@@ -188,7 +188,13 @@ fun ArtifactSpace(
                     .clip(RoundedCornerShape(KeryxRadius.card)),
                 contentAlignment = Alignment.Center,
             ) {
-                ArtifactWebView(html = p.html, modifier = Modifier.fillMaxSize())
+                val siteRest = rest()
+                ArtifactWebView(
+                    html = p.html,
+                    path = p.path?.takeIf { siteRest != null },
+                    fetchSibling = { sibling -> siteRest?.downloadFile(sibling)?.getOrNull() },
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
     }
@@ -198,7 +204,8 @@ fun ArtifactSpace(
 private sealed interface Page {
     data object Loading : Page
     data class Failed(val why: String) : Page
-    class Ready(val html: String, val bytes: ByteArray) : Page
+    /** [path] is set when the page came by path: its folder answers its relative links (2.16). */
+    class Ready(val html: String, val bytes: ByteArray, val path: String? = null) : Page
 }
 
 private suspend fun load(
@@ -218,16 +225,24 @@ private suspend fun load(
     if (rest == null) return Page.Failed("A page by path can only be read over the gateway door.")
     val head = rest.readText(path).getOrElse { return Page.Failed(it.message ?: "The gateway didn't answer.") }
     if (!head.truncated) {
-        return Page.Ready(head.text, head.text.encodeToByteArray())
+        return Page.Ready(head.text, head.text.encodeToByteArray(), path)
     }
     // Past the preview cap: the whole file, not the head of it.
     val bytes = rest.downloadFile(path).getOrElse { return Page.Failed(it.message ?: "The download failed.") }
-    return Page.Ready(bytes.decodeToString(), bytes)
+    return Page.Ready(bytes.decodeToString(), bytes, path)
 }
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-private fun ArtifactWebView(html: String, modifier: Modifier = Modifier) {
+private fun ArtifactWebView(
+    html: String,
+    modifier: Modifier = Modifier,
+    /** The page's own gateway path; null = no siblings (a room file, or no gateway door). */
+    path: String? = null,
+    fetchSibling: suspend (String) -> ByteArray? = { null },
+) {
+    val folder = path?.let(chat.keryx.core.model.ArtifactBase::folderOf)
+    val base = path?.let(chat.keryx.core.model.ArtifactBase::baseUrl)
     var view by remember { mutableStateOf<WebView?>(null) }
     DisposableEffect(Unit) {
         onDispose { view?.destroy(); view = null }
@@ -249,6 +264,22 @@ private fun ArtifactWebView(html: String, modifier: Modifier = Modifier) {
                 settings.builtInZoomControls = true
                 settings.displayZoomControls = false
                 webViewClient = object : WebViewClient() {
+                    // Siblings (2.16): a request on the synthetic origin, inside the page's own
+                    // folder, is answered from the gateway's file API. Called off the main
+                    // thread, so blocking on the download is allowed here. Anything else is
+                    // left to the WebView (the open web) or refused (a path out of the folder).
+                    override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): android.webkit.WebResourceResponse? {
+                        val url = request?.url ?: return null
+                        if (url.host != chat.keryx.core.model.ArtifactBase.HOST) return null
+                        val sibling = folder?.let { chat.keryx.core.model.ArtifactBase.resolve(it, url.host, url.path) }
+                            ?: return android.webkit.WebResourceResponse("text/plain", "utf-8", 404, "Not Found", emptyMap(), java.io.ByteArrayInputStream(ByteArray(0)))
+                        val bytes = kotlinx.coroutines.runBlocking { fetchSibling(sibling) }
+                            ?: return android.webkit.WebResourceResponse("text/plain", "utf-8", 404, "Not Found", emptyMap(), java.io.ByteArrayInputStream(ByteArray(0)))
+                        return android.webkit.WebResourceResponse(
+                            chat.keryx.core.model.ArtifactBase.mimeOf(sibling), null, java.io.ByteArrayInputStream(bytes),
+                        )
+                    }
+
                     // The page may link out; the viewer does not follow. The browser gets the
                     // link, the artifact stays where the eye left it — but only a link a finger
                     // chose, to the web or to mail. The page is agent-written and may carry text
@@ -257,6 +288,8 @@ private fun ArtifactWebView(html: String, modifier: Modifier = Modifier) {
                     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                         val url = request?.url ?: return false
                         if (!request.isForMainFrame) return false
+                        // A link to a sibling page stays in the viewer (served like any sibling).
+                        if (folder != null && url.host == chat.keryx.core.model.ArtifactBase.HOST) return false
                         val scheme = url.scheme?.lowercase()
                         if (request.hasGesture() && scheme in setOf("http", "https", "mailto")) {
                             runCatching {
@@ -274,7 +307,7 @@ private fun ArtifactWebView(html: String, modifier: Modifier = Modifier) {
             // and throw away the scroll; a reload that fetched new bytes must.
             if (wv.tag != html) {
                 wv.tag = html
-                wv.loadDataWithBaseURL(null, html, "text/html", "utf-8", null)
+                wv.loadDataWithBaseURL(base, html, "text/html", "utf-8", null)
             }
         },
     )

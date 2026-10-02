@@ -167,6 +167,16 @@ class KeryxWidget : GlanceAppWidget() {
             Spacer(GlanceModifier.defaultWeight())
             // The turn in flight wears the accent: it is the one thing on the card that is
             // happening rather than done. At rest the slot stays empty rather than saying so.
+            // What is waiting on you outranks what is running: it is the one line that asks
+            // something of whoever glances at the home screen (2.16).
+            state.needsLine?.let { line ->
+                Text(
+                    text = "● $line",
+                    style = TextStyle(color = colors.error, fontSize = KeryxType.caption, fontWeight = FontWeight.Medium),
+                    maxLines = 1,
+                )
+                Spacer(GlanceModifier.height(2.dp))
+            }
             state.run?.let { run ->
                 Text(
                     text = run.line,

@@ -807,6 +807,11 @@ class ChatViewModel(
     var assistConsumed = 0
     fun summonAssist() { _assistSummon.value += 1 }
 
+    /** Find in chat is open (2.16): the top bar's search glyph opens it, Done closes it. */
+    private val _findOpen = MutableStateFlow(false)
+    val findOpen: StateFlow<Boolean> = _findOpen.asStateFlow()
+    fun setFindOpen(open: Boolean) { _findOpen.value = open }
+
     /** A place asked for from outside (2.16 `keryx://missions` etc.): a route the host walks to
      *  and then clears. A flag, not an event, so it waits for the host to compose. */
     private val _spaceRequest = MutableStateFlow<String?>(null)
@@ -1914,6 +1919,25 @@ class ChatViewModel(
     fun sendAttachment(bytes: ByteArray, fileName: String, contentType: String, caption: String? = null) {
         val session = _currentRoom.value ?: return
         viewModelScope.launch { transport.sendAttachment(session.id, bytes, fileName, contentType, caption) }
+    }
+
+    /**
+     * Several attachments as one message (2.16). The direct door stages every one and submits a
+     * single prompt, so three photos are one turn, not three; the Matrix door sends them in
+     * order with the caption on the first.
+     */
+    fun sendAttachments(files: List<OutgoingFile>, caption: String?) {
+        val session = _currentRoom.value ?: return
+        if (files.isEmpty()) return
+        val d = direct
+        viewModelScope.launch {
+            runCatching {
+                if (d != null) d.sendAttachments(session.id, files, caption)
+                else files.forEachIndexed { i, f ->
+                    transport.sendAttachment(session.id, f.bytes, f.name, f.contentType, caption.takeIf { i == 0 })
+                }
+            }.onFailure { toast("Couldn't send: ${it.message?.take(80)}") }
+        }
     }
 
     fun markRoomRead(roomId: String, eventId: String) {

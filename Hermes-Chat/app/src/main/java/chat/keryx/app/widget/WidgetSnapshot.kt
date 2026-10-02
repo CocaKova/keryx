@@ -47,6 +47,7 @@ object WidgetSnapshot {
             if (direct != null) direct.peekLatest(room.id, 3)
             else transport.getMessages(room.id, 3).map { it.takeLast(3) }.first { it.isNotEmpty() }
         }.orEmpty()
-        return WidgetState.from(link, room, latest, runs, now = System.currentTimeMillis())
+        val needsYou = if (direct == null) 0 else withTimeoutOrNull(PEEK_WAIT_MS) { direct.shadePending().first().size } ?: 0
+        return WidgetState.from(link, room, latest, runs, now = System.currentTimeMillis(), needsYou = needsYou)
     }
 }

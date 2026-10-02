@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The widget picker's preview (2.16): the card as it looks at rest, drawn statically.
+     RemoteViews-safe views only. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/keryx_widget_preview_bg"
+    android:paddingStart="14dp"
+    android:paddingEnd="14dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="● Keryx"
+        android:textColor="#1C1B1F"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:maxLines="1" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="The last reply, a line or two of it."
+        android:textColor="#1C1B1F"
+        android:textSize="14sp"
+        android:maxLines="2" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="working · 0:42"
+        android:textColor="#E55A00"
+        android:textSize="12sp"
+        android:maxLines="1" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="live · 12:04"
+        android:textColor="#5F5B66"
+        android:textSize="11sp"
+        android:fontFamily="monospace"
+        android:maxLines="1" />
+</LinearLayout>

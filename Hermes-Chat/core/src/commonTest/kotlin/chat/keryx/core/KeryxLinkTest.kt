@@ -34,3 +34,20 @@ class KeryxLinkTest {
         assertNull(KeryxLink.parse(null))
     }
 }
+
+class FindInChatTest {
+    private val msgs = listOf(
+        "m3" to "The **parser** is fixed",
+        "m2" to "unrelated",
+        "m1" to "Parser tests fail on main",
+    )
+
+    @Test
+    fun everyTermNewestFirst() {
+        assertEquals(listOf("m3", "m1"), chat.keryx.core.model.FindInChat.hits(msgs, "parser"))
+        assertEquals(listOf("m1"), chat.keryx.core.model.FindInChat.hits(msgs, "PARSER main"))
+        assertEquals(emptyList(), chat.keryx.core.model.FindInChat.hits(msgs, "  "))
+        assertEquals("2 of 5", chat.keryx.core.model.FindInChat.label(1, 5))
+        assertEquals("no match", chat.keryx.core.model.FindInChat.label(0, 0))
+    }
+}

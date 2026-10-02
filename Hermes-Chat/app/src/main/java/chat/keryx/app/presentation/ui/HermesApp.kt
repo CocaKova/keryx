@@ -533,6 +533,14 @@ fun HermesApp(viewModel: ChatViewModel) {
                                     },
                                 )
                             }
+                            // Find in chat (2.16).
+                            IconButton(onClick = { viewModel.setFindOpen(!viewModel.findOpen.value) }) {
+                                Icon(
+                                    chat.keryx.app.presentation.ui.components.KeryxGlyphs.Search,
+                                    contentDescription = "Find in chat",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
                             // Reasoning moved to the composer footer (2.2, the Talaria
                             // treatment) — the dial now lives where the thinking happens.
                             // The Call (1.22): a voice conversation with this room's agent. Needs

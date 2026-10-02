@@ -13,4 +13,5 @@
     android:widgetCategory="home_screen"
     android:description="@string/widget_description"
     android:updatePeriodMillis="0"
-    android:initialLayout="@layout/glance_default_loading_layout" />
+    android:initialLayout="@layout/glance_default_loading_layout"
+    android:previewLayout="@layout/keryx_widget_preview" />

@@ -28,7 +28,16 @@ data class WidgetState(
     val preview: String,
     /** The turn in flight in [roomId], or null when the agent is at rest. */
     val run: Run? = null,
+    /** Requests waiting on you across the gateway — approvals, questions, sudo (2.16). */
+    val needsYou: Int = 0,
 ) {
+    /** "1 waiting on you" / "3 waiting on you", or null when nothing is. */
+    val needsLine: String?
+        get() = when {
+            needsYou <= 0 -> null
+            else -> "$needsYou waiting on you"
+        }
+
     /** The link, in the three words the widget knows. */
     enum class Link(val word: String) {
         LIVE("live"),
@@ -85,13 +94,14 @@ data class WidgetState(
             latest: List<Message>,
             runs: Map<String, RunActivity>,
             now: Long,
+            needsYou: Int = 0,
         ): WidgetState {
             val state = when (link) {
                 LinkState.CONNECTED -> Link.LIVE
                 LinkState.CONNECTING -> Link.RECONNECTING
                 else -> Link.OFFLINE
             }
-            if (room == null) return empty(state)
+            if (room == null) return empty(state).copy(needsYou = needsYou)
             val run = runs[room.id]?.let { a ->
                 Run(
                     sessionId = room.id,
@@ -109,6 +119,7 @@ data class WidgetState(
                 title = room.name.ifBlank { "Keryx" },
                 preview = spoken?.let(::previewOf) ?: room.preview.ifBlank { "Nothing said yet" },
                 run = run,
+                needsYou = needsYou,
             )
         }
 

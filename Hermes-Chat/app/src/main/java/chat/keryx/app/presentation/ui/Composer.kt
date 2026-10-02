@@ -113,6 +113,8 @@ internal fun Composer(
     onSend: () -> Unit,
     onPickGallery: () -> Unit,
     onPickFile: () -> Unit,
+    /** Take a photo with the system camera (2.16). Null hides the pill. */
+    onCamera: (() -> Unit)? = null,
     atBottom: () -> Boolean,
     hasMessages: Boolean,
     onFocusedAtBottom: () -> Unit,
@@ -157,6 +159,7 @@ internal fun Composer(
             visible = attachMenu,
             onPhoto = { attachMenu = false; onPickGallery() },
             onFile = { attachMenu = false; onPickFile() },
+            onCamera = onCamera?.let { c -> { attachMenu = false; c() } },
         )
     // One hairline surface holds everything (the Talaria treatment): near-square, matte,
     // gilt-adjacent border — the input row on top, the status footer beneath.
@@ -653,7 +656,7 @@ internal fun AttachmentPreview(att: PendingAttachment, onRemove: () -> Unit) {
 }
 
 @Composable
-internal fun DreamAttachBloom(visible: Boolean, onPhoto: () -> Unit, onFile: () -> Unit) {
+internal fun DreamAttachBloom(visible: Boolean, onPhoto: () -> Unit, onFile: () -> Unit, onCamera: (() -> Unit)? = null) {
     val accent = MaterialTheme.colorScheme.primary
     AnimatedVisibility(
         visible = visible,
@@ -670,6 +673,9 @@ internal fun DreamAttachBloom(visible: Boolean, onPhoto: () -> Unit, onFile: () 
         ) {
             DreamPill("Photo", chat.keryx.app.presentation.ui.components.KeryxGlyphs.Image, accent, delayMs = 0) { onPhoto() }
             DreamPill("File", chat.keryx.app.presentation.ui.components.KeryxGlyphs.FileClip, accent, delayMs = 55) { onFile() }
+            if (onCamera != null) {
+                DreamPill("Camera", chat.keryx.app.presentation.ui.components.KeryxGlyphs.Scope, accent, delayMs = 110) { onCamera() }
+            }
         }
     }
 }

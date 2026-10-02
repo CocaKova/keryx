@@ -12,6 +12,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -82,6 +84,7 @@ import chat.keryx.app.presentation.ui.components.shortSender
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import chat.keryx.app.presentation.ui.components.KeryxType
+import chat.keryx.app.presentation.ui.components.KeryxRadius
 
 /**
  * Qwen3-VL patches images on a 32px grid (patch_size 16 * merge_size 2). Images whose
@@ -182,7 +185,8 @@ fun ChatScreen(
     val pendingBlocking by viewModel.pendingBlocking.collectAsState()
     val flightPlan by viewModel.flightPlan.collectAsState()
 
-    var pendingAttachment by remember { mutableStateOf<PendingAttachment?>(null) }
+    // Several at once (2.16): a photo set, a few files, a camera shot — sent as one message.
+    var pendingAttachments by remember { mutableStateOf<List<PendingAttachment>>(emptyList()) }
     var composerHeightPx by remember { mutableStateOf(0) }
 
     fun stageFromUri(uri: android.net.Uri?, fallbackType: String): Boolean {
@@ -195,7 +199,8 @@ fun ChatScreen(
         val isImage = rawType.startsWith("image")
         val (bytes, type) = if (isImage) normalizeImageBytes(rawBytes, rawType) else rawBytes to rawType
         val name = queryDisplayName(context, uri)
-        pendingAttachment = PendingAttachment(bytes, name, type, isImage = isImage)
+        pendingAttachments = (pendingAttachments + PendingAttachment(bytes, name, type, isImage = isImage))
+            .takeLast(MAX_ATTACHMENTS)
         return true
     }
 
@@ -208,11 +213,28 @@ fun ChatScreen(
         return stageFromUri(uri, fallbackType = type)
     }
 
-    val galleryPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        stageFromUri(uri, fallbackType = "image/jpeg")
+    val galleryPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(MAX_ATTACHMENTS)) { uris ->
+        uris.forEach { stageFromUri(it, fallbackType = "image/jpeg") }
     }
-    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        stageFromUri(uri, fallbackType = "application/octet-stream")
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
+        uris.take(MAX_ATTACHMENTS).forEach { stageFromUri(it, fallbackType = "application/octet-stream") }
+    }
+    // Camera (2.16): the system camera writes into our cache through the FileProvider; no
+    // CAMERA permission, because Keryx never opens the camera itself.
+    var cameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
+        val uri = cameraUri
+        if (saved && uri != null) stageFromUri(uri, fallbackType = "image/jpeg")
+        cameraUri = null
+    }
+    fun launchCamera() {
+        val dir = java.io.File(context.cacheDir, "camera").apply { mkdirs() }
+        dir.listFiles()?.filter { System.currentTimeMillis() - it.lastModified() > 86_400_000L }?.forEach { it.delete() }
+        val file = java.io.File(dir, "keryx-${System.currentTimeMillis()}.jpg")
+        val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        cameraUri = uri
+        runCatching { cameraLauncher.launch(uri) }
+            .onFailure { viewModel.toast("No camera app answered") }
     }
 
     // Composer state. A TextFieldState (2.13.12), not a TextFieldValue: only the state-based field
@@ -547,6 +569,18 @@ fun ChatScreen(
     LaunchedEffect(flashMessageId) {
         if (flashMessageId != null) { kotlinx.coroutines.delay(1500); flashMessageId = null }
     }
+    // Find in chat (2.16): hits over the loaded transcript, newest first; the bar walks them.
+    val findOpen by viewModel.findOpen.collectAsState()
+    var findQuery by remember { mutableStateOf("") }
+    var findIndex by remember { mutableStateOf(0) }
+    val findHits = remember(renderItems, findQuery, findOpen) {
+        if (!findOpen) emptyList() else chat.keryx.core.model.FindInChat.hits(
+            renderItems.mapNotNull { (it as? ChatRenderItem.Single)?.message?.let { m -> m.id to m.content } },
+            findQuery,
+        )
+    }
+    LaunchedEffect(currentRoom?.id) { viewModel.setFindOpen(false); findQuery = "" }
+
     fun jumpToMessage(id: String) {
         val idx = renderItems.indexOfFirst { it is ChatRenderItem.Single && it.message.id == id }
         if (idx >= 0) {
@@ -557,14 +591,18 @@ fun ChatScreen(
 
     fun doSend() {
         tts.stop()
-        val attachment = pendingAttachment
+        val attachments = pendingAttachments
+        val attachment = attachments.firstOrNull()
         val text = composerField.text.toString()
         // Text sent alongside an attachment rides in the same event as its caption (one Matrix
         // event, one agent turn) — except slash commands, which must reach the gateway as text.
         val caption = text.takeIf { attachment != null && it.isNotBlank() && !it.startsWith("/") }
         if (attachment != null) {
-            viewModel.sendAttachment(attachment.bytes, attachment.name, attachment.contentType, caption)
-            pendingAttachment = null
+            viewModel.sendAttachments(
+                attachments.map { chat.keryx.app.presentation.OutgoingFile(it.bytes, it.name, it.contentType) },
+                caption,
+            )
+            pendingAttachments = emptyList()
         }
         if (text.isNotBlank()) {
             if (caption == null) {
@@ -586,6 +624,13 @@ fun ChatScreen(
     Box(modifier = modifier.fillMaxSize().imePadding()) {
         if (currentRoom == null) {
             EmptyChat(viewModel = viewModel, modifier = Modifier.align(Alignment.Center))
+        } else if (messages.isEmpty() && !awaitingReply && pendingSend == null && liveStream == null) {
+            // A fresh session (2.16): a few ways in instead of a blank page. A tap fills the
+            // composer — your words to change — rather than sending on your behalf.
+            StarterPrompts(
+                onPick = { setComposer(it) },
+                modifier = Modifier.align(Alignment.Center),
+            )
         }
         // The instrument rail (flight plan + working banner) is composed at the END of this Box —
         // see "TOP INSTRUMENTS" below. Both are pinned to the top edge and both float over the
@@ -1027,12 +1072,19 @@ fun ChatScreen(
                     }
                 }
             }
-            androidx.compose.animation.AnimatedVisibility(visible = pendingAttachment != null, enter = keryxReveal(), exit = keryxConceal()) {
-                pendingAttachment?.let { att ->
-                    Column {
-                        AttachmentPreview(att, onRemove = { pendingAttachment = null })
-                        Spacer(modifier = Modifier.height(6.dp))
+            androidx.compose.animation.AnimatedVisibility(visible = pendingAttachments.isNotEmpty(), enter = keryxReveal(), exit = keryxConceal()) {
+                Column {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    ) {
+                        pendingAttachments.forEachIndexed { i, att ->
+                            AttachmentPreview(att, onRemove = {
+                                pendingAttachments = pendingAttachments.filterIndexed { j, _ -> j != i }
+                            })
+                        }
                     }
+                    Spacer(modifier = Modifier.height(6.dp))
                 }
             }
             val composerCaps by viewModel.hub.reasoningCaps.collectAsState()
@@ -1056,11 +1108,11 @@ fun ChatScreen(
             val busyNow = awaitingReply || agentLive || compactingNow
             val slashTyped = composerField.text.trimStart().startsWith("/")
             val steerable = busyNow && !compactingNow && pendingApproval == null &&
-                pendingBlocking == null && pendingAttachment == null && !slashTyped
+                pendingBlocking == null && pendingAttachments.isEmpty() && !slashTyped
             val busyAction = when {
                 !busyNow -> null
                 slashTyped -> null // slash runs inline even mid-turn
-                composerField.text.isBlank() && pendingAttachment == null ->
+                composerField.text.isBlank() && pendingAttachments.isEmpty() ->
                     if (viewModel.canInterruptTurn) "stop" else null
                 steerable -> "steer"
                 else -> "queue"
@@ -1080,7 +1132,7 @@ fun ChatScreen(
                     if (composerField.text.isNotBlank()) viewModel.steerTurn(takeComposerText())
                 },
                 onQueue = {
-                    if (pendingAttachment != null) {
+                    if (pendingAttachments.isNotEmpty()) {
                         viewModel.toast("Attachments can't queue — send after this turn finishes")
                     } else if (composerField.text.isNotBlank()) {
                         viewModel.queueMessage(takeComposerText())
@@ -1103,6 +1155,7 @@ fun ChatScreen(
                 } else null,
                 onPickGallery = { galleryPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) },
                 onPickFile = { filePicker.launch("*/*") },
+                onCamera = ::launchCamera,
                 // Deferred read: Composer only consults this inside its focus callback, and a
                 // plain Boolean param recomposed the composer (and this whole screen) on every
                 // bottom-threshold crossing during scroll.
@@ -1202,6 +1255,36 @@ fun ChatScreen(
             flightPlan?.takeIf { it.total > 0 }?.let { plan ->
                 Box(Modifier.zIndex(1f)) {
                     chat.keryx.app.presentation.ui.components.FlightPlanStrip(plan)
+                }
+            }
+            // FIND (2.16): above everything else in the rail while it is open.
+            if (findOpen) {
+                Box(Modifier.zIndex(1f)) {
+                    chat.keryx.app.presentation.ui.components.FindBar(
+                        query = findQuery,
+                        onQuery = { q ->
+                            findQuery = q
+                            findIndex = 0
+                            chat.keryx.core.model.FindInChat.hits(
+                                renderItems.mapNotNull { (it as? ChatRenderItem.Single)?.message?.let { m -> m.id to m.content } }, q,
+                            ).firstOrNull()?.let(::jumpToMessage)
+                        },
+                        index = findIndex,
+                        total = findHits.size,
+                        onOlder = {
+                            if (findHits.isNotEmpty()) {
+                                findIndex = (findIndex + 1) % findHits.size
+                                jumpToMessage(findHits[findIndex])
+                            }
+                        },
+                        onNewer = {
+                            if (findHits.isNotEmpty()) {
+                                findIndex = (findIndex - 1 + findHits.size) % findHits.size
+                                jumpToMessage(findHits[findIndex])
+                            }
+                        },
+                        onClose = { viewModel.setFindOpen(false); findQuery = "" },
+                    )
                 }
             }
             // GOAL STRIP (2.16): the session's standing goal, under the plan on the same floor.
@@ -1306,6 +1389,49 @@ private fun EmptyChat(viewModel: ChatViewModel, modifier: Modifier = Modifier) {
     }
 }
 
+/** Ways into an empty session (2.16). */
+internal val STARTER_PROMPTS = listOf(
+    "What can you do in this session?",
+    "What's on my plate today?",
+    "How is the brain doing right now?",
+    "Help me plan something small, step by step.",
+)
+
+@Composable
+private fun StarterPrompts(onPick: (String) -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.padding(horizontal = 28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            "A fresh page",
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = KeryxType.title,
+            fontWeight = FontWeight.Medium,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Ask anything, or start from one of these.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = KeryxType.caption,
+        )
+        Spacer(Modifier.height(14.dp))
+        STARTER_PROMPTS.forEach { prompt ->
+            Text(
+                prompt,
+                color = chat.keryx.app.presentation.ui.components.keryxAccentInk(),
+                fontSize = KeryxType.body,
+                modifier = Modifier
+                    .padding(vertical = 3.dp)
+                    .clip(RoundedCornerShape(KeryxRadius.chip))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+                    .clickable { onPick(prompt) }
+                    .padding(horizontal = 14.dp, vertical = 9.dp),
+            )
+        }
+    }
+}
+
 /** A quiet centered chip marking a day boundary ("Today", "Yesterday", "Wednesday, Jul 2"). */
 @Composable
 fun DaySeparator(epochMillis: Long) {
@@ -1343,3 +1469,6 @@ fun DaySeparator(epochMillis: Long) {
         Box(Modifier.weight(1f).height(1.dp).background(line))
     }
 }
+
+/** How many attachments one message carries (2.16). */
+private const val MAX_ATTACHMENTS = 6
