@@ -523,6 +523,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         /** Drop the rows this process life added on its own — a re-read is about to replace them. */
         fun clearLocal() { local = emptyList(); publish() }
 
+        /** Paint now. A replay applies a burst of deltas inside one throttle window, and its
+         *  last words must not wait for the next live frame to show (2.16). */
+        fun republish() = publish()
+
         fun localUserMessage(text: String) {
             local = local + Message(
                 id = "local-${System.currentTimeMillis()}",
@@ -749,9 +753,23 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     val connectionState: StateFlow<GatewayRpc.ConnState>?
         get() = rpc?.state
 
-    private fun onEvent(ev: GatewayRpc.GatewayEvent) = runCatching { handleEvent(ev) }
+    /**
+     * Every frame off the socket passes the replay ledger first (2.16): a session catching up
+     * after a drop holds its live frames until the missed ones are in, so the transcript never
+     * applies a frame twice or out of order. The lock is the one the catch-up applies its replay
+     * under — one writer at a time, socket and replay alike.
+     */
+    private fun onEvent(ev: GatewayRpc.GatewayEvent) = synchronized(pumpLock) {
+        replay.live(ev).forEach(::applyEvent)
+    }
+
+    private fun applyEvent(ev: GatewayRpc.GatewayEvent) = runCatching { handleEvent(ev) }
         .onFailure { android.util.Log.e("KeryxGw", "event ${ev.type} mishandled", it) }
         .let { }
+
+    /** Per-session seq watermarks and catch-up holds; touched only under [pumpLock]. */
+    private val replay = ReplayLedger()
+    private val pumpLock = Any()
 
     // A malformed or unexpected payload shape must never escape the event pump — the pump
     // runs in appScope, and the stream must survive whatever a future gateway emits.
@@ -759,7 +777,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         // Global broadcasts carry no session id.
         if (ev.type == "sessions.changed") { onSessionsChanged(); return }
         // A fresh socket. Everything we know may be stale, so this is the resync point.
-        if (ev.type == "gateway.ready") { onGatewayReady(); return }
+        if (ev.type == "gateway.ready") {
+            onGatewayReady(ev.payload?.get("replay_epoch")?.jsonPrimitive?.contentOrNull)
+            return
+        }
         // ⚠ The gateway can take a live session BACK — idle TTL, LRU eviction, or the
         // WS-orphan reaper after a network blip (server.py `_RECLAIM_END_REASONS`). This is
         // a GLOBAL broadcast (frame session_id is empty; the ids are in the payload),
@@ -1179,14 +1200,35 @@ private const val INTERRUPT_SEAL_MS = 4_000L
      * Live session ids do not survive this boundary either: a gateway that restarted (or
      * reaped us as an orphan while we were away) has forgotten every sid we cached, so
      * holding them means the next send addresses a session that no longer exists.
+     *
+     * Runs inside the event pump (under [pumpLock]), which is what lets the catch-up holds
+     * below be in place before the new socket can deliver a single frame for those sessions.
      */
-    private fun onGatewayReady() {
+    private fun onGatewayReady(replayEpoch: String?) {
         // Taken before the busy marks are wiped below: a turn that was running when the
         // socket dropped is one whose end still has to reach the notification watcher.
         val wasBusy = _busyStored.value
+        // The live ids held before the drop. A session the gateway kept running answers its
+        // resume with the SAME id, and that id's numbered frames are what let it catch up.
+        val priorLive = HashMap(storedToLive)
+        val gen = replay.onReady(replayEpoch)
         storedToLive.clear()
         liveToStored.clear()
-        stores.values.forEach { it.releaseFlyingWings() }
+        // It didn't blink (2.16): an open or mid-turn session the gateway can replay catches up
+        // frame by frame instead of re-reading its transcript; see [catchUp].
+        val seamless = HashMap<String, String>()
+        stores.entries.toList().forEach { (storedId, st) ->
+            if (st.followers == 0 && storedId !in wasBusy) return@forEach
+            val live = priorLive[storedId] ?: return@forEach
+            if (replay.canReplay(live)) {
+                replay.hold(live)
+                seamless[storedId] = live
+            }
+        }
+        // Wings in flight stand down — except where the replay will say how they landed.
+        stores.entries.toList().forEach { (storedId, st) ->
+            if (storedId !in seamless) st.releaseFlyingWings()
+        }
         // Busy marks don't survive the boundary: a turn that ended while we were away will
         // never send its message.complete, and one still running re-marks itself with its
         // next delta (the blanket turn-traffic rule above). Shade entries stay — a pending
@@ -1194,8 +1236,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         // its own honest timeout.
         _runs.value = emptyMap()
         _busyStored.value = emptySet()
+        scope.launch { refreshSessions() }
         scope.launch {
-            refreshSessions()
             // Re-open what the user actually has open. Sessions are only in `stores` once
             // something opened them, so this is bounded by what this run has touched.
             stores.entries.toList().forEach { (storedId, st) ->
@@ -1207,12 +1249,81 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                     st.hydrated = false
                     return@forEach
                 }
-                runCatching { rehydrate(storedId, st) }
-                    .onFailure { android.util.Log.w("KeryxGw", "resync failed for $storedId", it) }
-                // Re-lease so live events flow again without waiting for the user to type.
-                runCatching { attach(storedId) }
+                // Each on its own: a held session's frames wait for ITS catch-up, never for
+                // another session's re-read.
+                launch {
+                    val live = seamless[storedId]
+                    if (live != null && catchUp(storedId, st, live, gen, wasBusy = storedId in wasBusy)) {
+                        return@launch
+                    }
+                    runCatching { rehydrate(storedId, st) }
+                        .onFailure { android.util.Log.w("KeryxGw", "resync failed for $storedId", it) }
+                    // Re-lease so live events flow again without waiting for the user to type.
+                    runCatching { attach(storedId) }
+                }
             }
         }
+    }
+
+    /**
+     * Catch one session up after a drop by replaying what it missed (2.16): re-lease it, ask
+     * the gateway's ring for every frame after the last one applied, and run them through the
+     * same pump as if they had never been missed — the turn that streamed through the drop
+     * keeps its overlay, its row names and its read-mark, and folds as ONE reply.
+     *
+     * True when the session is whole again without a re-read, or when a newer socket has
+     * already taken it over. False = re-read the transcript, as this door always did: the
+     * session came back as a new runtime, the ring overflowed or forgot it, the gateway
+     * restarted, or it is too old to replay at all.
+     */
+    private suspend fun catchUp(
+        storedId: String,
+        st: SessionStore,
+        priorLive: String,
+        gen: Long,
+        wasBusy: Boolean,
+    ): Boolean {
+        val plan = try {
+            val rpc = rpc ?: error("gateway not connected")
+            val live = attach(storedId)
+            if (live != priorLive) {
+                ReplayLedger.Plan.Reload("resumed as a new runtime")
+            } else {
+                val (epoch, since) = synchronized(pumpLock) { replay.epoch to replay.watermark(live) }
+                val res = runCatching {
+                    rpc.request("session.events.since", buildJsonObject {
+                        put("session_id", JsonPrimitive(live))
+                        put("last_seen", JsonPrimitive(since ?: 0L))
+                    }, timeoutMs = 15_000)
+                }
+                ReplayLedger.plan(epoch, since, res)
+            }
+        } catch (e: Exception) {
+            ReplayLedger.Plan.Reload("resume failed: ${e.message}")
+        }
+        synchronized(pumpLock) {
+            if (!replay.isCurrent(gen)) return true // a newer socket owns this session now
+            when (plan) {
+                is ReplayLedger.Plan.Replay -> {
+                    val frames = replay.release(priorLive, gen, plan.events)
+                    _turnEvents.batched { frames.forEach(::applyEvent) }
+                    // After the frames, not before: replayed turn traffic clears an approval
+                    // card, and these are the questions still open NOW.
+                    plan.openRequests.forEach(::onServerRequest)
+                    st.republish()
+                    // Still mid-turn with nothing missed: the drop wiped the mark, nothing else will
+                    // restore it until the next frame.
+                    if (wasBusy && st.isStreaming) markBusy(storedId, true)
+                    android.util.Log.w("KeryxGw", "caught up ${storedId.take(8)} by replay: ${frames.size} frames")
+                }
+                is ReplayLedger.Plan.Reload -> {
+                    replay.abandon(priorLive, gen).forEach(::applyEvent)
+                    st.releaseFlyingWings()
+                    android.util.Log.w("KeryxGw", "re-reading ${storedId.take(8)} after reconnect: ${plan.why}")
+                }
+            }
+        }
+        return plan is ReplayLedger.Plan.Replay
     }
 
     /**
@@ -2682,9 +2793,11 @@ private const val INTERRUPT_SEAL_MS = 4_000L
 
     fun reasoningRejections(): Flow<String> = _reasoningRejections
 
-    private val _turnEvents = MutableSharedFlow<chat.keryx.core.model.TurnEvent>(extraBufferCapacity = 256)
+    // A sink, not a bare SharedFlow: a reconnect replay emits a ring's worth at once and must
+    // not drop the turn's End off a full buffer (see TurnEventSink).
+    private val _turnEvents = TurnEventSink(capacity = 256)
 
-    fun turnEvents(): Flow<chat.keryx.core.model.TurnEvent> = _turnEvents
+    fun turnEvents(): Flow<chat.keryx.core.model.TurnEvent> = _turnEvents.events
 
         /** (oldStoredId, newStoredId) each time compaction re-anchors a live session. */
     private val _sessionRotations = MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 8)

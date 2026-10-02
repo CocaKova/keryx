@@ -70,8 +70,20 @@ class GatewayRpc(
         data class Failed(val reason: String, val wsCloseCode: Int? = null) : ConnState
     }
 
-    /** One `method:"event"` frame: `params.type` + `params.session_id` + `params.payload`. */
-    data class GatewayEvent(val type: String, val sessionId: String, val payload: JsonObject?)
+    /**
+     * One `method:"event"` frame: `params.type` + `params.session_id` + `params.payload`.
+     *
+     * [seq] is the gateway's per-session stamp (hermes `tui_gateway/event_replay.py`): every
+     * event for a session counts up from 1 in one gateway process, and the same numbers key the
+     * replay ring `session.events.since` reads after a socket drop. Null on a session-less
+     * broadcast and on a gateway that predates the ring.
+     */
+    data class GatewayEvent(
+        val type: String,
+        val sessionId: String,
+        val payload: JsonObject?,
+        val seq: Long? = null,
+    )
 
     /**
      * One server→client request: the backend asking THIS client a question (`clarify`,
@@ -103,6 +115,10 @@ class GatewayRpc(
         .connectTimeout(6, TimeUnit.SECONDS)
         // The JSON-RPC protocol has no app-level ping; WS-level pings keep NATs open and
         // detect dead sockets (the gateway itself pings every 20s on non-loopback binds).
+        // Never parked off screen, on purpose (2.16): on this door the socket IS the
+        // notification channel — push is Matrix-only — so a parked socket would silence message
+        // alerts, turn-end alerts and approvals alike. Replay makes catching up after a park
+        // free; what is missing is a gateway-side push to wake the phone while it sleeps.
         .pingInterval(20, TimeUnit.SECONDS)
         .readTimeout(0, TimeUnit.MILLISECONDS)
         .apply {
@@ -372,10 +388,8 @@ class GatewayRpc(
             val method = frame["method"]?.jsonPrimitive?.contentOrNull
             val idPrim = frame["id"] as? JsonPrimitive
             if (method == "event") {
-                val params = frame["params"]?.jsonObject ?: return Inbound.Ignored
-                val type = params["type"]?.jsonPrimitive?.contentOrNull ?: return Inbound.Ignored
-                val sessionId = params["session_id"]?.jsonPrimitive?.contentOrNull ?: ""
-                return Inbound.Event(GatewayEvent(type, sessionId, params["payload"] as? JsonObject))
+                val params = frame["params"] as? JsonObject ?: return Inbound.Ignored
+                return eventOf(params)?.let { Inbound.Event(it) } ?: Inbound.Ignored
             }
             if (method != null) {
                 if (idPrim == null || !idPrim.isString) return Inbound.Ignored
@@ -385,6 +399,18 @@ class GatewayRpc(
             }
             val id = idPrim?.longOrNull ?: return Inbound.Ignored
             return Inbound.Response(id, frame["result"] as? JsonObject, frame["error"] as? JsonObject)
+        }
+
+        /**
+         * An event out of its `params` object — the shape a live frame carries AND the shape
+         * `session.events.since` hands back (the ring stores params, not envelopes), so a
+         * replayed event and a live one are read by the same rule.
+         */
+        fun eventOf(params: JsonObject): GatewayEvent? {
+            val type = (params["type"] as? JsonPrimitive)?.contentOrNull ?: return null
+            val sessionId = (params["session_id"] as? JsonPrimitive)?.contentOrNull ?: ""
+            val seq = (params["seq"] as? JsonPrimitive)?.longOrNull
+            return GatewayEvent(type, sessionId, params["payload"] as? JsonObject, seq)
         }
 
         /** Failure codes no retry can heal: the credential (or Host boundary) is rejected
