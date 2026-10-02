@@ -156,6 +156,9 @@ fun ChatScreen(
     val typingAgentIds by viewModel.typingAgentIds.collectAsState()
     val liveStream by viewModel.liveStream.collectAsState()
     val liveRate by viewModel.liveRate.collectAsState()
+    val sessionControl by viewModel.sessionControl.collectAsState()
+    val asides by viewModel.asides.collectAsState()
+    val redirectAvailable by viewModel.redirectAvailable.collectAsState()
     val turnRates by viewModel.turnRates.collectAsState()
     val pendingSend by viewModel.pendingSend.collectAsState()
     val showTelemetry by viewModel.showTelemetry.collectAsState()
@@ -616,6 +619,17 @@ fun ChatScreen(
             // quips indicator fires only BEFORE the turn's first sign of life (3.1 §C3): once
             // tool beats exist, the live run row in the transcript already names the tool, and
             // quips beneath it were a fourth "working" signal saying less than the row above.
+            // Asides (2.16) sit at the very foot, newest lowest: answered outside the chat, so
+            // below everything that is in it.
+            asides.asReversed().forEach { aside ->
+                item(key = "aside-${aside.taskId}") {
+                    Box(modifier = Modifier.animateItem()) {
+                        chat.keryx.app.presentation.ui.components.AsideBubble(
+                            aside, onDismiss = { viewModel.dismissAside(aside.taskId) },
+                        )
+                    }
+                }
+            }
             val stream = liveStream
             val streamVisible = stream != null && stream.roomId == currentRoom?.id &&
                 (stream.text.isNotBlank() || stream.reasoning.isNotBlank() ||
@@ -827,6 +841,22 @@ fun ChatScreen(
                                 } else null,
                                 // Retry rides the same gate as the undo (2.11.9): it IS an undo
                                 // with the prompt re-sent, so a refused undo is a refused retry.
+                                // Branch from here (2.16): any saved line of the conversation.
+                                onBranch = if (viewModel.transportIsDirect && message.content.isNotBlank() &&
+                                    (message.sender == SenderType.ME || message.sender == SenderType.HERMES)
+                                ) {
+                                    { viewModel.branchFrom(message) }
+                                } else null,
+                                // Edit & resend (2.16): your own words back in the composer.
+                                onEdit = if (message.sender == SenderType.ME && message.content.isNotBlank()) {
+                                    {
+                                        viewModel.editAndResend(
+                                            message,
+                                            takeBack = viewModel.transportIsDirect && !awaitingReply &&
+                                                message.id == messages.lastOrNull { it.sender == SenderType.ME }?.id,
+                                        )
+                                    }
+                                } else null,
                                 onRetry = if (viewModel.transportIsDirect && message.id == lastAgentId && !awaitingReply &&
                                     ChatViewModel.retryPromptOf(messages) != null
                                 ) {
@@ -1058,8 +1088,19 @@ fun ChatScreen(
                 },
                 onStop = { viewModel.interruptTurn() },
                 onStopHint = {
-                    viewModel.toast("Type your correction first — then tap steers the turn, hold queues it")
+                    viewModel.toast("Type your correction first — then tap steers the turn, hold for more")
                 },
+                busyMenu = if (viewModel.transportIsDirect) buildList {
+                    add("Queue for the next turn" to {
+                        if (composerField.text.isNotBlank()) viewModel.queueMessage(takeComposerText())
+                    })
+                    add("Ask aside — answered outside the chat" to {
+                        if (composerField.text.isNotBlank()) viewModel.askAside(takeComposerText())
+                    })
+                    if (redirectAvailable) add("Redirect — restart the reply with this" to {
+                        if (composerField.text.isNotBlank()) viewModel.redirectTurn(takeComposerText())
+                    })
+                } else null,
                 onPickGallery = { galleryPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) },
                 onPickFile = { filePicker.launch("*/*") },
                 // Deferred read: Composer only consults this inside its focus callback, and a
@@ -1161,6 +1202,12 @@ fun ChatScreen(
             flightPlan?.takeIf { it.total > 0 }?.let { plan ->
                 Box(Modifier.zIndex(1f)) {
                     chat.keryx.app.presentation.ui.components.FlightPlanStrip(plan)
+                }
+            }
+            // GOAL STRIP (2.16): the session's standing goal, under the plan on the same floor.
+            sessionControl?.takeIf { !it.isEmpty }?.let { control ->
+                Box(Modifier.zIndex(1f)) {
+                    chat.keryx.app.presentation.ui.components.GoalStrip(control, onAction = viewModel::goalAction)
                 }
             }
             WorkingStatusBar(

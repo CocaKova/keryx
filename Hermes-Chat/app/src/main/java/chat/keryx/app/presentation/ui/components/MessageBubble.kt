@@ -3,6 +3,7 @@ package chat.keryx.app.presentation.ui.components
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -115,6 +116,11 @@ fun MessageBubble(
     onUndoTurn: (() -> Unit)? = null,
     /** Take the exchange back, then say it again — the Desktop's /retry (2.11.9). Same gate. */
     onRetry: (() -> Unit)? = null,
+    /** 2.16: a new session holding the history up to and including this message. */
+    onBranch: (() -> Unit)? = null,
+    /** 2.16: put this message of yours back in the composer to edit and send again (the last
+     *  exchange is taken back first, where the gateway allows it). */
+    onEdit: (() -> Unit)? = null,
     /** True while this message is being read aloud (or its speech is being fetched). */
     speaking: Boolean = false,
     /** Read this message aloud / stop reading it. Null hides the affordance (non-agent senders). */
@@ -418,6 +424,8 @@ fun MessageBubble(
                 onDelete = onDelete?.let { { showReactionPicker = false; confirmDelete = true } },
                 onUndoTurn = onUndoTurn?.let { { showReactionPicker = false; confirmUndo = true } },
                 onRetry = onRetry?.let { r -> { showReactionPicker = false; r() } },
+                onBranch = onBranch?.let { b -> { showReactionPicker = false; b() } },
+                onEdit = onEdit?.let { e -> { showReactionPicker = false; e() } },
                 onSpeak = onSpeak?.let { speak -> { showReactionPicker = false; speak() } },
                 speaking = speaking,
                 kept = kept,
@@ -605,6 +613,8 @@ private fun ReactionPickerRow(
     onDelete: (() -> Unit)? = null,
     onUndoTurn: (() -> Unit)? = null,
     onRetry: (() -> Unit)? = null,
+    onBranch: (() -> Unit)? = null,
+    onEdit: (() -> Unit)? = null,
     onSpeak: (() -> Unit)? = null,
     speaking: Boolean = false,
     kept: Boolean? = null,
@@ -731,6 +741,26 @@ private fun ReactionPickerRow(
                             Icon(
                                 KeryxGlyphs.Refresh,
                                 contentDescription = "Take it back and say it again",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                    if (onEdit != null) {
+                        IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                androidx.compose.material.icons.Icons.Filled.Edit,
+                                contentDescription = "Edit and send again",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                    if (onBranch != null) {
+                        IconButton(onClick = onBranch, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                KeryxGlyphs.GitBranch,
+                                contentDescription = "Branch a new session from here",
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp),
                             )

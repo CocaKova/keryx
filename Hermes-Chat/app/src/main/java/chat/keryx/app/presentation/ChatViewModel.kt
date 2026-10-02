@@ -110,6 +110,7 @@ class ChatViewModel(
         // ~10 dispatches/s keeps recomposition (and the markdown re-parse) far off the frame budget
         // even at high token rates, while still reading as a live stream.
         private const val STREAM_DISPATCH_MS = 100L
+        private const val MAX_ASIDES = 4
         private const val STREAM_DISPATCH_CHARS = 240
         // The overlay renders (and markdown-parses) on every dispatch, so what it shows must stay
         // bounded no matter how long a marathon turn grows — only the tail is live anyway; the
@@ -2311,6 +2312,33 @@ class ChatViewModel(
         }
     }
 
+    /**
+     * Edit & resend (2.16): [message] back in the composer to change and send again. With
+     * [takeBack] (direct door, your newest message, idle) the exchange it started is taken back
+     * first, so the resend replaces it rather than following it; anywhere else it is a copy to
+     * edit, and the chat it came from stays as it was.
+     */
+    fun editAndResend(message: Message, takeBack: Boolean) {
+        val text = chat.keryx.app.senses.KeryxSenses.stripMarker(message.content).trim()
+        val room = _currentRoom.value
+        val d = direct
+        if (!takeBack || room == null || d == null) {
+            prefillComposer(text)
+            return
+        }
+        viewModelScope.launch {
+            d.undoLastTurn(room.id)
+                .onSuccess { removed ->
+                    prefillComposer(text)
+                    if (removed > 0) toast("Taken back — edit it and send again")
+                }
+                .onFailure {
+                    prefillComposer(text)
+                    toast("Couldn't take it back — your words are in the composer to send again")
+                }
+        }
+    }
+
     /** Archive and its reverse each say so with an Undo that is the other (2.16); the Undo
      *  runs quietly ([undoable] false) so the two never volley. */
     fun archiveSession(sessionId: String, undoable: Boolean = true) {
@@ -2821,6 +2849,127 @@ class ChatViewModel(
                     }
                 }
                 .onFailure { toast("Steer failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    // ---- 2.16: the gateway's other hands — standing orders, asides, branches, redirect -----
+
+    /** The open session's goal / loop / heartbeat (direct door). Read on open; the gateway's
+     *  `session.control.update` keeps it after that. Null = none set, or a gateway without it. */
+    val sessionControl: StateFlow<chat.keryx.core.model.SessionControl?> =
+        _currentRoom.flatMapLatest { r ->
+            val d = transport as? chat.keryx.app.transport.direct.DirectTransport
+            if (r == null || d == null) flowOf(null)
+            else d.sessionControl(r.id).also { viewModelScope.launch { d.readControl(r.id) } }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** Pause / resume / clear / stop-waiting on the open session's goal. */
+    fun goalAction(action: String) {
+        val session = _currentRoom.value ?: return
+        val d = direct ?: return
+        viewModelScope.launch {
+            d.controlAction(session.id, action)
+                .onFailure { toast("Goal: ${it.message?.take(80)}") }
+        }
+    }
+
+    /** A question asked aside (2.16 `prompt.btw`): shown under the chat, never part of it. */
+    data class Aside(
+        val taskId: String,
+        val roomId: String,
+        val question: String,
+        val answer: String? = null,
+        val failed: Boolean = false,
+    )
+
+    private val _asides = MutableStateFlow<List<Aside>>(emptyList())
+    /** The open room's asides, oldest first. Gone with the process; never in history. */
+    val asides: StateFlow<List<Aside>> =
+        combine(_asides, _currentRoom) { all, room -> all.filter { it.roomId == room?.id } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private var asideCollector: kotlinx.coroutines.Job? = null
+
+    /**
+     * Ask aside: a side agent answers [text] over a snapshot of this conversation while the turn
+     * keeps running. It is NOT a turn — it never touches [_awaitingReply] or [_liveTurnSigns], so
+     * nothing after it can be mistaken for a steer; its own pending state lives on the aside.
+     */
+    fun askAside(text: String) {
+        val session = _currentRoom.value ?: return
+        val d = direct ?: run { toast("Asking aside needs the direct gateway"); return }
+        if (asideCollector == null) {
+            asideCollector = viewModelScope.launch {
+                d.asideAnswers().collect { a ->
+                    val failed = a.text.startsWith("error:")
+                    _asides.value = _asides.value.map {
+                        if (it.taskId == a.taskId) it.copy(answer = a.text.removePrefix("error:").trim(), failed = failed) else it
+                    }
+                }
+            }
+        }
+        viewModelScope.launch {
+            d.askAside(session.id, text)
+                .onSuccess { task ->
+                    _asides.value = (_asides.value + Aside(task, session.id, text)).takeLast(MAX_ASIDES)
+                }
+                .onFailure { toast("Ask aside failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    fun dismissAside(taskId: String) {
+        _asides.value = _asides.value.filterNot { it.taskId == taskId }
+    }
+
+    /** Whether redirect is still on offer on this gateway (false after a 4010 / unknown verb). */
+    val redirectAvailable: StateFlow<Boolean> =
+        (transport as? chat.keryx.app.transport.direct.DirectTransport)?.redirectAvailable()
+            ?: MutableStateFlow(false)
+
+    /**
+     * Redirect the running turn (2.16): cancel the reply in flight and re-ask with [text], keeping
+     * the work done. The turn stays the same turn, so the live-turn flags are left as they are —
+     * except when the gateway answers that the turn is over, where it becomes a queued prompt.
+     */
+    fun redirectTurn(text: String) {
+        val session = _currentRoom.value ?: return
+        val d = direct ?: run { steerTurn(text); return }
+        viewModelScope.launch {
+            d.redirectTurn(session.id, text)
+                .onSuccess { outcome ->
+                    when (outcome) {
+                        chat.keryx.core.model.RedirectOutcome.REDIRECTED ->
+                            toast("Redirected — the reply starts over with your correction")
+                        chat.keryx.core.model.RedirectOutcome.QUEUED ->
+                            toast("Between calls — your correction runs next")
+                        chat.keryx.core.model.RedirectOutcome.REJECTED ->
+                            d.queuePrompt(session.id, text)
+                                .onSuccess { toast("The reply had finished — queued for the next turn") }
+                                .onFailure { toast("Queue failed: ${it.message?.take(80)}") }
+                        chat.keryx.core.model.RedirectOutcome.UNSUPPORTED -> {
+                            toast("This agent can't redirect — steering instead")
+                            steerTurn(text)
+                        }
+                    }
+                }
+                .onFailure { toast("Redirect failed: ${it.message?.take(80)}") }
+        }
+    }
+
+    /**
+     * Branch from [message] (2.16 `session.branch {count}`): a new session holding the history up
+     * to and including it, opened with the room-switch dissolve.
+     */
+    fun branchFrom(message: Message) {
+        val session = _currentRoom.value ?: return
+        val d = direct ?: return
+        viewModelScope.launch {
+            d.branchFrom(session.id, message.id, message.content, mine = message.sender == SenderType.ME)
+                .onSuccess { (stored, title) ->
+                    openSessionById(stored, title)
+                    toast("Branched — this is a new session from that message")
+                }
+                .onFailure { toast("Branch failed: ${it.message?.take(80)}") }
         }
     }
 

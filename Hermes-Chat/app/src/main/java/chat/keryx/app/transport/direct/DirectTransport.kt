@@ -98,6 +98,7 @@ class DirectTransport(
         /** Placeholder id for a tool.generating card, replaced by the real tool.start. */
         private const val STREAM_PUBLISH_MS = 100L
         private const val RATE_PUBLISH_MS = 250L
+        private const val BRANCH_MAX_PAGES = 60
         private const val TURN_RATES_KEPT = 240
 private const val GHOST_TOOL_ID = "generating"
 /** How long a Stop waits for the gateway's own `message.complete` before sealing the stream itself. */
@@ -302,6 +303,9 @@ private const val INTERRUPT_SEAL_MS = 4_000L
 
         /** Rows fetched so far = the offset the next (older) page starts at. */
         fun historyOffset(): Int = hydratedRows.size
+
+        /** The persisted rows held, oldest first (2.16 branch-from-here counts over them). */
+        fun rowsSnapshot(): List<MessageRow> = hydratedRows
 
         fun streamStart() {
             streaming = true
@@ -538,6 +542,19 @@ private const val INTERRUPT_SEAL_MS = 4_000L
          *  last words must not wait for the next live frame to show (2.16). */
         fun republish() = publish()
 
+        /**
+         * A redirect landed (2.16): the correction joins the live turn where it happened — under
+         * the words already streamed (sealed, so the re-asked call's words start a new segment
+         * instead of running on into the cancelled one), above whatever comes next. The order
+         * the gateway records and Desktop draws. A turn already over gets a plain echo.
+         */
+        fun correction(text: String) {
+            if (!streaming) { localUserMessage(text); return }
+            if (buffer.isNotBlank()) sealBuffer()
+            items += TurnItem.Said(seq++, text)
+            publish()
+        }
+
         fun localUserMessage(text: String) {
             local = local + Message(
                 id = "local-${System.currentTimeMillis()}",
@@ -624,6 +641,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 id = id, roomId = storedId, sender = SenderType.HERMES,
                 content = "", timestamp = ts, toolCalls = listOf(item.call),
             )
+            is TurnItem.Said -> Message(
+                id = id, roomId = storedId, sender = SenderType.ME,
+                content = item.text, timestamp = ts,
+            )
         }
 
         private fun publish() {
@@ -672,6 +693,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         val seq: Int
         data class Text(override val seq: Int, val text: String, val provisional: Boolean) : TurnItem
         data class Tool(override val seq: Int, val call: ToolCall) : TurnItem
+        /** The user's own words, inside the turn they redirected (2.16). */
+        data class Said(override val seq: Int, val text: String) : TurnItem
     }
 
     // ---- connection lifecycle -------------------------------------------------------
@@ -699,6 +722,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         requestJob?.cancel()
         stateJob?.cancel()
         storedToLive.clear(); liveToStored.clear()
+        _redirectAvailable.value = true // a rebuilt client asks its gateway afresh
         // One DirectAuth for both halves: REST bearer rotation and per-connect WS tickets
         // share a refresh mutex, so one expiry rotates once for everyone.
         val auth = DirectAuth(settings, settings.allowInsecure)
@@ -975,6 +999,13 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 scope.launch { reconcileStoredId(ev.sessionId) }
             }
             "session.info" -> applyMeta(storedId, p)
+            // Standing orders changed (2.16): goal / loop / heartbeat, the exact snapshot.
+            "session.control.update" ->
+                controlFlow(storedId).value = chat.keryx.core.model.SessionControls.parse(p?.get("control"))
+            // An aside answered (2.16 prompt.btw): never part of the transcript.
+            "btw.complete" -> _asideAnswers.tryEmit(
+                AsideAnswer(storedId, pStr("task_id").orEmpty(), pStr("question").orEmpty(), pStr("text").orEmpty())
+            )
             // The gateway's own mid-turn usage tick (~1 s, only while the counters move;
             // `_start_usage_ticker`). Unhandled until 2.16, so the ring and the run numbers sat
             // still for a whole turn unless the 15 s poll happened to ask.
@@ -2696,6 +2727,38 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         accepted
     }
 
+    /** False once this gateway has said it cannot redirect a live turn (2.16): the toggle goes. */
+    private val _redirectAvailable = MutableStateFlow(true)
+    fun redirectAvailable(): StateFlow<Boolean> = _redirectAvailable
+
+    /**
+     * Redirect the running turn (2.16): cancel the model call in flight and re-ask it with
+     * [text] appended, keeping the work already done — where [steerTurn] waits for the next
+     * tool result. 4010 / an unknown method answers [RedirectOutcome.UNSUPPORTED] and retires
+     * the option for this gateway; the caller decides what the correction does instead.
+     */
+    suspend fun redirectTurn(sessionId: String, text: String): Result<chat.keryx.core.model.RedirectOutcome> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        val live = attach(sessionId)
+        val res = try {
+            rpc.request("session.redirect", buildJsonObject {
+                put("session_id", JsonPrimitive(live))
+                put("text", JsonPrimitive(text))
+            })
+        } catch (e: GatewayRpc.RpcException) {
+            val never = chat.keryx.core.model.RedirectOutcome.ofErrorCode(e.code) ?: throw e
+            _redirectAvailable.value = false
+            return@runCatching never
+        }
+        val outcome = chat.keryx.core.model.RedirectOutcome.ofStatus(res.strOrNull("status"))
+        // Under the pump lock: the re-asked call's first words may already be on the socket,
+        // and the live turn's items are the pump's to touch.
+        if (outcome == chat.keryx.core.model.RedirectOutcome.REDIRECTED) {
+            synchronized(pumpLock) { store(sessionId).correction(text) }
+        }
+        outcome
+    }
+
     suspend fun queuePrompt(sessionId: String, text: String): Result<Unit> = runCatching {
         val rpc = rpc ?: error("gateway not connected")
         val live = attach(sessionId)
@@ -2821,6 +2884,100 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     private val _turnEvents = TurnEventSink(capacity = 256)
 
     fun turnEvents(): Flow<chat.keryx.core.model.TurnEvent> = _turnEvents.events
+
+    // ---- Standing orders, asides, branches (2.16) -------------------------------------------
+
+    private val controlFlows = java.util.concurrent.ConcurrentHashMap<String, MutableStateFlow<chat.keryx.core.model.SessionControl?>>()
+    private fun controlFlow(id: String) = controlFlows.getOrPut(id) { MutableStateFlow(null) }
+
+    /** The session's goal / loop / heartbeat, as the gateway last said; null = none or unknown. */
+    fun sessionControl(sessionId: String): StateFlow<chat.keryx.core.model.SessionControl?> = controlFlow(sessionId)
+
+    /** False once this gateway has said it has no `session.control.*` (the strip stays away). */
+    @Volatile private var controlSupported = true
+
+    /** Read the standing orders now (on open; the update event keeps them after that). */
+    suspend fun readControl(sessionId: String): Result<Unit> = runCatching {
+        if (!controlSupported) return@runCatching
+        val rpc = rpc ?: return@runCatching
+        val live = attach(sessionId)
+        val res = try {
+            rpc.request("session.control.read", buildJsonObject { put("session_id", JsonPrimitive(live)) })
+        } catch (e: GatewayRpc.RpcException) {
+            if (e.code == -32601) { controlSupported = false; return@runCatching }
+            throw e
+        }
+        controlFlow(forwarded(sessionId)).value = chat.keryx.core.model.SessionControls.parse(res["control"])
+    }
+
+    /** One allowlisted `session.control` action ("goal.pause", "goal.clear", …). */
+    suspend fun controlAction(sessionId: String, action: String): Result<Unit> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        val live = attach(sessionId)
+        val res = rpc.request("session.control", buildJsonObject {
+            put("session_id", JsonPrimitive(live))
+            put("action", JsonPrimitive(action))
+        })
+        (res["control"] as? kotlinx.serialization.json.JsonObject)?.let {
+            controlFlow(forwarded(sessionId)).value = chat.keryx.core.model.SessionControls.parse(it)
+        }
+    }
+
+    /** An aside's answer: [text] is the side agent's reply (or "error: …"). */
+    data class AsideAnswer(val sessionId: String, val taskId: String, val question: String, val text: String)
+
+    private val _asideAnswers = kotlinx.coroutines.flow.MutableSharedFlow<AsideAnswer>(extraBufferCapacity = 16)
+    fun asideAnswers(): Flow<AsideAnswer> = _asideAnswers
+
+    /**
+     * Ask aside (`prompt.btw`): a side agent answers over a snapshot of the conversation; the
+     * history, the turn in flight and the prompt cache are untouched. Returns the task id the
+     * answer (`btw.complete`) will carry.
+     */
+    suspend fun askAside(sessionId: String, text: String): Result<String> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        val live = attach(sessionId)
+        val res = rpc.request("prompt.btw", buildJsonObject {
+            put("session_id", JsonPrimitive(live))
+            put("text", JsonPrimitive(text))
+        })
+        res.strOrNull("task_id") ?: error("no task id")
+    }
+
+    /**
+     * Branch from a message (`session.branch {count}`): a new session holding the history up to
+     * and including it. The whole history is paged in first, because the count runs from the
+     * start. Returns (new stored id, title); the new live session is mapped so opening it does
+     * not resume a second one.
+     */
+    suspend fun branchFrom(sessionId: String, messageId: String, content: String, mine: Boolean): Result<Pair<String, String>> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        val storedId = forwarded(sessionId)
+        val st = store(storedId)
+        var pages = 0
+        while (st.history.value.hasMore && pages++ < BRANCH_MAX_PAGES) {
+            if (st.history.value.loading) { delay(150); continue }
+            loadEarlier(storedId).getOrThrow()
+        }
+        var count = chat.keryx.core.model.BranchPoint.count(st.rowsSnapshot(), messageId, content, mine)
+        if (count == null && messageId.startsWith("live-")) {
+            // A row this process streamed: its persisted twin arrives with a re-read.
+            st.clearLocal()
+            rehydrate(storedId, st)
+            count = chat.keryx.core.model.BranchPoint.count(st.rowsSnapshot(), messageId, content, mine)
+        }
+        count ?: error("that message isn't saved yet — try again in a moment")
+        val live = attach(storedId)
+        val res = rpc.request("session.branch", buildJsonObject {
+            put("session_id", JsonPrimitive(live))
+            put("count", JsonPrimitive(count))
+        })
+        val newLive = res.strOrNull("session_id") ?: error("branch returned no session")
+        val newStored = res.strOrNull("stored_session_id") ?: error("branch returned no stored id")
+        storedToLive[newStored] = newLive
+        liveToStored[newLive] = newStored
+        newStored to (res.strOrNull("title") ?: "Branch")
+    }
 
     // ---- Honest tok/s (2.16) ---------------------------------------------------------------
     // Live: the streamed character rate, read with a chars-per-token ratio measured against the

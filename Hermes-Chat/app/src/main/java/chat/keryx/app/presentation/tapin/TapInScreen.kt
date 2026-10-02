@@ -188,6 +188,11 @@ class TapInSteer(
 @Composable
 private fun Headline(state: TapInState, ink: Color, accent: Color, reduced: Boolean) {
     Column(Modifier.fillMaxWidth()) {
+        // The standing goal this turn serves (2.16), above what the turn is doing.
+        state.goalLine?.let {
+            Text(it, fontSize = KeryxType.caption, color = accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Spacer(Modifier.height(4.dp))
+        }
         AnimatedContent(
             targetState = state.headline,
             transitionSpec = {

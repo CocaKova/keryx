@@ -79,6 +79,24 @@ class PaperContrastTest {
      * running must still clear AA. (2.8.2: the floor was a 3% tint, and a light bubble
      * under white text was the whole background.)
      */
+    /** The goal strip (2.16) floats in the same rail on its own floor; it may not be thinner
+     *  than the flight plan's, nor its line fainter, and the same worst cases must hold. */
+    @Test
+    fun `goal strip floor keeps its line readable over any transcript`() {
+        val floorAlpha = chat.keryx.app.presentation.ui.components.GoalStripFloor.ALPHA.toDouble()
+        val lineAlpha = chat.keryx.app.presentation.ui.components.GoalStripFloor.LINE_ALPHA.toDouble()
+        assertTrue(floorAlpha >= FlightPlanFloor.ALPHA)
+        assertTrue(lineAlpha >= FlightPlanFloor.LINE_ALPHA)
+        for (under in listOf(void, 0xFFFFB300L, voidSurface, 0xFF8B5CF6L)) {
+            val floor = over(paperSurface, floorAlpha, under)
+            assertTrue("paper goal strip over ${under.toString(16)}", contrast(over(ink, lineAlpha, floor), floor) >= AA)
+        }
+        for (under in listOf(0xFFFFFFFFL, 0xFFFFB300L, paper, 0xFF8B5CF6L)) {
+            val floor = over(voidSurface, floorAlpha, under)
+            assertTrue("void goal strip over ${under.toString(16)}", contrast(over(voidInk, lineAlpha, floor), floor) >= AA)
+        }
+    }
+
     @Test
     fun `flight plan floor keeps its text readable over any transcript`() {
         val floorAlpha = FlightPlanFloor.ALPHA.toDouble()

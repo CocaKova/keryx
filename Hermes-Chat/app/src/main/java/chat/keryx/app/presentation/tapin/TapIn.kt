@@ -42,6 +42,8 @@ data class TapInState(
     /** The live rate as a label (core TokenRate: "≈41 tok/s" calibrated, "164 chars/s" not);
      *  null when nothing is flowing — it falls away during a stall. */
     val rateLabel: String? = null,
+    /** The session's standing goal as one line (2.16 SessionControls.headline), or null. */
+    val goalLine: String? = null,
 ) {
     val crewLanded: Int get() = crew.count { !it.run.running }
     val hasCrew: Boolean get() = crew.isNotEmpty()

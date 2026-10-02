@@ -41,6 +41,7 @@ fun TapInHost(
     val workStartedAt by viewModel.workStartedAt.collectAsState()
     val usage by viewModel.contextUsage.collectAsState()
     val liveRate by viewModel.liveRate.collectAsState()
+    val control by viewModel.sessionControl.collectAsState()
 
     val roomId = currentRoom?.id
     val stream = liveStream?.takeIf { it.roomId == roomId }
@@ -76,6 +77,8 @@ fun TapInHost(
         )
     }
 
+    val goalLine = control?.goal?.let(chat.keryx.core.model.SessionControls::headline)
+    val shown = if (goalLine != null) state.copy(goalLine = goalLine) else state
     var helper by remember { mutableStateOf<Delegation?>(null) }
     var helperRoom by remember { mutableStateOf<String?>(null) }
     // Tap-In follows the open room; a helper sheet from the room it left must not follow it.
@@ -91,7 +94,7 @@ fun TapInHost(
             onStop = { viewModel.interruptTurn() },
         )
     }
-    TapInScreen(state = state, onClose = onClose, onOpenHelper = { helper = it; helperRoom = roomId }, steer = steer)
+    TapInScreen(state = shown, onClose = onClose, onOpenHelper = { helper = it; helperRoom = roomId }, steer = steer)
 
     helper?.let { picked ->
         // Re-resolved by key so a card tapped while flying keeps growing, as the chat's does.

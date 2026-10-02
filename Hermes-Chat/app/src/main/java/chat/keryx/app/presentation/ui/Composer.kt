@@ -144,8 +144,12 @@ internal fun Composer(
     onQueue: () -> Unit = {},
     onStop: () -> Unit = {},
     onStopHint: () -> Unit = {},
+    /** 2.16: what a long-press on Steer offers instead (queue, ask aside, redirect), as
+     *  (label, action). Null keeps the old long-press: queue. */
+    busyMenu: List<Pair<String, () -> Unit>>? = null,
 ) {
     var attachMenu by remember { mutableStateOf(false) }
+    var busyMenuOpen by remember { mutableStateOf(false) }
     // The dream attach options bloom in just above the composer pill (rendered inline rather than in
     // a Popup — Popup positioning at the screen edge was unreliable and hid the menu entirely).
     Column {
@@ -350,7 +354,7 @@ internal fun Composer(
                         // mind with the turn, and a screen reader has no glyph to go on.
                         onClickLabel = label,
                         onLongClickLabel = when (busyAction) {
-                            "steer" -> "Queue for next turn instead"
+                            "steer" -> if (busyMenu != null) "Queue, ask aside or redirect" else "Queue for next turn instead"
                             "stop" -> "What stop does"
                             else -> null
                         },
@@ -372,12 +376,24 @@ internal fun Composer(
                         // Long-press on STOP teaches (it was the first thing tried, and silence
                         // read as broken).
                         onLongClick = when (busyAction) {
-                            "steer" -> onQueue
+                            "steer" -> if (busyMenu != null) ({ busyMenuOpen = true }) else onQueue
                             "stop" -> onStopHint
                             else -> null
                         },
                     ),
             ) {
+                // The other hands on a running turn (2.16), one hold away from Steer.
+                androidx.compose.material3.DropdownMenu(
+                    expanded = busyMenuOpen && busyMenu != null && busyAction == "steer",
+                    onDismissRequest = { busyMenuOpen = false },
+                ) {
+                    busyMenu?.forEach { (label, action) ->
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = { Text(label, fontSize = chat.keryx.app.presentation.ui.components.KeryxType.body) },
+                            onClick = { busyMenuOpen = false; sendHaptics.commit(); action() },
+                        )
+                    }
+                }
                 // Send → steer → queue → stop is one button changing its mind; the glyph pops
                 // into the new one instead of snapping, so the change itself is noticed.
                 AnimatedContent(
