@@ -368,7 +368,7 @@ class HubDelegate(deps: GatewayDeps) {
         val client = client() ?: return
         scope.launch {
             client.reasoningSet(level)
-                .onSuccess { toast("Reasoning → $level (next session)"); refreshReasoningCaps() }
+                .onSuccess { toast("Reasoning → ${chat.keryx.core.model.ReasoningEffort.label(level)} (next session)"); refreshReasoningCaps() }
                 .onFailure { toast("Change refused: ${it.message?.take(80)}") }
         }
     }

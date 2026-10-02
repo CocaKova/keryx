@@ -1579,9 +1579,9 @@ private fun SteeringSection(taskId: String, task: KanbanTask, viewModel: ChatVie
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             val current = task.reasoningEffort
-            (listOf("" to "inherit", "none" to "off") +
-                listOf("minimal", "low", "medium", "high", "xhigh", "max", "ultra")
-                    .map { it to it }).forEach { (value, label) ->
+            (listOf("" to "Inherit") +
+                chat.keryx.core.model.ReasoningEffort.VALUES
+                    .map { it to chat.keryx.core.model.ReasoningEffort.label(it) }).forEach { (value, label) ->
                 val selected = value == current
                 Text(
                     label,

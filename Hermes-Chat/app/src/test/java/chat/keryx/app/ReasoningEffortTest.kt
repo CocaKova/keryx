@@ -39,7 +39,7 @@ class ReasoningEffortTest {
         // A gateway that grows a level we don't know must not be relabelled as one we do.
         assertEquals("cosmic", ReasoningEffort.shortLabel("cosmic"))
         assertEquals("", ReasoningEffort.shortLabel(""))
-        assertEquals("XHigh", ReasoningEffort.shortLabel("xhigh"))
+        assertEquals("X-High", ReasoningEffort.shortLabel("xhigh"))
         assertEquals("Off", ReasoningEffort.shortLabel("none"))
     }
 
@@ -57,7 +57,7 @@ class ReasoningEffortTest {
         // No session level: the profile default is what the agent will actually use.
         assertEquals("qwen38-27b · Max", ReasoningEffort.statusLabel("qwen38-27b", "", "max"))
         // Neither: Hermes' own fallback, never a bare model name.
-        assertEquals("qwen38-27b · Med", ReasoningEffort.statusLabel("qwen38-27b", null, null))
+        assertEquals("qwen38-27b · Medium", ReasoningEffort.statusLabel("qwen38-27b", null, null))
         // No model, no label — the pill says "model" on its own elsewhere.
         assertEquals("", ReasoningEffort.statusLabel("", "high"))
     }

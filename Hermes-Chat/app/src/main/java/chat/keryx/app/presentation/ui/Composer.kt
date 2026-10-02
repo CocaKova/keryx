@@ -512,7 +512,7 @@ internal fun ComposerFooter(
         Spacer(modifier = Modifier.width(4.dp))
         // Reasoning pill — the relocated top-bar menu, now living where the thinking happens.
         var reasoningMenu by remember { mutableStateOf(false) }
-        val levelLabel = caps?.let { c -> (c.labels[c.current] ?: c.current).ifBlank { "reasoning" } } ?: "reasoning"
+        val levelLabel = caps?.let { c -> chat.keryx.core.model.ReasoningEffort.label(c.current, c.labels).ifBlank { "reasoning" } } ?: "reasoning"
         Box {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

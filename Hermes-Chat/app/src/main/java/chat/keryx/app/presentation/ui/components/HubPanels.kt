@@ -169,7 +169,7 @@ internal fun StatusTab(
             val rows = listOfNotNull(
                 caps?.model?.takeIf { it.isNotBlank() }?.let { "Model" to it },
                 caps?.let {
-                    "Reasoning" to (it.labels[it.current] ?: it.current.ifBlank { "—" }) +
+                    "Reasoning" to chat.keryx.core.model.ReasoningEffort.label(it.current, it.labels).ifBlank { "—" } +
                         if (it.mode == "binary") " (on/off brain)" else " (effort scale)"
                 },
                 panel.data?.version?.takeIf { it.isNotBlank() }?.let { "Gateway" to "hermes-agent $it" },

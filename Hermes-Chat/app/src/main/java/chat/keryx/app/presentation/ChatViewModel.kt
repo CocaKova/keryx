@@ -2729,7 +2729,7 @@ class ChatViewModel(
         if (!refusedLevels.add(chat.keryx.core.model.ReasoningEffort.rejectionKey(model, current))) return
 
         val label = { level: String ->
-            chat.keryx.core.model.ReasoningEffort.longLabel(level).ifBlank { level }
+            chat.keryx.core.model.ReasoningEffort.label(level, caps?.labels.orEmpty()).ifBlank { level }
         }
         val next = chat.keryx.core.model.ReasoningEffort.fallbackBelow(model, current, refusedLevels)
         if (next == null) {
@@ -2775,7 +2775,8 @@ class ChatViewModel(
             viewModelScope.launch {
                 d.setReasoningEffort(roomId, level, global)
                     .onSuccess { v ->
-                        toast(if (global) "Reasoning → ${v.ifBlank { level }} for every session" else "Reasoning → ${v.ifBlank { level }} — this session")
+                        val said = chat.keryx.core.model.ReasoningEffort.label(v.ifBlank { level }, hub.reasoningCaps.value?.labels.orEmpty())
+                        toast(if (global) "Reasoning → $said for every session" else "Reasoning → $said — this session")
                         refreshReasoningCaps()
                     }
                     .onFailure { toast("Reasoning refused: ${it.message?.take(80)}") }

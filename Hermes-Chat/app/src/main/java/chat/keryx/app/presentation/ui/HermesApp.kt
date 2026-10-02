@@ -700,19 +700,14 @@ internal fun ReasoningMenu(
             emptyList()
         } else if (!caps?.levels.isNullOrEmpty()) {
             caps!!.levels.map { arg ->
-                val label = caps.labels[arg] ?: arg.replaceFirstChar { it.uppercase() }
+                val label = chat.keryx.core.model.ReasoningEffort.label(arg, caps.labels)
                 val glyph = glyphFor[arg] ?: if (caps.mode == "binary" && arg != "none") "▁▃▅▇" else "·"
                 Triple(arg, label, glyph)
             }
         } else {
-            listOf(
-                Triple("none", "Off", "·"),
-                Triple("minimal", "Minimal", "▁"),
-                Triple("low", "Low", "▁▃"),
-                Triple("medium", "Medium", "▁▃▅"),
-                Triple("high", "High", "▁▃▅▇"),
-                Triple("xhigh", "X-High", "▁▃▅▇█"),
-            )
+            listOf("none", "minimal", "low", "medium", "high", "xhigh").map { arg ->
+                Triple(arg, chat.keryx.core.model.ReasoningEffort.label(arg), glyphFor[arg] ?: "·")
+            }
         }
         entries.forEach { (arg, label, glyph) ->
             val isCurrent = caps?.current == arg

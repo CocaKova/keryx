@@ -25,26 +25,18 @@ object ReasoningEffort {
     /** Hermes' own fallback when neither the session nor the profile names one. */
     const val DEFAULT: String = "medium"
 
-    /** Compact labels for chrome where space is tight — the composer pill, picker rows. */
-    private val SHORT = mapOf(
+    /**
+     * The one spelling of each level (2.16). There used to be three: the composer pill printed
+     * the wire value ("xhigh"), the reasoning dial capitalised it ("Xhigh"), and the dial's
+     * fallback list said "X-High" — with a fourth, "Extra high", in the refusal notices.
+     */
+    private val NAMES = mapOf(
         "none" to "Off",
-        "minimal" to "Min",
-        "low" to "Low",
-        "medium" to "Med",
-        "high" to "High",
-        "xhigh" to "XHigh",
-        "max" to "Max",
-        "ultra" to "Ultra",
-    )
-
-    /** Spelled-out names for the picker itself, where the reader has room to read. */
-    private val LONG = mapOf(
-        "none" to "Off · no thinking",
         "minimal" to "Minimal",
         "low" to "Low",
         "medium" to "Medium",
         "high" to "High",
-        "xhigh" to "Extra high",
+        "xhigh" to "X-High",
         "max" to "Max",
         "ultra" to "Ultra",
     )
@@ -56,19 +48,28 @@ object ReasoningEffort {
         return if (v in VALUES) v else DEFAULT
     }
 
-    /** Unknown values pass through as themselves: a gateway that grows a level we don't know
-     *  yet must still be able to SAY so, rather than be relabelled as something it isn't. */
-    fun shortLabel(raw: String?): String {
+    /**
+     * How a level reads, on every surface that shows one: the composer pill, the reasoning dial,
+     * Settings, the Hub's controls, a mission's thinking depth, the notices.
+     *
+     * [gatewayLabels] is the brain's own naming from `/keryx/capabilities`, and it wins where it
+     * says something: on a binary brain `high` is "On", not "High". Unknown values pass through
+     * as themselves — a gateway that grows a level we don't know yet must still be able to SAY
+     * so, rather than be relabelled as something it isn't.
+     */
+    fun label(raw: String?, gatewayLabels: Map<String, String> = emptyMap()): String {
         val v = raw?.trim()?.lowercase().orEmpty()
         if (v.isEmpty()) return ""
-        return SHORT[v] ?: v
+        val brains = gatewayLabels[v] ?: gatewayLabels[raw?.trim().orEmpty()]
+        brains?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
+        return NAMES[v] ?: v
     }
 
-    fun longLabel(raw: String?): String {
-        val v = raw?.trim()?.lowercase().orEmpty()
-        if (v.isEmpty()) return ""
-        return LONG[v] ?: v
-    }
+    /** [label]; kept so older call sites read the same one spelling. */
+    fun shortLabel(raw: String?): String = label(raw)
+
+    /** [label]; kept so older call sites read the same one spelling. */
+    fun longLabel(raw: String?): String = label(raw)
 
     fun isValid(raw: String?): Boolean = raw?.trim()?.lowercase() in VALUES
 
@@ -152,7 +153,7 @@ object ReasoningEffort {
         val level = effort?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
             ?: defaultEffort?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
             ?: DEFAULT
-        val tag = shortLabel(level)
+        val tag = label(level)
         return if (tag.isEmpty()) name else "$name · $tag"
     }
 }

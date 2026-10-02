@@ -53,6 +53,34 @@ class ReasoningEffortTest {
     }
 
     @Test
+    fun `every level has one spelling`() {
+        // 2.15 printed xhigh three ways (pill "xhigh", dial "Xhigh", fallback "X-High").
+        assertEquals(
+            listOf("Off", "Minimal", "Low", "Medium", "High", "X-High", "Max", "Ultra"),
+            ReasoningEffort.VALUES.map { ReasoningEffort.label(it) },
+        )
+        assertEquals("X-High", ReasoningEffort.label(" XHIGH "))
+        // The short and long names are the same name now.
+        for (v in ReasoningEffort.VALUES) {
+            assertEquals(ReasoningEffort.label(v), ReasoningEffort.shortLabel(v))
+            assertEquals(ReasoningEffort.label(v), ReasoningEffort.longLabel(v))
+        }
+    }
+
+    @Test
+    fun `the brain's own name for a level wins`() {
+        // keryx-stream declares a binary brain as levels [none, high] labelled Off / On.
+        val binary = mapOf("none" to "Off", "high" to "On")
+        assertEquals("On", ReasoningEffort.label("high", binary))
+        assertEquals("Off", ReasoningEffort.label("none", binary))
+        // A blank gateway label says nothing; the scale's name stands.
+        assertEquals("Medium", ReasoningEffort.label("medium", mapOf("medium" to " ")))
+        // Unknown and empty values are not invented.
+        assertEquals("cosmic", ReasoningEffort.label("cosmic"))
+        assertEquals("", ReasoningEffort.label(null))
+    }
+
+    @Test
     fun `an unknown level is not walked back from`() {
         assertNull(ReasoningEffort.fallbackBelow(brain, "turbo", emptySet()))
         assertNull(ReasoningEffort.fallbackBelow(brain, "", emptySet()))

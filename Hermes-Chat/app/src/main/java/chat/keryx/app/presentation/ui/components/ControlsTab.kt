@@ -133,7 +133,7 @@ fun ControlsTab(viewModel: ChatViewModel) {
                     Spacer(Modifier.height(6.dp))
                     ChoiceChips(
                         choices = c.levels,
-                        labels = c.labels,
+                        labels = c.levels.associateWith { chat.keryx.core.model.ReasoningEffort.label(it, c.labels) },
                         selected = c.current,
                         onSelect = { viewModel.hub.reasoningSet(it) },
                     )
