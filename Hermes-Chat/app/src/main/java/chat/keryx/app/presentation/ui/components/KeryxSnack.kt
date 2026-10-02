@@ -93,7 +93,10 @@ object KeryxSnackFloor {
  *  notice can sit above it instead of on its text. Window coordinates; null = no input. */
 @Stable
 class KeryxSnackSlot internal constructor() {
-    internal var inputTopPx by mutableStateOf<Float?>(null)
+    /** Every input in this window reports its own top (2.16: Tap-In's steer bar now shares the
+     *  activity window with the composer under it); the notice clears the highest of them. */
+    internal val inputTops = androidx.compose.runtime.mutableStateMapOf<Any, Float>()
+    internal val inputTopPx: Float? get() = inputTops.values.minOrNull()
 }
 
 /**
@@ -226,8 +229,9 @@ fun rememberKeryxSnack(): KeryxSnack {
  */
 fun keryxSnackClearance(): Modifier = Modifier.composed {
     val slot = LocalKeryxSnackSlot.current ?: return@composed Modifier
-    DisposableEffect(slot) { onDispose { slot.inputTopPx = null } }
-    Modifier.onGloballyPositioned { slot.inputTopPx = it.positionInWindow().y }
+    val key = remember { Any() }
+    DisposableEffect(slot) { onDispose { slot.inputTops.remove(key) } }
+    Modifier.onGloballyPositioned { slot.inputTops[key] = it.positionInWindow().y }
 }
 
 /**

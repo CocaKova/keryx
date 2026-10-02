@@ -14,6 +14,8 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -332,17 +334,10 @@ fun ChatScreen(
     // Tap-In (2.12): the turn in flight, full screen. Opened from the working banner, a long
     // press on the newest run, or the run notice in the shade; closed by the back gesture. It
     // reads the same render items the transcript draws, so both doors are already reconciled.
-    var tapInOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
-    val tapInRequested by viewModel.tapInRequested.collectAsState()
-    LaunchedEffect(tapInRequested) {
-        if (tapInRequested) { tapInOpen = true; viewModel.consumeTapIn() }
-    }
-    if (tapInOpen) chat.keryx.app.presentation.tapin.TapInHost(
-        viewModel = viewModel,
-        itemsNewestFirst = renderItems,
-        structured = lastTurnBeats,
-        onClose = { tapInOpen = false },
-    )
+    // 2.16: Tap-In is a layer on the nav stack now (predictive back, the cloud-grown arrival);
+    // the screen hands it the same reconciled items through the ViewModel and asks for it there.
+    LaunchedEffect(renderItems, lastTurnBeats) { viewModel.publishTapInFeed(renderItems, lastTurnBeats) }
+    fun openTapIn() { currentRoom?.id?.let(viewModel::requestTapIn) }
 
     // Restore this room's unsent draft when it opens (and swap drafts when switching rooms) so
     // half-typed thoughts survive room hops and app restarts.
@@ -773,7 +768,7 @@ fun ChatScreen(
                             // attaching one turn's diffs to another's calls.
                             structured = if (item.key == newestToolRunKey) lastTurnBeats else emptyList(),
                             onOpenSubagent = { openSubagent = it; openSubagentRoom = currentRoom?.id },
-                            onTapIn = if (item.key == newestToolRunKey) ({ tapInOpen = true }) else null,
+                            onTapIn = if (item.key == newestToolRunKey) ({ openTapIn() }) else null,
                             // The newest item (index 0 under reverseLayout) is "running" while we
                             // still await Hermes' reply; older runs are settled ("Ran N tools").
                             active = index == 0 && awaitingReply,
@@ -1336,8 +1331,11 @@ fun ChatScreen(
                 rate = topRate,
                 toolTint = toolTint,
                 typingAgentIds = typingAgentIds,
-                modifier = Modifier.padding(top = 6.dp),
-                onTapIn = { tapInOpen = true },
+                // Where Tap-In grows out of (2.16): the cloud's bounds, kept while it shows.
+                modifier = Modifier
+                    .padding(top = 6.dp)
+                    .onGloballyPositioned { viewModel.cloudBounds = it.boundsInRoot() },
+                onTapIn = { openTapIn() },
             )
         }
     }

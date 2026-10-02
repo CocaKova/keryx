@@ -66,6 +66,10 @@ sealed interface KeryxDest {
 
     data object Settings : KeryxDest { override val route = "settings" }
 
+    /** Tap-In (2.16 moved it here from its own Dialog window): the turn in flight, full screen,
+     *  with the nav's predictive back and an arrival that grows out of the working cloud. */
+    data object TapIn : KeryxDest { override val route = "tapin" }
+
     /**
      * A page the agent wrote, open in the viewer (2.13). The first place on the stack that
      * carries arguments, so its route is a query string: `artifact?path=…&name=…&room=…&event=…`,
@@ -108,7 +112,7 @@ sealed interface KeryxDest {
     }
 
     companion object {
-        private val all = listOf(Archive, Missions, Projects, Shipyard, Runs, Bots, Gateway, Settings)
+        private val all = listOf(Archive, Missions, Projects, Shipyard, Runs, Bots, Gateway, Settings, TapIn)
 
         /**
          * Legacy route names that must keep resolving. A saved back stack written by 2.4 — or an
@@ -133,6 +137,9 @@ class KeryxNavState internal constructor(initial: List<KeryxDest>) {
 
     /** Nothing layered over the floor — the chat is the screen. */
     val atFloor: Boolean get() = stack.isEmpty()
+
+    /** The place on top, or null at the floor. */
+    val top: KeryxDest? get() = stack.lastOrNull()
 
     val current: KeryxDest? get() = stack.lastOrNull()
 
@@ -184,6 +191,9 @@ private object NavMotion {
 fun KeryxNavHost(
     nav: KeryxNavState,
     modifier: Modifier = Modifier,
+    /** Where a place grows out of (2.16): bounds in the host's coordinates, read as it arrives
+     *  and leaves. Null = the usual rise out of the void. Tap-In grows out of the working cloud. */
+    originOf: (KeryxDest) -> androidx.compose.ui.geometry.Rect? = { null },
     root: @Composable () -> Unit,
     content: @Composable (KeryxDest) -> Unit,
 ) {
@@ -253,6 +263,23 @@ fun KeryxNavHost(
                         )
                         .graphicsLayer {
                             val p = layer.progress.value
+                            val origin = originOf(layer.dest)?.takeIf { size.width > 0f && size.height > 0f }
+                            if (origin != null) {
+                                // Grows out of (and, on back, folds into) the thing it came from:
+                                // scaled from that thing's size about its centre, clipped round.
+                                val sx = (origin.width / size.width).coerceIn(0.05f, 1f)
+                                val sy = (origin.height / size.height).coerceIn(0.03f, 1f)
+                                alpha = (0.35f + 0.65f * p).coerceIn(0f, 1f) * (if (p < 0.02f) p * 50f else 1f)
+                                scaleX = sx + (1f - sx) * p
+                                scaleY = sy + (1f - sy) * p
+                                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(
+                                    (origin.center.x / size.width).coerceIn(0f, 1f),
+                                    (origin.center.y / size.height).coerceIn(0f, 1f),
+                                )
+                                clip = true
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(((1f - p) * 48f).dp)
+                                return@graphicsLayer
+                            }
                             alpha = p
                             translationY = (1f - p) * liftPx
                             val depth = 0.985f + 0.015f * p

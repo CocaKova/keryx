@@ -98,6 +98,8 @@ fun TapInScreen(
     /** The hand on the turn (2.13): steer / hold-to-queue / stop, the chat composer's busy
      *  grammar. Null where the door can't (Matrix) — the bar is then simply not drawn. */
     steer: TapInSteer? = null,
+    /** 2.16: false when Tap-In is a nav layer (the nav owns back and the window). */
+    standalone: Boolean = true,
 ) {
     val ink = MaterialTheme.colorScheme.onSurface
     val accent = MaterialTheme.colorScheme.primary
@@ -113,7 +115,7 @@ fun TapInScreen(
     KeryxSpace(
         title = "Tap-In",
         onClose = onClose,
-        standalone = true,
+        standalone = standalone,
         liveSlot = {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
                 KeryxBreathingDot(

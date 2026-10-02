@@ -1623,6 +1623,23 @@ class ChatViewModel(
 
     fun consumeTapIn() { _tapInRequested.value = false }
 
+    /** What Tap-In reads (2.16, now a nav layer): the chat's reconciled render items and the
+     *  side-channel's record of the newest run, as the chat screen last drew them. */
+    data class TapInFeed(
+        val items: List<chat.keryx.app.presentation.ui.components.ChatRenderItem> = emptyList(),
+        val structured: List<chat.keryx.core.model.ToolCall> = emptyList(),
+    )
+    private val _tapInFeed = MutableStateFlow(TapInFeed())
+    val tapInFeed: StateFlow<TapInFeed> = _tapInFeed.asStateFlow()
+    fun publishTapInFeed(
+        items: List<chat.keryx.app.presentation.ui.components.ChatRenderItem>,
+        structured: List<chat.keryx.core.model.ToolCall>,
+    ) { _tapInFeed.value = TapInFeed(items, structured) }
+
+    /** The working cloud's last bounds in the window (2.16): Tap-In grows out of them. A plain
+     *  field, not state — it is read inside a draw layer, and must not recompose anything. */
+    @Volatile var cloudBounds: androidx.compose.ui.geometry.Rect? = null
+
     fun selectRoom(room: RoomProfile) {
         setCurrentRoom(room)
         limitDecayJob?.cancel()

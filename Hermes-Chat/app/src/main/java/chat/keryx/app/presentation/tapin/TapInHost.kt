@@ -32,6 +32,8 @@ fun TapInHost(
     /** The side-channel's record of the newest run, when watched live. */
     structured: List<ToolCall>,
     onClose: () -> Unit,
+    /** False when it is a nav layer (2.16), true for its old Dialog window. */
+    standalone: Boolean = true,
 ) {
     val currentRoom by viewModel.currentRoom.collectAsState()
     val liveStream by viewModel.liveStream.collectAsState()
@@ -94,7 +96,7 @@ fun TapInHost(
             onStop = { viewModel.interruptTurn() },
         )
     }
-    TapInScreen(state = shown, onClose = onClose, onOpenHelper = { helper = it; helperRoom = roomId }, steer = steer)
+    TapInScreen(state = shown, onClose = onClose, onOpenHelper = { helper = it; helperRoom = roomId }, steer = steer, standalone = standalone)
 
     helper?.let { picked ->
         // Re-resolved by key so a card tapped while flying keeps growing, as the chat's does.

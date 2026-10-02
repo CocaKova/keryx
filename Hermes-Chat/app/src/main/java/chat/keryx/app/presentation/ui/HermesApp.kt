@@ -100,6 +100,16 @@ fun HermesApp(viewModel: ChatViewModel) {
         nav.open(dest)
     }
 
+    // Tap-In asked for (the cloud, a run row, the shade): a layer on the nav stack (2.16).
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        viewModel.tapInRequested.collect { requested ->
+            if (requested) {
+                openSpace(KeryxDest.TapIn)
+                viewModel.consumeTapIn()
+            }
+        }
+    }
+
     // A keryx:// link to a place (2.16): walk there once.
     androidx.compose.runtime.LaunchedEffect(Unit) {
         viewModel.spaceRequest.collect { route ->
@@ -233,10 +243,12 @@ fun HermesApp(viewModel: ChatViewModel) {
     // when the drawer or a place covers the composer (the notice must never sit on its text).
     chat.keryx.app.presentation.ui.components.KeryxSnackLayer(
         modifier = Modifier.fillMaxSize(),
-        clearInput = nav.atFloor && drawerState.targetValue == DrawerValue.Closed,
+        // Tap-In carries its own input (the steer bar), so a notice clears it there too.
+        clearInput = (nav.atFloor || nav.top == KeryxDest.TapIn) && drawerState.targetValue == DrawerValue.Closed,
     ) {
     KeryxNavHost(
         nav = nav,
+        originOf = { dest -> if (dest == KeryxDest.TapIn) viewModel.cloudBounds else null },
         root = {
     ModalNavigationDrawer(
         modifier = Modifier.nestedScroll(drawerAssist),
@@ -643,6 +655,16 @@ fun HermesApp(viewModel: ChatViewModel) {
                     viewModel = viewModel,
                     onClose = nav::back,
                 )
+                KeryxDest.TapIn -> {
+                    val feed by viewModel.tapInFeed.collectAsState()
+                    chat.keryx.app.presentation.tapin.TapInHost(
+                        viewModel = viewModel,
+                        itemsNewestFirst = feed.items,
+                        structured = feed.structured,
+                        onClose = nav::back,
+                        standalone = false,
+                    )
+                }
                 // A page the agent wrote (2.13): the one place that carries its own arguments.
                 is KeryxDest.Artifact -> chat.keryx.app.presentation.artifact.ArtifactSpace(
                     dest = dest,

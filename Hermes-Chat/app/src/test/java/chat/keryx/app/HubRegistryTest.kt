@@ -69,7 +69,7 @@ class HubRegistryTest {
     fun `every destination resolves from its own route`() {
         for (dest in listOf(
             KeryxDest.Archive, KeryxDest.Missions, KeryxDest.Gateway,
-            KeryxDest.Runs, KeryxDest.Bots, KeryxDest.Settings,
+            KeryxDest.Runs, KeryxDest.Bots, KeryxDest.Settings, KeryxDest.TapIn,
         )) {
             assertEquals(dest, KeryxDest.fromRoute(dest.route))
         }
