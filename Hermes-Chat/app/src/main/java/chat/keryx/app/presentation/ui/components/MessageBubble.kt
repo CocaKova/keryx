@@ -35,6 +35,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
@@ -299,6 +301,8 @@ fun MessageBubble(
                     )
                     .combinedClickable(
                         onClick = {},
+                        // TalkBack's "double-tap and hold" names what the hold opens (2.16).
+                        onLongClickLabel = "Reply, react or copy",
                         onLongClick = { showReactionPicker = true },
                         onDoubleClick = { heartBloomTick++; onReact("❤️") },
                     )
@@ -471,7 +475,10 @@ fun MessageBubble(
                 // Sent indicator (Element-style). The message is a real timeline event, so it's
                 // delivered. Accent at 0.8 measured 2.62:1 on paper; keryxAccentInk is the same
                 // hue pressed into it (and the raw accent back again on the void).
-                Text("✓", color = keryxAccentInk(), fontSize = KeryxType.micro)
+                Text(
+                    "✓", color = keryxAccentInk(), fontSize = KeryxType.micro,
+                    modifier = Modifier.semantics { contentDescription = "Sent" },
+                )
             }
             if (speaking && onSpeak != null) {
                 Spacer(modifier = Modifier.width(6.dp))
@@ -518,7 +525,7 @@ private fun ReplyQuote(replyTo: Message, textColor: Color, onClick: (() -> Unit)
             .padding(bottom = 6.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(accent.copy(alpha = 0.10f))
-            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+            .then(if (onClick != null) Modifier.clickable(onClickLabel = "Go to the quoted message") { onClick() } else Modifier)
             .height(IntrinsicSize.Min),
     ) {
         Box(modifier = Modifier.width(3.dp).fillMaxHeight().background(accent.copy(alpha = 0.7f)))
@@ -552,7 +559,7 @@ private fun ReactionChips(reactions: List<MessageReaction>, isMine: Boolean, onR
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
                     .background(bg)
-                    .clickable { onReact(r.emoji) }
+                    .clickable(onClickLabel = if (r.mine) "Take back your reaction" else "Add your reaction") { onReact(r.emoji) }
                     .padding(horizontal = 8.dp, vertical = 3.dp),
             ) {
                 Text(r.emoji, fontSize = KeryxType.body)
@@ -650,7 +657,7 @@ private fun ReactionPickerRow(
                             modifier = Modifier
                                 .graphicsLayer { scaleX = scale; scaleY = scale; alpha = scale.coerceIn(0f, 1f) }
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable { onPick(emoji) }
+                                .clickable(onClickLabel = "React") { onPick(emoji) }
                                 .padding(4.dp),
                         )
                     }

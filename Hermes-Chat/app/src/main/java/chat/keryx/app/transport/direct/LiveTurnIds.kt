@@ -22,4 +22,12 @@ internal object LiveTurnIds {
 
     /** The thought, once it folds out of the streaming bubble into its own row above. */
     fun thought(turn: Long): String = "live-$turn-think"
+
+    /** The turn a live row belongs to ("live-<turn>"), or null for any other row — so a reader
+     *  of the overlay can gather one turn's rows without knowing how they are spelled. */
+    fun turnOf(id: String): String? {
+        if (!id.startsWith("live-")) return null
+        val cut = id.lastIndexOf('-')
+        return if (cut > "live-".length) id.substring(0, cut) else null
+    }
 }

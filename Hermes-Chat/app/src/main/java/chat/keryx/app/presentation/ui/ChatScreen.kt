@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.style.TextOverflow
@@ -869,7 +870,7 @@ fun ChatScreen(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .clickable { scope.launch { listState.animateScrollToItem(0) } }
+                        .clickable(onClickLabel = "Jump to newest") { scope.launch { listState.animateScrollToItem(0) } }
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                 ) {
                     if (missedWhileAway > 0) {
@@ -878,12 +879,13 @@ fun ChatScreen(
                             color = accent,
                             fontSize = KeryxType.caption,
                             fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(end = 6.dp),
+                            // Spoken once, with the arrow's words, not as a bare number first.
+                            modifier = Modifier.padding(end = 6.dp).clearAndSetSemantics { },
                         )
                     }
                     Icon(
                         chat.keryx.app.presentation.ui.components.KeryxGlyphs.ChevronDown,
-                        contentDescription = "Jump to newest",
+                        contentDescription = if (missedWhileAway > 0) "Jump to newest, $missedWhileAway new" else "Jump to newest",
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                         modifier = Modifier.size(18.dp),
                     )
@@ -1114,6 +1116,15 @@ fun ChatScreen(
                 modifier = Modifier.fillMaxSize(),
             )
         }
+
+        // TalkBack hears the reply as it is written, a sentence at a time (2.16). Inert without
+        // a screen reader.
+        chat.keryx.app.presentation.ui.components.StreamAnnouncer(
+            sideStream = liveStream?.takeIf { it.roomId == currentRoom?.id },
+            messages = messages,
+            roomKey = currentRoom?.id,
+            modifier = Modifier.align(Alignment.TopStart),
+        )
 
         // TOP INSTRUMENTS — the flight plan and the working banner, stacked.
         //

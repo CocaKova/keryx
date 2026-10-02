@@ -27,6 +27,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -64,6 +67,10 @@ fun ApprovalCard(
             .border(1.dp, warn.copy(alpha = 0.45f), RoundedCornerShape(KeryxRadius.chip))
             .padding(12.dp),
     ) {
+        // The agent has stopped and is waiting on a person: under TalkBack that has to be SAID
+        // the moment the card lands, not found by swiping (2.16). Assertive: it interrupts, as
+        // the card's place on screen does. The buttons below stay their own stops.
+        Column(Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Assertive }) {
         KeryxSectionHeader("Approval needed", color = warn)
         if (approval.description.isNotBlank()) {
             Spacer(Modifier.height(6.dp))
@@ -73,6 +80,7 @@ fun ApprovalCard(
                 lineHeight = 18.sp,
                 color = MaterialTheme.colorScheme.onSurface,
             )
+        }
         }
         if (approval.command.isNotBlank()) {
             Spacer(Modifier.height(8.dp))
@@ -136,6 +144,8 @@ fun BlockingRequestCard(
             .border(1.dp, accent.copy(alpha = 0.40f), RoundedCornerShape(KeryxRadius.chip))
             .padding(12.dp),
     ) {
+        // Same as the approval: said aloud the moment it lands (2.16).
+        Column(Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Assertive }) {
         KeryxSectionHeader(
             when (request.kind) {
                 // A batch is walked one question at a time; say where in it this one sits.
@@ -152,6 +162,7 @@ fun BlockingRequestCard(
         if (request.prompt.isNotBlank()) {
             Spacer(Modifier.height(6.dp))
             Text(request.prompt, fontSize = KeryxType.body, lineHeight = 18.sp, color = onSurface)
+        }
         }
         if (request.envVar.isNotBlank()) {
             Spacer(Modifier.height(4.dp))

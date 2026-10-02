@@ -49,6 +49,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.drawText
 import androidx.compose.foundation.content.MediaType
@@ -344,6 +346,14 @@ internal fun Composer(
                     .clip(RoundedCornerShape(50))
                     .background(sendBrush)
                     .combinedClickable(
+                        // Spoken as what this press does right now (2.16): the glyph changes its
+                        // mind with the turn, and a screen reader has no glyph to go on.
+                        onClickLabel = label,
+                        onLongClickLabel = when (busyAction) {
+                            "steer" -> "Queue for next turn instead"
+                            "stop" -> "What stop does"
+                            else -> null
+                        },
                         onClick = {
                             when (busyAction) {
                                 "steer" -> { if (composerField.text.isNotBlank()) sendHaptics.commit(); onSteer() }
@@ -462,7 +472,9 @@ internal fun ComposerFooter(
                 modifier = Modifier
                     .heightIn(min = 36.dp)
                     .clip(pillShape)
-                    .clickable { modelMenu = true; onRefreshCaps(); onRefreshCatalog() }
+                    .clickable(onClickLabel = "Choose a model") { modelMenu = true; onRefreshCaps(); onRefreshCatalog() }
+                    // Read as the model, not the menu's triangle.
+                    .semantics { contentDescription = "Model: $modelName" }
                     .padding(horizontal = 8.dp, vertical = 4.dp),
             ) {
                 // The name rises into place when the brain changes — the readout answers the pick.
@@ -604,7 +616,7 @@ internal fun AttachmentPreview(att: PendingAttachment, onRemove: () -> Unit) {
             Icon(
                 if (att.isImage) chat.keryx.app.presentation.ui.components.KeryxGlyphs.Image
                 else chat.keryx.app.presentation.ui.components.KeryxGlyphs.FileClip,
-                contentDescription = null,
+                contentDescription = if (att.isImage) "Image attached" else "File attached",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(22.dp),
             )

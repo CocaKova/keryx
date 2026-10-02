@@ -69,7 +69,7 @@ internal fun TurnFailureCard(
                 .padding(horizontal = 14.dp, vertical = 12.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(KeryxGlyphs.Warning, contentDescription = null, tint = bad, modifier = Modifier.width(18.dp))
+                Icon(KeryxGlyphs.Warning, contentDescription = "Failed", tint = bad, modifier = Modifier.width(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(
                     failure.title,

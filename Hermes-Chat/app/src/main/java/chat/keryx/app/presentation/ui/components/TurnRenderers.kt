@@ -17,6 +17,11 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -66,7 +71,7 @@ internal fun WorkingStatusBar(
             // No clip: the cloud's scallops, glow and thought trail are drawn PAST the banner's
             // box on purpose, and the 2.12 rounded-rect clip (added for the tap-in ripple) sheared
             // them off. The press answers with a sink instead of a ripple, which needs no bounds.
-            modifier = if (onTapIn != null) {
+            modifier = (if (onTapIn != null) {
                 val source = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
                 Modifier
                     .keryxPressScale(source, scale = 0.96f)
@@ -76,7 +81,15 @@ internal fun WorkingStatusBar(
                         onClickLabel = "Tap in to the turn",
                         onClick = onTapIn,
                     )
-            } else Modifier,
+            } else Modifier)
+                // Said aloud when the work changes (2.16), politely: the label alone, never the
+                // clock or the tok/s beside it, which tick every second and would be read every
+                // second. The tap stays, as a named action.
+                .clearAndSetSemantics {
+                    liveRegion = LiveRegionMode.Polite
+                    contentDescription = label
+                    if (onTapIn != null) onClick(label = "Tap in to the turn") { onTapIn(); true }
+                },
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (council && typingAgentIds.isNotEmpty()) {

@@ -43,8 +43,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
@@ -119,7 +121,11 @@ fun ToolTheaterRow(
         "out:" + call.name + call.context,
     ) { mutableStateOf(false) }
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        // One stop for a screen reader: "Succeeded, Ran, ls -la, 2s" — not four.
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { },
+        ) {
             // Three verdicts, not two: a ✓ has to mean the call was SEEN to succeed. Most tool
             // lines carry no verdict in the text, and printing ✓ for those told a turn's one
             // failure apart from its successes only by luck. Unknown gets its own faint mark; a
@@ -139,7 +145,9 @@ fun ToolTheaterRow(
                     true -> KeryxStatus.good
                     null -> baseColor.copy(alpha = 0.45f)
                 },
-                modifier = Modifier.width(6.dp),
+                modifier = Modifier.width(6.dp).semantics {
+                    contentDescription = when (ok) { true -> "Succeeded"; false -> "Failed"; null -> "No verdict" }
+                },
             )
             Spacer(modifier = Modifier.width(7.dp))
             if (!titled) {
@@ -157,6 +165,8 @@ fun ToolTheaterRow(
                 // a 10% wash put four of the eight families under it. The tint is already the
                 // quiet version of itself.
                 color = if (isSkill) accent else KeryxToolTint.forTool(call.name),
+                // The title beside it names the tool; the glyph read aloud is noise.
+                modifier = Modifier.clearAndSetSemantics { },
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
@@ -257,7 +267,8 @@ fun ToolTheaterRow(
                 modifier = Modifier
                     .padding(start = 15.dp)
                     .clip(RoundedCornerShape(KeryxRadius.chip))
-                    .clickable { open = !open }
+                    .clickable(onClickLabel = if (open) "Hide the diff" else "Show the diff") { open = !open }
+                    .semantics { contentDescription = "Diff" }
                     .padding(horizontal = 4.dp, vertical = 8.dp),
             )
             if (open) {
@@ -298,6 +309,7 @@ private fun ToolOutputToggle(
             modifier = Modifier
                 .clip(RoundedCornerShape(KeryxRadius.chip))
                 .clickable(onClickLabel = if (open) "Hide the output" else "Show the output") { onToggle() }
+                .semantics { contentDescription = "Output" }
                 .padding(horizontal = 4.dp, vertical = 8.dp),
         )
     }
@@ -446,9 +458,11 @@ fun ToolTheaterRun(
                 )
                 .combinedClickable(
                     onClick = { expanded = !expanded; onToggle(expanded) },
+                    onClickLabel = if (expanded) "Fold the steps away" else "Show the steps",
                     onLongClick = onTapIn,
                     onLongClickLabel = if (onTapIn != null) "Tap in to this run" else null,
                 )
+                .semantics { stateDescription = if (expanded) "Open" else "Folded" }
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
             // The header's glyph strip, each glyph in its family's colour: the run's shape at
@@ -463,6 +477,8 @@ fun ToolTheaterRun(
                     }
                 },
                 fontSize = KeryxType.caption,
+                // The sentence beside it says what ran; the strip is for the eye.
+                modifier = Modifier.clearAndSetSemantics { },
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -481,7 +497,10 @@ fun ToolTheaterRun(
                 DiffStat(added = added, removed = removed)
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Text(if (expanded) "▾" else "▸", color = baseColor.copy(alpha = 0.5f), fontSize = KeryxType.micro)
+            Text(
+                if (expanded) "▾" else "▸", color = baseColor.copy(alpha = 0.5f), fontSize = KeryxType.micro,
+                modifier = Modifier.clearAndSetSemantics { },
+            )
         }
 
         AnimatedVisibility(

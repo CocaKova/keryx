@@ -38,6 +38,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -101,7 +104,8 @@ fun ReasoningDisclosure(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .clip(RoundedCornerShape(KeryxRadius.chip))
-                .clickable { userOpen = !open }
+                .clickable(onClickLabel = if (open) "Hide the reasoning" else "Show the reasoning") { userOpen = !open }
+                .semantics { stateDescription = if (open) "Open" else "Folded" }
                 .padding(horizontal = 2.dp, vertical = 4.dp),
         ) {
             Box(
@@ -124,6 +128,8 @@ fun ReasoningDisclosure(
                     fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     color = quiet.copy(alpha = 0.5f),
+                    // A ticking count is for the eye; read aloud it would change every second.
+                    modifier = Modifier.clearAndSetSemantics { },
                 )
             }
             Spacer(Modifier.width(6.dp))
@@ -131,6 +137,7 @@ fun ReasoningDisclosure(
                 if (open) "▾" else "▸",
                 fontSize = KeryxType.micro,
                 color = quiet.copy(alpha = 0.55f),
+                modifier = Modifier.clearAndSetSemantics { },
             )
         }
         AnimatedVisibility(
