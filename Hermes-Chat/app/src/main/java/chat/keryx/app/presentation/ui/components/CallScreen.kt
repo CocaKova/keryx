@@ -265,19 +265,19 @@ fun CallScreen(
                 ) {
                     Text(
                         "KERYX · CALL",
-                        fontSize = 11.sp, letterSpacing = 6.sp, fontWeight = FontWeight.SemiBold,
+                        fontSize = KeryxType.micro, letterSpacing = 6.sp, fontWeight = FontWeight.SemiBold,
                         color = Color.White.copy(alpha = 0.5f),
                     )
                     Spacer(Modifier.height(6.dp))
                     Text(
                         roomName,
-                        fontSize = 19.sp, fontWeight = FontWeight.Medium, color = Color.White,
+                        fontSize = KeryxType.headline, fontWeight = FontWeight.Medium, color = Color.White,
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
                         "%d:%02d".format(elapsed / 60, elapsed % 60),
-                        fontSize = 12.sp, color = Color.White.copy(alpha = 0.42f),
+                        fontSize = KeryxType.caption, color = Color.White.copy(alpha = 0.42f),
                         style = TextStyle(fontFeatureSettings = "tnum"),
                     )
                 }
@@ -287,7 +287,7 @@ fun CallScreen(
                 when {
                     denied -> Text(
                         "Keryx needs the microphone for a call.",
-                        color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp,
+                        color = Color.White.copy(alpha = 0.8f), fontSize = KeryxType.bodyLarge,
                         textAlign = TextAlign.Center,
                     )
                     else -> CallOrb(
@@ -325,7 +325,7 @@ fun CallScreen(
                 ) { text ->
                     Text(
                         text,
-                        fontSize = 12.sp, letterSpacing = 2.5.sp,
+                        fontSize = KeryxType.caption, letterSpacing = 2.5.sp,
                         color = tint.copy(alpha = 0.85f),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth(),
@@ -341,7 +341,7 @@ fun CallScreen(
                     if (awaiting && workLabel != "Working" && ui.phase == CallController.Phase.SPEAKING) {
                         Text(
                             workLabel.lowercase(),
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             color = Color.White.copy(alpha = 0.5f),
                             textAlign = TextAlign.Center,
                         )
@@ -355,7 +355,7 @@ fun CallScreen(
                         if (heard.isNotBlank()) {
                             Text(
                                 "“$heard”",
-                                fontSize = 13.sp, color = accent.copy(alpha = 0.9f),
+                                fontSize = KeryxType.body, color = accent.copy(alpha = 0.9f),
                                 textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.fillMaxWidth(),
                             )
@@ -370,7 +370,7 @@ fun CallScreen(
                         if (text.isNotBlank()) {
                             Text(
                                 text,
-                                fontSize = 13.sp, color = Color.White.copy(alpha = 0.78f),
+                                fontSize = KeryxType.body, color = Color.White.copy(alpha = 0.78f),
                                 textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                             )
@@ -379,7 +379,7 @@ fun CallScreen(
                     ui.error?.let {
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            it, fontSize = 11.sp, color = MaterialTheme.colorScheme.error,
+                            it, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.error,
                             textAlign = TextAlign.Center,
                         )
                     }

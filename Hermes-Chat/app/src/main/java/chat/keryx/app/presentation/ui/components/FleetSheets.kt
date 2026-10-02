@@ -78,7 +78,7 @@ fun GatewayRegistry(
     Text(
         text = "Every Hermes gateway this phone can reach. Sessions, jobs, bots and the Hub are the active gateway's; switching moves the whole workspace.",
         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
-        fontSize = 12.sp,
+        fontSize = KeryxType.caption,
     )
     Spacer(Modifier.height(10.dp))
 
@@ -100,7 +100,7 @@ fun GatewayRegistry(
                             text = entry.name,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp,
+                            fontSize = KeryxType.title,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false),
@@ -111,7 +111,7 @@ fun GatewayRegistry(
                     Text(
                         text = entry.hostLabel,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 11.sp,
+                        fontSize = KeryxType.micro,
                         fontFamily = FontFamily.Monospace,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -155,7 +155,7 @@ fun GatewayRegistry(
                 Text(
                     text = message,
                     color = if (ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     modifier = Modifier.padding(top = 4.dp, end = 8.dp),
                 )
             }
@@ -171,7 +171,7 @@ fun GatewayRegistry(
     if (fleet.size == 1) Text(
         text = "Primary is the fallback when the gateway you were on is gone. Make primary never switches the workspace.",
         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-        fontSize = 11.sp,
+        fontSize = KeryxType.micro,
         modifier = Modifier.padding(top = 8.dp),
     )
 
@@ -237,7 +237,7 @@ private fun FleetPill(label: String, filled: Boolean) {
     Text(
         text = label,
         color = if (filled) MaterialTheme.colorScheme.onPrimary else accent,
-        fontSize = 10.sp,
+        fontSize = KeryxType.micro,
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier
             .padding(start = 8.dp)
@@ -272,7 +272,7 @@ fun AddGatewaySheet(
         Text(
             text = "A running hermes dashboard, reachable from this phone — over the LAN, Tailscale or the internet.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 12.sp,
+            fontSize = KeryxType.caption,
             modifier = Modifier.padding(horizontal = 20.dp),
         )
         Spacer(Modifier.height(12.dp))
@@ -311,7 +311,7 @@ fun AddGatewaySheet(
             Text(
                 text = it,
                 color = MaterialTheme.colorScheme.error,
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
             )
         }
@@ -337,7 +337,7 @@ fun AddGatewaySheet(
             modifier = Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 20.dp).padding(top = 8.dp),
         ) {
             if (connecting) CircularProgressIndicator(modifier = Modifier.size(22.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
-            else Text("Connect", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            else Text("Connect", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
         }
         Spacer(Modifier.height(24.dp))
     }
@@ -375,7 +375,7 @@ fun FleetSelector(
             Text(
                 text = active.name,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -399,7 +399,7 @@ fun FleetSelector(
                                 fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
                                 color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                             )
-                            Text(entry.hostLabel, fontSize = 11.sp, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(entry.hostLabel, fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     },
                     onClick = { open = false; if (!isActive) onSwitch(entry.id) },

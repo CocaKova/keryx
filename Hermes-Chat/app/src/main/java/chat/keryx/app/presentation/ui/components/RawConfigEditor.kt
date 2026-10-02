@@ -89,7 +89,7 @@ fun RawConfigEditor(viewModel: ChatViewModel, onDismiss: () -> Unit) {
             Text(
                 path.substringAfterLast('/').ifBlank { "config.yaml" } +
                     if (dirty) " · unsaved" else "",
-                fontSize = 11.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -106,7 +106,7 @@ fun RawConfigEditor(viewModel: ChatViewModel, onDismiss: () -> Unit) {
             status?.let {
                 Text(
                     it,
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     color = if (statusIsError) MaterialTheme.colorScheme.error
                             else MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.padding(bottom = 6.dp),
@@ -116,19 +116,19 @@ fun RawConfigEditor(viewModel: ChatViewModel, onDismiss: () -> Unit) {
                 loadError != null -> Text(
                     "Couldn't load config.yaml: $loadError",
                     color = MaterialTheme.colorScheme.error,
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     modifier = Modifier.padding(vertical = 20.dp),
                 )
                 draft == null -> Text(
                     "Loading…",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     modifier = Modifier.padding(vertical = 20.dp),
                 )
                 else -> {
                     Text(
                         "Saved changes take effect on the next gateway restart for most sections.",
-                        fontSize = 10.sp,
+                        fontSize = KeryxType.micro,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 6.dp),
                     )
@@ -136,7 +136,7 @@ fun RawConfigEditor(viewModel: ChatViewModel, onDismiss: () -> Unit) {
                         value = draft.orEmpty(),
                         onValueChange = { draft = it },
                         modifier = Modifier.fillMaxWidth().weight(1f),
-                        textStyle = TextStyle(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
+                        textStyle = TextStyle(fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace),
                     )
                     Spacer(Modifier.height(12.dp))
                 }
@@ -148,9 +148,9 @@ fun RawConfigEditor(viewModel: ChatViewModel, onDismiss: () -> Unit) {
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmForce = null },
-            title = { Text("Save anyway?", fontSize = 16.sp) },
+            title = { Text("Save anyway?", fontSize = KeryxType.titleLarge) },
             // The gateway's own words — it counted the sections, so it says which ones go.
-            text = { Text(message, fontSize = 13.sp) },
+            text = { Text(message, fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmForce = null
@@ -167,8 +167,8 @@ fun RawConfigEditor(viewModel: ChatViewModel, onDismiss: () -> Unit) {
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmDiscard = false },
-            title = { Text("Discard changes?", fontSize = 16.sp) },
-            text = { Text("config.yaml on the gateway is untouched.", fontSize = 13.sp) },
+            title = { Text("Discard changes?", fontSize = KeryxType.titleLarge) },
+            text = { Text("config.yaml on the gateway is untouched.", fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = { confirmDiscard = false; onDismiss() }) {
                     Text("Discard", color = MaterialTheme.colorScheme.error)

@@ -57,6 +57,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import chat.keryx.app.presentation.ui.components.KeryxType
 
 /**
  * The system share-sheet target: anything on the phone — an article URL, a screenshot, a photo, a
@@ -274,12 +275,12 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
                 .padding(horizontal = 18.dp, vertical = 14.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                KeryxWordmark(fontSize = 20.sp)
+                KeryxWordmark(fontSize = KeryxType.display)
                 Spacer(Modifier.width(10.dp))
                 Text(
                     lexicon.shareTitle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 13.sp,
+                    fontSize = KeryxType.body,
                 )
             }
             Spacer(Modifier.height(12.dp))
@@ -295,7 +296,7 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
             Text(
                 summary,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
@@ -330,14 +331,14 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
                         Text(
                             room.name,
                             color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 14.sp,
+                            fontSize = KeryxType.bodyLarge,
                             fontWeight = if (sel) FontWeight.SemiBold else FontWeight.Normal,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f),
                         )
                         if (isPinned(room)) {
-                            Text("★", color = accent.copy(alpha = 0.8f), fontSize = 12.sp)
+                            Text("★", color = accent.copy(alpha = 0.8f), fontSize = KeryxType.caption)
                         }
                     }
                 }
@@ -382,9 +383,9 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxSize(),
         ) {
-            KeryxWordmark(fontSize = 28.sp)
+            KeryxWordmark(fontSize = KeryxType.hero)
             Spacer(Modifier.height(10.dp))
-            Text("Locked", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+            Text("Locked", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = KeryxType.body)
             Spacer(Modifier.height(20.dp))
             androidx.compose.material3.OutlinedButton(onClick = onUnlock) { Text("Unlock") }
         }

@@ -77,7 +77,7 @@ internal fun SettingsCard(title: String, anchor: SettingsRow? = null, content: @
 /** A choice's name, above its segmented row. */
 @Composable
 internal fun SettingsChoiceLabel(text: String) {
-    Text(text, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface,
+    Text(text, fontWeight = FontWeight.SemiBold, fontSize = KeryxType.bodyLarge, color = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.padding(bottom = 8.dp))
 }
 
@@ -145,8 +145,8 @@ fun SettingsSwitchRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
-                Text(text = subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = title, fontWeight = FontWeight.SemiBold, fontSize = KeryxType.title, color = MaterialTheme.colorScheme.onSurface)
+                Text(text = subtitle, fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Switch(checked = checked, onCheckedChange = onCheckedChange)
         }

@@ -39,6 +39,7 @@ import chat.keryx.app.theme.HermesChatTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import chat.keryx.app.presentation.ui.components.KeryxType
 
 // FragmentActivity (not ComponentActivity): androidx BiometricPrompt can only attach to one.
 class MainActivity : androidx.fragment.app.FragmentActivity() {
@@ -271,12 +272,12 @@ private fun LockScreen(onUnlock: () -> Unit) {
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
         modifier = Modifier.fillMaxSize(),
     ) {
-        chat.keryx.app.presentation.ui.components.KeryxWordmark(fontSize = 34.sp)
+        chat.keryx.app.presentation.ui.components.KeryxWordmark(fontSize = KeryxType.splash)
         androidx.compose.foundation.layout.Spacer(Modifier.height(10.dp))
         androidx.compose.material3.Text(
             "Locked",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 13.sp,
+            fontSize = KeryxType.body,
         )
         androidx.compose.foundation.layout.Spacer(Modifier.height(28.dp))
         androidx.compose.material3.OutlinedButton(onClick = onUnlock) {

@@ -152,7 +152,7 @@ fun SettingsScreen(
                     title = {
                         Text(
                             (section ?: "Settings").uppercase(),
-                            fontSize = 17.sp,
+                            fontSize = KeryxType.headline,
                             fontWeight = FontWeight.SemiBold,
                             letterSpacing = 5.sp,
                         )
@@ -199,7 +199,7 @@ fun SettingsScreen(
                             placeholder = { Text("Find a setting…") },
                             leadingIcon = { Icon(KeryxGlyphs.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
                             trailingIcon = if (query.isNotBlank()) {
-                                { TextButton(onClick = { query = "" }) { Text("Clear", fontSize = 11.sp) } }
+                                { TextButton(onClick = { query = "" }) { Text("Clear", fontSize = KeryxType.micro) } }
                             } else null,
                             singleLine = true,
                             shape = RoundedCornerShape(14.dp),
@@ -210,7 +210,7 @@ fun SettingsScreen(
                             if (hits.isEmpty()) Text(
                                 "Nothing by that name",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 13.sp,
+                                fontSize = KeryxType.body,
                                 modifier = Modifier.padding(8.dp),
                             )
                             hits.forEach { e ->
@@ -223,9 +223,9 @@ fun SettingsScreen(
                                         .padding(horizontal = 10.dp, vertical = 12.dp),
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(e.title, fontSize = 15.sp, fontWeight = FontWeight.Medium,
+                                        Text(e.title, fontSize = KeryxType.title, fontWeight = FontWeight.Medium,
                                             color = MaterialTheme.colorScheme.onSurface)
-                                        Text(e.section(direct).orEmpty(), fontSize = 12.sp,
+                                        Text(e.section(direct).orEmpty(), fontSize = KeryxType.caption,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                     Icon(KeryxGlyphs.ChevronRight, contentDescription = null,
@@ -287,13 +287,13 @@ fun SettingsScreen(
                             text = currentUserId ?: "Not signed in",
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp,
+                            fontSize = KeryxType.title,
                         )
                         Text(
                             text = if (viewModel.transportIsDirect) viewModel.directGatewayUrl.ifBlank { "No gateway set" }
                             else matrixUrl.ifBlank { "No homeserver set" },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                         )
                         Spacer(Modifier.height(14.dp))
                         OutlinedButton(
@@ -320,14 +320,14 @@ fun SettingsScreen(
                             text = if (direct) "Direct to gateway" else "Matrix",
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp,
+                            fontSize = KeryxType.title,
                         )
                         Text(
                             text = buildString {
                                 append(if (direct) "No homeserver — straight to the hermes gateway." else "The herald's home — E2EE rooms over your homeserver.")
                             },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                         )
                         Spacer(Modifier.height(10.dp))
                         Text(
@@ -338,7 +338,7 @@ fun SettingsScreen(
                                 else -> "No gateway credentials yet — you'll connect after the switch."
                             },
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                         )
                         Spacer(Modifier.height(10.dp))
                         OutlinedButton(onClick = { confirmSwitch = true }) {
@@ -386,13 +386,13 @@ fun SettingsScreen(
                                 Text(
                                     hubHealth.error ?: "Probing the gateway…",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontSize = 12.sp,
+                                    fontSize = KeryxType.caption,
                                 )
                             } else rows.forEach { (k, v) ->
                                 Row(modifier = Modifier.padding(vertical = 3.dp)) {
-                                    Text(k, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    Text(k, fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.width(86.dp))
-                                    Text(v, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                                    Text(v, fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onSurface)
                                 }
                             }
@@ -400,7 +400,7 @@ fun SettingsScreen(
                             Text(
                                 "Live console — controls, jobs, sessions, skills and tools live in the Gateway.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                fontSize = 11.sp,
+                                fontSize = KeryxType.micro,
                             )
                         }
                         SettingsCard("Presence") {
@@ -458,17 +458,17 @@ fun SettingsScreen(
                                 Spacer(Modifier.width(12.dp))
                                 Column {
                                     Text(pet.displayName.ifBlank { pet.slug },
-                                        fontWeight = FontWeight.SemiBold, fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold, fontSize = KeryxType.title,
                                         color = MaterialTheme.colorScheme.onSurface)
                                     Text("Lives in the drawer header — runs while the agent works",
-                                        fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         } else {
                             Text(
                                 "No companion adopted yet — pick one from the gateway's petdex.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 12.sp,
+                                fontSize = KeryxType.caption,
                             )
                         }
                         Spacer(Modifier.height(12.dp))
@@ -568,7 +568,7 @@ fun SettingsScreen(
                                 label = { Text("Push gateway URL") },
                                 placeholder = { Text("https://ntfy.example.com") },
                                 supportingText = {
-                                    Text("A Matrix push gateway — a self-hosted ntfy server works out of the box", fontSize = 11.sp)
+                                    Text("A Matrix push gateway — a self-hosted ntfy server works out of the box", fontSize = KeryxType.micro)
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
@@ -601,7 +601,7 @@ fun SettingsScreen(
                                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                                 trailingIcon = {
                                     TextButton(onClick = { passwordVisible = !passwordVisible }) {
-                                        Text(if (passwordVisible) "Hide" else "Show", fontSize = 12.sp)
+                                        Text(if (passwordVisible) "Hide" else "Show", fontSize = KeryxType.caption)
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -622,7 +622,7 @@ fun SettingsScreen(
                                 modifier = Modifier.fillMaxWidth(),
                             ) { Text("Login") }
                             if (testStatus.isNotEmpty()) {
-                                Text(testStatus, color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+                                Text(testStatus, color = MaterialTheme.colorScheme.primary, fontSize = KeryxType.caption, modifier = Modifier.padding(top = 8.dp))
                             }
                         }
                     }
@@ -661,7 +661,7 @@ fun SettingsScreen(
                             visualTransformation = if (keyVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             trailingIcon = {
                                 TextButton(onClick = { keyVisible = !keyVisible }) {
-                                    Text(if (keyVisible) "Hide" else "Show", fontSize = 12.sp)
+                                    Text(if (keyVisible) "Hide" else "Show", fontSize = KeryxType.caption)
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -676,7 +676,7 @@ fun SettingsScreen(
                             enabled = sideChannelEnabled,
                             shape = RoundedCornerShape(KeryxRadius.field),
                         ) {
-                            Text("Test link", fontSize = 13.sp)
+                            Text("Test link", fontSize = KeryxType.body)
                         }
                     }
 
@@ -687,7 +687,7 @@ fun SettingsScreen(
                                 "input field. Works with any OpenAI-compatible transcription endpoint — " +
                                 "a self-hosted server on your own network, OpenAI, Groq…",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                         )
                         Spacer(Modifier.height(12.dp))
                         OutlinedTextField(
@@ -695,7 +695,7 @@ fun SettingsScreen(
                             onValueChange = onSttUrlChanged,
                             label = { Text("STT server URL") },
                             placeholder = { Text("http://your-stt-host:8123") },
-                            supportingText = { Text("Blank hides the mic. Bare host, /v1, or full /v1/audio/transcriptions path all work.", fontSize = 11.sp) },
+                            supportingText = { Text("Blank hides the mic. Bare host, /v1, or full /v1/audio/transcriptions path all work.", fontSize = KeryxType.micro) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                         )
@@ -708,7 +708,7 @@ fun SettingsScreen(
                             visualTransformation = if (sttKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             trailingIcon = {
                                 TextButton(onClick = { sttKeyVisible = !sttKeyVisible }) {
-                                    Text(if (sttKeyVisible) "Hide" else "Show", fontSize = 12.sp)
+                                    Text(if (sttKeyVisible) "Hide" else "Show", fontSize = KeryxType.caption)
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -732,7 +732,7 @@ fun SettingsScreen(
                                 "OpenAI-compatible speech endpoint (Kokoro, openedai-speech, LocalAI…) " +
                                 "for a custom voice.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                         )
                         Spacer(Modifier.height(4.dp))
                         SettingsSwitchRow(
@@ -747,7 +747,7 @@ fun SettingsScreen(
                             onValueChange = onTtsUrlChanged,
                             label = { Text("TTS server URL (optional)") },
                             placeholder = { Text("http://your-tts-host:8880") },
-                            supportingText = { Text("Blank uses Android's built-in voice. Bare host, /v1, or full /v1/audio/speech path all work.", fontSize = 11.sp) },
+                            supportingText = { Text("Blank uses Android's built-in voice. Bare host, /v1, or full /v1/audio/speech path all work.", fontSize = KeryxType.micro) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                         )
@@ -760,7 +760,7 @@ fun SettingsScreen(
                             visualTransformation = if (ttsKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             trailingIcon = {
                                 TextButton(onClick = { ttsKeyVisible = !ttsKeyVisible }) {
-                                    Text(if (ttsKeyVisible) "Hide" else "Show", fontSize = 12.sp)
+                                    Text(if (ttsKeyVisible) "Hide" else "Show", fontSize = KeryxType.caption)
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -818,7 +818,7 @@ fun SettingsScreen(
                         }
                         Spacer(Modifier.height(18.dp))
                         SettingsAnchor(SettingsRow.APPEARANCE_ACCENT) {
-                        Text("Accent Color", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        Text("Accent Color", fontWeight = FontWeight.SemiBold, fontSize = KeryxType.bodyLarge)
                         }
                         Spacer(Modifier.height(12.dp))
                         ColorPickerPanel(
@@ -828,11 +828,11 @@ fun SettingsScreen(
                             discSize = 180.dp,
                         )
                         Spacer(Modifier.height(18.dp))
-                        Text("Accent 2", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        Text("Accent 2", fontWeight = FontWeight.SemiBold, fontSize = KeryxType.bodyLarge)
                         Text(
                             "The gradient partner: bubbles, the working cloud, and borders blend Accent → Accent 2.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 11.sp,
+                            fontSize = KeryxType.micro,
                         )
                         Spacer(Modifier.height(12.dp))
                         ColorPickerPanel(
@@ -854,7 +854,7 @@ fun SettingsScreen(
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
                                 .align(Alignment.CenterHorizontally)
                         ) {
-                            Text("Accent → Accent 2", color = currentAccentColor2, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("Accent → Accent 2", color = currentAccentColor2, fontWeight = FontWeight.Bold, fontSize = KeryxType.bodyLarge)
                         }
                         Spacer(Modifier.height(16.dp))
                         OutlinedButton(onClick = onResetAppearance, modifier = Modifier.align(Alignment.CenterHorizontally)) {
@@ -921,7 +921,7 @@ fun SettingsScreen(
                         if (archived.isEmpty()) Text(
                             "Nothing archived. Long-press a session in the drawer to put it away — it stays on the gateway.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                         )
                         archived.forEach { room ->
                             Row(
@@ -936,15 +936,15 @@ fun SettingsScreen(
                                     .padding(vertical = 8.dp, horizontal = 4.dp),
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(room.name, fontSize = 14.sp, fontWeight = FontWeight.Medium,
+                                    Text(room.name, fontSize = KeryxType.bodyLarge, fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onSurface,
                                         maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                                    if (room.preview.isNotBlank()) Text(room.preview, fontSize = 11.sp,
+                                    if (room.preview.isNotBlank()) Text(room.preview, fontSize = KeryxType.micro,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                                 }
                                 TextButton(onClick = { viewModel.unarchiveSession(room.id) }) {
-                                    Text("Restore", fontSize = 12.sp)
+                                    Text("Restore", fontSize = KeryxType.caption)
                                 }
                             }
                         }
@@ -954,11 +954,11 @@ fun SettingsScreen(
                         Text(
                             "Delete old, idle sessions from the gateway in one sweep — previewed before anything goes.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                         )
                         Spacer(Modifier.height(10.dp))
                         OutlinedButton(onClick = { pruneOpen = true }, shape = RoundedCornerShape(KeryxRadius.field)) {
-                            Text("Prune sessions…", fontSize = 13.sp)
+                            Text("Prune sessions…", fontSize = KeryxType.body)
                         }
                         if (pruneOpen) SessionPruneDialog(viewModel = viewModel, onDismiss = { pruneOpen = false })
                     }
@@ -970,12 +970,12 @@ fun SettingsScreen(
                             text = if (crashText.isBlank()) "No crashes recorded"
                                 else "Crash log: ${crashText.length / 1024} KB recorded",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 13.sp,
+                            fontSize = KeryxType.body,
                         )
                         Text(
                             text = "Kept only on this device; share it when reporting a bug.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            fontSize = 11.sp,
+                            fontSize = KeryxType.micro,
                         )
                         Spacer(Modifier.height(10.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -983,7 +983,7 @@ fun SettingsScreen(
                                 onClick = { chat.keryx.app.CrashLog.share(diagContext) },
                                 enabled = crashText.isNotBlank(),
                                 shape = RoundedCornerShape(KeryxRadius.field),
-                            ) { Text("Share", fontSize = 13.sp) }
+                            ) { Text("Share", fontSize = KeryxType.body) }
                             OutlinedButton(
                                 onClick = {
                                     chat.keryx.app.CrashLog.clear(diagContext)
@@ -992,7 +992,7 @@ fun SettingsScreen(
                                 enabled = crashText.isNotBlank(),
                                 shape = RoundedCornerShape(KeryxRadius.field),
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                            ) { Text("Clear", fontSize = 13.sp) }
+                            ) { Text("Clear", fontSize = KeryxType.body) }
                         }
                     }
                     if (section == "About") SettingsCard("Keryx", anchor = SettingsRow.ABOUT_VERSION) {
@@ -1006,9 +1006,9 @@ fun SettingsScreen(
                         )
                         lines.forEach { (k, v) ->
                             Row(modifier = Modifier.padding(vertical = 3.dp)) {
-                                Text(k, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                Text(k, fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.width(86.dp))
-                                Text(v, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                                Text(v, fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface)
                             }
                         }
@@ -1023,7 +1023,7 @@ fun SettingsScreen(
                                 android.widget.Toast.makeText(aboutContext, "Diagnostics copied", android.widget.Toast.LENGTH_SHORT).show()
                             },
                             shape = RoundedCornerShape(KeryxRadius.field),
-                        ) { Text("Copy diagnostics", fontSize = 13.sp) }
+                        ) { Text("Copy diagnostics", fontSize = KeryxType.body) }
                     }
 
                     Spacer(Modifier.height(40.dp))

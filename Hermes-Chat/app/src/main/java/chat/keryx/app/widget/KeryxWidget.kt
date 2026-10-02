@@ -65,6 +65,7 @@ import kotlinx.coroutines.withContext
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import chat.keryx.app.presentation.ui.components.KeryxType
 
 /**
  * The home-screen widget (2.13 Part B): the agent, glanced at.
@@ -151,7 +152,7 @@ class KeryxWidget : GlanceAppWidget() {
                 Spacer(GlanceModifier.width(8.dp))
                 Text(
                     text = state.title,
-                    style = TextStyle(color = ink, fontSize = 14.sp, fontWeight = FontWeight.Medium),
+                    style = TextStyle(color = ink, fontSize = KeryxType.bodyLarge, fontWeight = FontWeight.Medium),
                     maxLines = 1,
                     modifier = GlanceModifier.defaultWeight(),
                 )
@@ -159,7 +160,7 @@ class KeryxWidget : GlanceAppWidget() {
             Spacer(GlanceModifier.height(6.dp))
             Text(
                 text = state.preview,
-                style = TextStyle(color = ink, fontSize = 13.sp),
+                style = TextStyle(color = ink, fontSize = KeryxType.body),
                 maxLines = 2,
                 modifier = GlanceModifier.fillMaxWidth(),
             )
@@ -169,14 +170,14 @@ class KeryxWidget : GlanceAppWidget() {
             state.run?.let { run ->
                 Text(
                     text = run.line,
-                    style = TextStyle(color = colors.primary, fontSize = 12.sp, fontWeight = FontWeight.Medium),
+                    style = TextStyle(color = colors.primary, fontSize = KeryxType.caption, fontWeight = FontWeight.Medium),
                     maxLines = 1,
                 )
                 Spacer(GlanceModifier.height(4.dp))
             }
             Text(
                 text = listOf(Heralds.SIGIL, state.link.word, stamp).filter { it.isNotBlank() }.joinToString(" · "),
-                style = TextStyle(color = faded, fontSize = 10.sp, fontFamily = FontFamily.Monospace),
+                style = TextStyle(color = faded, fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace),
                 maxLines = 1,
             )
         }

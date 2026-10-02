@@ -71,6 +71,7 @@ import chat.keryx.core.model.ToolCall
 import chat.keryx.core.model.ToolGrammar
 import chat.keryx.core.protocol.MessageParser
 import kotlinx.coroutines.delay
+import chat.keryx.app.presentation.ui.components.KeryxType
 
 /**
  * Tap-In (2.12): the agent, going — full screen.
@@ -121,7 +122,7 @@ fun TapInScreen(
                 Spacer(Modifier.width(6.dp))
                 Text(
                     state.subline.ifBlank { if (state.running) "just started" else "nothing to show yet" },
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -151,7 +152,7 @@ fun TapInScreen(
                     if (state.running) "The turn has not shown anything yet — the first tool or thought lands here."
                     else "Nothing was watched on this turn.",
                     color = ink.copy(alpha = 0.55f),
-                    fontSize = 13.sp,
+                    fontSize = KeryxType.body,
                     fontStyle = FontStyle.Italic,
                 )
             }
@@ -198,7 +199,7 @@ private fun Headline(state: TapInState, ink: Color, accent: Color, reduced: Bool
         ) { line ->
             Text(
                 line,
-                fontSize = 26.sp,
+                fontSize = KeryxType.hero,
                 lineHeight = 32.sp,
                 fontWeight = FontWeight.Medium,
                 color = ink,
@@ -210,7 +211,7 @@ private fun Headline(state: TapInState, ink: Color, accent: Color, reduced: Bool
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 TapIn.clock(state.elapsedMs),
-                fontSize = 15.sp,
+                fontSize = KeryxType.title,
                 fontFamily = FontFamily.Monospace,
                 color = if (state.running) accent else ink.copy(alpha = 0.6f),
             )
@@ -218,7 +219,7 @@ private fun Headline(state: TapInState, ink: Color, accent: Color, reduced: Bool
                 Spacer(Modifier.width(10.dp))
                 Text(
                     "≈${(state.charsPerSec / 4f).toInt()} tok/s",
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     color = ink.copy(alpha = 0.45f),
                 )
@@ -236,7 +237,7 @@ private fun Mind(mind: String, ink: Color, reduced: Boolean) {
         Spacer(Modifier.height(6.dp))
         Text(
             mind,
-            fontSize = 13.sp,
+            fontSize = KeryxType.body,
             lineHeight = 19.sp,
             fontStyle = FontStyle.Italic,
             color = ink.copy(alpha = 0.72f),
@@ -292,7 +293,7 @@ internal fun CrewDeck(
             Spacer(Modifier.height(4.dp))
             Text(
                 "$landed of ${crew.size} landed",
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = ink.copy(alpha = 0.45f),
             )
@@ -393,7 +394,7 @@ private fun Saying(answer: String, ink: Color) {
         Spacer(Modifier.height(6.dp))
         Text(
             MessageParser.extractKeryx(answer).text.trim(),
-            fontSize = 13.sp,
+            fontSize = KeryxType.body,
             lineHeight = 19.sp,
             color = ink.copy(alpha = 0.85f),
             modifier = Modifier
@@ -437,7 +438,7 @@ private fun Instruments(state: TapInState, ink: Color) {
         if (state.model.isNotBlank()) {
             Text(
                 state.model,
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = ink.copy(alpha = 0.45f),
                 maxLines = 1,
@@ -451,7 +452,7 @@ private fun Instruments(state: TapInState, ink: Color) {
 @Composable
 private fun Instrument(value: String, label: String, ink: Color, color: Color = ink) {
     Column {
-        Text(value, fontSize = 14.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Medium, color = color)
-        Text(label, fontSize = 9.sp, letterSpacing = 0.6.sp, color = ink.copy(alpha = 0.45f))
+        Text(value, fontSize = KeryxType.bodyLarge, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Medium, color = color)
+        Text(label, fontSize = KeryxType.micro, letterSpacing = 0.6.sp, color = ink.copy(alpha = 0.45f))
     }
 }

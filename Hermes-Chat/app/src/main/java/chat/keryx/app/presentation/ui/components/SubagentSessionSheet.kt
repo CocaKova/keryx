@@ -97,11 +97,11 @@ fun SubagentSessionSheet(
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp).padding(bottom = 24.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("⑂", fontSize = 15.sp, color = MaterialTheme.colorScheme.tertiary)
+                Text("⑂", fontSize = KeryxType.title, color = MaterialTheme.colorScheme.tertiary)
                 Spacer(Modifier.width(8.dp))
                 Text(
                     run.goal.ifBlank { "Delegated task" },
-                    fontSize = 15.sp,
+                    fontSize = KeryxType.title,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -131,7 +131,7 @@ fun SubagentSessionSheet(
             if (meta.isNotEmpty()) {
                 Text(
                     meta.joinToString(" · "),
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp, start = 23.dp),
@@ -205,7 +205,7 @@ fun SubagentSessionSheet(
                         modifier = Modifier.width(16.dp).heightIn(min = 16.dp, max = 16.dp),
                     )
                     Spacer(Modifier.width(10.dp))
-                    Text("Opening the subagent's session…", fontSize = 12.sp)
+                    Text("Opening the subagent's session…", fontSize = KeryxType.caption)
                 }
 
                 else -> result.fold(
@@ -222,7 +222,7 @@ fun SubagentSessionSheet(
                                     "The gateway stored no transcript for this subagent — this is what it was seen doing."
                                 else
                                     "The gateway has no stored transcript for this subagent.",
-                                fontSize = 12.sp,
+                                fontSize = KeryxType.caption,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             if (run.trail.isNotEmpty()) {
@@ -232,7 +232,7 @@ fun SubagentSessionSheet(
                             if (run.summary.isNotBlank()) {
                                 Text(
                                     run.summary,
-                                    fontSize = 12.5.sp,
+                                    fontSize = KeryxType.body,
                                     lineHeight = 17.sp,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                                     modifier = Modifier.padding(top = 10.dp),
@@ -250,13 +250,13 @@ fun SubagentSessionSheet(
                     onFailure = { e ->
                         Text(
                             "Couldn't open it — ${e.message?.take(120) ?: "unknown error"}",
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             color = MaterialTheme.colorScheme.error,
                         )
                         if (run.summary.isNotBlank()) {
                             Text(
                                 run.summary,
-                                fontSize = 12.5.sp,
+                                fontSize = KeryxType.body,
                                 lineHeight = 17.sp,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                                 modifier = Modifier.padding(top = 10.dp),
@@ -303,14 +303,14 @@ private fun CrewMindView(mind: CrewMind, trail: List<DelegationBeat>, modifier: 
             ) {
                 Text(
                     if (earlierOpen) "Before you opened this" else "Before you opened this · tap to read",
-                    fontSize = 10.5.sp,
+                    fontSize = KeryxType.micro,
                     fontWeight = FontWeight.Medium,
                     color = base.copy(alpha = 0.55f),
                 )
                 if (earlierOpen) {
                     Text(
                         mind.earlier,
-                        fontSize = 11.sp,
+                        fontSize = KeryxType.micro,
                         lineHeight = 15.sp,
                         fontFamily = FontFamily.Monospace,
                         color = base.copy(alpha = 0.7f),
@@ -323,13 +323,13 @@ private fun CrewMindView(mind: CrewMind, trail: List<DelegationBeat>, modifier: 
             Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp)) {
                 Text(
                     if (mind.streaming) "Thinking" else "Thought",
-                    fontSize = 10.5.sp,
+                    fontSize = KeryxType.micro,
                     fontWeight = FontWeight.Medium,
                     color = if (mind.streaming) accent else base.copy(alpha = 0.55f),
                 )
                 Text(
                     mind.thinking,
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     lineHeight = 17.sp,
                     color = base.copy(alpha = 0.7f),
                     modifier = Modifier.padding(top = 3.dp),
@@ -338,19 +338,19 @@ private fun CrewMindView(mind: CrewMind, trail: List<DelegationBeat>, modifier: 
         }
         if (mind.tools.isNotEmpty()) item(key = "tools") {
             Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp)) {
-                Text("Did", fontSize = 10.5.sp, fontWeight = FontWeight.Medium, color = base.copy(alpha = 0.55f))
+                Text("Did", fontSize = KeryxType.micro, fontWeight = FontWeight.Medium, color = base.copy(alpha = 0.55f))
                 mind.tools.forEachIndexed { i, call ->
                     val newest = mind.streaming && i == mind.tools.lastIndex && call.status == chat.keryx.core.model.ToolStatus.EXECUTING
                     Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
                         Text(
                             ToolGrammar.glyphOf(call.name),
-                            fontSize = 11.sp,
+                            fontSize = KeryxType.micro,
                             color = if (newest) accent else base.copy(alpha = 0.45f),
                             modifier = Modifier.width(20.dp),
                         )
                         Text(
                             ToolGrammar.title(call.name, call.context, running = newest),
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = if (newest) FontWeight.SemiBold else FontWeight.Normal,
                             color = base.copy(alpha = if (newest) 0.95f else 0.75f),
@@ -363,7 +363,7 @@ private fun CrewMindView(mind: CrewMind, trail: List<DelegationBeat>, modifier: 
                 if (missed > 0) {
                     Text(
                         "+ $missed before the window opened",
-                        fontSize = 10.5.sp,
+                        fontSize = KeryxType.micro,
                         color = base.copy(alpha = 0.45f),
                         modifier = Modifier.padding(top = 4.dp, start = 20.dp),
                     )
@@ -372,10 +372,10 @@ private fun CrewMindView(mind: CrewMind, trail: List<DelegationBeat>, modifier: 
         }
         if (mind.saying.isNotBlank()) item(key = "saying") {
             Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp)) {
-                Text("Said", fontSize = 10.5.sp, fontWeight = FontWeight.Medium, color = base.copy(alpha = 0.55f))
+                Text("Said", fontSize = KeryxType.micro, fontWeight = FontWeight.Medium, color = base.copy(alpha = 0.55f))
                 Text(
                     mind.saying,
-                    fontSize = 12.5.sp,
+                    fontSize = KeryxType.body,
                     lineHeight = 17.sp,
                     color = base.copy(alpha = 0.85f),
                     modifier = Modifier.padding(top = 3.dp),
@@ -401,7 +401,7 @@ private fun TrailList(trail: List<DelegationBeat>, live: Boolean) {
     if (trail.isEmpty()) {
         Text(
             if (live) "It hasn't reported anything yet." else "Nothing was recorded for this subagent.",
-            fontSize = 12.sp,
+            fontSize = KeryxType.caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         return
@@ -424,7 +424,7 @@ private fun TrailList(trail: List<DelegationBeat>, live: Boolean) {
                 // tool call, and should not need a second alphabet to be read.
                 Text(
                     if (beat.kind == "tool") ToolGrammar.glyphOf(beat.name) else "·",
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     color = if (newest) accent else base.copy(alpha = 0.45f),
                     modifier = Modifier.width(20.dp),
                 )
@@ -432,7 +432,7 @@ private fun TrailList(trail: List<DelegationBeat>, live: Boolean) {
                     if (beat.name.isNotBlank()) {
                         Text(
                             beat.name,
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = if (newest) FontWeight.SemiBold else FontWeight.Normal,
                             color = base.copy(alpha = if (newest) 0.95f else 0.75f),
@@ -441,7 +441,7 @@ private fun TrailList(trail: List<DelegationBeat>, live: Boolean) {
                     if (beat.text.isNotBlank()) {
                         Text(
                             beat.text,
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             lineHeight = 16.sp,
                             color = base.copy(alpha = 0.6f),
                             maxLines = 3,
@@ -476,13 +476,13 @@ private fun ChildTurn(m: HubMessage) {
             // Same glyph vocabulary as everywhere else — a child's tool call is still a tool call.
             Text(
                 if (isTool) ToolGrammar.glyphOf(m.toolName) else "·",
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 color = base.copy(alpha = 0.5f),
             )
             Spacer(Modifier.width(7.dp))
             Text(
                 label,
-                fontSize = 10.5.sp,
+                fontSize = KeryxType.micro,
                 fontWeight = FontWeight.Medium,
                 color = base.copy(alpha = 0.6f),
             )
@@ -490,7 +490,7 @@ private fun ChildTurn(m: HubMessage) {
                 Spacer(Modifier.width(6.dp))
                 Text(
                     "×${m.toolCallCount}",
-                    fontSize = 9.5.sp,
+                    fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     color = base.copy(alpha = 0.4f),
                 )
@@ -499,7 +499,7 @@ private fun ChildTurn(m: HubMessage) {
         if (m.content.isNotBlank()) {
             Text(
                 m.content,
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
                 lineHeight = 17.sp,
                 color = base.copy(alpha = 0.85f),
                 modifier = Modifier.padding(top = 4.dp),
@@ -549,7 +549,7 @@ fun SessionTranscriptSheet(
                 }
                 Text(
                     title,
-                    fontSize = 15.sp,
+                    fontSize = KeryxType.title,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
@@ -557,13 +557,13 @@ fun SessionTranscriptSheet(
                     modifier = Modifier.weight(1f),
                 )
                 if (onOpenInChat != null) {
-                    TextButton(onClick = onOpenInChat) { Text("Open in chat", fontSize = 12.sp) }
+                    TextButton(onClick = onOpenInChat) { Text("Open in chat", fontSize = KeryxType.caption) }
                 }
             }
             if (meta.isNotBlank()) {
                 Text(
                     meta,
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp),
@@ -580,7 +580,7 @@ fun SessionTranscriptSheet(
                         modifier = Modifier.width(16.dp).heightIn(min = 16.dp, max = 16.dp),
                     )
                     Spacer(Modifier.width(10.dp))
-                    Text("Opening the session…", fontSize = 12.sp)
+                    Text("Opening the session…", fontSize = KeryxType.caption)
                 }
                 else -> result.fold(
                     onSuccess = { messages ->
@@ -588,7 +588,7 @@ fun SessionTranscriptSheet(
                             Text(
                                 if (live) "Nothing written yet — it fills in as the worker goes."
                                 else "The gateway has no stored transcript for this session.",
-                                fontSize = 12.sp,
+                                fontSize = KeryxType.caption,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         } else {
@@ -615,7 +615,7 @@ fun SessionTranscriptSheet(
                     onFailure = { e ->
                         Text(
                             "Couldn't open it — ${e.message?.take(120) ?: "unknown error"}",
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             color = MaterialTheme.colorScheme.error,
                         )
                     },

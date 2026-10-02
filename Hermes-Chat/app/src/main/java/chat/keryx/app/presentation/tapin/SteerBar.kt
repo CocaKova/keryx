@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.keryx.app.presentation.ui.components.KeryxGlyphs
 import chat.keryx.app.presentation.ui.components.contrastColorFor
+import chat.keryx.app.presentation.ui.components.KeryxType
 
 /**
  * The one-line steer composer (2.13), for the places the chat composer is not: the foot of
@@ -85,12 +86,12 @@ fun SteerBar(
             contentAlignment = Alignment.CenterStart,
         ) {
             if (text.isEmpty()) {
-                Text(placeholder, fontSize = 14.sp, color = ink.copy(alpha = 0.45f), maxLines = 1)
+                Text(placeholder, fontSize = KeryxType.bodyLarge, color = ink.copy(alpha = 0.45f), maxLines = 1)
             }
             BasicTextField(
                 value = text,
                 onValueChange = { text = it },
-                textStyle = TextStyle(fontSize = 14.sp, color = ink, lineHeight = 19.sp),
+                textStyle = TextStyle(fontSize = KeryxType.bodyLarge, color = ink, lineHeight = 19.sp),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 maxLines = 4,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),

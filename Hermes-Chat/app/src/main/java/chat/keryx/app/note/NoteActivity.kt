@@ -66,6 +66,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import chat.keryx.app.presentation.ui.components.KeryxType
 
 /**
  * The note (2.13 Part B): one line to the agent, from the Quick Settings tile, over whatever
@@ -221,12 +222,12 @@ class NoteActivity : androidx.fragment.app.FragmentActivity() {
 
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                KeryxWordmark(fontSize = 18.sp)
+                KeryxWordmark(fontSize = KeryxType.headline)
                 Spacer(Modifier.width(10.dp))
                 Text(
                     if (agentName != null) stringResourceTo(agentName) else getString(R.string.note_tile_label),
                     color = faded,
-                    fontSize = 13.sp,
+                    fontSize = KeryxType.body,
                 )
             }
             Spacer(Modifier.height(12.dp))
@@ -242,12 +243,12 @@ class NoteActivity : androidx.fragment.app.FragmentActivity() {
                     .clickable(enabled = !isSending && rooms.size > 1) { picking = !picking }
                     .padding(horizontal = 12.dp, vertical = 9.dp),
             ) {
-                Text(getString(R.string.note_target_prefix), color = faded, fontSize = 12.sp)
+                Text(getString(R.string.note_target_prefix), color = faded, fontSize = KeryxType.caption)
                 Spacer(Modifier.width(6.dp))
                 Text(
                     target?.name ?: getString(R.string.note_no_sessions),
                     color = ink,
-                    fontSize = 13.sp,
+                    fontSize = KeryxType.body,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -281,7 +282,7 @@ class NoteActivity : androidx.fragment.app.FragmentActivity() {
                             Text(
                                 room.name,
                                 color = ink,
-                                fontSize = 13.sp,
+                                fontSize = KeryxType.body,
                                 fontWeight = if (sel) FontWeight.SemiBold else FontWeight.Normal,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -306,13 +307,13 @@ class NoteActivity : androidx.fragment.app.FragmentActivity() {
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     if (text.isEmpty()) {
-                        Text(getString(R.string.note_placeholder), fontSize = 14.sp, color = ink.copy(alpha = 0.45f), maxLines = 1)
+                        Text(getString(R.string.note_placeholder), fontSize = KeryxType.bodyLarge, color = ink.copy(alpha = 0.45f), maxLines = 1)
                     }
                     BasicTextField(
                         value = text,
                         onValueChange = { text = it },
                         enabled = !isSending,
-                        textStyle = TextStyle(fontSize = 14.sp, color = ink, lineHeight = 19.sp),
+                        textStyle = TextStyle(fontSize = KeryxType.bodyLarge, color = ink, lineHeight = 19.sp),
                         cursorBrush = SolidColor(accent),
                         maxLines = 3,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
@@ -355,9 +356,9 @@ class NoteActivity : androidx.fragment.app.FragmentActivity() {
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxWidth().padding(24.dp),
         ) {
-            KeryxWordmark(fontSize = 24.sp)
+            KeryxWordmark(fontSize = KeryxType.display)
             Spacer(Modifier.height(8.dp))
-            Text(getString(R.string.note_locked), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+            Text(getString(R.string.note_locked), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = KeryxType.body)
             Spacer(Modifier.height(16.dp))
             androidx.compose.material3.OutlinedButton(onClick = onUnlock) { Text(getString(R.string.note_unlock)) }
         }

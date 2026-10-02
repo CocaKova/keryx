@@ -87,7 +87,7 @@ internal fun HeraldsList(
         "Each life has its own color. Tap a herald to choose its light, or reset it to the one " +
             "Keryx derived from its name.",
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        fontSize = 11.sp,
+        fontSize = KeryxType.micro,
     )
     Spacer(Modifier.height(8.dp))
 
@@ -102,17 +102,17 @@ internal fun HeraldsList(
                 .clickable(enabled = !light.primary) { editing = if (open) null else key }
                 .padding(vertical = 8.dp),
         ) {
-            HeraldSigil(light, fontSize = 16.sp)
+            HeraldSigil(light, fontSize = KeryxType.titleLarge)
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(key, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = light.accent)
+                Text(key, fontSize = KeryxType.bodyLarge, fontWeight = FontWeight.Medium, color = light.accent)
                 Text(
                     when {
                         light.primary -> "Primary — wears your own accents"
                         overrides.containsKey(key) -> "Your colour"
                         else -> "Derived from the name"
                     },
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -218,7 +218,7 @@ fun ColorPickerPanel(
 
         // ── Brightness ──
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Brightness", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Brightness", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(10.dp))
             Slider(
                 value = bright,
@@ -246,7 +246,7 @@ fun ColorPickerPanel(
                 prefix = { Text("#", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                 singleLine = true,
                 textStyle = androidx.compose.ui.text.TextStyle(
-                    fontSize = 13.sp,
+                    fontSize = KeryxType.body,
                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                 ),
                 modifier = Modifier

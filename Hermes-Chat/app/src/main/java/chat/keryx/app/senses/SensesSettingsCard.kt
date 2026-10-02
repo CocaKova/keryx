@@ -33,6 +33,7 @@ import androidx.core.content.ContextCompat
 import chat.keryx.app.presentation.ui.components.KeryxRadius
 import chat.keryx.app.presentation.ui.components.KeryxSectionHeader
 import chat.keryx.app.presentation.ui.components.SettingsSwitchRow
+import chat.keryx.app.presentation.ui.components.KeryxType
 
 /**
  * Settings → "Senses" (2.3 §4). Three opt-in switches, the last-sent line, and the one promise
@@ -112,7 +113,7 @@ fun SensesSettingsCard(modifier: Modifier = Modifier) {
         Spacer(Modifier.height(12.dp))
         Text(
             text = "Last sent: " + KeryxSenses.lastSentLabel(System.currentTimeMillis(), lastSent),
-            fontSize = 12.sp,
+            fontSize = KeryxType.caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (batteryOn || timeOn || placeOn) {
@@ -124,14 +125,14 @@ fun SensesSettingsCard(modifier: Modifier = Modifier) {
                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
                 modifier = Modifier.height(28.dp),
             ) {
-                Text("Send with my next message", fontSize = 12.sp)
+                Text("Send with my next message", fontSize = KeryxType.caption)
             }
         }
         Spacer(Modifier.height(6.dp))
         Text(
             text = "Rides inside your own messages, end-to-end encrypted. " +
                 "Nothing leaves the phone until you send.",
-            fontSize = 11.sp,
+            fontSize = KeryxType.micro,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
         )
     }

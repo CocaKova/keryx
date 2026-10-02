@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.ui.components.BrailleSnakeAnimation
+import chat.keryx.app.presentation.ui.components.KeryxType
 
 /**
  * First-run connect/login experience. The Braille snake traces the contour of an emblem while the
@@ -111,7 +112,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
 
         chat.keryx.app.presentation.ui.components.KeryxWordmark(
             modifier = Modifier.padding(top = 8.dp),
-            fontSize = 34.sp,
+            fontSize = KeryxType.splash,
         )
         Text(
             text = when {
@@ -120,7 +121,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 else -> "Connect to your homeserver"
             },
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 14.sp,
+            fontSize = KeryxType.bodyLarge,
             modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
         )
 
@@ -134,7 +135,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 TextButton(onClick = onClick, enabled = !connecting) {
                     Text(
                         label,
-                        fontSize = 14.sp,
+                        fontSize = KeryxType.bodyLarge,
                         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (selected) accent else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -190,12 +191,12 @@ fun LoginScreen(viewModel: ChatViewModel) {
                     Text(
                         "Allow self-signed certificates",
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 15.sp,
+                        fontSize = KeryxType.title,
                     )
                     Text(
                         "Only for local / self-hosted gateways",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 12.sp,
+                        fontSize = KeryxType.caption,
                     )
                 }
                 Switch(checked = allowInsecure, onCheckedChange = { allowInsecure = it }, enabled = !connecting)
@@ -204,7 +205,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 Text(
                     text = it,
                     color = MaterialTheme.colorScheme.error,
-                    fontSize = 13.sp,
+                    fontSize = KeryxType.body,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                 )
@@ -250,7 +251,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    Text("Connect", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Connect", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
                 }
             }
             return@Column
@@ -262,7 +263,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
             Text(
                 "Keryx is currently in direct-gateway mode. Switching to Matrix restarts the app.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             )
@@ -270,7 +271,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 onClick = { viewModel.switchTransport("matrix"); relaunch() },
                 modifier = Modifier.fillMaxWidth().height(52.dp).padding(top = 24.dp),
             ) {
-                Text("Switch to Matrix", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text("Switch to Matrix", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
             }
             return@Column
         }
@@ -338,12 +339,12 @@ fun LoginScreen(viewModel: ChatViewModel) {
                     Text(
                         "Allow self-signed certificates",
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 15.sp,
+                        fontSize = KeryxType.title,
                     )
                     Text(
                         "Only for local / self-hosted servers",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 12.sp,
+                        fontSize = KeryxType.caption,
                     )
                 }
                 Switch(checked = allowInsecure, onCheckedChange = { allowInsecure = it }, enabled = !connecting)
@@ -354,7 +355,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
             Text(
                 text = it,
                 color = MaterialTheme.colorScheme.error,
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
             )
@@ -382,7 +383,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                     strokeWidth = 2.dp,
                 )
             } else {
-                Text("Connect", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text("Connect", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
             }
         }
     }

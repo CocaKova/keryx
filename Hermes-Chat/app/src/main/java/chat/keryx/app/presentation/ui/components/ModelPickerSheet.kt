@@ -130,7 +130,7 @@ fun ModelPickerSheet(
                 value = query,
                 onValueChange = { query = it },
                 singleLine = true,
-                placeholder = { Text("Find a model, a lab, a provider…", fontSize = 13.sp) },
+                placeholder = { Text("Find a model, a lab, a provider…", fontSize = KeryxType.body) },
                 leadingIcon = { Icon(KeryxGlyphs.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
                 trailingIcon = {
                     AnimatedVisibility(query.isNotEmpty(), enter = keryxPop(), exit = keryxVanish()) {
@@ -145,7 +145,7 @@ fun ModelPickerSheet(
                     focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
                 ),
-                textStyle = TextStyle(fontSize = 14.sp),
+                textStyle = TextStyle(fontSize = KeryxType.bodyLarge),
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(8.dp))
@@ -180,7 +180,7 @@ fun ModelPickerSheet(
                         query.isNotBlank() -> "Nothing answers to “${query.trim()}”"
                         else -> "No routes from the gateway"
                     },
-                    fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 18.dp),
                 )
             }
@@ -275,7 +275,7 @@ private fun CurrentBrainCard(current: ModelChoice?, catalog: ModelCatalog?, load
             Box(Modifier.size(9.dp).clip(CircleShape).background(kindTint(kind).copy(alpha = breathingAlpha(active = current != null, low = 0.5f))))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("NOW", fontSize = 9.sp, letterSpacing = 2.sp, color = MaterialTheme.colorScheme.primary)
+                Text("NOW", fontSize = KeryxType.micro, letterSpacing = 2.sp, color = MaterialTheme.colorScheme.primary)
                 // The name slides up when the brain changes — the card answers the pick.
                 AnimatedContent(
                     targetState = current?.shortName ?: catalog?.model?.ifBlank { null } ?: "no model",
@@ -286,7 +286,7 @@ private fun CurrentBrainCard(current: ModelChoice?, catalog: ModelCatalog?, load
                     label = "currentModel",
                 ) { name ->
                     Text(
-                        name, fontSize = 15.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold,
+                        name, fontSize = KeryxType.title, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
                 }
@@ -295,7 +295,7 @@ private fun CurrentBrainCard(current: ModelChoice?, catalog: ModelCatalog?, load
                     kindWord(kind).takeIf { it.isNotEmpty() },
                     current?.lab?.takeIf { it.isNotEmpty() }?.let(ModelPicker::labName),
                 ).joinToString(" · ")
-                if (line.isNotBlank()) Text(line, fontSize = 11.sp, color = meta, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (line.isNotBlank()) Text(line, fontSize = KeryxType.micro, color = meta, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 current?.let { MetaLine(it, muted = meta) }
             }
             // Refresh turns while the catalog is being read.
@@ -350,7 +350,7 @@ private fun SectionChip(title: String, kind: ModelPicker.Kind?, lit: Boolean, on
         Box(Modifier.size(6.dp).clip(CircleShape).background(tint))
         Spacer(Modifier.width(6.dp))
         Text(
-            title, fontSize = 11.sp, letterSpacing = 0.4.sp,
+            title, fontSize = KeryxType.micro, letterSpacing = 0.4.sp,
             color = if (lit) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
         )
@@ -366,7 +366,7 @@ private fun SectionHead(section: ModelPicker.Section) {
             count = section.count.takeIf { it > 0 && section.kind != null },
         )
         if (section.subtitle.isNotBlank()) Text(
-            section.subtitle, fontSize = 10.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            section.subtitle, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = if (section.kind != null) 16.dp else 0.dp, top = 1.dp),
         )
     }
@@ -375,7 +375,7 @@ private fun SectionHead(section: ModelPicker.Section) {
 @Composable
 private fun LabHead(title: String) {
     Text(
-        title, fontSize = 10.sp, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold,
+        title, fontSize = KeryxType.micro, letterSpacing = 1.2.sp, fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 2.dp),
     )
@@ -411,7 +411,7 @@ private fun ModelRow(m: ModelChoice, current: Boolean, kind: ModelPicker.Kind?, 
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                m.shortName, fontSize = 13.sp, fontFamily = FontFamily.Monospace,
+                m.shortName, fontSize = KeryxType.body, fontFamily = FontFamily.Monospace,
                 fontWeight = if (current) FontWeight.SemiBold else FontWeight.Normal,
                 color = if (current) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -448,8 +448,8 @@ private fun MetaLine(m: ModelChoice, muted: Color) {
     if (parts.isEmpty()) return
     Row(verticalAlignment = Alignment.CenterVertically) {
         parts.forEachIndexed { i, (text, tint) ->
-            if (i > 0) Text(" · ", fontSize = 9.5.sp, color = muted.copy(alpha = 0.6f), fontFamily = FontFamily.Monospace)
-            Text(text, fontSize = 9.5.sp, color = tint ?: muted, fontFamily = FontFamily.Monospace, maxLines = 1)
+            if (i > 0) Text(" · ", fontSize = KeryxType.micro, color = muted.copy(alpha = 0.6f), fontFamily = FontFamily.Monospace)
+            Text(text, fontSize = KeryxType.micro, color = tint ?: muted, fontFamily = FontFamily.Monospace, maxLines = 1)
         }
     }
 }
@@ -466,7 +466,7 @@ private fun FoldRow(count: Int, onClick: () -> Unit) {
     ) {
         Spacer(Modifier.width(19.dp))
         Text(
-            "$count more", fontSize = 11.5.sp, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+            "$count more", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
             fontFamily = FontFamily.Monospace,
         )
         Spacer(Modifier.width(6.dp))
@@ -499,12 +499,12 @@ private fun MachineRow(b: HermesStreamClient.BrainEntry, active: Boolean, onClic
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                b.name, fontSize = 13.sp, fontFamily = FontFamily.Monospace,
+                b.name, fontSize = KeryxType.body, fontFamily = FontFamily.Monospace,
                 fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
                 color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             )
             if (b.description.isNotBlank()) Text(
-                b.description, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                b.description, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
