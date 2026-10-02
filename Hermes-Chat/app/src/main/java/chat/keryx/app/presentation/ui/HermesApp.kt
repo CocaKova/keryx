@@ -100,6 +100,24 @@ fun HermesApp(viewModel: ChatViewModel) {
         nav.open(dest)
     }
 
+    // A keryx:// link to a place (2.16): walk there once.
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        viewModel.spaceRequest.collect { route ->
+            val dest = when (route) {
+                "missions" -> KeryxDest.Missions
+                "runs" -> KeryxDest.Runs
+                "archive" -> KeryxDest.Archive
+                "projects" -> KeryxDest.Projects
+                "bots" -> KeryxDest.Bots
+                else -> null
+            }
+            if (route != null) {
+                dest?.let(openSpace)
+                viewModel.consumeSpaceRequest()
+            }
+        }
+    }
+
     // A mission alert's tap (2.14.1): walk to Missions; the board opens the card's sheet and
     // consumes the request itself, so it survives the screen not being composed yet.
     androidx.compose.runtime.LaunchedEffect(Unit) {

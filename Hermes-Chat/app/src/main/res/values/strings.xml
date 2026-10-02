@@ -1,5 +1,11 @@
 <resources>
     <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">New chat</string>
+    <string name="shortcut_new_chat_long">Start a new chat</string>
+    <string name="shortcut_missions">Missions</string>
+    <string name="shortcut_missions_long">Open the mission board</string>
+    <string name="shortcut_runs">Runs</string>
+    <string name="shortcut_runs_long">Scheduled runs and their reports</string>
 
     <!-- The home-screen widget (2.13). -->
     <string name="widget_description">The agent at a glance: link, newest session, what it last said, and the turn in flight.</string>

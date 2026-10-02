@@ -807,6 +807,13 @@ class ChatViewModel(
     var assistConsumed = 0
     fun summonAssist() { _assistSummon.value += 1 }
 
+    /** A place asked for from outside (2.16 `keryx://missions` etc.): a route the host walks to
+     *  and then clears. A flag, not an event, so it waits for the host to compose. */
+    private val _spaceRequest = MutableStateFlow<String?>(null)
+    val spaceRequest: StateFlow<String?> = _spaceRequest.asStateFlow()
+    fun requestSpace(route: String) { _spaceRequest.value = route }
+    fun consumeSpaceRequest() { _spaceRequest.value = null }
+
     private fun scheduleClearAwaiting(delayMs: Long, force: Boolean = false) {
         quietJob?.cancel()
         quietJob = viewModelScope.launch {

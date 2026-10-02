@@ -11,6 +11,8 @@
         android:maxSdkVersion="28" />
     <!-- Post message notifications (runtime-requested on Android 13+). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Android 16 Live Updates (2.16): the run notice may ask to be promoted. -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <!-- Lets Keryx ask to be exempt from battery optimization so the OS (esp. Samsung's
          aggressive "deep sleep" freezing) doesn't suspend the Matrix sync while backgrounded —
          this is what keeps messages arriving without a persistent foreground-service notification. -->
@@ -101,6 +103,16 @@
                 <action android:name="android.intent.action.ASSIST" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+            <!-- keryx:// deep links (2.16): shortcuts, conversation shortcuts, other apps. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="keryx" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <!-- System share-sheet target: text/links and any file type Matrix can carry. Its own

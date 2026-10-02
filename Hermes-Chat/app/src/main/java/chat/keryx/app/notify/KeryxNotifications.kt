@@ -120,6 +120,9 @@ object KeryxNotifications {
             return
         }
 
+        // The shortcut the notification names must exist, or Android has no conversation to
+        // put it in (2.16).
+        ConversationShortcuts.push(context, roomId, notice.conversation)
         val speaker = personFor(context, notice)
         val line = NotificationCompat.MessagingStyle.Message(notice.line, timestamp, speaker)
         val lines = history.getOrPut(roomId) { ArrayDeque() }
@@ -621,7 +624,11 @@ object KeryxNotifications {
                 ).setShowsUserInterface(false).build(),
             )
         }
-        return builder.build()
+        // Android 16: ask to be a Live Update, the flight plan as progress segments (2.16).
+        return LiveUpdate.promote(
+            context, builder.build(), notice.planDone, notice.planTotal,
+            accent = notice.colorKey?.let { deepFor(it) } ?: COLOR_KERYX,
+        )
     }
 
     const val MISSIONS_CHANNEL_ID = "keryx_missions"

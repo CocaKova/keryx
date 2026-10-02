@@ -94,6 +94,15 @@ class KeryxApp : Application() {
         get() = _openRoom.value
         set(value) { _openRoom.value = value }
 
+    /** A session was opened (2.16): it becomes a conversation shortcut — the launcher's and
+     *  the share sheet's recents. Off the main thread; the roster names it when it can. */
+    fun reportConversationOpened(roomId: String) {
+        val name = roomsById[roomId]?.name.orEmpty()
+        appScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+            chat.keryx.app.notify.ConversationShortcuts.push(this@KeryxApp, roomId, name)
+        }
+    }
+
     /** The room being looked at right now: open AND on screen, or nothing. */
     private val attention: kotlinx.coroutines.flow.Flow<String?> =
         combine(_openRoom, _foreground) { room, fg -> room.takeIf { fg } }

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher shortcuts (2.16): long-press the icon. Each is a keryx:// link MainActivity routes. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="new_chat"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_new_chat"
+        android:shortcutLongLabel="@string/shortcut_new_chat_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="chat.keryx.app"
+            android:targetClass="chat.keryx.app.MainActivity"
+            android:data="keryx://new" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="missions"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_missions"
+        android:shortcutLongLabel="@string/shortcut_missions_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="chat.keryx.app"
+            android:targetClass="chat.keryx.app.MainActivity"
+            android:data="keryx://missions" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="runs"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_runs"
+        android:shortcutLongLabel="@string/shortcut_runs_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="chat.keryx.app"
+            android:targetClass="chat.keryx.app.MainActivity"
+            android:data="keryx://runs" />
+    </shortcut>
+</shortcuts>

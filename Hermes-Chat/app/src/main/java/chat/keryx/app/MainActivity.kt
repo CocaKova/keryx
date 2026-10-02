@@ -140,7 +140,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                     isAppForeground = { app.isForeground },
                     // Synchronous: the watcher must never see a roster emission for a room
                     // the user is opening before it knows that room is on screen.
-                    onOpenRoomChanged = { app.openRoomId = it },
+                    onOpenRoomChanged = { app.openRoomId = it; it?.let(app::reportConversationOpened) },
                     purgeGatewayFiles = app::purgeGatewayFiles,
                 ) as T
             }
@@ -169,6 +169,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
         // A notification tap delivers the room id; open it.
         handleNotificationIntent(intent)
         handleAssistIntent(intent)
+        handleDeepLink(intent)
 
         enableEdgeToEdge()
         setContent {
@@ -202,6 +203,25 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
         setIntent(intent)
         handleNotificationIntent(intent)
         handleAssistIntent(intent)
+        handleDeepLink(intent)
+    }
+
+    /**
+     * `keryx://` links (2.16): launcher shortcuts, conversation shortcuts and other apps. A link
+     * is consumed once (its data cleared) so a resume doesn't replay it.
+     */
+    private fun handleDeepLink(intent: Intent?) {
+        if (intent?.action != Intent.ACTION_VIEW || !::viewModel.isInitialized) return
+        val link = chat.keryx.core.model.KeryxLink.parse(intent.dataString) ?: return
+        intent.data = null
+        when (link) {
+            is chat.keryx.core.model.KeryxLink.Session ->
+                if (link.tapIn) viewModel.requestTapIn(link.id) else viewModel.openRoomById(link.id)
+            chat.keryx.core.model.KeryxLink.NewChat -> viewModel.createSession("") { }
+            chat.keryx.core.model.KeryxLink.Composer -> viewModel.summonAssist()
+            is chat.keryx.core.model.KeryxLink.Space -> viewModel.requestSpace(link.route)
+            is chat.keryx.core.model.KeryxLink.Mission -> viewModel.missions.requestOpenTask(link.taskId)
+        }
     }
 
     /** The assist gesture (long-press home/power with Keryx as the assist app) summons the

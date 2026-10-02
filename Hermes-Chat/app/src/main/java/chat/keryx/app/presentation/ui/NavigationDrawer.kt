@@ -87,6 +87,9 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import chat.keryx.app.presentation.ui.components.keryxLightSweep
 import androidx.compose.runtime.setValue
 import chat.keryx.app.presentation.ui.components.KeryxType
 
@@ -727,6 +730,7 @@ fun NavigationDrawerContent(
                     if (open) items(section.rows, key = { it.id }) { room ->
                     RoomRow(
                         room = room,
+                        running = room.id in busy,
                         isSelected = currentRoom?.id == room.id,
                         isPinned = room.id in pinnedRoomIds,
                         isTemporary = room.id in tempSessionIds,
@@ -1116,9 +1120,25 @@ fun RoomRow(
     onMoveToProject: ((chat.keryx.core.model.ProjectInfo) -> Unit)? = null,
     avatarLoader: suspend (String) -> ByteArray?,
     previewLoader: (suspend () -> String?)? = null,
+    /** A turn is running in this session right now (2.16): the row breathes in its own light. */
+    running: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val haptics = chat.keryx.app.presentation.ui.components.LocalKeryxHaptics.current
+    // 2.16: the row's own light, for the running breath and the unread sweep. Both only exist
+    // while the drawer is composed (open), so they cost nothing with it shut.
+    val light = chat.keryx.app.presentation.ui.components.roomLight(room.name)
+    val breath = chat.keryx.app.presentation.ui.components.breathingAlpha(active = running, low = 0.0f, periodMillis = 2200)
+    val unreadSweep = remember { androidx.compose.animation.core.Animatable(0f) }
+    var wasUnread by remember { mutableStateOf(room.hasUnread) }
+    LaunchedEffect(room.hasUnread) {
+        // One pass of light the moment a row turns unread — not on first show, not again.
+        if (room.hasUnread && !wasUnread) {
+            unreadSweep.snapTo(0f)
+            unreadSweep.animateTo(1f, androidx.compose.animation.core.tween(720))
+        }
+        wasUnread = room.hasUnread
+    }
     // Long-press menu (pin/unpin + the transport's own verbs). Replaced the instant pin toggle
     // once leaving rooms became possible — two destructive-adjacent actions can't share one
     // blind gesture.
@@ -1150,6 +1170,13 @@ fun RoomRow(
             .padding(vertical = 2.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(rowFill)
+            .then(
+                if (running) Modifier.background(light.copy(alpha = 0.04f + 0.08f * breath)) else Modifier
+            )
+            .keryxLightSweep(
+                light, MaterialTheme.colorScheme.tertiary,
+                core = chat.keryx.app.presentation.ui.components.keryxSweepCore(),
+            ) { unreadSweep.value }
             .keryxPressScale(rowPress)
             .combinedClickable(
                 interactionSource = rowPress,
@@ -1183,6 +1210,12 @@ fun RoomRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
+                if (running) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Box(Modifier.semantics { contentDescription = "Running" }) {
+                        chat.keryx.app.presentation.ui.components.KeryxBreathingDot(light, alive = true, size = 6.dp)
+                    }
+                }
                 if (isTemporary) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Icon(
