@@ -104,6 +104,18 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
         content = { ControlsTab(it.viewModel) },
     ),
     HubPanel(
+        id = "update",
+        label = "Update",
+        icon = KeryxGlyphs.Download,
+        refresh = { vm -> vm.hermesUpdate.refresh() },
+        subtitle = { vm -> updateSubtitle(vm) },
+        content = { UpdateTab(it.viewModel) },
+        shown = { vm ->
+            val available by vm.hermesUpdate.available.collectAsState()
+            available != false
+        },
+    ),
+    HubPanel(
         id = "jobs",
         label = "Jobs",
         icon = KeryxGlyphs.Calendar,

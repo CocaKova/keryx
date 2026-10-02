@@ -729,6 +729,14 @@ class HermesStreamClient(
         }
     }
 
+    /** A raw, never-snapshotted call on the Link base, for a feature that keeps its parsing in
+     *  its own file (2.16's Hermes update panel). Throws [GatewayError] with the status. */
+    internal suspend fun linkCall(
+        path: String,
+        method: String = "GET",
+        body: kotlinx.serialization.json.JsonObject? = null,
+    ): kotlinx.serialization.json.JsonObject = apiCall(path, method = method, body = body, snapshot = false)
+
     suspend fun kanbanBoard(): Result<KanbanBoard> = runCatching {
         HubJson.kanbanBoard(kanbanCall("/keryx/kanban/board"))
     }

@@ -673,6 +673,8 @@ class ChatViewModel(
     val memory = MemoryDelegate(deps) { direct?.restClient }
     /** Export and share out (2.16): one session as a file, from the drawer's long-press menu. */
     val exports = SessionExportDelegate({ direct?.restClient }, { direct?.profileForSession(it) })
+    /** Hermes update from the phone (2.16): the plugin's /keryx/update and the dashboard's routes. */
+    val hermesUpdate = HermesUpdateDelegate(deps) { direct?.restClient }
 
     // --- Real push (UnifiedPush) — the caller drives PushManager (it needs a Context). ---
     private val _pushEnabled = MutableStateFlow(settingsRepository.pushEnabled)

@@ -51,7 +51,12 @@ class MemoryDelegate(
     private var inFlight: Job? = null
 
     fun refresh() {
-        val r = rest() ?: run { _available.value = false; return }
+        // No client yet is the door still dialing (or Matrix, where the spoke never shows) —
+        // not an answer about the routes, so it never hides the spoke.
+        val r = rest() ?: run {
+            _book.value = _book.value.copy(error = "The gateway door isn't open yet — try Refresh in a moment.", refreshing = false)
+            return
+        }
         if (inFlight?.isActive == true) return
         _book.value = _book.value.copy(refreshing = true)
         inFlight = scope.launch {
