@@ -264,6 +264,27 @@ data class SessionMeta(
      * nowhere (2.13.11).
      */
     val compactAt: Long = 0L,
+    // ---- run numbers (2.16), folded by [SessionUsage.fold]. Null = the gateway never said,
+    // which is not the same as zero: a gauge that reads 0 tok/s is a claim nobody made.
+    /** Output tokens per second over the last calls (`usage.avg_tps`). */
+    val avgTps: Double? = null,
+    /** Prompt tokens served from the provider's prefix cache, % (`usage.cache_hit_pct`). */
+    val cacheHitPct: Int? = null,
+    /** Mean seconds per model call over the last calls (`usage.avg_latency_s`). */
+    val avgLatencyS: Double? = null,
+    /** Compactions this session's agent has run (`usage.compressions`). */
+    val compressions: Int? = null,
+    /** Cumulative session tokens: reasoning, output, input (`usage.reasoning/output/input`). */
+    val reasoningTokens: Long? = null,
+    val outputTokens: Long? = null,
+    val inputTokens: Long? = null,
+    /** Model calls this session (`usage.calls`). */
+    val apiCalls: Int? = null,
+    /** Spend in US dollars, when the provider prices it (`usage.cost_usd`). */
+    val costUsd: Double? = null,
+    /** Phone clock (epoch ms) of the last usage reading that carried [outputTokens]: with the
+     *  raw cumulative count, the pair a real tokens-per-second figure is measured from. */
+    val usageAtMs: Long? = null,
 ) {
     /**
      * The context window as (used, max) — or null until the gateway has said both. The gateway

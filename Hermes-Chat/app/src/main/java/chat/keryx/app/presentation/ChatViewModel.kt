@@ -2224,6 +2224,13 @@ class ChatViewModel(
         return direct?.contextBreakdown(room.id)
     }
 
+    /** The open session's run numbers (2.16) for the same sheet: cache hit, speed, compactions,
+     *  totals — live while the sheet collects it. Direct door only; a lone null elsewhere. */
+    fun sessionNumbers(): kotlinx.coroutines.flow.Flow<chat.keryx.core.model.SessionMeta?> {
+        val room = _currentRoom.value ?: return flowOf(null)
+        return direct?.sessionMeta(room.id) ?: flowOf(null)
+    }
+
     /** Take back the last exchange in the open session (direct door). */
     fun undoLastTurn() {
         val room = _currentRoom.value ?: return

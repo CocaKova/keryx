@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +43,8 @@ import chat.keryx.core.model.ContextBreakdown
 internal fun ContextBreakdownSheet(viewModel: ChatViewModel, onDismiss: () -> Unit) {
     var data by remember { mutableStateOf<ContextBreakdown?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    // Live while the sheet is up (the transport's meta flow; the ~1 s usage tick moves it).
+    val numbers by remember { viewModel.sessionNumbers() }.collectAsState(null)
     LaunchedEffect(Unit) {
         val r = viewModel.contextBreakdown()
         if (r == null) error = "Only the direct door can itemise the window."
@@ -126,6 +129,7 @@ internal fun ContextBreakdownSheet(viewModel: ChatViewModel, onDismiss: () -> Un
                     Spacer(Modifier.height(16.dp))
                 }
             }
+            SessionNumbers(numbers, modifier = Modifier.padding(bottom = 16.dp))
         }
     }
 }

@@ -956,6 +956,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 scope.launch { reconcileStoredId(ev.sessionId) }
             }
             "session.info" -> applyMeta(storedId, p)
+            // The gateway's own mid-turn usage tick (~1 s, only while the counters move;
+            // `_start_usage_ticker`). Unhandled until 2.16, so the ring and the run numbers sat
+            // still for a whole turn unless the 15 s poll happened to ask.
+            "session.usage" -> applyMeta(storedId, p)
             // The gateway narrates long lifecycle work here — notably compaction
             // ("compressing"/"compacting" with its own progress text). "ready" clears.
             "status.update" -> {
@@ -3300,7 +3304,11 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             // level we already know.
             reasoningEffort = p["reasoning_effort"]?.jsonPrimitive?.contentOrNull
                 ?.takeIf { it.isNotBlank() } ?: cur.reasoningEffort,
-        )
+        ).let {
+            // The run numbers riding the same payload (2.16): cache hit, speed, latency,
+            // compactions, the session's token totals — read for the context sheet.
+            chat.keryx.core.model.SessionUsage.fold(it, usage, System.currentTimeMillis())
+        }
     }
 
     override suspend fun setTyping(sessionId: String, typing: Boolean) { /* not surfaced */ }
