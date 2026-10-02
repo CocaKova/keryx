@@ -377,7 +377,15 @@ object KeryxNotifications {
     // Its own channel, not the messages one: this is the agent stopped and waiting on you, it
     // wants to be able to interrupt, and it must be silenceable on its own if it ever gets noisy.
 
-    const val GATE_CHANNEL_ID = "keryx_gate"
+    /**
+     * v2 since 2.16. The first channel ("keryx_gate") let the lock screen show a guarded command
+     * whenever the phone-wide setting allowed sensitive content. An app can set a channel's
+     * lock-screen visibility only when it creates the channel, so the fix is a new id created
+     * PRIVATE (the system then redacts every gate notice on a secure lock screen, whatever the
+     * global setting) and the old channel deleted.
+     */
+    const val GATE_CHANNEL_ID = "keryx_gate_v2"
+    private const val GATE_CHANNEL_ID_V1 = "keryx_gate"
     const val EXTRA_GATE_SESSION = "keryx.gate.session"
     const val EXTRA_GATE_KIND = "keryx.gate.kind"
     const val EXTRA_GATE_REQUEST = "keryx.gate.request"
@@ -403,8 +411,12 @@ object KeryxNotifications {
         ).apply {
             description = "An agent is stopped, waiting on your answer"
             enableVibration(true)
+            // The command, the question and the session name stay off a secure lock screen;
+            // it shows the notice's public version instead (see notifyGate).
+            lockscreenVisibility = android.app.Notification.VISIBILITY_PRIVATE
         }
         mgr.createNotificationChannel(channel)
+        runCatching { mgr.deleteNotificationChannel(GATE_CHANNEL_ID_V1) }
     }
 
     /**
@@ -461,11 +473,31 @@ object KeryxNotifications {
             // A notice must die honestly: the gateway fails closed when its wait runs out, and a
             // button that outlives the wait resolves nothing. The system drops the whole notice.
             .setTimeoutAfter(notice.timeoutMs)
+            // 2.16: a secure lock screen shows the public version below, never the command. The
+            // channel is PRIVATE too, so this holds even when the phone-wide setting would show
+            // sensitive content.
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(
+                NotificationCompat.Builder(context, GATE_CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat_keryx)
+                    .setContentTitle(notice.title)
+                    .setContentText(notice.lockScreenBody)
+                    .setColor(COLOR_GATE)
+                    .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setContentIntent(tapIntent(context, sessionId))
+                    .setTimeoutAfter(notice.timeoutMs)
+                    .build(),
+            )
 
         notice.actions.forEach { act ->
             builder.addAction(
                 NotificationCompat.Action.Builder(0, act.label, gateIntent(NotificationActionReceiver.ACTION_GATE_CHOICE, act.wireValue))
                     .setAllowGeneratedReplies(false)
+                    // 2.16 (0.6): anyone holding the locked phone could approve a command from
+                    // the shade. An approving button now asks for the unlock first (Android 12+;
+                    // older versions ignore the flag). Deny never does: refusing is always safe.
+                    .setAuthenticationRequired(act.requiresUnlock)
                     .build(),
             )
         }

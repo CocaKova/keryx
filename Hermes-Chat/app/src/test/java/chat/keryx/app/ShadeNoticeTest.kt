@@ -92,4 +92,47 @@ class ShadeNoticeTest {
         assertEquals("The agent asks", ShadeNotices.forEntry(entry)!!.title)
         assertNull(ShadeNotices.forEntry(ShadePendingEntry()))
     }
+
+    @Test
+    fun `every approving button asks for the unlock and Deny never does`() {
+        for (choices in listOf(
+            listOf("once", "session", "always", "deny"),
+            listOf("once", "session", "deny"),
+            listOf("once", "deny"),
+        )) {
+            val n = ShadeNotices.forApproval(ApprovalRequest("rm -rf build", "", choices))
+            for (a in n.actions) {
+                assertEquals("${a.wireValue} in $choices", a.wireValue != "deny", a.requiresUnlock)
+            }
+            assertTrue(n.actions.any { it.wireValue == "deny" && !it.requiresUnlock })
+        }
+    }
+
+    @Test
+    fun `clarify answers stay one tap`() {
+        val n = ShadeNotices.forBlocking(
+            BlockingRequest(BlockingKind.CLARIFY, "r1", prompt = "Pick one", choices = listOf("a", "b")),
+        )
+        assertTrue(n.actions.none { it.requiresUnlock })
+    }
+
+    @Test
+    fun `the lock screen never carries the command, the question or the variable`() {
+        val approval = ShadeNotices.forApproval(
+            ApprovalRequest("rm -rf /srv/secret-project", "Delete secret-project", listOf("once", "deny")),
+        )
+        assertFalse(approval.lockScreenBody.contains("secret-project"))
+        assertTrue(approval.body.contains("secret-project"))
+
+        val ask = ShadeNotices.forBlocking(
+            BlockingRequest(BlockingKind.CLARIFY, "r1", prompt = "Wire the payroll to which account?"),
+        )
+        assertFalse(ask.lockScreenBody.contains("payroll"))
+
+        val secret = ShadeNotices.forBlocking(
+            BlockingRequest(BlockingKind.SECRET, "r1", prompt = "Paste it", envVar = "STRIPE_LIVE_KEY"),
+        )
+        assertFalse(secret.lockScreenBody.contains("STRIPE"))
+        assertTrue(secret.lockScreenBody.isNotBlank())
+    }
 }

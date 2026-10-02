@@ -6,7 +6,11 @@ package chat.keryx.core.model
  * everything that requires judgment (which buttons, which requests are shade-safe, how long
  * the notice stays honest) is decided here where it can be unit-tested.
  *
- * Two hard rules encoded below:
+ * Three hard rules encoded below:
+ *  - **The locked phone cannot say yes (2.16).** Anyone holding a locked phone could approve a
+ *    guarded command from the shade. Every button that lets a command run asks for the unlock
+ *    first ([ShadeAction.requiresUnlock]); Deny stays one tap, because refusing is always safe.
+ *    The lock screen also gets [ShadeNotice.lockScreenBody] in place of the command itself.
  *  - **Credentials never ride the shade.** Sudo/secret answers are passwords; a lock-screen
  *    RemoteInput would echo them into the most shoulder-surfable surface the OS has. Those
  *    notices are tap-through only — the in-app card (with its masked field) owns the answer.
@@ -24,10 +28,17 @@ data class ShadeNotice(
     val freeTextReply: Boolean,
     /** Milliseconds the notice stays valid; the shade should drop it after this. */
     val timeoutMs: Long,
+    /** What a secure lock screen shows instead of [body]: the request's kind, never its
+     *  content (the command line, the question, the variable name). */
+    val lockScreenBody: String = "Unlock to see it.",
 )
 
-/** One shade button: [label] for the human, [wireValue] for the gateway. */
-data class ShadeAction(val label: String, val wireValue: String)
+/**
+ * One shade button: [label] for the human, [wireValue] for the gateway. [requiresUnlock] means
+ * the system asks for the device credential before the tap goes through (Android 12+); an
+ * approving button sets it, a refusing one never does.
+ */
+data class ShadeAction(val label: String, val wireValue: String, val requiresUnlock: Boolean = false)
 
 /** A session's pending shade-answerable state — at most one notice per session keeps the
  *  shade legible. A blocking request outranks an approval when both are somehow live: it is
@@ -64,9 +75,9 @@ object ShadeNotices {
      *  a lock-screen shortcut; "session" is a power move better made from the in-app card). */
     fun forApproval(req: ApprovalRequest): ShadeNotice {
         val actions = buildList {
-            if ("once" in req.choices) add(ShadeAction("Approve", "once"))
-            if ("always" in req.choices) add(ShadeAction("Always", "always"))
-            else if ("session" in req.choices) add(ShadeAction("This session", "session"))
+            if ("once" in req.choices) add(ShadeAction("Approve", "once", requiresUnlock = true))
+            if ("always" in req.choices) add(ShadeAction("Always", "always", requiresUnlock = true))
+            else if ("session" in req.choices) add(ShadeAction("This session", "session", requiresUnlock = true))
             if ("deny" in req.choices) add(ShadeAction("Deny", "deny"))
         }.take(MAX_ACTIONS)
         return ShadeNotice(
@@ -75,6 +86,7 @@ object ShadeNotices {
             actions = actions,
             freeTextReply = false,
             timeoutMs = APPROVAL_TIMEOUT_MS,
+            lockScreenBody = "The agent wants to run a command. Unlock to see it.",
         )
     }
 
@@ -93,6 +105,7 @@ object ShadeNotices {
                 // off-list from the shade is more likely a typo than an intent.
                 freeTextReply = req.choices.isEmpty(),
                 timeoutMs = BLOCKING_TIMEOUT_MS,
+                lockScreenBody = "The agent has a question. Unlock to read it.",
             )
         }
         BlockingKind.SUDO -> ShadeNotice(
@@ -101,6 +114,7 @@ object ShadeNotices {
             actions = emptyList(),
             freeTextReply = false,
             timeoutMs = BLOCKING_TIMEOUT_MS,
+            lockScreenBody = "A command is waiting for a password. Unlock to answer.",
         )
         BlockingKind.SECRET -> ShadeNotice(
             title = "Secret needed",
@@ -109,6 +123,7 @@ object ShadeNotices {
             actions = emptyList(),
             freeTextReply = false,
             timeoutMs = BLOCKING_TIMEOUT_MS,
+            lockScreenBody = "The agent needs a credential. Unlock to answer.",
         )
     }
 }
