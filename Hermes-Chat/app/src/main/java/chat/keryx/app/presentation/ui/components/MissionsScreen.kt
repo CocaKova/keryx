@@ -298,7 +298,7 @@ fun MissionsScreen(
                         board?.board != null -> "board: ${board?.board}"
                         else -> "the agent's board"
                     },
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                 )
@@ -390,7 +390,7 @@ fun MissionsScreen(
                         Spacer(Modifier.width(6.dp))
                         Text(
                             "${section.label} ${section.cards.size}",
-                            fontSize = 11.sp,
+                            fontSize = KeryxType.micro,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
@@ -535,7 +535,7 @@ fun MissionsScreen(
 private fun LaneAction(label: String, onClick: () -> Unit) {
     Text(
         label,
-        fontSize = 11.sp,
+        fontSize = KeryxType.micro,
         fontWeight = FontWeight.SemiBold,
         color = keryxAccentInk(),
         maxLines = 1,
@@ -580,7 +580,7 @@ private fun SelectionBar(
                         (if (progress.failed > 0) " · ${progress.failed} failed" else "")
                     else -> "$count selected"
                 },
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
@@ -622,14 +622,14 @@ private fun AlertsHintRow(onTurnOn: () -> Unit, onDismiss: () -> Unit) {
         )
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text("Ring me when missions finish", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Text("Ring me when missions finish", fontSize = KeryxType.body, fontWeight = FontWeight.Medium)
             Text(
                 "A notification when a mission completes, blocks, or gives up",
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        TextButton(onClick = onTurnOn) { Text("Turn on", fontSize = 12.sp) }
+        TextButton(onClick = onTurnOn) { Text("Turn on", fontSize = KeryxType.caption) }
         IconButton(onClick = onDismiss) {
             Icon(
                 KeryxGlyphs.Close,
@@ -659,11 +659,11 @@ private fun MissionsEmptyState(line1: String, line2: String, modifier: Modifier 
             running = true,
         )
         Spacer(Modifier.height(18.dp))
-        Text(line1, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Text(line1, fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(6.dp))
         Text(
             line2,
-            fontSize = 12.sp,
+            fontSize = KeryxType.caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
@@ -727,7 +727,7 @@ private fun MissionCard(
                     }
                     Text(
                         task.title,
-                        fontSize = 14.sp,
+                        fontSize = KeryxType.bodyLarge,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.weight(1f),
                         maxLines = 2,
@@ -744,7 +744,7 @@ private fun MissionCard(
                     if (task.priority > 0) {
                         Text(
                             "P${task.priority}",
-                            fontSize = 10.sp,
+                            fontSize = KeryxType.micro,
                             fontFamily = FontFamily.Monospace,
                             color = MaterialTheme.colorScheme.tertiary,
                         )
@@ -755,7 +755,7 @@ private fun MissionCard(
                     if (task.assignee.isNotBlank()) {
                         Text(
                             task.assignee.replaceFirstChar { it.uppercase() },
-                            fontSize = 10.sp,
+                            fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(KeryxRadius.chip))
@@ -767,14 +767,14 @@ private fun MissionCard(
                     if (task.consecutiveFailures > 0) {
                         Text(
                             "⚠ ${task.consecutiveFailures} fail${if (task.consecutiveFailures > 1) "s" else ""}",
-                            fontSize = 10.sp,
+                            fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.error,
                         )
                         Spacer(Modifier.width(8.dp))
                     }
                     Text(
                         missionAge(task),
-                        fontSize = 10.sp,
+                        fontSize = KeryxType.micro,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.weight(1f))
@@ -788,7 +788,7 @@ private fun MissionCard(
                     Spacer(Modifier.height(4.dp))
                     Text(
                         task.ask,
-                        fontSize = 12.sp,
+                        fontSize = KeryxType.caption,
                         lineHeight = 16.sp,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = if (task.needsYou) 4 else 2,
@@ -798,7 +798,7 @@ private fun MissionCard(
                     Spacer(Modifier.height(4.dp))
                     Text(
                         task.bodyExcerpt,
-                        fontSize = 11.sp,
+                        fontSize = KeryxType.micro,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                     )
@@ -843,7 +843,7 @@ private fun StatusPill(label: String, color: Color) {
     ) {
         Box(Modifier.size(6.dp).clip(CircleShape).background(color))
         Spacer(Modifier.width(5.dp))
-        Text(label, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+        Text(label, fontSize = KeryxType.micro, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
     }
 }
 
@@ -862,7 +862,7 @@ private fun DiagBadge(task: KanbanTask) {
     val color = if (task.diagStale) KeryxStatus.idle else severityColor(task.diagSeverity)
     Text(
         "⚠ ${task.diagCount}",
-        fontSize = 10.sp,
+        fontSize = KeryxType.micro,
         fontFamily = FontFamily.Monospace,
         fontWeight = FontWeight.SemiBold,
         color = color,
@@ -912,13 +912,13 @@ private fun MissionDetailSheet(
                 loadError != null -> Text(
                     "Couldn't load task: $loadError",
                     color = MaterialTheme.colorScheme.error,
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     modifier = Modifier.padding(vertical = 20.dp),
                 )
                 d == null -> Text(
                     "Loading…",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     modifier = Modifier.padding(vertical = 20.dp),
                 )
                 else -> {
@@ -933,7 +933,7 @@ private fun MissionDetailSheet(
                             Spacer(Modifier.width(10.dp))
                             Text(
                                 "@${t.assignee}",
-                                fontSize = 11.sp,
+                                fontSize = KeryxType.micro,
                                 color = keryxAccentInk(),
                                 fontWeight = FontWeight.SemiBold,
                             )
@@ -943,13 +943,13 @@ private fun MissionDetailSheet(
                         Spacer(Modifier.width(8.dp))
                         Text(
                             t.id,
-                            fontSize = 10.sp,
+                            fontSize = KeryxType.micro,
                             fontFamily = FontFamily.Monospace,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text(t.title, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    Text(t.title, fontSize = KeryxType.headline, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
@@ -1017,7 +1017,7 @@ private fun MissionDetailSheet(
                             ) {
                                 Text(
                                     "Result",
-                                    fontSize = 11.sp,
+                                    fontSize = KeryxType.micro,
                                     fontWeight = FontWeight.SemiBold,
                                     color = keryxAccentInk(MaterialTheme.colorScheme.tertiary),
                                 )
@@ -1028,7 +1028,7 @@ private fun MissionDetailSheet(
                         if (t.lastFailureError.isNotBlank()) item(key = "fail") {
                             Text(
                                 "⚠ ${t.lastFailureError}",
-                                fontSize = 11.sp,
+                                fontSize = KeryxType.micro,
                                 color = MaterialTheme.colorScheme.error,
                             )
                         }
@@ -1044,7 +1044,7 @@ private fun MissionDetailSheet(
                                 d.attachments.forEach { a ->
                                     Text(
                                         "📎 ${a.filename}" + (if (a.size > 0) "  ·  ${a.size / 1024} KB" else ""),
-                                        fontSize = 12.sp,
+                                        fontSize = KeryxType.caption,
                                         fontFamily = FontFamily.Monospace,
                                     )
                                 }
@@ -1065,7 +1065,7 @@ private fun MissionDetailSheet(
                                 Column {
                                     Text(
                                         c.author,
-                                        fontSize = 10.sp,
+                                        fontSize = KeryxType.micro,
                                         fontWeight = FontWeight.SemiBold,
                                         color = keryxAccentInk(),
                                         modifier = Modifier
@@ -1095,8 +1095,8 @@ private fun MissionDetailSheet(
                             value = comment,
                             onValueChange = { comment = it },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Comment — lands in the next worker's context", fontSize = 12.sp) },
-                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
+                            placeholder = { Text("Comment — lands in the next worker's context", fontSize = KeryxType.caption) },
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = KeryxType.body),
                             shape = RoundedCornerShape(KeryxRadius.field),
                             trailingIcon = {
                                 TextButton(
@@ -1198,7 +1198,7 @@ private fun AskPanel(
             if (task.blockRecurrences > 0) {
                 Text(
                     "blocked ${task.blockRecurrences + 1}×",
-                    fontSize = 10.sp,
+                    fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1221,10 +1221,10 @@ private fun AskPanel(
                     Text(
                         if (review) "A note to approve with, or what has to change"
                         else "Your answer — the next run reads it",
-                        fontSize = 12.sp,
+                        fontSize = KeryxType.caption,
                     )
                 },
-                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = KeryxType.body),
                 shape = RoundedCornerShape(KeryxRadius.field),
                 minLines = 2,
             )
@@ -1233,7 +1233,7 @@ private fun AskPanel(
                 TextButton(
                     enabled = reply.isNotBlank(),
                     onClick = { onRequestChanges(reply.trim()); reply = "" },
-                ) { Text("Request changes", fontSize = 12.sp, color = KeryxStatus.bad) }
+                ) { Text("Request changes", fontSize = KeryxType.caption, color = KeryxStatus.bad) }
                 Spacer(Modifier.weight(1f))
                 VerdictButton("Approve", enabled = true) { onApprove(reply.trim()); reply = "" }
             } else Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1241,7 +1241,7 @@ private fun AskPanel(
                     TextButton(
                         enabled = reply.isNotBlank(),
                         onClick = { onReply(reply.trim(), false); reply = "" },
-                    ) { Text("Reply only", fontSize = 12.sp) }
+                    ) { Text("Reply only", fontSize = KeryxType.caption) }
                 }
                 Spacer(Modifier.weight(1f))
                 VerdictButton(if (canUnblock) "Reply & unblock" else "Reply", enabled = reply.isNotBlank()) {
@@ -1258,7 +1258,7 @@ private fun VerdictButton(label: String, enabled: Boolean, onClick: () -> Unit) 
     val accent = MaterialTheme.colorScheme.primary
     Text(
         label,
-        fontSize = 13.sp,
+        fontSize = KeryxType.body,
         fontWeight = FontWeight.SemiBold,
         color = contrastColorFor(accent),
         modifier = Modifier
@@ -1286,14 +1286,14 @@ private fun AlertToggle(taskId: String, viewModel: ChatViewModel) {
         )
         Spacer(Modifier.width(8.dp))
         Column(Modifier.weight(1f)) {
-            Text("Alert when this ends", fontSize = 13.sp)
+            Text("Alert when this ends", fontSize = KeryxType.body)
             Text(
                 when {
                     subscribed -> "The agent pushes a message the moment it completes or blocks"
                     roomName != null -> "Lands in $roomName as a real message — no polling"
                     else -> viewModel.missions.alertUnavailableReason
                 },
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -1319,7 +1319,7 @@ private fun LinkRow(
     onOpen: (String) -> Unit,
 ) {
     Column {
-        Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(label, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(4.dp))
         androidx.compose.foundation.layout.FlowRow(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -1339,7 +1339,7 @@ private fun LinkRow(
                     Spacer(Modifier.width(6.dp))
                     Text(
                         link.title,
-                        fontSize = 12.sp,
+                        fontSize = KeryxType.caption,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
@@ -1347,7 +1347,7 @@ private fun LinkRow(
                     )
                     Text(
                         "  ${link.status}",
-                        fontSize = 10.sp,
+                        fontSize = KeryxType.micro,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -1368,7 +1368,7 @@ private fun DiagnosticRow(diag: chat.keryx.app.data.remote.HermesStreamClient.Ka
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 if (diag.stale) "outlived" else diag.severity,
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.SemiBold,
                 color = color,
@@ -1376,25 +1376,25 @@ private fun DiagnosticRow(diag: chat.keryx.app.data.remote.HermesStreamClient.Ka
             Spacer(Modifier.width(8.dp))
             Text(
                 diag.kind.replace('_', ' '),
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Spacer(Modifier.height(4.dp))
-        Text(diag.title, fontSize = 12.sp, lineHeight = 16.sp, maxLines = 4,
+        Text(diag.title, fontSize = KeryxType.caption, lineHeight = 16.sp, maxLines = 4,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         if (diag.stale) {
             Spacer(Modifier.height(4.dp))
             Text(
                 "A later run ended some other way — this is history, not the current state.",
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else if (diag.suggestedAction.isNotBlank()) {
             Spacer(Modifier.height(4.dp))
             Text(
                 "→ ${diag.suggestedAction}",
-                fontSize = 10.5.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1448,7 +1448,7 @@ private fun RunDeck(runs: List<KanbanRun>, onOpenRun: (KanbanRun) -> Unit) {
                     // the deck looks exactly as it did.
                     if (openable) Text(
                         if (live) "Watch session ›" else "View session ›",
-                        fontSize = 11.sp,
+                        fontSize = KeryxType.micro,
                         fontWeight = FontWeight.Medium,
                         color = keryxAccentInk(),
                         modifier = Modifier
@@ -1492,12 +1492,12 @@ private fun BriefSection(body: String) {
         ) {
             KeryxSectionHeader(label = "Brief", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(6.dp))
-            Text(if (open) "▾" else "▸", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (open) "▾" else "▸", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Spacer(Modifier.height(6.dp))
         if (open) MissionProse(body) else Text(
             body,
-            fontSize = 12.sp,
+            fontSize = KeryxType.caption,
             lineHeight = 16.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 3,
@@ -1519,11 +1519,11 @@ private fun EventsSection(events: List<chat.keryx.app.data.remote.HermesStreamCl
         ) {
             KeryxSectionHeader(label = "Events", count = rows.size, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(6.dp))
-            Text(if (open) "▾" else "▸", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (open) "▾" else "▸", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
             if (beats > 0) Text(
                 "$beats heartbeat${if (beats == 1) "" else "s"} folded",
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -1533,7 +1533,7 @@ private fun EventsSection(events: List<chat.keryx.app.data.remote.HermesStreamCl
                 Row(Modifier.padding(vertical = 3.dp)) {
                     Text(
                         missionClock(e.createdAt).orEmpty(),
-                        fontSize = 10.sp,
+                        fontSize = KeryxType.micro,
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.width(84.dp),
@@ -1541,12 +1541,12 @@ private fun EventsSection(events: List<chat.keryx.app.data.remote.HermesStreamCl
                     Column(Modifier.weight(1f)) {
                         Text(
                             e.kind.replace('_', ' ') + (e.runId?.let { "  · run $it" } ?: ""),
-                            fontSize = 11.sp,
+                            fontSize = KeryxType.micro,
                             fontWeight = FontWeight.SemiBold,
                         )
                         if (e.detail.isNotBlank()) Text(
                             e.detail,
-                            fontSize = 11.sp,
+                            fontSize = KeryxType.micro,
                             lineHeight = 15.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 3,
@@ -1571,7 +1571,7 @@ private fun SteeringSection(taskId: String, task: KanbanTask, viewModel: ChatVie
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(4.dp))
-        Text("Thinking depth", fontSize = 11.sp,
+        Text("Thinking depth", fontSize = KeryxType.micro,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(4.dp))
         androidx.compose.foundation.layout.FlowRow(
@@ -1585,7 +1585,7 @@ private fun SteeringSection(taskId: String, task: KanbanTask, viewModel: ChatVie
                 val selected = value == current
                 Text(
                     label,
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     maxLines = 1,
                     softWrap = false,
                     color = if (selected) MaterialTheme.colorScheme.onPrimary
@@ -1611,9 +1611,9 @@ private fun SteeringSection(taskId: String, task: KanbanTask, viewModel: ChatVie
             value = modelDraft,
             onValueChange = { modelDraft = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Model pin (blank = profile's own)", fontSize = 12.sp) },
+            label = { Text("Model pin (blank = profile's own)", fontSize = KeryxType.caption) },
             textStyle = androidx.compose.ui.text.TextStyle(
-                fontSize = 13.sp, fontFamily = FontFamily.Monospace),
+                fontSize = KeryxType.body, fontFamily = FontFamily.Monospace),
             shape = RoundedCornerShape(KeryxRadius.field),
             singleLine = true,
             trailingIcon = {
@@ -1668,7 +1668,7 @@ private fun MissionCreateDialog(
                     shape = RoundedCornerShape(KeryxRadius.field),
                 )
                 Spacer(Modifier.height(10.dp))
-                Text("Assignee", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Assignee", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(4.dp))
                 // FlowRow, not Row: five profiles overflow a phone-width dialog, and a plain Row
                 // squeezes the last chip to letter-per-line confetti instead of wrapping.
@@ -1680,7 +1680,7 @@ private fun MissionCreateDialog(
                         val selected = p == assignee
                         Text(
                             p.replaceFirstChar { it.uppercase() },
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             maxLines = 1,
                             softWrap = false,
                             color = if (selected) MaterialTheme.colorScheme.onPrimary
@@ -1699,11 +1699,11 @@ private fun MissionCreateDialog(
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text("Park in triage", fontSize = 13.sp)
+                        Text("Park in triage", fontSize = KeryxType.body)
                         Text(
                             if (triage) "Spec-first — nothing runs until promoted"
                             else "Dispatcher spawns a worker for it",
-                            fontSize = 10.sp,
+                            fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -1712,11 +1712,11 @@ private fun MissionCreateDialog(
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text("Notify me when it ends", fontSize = 13.sp)
+                        Text("Notify me when it ends", fontSize = KeryxType.body)
                         Text(
                             if (canNotify) "A real message lands in your room on completion"
                             else notifyUnavailableReason,
-                            fontSize = 10.sp,
+                            fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }

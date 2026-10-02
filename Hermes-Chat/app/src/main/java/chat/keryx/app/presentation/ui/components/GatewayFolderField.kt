@@ -93,7 +93,7 @@ fun GatewayFolderField(
         }
         verdict?.let { (word, tint) ->
             Text(
-                word, fontSize = 10.sp, fontFamily = FontFamily.Monospace, color = tint,
+                word, fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace, color = tint,
                 modifier = Modifier.padding(start = 4.dp, top = 3.dp),
             )
         }
@@ -102,7 +102,7 @@ fun GatewayFolderField(
         if (value.isBlank() && suggestions.isNotEmpty()) {
             Text(
                 "Known workspaces",
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 2.dp),
@@ -133,7 +133,7 @@ fun GatewayFolderField(
                 // No silent caps — ours at six rows, and the gateway's own at thirty.
                 if (page?.truncated == true) "more than 30 folders here — keep typing to narrow"
                 else "+$hidden more — keep typing to narrow",
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.padding(start = 4.dp, top = 2.dp),

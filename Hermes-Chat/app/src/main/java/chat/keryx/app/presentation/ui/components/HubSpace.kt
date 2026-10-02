@@ -199,7 +199,7 @@ fun GatewaySpace(viewModel: ChatViewModel, health: LinkHealth, onDismiss: () -> 
                         (gatewayUrl.takeIf { it.isNotBlank() }?.let { url ->
                             " · " + url.removePrefix("https://").removePrefix("http://").trimEnd('/')
                         } ?: ""),
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )

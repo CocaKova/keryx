@@ -113,7 +113,7 @@ fun ShipyardSpace(
                         Text(
                             msg,
                             color = KeryxStatus.bad,
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             modifier = Modifier.weight(1f),
                         )
                         Spacer(Modifier.width(8.dp))
@@ -148,7 +148,7 @@ fun ShipyardSpace(
                     Text(
                         file,
                         fontFamily = FontFamily.Monospace,
-                        fontSize = 11.sp,
+                        fontSize = KeryxType.micro,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                         maxLines = 2,
@@ -165,8 +165,8 @@ fun ShipyardSpace(
                     Spacer(Modifier.height(8.dp))
                 }
                 when {
-                    d == null -> Text("reading the diff…", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    d.diff.isBlank() -> Text("No diff — the file is unchanged in this scope.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    d == null -> Text("reading the diff…", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    d.diff.isBlank() -> Text("No diff — the file is unchanged in this scope.", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     else -> {
                         DiffPanel(
                             diff = d.diff,
@@ -178,7 +178,7 @@ fun ShipyardSpace(
                             Spacer(Modifier.height(6.dp))
                             Text(
                                 "clipped by the gateway: ${d.omittedLines} of ${d.totalLines} lines not shown",
-                                fontSize = 11.sp,
+                                fontSize = KeryxType.micro,
                                 color = KeryxStatus.warn,
                             )
                         }
@@ -237,7 +237,7 @@ private fun RepoRoster(repos: List<ShipyardRepo>, onOpen: (ShipyardRepo) -> Unit
                 Spacer(Modifier.height(6.dp))
                 Text(
                     "No repos the gateway will let a phone review. A project's folder or a discovered repo under the gateway user's home appears here.",
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -255,11 +255,11 @@ private fun RepoRoster(repos: List<ShipyardRepo>, onOpen: (ShipyardRepo) -> Unit
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(tint))
                     Spacer(Modifier.width(10.dp))
-                    Text(r.label, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, modifier = Modifier.weight(1f))
-                    r.branch?.let { Text(it, fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    Text(r.label, fontWeight = FontWeight.SemiBold, fontSize = KeryxType.title, modifier = Modifier.weight(1f))
+                    r.branch?.let { Text(it, fontFamily = FontFamily.Monospace, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
                 Spacer(Modifier.height(4.dp))
-                Text(r.path, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                Text(r.path, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
             }
         }
     }
@@ -292,18 +292,18 @@ private fun RepoReview(
                 Text(
                     status?.branch ?: repo.branch ?: "detached",
                     fontFamily = FontFamily.Monospace,
-                    fontSize = 13.sp,
+                    fontSize = KeryxType.body,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
                 status?.let { st ->
-                    if (st.ahead > 0) Text("↑${st.ahead}", fontSize = 12.sp, color = KeryxStatus.warn)
-                    if (st.behind > 0) Text(" ↓${st.behind}", fontSize = 12.sp, color = KeryxStatus.warn)
-                    if (st.ahead == 0 && st.behind == 0 && !st.detached) Text("in step", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (st.ahead > 0) Text("↑${st.ahead}", fontSize = KeryxType.caption, color = KeryxStatus.warn)
+                    if (st.behind > 0) Text(" ↓${st.behind}", fontSize = KeryxType.caption, color = KeryxStatus.warn)
+                    if (st.ahead == 0 && st.behind == 0 && !st.detached) Text("in step", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            shipInfoLine?.let { Text(it, fontSize = 11.sp, color = KeryxStatus.good) }
-            Text(repo.path, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+            shipInfoLine?.let { Text(it, fontSize = KeryxType.micro, color = KeryxStatus.good) }
+            Text(repo.path, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -331,7 +331,7 @@ private fun RepoReview(
         if (hydrating) item {
             Text(
                 "Reading the working tree…",
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 10.dp),
             )
@@ -351,7 +351,7 @@ private fun RepoReview(
                 Text(
                     f.status,
                     fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     fontWeight = FontWeight.Bold,
                     color = statusTint(f.status),
                     modifier = Modifier.width(18.dp),
@@ -359,7 +359,7 @@ private fun RepoReview(
                 Text(
                     f.path,
                     fontFamily = FontFamily.Monospace,
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     modifier = Modifier.weight(1f),
                     maxLines = 2,
                 )
@@ -404,7 +404,7 @@ private fun CommitSheet(
             Text(
                 if (st != null && st.staged > 0) "${st.staged} staged file${if (st.staged == 1) "" else "s"} will be committed."
                 else "Nothing is staged — everything in the working tree will be committed.",
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(10.dp))
@@ -419,16 +419,16 @@ private fun CommitSheet(
             )
             ctx?.recentSubjects?.takeIf { it.isNotEmpty() }?.let { recent ->
                 Spacer(Modifier.height(10.dp))
-                Text("RECENT", fontSize = 10.sp, letterSpacing = 1.4.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("RECENT", fontSize = KeryxType.micro, letterSpacing = 1.4.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 recent.take(4).forEach { s ->
-                    Text(s, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
+                    Text(s, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
                         modifier = Modifier.padding(top = 2.dp))
                 }
             }
             Spacer(Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { push = !push }) {
                 Checkbox(checked = push, onCheckedChange = { push = it })
-                Text("Push after committing", fontSize = 13.sp)
+                Text("Push after committing", fontSize = KeryxType.body)
             }
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
@@ -482,7 +482,7 @@ private fun ShipyardChip(
     ) {
         Text(
             label.uppercase(),
-            fontSize = 10.sp,
+            fontSize = KeryxType.micro,
             letterSpacing = 1.4.sp,
             fontWeight = FontWeight.SemiBold,
             color = if (filled) MaterialTheme.colorScheme.background else tint.copy(alpha = if (enabled) 1f else 0.4f),

@@ -238,7 +238,7 @@ fun RunsSpace(
                         append("${rows.size} jobs")
                         if (failing > 0) append(" · $failing failing")
                     },
-                    fontSize = 10.5.sp, fontFamily = FontFamily.Monospace,
+                    fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                     color = if (failing > 0) KeryxStatus.bad else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
@@ -252,7 +252,7 @@ fun RunsSpace(
             val unread = board?.unread
             if (unread != null && unread.any && (!railFolded || narrowing)) {
                 TextButton(onClick = { viewModel.hub.cronMarkAllSeen() }) {
-                    Text("Mark ${unread.total} read", fontSize = 12.sp)
+                    Text("Mark ${unread.total} read", fontSize = KeryxType.caption)
                 }
             }
         },
@@ -264,7 +264,7 @@ fun RunsSpace(
                 Text(
                     "No scheduled work yet.\nThe agent creates jobs with the cronjob tool.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 13.sp, lineHeight = 19.sp,
+                    fontSize = KeryxType.body, lineHeight = 19.sp,
                     modifier = Modifier.padding(32.dp),
                 )
             }
@@ -325,7 +325,7 @@ fun RunsSpace(
                                 if (searching) "No job matches “${query.trim()}”."
                                 else "No ${filter.label.lowercase()} jobs.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 12.5.sp,
+                                fontSize = KeryxType.body,
                                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 16.dp),
                             )
                         }
@@ -472,7 +472,7 @@ private fun PinnedShelf(
             Spacer(Modifier.width(7.dp))
             KeryxSectionHeader("Pinned", count = board.pinned.size, color = onSurface.copy(alpha = 0.8f))
             Spacer(Modifier.weight(1f))
-            Text(if (folded) "▸" else "▾", color = quiet.copy(alpha = 0.6f), fontSize = 11.sp)
+            Text(if (folded) "▸" else "▾", color = quiet.copy(alpha = 0.6f), fontSize = KeryxType.micro)
         }
         if (!folded) {
             Spacer(Modifier.height(2.dp))
@@ -505,7 +505,7 @@ private fun PinnedShelf(
                 ) {
                     Text(
                         if (showAll) "Show fewer" else "Show all ${board.pinned.size}",
-                        fontSize = 11.sp, color = quiet,
+                        fontSize = KeryxType.micro, color = quiet,
                     )
                 }
             }
@@ -566,7 +566,7 @@ private fun NewArrivals(
             Text(
                 "and ${board.unread.total - NEW_RAIL_MAX} more below",
                 color = quiet.copy(alpha = 0.7f),
-                fontSize = 10.5.sp, fontFamily = FontFamily.Monospace,
+                fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                 modifier = Modifier.padding(top = 8.dp, start = 12.dp),
             )
         }
@@ -634,7 +634,7 @@ private fun RunHeadlineRow(
                     Text(
                         jobName,
                         color = onSurface.copy(alpha = 0.9f),
-                        fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                        fontSize = KeryxType.caption, fontWeight = FontWeight.Medium,
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
                     )
@@ -645,7 +645,7 @@ private fun RunHeadlineRow(
                             // Accent text on a 12% wash of the same accent is 3.03:1 on
                             // parchment; the ground stays the light, the label takes the ink.
                             color = keryxAccentInk(accent),
-                            fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
+                            fontSize = KeryxType.micro, fontWeight = FontWeight.SemiBold,
                             fontFamily = FontFamily.Monospace,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(KeryxRadius.chip))
@@ -657,7 +657,7 @@ private fun RunHeadlineRow(
                     Text(
                         whenText,
                         color = quiet.copy(alpha = 0.8f),
-                        fontSize = 10.sp, fontFamily = FontFamily.Monospace,
+                        fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                     )
                     if (trailing != null) {
                         Spacer(Modifier.width(6.dp))
@@ -668,7 +668,7 @@ private fun RunHeadlineRow(
                 Text(
                     d?.title ?: "reading…",
                     color = onSurface.copy(alpha = if (d?.title != null) titleAlpha else 0.35f),
-                    fontSize = 11.5.sp, lineHeight = 15.5.sp,
+                    fontSize = KeryxType.caption, lineHeight = 15.5.sp,
                     maxLines = 2, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 1.dp),
                 )
@@ -677,7 +677,7 @@ private fun RunHeadlineRow(
                         Text(
                             it,
                             color = quiet.copy(alpha = 0.85f),
-                            fontSize = 11.sp, lineHeight = 14.5.sp,
+                            fontSize = KeryxType.micro, lineHeight = 14.5.sp,
                             maxLines = leadLines, overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.padding(top = 1.dp),
                         )
@@ -819,7 +819,7 @@ private fun RunCard(
                 }
                 Text(
                     card.name,
-                    fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = onSurface,
+                    fontSize = KeryxType.bodyLarge, fontWeight = FontWeight.SemiBold, color = onSurface,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false),
                 )
@@ -827,7 +827,7 @@ private fun RunCard(
                     Spacer(Modifier.width(8.dp))
                     Text(
                         "$unreadCount new",
-                        fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
+                        fontSize = KeryxType.micro, fontWeight = FontWeight.SemiBold,
                         color = keryxAccentInk(),
                         modifier = Modifier
                             .clip(RoundedCornerShape(KeryxRadius.chip))
@@ -848,12 +848,12 @@ private fun RunCard(
                     Spacer(Modifier.width(2.dp))
                     Text(
                         "${card.pinnedCount}",
-                        fontSize = 10.sp, fontFamily = FontFamily.Monospace,
+                        fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                         color = quiet.copy(alpha = 0.7f),
                     )
                 }
                 Spacer(Modifier.weight(1f))
-                Text(if (open) "▾" else "▸", color = quiet.copy(alpha = 0.6f), fontSize = 11.sp)
+                Text(if (open) "▾" else "▸", color = quiet.copy(alpha = 0.6f), fontSize = KeryxType.micro)
             }
 
             // The meta line: schedule in words, distance to the next run, last verdict.
@@ -873,14 +873,14 @@ private fun RunCard(
                     if (job != null && !card.neverRun) {
                         Text(
                             if (failed) "✕" else "✓",
-                            fontSize = 9.sp,
+                            fontSize = KeryxType.micro,
                             color = if (failed) bad else good.copy(alpha = 0.7f),
                         )
                         Spacer(Modifier.width(5.dp))
                     }
                     Text(
                         meta.joinToString(" · "),
-                        fontSize = 10.5.sp, fontFamily = FontFamily.Monospace,
+                        fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                         color = quiet.copy(alpha = 0.8f),
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
@@ -899,14 +899,14 @@ private fun RunCard(
             if (!card.neverRun && d?.title != null) {
                 Text(
                     d.title!!,
-                    fontSize = 12.5.sp, color = onSurface.copy(alpha = 0.85f),
+                    fontSize = KeryxType.body, color = onSurface.copy(alpha = 0.85f),
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 5.dp),
                 )
                 d.lead?.let {
                     Text(
                         it,
-                        fontSize = 11.5.sp, color = quiet.copy(alpha = 0.85f), lineHeight = 15.sp,
+                        fontSize = KeryxType.caption, color = quiet.copy(alpha = 0.85f), lineHeight = 15.sp,
                         maxLines = if (open) 3 else 1, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 1.dp),
                     )
@@ -928,7 +928,7 @@ private fun RunCard(
                     Spacer(Modifier.width(6.dp))
                     Text(
                         "since last run · ${d.summary}",
-                        fontSize = 10.5.sp, fontFamily = FontFamily.Monospace,
+                        fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                         color = if (d.same) quiet.copy(alpha = 0.7f) else onSurface.copy(alpha = 0.8f),
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
@@ -970,13 +970,13 @@ private fun DeltaLines(prefix: String, lines: List<String>, color: Color, max: I
         Row(modifier = Modifier.padding(start = 2.dp, top = 2.dp)) {
             Text(
                 prefix,
-                fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold,
+                fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold,
                 color = color,
                 modifier = Modifier.width(12.dp),
             )
             Text(
                 line,
-                fontSize = 11.5.sp, lineHeight = 15.sp,
+                fontSize = KeryxType.caption, lineHeight = 15.sp,
                 color = onSurface.copy(alpha = 0.8f),
                 maxLines = 2, overflow = TextOverflow.Ellipsis,
             )
@@ -985,7 +985,7 @@ private fun DeltaLines(prefix: String, lines: List<String>, color: Color, max: I
     if (lines.size > max) {
         Text(
             "$prefix ${lines.size - max} more",
-            fontSize = 10.5.sp, fontFamily = FontFamily.Monospace,
+            fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
             color = color.copy(alpha = 0.7f),
             modifier = Modifier.padding(start = 2.dp, top = 2.dp),
         )
@@ -1055,7 +1055,7 @@ private fun RunList(
                 Text(
                     // The gateway titles runs "<job> · <when>"; the job half is the card.
                     run.title.substringAfter(" · ", run.title),
-                    fontSize = 12.sp, color = onSurface.copy(alpha = 0.8f),
+                    fontSize = KeryxType.caption, color = onSurface.copy(alpha = 0.8f),
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
@@ -1070,7 +1070,7 @@ private fun RunList(
                 }
                 Text(
                     relativeWhen(run.timestamp),
-                    fontSize = 10.sp, fontFamily = FontFamily.Monospace,
+                    fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                     color = quiet.copy(alpha = 0.6f),
                 )
             }
@@ -1086,7 +1086,7 @@ private fun RunList(
     if (card.runs.size > 20) {
         Text(
             "${card.runs.size - 20} older runs in Gateway ▸ Sessions",
-            fontSize = 10.5.sp, color = quiet.copy(alpha = 0.6f),
+            fontSize = KeryxType.micro, color = quiet.copy(alpha = 0.6f),
             modifier = Modifier.padding(top = 2.dp),
         )
     }
@@ -1136,19 +1136,19 @@ private fun JobMenu(
                         )
                         if (job.scriptOnly) append(" · script, no transcript")
                     },
-                    fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = quiet,
+                    fontSize = KeryxType.caption, fontFamily = FontFamily.Monospace, color = quiet,
                 )
                 val err = job.lastError?.takeIf { it.isNotBlank() }
                 if (err != null) {
                     Spacer(Modifier.height(12.dp))
                     Text(
                         if (job.failureStreak > 1) "FAILED ${job.failureStreak} RUNS IN A ROW" else "LAST RUN FAILED",
-                        fontSize = 10.sp, letterSpacing = 1.5.sp, color = KeryxStatus.bad,
+                        fontSize = KeryxType.micro, letterSpacing = 1.5.sp, color = KeryxStatus.bad,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
                         CronTriage.errorGist(err),
-                        fontSize = 13.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Monospace,
+                        fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(Modifier.height(6.dp))
@@ -1157,7 +1157,7 @@ private fun JobMenu(
                     androidx.compose.foundation.text.selection.SelectionContainer {
                         Text(
                             err.take(ERROR_SHOWN),
-                            fontSize = 11.5.sp, lineHeight = 16.sp, fontFamily = FontFamily.Monospace,
+                            fontSize = KeryxType.caption, lineHeight = 16.sp, fontFamily = FontFamily.Monospace,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1171,7 +1171,7 @@ private fun JobMenu(
                     TextButton(onClick = { clipboard.setText(androidx.compose.ui.text.AnnotatedString(err)) }) {
                         Icon(KeryxGlyphs.Copy, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Copy error", fontSize = 12.sp)
+                        Text("Copy error", fontSize = KeryxType.caption)
                     }
                     SheetAction(KeryxGlyphs.Wrench, "Ask the agent to fix it", "A new chat with the job and its error, ready to send") {
                         onDismiss(); verbs.askFix(card, job)
@@ -1239,8 +1239,8 @@ private fun SheetAction(
         Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(14.dp))
         Column {
-            Text(label, fontSize = 14.sp, color = tint)
-            if (detail != null) Text(detail, fontSize = 11.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(label, fontSize = KeryxType.bodyLarge, color = tint)
+            if (detail != null) Text(detail, fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -1280,7 +1280,7 @@ private fun FailureChip(icon: androidx.compose.ui.graphics.vector.ImageVector?, 
             Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(13.dp))
             Spacer(Modifier.width(5.dp))
         }
-        Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+        Text(label, fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 
@@ -1301,7 +1301,7 @@ private fun FailureLine(error: String, maxLines: Int) {
         Text(
             // The cause, not the wrapper: the full text lives in the job sheet.
             CronTriage.errorGist(error).ifBlank { error.trim() },
-            fontSize = 10.5.sp, lineHeight = 14.sp, fontFamily = FontFamily.Monospace,
+            fontSize = KeryxType.micro, lineHeight = 14.sp, fontFamily = FontFamily.Monospace,
             color = KeryxStatus.bad,
             maxLines = maxLines, overflow = TextOverflow.Ellipsis,
         )
@@ -1357,7 +1357,7 @@ private fun RunsControls(
                     if (query.isEmpty()) {
                         Text(
                             "Find a job, a headline, a schedule…",
-                            fontSize = 13.sp, color = quiet.copy(alpha = 0.7f),
+                            fontSize = KeryxType.body, color = quiet.copy(alpha = 0.7f),
                             maxLines = 1, overflow = TextOverflow.Ellipsis,
                         )
                     }
@@ -1365,7 +1365,7 @@ private fun RunsControls(
                         value = query,
                         onValueChange = onQuery,
                         singleLine = true,
-                        textStyle = TextStyle(fontSize = 13.sp, color = onSurface),
+                        textStyle = TextStyle(fontSize = KeryxType.body, color = onSurface),
                         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
@@ -1430,12 +1430,12 @@ private fun FilterPill(filter: CronFilter, count: Int, selected: Boolean, onClic
             Spacer(Modifier.width(6.dp))
         }
         Text(
-            filter.label, fontSize = 11.sp, letterSpacing = 0.4.sp, maxLines = 1,
+            filter.label, fontSize = KeryxType.micro, letterSpacing = 0.4.sp, maxLines = 1,
             color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.width(5.dp))
         Text(
-            "$count", fontSize = 10.5.sp, fontFamily = FontFamily.Monospace, maxLines = 1,
+            "$count", fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace, maxLines = 1,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
         )
     }
@@ -1454,7 +1454,7 @@ private fun DensitySwitch(compact: Boolean, onCompact: (Boolean) -> Unit) {
             val on = isList == compact
             Text(
                 label,
-                fontSize = 11.sp, maxLines = 1,
+                fontSize = KeryxType.micro, maxLines = 1,
                 color = if (on) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
                 modifier = Modifier
@@ -1499,7 +1499,7 @@ private fun SectionHead(
         if (onToggle != null) {
             Text(
                 if (open) "▾" else "▸ show",
-                color = quiet.copy(alpha = 0.6f), fontSize = 11.sp,
+                color = quiet.copy(alpha = 0.6f), fontSize = KeryxType.micro,
             )
         }
     }
@@ -1534,15 +1534,15 @@ private fun RailSummary(
         Text(
             "${board.unread.total} new · ${board.unread.byJob.size} jobs",
             color = keryxAccentInk(accent),
-            fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold,
+            fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold,
             maxLines = 1, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f, fill = false),
         )
         Spacer(Modifier.width(6.dp))
-        Text(if (open) "▾" else "▸", color = quiet.copy(alpha = 0.6f), fontSize = 11.sp)
+        Text(if (open) "▾" else "▸", color = quiet.copy(alpha = 0.6f), fontSize = KeryxType.micro)
         Spacer(Modifier.weight(1f))
         TextButton(onClick = onMarkAll) {
-            Text("Mark read", fontSize = 12.sp)
+            Text("Mark read", fontSize = KeryxType.caption)
         }
     }
 }
@@ -1642,14 +1642,14 @@ private fun CompactRunRow(
                             }
                             Text(
                                 card.name,
-                                fontSize = 13.5.sp, fontWeight = FontWeight.Medium,
+                                fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
                                 color = onSurface.copy(alpha = if (row.health == CronHealth.PAUSED) 0.6f else 0.95f),
                                 maxLines = 1, overflow = TextOverflow.Ellipsis,
                             )
                         }
                         Text(
                             meta.joinToString(" · "),
-                            fontSize = 10.sp, fontFamily = FontFamily.Monospace,
+                            fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                             color = if (failed) KeryxStatus.bad else quiet.copy(alpha = 0.8f),
                             maxLines = 1, overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.padding(top = 1.dp),
@@ -1661,7 +1661,7 @@ private fun CompactRunRow(
                         Spacer(Modifier.width(6.dp))
                         Text(
                             "${row.unread}",
-                            fontSize = 10.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Monospace,
+                            fontSize = KeryxType.micro, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Monospace,
                             color = keryxAccentInk(),
                             modifier = Modifier
                                 .clip(RoundedCornerShape(KeryxRadius.chip))
@@ -1670,7 +1670,7 @@ private fun CompactRunRow(
                         )
                     }
                     Spacer(Modifier.width(6.dp))
-                    Text(if (open) "▾" else "▸", color = quiet.copy(alpha = 0.6f), fontSize = 11.sp)
+                    Text(if (open) "▾" else "▸", color = quiet.copy(alpha = 0.6f), fontSize = KeryxType.micro)
                 }
                 if (open) {
                     Column(Modifier.padding(start = 12.dp, end = 10.dp, bottom = 8.dp)) {
@@ -1685,7 +1685,7 @@ private fun CompactRunRow(
                         } else if (!failed) {
                             Text(
                                 "No transcripts on the gateway for this job.",
-                                fontSize = 11.sp, color = quiet.copy(alpha = 0.7f),
+                                fontSize = KeryxType.micro, color = quiet.copy(alpha = 0.7f),
                                 modifier = Modifier.padding(top = 4.dp),
                             )
                         }
@@ -1716,14 +1716,14 @@ private fun OpenedHeadline(card: CronJobCard, viewModel: ChatViewModel) {
     val title = d.title ?: return
     Text(
         title,
-        fontSize = 12.5.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+        fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
         maxLines = 2, overflow = TextOverflow.Ellipsis,
         modifier = Modifier.padding(top = 4.dp),
     )
     d.lead?.let {
         Text(
             it,
-            fontSize = 11.5.sp, lineHeight = 15.sp,
+            fontSize = KeryxType.caption, lineHeight = 15.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
             maxLines = 3, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 1.dp),

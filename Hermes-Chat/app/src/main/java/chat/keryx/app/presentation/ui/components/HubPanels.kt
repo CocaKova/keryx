@@ -88,7 +88,7 @@ internal fun PanelErrorLine(error: String?) {
     if (error == null) return
     Text(
         "⚠ $error",
-        fontSize = 11.sp,
+        fontSize = KeryxType.micro,
         color = MaterialTheme.colorScheme.error,
         modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
     )
@@ -98,7 +98,7 @@ internal fun PanelErrorLine(error: String?) {
 internal fun PanelLoading() {
     Text(
         "Asking the gateway…",
-        fontSize = 12.sp,
+        fontSize = KeryxType.caption,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
     )
@@ -151,11 +151,11 @@ internal fun StatusTab(
                         .background(accent.copy(alpha = 0.12f))
                         .padding(horizontal = 10.dp, vertical = 8.dp),
                 ) {
-                    Text("▶", fontSize = 12.sp, color = accent)
+                    Text("▶", fontSize = KeryxType.caption, color = accent)
                     Spacer(Modifier.width(8.dp))
                     Text(
                         "turn live — " + console.prompt.take(60),
-                        fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f),
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
@@ -182,13 +182,13 @@ internal fun StatusTab(
                 Text(
                     if (health == LinkHealth.UNREACHABLE) "Gateway unreachable — info unavailable"
                     else "Probing gateway…",
-                    fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else rows.forEach { (k, v) ->
                 Row(modifier = Modifier.padding(vertical = 3.dp)) {
-                    Text(k, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    Text(k, fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.width(86.dp))
-                    Text(v, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                    Text(v, fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
@@ -206,7 +206,7 @@ internal fun StatusTab(
                     f.contextPct?.let { pct ->
                         Row(verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(vertical = 3.dp)) {
-                            Text("Context", fontSize = 13.sp,
+                            Text("Context", fontSize = KeryxType.body,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.width(86.dp))
                             Box(
@@ -229,16 +229,16 @@ internal fun StatusTab(
                                 )
                             }
                             Spacer(Modifier.width(8.dp))
-                            Text("$pct%", fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                            Text("$pct%", fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                     f.latency?.let { lat ->
                         Row(modifier = Modifier.padding(vertical = 3.dp)) {
-                            Text("Latency", fontSize = 13.sp,
+                            Text("Latency", fontSize = KeryxType.body,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.width(86.dp))
-                            Text(lat, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                            Text(lat, fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
@@ -257,11 +257,11 @@ internal fun StatusTab(
                     modifier = Modifier.padding(vertical = 3.dp)) {
                     Box(Modifier.size(7.dp).clip(CircleShape).background(connStateColor(p.state)))
                     Spacer(Modifier.width(9.dp))
-                    Text(p.name, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface,
+                    Text(p.name, fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.width(120.dp))
                     Text(
                         p.state + (p.errorMessage.takeIf { it.isNotBlank() }?.let { " — $it" } ?: ""),
-                        fontSize = 11.sp,
+                        fontSize = KeryxType.micro,
                         color = if (p.errorMessage.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant
                                 else MaterialTheme.colorScheme.error,
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -276,12 +276,12 @@ internal fun StatusTab(
             item { SectionLabel("Models") }
             items(modelRows, key = { "model:" + it.id }) { m ->
                 Row(modifier = Modifier.padding(vertical = 3.dp)) {
-                    Text(m.id, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                    Text(m.id, fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f))
                     if (m.resolvesTo.isNotBlank() && m.resolvesTo != m.id) {
-                        Text("→ ${m.resolvesTo}", fontSize = 11.sp,
+                        Text("→ ${m.resolvesTo}", fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
@@ -312,19 +312,19 @@ internal fun StatusTab(
                         }
                         .padding(horizontal = 8.dp, vertical = 10.dp),
                 ) {
-                    Text(cmd, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                    Text(cmd, fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold,
                         color = if (haveRoom) accent else accent.copy(alpha = 0.4f),
                         fontFamily = FontFamily.Monospace,
                         modifier = Modifier.width(96.dp))
                     Column {
-                        Text(title, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface
+                        Text(title, fontSize = KeryxType.bodyLarge, color = MaterialTheme.colorScheme.onSurface
                             .copy(alpha = if (haveRoom) 1f else 0.45f))
-                        Text(desc, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(desc, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
             if (!haveRoom) {
-                Text(viewModel.lexicon.openOneFirst, fontSize = 11.sp,
+                Text(viewModel.lexicon.openOneFirst, fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 8.dp, top = 2.dp))
             }
@@ -354,13 +354,13 @@ internal fun JobsTab(viewModel: ChatViewModel) {
         ) {
             Text(
                 "Scheduled jobs the gateway runs on its own",
-                fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )
             TextButton(onClick = { createOpen = true }) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("New job", fontSize = 12.sp)
+                Text("New job", fontSize = KeryxType.caption)
             }
         }
         val jobs = panel.data
@@ -368,7 +368,7 @@ internal fun JobsTab(viewModel: ChatViewModel) {
             jobs == null -> PanelLoading()
             jobs.isEmpty() -> Text(
                 "No scheduled jobs — create one and the agent runs it on the cron you set.",
-                fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
             )
             else -> LazyColumn(
@@ -414,9 +414,9 @@ internal fun JobsTab(viewModel: ChatViewModel) {
     deleteTarget?.let { job ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Delete \"${job.name}\"?", fontSize = 16.sp) },
+            title = { Text("Delete \"${job.name}\"?", fontSize = KeryxType.titleLarge) },
             text = { Text("The schedule and its run history go with it. This can't be undone.",
-                fontSize = 13.sp) },
+                fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = { viewModel.hub.jobDelete(job.id); deleteTarget = null }) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
@@ -447,14 +447,14 @@ private fun JobCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             // Tap the job's identity to edit it (PATCH — the 1.20 verb); the icons keep their jobs.
             Column(Modifier.weight(1f).clickable(onClick = onEdit)) {
-                Text(job.name, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 2)
+                Text(job.name, fontSize = KeryxType.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 2)
                 Spacer(Modifier.height(3.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(job.scheduleDisplay, fontSize = 10.sp, fontFamily = FontFamily.Monospace,
+                    Text(job.scheduleDisplay, fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.tertiary)
                     nextRunEta(job)?.let {
                         Spacer(Modifier.width(8.dp))
-                        Text(it, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(it, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -478,7 +478,7 @@ private fun JobCard(
                     "last run ${job.lastStatus}" +
                         (job.lastError?.takeIf { it.isNotBlank() }?.let { " — ${it.take(60)}" } ?: "") +
                         if (job.repeatCompleted > 0) " · ${job.repeatCompleted} runs" else "",
-                    fontSize = 10.sp,
+                    fontSize = KeryxType.micro,
                     color = if (ok) MaterialTheme.colorScheme.onSurfaceVariant
                             else MaterialTheme.colorScheme.error,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -486,7 +486,7 @@ private fun JobCard(
             }
             if (!job.enabled) {
                 Spacer(Modifier.width(8.dp))
-                Text("paused", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("paused", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -521,7 +521,7 @@ private fun JobCreateDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text("New scheduled job", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("New scheduled job", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value = name, onValueChange = { name = it },
@@ -533,7 +533,7 @@ private fun JobCreateDialog(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Schedule (cron, e.g. 0 7 * * *)") },
                     singleLine = true,
-                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = 13.sp),
+                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = KeryxType.body),
                 )
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
@@ -545,11 +545,11 @@ private fun JobCreateDialog(
                     Spacer(Modifier.height(10.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("Deliver to this room", fontSize = 13.sp)
+                            Text("Deliver to this room", fontSize = KeryxType.body)
                             Text(
                                 if (toRoom) "Each run's result posts into the open chat"
                                 else "Runs quietly — results stay in the gateway log",
-                                fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         Switch(checked = toRoom, onCheckedChange = { toRoom = it })
@@ -588,7 +588,7 @@ private fun JobEditDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text("Edit job", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("Edit job", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value = name, onValueChange = { name = it },
@@ -600,7 +600,7 @@ private fun JobEditDialog(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Schedule (cron)") },
                     singleLine = true,
-                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = 13.sp),
+                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = KeryxType.body),
                 )
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
@@ -614,7 +614,7 @@ private fun JobEditDialog(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Deliver to (\"local\" or \"matrix:<room>\")") },
                     singleLine = true,
-                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp),
+                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = KeryxType.caption),
                 )
                 Spacer(Modifier.height(14.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -665,18 +665,18 @@ internal fun SessionsTab(viewModel: ChatViewModel, closeSpace: () -> Unit = {}) 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 "What the agent has been doing — every persisted session, newest first",
-                fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f).padding(start = 20.dp, top = 4.dp, bottom = 4.dp),
             )
             // The 1.8 pruner: dry-run preview + count-restating confirm + app-lock gate.
-            TextButton(onClick = { pruneOpen = true }) { Text("Prune…", fontSize = 12.sp) }
+            TextButton(onClick = { pruneOpen = true }) { Text("Prune…", fontSize = KeryxType.caption) }
         }
         val sessions = panel.data
         when {
             sessions == null -> PanelLoading()
             sessions.isEmpty() -> Text(
                 "No sessions on record.",
-                fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
             )
             else -> LazyColumn(
@@ -708,12 +708,12 @@ private fun SessionCard(s: HubSession, onClick: () -> Unit) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 s.title?.takeIf { it.isNotBlank() } ?: s.model.ifBlank { s.id },
-                fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
                 modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
             Text(
                 s.source,
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
@@ -730,12 +730,12 @@ private fun SessionCard(s: HubSession, onClick: () -> Unit) {
                 "${compactCount(s.inputTokens)} in · ${compactCount(s.outputTokens)} out",
                 epochAgo(s.lastActive),
             ).joinToString(" · "),
-            fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1, overflow = TextOverflow.Ellipsis,
         )
         if (s.preview.isNotBlank()) {
             Spacer(Modifier.height(4.dp))
-            Text(s.preview, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Text(s.preview, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
     }
@@ -771,7 +771,7 @@ internal fun SessionTranscript(
         var title by remember { mutableStateOf(session.title.orEmpty()) }
         AlertDialog(
             onDismissRequest = { renameOpen = false },
-            title = { Text("Rename session", fontSize = 16.sp) },
+            title = { Text("Rename session", fontSize = KeryxType.titleLarge) },
             text = {
                 OutlinedTextField(
                     value = title, onValueChange = { title = it },
@@ -794,10 +794,10 @@ internal fun SessionTranscript(
     if (deleteOpen) {
         AlertDialog(
             onDismissRequest = { deleteOpen = false },
-            title = { Text("Delete this session?", fontSize = 16.sp) },
+            title = { Text("Delete this session?", fontSize = KeryxType.titleLarge) },
             text = { Text(
                 "The transcript (${session.messageCount} messages) goes with it. This can't be undone.",
-                fontSize = 13.sp) },
+                fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = {
                     deleteOpen = false
@@ -816,9 +816,9 @@ internal fun SessionTranscript(
             }
             Column {
                 Text(session.title?.takeIf { it.isNotBlank() } ?: session.model,
-                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                    fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(session.id, fontSize = 10.sp, fontFamily = FontFamily.Monospace,
+                Text(session.id, fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -832,10 +832,10 @@ internal fun SessionTranscript(
                 viewModel.hub.sessionFork(session.id) { fork ->
                     if (fork != null) onForked?.invoke(fork)
                 }
-            }) { Text("Fork", fontSize = 12.sp) }
-            TextButton(onClick = { renameOpen = true }) { Text("Rename", fontSize = 12.sp) }
+            }) { Text("Fork", fontSize = KeryxType.caption) }
+            TextButton(onClick = { renameOpen = true }) { Text("Rename", fontSize = KeryxType.caption) }
             TextButton(onClick = { deleteOpen = true }) {
-                Text("Delete", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                Text("Delete", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
             }
         }
         when {
@@ -854,7 +854,7 @@ internal fun SessionTranscript(
                                 m.role == "tool" && m.toolName.isNotBlank() -> "tool · ${m.toolName}"
                                 else -> m.role
                             },
-                            fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
+                            fontSize = KeryxType.micro, fontWeight = FontWeight.SemiBold,
                             fontFamily = FontFamily.Monospace,
                             color = when (m.role) {
                                 "user" -> MaterialTheme.colorScheme.primary
@@ -878,13 +878,13 @@ internal fun SessionTranscript(
                                     inlineReasoning = true,
                                 )
                             } else {
-                                Text(m.content, fontSize = 12.sp, maxLines = 8,
+                                Text(m.content, fontSize = KeryxType.caption, maxLines = 8,
                                     overflow = TextOverflow.Ellipsis)
                             }
                         }
                         if (m.toolCallCount > 0) {
                             Text("→ ${m.toolCallCount} tool call${if (m.toolCallCount > 1) "s" else ""}",
-                                fontSize = 10.sp, color = MaterialTheme.colorScheme.tertiary)
+                                fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.tertiary)
                         }
                     }
                 }
@@ -904,8 +904,8 @@ internal fun SessionTranscript(
                 value = resumePrompt,
                 onValueChange = { resumePrompt = it },
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Continue this session…", fontSize = 13.sp) },
-                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
+                placeholder = { Text("Continue this session…", fontSize = KeryxType.body) },
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = KeryxType.body),
                 enabled = !console.live,
                 maxLines = 4,
             )
@@ -975,8 +975,8 @@ internal fun SkillsTab(viewModel: ChatViewModel) {
                     OutlinedTextField(
                         value = filter, onValueChange = { filter = it },
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text("Filter ${skills.size} skills…", fontSize = 12.sp) },
-                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
+                        placeholder = { Text("Filter ${skills.size} skills…", fontSize = KeryxType.caption) },
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = KeryxType.body),
                         singleLine = true,
                     )
                     IconButton(onClick = { creating = true }) {
@@ -995,7 +995,7 @@ internal fun SkillsTab(viewModel: ChatViewModel) {
                         Text(
                             if (showTrash) "← Back to ${skills.size} skills"
                             else "Trash (${trash.size})",
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                         )
                     }
                 }
@@ -1014,9 +1014,9 @@ internal fun SkillsTab(viewModel: ChatViewModel) {
                         items(shown, key = { it.name }) { s ->
                             // Tap opens the Skill Forge (1.8): full SKILL.md, edit, save, delete.
                             Column(Modifier.fillMaxWidth().clickable { viewModel.hub.openSkillForge(s.name) }) {
-                                Text(s.name, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                Text(s.name, fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
                                 if (s.description.isNotBlank()) {
-                                    Text(s.description, fontSize = 11.sp,
+                                    Text(s.description, fontSize = KeryxType.micro,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 3, overflow = TextOverflow.Ellipsis)
                                 }
@@ -1046,27 +1046,27 @@ private fun SkillTrashList(
         items(trash, key = { it.id }) { t ->
             var confirmPurge by remember(t.id) { mutableStateOf(false) }
             Column(Modifier.fillMaxWidth()) {
-                Text(t.name, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text(t.name, fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
                 Text(
                     listOfNotNull(t.category, "deleted ${t.deletedAt}").joinToString(" · "),
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     if (t.restorable) {
                         TextButton(onClick = { viewModel.hub.skillRestore(t.id, t.name) }) {
-                            Text("Restore", fontSize = 12.sp)
+                            Text("Restore", fontSize = KeryxType.caption)
                         }
                     } else {
                         Text(
                             "a skill by that name exists again",
-                            fontSize = 11.sp,
+                            fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 14.dp),
                         )
                     }
                     TextButton(onClick = { confirmPurge = true }) {
-                        Text("Purge", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                        Text("Purge", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
                     }
                 }
             }
@@ -1074,8 +1074,8 @@ private fun SkillTrashList(
                 AlertDialog(
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
                     onDismissRequest = { confirmPurge = false },
-                    title = { Text("Purge “${t.name}”?", fontSize = 16.sp) },
-                    text = { Text("This deletes it from disk for good. There is no undo.", fontSize = 13.sp) },
+                    title = { Text("Purge “${t.name}”?", fontSize = KeryxType.titleLarge) },
+                    text = { Text("This deletes it from disk for good. There is no undo.", fontSize = KeryxType.body) },
                     confirmButton = {
                         TextButton(onClick = {
                             confirmPurge = false
@@ -1110,24 +1110,24 @@ private fun NewSkillDialog(viewModel: ChatViewModel, onClose: () -> Unit) {
     AlertDialog(
         shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
         onDismissRequest = { if (!saving) onClose() },
-        title = { Text("New skill", fontSize = 16.sp) },
+        title = { Text("New skill", fontSize = KeryxType.titleLarge) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = name, onValueChange = { name = it },
-                    label = { Text("Name", fontSize = 12.sp) },
+                    label = { Text("Name", fontSize = KeryxType.caption) },
                     singleLine = true,
-                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
+                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = KeryxType.body),
                 )
                 OutlinedTextField(
                     value = content, onValueChange = { content = it },
-                    label = { Text("SKILL.md", fontSize = 12.sp) },
+                    label = { Text("SKILL.md", fontSize = KeryxType.caption) },
                     modifier = Modifier.height(200.dp),
                     textStyle = androidx.compose.ui.text.TextStyle(
-                        fontSize = 12.sp, fontFamily = FontFamily.Monospace),
+                        fontSize = KeryxType.caption, fontFamily = FontFamily.Monospace),
                 )
                 status?.let {
-                    Text(it, fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
+                    Text(it, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.error)
                 }
             }
         },
@@ -1161,7 +1161,7 @@ internal fun ToolsTab(viewModel: ChatViewModel) {
             if (hub?.canToggle == true) "Tool groups for the agent's chat platform — switches persist"
             // Legacy gateway: read-only, and only its own (api_server) platform surface exists.
             else "Tool groups as the API platform sees them",
-            fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
         )
         when {
@@ -1188,10 +1188,10 @@ internal fun ToolsTab(viewModel: ChatViewModel) {
                                     else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)))
                                 Spacer(Modifier.width(9.dp))
                             }
-                            Text(t.label.ifBlank { t.name }, fontSize = 13.sp,
+                            Text(t.label.ifBlank { t.name }, fontSize = KeryxType.body,
                                 fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                             if (!t.configured) {
-                                Text("needs keys", fontSize = 10.sp,
+                                Text("needs keys", fontSize = KeryxType.micro,
                                     color = MaterialTheme.colorScheme.error)
                             }
                             if (hub.canToggle) {
@@ -1208,7 +1208,7 @@ internal fun ToolsTab(viewModel: ChatViewModel) {
                             Spacer(Modifier.height(4.dp))
                             Text(
                                 t.tools.joinToString(", "),
-                                fontSize = 10.sp, fontFamily = FontFamily.Monospace,
+                                fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 4, overflow = TextOverflow.Ellipsis,
                             )

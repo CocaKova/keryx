@@ -98,7 +98,7 @@ fun SkillForgeSheet(
                     (d.category?.let { "$it/" } ?: "") + d.name +
                         if (d.readonly) " · read-only" else ""
                 } ?: skillName,
-                fontSize = 11.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -144,7 +144,7 @@ fun SkillForgeSheet(
                     statusLine?.let {
                         Text(
                             it,
-                            fontSize = 11.sp,
+                            fontSize = KeryxType.micro,
                             color = if (editing) MaterialTheme.colorScheme.error
                                     else MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.padding(bottom = 6.dp),
@@ -155,13 +155,13 @@ fun SkillForgeSheet(
                         loadError != null -> Text(
                             "Couldn't load skill: $loadError",
                             color = MaterialTheme.colorScheme.error,
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             modifier = Modifier.padding(vertical = 20.dp),
                         )
                         d == null -> Text(
                             "Loading…",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             modifier = Modifier.padding(vertical = 20.dp),
                         )
                         editing -> OutlinedTextField(
@@ -169,7 +169,7 @@ fun SkillForgeSheet(
                             onValueChange = { draft = it },
                             modifier = Modifier.fillMaxSize().padding(bottom = 12.dp),
                             textStyle = androidx.compose.ui.text.TextStyle(
-                                fontSize = 12.sp,
+                                fontSize = KeryxType.caption,
                                 fontFamily = FontFamily.Monospace,
                             ),
                         )
@@ -187,16 +187,16 @@ fun SkillForgeSheet(
                                 Spacer(Modifier.height(16.dp))
                                 Text(
                                     "Sidecar files",
-                                    fontSize = 11.sp,
+                                    fontSize = KeryxType.micro,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 d.files.forEach { f ->
                                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        Text("·", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("·", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Text(
                                             f,
-                                            fontSize = 11.sp,
+                                            fontSize = KeryxType.micro,
                                             fontFamily = FontFamily.Monospace,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
@@ -214,12 +214,12 @@ fun SkillForgeSheet(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete this skill?", fontSize = 16.sp) },
+            title = { Text("Delete this skill?", fontSize = KeryxType.titleLarge) },
             text = {
                 Text(
                     "“${d?.name ?: skillName}” moves to the trash and stops loading into the " +
                         "agent. You can restore it from Skills ▸ Trash until you purge it.",
-                    fontSize = 13.sp,
+                    fontSize = KeryxType.body,
                 )
             },
             confirmButton = {
@@ -240,8 +240,8 @@ fun SkillForgeSheet(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmDiscard = false },
-            title = { Text("Discard changes?", fontSize = 16.sp) },
-            text = { Text("The edit hasn't been saved to the gateway.", fontSize = 13.sp) },
+            title = { Text("Discard changes?", fontSize = KeryxType.titleLarge) },
+            text = { Text("The edit hasn't been saved to the gateway.", fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = { confirmDiscard = false; onDismiss() }) {
                     Text("Discard", color = MaterialTheme.colorScheme.error)

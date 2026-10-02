@@ -162,7 +162,7 @@ fun BotsSpace(
                 Text(
                     "No profiles on this gateway yet.\nTap + to make the first bot.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 13.sp, lineHeight = 19.sp,
+                    fontSize = KeryxType.body, lineHeight = 19.sp,
                     modifier = Modifier.padding(32.dp),
                 )
             }
@@ -176,7 +176,7 @@ fun BotsSpace(
                             value = query,
                             onValueChange = { query = it },
                             singleLine = true,
-                            placeholder = { Text("Search bots", fontSize = 13.sp) },
+                            placeholder = { Text("Search bots", fontSize = KeryxType.body) },
                             leadingIcon = { Icon(KeryxGlyphs.Search, contentDescription = null, modifier = Modifier.size(16.dp)) },
                             shape = RoundedCornerShape(KeryxRadius.field),
                             modifier = Modifier.fillMaxWidth(),
@@ -252,7 +252,7 @@ private fun ActiveNowStrip(active: List<BotProfile>, viewModel: ChatViewModel, o
         Spacer(Modifier.width(8.dp))
         Text(
             "ACTIVE NOW",
-            fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.SemiBold,
+            fontSize = KeryxType.micro, letterSpacing = 1.5.sp, fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.width(10.dp))
@@ -269,7 +269,7 @@ private fun ActiveNowStrip(active: List<BotProfile>, viewModel: ChatViewModel, o
             ) {
                 BotFace(bot = bot, viewModel = viewModel, size = 18.dp, working = true)
                 Spacer(Modifier.width(6.dp))
-                Text(bot.label, fontSize = 12.sp, color = light.accent, fontWeight = FontWeight.Medium, maxLines = 1)
+                Text(bot.label, fontSize = KeryxType.caption, color = light.accent, fontWeight = FontWeight.Medium, maxLines = 1)
             }
         }
     }
@@ -352,7 +352,7 @@ private fun BotRow(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         bot.label,
-                        fontSize = 15.sp,
+                        fontSize = KeryxType.title,
                         fontWeight = if (unread) FontWeight.SemiBold else FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (bot.hidden) 0.55f else 1f),
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -370,7 +370,7 @@ private fun BotRow(
                     ?: "Tap to start ${bot.label}'s chat"
                 Text(
                     line,
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
@@ -379,7 +379,7 @@ private fun BotRow(
                     if (bot.model.isNotBlank()) { if (isNotEmpty()) append(" · "); append(bot.model) }
                     if (!bot.managed) { if (isNotEmpty()) append(" · "); append("not armed") }
                 }
-                if (meta.isNotEmpty()) Text(meta, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), maxLines = 1)
+                if (meta.isNotEmpty()) Text(meta, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), maxLines = 1)
             }
             if (unread) {
                 Spacer(Modifier.width(8.dp))
@@ -411,7 +411,7 @@ private fun Chip(text: String, color: Color) {
         // accent. The ground is the light, the label is ink pressed out of it — and on the
         // void keryxAccentInk hands the hue straight back, so dark mode is unchanged.
         color = keryxAccentInk(color),
-        fontSize = 9.sp,
+        fontSize = KeryxType.micro,
         maxLines = 1,
         modifier = Modifier
             .clip(RoundedCornerShape(KeryxRadius.chip))
@@ -433,7 +433,7 @@ private fun MessagingCard(armed: Boolean, protocolOn: Boolean, managed: Int, tot
             Spacer(Modifier.width(8.dp))
             Text(
                 if (armed) "Bot-to-bot messaging is on" else "Bot-to-bot messaging is off",
-                fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold,
             )
         }
         Spacer(Modifier.height(4.dp))
@@ -443,12 +443,12 @@ private fun MessagingCard(armed: Boolean, protocolOn: Boolean, managed: Int, tot
                 armed -> "$managed of $total profiles carry the Bot Mode block. Their Bot Chats can @mention each other with message_agent; a reply lands as a message from that bot."
                 else -> "Arm it once and every Bot Chat gets the message_agent tool: bots can hand work to each other by @name, and replies arrive attributed. Regular sessions are untouched."
             },
-            fontSize = 11.sp, lineHeight = 15.sp,
+            fontSize = KeryxType.micro, lineHeight = 15.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (protocolOn && managed < total) {
             TextButton(onClick = onEnable, enabled = !busy) {
-                Text(if (busy) "Arming…" else if (armed) "Arm the remaining ${total - managed}" else "Turn on bot messaging", fontSize = 12.sp)
+                Text(if (busy) "Arming…" else if (armed) "Arm the remaining ${total - managed}" else "Turn on bot messaging", fontSize = KeryxType.caption)
             }
         }
     }
@@ -492,7 +492,7 @@ private fun BotEditSheet(
                                 slug.isNotBlank() && slug != name.trim() -> "Profile: $slug"
                                 else -> "The profile's name — lowercase, dashes ok"
                             },
-                            fontSize = 11.sp,
+                            fontSize = KeryxType.micro,
                         )
                     },
                     isError = taken,
@@ -505,7 +505,7 @@ private fun BotEditSheet(
             OutlinedTextField(
                 value = title, onValueChange = { title = it },
                 label = { Text("Title") },
-                supportingText = { Text("What the roster calls it (\"Research Buddy\") — also its @tag", fontSize = 11.sp) },
+                supportingText = { Text("What the roster calls it (\"Research Buddy\") — also its @tag", fontSize = KeryxType.micro) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -513,7 +513,7 @@ private fun BotEditSheet(
             OutlinedTextField(
                 value = role, onValueChange = { role = it },
                 label = { Text("Role") },
-                supportingText = { Text("One line teammates read before choosing whom to message", fontSize = 11.sp) },
+                supportingText = { Text("One line teammates read before choosing whom to message", fontSize = KeryxType.micro) },
                 minLines = 2, maxLines = 4,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -529,13 +529,13 @@ private fun BotEditSheet(
                 }
                 Text(
                     if (cloneFrom == null) "Bundled skills, a clean memory." else "Copies ${existing.firstOrNull { it.name == cloneFrom }?.label}'s config, skills and SOUL.",
-                    fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
             error?.let {
                 Spacer(Modifier.height(6.dp))
-                Text(it, color = KeryxStatus.bad, fontSize = 12.sp)
+                Text(it, color = KeryxStatus.bad, fontSize = KeryxType.caption)
             }
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -583,7 +583,7 @@ private fun ClonePill(label: String, selected: Boolean, onClick: () -> Unit) {
     ) {
         Text(
             label,
-            fontSize = 12.sp,
+            fontSize = KeryxType.caption,
             color = if (selected) keryxAccentInk(accent) else MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -602,19 +602,19 @@ private fun BotRoutinesSheet(bot: BotProfile, viewModel: ChatViewModel, onOpenRu
             if (jobs.isEmpty()) {
                 Text(
                     "No routines yet. Ask ${bot.label} in its chat to schedule one — a job named \"${BotRoster.routineTag(bot.name)} …\" shows up here and runs in its own chat history.",
-                    fontSize = 12.sp, lineHeight = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = KeryxType.caption, lineHeight = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
                 jobs.forEach { job ->
                     KeryxCard(tint = if (job.enabled) null else KeryxStatus.idle) {
-                        Text(BotRoster.routineLabel(job.name), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Text(BotRoster.routineLabel(job.name), fontSize = KeryxType.bodyLarge, fontWeight = FontWeight.Medium)
                         Text(
                             buildString {
                                 append(job.scheduleDisplay)
                                 if (!job.enabled) append(" · paused")
                                 job.nextRunAt?.takeIf { it.isNotBlank() }?.let { append(" · next ").append(it) }
                             },
-                            fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Spacer(Modifier.height(6.dp))

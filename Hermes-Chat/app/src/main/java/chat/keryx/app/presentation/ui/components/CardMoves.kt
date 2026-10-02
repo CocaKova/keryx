@@ -134,7 +134,7 @@ private fun MoveChip(label: String, primary: Boolean, destructive: Boolean, onCl
     val ink: Color = if (primary && !destructive) contrastColorFor(hue) else keryxAccentInk(hue)
     Text(
         label,
-        fontSize = 12.sp,
+        fontSize = KeryxType.caption,
         fontWeight = if (primary) FontWeight.SemiBold else FontWeight.Normal,
         maxLines = 1,
         softWrap = false,
@@ -163,11 +163,11 @@ private fun MoveDialog(
             Column(Modifier.padding(20.dp)) {
                 KeryxSectionHeader(move.label.removeSuffix("…"))
                 Spacer(Modifier.height(8.dp))
-                Text(move.explain, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(move.explain, fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (move == CardMove.REASSIGN) {
                     Spacer(Modifier.height(12.dp))
                     if (profiles.isEmpty()) {
-                        Text("No other profile to hand it to.", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                        Text("No other profile to hand it to.", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
                     }
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -177,7 +177,7 @@ private fun MoveDialog(
                             val selected = p == assignee
                             Text(
                                 p.replaceFirstChar { it.uppercase() },
-                                fontSize = 12.sp,
+                                fontSize = KeryxType.caption,
                                 maxLines = 1,
                                 softWrap = false,
                                 color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
@@ -206,10 +206,10 @@ private fun MoveDialog(
                                     move == CardMove.DONE -> "What got done (optional)"
                                     else -> "A note on the card (optional)"
                                 },
-                                fontSize = 12.sp,
+                                fontSize = KeryxType.caption,
                             )
                         },
-                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = KeryxType.body),
                         shape = RoundedCornerShape(KeryxRadius.field),
                         minLines = 2,
                     )

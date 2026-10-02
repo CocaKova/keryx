@@ -89,11 +89,11 @@ fun ControlsTab(viewModel: ChatViewModel) {
     swapTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { swapTarget = null },
-            title = { Text("Swap to \"$target\"?", fontSize = 16.sp) },
+            title = { Text("Swap to \"$target\"?", fontSize = KeryxType.titleLarge) },
             text = { Text(
                 "The gateway runs the operator's swap command — the brain (and possibly the " +
                     "gateway itself) restarts. Chats pause until the new brain is up.",
-                fontSize = 13.sp) },
+                fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = { viewModel.hub.brainSelect(target); swapTarget = null }) {
                     Text("Swap")
@@ -128,7 +128,7 @@ fun ControlsTab(viewModel: ChatViewModel) {
                     Text(
                         if (c.mode == "binary") "This brain's thinking is an on/off switch."
                         else "How hard the brain thinks before answering.",
-                        fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(6.dp))
                     ChoiceChips(
@@ -139,7 +139,7 @@ fun ControlsTab(viewModel: ChatViewModel) {
                     )
                     Text(
                         "applies next session",
-                        fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
                     )
                 }
@@ -149,10 +149,10 @@ fun ControlsTab(viewModel: ChatViewModel) {
                     SectionLabel("Brain")
                     if (row.active.isNotBlank()) {
                         Row(modifier = Modifier.padding(bottom = 4.dp)) {
-                            Text("Active", fontSize = 13.sp,
+                            Text("Active", fontSize = KeryxType.body,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.width(86.dp))
-                            Text(row.active, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                            Text(row.active, fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
                                 fontFamily = FontFamily.Monospace,
                                 maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
@@ -171,9 +171,9 @@ fun ControlsTab(viewModel: ChatViewModel) {
                             .clickable { swapTarget = b.name }
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                     ) {
-                        Text(b.name, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Text(b.name, fontSize = KeryxType.body, fontWeight = FontWeight.Medium)
                         if (b.description.isNotBlank()) {
-                            Text(b.description, fontSize = 11.sp,
+                            Text(b.description, fontSize = KeryxType.micro,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 2, overflow = TextOverflow.Ellipsis)
                         }
@@ -211,12 +211,12 @@ fun ControlsTab(viewModel: ChatViewModel) {
                 )
                 is ControlRow.NoMatch -> Text(
                     "Nothing matches \"${row.query}\".",
-                    fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 12.dp),
                 )
                 is ControlRow.NoKnobs -> Text(
                     "This gateway doesn't offer remote controls (keryx-stream plugin 1.21+).",
-                    fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 12.dp),
                 )
 
@@ -232,7 +232,7 @@ fun ControlsTab(viewModel: ChatViewModel) {
                     }
                     Text(
                         "Everything above, plus every setting no knob covers. Backed up before each save.",
-                        fontSize = 10.sp,
+                        fontSize = KeryxType.micro,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
                     )
@@ -357,7 +357,7 @@ private fun KnobsHeader(
                 )
             }
             TextButton(onClick = onToggleAll) {
-                Text(if (anyExpanded) "Collapse all" else "Expand all", fontSize = 11.sp)
+                Text(if (anyExpanded) "Collapse all" else "Expand all", fontSize = KeryxType.micro)
             }
         }
         OutlinedTextField(
@@ -365,13 +365,13 @@ private fun KnobsHeader(
             onValueChange = onQuery,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = KeryxType.body),
             placeholder = {
-                Text("Find a setting…", fontSize = 13.sp,
+                Text("Find a setting…", fontSize = KeryxType.body,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             },
             trailingIcon = if (query.isBlank()) null else ({
-                TextButton(onClick = { onQuery("") }) { Text("Clear", fontSize = 11.sp) }
+                TextButton(onClick = { onQuery("") }) { Text("Clear", fontSize = KeryxType.micro) }
             }),
             shape = RoundedCornerShape(12.dp),
         )
@@ -385,7 +385,7 @@ private fun KnobsHeader(
                 val shape = RoundedCornerShape(9.dp)
                 Text(
                     "$name · $count",
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .clip(shape)
@@ -419,20 +419,20 @@ private fun GroupHeader(name: String, count: Int, expanded: Boolean, onToggle: (
     ) {
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(name, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                Text(name, fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold,
                     color = if (expanded) MaterialTheme.colorScheme.primary else Color.Unspecified)
                 Spacer(Modifier.width(8.dp))
-                Text("$count", fontSize = 11.sp, fontFamily = FontFamily.Monospace,
+                Text("$count", fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             GROUP_BLURBS[name]?.let {
-                Text(it, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                Text(it, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
         Text(
             if (expanded) "▾" else "▸",
-            fontSize = 14.sp,
+            fontSize = KeryxType.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -445,17 +445,17 @@ private fun KnobRow(knob: ConfigKnob, busy: Boolean, onSet: (JsonPrimitive) -> U
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(knob.label, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    Text(knob.label, fontSize = KeryxType.body, fontWeight = FontWeight.Medium)
                     if (knob.locked) {
                         Spacer(Modifier.width(6.dp))
-                        Text("locked", fontSize = 9.sp,
+                        Text("locked", fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Spacer(Modifier.width(6.dp))
-                    Text(knob.applies, fontSize = 9.sp,
+                    Text(knob.applies, fontSize = KeryxType.micro,
                         color = MaterialTheme.colorScheme.tertiary)
                 }
-                Text(knob.description, fontSize = 11.sp,
+                Text(knob.description, fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (knob.kind == "bool") {
@@ -484,7 +484,7 @@ private fun KnobRow(knob: ConfigKnob, busy: Boolean, onSet: (JsonPrimitive) -> U
                         onValueChange = { text = it.filter { ch -> ch.isDigit() } },
                         modifier = Modifier.width(110.dp),
                         textStyle = androidx.compose.ui.text.TextStyle(
-                            fontSize = 13.sp, fontFamily = FontFamily.Monospace),
+                            fontSize = KeryxType.body, fontFamily = FontFamily.Monospace),
                         singleLine = true,
                         enabled = !knob.locked,
                     )
@@ -493,10 +493,10 @@ private fun KnobRow(knob: ConfigKnob, busy: Boolean, onSet: (JsonPrimitive) -> U
                         enabled = !knob.locked && !busy &&
                             text.toIntOrNull() != null && text != knob.value,
                         onClick = { text.toIntOrNull()?.let { onSet(JsonPrimitive(it)) } },
-                    ) { Text("Save", fontSize = 12.sp) }
+                    ) { Text("Save", fontSize = KeryxType.caption) }
                     val bounds = listOfNotNull(knob.min, knob.max)
                     if (bounds.size == 2) {
-                        Text("${knob.min}–${knob.max}", fontSize = 10.sp,
+                        Text("${knob.min}–${knob.max}", fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
@@ -513,7 +513,7 @@ private fun KnobRow(knob: ConfigKnob, busy: Boolean, onSet: (JsonPrimitive) -> U
                         },
                         modifier = Modifier.width(110.dp),
                         textStyle = androidx.compose.ui.text.TextStyle(
-                            fontSize = 13.sp, fontFamily = FontFamily.Monospace),
+                            fontSize = KeryxType.body, fontFamily = FontFamily.Monospace),
                         singleLine = true,
                         enabled = !knob.locked,
                     )
@@ -522,10 +522,10 @@ private fun KnobRow(knob: ConfigKnob, busy: Boolean, onSet: (JsonPrimitive) -> U
                         enabled = !knob.locked && !busy &&
                             text.toDoubleOrNull() != null && text != knob.value,
                         onClick = { text.toDoubleOrNull()?.let { onSet(JsonPrimitive(it)) } },
-                    ) { Text("Save", fontSize = 12.sp) }
+                    ) { Text("Save", fontSize = KeryxType.caption) }
                     val bounds = listOfNotNull(knob.minF, knob.maxF)
                     if (bounds.size == 2) {
-                        Text("${knob.minF}–${knob.maxF}", fontSize = 10.sp,
+                        Text("${knob.minF}–${knob.maxF}", fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
@@ -554,7 +554,7 @@ private fun ChoiceChips(
             val shape = RoundedCornerShape(9.dp)
             Text(
                 labels[choice] ?: choice,
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
                 fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
                 color = if (active) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -593,29 +593,29 @@ internal fun GatewayLogViewer(viewModel: ChatViewModel, onDismiss: () -> Unit) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
             Column(Modifier.fillMaxSize().padding(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("GATEWAY LOG", fontSize = 12.sp, letterSpacing = 3.sp,
+                    Text("GATEWAY LOG", fontSize = KeryxType.caption, letterSpacing = 3.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.weight(1f))
                     listOf(120, 300, 500).forEach { n ->
                         TextButton(onClick = { text = null; lines = n }) {
-                            Text("$n", fontSize = 12.sp,
+                            Text("$n", fontSize = KeryxType.caption,
                                 fontWeight = if (lines == n) FontWeight.Bold else FontWeight.Normal)
                         }
                     }
-                    TextButton(onClick = onDismiss) { Text("Close", fontSize = 12.sp) }
+                    TextButton(onClick = onDismiss) { Text("Close", fontSize = KeryxType.caption) }
                 }
                 when {
-                    error != null -> Text("⚠ $error", fontSize = 12.sp,
+                    error != null -> Text("⚠ $error", fontSize = KeryxType.caption,
                         color = MaterialTheme.colorScheme.error)
-                    text == null -> Text("Fetching…", fontSize = 12.sp,
+                    text == null -> Text("Fetching…", fontSize = KeryxType.caption,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     else -> {
                         val scroll = rememberScrollState()
                         LaunchedEffect(text) { scroll.scrollTo(scroll.maxValue) }
                         Text(
                             text.orEmpty(),
-                            fontSize = 10.sp,
+                            fontSize = KeryxType.micro,
                             fontFamily = FontFamily.Monospace,
                             lineHeight = 14.sp,
                             modifier = Modifier

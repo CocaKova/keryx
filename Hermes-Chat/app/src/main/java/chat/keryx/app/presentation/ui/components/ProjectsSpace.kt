@@ -141,7 +141,7 @@ fun ProjectsSpace(
                     )
                     Spacer(Modifier.width(9.dp))
                     Text(
-                        "New project", fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                        "New project", fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
@@ -153,7 +153,7 @@ fun ProjectsSpace(
                         else "No projects yet.\nA project is a workspace folder — sessions " +
                             "whose work lives there group under it.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 13.sp,
+                        fontSize = KeryxType.body,
                         lineHeight = 19.sp,
                         modifier = Modifier.padding(16.dp),
                     )
@@ -230,7 +230,7 @@ private fun ProjectCard(
             Text(
                 text = node.label,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -242,7 +242,7 @@ private fun ProjectCard(
                     // A discovered repo, not a project someone declared — labeled so the
                     // difference stays visible instead of silently blended.
                     "auto",
-                    fontSize = 9.sp,
+                    fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                 )
@@ -258,7 +258,7 @@ private fun ProjectCard(
         Text(
             text = meta,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
-            fontSize = 10.sp,
+            fontSize = KeryxType.micro,
             fontFamily = FontFamily.Monospace,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -269,7 +269,7 @@ private fun ProjectCard(
             Text(
                 text = s.name,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                fontSize = 11.sp,
+                fontSize = KeryxType.micro,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 3.dp),
@@ -303,14 +303,14 @@ private fun ProjectCard(
         AlertDialog(
             shape = RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete ${node.label}?", fontSize = 16.sp) },
+            title = { Text("Delete ${node.label}?", fontSize = KeryxType.titleLarge) },
             text = {
                 Text(
                     // The reassurance that makes this safe to tap: a project is a grouping
                     // row, and deleting it is not deleting anyone's work.
                     "Only the project row goes. The folder on the gateway and every session " +
                         "in it stay exactly where they are.",
-                    fontSize = 13.sp,
+                    fontSize = KeryxType.body,
                     lineHeight = 18.sp,
                 )
             },
@@ -345,7 +345,7 @@ private fun ProjectDetail(
                 node.path?.let {
                     Text(
                         it,
-                        fontSize = 10.sp,
+                        fontSize = KeryxType.micro,
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                         maxLines = 1,
@@ -364,7 +364,7 @@ private fun ProjectDetail(
                 Text(
                     if (hydrating) "Loading sessions…" else "No sessions in this workspace yet.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 13.sp,
+                    fontSize = KeryxType.body,
                     modifier = Modifier.padding(16.dp),
                 )
             }
@@ -405,7 +405,7 @@ private fun ProjectDetail(
                         Text(
                             text = session.name,
                             color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 13.sp,
+                            fontSize = KeryxType.body,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -421,7 +421,7 @@ private fun ProjectDetail(
                         Text(
                             text = meta,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
-                            fontSize = 10.sp,
+                            fontSize = KeryxType.micro,
                             fontFamily = FontFamily.Monospace,
                             maxLines = 1,
                         )
@@ -446,7 +446,7 @@ private fun CreateProjectDialog(
     AlertDialog(
         shape = RoundedCornerShape(KeryxRadius.sheet),
         onDismissRequest = { if (!busy) onDismiss() },
-        title = { Text("New project", fontSize = 16.sp) },
+        title = { Text("New project", fontSize = KeryxType.titleLarge) },
         text = {
             Column {
                 OutlinedTextField(
@@ -468,14 +468,14 @@ private fun CreateProjectDialog(
                     "Sessions whose work lives in this folder belong to the project; " +
                         "“Move to project” re-homes a session into it. The folder has to " +
                         "exist on the gateway already — make it there first.",
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     lineHeight = 15.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp),
                 )
                 err?.let {
                     Text(
-                        it, color = MaterialTheme.colorScheme.error, fontSize = 11.sp,
+                        it, color = MaterialTheme.colorScheme.error, fontSize = KeryxType.micro,
                         modifier = Modifier.padding(top = 6.dp),
                     )
                 }
@@ -538,7 +538,7 @@ private fun TalariaLabel(
     text: String,
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-    size: androidx.compose.ui.unit.TextUnit = 10.sp,
+    size: androidx.compose.ui.unit.TextUnit = KeryxType.micro,
     tracking: androidx.compose.ui.unit.TextUnit = 1.4.sp,
     weight: FontWeight = FontWeight.SemiBold,
     maxLines: Int = 1,

@@ -169,7 +169,7 @@ fun ArchiveScreen(
                 ) {
                     Text(
                         t.label,
-                        fontSize = 12.sp,
+                        fontSize = KeryxType.caption,
                         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (selected) keryxAccentInk(accent)
                         else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -219,7 +219,7 @@ private enum class ArchiveTab(val label: String) { SEARCH("Search"), SAVED("Save
 
 @Composable
 private fun StatusLine(text: String) {
-    Text(text, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(text, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 // --- Search ------------------------------------------------------------------------------------
@@ -273,7 +273,7 @@ private fun SearchTab(
             item(key = "recent-label") {
                 Text(
                     "RECENTLY REMEMBERED",
-                    fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp,
+                    fontSize = KeryxType.micro, fontWeight = FontWeight.Bold, letterSpacing = 2.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -284,7 +284,7 @@ private fun SearchTab(
                     if (e.mediaKind != null) MediaLine(e)
                     else Text(
                         e.body.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty(),
-                        fontSize = 13.sp, maxLines = 3, overflow = TextOverflow.Ellipsis,
+                        fontSize = KeryxType.body, maxLines = 3, overflow = TextOverflow.Ellipsis,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
@@ -294,14 +294,14 @@ private fun SearchTab(
             Text(
                 if (indexedCount == 0) "Nothing remembered yet — the index fills as sessions are swept."
                 else "Every message the app has ever seen, one search away.",
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         searched && hits.isEmpty() -> Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
                 "Nothing yet for \"${query.trim()}\"",
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -321,7 +321,7 @@ private fun SearchTab(
                     if (hit.snippet.isNotBlank() || hit.entry.mediaKind == null) {
                         Text(
                             snippetAnnotated(hit.snippet, MaterialTheme.colorScheme.primary),
-                            fontSize = 13.sp,
+                            fontSize = KeryxType.body,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                             maxLines = 4,
                             overflow = TextOverflow.Ellipsis,
@@ -386,7 +386,7 @@ private fun SavedTab(
         Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
                 "Opening the archive…",
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -396,7 +396,7 @@ private fun SavedTab(
         Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
                 "Nothing kept yet. Long-press a message and tap the bookmark.",
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -417,7 +417,7 @@ private fun SavedTab(
                         if (e.body.isNotBlank()) {
                             Text(
                                 e.body,
-                                fontSize = 13.sp,
+                                fontSize = KeryxType.body,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                                 maxLines = 5,
                                 overflow = TextOverflow.Ellipsis,
@@ -474,7 +474,7 @@ private fun MediaTab(
         Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
                 "Looking through what's indexed…",
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -484,7 +484,7 @@ private fun MediaTab(
         Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
                 "No photos or files indexed yet.",
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -552,7 +552,7 @@ private fun MediaCell(e: ArchiveStore.Entry, viewModel: ChatViewModel, onOpen: (
                     Spacer(Modifier.height(4.dp))
                     Text(
                         e.fileName,
-                        fontSize = 9.sp,
+                        fontSize = KeryxType.micro,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -580,14 +580,14 @@ private fun EntryHeader(e: ArchiveStore.Entry, myId: String?, roomName: String? 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = senderLabel(e.sender, myId) + (roomName?.let { " · $it" } ?: ""),
-            fontSize = 11.sp,
+            fontSize = KeryxType.micro,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,
         )
         Spacer(Modifier.width(8.dp))
         Text(
             text = archiveDate(e.timestamp),
-            fontSize = 11.sp,
+            fontSize = KeryxType.micro,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
         )
     }
@@ -610,7 +610,7 @@ private fun MediaLine(e: ArchiveStore.Entry) {
         Spacer(Modifier.width(5.dp))
         Text(
             e.fileName.ifBlank { e.mediaKind?.lowercase() ?: "attachment" },
-            fontSize = 12.sp,
+            fontSize = KeryxType.caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -682,7 +682,7 @@ fun ArchiveContextViewer(
             Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
                 Text(
                     "That moment couldn't be loaded (it may predate this login's keys).",
-                    fontSize = 13.sp,
+                    fontSize = KeryxType.body,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -755,7 +755,7 @@ private fun ReachButton(label: String, busy: Boolean, onClick: () -> Unit) {
             KeryxBreathingDot(KeryxStatus.good, alive = true)
         } else {
             TextButton(onClick = onClick) {
-                Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                Text(label, fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -788,7 +788,7 @@ private fun ContextRow(m: Message, anchor: Boolean, viewModel: ChatViewModel) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     if (isMe) "You" else senderLabel(m.senderName.ifBlank { m.senderId }, null),
-                    fontSize = 10.sp,
+                    fontSize = KeryxType.micro,
                     fontWeight = FontWeight.SemiBold,
                     color = if (anchor) accent else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -796,7 +796,7 @@ private fun ContextRow(m: Message, anchor: Boolean, viewModel: ChatViewModel) {
                 Text(
                     java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
                         .format(java.util.Date(m.timestamp)),
-                    fontSize = 10.sp,
+                    fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
