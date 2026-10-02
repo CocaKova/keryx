@@ -477,7 +477,13 @@ class GatewayRest(
         auth?.header(base)
             ?: token.takeIf { it.isNotBlank() }?.let { "X-Hermes-Session-Token" to it }
 
-    private suspend fun send(method: String, path: String, jsonBody: String?): Result<String> = withContext(Dispatchers.IO) {
+    /**
+     * One authenticated request, answered with its status and body WHATEVER the status. For the
+     * callers that branch on the code rather than fail on it (2.16 Hub tools): a route an older
+     * dashboard lacks answers 404/405, which hides a panel instead of erroring it. [send] is
+     * this plus "anything outside 2xx is a failure".
+     */
+    internal suspend fun exchange(method: String, path: String, jsonBody: String?): Result<Pair<Int, String>> = withContext(Dispatchers.IO) {
         runCatching {
             fun run(hdr: Pair<String, String>?): Pair<Int, String> {
                 val req = Request.Builder()
@@ -495,6 +501,12 @@ class GatewayRest(
             if (code == 401 && auth?.nativeMode == true && auth.bearer(base, force = true) != null) {
                 val retry = run(authHeader()); code = retry.first; body = retry.second
             }
+            code to body
+        }
+    }
+
+    private suspend fun send(method: String, path: String, jsonBody: String?): Result<String> =
+        exchange(method, path, jsonBody).mapCatching { (code, body) ->
             // Carry the server's own words into the failure: "HTTP 404" alone sent us
             // hunting the transport when the gateway was already explaining itself.
             if (code !in 200..299) error(
@@ -502,7 +514,6 @@ class GatewayRest(
             )
             body
         }
-    }
 
     private suspend fun get(path: String): Result<String> = send("GET", path, null)
 

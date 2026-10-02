@@ -24,7 +24,8 @@ class HubRegistryTest {
         // Runs left the hub 2026-09-01 ("the crons are hard to get to") — it is the Runs DOOR
         // now (RunsSpace); Jobs stays because managing schedules is server administration.
         // 2.10 folded the Workshop back in as spokes: changing the machine first, then reading it.
-        assertEquals(listOf("Controls", "Jobs", "Sessions", "Skills", "Tools"), GATEWAY_SPOKES.map { it.label })
+        // 2.16: Memory sits with Skills — what the agent learned, beside what it remembers.
+        assertEquals(listOf("Controls", "Jobs", "Sessions", "Skills", "Memory", "Tools"), GATEWAY_SPOKES.map { it.label })
     }
 
     @Test

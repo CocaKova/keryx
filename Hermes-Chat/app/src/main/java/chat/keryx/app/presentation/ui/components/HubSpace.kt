@@ -81,6 +81,10 @@ data class HubPanel(
     val refresh: (ChatViewModel) -> Unit,
     val subtitle: @Composable (ChatViewModel) -> String,
     val content: @Composable (HubPanelScope) -> Unit,
+    /** Whether the landing lists this spoke at all (2.16): false when the route behind it is
+     *  one this gateway (or this door) doesn't have — an older Hermes hides the door, it
+     *  doesn't show one that only ever errors. */
+    val shown: @Composable (ChatViewModel) -> Boolean = { true },
 )
 
 private const val HUB_POLL_MS = 10_000L
@@ -133,6 +137,18 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
             skills.data?.let { "${it.size} learned" } ?: "What the agent knows how to do"
         },
         content = { SkillsTab(it.viewModel) },
+    ),
+    HubPanel(
+        id = "memory",
+        label = "Memory",
+        icon = KeryxGlyphs.Bookmark,
+        refresh = { vm -> vm.memory.refresh() },
+        subtitle = { vm -> memorySubtitle(vm) },
+        content = { MemoryTab(it.viewModel) },
+        shown = { vm ->
+            val available by vm.memory.available.collectAsState()
+            vm.transportIsDirect && available != false
+        },
     ),
     HubPanel(
         id = "tools",
@@ -241,6 +257,7 @@ private fun LazyListScope.gatewaySpokeRows(viewModel: ChatViewModel, open: (Stri
     }
     items(GATEWAY_SPOKES.size, key = { "spoke-" + GATEWAY_SPOKES[it].id }) { i ->
         val p = GATEWAY_SPOKES[i]
+        if (!p.shown(viewModel)) return@items
         KeryxHubRow(icon = p.icon, title = p.label, subtitle = p.subtitle(viewModel), onClick = { open(p.id) })
     }
     item(key = "spokes-gap") { Spacer(Modifier.height(8.dp)) }
