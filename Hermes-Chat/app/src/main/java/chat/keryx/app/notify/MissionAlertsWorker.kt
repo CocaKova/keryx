@@ -11,6 +11,10 @@ import androidx.work.WorkerParameters
 import chat.keryx.app.data.remote.HermesStreamClient
 import chat.keryx.app.data.repository.SettingsRepositoryImpl
 import chat.keryx.app.domain.repository.SettingsRepository
+import chat.keryx.core.model.Fleet
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.TimeUnit
@@ -30,6 +34,11 @@ import java.util.concurrent.TimeUnit
  * same check ([checkAndNotify]) every minute, so a mission that ends while you are in another
  * chat rings within a minute instead of within fifteen; this worker covers the app being away.
  *
+ * 2.15: it watches EVERY gateway on the fleet, each with its own cursor, and an alert names the
+ * gateway it came from when there is more than one; tapping it switches over and opens the card.
+ * Message notifications deliberately stay with the active gateway (one live socket, not one per
+ * gateway — the battery work of 2.13.10).
+ *
  * WorkManager at its 15-minute floor, network-constrained: survives process death and reboots,
  * defers through Doze, and does nothing while disabled (the toggle cancels the work; the guard
  * here covers a stale enqueue racing the toggle).
@@ -40,12 +49,34 @@ class MissionAlertsWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        val settings = SettingsRepositoryImpl(applicationContext)
-        if (!settings.missionAlertsEnabled || !settings.sideChannelEnabled) return Result.success()
-        val url = settings.gatewayUrl.trim()
-        if (url.isBlank()) return Result.success()
-        val client = HermesStreamClient(url, settings.gatewayApiKey, settings.allowInsecure)
-        return if (checkAndNotify(applicationContext, client, settings)) Result.success() else Result.retry()
+        val root = SettingsRepositoryImpl(applicationContext)
+        if (!root.missionAlertsEnabled || !root.sideChannelEnabled) return Result.success()
+        // 2.15: every gateway on the fleet, not just the one the app last booted onto. Each
+        // gateway's board, cursor and Link key are its own (a pinned view per row); a gateway
+        // that is down only costs its own check, never the others'.
+        val fleet = root.fleet
+        val targets = alertTargets(root.transportMode, fleet)
+        val activeScope = alertScope(root.transportMode, fleet)
+        val labelled = targets.size > 1
+        val outcomes = coroutineScope {
+            targets.map { id ->
+                async {
+                    val settings = if (id.isBlank()) root else root.forGateway(id)
+                    val url = settings.gatewayUrl.trim()
+                    if (url.isBlank()) return@async null
+                    val client = HermesStreamClient(url, settings.gatewayApiKey, root.allowInsecure)
+                    checkAndNotify(
+                        applicationContext, client, settings,
+                        gatewayId = id,
+                        gatewayLabel = if (labelled) fleet.byId(id)?.name else null,
+                        boardShowsThisGateway = id == activeScope,
+                    )
+                }
+            }.awaitAll()
+        }.filterNotNull()
+        // Retry only when nothing answered at all (the phone's network, most likely); one
+        // gateway being away — powered off, out for repair — must not keep the worker spinning.
+        return if (outcomes.isNotEmpty() && outcomes.none { it }) Result.retry() else Result.success()
     }
 
     companion object {
@@ -65,7 +96,10 @@ class MissionAlertsWorker(
             context: Context,
             client: HermesStreamClient,
             settings: SettingsRepository,
-        ): Boolean = checkLock.withLock {
+            gatewayId: String = "",
+            gatewayLabel: String? = null,
+            boardShowsThisGateway: Boolean = true,
+        ): Boolean = lockFor(gatewayId).withLock {
             if (!settings.missionAlertsEnabled) return@withLock true
             val since = settings.missionEventsCursor
             if (since < 0) {
@@ -82,16 +116,57 @@ class MissionAlertsWorker(
             }
 
             val page = client.kanbanEvents(since).getOrElse { return@withLock false }
-            for (event in alertsToRing(page.events, boardOnScreen)) {
+            // The board on screen is the ACTIVE gateway's; another gateway's card is news.
+            for (event in alertsToRing(
+                page.events, boardOnScreen && boardShowsThisGateway, System.currentTimeMillis() / 1000,
+            )) {
                 val task = client.kanbanTask(event.taskId).getOrNull()?.task
                 val title = task?.title?.takeIf { it.isNotBlank() } ?: event.taskId
-                KeryxNotifications.notifyMission(context, event.taskId, title, alertLine(event, task))
+                KeryxNotifications.notifyMission(
+                    context, event.taskId, title, alertLine(event, task),
+                    gatewayId = gatewayId, gatewayLabel = gatewayLabel,
+                )
             }
             settings.missionEventsCursor = maxOf(since, page.cursor)
             true
         }
 
-        private val checkLock = Mutex()
+        // One lock per gateway (2.15): the pulse and the worker share a gateway's cursor and
+        // must take turns on it, but a slow gateway must not hold up another's check.
+        private val checkLocks = java.util.concurrent.ConcurrentHashMap<String, Mutex>()
+        private fun lockFor(gatewayId: String): Mutex = checkLocks.getOrPut(gatewayId) { Mutex() }
+
+        /**
+         * The gateway the app is standing on, as the alert path keys it: the fleet's active row
+         * on the direct door, blank on Matrix (one homeserver, unscoped ledgers). Matches the
+         * scope [SettingsRepositoryImpl] suffixes the cursor with, so the pulse and the worker
+         * lock and advance the same cursor for the same gateway.
+         */
+        fun alertScope(transportMode: String, fleet: Fleet): String =
+            if (transportMode == "direct") fleet.activeId else ""
+
+        /**
+         * Which gateways the background watcher checks (2.15). Until now it built one
+         * unpinned settings view, which reads the ACTIVE gateway only: a mission finishing on
+         * any other gateway on the fleet never rang until you switched to it, and the switch
+         * then left the old gateway's cursor frozen. On the direct door that is every fleet row,
+         * the active one first; on Matrix (or a direct door with no fleet yet) it is the single
+         * unscoped view, as before.
+         */
+        fun alertTargets(transportMode: String, fleet: Fleet): List<String> {
+            if (transportMode != "direct" || fleet.gateways.isEmpty()) return listOf("")
+            val ids = fleet.gateways.map { it.id }
+            return (listOf(fleet.activeId).filter { it in ids } + ids).distinct()
+        }
+
+        /**
+         * A mission tap from another gateway (2.15) has to move the app first: the board,
+         * sessions and Link belong to the gateway the process booted on. True when the tap
+         * names a gateway on this fleet that is not the active one, on the direct door.
+         */
+        fun tapNeedsSwitch(tapGateway: String?, transportIsDirect: Boolean, fleet: Fleet): Boolean =
+            transportIsDirect && !tapGateway.isNullOrBlank() && tapGateway != fleet.activeId &&
+                fleet.byId(tapGateway) != null
 
         /**
          * The Missions board is on screen right now (composed AND resumed) — the board already
@@ -112,9 +187,24 @@ class MissionAlertsWorker(
         internal fun alertsToRing(
             events: List<HermesStreamClient.KanbanEvent>,
             boardOnScreen: Boolean,
+            nowSec: Long? = null,
         ): List<HermesStreamClient.KanbanEvent> =
             if (boardOnScreen) emptyList()
-            else events.filter { it.kind in ALERT_KINDS }.takeLast(MAX_ALERTS_PER_CHECK)
+            else events.filter { it.kind in ALERT_KINDS && !isStale(it, nowSec) }.takeLast(MAX_ALERTS_PER_CHECK)
+
+        /**
+         * Older than a day = history, consumed without ringing (2.15). A gateway the watcher
+         * was not checking — you were standing on another one — resumes from where its cursor
+         * froze, possibly weeks back; last month's completions are not news. The feed stamps
+         * epoch seconds; a millisecond stamp is tolerated, an unstamped (0) event always rings.
+         */
+        internal fun isStale(event: HermesStreamClient.KanbanEvent, nowSec: Long?): Boolean {
+            if (nowSec == null || event.createdAt <= 0L) return false
+            val at = if (event.createdAt > 100_000_000_000L) event.createdAt / 1000 else event.createdAt
+            return nowSec - at > STALE_AFTER_SEC
+        }
+
+        private const val STALE_AFTER_SEC = 24 * 60 * 60L
 
         /**
          * The shade's one line, in the worker's own words where it left any: a block says WHY

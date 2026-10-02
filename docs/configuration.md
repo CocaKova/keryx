@@ -32,7 +32,7 @@ Agent, Voice, Appearance, Companion, Privacy & Security, Sessions, About.
 | Hermes Link | Gateway / Hermes Link | both | The toggle for live token streaming over the SSE side-channel. Off means committed turns only. |
 | Gateway URL | Gateway / Hermes Link | both | The plugin's base URL, `http://<gateway-host>:8642`, with the API key beside it and a **Test link** probe. |
 | Show telemetry | Agent | both | Whether runtime footers and cron check-ins render as low-contrast telemetry rows. |
-| Mission alerts | Agent | both | The 15-minute kanban alerts worker, for comments and non-terminal task events. |
+| Mission alerts | Agent | both | The 15-minute kanban alerts worker (every 60 s for the active gateway while the app is open). On the direct door it watches every gateway on the fleet; an alert names its gateway and a tap switches to it. |
 | Reopen last chat on launch | Agent | both | Opens the room you were in rather than the drawer. |
 | New sessions use the last model picked | Agent | direct | On: a new chat inherits the last chosen model. Off: it opens on the gateway's configured default brain. |
 | Voice dictation | Voice | both | Mic input through the gateway's STT. |

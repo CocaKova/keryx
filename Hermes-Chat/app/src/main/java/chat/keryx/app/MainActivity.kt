@@ -216,8 +216,22 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
         // A mission alert (2.14.1) opens Missions on its card. Consumed like Tap-In: a resume
         // re-delivering the same intent must not pop the sheet back open after it was closed.
         intent?.getStringExtra(KeryxNotifications.EXTRA_MISSION_TASK)?.let { taskId ->
-            if (::viewModel.isInitialized) viewModel.missions.requestOpenTask(taskId)
+            // 2.15: an alert from another gateway on the fleet moves the app there first — the
+            // board is the booted gateway's — and the relaunched process opens the card.
+            val gateway = intent.getStringExtra(KeryxNotifications.EXTRA_MISSION_GATEWAY)
             intent.removeExtra(KeryxNotifications.EXTRA_MISSION_TASK)
+            intent.removeExtra(KeryxNotifications.EXTRA_MISSION_GATEWAY)
+            if (!::viewModel.isInitialized) return
+            if (chat.keryx.app.notify.MissionAlertsWorker.tapNeedsSwitch(
+                    gateway, viewModel.transportIsDirect, viewModel.fleet.value,
+                ) && viewModel.switchGateway(gateway!!)
+            ) {
+                chat.keryx.app.presentation.ui.components.relaunchApp(this) {
+                    putExtra(KeryxNotifications.EXTRA_MISSION_TASK, taskId)
+                }
+                return
+            }
+            viewModel.missions.requestOpenTask(taskId)
             return
         }
         val roomId = intent?.getStringExtra(KeryxNotifications.EXTRA_ROOM_ID) ?: return

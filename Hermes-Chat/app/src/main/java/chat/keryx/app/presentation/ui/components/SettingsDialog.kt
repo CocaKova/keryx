@@ -414,7 +414,7 @@ fun SettingsScreen(
                             SettingsSwitchRow(
                                 anchor = SettingsRow.AGENT_ALERTS,
                                 title = "Mission alerts",
-                                subtitle = "Notify when a mission completes, blocks, or gives up — checked in the background every 15 minutes",
+                                subtitle = "Notify when a mission on any of your gateways completes, blocks, or gives up — checked in the background every 15 minutes",
                                 checked = missionAlertsEnabled,
                                 onCheckedChange = onMissionAlertsChanged,
                             )

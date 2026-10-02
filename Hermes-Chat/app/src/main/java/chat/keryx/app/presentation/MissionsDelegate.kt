@@ -117,7 +117,18 @@ class MissionsDelegate(
                 if (!MissionAlertsWorker.boardOnScreen) {
                     c.kanbanBoard().onSuccess { _kanbanBoard.value = it; _kanbanError.value = null }
                 }
-                if (settings.missionAlertsEnabled) MissionAlertsWorker.checkAndNotify(app, c, settings)
+                if (settings.missionAlertsEnabled) {
+                    // Keyed to the gateway the app stands on (2.15), so this beat and the worker
+                    // share one lock and one cursor for it; other gateways are the worker's.
+                    val fleet = settings.fleet
+                    val scope = MissionAlertsWorker.alertScope(settings.transportMode, fleet)
+                    val labelled = MissionAlertsWorker.alertTargets(settings.transportMode, fleet).size > 1
+                    MissionAlertsWorker.checkAndNotify(
+                        app, c, settings,
+                        gatewayId = scope,
+                        gatewayLabel = if (labelled) fleet.byId(scope)?.name else null,
+                    )
+                }
             }
             delay(PULSE_MS)
         }

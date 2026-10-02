@@ -597,6 +597,17 @@ object KeryxNotifications {
     /** The card a mission alert is about; its tap opens Missions on that card's sheet (2.14.1). */
     const val EXTRA_MISSION_TASK = "keryx.mission.task"
 
+    /** The gateway that card lives on (2.15); blank on Matrix / a single unscoped gateway. */
+    const val EXTRA_MISSION_GATEWAY = "keryx.mission.gateway"
+
+    /**
+     * One shade slot (and one PendingIntent) per card PER GATEWAY: two gateways' boards mint
+     * task ids independently, so a bare task id could let one gateway's alert replace another's.
+     * Blank gateway keeps the pre-2.15 key, so an alert already in the shade is still replaced.
+     */
+    fun missionKey(gatewayId: String, taskId: String): String =
+        if (gatewayId.isBlank()) "mission:$taskId" else "mission:$gatewayId:$taskId"
+
     fun ensureMissionsChannel(context: Context) {
         val mgr = context.getSystemService(NotificationManager::class.java) ?: return
         if (mgr.getNotificationChannel(MISSIONS_CHANNEL_ID) != null) return
@@ -612,7 +623,14 @@ object KeryxNotifications {
     }
 
     /** Post a mission-transition alert; one per task, replaced as the task moves again. */
-    fun notifyMission(context: Context, taskId: String, title: String, body: String) {
+    fun notifyMission(
+        context: Context,
+        taskId: String,
+        title: String,
+        body: String,
+        gatewayId: String = "",
+        gatewayLabel: String? = null,
+    ) {
         ensureMissionsChannel(context)
         val nm = NotificationManagerCompat.from(context)
         if (!nm.areNotificationsEnabled()) return
@@ -622,13 +640,15 @@ object KeryxNotifications {
         val tapIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(EXTRA_MISSION_TASK, taskId)
+            if (gatewayId.isNotBlank()) putExtra(EXTRA_MISSION_GATEWAY, gatewayId)
         }
+        val key = missionKey(gatewayId, taskId)
         val pending = PendingIntent.getActivity(
             context,
             // One PendingIntent per task: a shared request code with UPDATE_CURRENT would
             // rewrite every earlier alert's extra to the newest card. Salted so a task id can
             // never collide with a room tap's code (those hash the bare room id).
-            "mission:$taskId".hashCode(),
+            key.hashCode(),
             tapIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
@@ -636,6 +656,8 @@ object KeryxNotifications {
             .setSmallIcon(R.drawable.ic_stat_keryx)
             .setContentTitle(title)
             .setContentText(body)
+            // 2.15: with more than one gateway on the fleet, say whose board this is.
+            .apply { gatewayLabel?.takeIf { it.isNotBlank() }?.let { setSubText(it) } }
             // 2.14: the line carries the worker's reason now — let the shade open it up.
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setAutoCancel(true)
@@ -643,6 +665,6 @@ object KeryxNotifications {
             .setContentIntent(pending)
             .build()
         // Offset from the message-notification id space so a task never clobbers a room.
-        runCatching { nm.notify("mission:$taskId".hashCode(), notification) }
+        runCatching { nm.notify(key.hashCode(), notification) }
     }
 }

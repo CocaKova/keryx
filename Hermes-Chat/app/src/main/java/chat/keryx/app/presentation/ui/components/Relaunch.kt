@@ -18,13 +18,15 @@ import android.content.Intent
  * repository holds, so this commit carries every pending in-memory edit with it.
  */
 @Suppress("ApplySharedPref") // synchronous ON PURPOSE — the process dies on the next line.
-fun relaunchApp(context: Context) {
+fun relaunchApp(context: Context, configure: Intent.() -> Unit = {}) {
     context.getSharedPreferences(
         chat.keryx.app.data.repository.SettingsRepositoryImpl.PREFS_FILE,
         Context.MODE_PRIVATE,
     ).edit().putLong("relaunch_flush_barrier", System.currentTimeMillis()).commit()
     val i = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
     i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+    // What the fresh process should do on arrival (2.15: open the mission card it was tapped for).
+    i.configure()
     context.startActivity(i)
     Runtime.getRuntime().exit(0)
 }

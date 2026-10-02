@@ -5,6 +5,20 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.15.0 · versionCode 119
+
+- Mission alerts cross gateways. The background watcher only ever checked the gateway the app
+  was standing on, so a mission that finished, blocked or gave up on any other gateway in your
+  list stayed silent until you switched to it, and switching away froze the old gateway's place
+  in its event feed. The watcher now checks every gateway you have added, each against its own
+  feed, at the same 15-minute floor; one gateway being down no longer holds up the rest. With
+  more than one gateway the alert names the gateway it came from, and tapping it switches there
+  and opens the card. Message notifications still follow the active gateway only: one live
+  connection, not one per gateway.
+- The same task id on two gateways gets two alerts instead of one replacing the other.
+- An event more than a day old is taken as history and consumed without ringing, so a gateway
+  picked up from an old place in its feed does not replay last month's completions.
+
 ## 2.14.1 · versionCode 118
 
 Hotfix.
