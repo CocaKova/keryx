@@ -43,6 +43,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
@@ -75,6 +77,10 @@ fun ToolTheaterRow(
     /** The same call as the side-channel saw it, when the turn was watched live (2.4) — this is
      *  where a duration, a real verdict and a diff come from; the message text has none. */
     beat: ToolCall? = null,
+    /** False when the run's header already IS this row's title — a run of one call read "Ran
+     *  python3 …" on the header and again on the only row inside it (2.16). The row keeps its
+     *  verdict, timing and output; the repeated sentence goes. */
+    titled: Boolean = true,
 ) {
     // An inter-agent delivery is a `terminal` call by mechanism and a conversation by meaning.
     // A FAILED one keeps the terminal row on purpose: when the mechanism breaks, the mechanism is
@@ -105,6 +111,13 @@ fun ToolTheaterRow(
     val target = ToolGrammar.targetOf(call.name, call.context)
     val ok = beat?.verdictOk ?: call.verdictOk
     val durS = beat?.durationS
+    // What the tool handed back, read rather than dumped (2.16): the shell envelope's output,
+    // its exit code and its own error. Every other shape passes through as it came.
+    val output = beat?.result?.ifBlank { null } ?: call.result
+    val parsed = remember(output) { chat.keryx.core.protocol.ToolOutput.parse(output) }
+    var showOutput by androidx.compose.runtime.saveable.rememberSaveable(
+        "out:" + call.name + call.context,
+    ) { mutableStateOf(false) }
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             // Three verdicts, not two: a ✓ has to mean the call was SEEN to succeed. Most tool
@@ -129,6 +142,11 @@ fun ToolTheaterRow(
                 modifier = Modifier.width(6.dp),
             )
             Spacer(modifier = Modifier.width(7.dp))
+            if (!titled) {
+                // The header above says what ran; this line carries what came of it.
+                ToolOutputToggle(parsed, showOutput, baseColor) { showOutput = !showOutput }
+                Spacer(modifier = Modifier.weight(1f))
+            } else {
             // The glyph is the tool's identity and its family's colour is the kind of work —
             // a shell is gold, a read is slate, an edit is amber — so a run's shape reads
             // before a single verb is read (2.6.2 tool-log pass).
@@ -161,6 +179,7 @@ fun ToolTheaterRow(
             } else {
                 Spacer(modifier = Modifier.weight(1f))
             }
+            }
             if (beat != null && (beat.added > 0 || beat.removed > 0)) {
                 Spacer(modifier = Modifier.width(6.dp))
                 DiffStat(added = beat.added, removed = beat.removed)
@@ -181,7 +200,6 @@ fun ToolTheaterRow(
         // and a `write_file` result with the syntax oracle's verdict appended had no window at all
         // (Jonny: "I don't see the tool payloads or failures"). A failure's reason is always on
         // show; the full payload is a fold, because a run of twelve calls is a wall otherwise.
-        val output = beat?.result?.ifBlank { null } ?: call.result
         if (ok == false && output.isNotBlank()) {
             Text(
                 text = Theater.reason(output),
@@ -192,30 +210,28 @@ fun ToolTheaterRow(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(start = 19.dp, top = 1.dp),
             )
-        }
-        if (output.isNotBlank()) {
-            var showOutput by androidx.compose.runtime.saveable.rememberSaveable(
-                "out:" + call.name + call.context,
-            ) { mutableStateOf(false) }
-            // ⚠️ `padding().clickable()` puts the padding OUTSIDE the hit area, so this was a
-            // 9.5sp line of text and nothing else: a **~12dp** target, and the only way into a
-            // tool's payload. Padding moved inside the clickable, and the ink lifted from 0.42
-            // (2.58:1 on parchment — the least readable interactive string in the run) to the
-            // 0.72 the tool's own title beside it already uses.
+        } else if (parsed.error != null) {
+            // A shell that answered with an error of its own but no failed verdict (the verdict
+            // line above already shows a failure's reason; this is the case it doesn't cover).
             Text(
-                if (showOutput) "▾ output" else "▸ output",
+                text = parsed.error.orEmpty(),
+                color = KeryxStatus.bad,
                 fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
-                color = baseColor.copy(alpha = 0.72f),
-                modifier = Modifier
-                    .padding(start = 15.dp)
-                    .clip(RoundedCornerShape(KeryxRadius.chip))
-                    .clickable { showOutput = !showOutput }
-                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 19.dp, top = 1.dp),
             )
-            if (showOutput) {
+        }
+        if (output.isNotBlank()) {
+            if (titled) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 15.dp)) {
+                    ToolOutputToggle(parsed, showOutput, baseColor) { showOutput = !showOutput }
+                }
+            }
+            if (showOutput && parsed.body.isNotBlank()) {
                 Text(
-                    text = output,
+                    text = parsed.body,
                     color = baseColor.copy(alpha = 0.78f),
                     fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
@@ -254,6 +270,52 @@ fun ToolTheaterRow(
             }
         }
     }
+}
+
+/**
+ * The "▸ output" fold and the exit chip beside it (2.16). The chip is the command's verdict in
+ * its own words: a quiet "✓ 0", or "✕ 2" in the failure colour every failed thing in Keryx wears.
+ * A result with nothing printed has no fold to open — the chip alone says how it ended.
+ */
+@Composable
+private fun ToolOutputToggle(
+    parsed: chat.keryx.core.protocol.ToolOutput,
+    open: Boolean,
+    baseColor: Color,
+    onToggle: () -> Unit,
+) {
+    if (parsed.body.isNotBlank()) {
+        // ⚠️ `padding().clickable()` puts the padding OUTSIDE the hit area, so this was a
+        // 9.5sp line of text and nothing else: a **~12dp** target, and the only way into a
+        // tool's payload. Padding moved inside the clickable, and the ink lifted from 0.42
+        // (2.58:1 on parchment — the least readable interactive string in the run) to the
+        // 0.72 the tool's own title beside it already uses.
+        Text(
+            if (open) "▾ output" else "▸ output",
+            fontSize = KeryxType.micro,
+            fontFamily = FontFamily.Monospace,
+            color = baseColor.copy(alpha = 0.72f),
+            modifier = Modifier
+                .clip(RoundedCornerShape(KeryxRadius.chip))
+                .clickable(onClickLabel = if (open) "Hide the output" else "Show the output") { onToggle() }
+                .padding(horizontal = 4.dp, vertical = 8.dp),
+        )
+    }
+    val exit = parsed.exitCode ?: return
+    val failed = exit != 0
+    Spacer(modifier = Modifier.width(4.dp))
+    Text(
+        if (failed) "✕ $exit" else "✓ $exit",
+        fontSize = KeryxType.micro,
+        fontFamily = FontFamily.Monospace,
+        // The quiet case is the toggle's own 0.72 ink: a clean exit is the expected news.
+        color = if (failed) KeryxStatus.bad else baseColor.copy(alpha = 0.72f),
+        modifier = Modifier
+            .clip(RoundedCornerShape(KeryxRadius.chip))
+            .background(if (failed) KeryxStatus.bad.copy(alpha = 0.10f) else baseColor.copy(alpha = 0.06f))
+            .padding(horizontal = 5.dp, vertical = 1.dp)
+            .semantics { contentDescription = if (failed) "Exit code $exit, failed" else "Exit code 0" },
+    )
 }
 
 /** The profile an inter-agent delivery is addressed to, or null for an ordinary tool call. */
@@ -361,6 +423,8 @@ fun ToolTheaterRun(
         if (failed > 0) append(" · $failed failed")
     }
     val enriched = remember(calls, structured) { Theater.align(calls.map { it.name }, structured) }
+    // A run of exactly one call: its header already reads as that call's title.
+    val singleCall = run.entries.size == 1 && calls.size == 1
     val added = enriched.values.sumOf { it.added }
     val removed = enriched.values.sumOf { it.removed }
 
@@ -477,6 +541,7 @@ fun ToolTheaterRun(
                                 entry.call,
                                 accent,
                                 baseColor,
+                                titled = !singleCall,
                                 deliveryReply = (run.entries.getOrNull(i + 1) as? ToolRunEntry.Note)
                                     ?.takeIf { i + 1 in consumed }
                                     ?.let { chat.keryx.core.model.AgentDeliveryCommand.replyText(it.text) },
