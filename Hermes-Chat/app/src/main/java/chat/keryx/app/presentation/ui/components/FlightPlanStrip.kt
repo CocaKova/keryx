@@ -103,7 +103,7 @@ fun FlightPlanStrip(plan: TodoPlan) {
             Text(
                 "FLIGHT PLAN",
                 color = quiet,
-                fontSize = 9.5.sp,
+                fontSize = KeryxType.micro,
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 1.2.sp,
             )
@@ -111,7 +111,7 @@ fun FlightPlanStrip(plan: TodoPlan) {
             Text(
                 "${plan.done}/${plan.total}",
                 color = if (plan.allDone) good else quiet,
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
             )
             Spacer(Modifier.width(10.dp))
@@ -122,12 +122,12 @@ fun FlightPlanStrip(plan: TodoPlan) {
                         (plan.items.firstOrNull { it.status == "pending" }?.content ?: "—")
                 },
                 color = onSurface.copy(alpha = if (plan.allDone) 0.45f else FlightPlanFloor.LINE_ALPHA),
-                fontSize = 11.5.sp,
+                fontSize = KeryxType.caption,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            Text(if (open) "▾" else "▸", color = quiet.copy(alpha = 0.5f), fontSize = 11.sp)
+            Text(if (open) "▾" else "▸", color = quiet.copy(alpha = 0.5f), fontSize = KeryxType.micro)
         }
 
         if (open) {
@@ -142,9 +142,9 @@ fun FlightPlanStrip(plan: TodoPlan) {
                     ) {
                         when {
                             running -> Dot(accent, 6.dp, pulse)
-                            done -> Text("✓", color = good.copy(alpha = 0.75f), fontSize = 10.sp)
-                            cancelled -> Text("✕", color = quiet.copy(alpha = 0.5f), fontSize = 10.sp)
-                            else -> Text("○", color = quiet.copy(alpha = 0.55f), fontSize = 10.sp)
+                            done -> Text("✓", color = good.copy(alpha = 0.75f), fontSize = KeryxType.micro)
+                            cancelled -> Text("✕", color = quiet.copy(alpha = 0.5f), fontSize = KeryxType.micro)
+                            else -> Text("○", color = quiet.copy(alpha = 0.55f), fontSize = KeryxType.micro)
                         }
                         Spacer(Modifier.width(8.dp))
                         Text(
@@ -154,7 +154,7 @@ fun FlightPlanStrip(plan: TodoPlan) {
                                 done || cancelled -> onSurface.copy(alpha = 0.38f)
                                 else -> onSurface.copy(alpha = 0.66f)
                             },
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             lineHeight = 16.sp,
                             fontWeight = if (running) FontWeight.Medium else FontWeight.Normal,
                             textDecoration = if (cancelled) TextDecoration.LineThrough else null,

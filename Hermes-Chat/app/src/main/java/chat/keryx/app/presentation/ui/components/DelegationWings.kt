@@ -102,7 +102,7 @@ internal fun DelegationWings(
                     else -> "subagent"
                 },
                 color = baseColor.copy(alpha = 0.45f),
-                fontSize = 9.sp,
+                fontSize = KeryxType.micro,
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.8.sp,
             )
@@ -133,7 +133,7 @@ private fun DelegationWing(
                 else Text(
                     if (failed) "!" else "⑂",
                     color = if (failed) error else baseColor.copy(alpha = 0.5f),
-                    fontSize = 10.sp,
+                    fontSize = KeryxType.micro,
                 )
             }
             Spacer(Modifier.width(4.dp))
@@ -152,7 +152,7 @@ private fun DelegationWing(
                     append(run.goal.ifBlank { "delegated task" })
                 },
                 color = baseColor.copy(alpha = 0.85f),
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 textDecoration = if (canOpen) TextDecoration.Underline else null,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -162,7 +162,7 @@ private fun DelegationWing(
             )
             if (canOpen) {
                 Spacer(Modifier.width(5.dp))
-                Text("↗", fontSize = 9.sp, color = baseColor.copy(alpha = 0.45f))
+                Text("↗", fontSize = KeryxType.micro, color = baseColor.copy(alpha = 0.45f))
             }
         }
         val meta = buildList {
@@ -177,7 +177,7 @@ private fun DelegationWing(
             Text(
                 meta.joinToString(" · "),
                 color = baseColor.copy(alpha = 0.4f),
-                fontSize = 9.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -203,7 +203,7 @@ private fun DelegationWing(
                 Text(
                     line,
                     color = if (failed) error.copy(alpha = 0.8f) else baseColor.copy(alpha = 0.5f),
-                    fontSize = 9.5.sp,
+                    fontSize = KeryxType.micro,
                     lineHeight = 13.sp,
                     maxLines = when {
                         run.running -> 1

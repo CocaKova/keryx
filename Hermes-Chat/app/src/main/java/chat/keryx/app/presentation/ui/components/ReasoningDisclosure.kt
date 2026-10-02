@@ -113,7 +113,7 @@ fun ReasoningDisclosure(
             Spacer(Modifier.width(8.dp))
             Text(
                 label,
-                fontSize = 11.5.sp,
+                fontSize = KeryxType.caption,
                 fontWeight = FontWeight.Medium,
                 color = quiet.copy(alpha = if (streaming) 0.9f else 0.7f),
             )
@@ -121,7 +121,7 @@ fun ReasoningDisclosure(
                 Spacer(Modifier.width(6.dp))
                 Text(
                     "${seconds}s",
-                    fontSize = 10.sp,
+                    fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     color = quiet.copy(alpha = 0.5f),
                 )
@@ -129,7 +129,7 @@ fun ReasoningDisclosure(
             Spacer(Modifier.width(6.dp))
             Text(
                 if (open) "▾" else "▸",
-                fontSize = 9.5.sp,
+                fontSize = KeryxType.micro,
                 color = quiet.copy(alpha = 0.55f),
             )
         }
@@ -151,7 +151,7 @@ fun ReasoningDisclosure(
             Box {
                 Text(
                     reasoning.trim(),
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     lineHeight = 17.sp,
                     color = quiet.copy(alpha = 0.62f),
                     modifier = Modifier
@@ -180,11 +180,11 @@ fun ReasoningDisclosure(
                             .clickable { scope.launch { scroll.animateScrollTo(scroll.maxValue) } }
                             .padding(horizontal = 9.dp, vertical = 5.dp),
                     ) {
-                        Text("\u25be", fontSize = 9.5.sp, color = accent.copy(alpha = 0.9f))
+                        Text("\u25be", fontSize = KeryxType.micro, color = accent.copy(alpha = 0.9f))
                         Spacer(Modifier.width(5.dp))
                         Text(
                             "newest",
-                            fontSize = 10.sp,
+                            fontSize = KeryxType.micro,
                             fontWeight = FontWeight.Medium,
                             color = accent.copy(alpha = 0.9f),
                         )

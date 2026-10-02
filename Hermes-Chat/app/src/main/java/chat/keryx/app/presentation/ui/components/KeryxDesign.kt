@@ -14,6 +14,7 @@ import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -107,6 +108,40 @@ object KeryxRadius {
     val field: Dp = 12.dp
     val card: Dp = 14.dp
     val sheet: Dp = 20.dp
+}
+
+/**
+ * The one type scale (2.16). Replaces about 800 `fontSize` literals in 22 sizes, 151 of them under
+ * 11 sp (9 sp instrument labels, a 9.5 sp "▸ output"). Each literal moved to the nearest step, so
+ * the app reads as it did, except that nothing meant to be read sits below [micro] any more.
+ *
+ * Pick by role, not by size: a timestamp is [micro] whatever its neighbours are. A new size is a
+ * new token here, never a literal at the call site (`TypeScaleTest` fails on one).
+ */
+object KeryxType {
+    /** The floor. Meta lines, chips, timestamps, instrument labels, section labels. */
+    val micro: TextUnit = 11.sp
+    /** Secondary lines: row subtitles, captions, small buttons, code in tool output. */
+    val caption: TextUnit = 12.sp
+    /** Default UI text: list rows, card bodies, menu items. */
+    val body: TextUnit = 13.sp
+    /** Emphasised body: text fields, primary row titles, chat-adjacent prose. */
+    val bodyLarge: TextUnit = 14.sp
+    /** Card and sheet-row titles. */
+    val title: TextUnit = 15.sp
+    /** Sheet titles, the conversation title in the top bar. */
+    val titleLarge: TextUnit = 16.sp
+    /** Screen headings, the play glyph, the brand mark in compact chrome. */
+    val headline: TextUnit = 18.sp
+    /** The drawer wordmark, reaction emoji, big numerals. */
+    val display: TextUnit = 22.sp
+    /** Hero numerals (Tap-In's clock, the context breakdown total). */
+    val hero: TextUnit = 28.sp
+    /** Splash and sign-in wordmark, the heart bloom. */
+    val splash: TextUnit = 34.sp
+
+    /** Ascending, for tests and for anything that steps through the scale. */
+    val steps: List<TextUnit> get() = listOf(micro, caption, body, bodyLarge, title, titleLarge, headline, display, hero, splash)
 }
 
 /** Semantic status colors — the exact values already used across the Hub and board, named. */

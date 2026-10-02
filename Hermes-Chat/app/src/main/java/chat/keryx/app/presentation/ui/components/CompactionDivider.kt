@@ -61,7 +61,7 @@ fun CompactionDivider(message: Message) {
             Text(
                 text = "🗜 Context compacted · $clock",
                 color = meta.copy(alpha = 0.75f),
-                fontSize = 11.sp,
+                fontSize = KeryxType.micro,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(horizontal = 12.dp),
             )
@@ -71,7 +71,7 @@ fun CompactionDivider(message: Message) {
             Text(
                 text = summary,
                 color = meta,
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
                 lineHeight = 17.sp,
                 modifier = Modifier
                     .fillMaxWidth()

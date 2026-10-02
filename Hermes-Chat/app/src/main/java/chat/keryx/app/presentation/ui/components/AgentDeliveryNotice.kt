@@ -63,13 +63,13 @@ fun AgentDeliveryNotice(
     ) {
         Text(
             chat.keryx.core.model.Heralds.SIGIL,
-            fontSize = 11.sp,
+            fontSize = KeryxType.micro,
             color = mark,
         )
         Spacer(Modifier.width(5.dp))
         Text(
             "relayed · ${delivery.sender}",
-            fontSize = 10.5.sp,
+            fontSize = KeryxType.micro,
             fontWeight = FontWeight.Medium,
             color = mark,
         )
@@ -107,13 +107,13 @@ fun AgentDeliverySentNotice(
         ) {
             Text(
                 chat.keryx.core.model.Heralds.SIGIL,
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
                 color = mark,
             )
             Spacer(Modifier.width(8.dp))
             Text(
                 if (pending) "Messaging $target…" else "Messaged $target",
-                fontSize = 11.5.sp,
+                fontSize = KeryxType.caption,
                 fontWeight = FontWeight.Medium,
                 color = mark,
             )
@@ -130,19 +130,19 @@ fun AgentDeliverySentNotice(
             ) {
                 Text(
                     chat.keryx.core.model.Heralds.SIGIL,
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     color = mark,
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     "Message from $target",
-                    fontSize = 11.5.sp,
+                    fontSize = KeryxType.caption,
                     fontWeight = FontWeight.Medium,
                     color = mark,
                 )
                 Spacer(Modifier.width(6.dp))
                 // The caret is the affordance — the one glyph that says this row opens.
-                Text(if (open) "▾" else "▸", fontSize = 9.5.sp, color = quiet)
+                Text(if (open) "▾" else "▸", fontSize = KeryxType.micro, color = quiet)
             }
             AnimatedVisibility(
                 visible = open,
@@ -151,7 +151,7 @@ fun AgentDeliverySentNotice(
             ) {
                 Text(
                     reply,
-                    fontSize = 13.sp,
+                    fontSize = KeryxType.body,
                     lineHeight = 18.sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp),

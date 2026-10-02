@@ -214,7 +214,7 @@ private fun AnimatedImage(
                 .clip(RoundedCornerShape(12.dp))
                 .background(textColor.copy(alpha = 0.08f)),
         ) {
-            Text("\uD83C\uDFAC  loading\u2026", color = textColor.copy(alpha = 0.6f), fontSize = 12.sp)
+            Text("\uD83C\uDFAC  loading\u2026", color = textColor.copy(alpha = 0.6f), fontSize = KeryxType.caption)
         }
     }
 }
@@ -337,7 +337,7 @@ fun MessageMedia(
                     .clip(RoundedCornerShape(12.dp))
                     .background(textColor.copy(alpha = 0.08f)),
             ) {
-                Text("🖼  loading…", color = textColor.copy(alpha = 0.6f), fontSize = 12.sp)
+                Text("🖼  loading…", color = textColor.copy(alpha = 0.6f), fontSize = KeryxType.caption)
             }
         }
     } else if (kind == MediaKind.VIDEO) {
@@ -443,7 +443,7 @@ private fun InlineVideo(
             )
         }
         if (video == null) {
-            Text("🎬  loading…", color = textColor.copy(alpha = 0.6f), fontSize = 12.sp,
+            Text("🎬  loading…", color = textColor.copy(alpha = 0.6f), fontSize = KeryxType.caption,
                 modifier = Modifier.padding(horizontal = 40.dp, vertical = 50.dp))
         } else {
             // Play affordance + duration badge over the poster.
@@ -454,13 +454,13 @@ private fun InlineVideo(
                     .clip(androidx.compose.foundation.shape.CircleShape)
                     .background(Color.Black.copy(alpha = 0.55f)),
             ) {
-                Text("▶", color = Color.White, fontSize = 18.sp)
+                Text("▶", color = Color.White, fontSize = KeryxType.headline)
             }
             if (video.durationMs > 0) {
                 Text(
                     formatDuration(video.durationMs),
                     color = Color.White,
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(6.dp)
@@ -714,12 +714,12 @@ private fun FileChip(
             )
             .padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
-        Text(if (busy) "⏳" else icon, fontSize = 18.sp)
+        Text(if (busy) "⏳" else icon, fontSize = KeryxType.headline)
         Spacer(modifier = Modifier.width(10.dp))
         Text(
             text = label,
             color = textColor,
-            fontSize = 14.sp,
+            fontSize = KeryxType.bodyLarge,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

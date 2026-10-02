@@ -80,6 +80,7 @@ import chat.keryx.app.presentation.ui.components.replyPreviewText
 import chat.keryx.app.presentation.ui.components.shortSender
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import chat.keryx.app.presentation.ui.components.KeryxType
 
 /**
  * Qwen3-VL patches images on a 32px grid (patch_size 16 * merge_size 2). Images whose
@@ -643,7 +644,7 @@ fun ChatScreen(
                                 2 -> "${typingHumans[0]} and ${typingHumans[1]} are typing…"
                                 else -> "Several people are typing…"
                             },
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp),
                         )
@@ -869,7 +870,7 @@ fun ChatScreen(
                         Text(
                             text = if (missedWhileAway > 9) "9+" else "$missedWhileAway",
                             color = accent,
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(end = 6.dp),
                         )
@@ -1210,7 +1211,7 @@ private fun EmptyChat(viewModel: ChatViewModel, modifier: Modifier = Modifier) {
         Text(
             text = viewModel.lexicon.emptyChat,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 15.sp,
+            fontSize = KeryxType.title,
         )
         // Direct door: the empty pane is also the front door for a fresh install — nothing to
         // select yet is the common case, so the way to make one is right here, not two taps
@@ -1267,7 +1268,7 @@ fun DaySeparator(epochMillis: Long) {
         Text(
             text = label,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-            fontSize = 11.sp,
+            fontSize = KeryxType.micro,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(horizontal = 12.dp),
         )

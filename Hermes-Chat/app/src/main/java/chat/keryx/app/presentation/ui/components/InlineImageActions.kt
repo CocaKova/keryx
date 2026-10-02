@@ -126,7 +126,7 @@ fun InlineImageSheet(url: String, onDismiss: () -> Unit) {
             )
             Text(
                 text = url,
-                fontSize = 11.sp,
+                fontSize = KeryxType.micro,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

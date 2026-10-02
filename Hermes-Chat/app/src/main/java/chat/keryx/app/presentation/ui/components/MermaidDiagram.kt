@@ -72,7 +72,7 @@ fun MermaidDiagram(code: String, baseColor: Color) {
         Text(
             text = code,
             color = baseColor.copy(alpha = 0.8f),
-            fontSize = 12.sp,
+            fontSize = KeryxType.caption,
             fontFamily = FontFamily.Monospace,
             modifier = Modifier
                 .padding(vertical = 4.dp)
@@ -146,7 +146,7 @@ fun MermaidDiagram(code: String, baseColor: Color) {
                     Text(
                         text = p.node.label,
                         color = baseColor,
-                        fontSize = 12.sp,
+                        fontSize = KeryxType.caption,
                         fontWeight = FontWeight.Medium,
                         textAlign = TextAlign.Center,
                         maxLines = 2,
@@ -168,7 +168,7 @@ fun MermaidDiagram(code: String, baseColor: Color) {
                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f))
                         .padding(horizontal = 5.dp, vertical = 1.dp),
                 ) {
-                    Text(label, color = baseColor.copy(alpha = 0.8f), fontSize = 10.sp)
+                    Text(label, color = baseColor.copy(alpha = 0.8f), fontSize = KeryxType.micro)
                 }
             }
         }

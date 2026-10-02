@@ -86,6 +86,7 @@ import chat.keryx.app.presentation.ui.components.replyPreviewText
 import chat.keryx.app.presentation.ui.components.shortSender
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import chat.keryx.app.presentation.ui.components.KeryxType
 
 // The composer and what hangs off it — the reply bar, attachments, the attach bloom, the
 // wake glyph. Split out of ChatScreen.kt in 2.10 (Phase E): a move, zero behaviour change.
@@ -475,7 +476,7 @@ internal fun ComposerFooter(
                 ) { name ->
                     Text(
                         name,
-                        fontSize = 10.5.sp,
+                        fontSize = KeryxType.micro,
                         fontFamily = FontFamily.Monospace,
                         color = meta,
                         maxLines = 1,
@@ -483,7 +484,7 @@ internal fun ComposerFooter(
                         modifier = Modifier.widthIn(max = 150.dp),
                     )
                 }
-                Text(" ▾", fontSize = 9.sp, color = meta.copy(alpha = 0.7f))
+                Text(" ▾", fontSize = KeryxType.micro, color = meta.copy(alpha = 0.7f))
             }
             if (modelMenu) chat.keryx.app.presentation.ui.components.ModelPickerSheet(
                 catalog = catalog,
@@ -511,12 +512,12 @@ internal fun ComposerFooter(
             ) {
                 Text(
                     levelLabel,
-                    fontSize = 10.5.sp,
+                    fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     color = meta,
                     maxLines = 1,
                 )
-                Text(" ▾", fontSize = 9.sp, color = meta.copy(alpha = 0.7f))
+                Text(" ▾", fontSize = KeryxType.micro, color = meta.copy(alpha = 0.7f))
             }
             chat.keryx.app.presentation.ui.ReasoningMenu(
                 expanded = reasoningMenu,
@@ -529,7 +530,7 @@ internal fun ComposerFooter(
             Spacer(Modifier.width(10.dp))
             Text(
                 "↪ steers the turn · hold to queue",
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -564,11 +565,11 @@ internal fun ReplyBar(target: Message, onDismiss: () -> Unit) {
     ) {
         Box(modifier = Modifier.width(3.dp).fillMaxHeight().background(accent))
         Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp, vertical = 8.dp)) {
-            Text("Replying to ${shortSender(target.senderName)}", color = accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Text("Replying to ${shortSender(target.senderName)}", color = accent, fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold)
             Text(
                 text = replyPreviewText(target),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -612,7 +613,7 @@ internal fun AttachmentPreview(att: PendingAttachment, onRemove: () -> Unit) {
         Text(
             text = att.name,
             color = MaterialTheme.colorScheme.onSurface,
-            fontSize = 13.sp,
+            fontSize = KeryxType.body,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f, fill = false).widthIn(max = 220.dp),
@@ -688,7 +689,7 @@ internal fun DreamPill(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
         ) {
             Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(18.dp))
-            Text(label, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Text(label, color = MaterialTheme.colorScheme.onSurface, fontSize = KeryxType.bodyLarge, fontWeight = FontWeight.Medium)
         }
     }
 }

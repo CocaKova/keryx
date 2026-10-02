@@ -67,7 +67,7 @@ fun DiffStat(added: Int, removed: Int, modifier: Modifier = Modifier) {
             Text(
                 "+$added",
                 color = c.add,
-                fontSize = 9.5.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Medium,
             )
@@ -77,7 +77,7 @@ fun DiffStat(added: Int, removed: Int, modifier: Modifier = Modifier) {
             Text(
                 "−$removed",
                 color = c.remove,
-                fontSize = 9.5.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Medium,
             )
@@ -125,7 +125,7 @@ fun DiffPanel(
                             Text(
                                 line.text.ifEmpty { " " },
                                 color = fg,
-                                fontSize = 9.5.sp,
+                                fontSize = KeryxType.micro,
                                 fontFamily = FontFamily.Monospace,
                                 lineHeight = 14.sp,
                                 softWrap = false,
@@ -141,7 +141,7 @@ fun DiffPanel(
             Text(
                 "… diff truncated",
                 color = baseColor.copy(alpha = 0.35f),
-                fontSize = 9.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 modifier = Modifier.padding(top = 2.dp),
             )

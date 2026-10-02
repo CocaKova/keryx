@@ -74,7 +74,7 @@ fun SessionLiveTurn(viewModel: ChatViewModel) {
                     "failed" -> "failed" + (console.error?.let { " — $it" } ?: "")
                     else -> console.status
                 },
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
                 color = if (console.status == "failed") MaterialTheme.colorScheme.error
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
@@ -85,16 +85,16 @@ fun SessionLiveTurn(viewModel: ChatViewModel) {
                     Icon(Icons.Default.Stop, contentDescription = null,
                         modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.width(4.dp))
-                    Text("Stop", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                    Text("Stop", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
                 }
             } else {
-                TextButton(onClick = { viewModel.console.reset() }) { Text("Clear", fontSize = 12.sp) }
+                TextButton(onClick = { viewModel.console.reset() }) { Text("Clear", fontSize = KeryxType.caption) }
             }
         }
         if (console.reasoningTail.isNotBlank()) {
             Text(
                 console.reasoningTail,
-                fontSize = 11.sp,
+                fontSize = KeryxType.micro,
                 fontStyle = FontStyle.Italic,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                 maxLines = 3, overflow = TextOverflow.Ellipsis,

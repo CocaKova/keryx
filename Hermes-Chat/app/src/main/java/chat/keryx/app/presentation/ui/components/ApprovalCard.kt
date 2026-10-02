@@ -69,7 +69,7 @@ fun ApprovalCard(
             Spacer(Modifier.height(6.dp))
             Text(
                 approval.description,
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 lineHeight = 18.sp,
                 color = MaterialTheme.colorScheme.onSurface,
             )
@@ -78,7 +78,7 @@ fun ApprovalCard(
             Spacer(Modifier.height(8.dp))
             Text(
                 approval.command,
-                fontSize = 11.5.sp,
+                fontSize = KeryxType.caption,
                 fontFamily = FontFamily.Monospace,
                 lineHeight = 16.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
@@ -151,14 +151,14 @@ fun BlockingRequestCard(
         )
         if (request.prompt.isNotBlank()) {
             Spacer(Modifier.height(6.dp))
-            Text(request.prompt, fontSize = 13.sp, lineHeight = 18.sp, color = onSurface)
+            Text(request.prompt, fontSize = KeryxType.body, lineHeight = 18.sp, color = onSurface)
         }
         if (request.envVar.isNotBlank()) {
             Spacer(Modifier.height(4.dp))
             Text(
                 // Say where it lands: this is stored on the gateway, not just used once.
                 "Stored on the gateway as ${request.envVar}",
-                fontSize = 11.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = onSurface.copy(alpha = 0.6f),
             )
@@ -179,7 +179,7 @@ fun BlockingRequestCard(
             if (request.multiSelect) {
                 Text(
                     "Several answers are allowed — type them comma-separated below.",
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     color = onSurface.copy(alpha = 0.55f),
                 )
             }
@@ -190,7 +190,7 @@ fun BlockingRequestCard(
             value = typed,
             onValueChange = { typed = it },
             singleLine = true,
-            textStyle = TextStyle(fontSize = 13.sp),
+            textStyle = TextStyle(fontSize = KeryxType.body),
             shape = RoundedCornerShape(KeryxRadius.field),
             placeholder = {
                 Text(
@@ -199,7 +199,7 @@ fun BlockingRequestCard(
                         BlockingKind.SUDO -> "Password"
                         BlockingKind.SECRET -> "Value"
                     },
-                    fontSize = 13.sp,
+                    fontSize = KeryxType.body,
                 )
             },
             visualTransformation =
@@ -265,6 +265,6 @@ private fun ApprovalButton(
             .keryxPressable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 7.dp),
     ) {
-        Text(label, fontSize = 12.5.sp, fontWeight = weight, color = ink)
+        Text(label, fontSize = KeryxType.body, fontWeight = weight, color = ink)
     }
 }

@@ -42,24 +42,24 @@ fun KeryxRunCard(
 ) {
     KeryxCard(modifier = modifier, onClick = onOpen, tint = tint, breathing = breathing) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(glyph, fontSize = 16.sp, color = tint ?: ink.copy(alpha = 0.7f))
+            Text(glyph, fontSize = KeryxType.titleLarge, color = tint ?: ink.copy(alpha = 0.7f))
             Spacer(Modifier.width(8.dp))
             Text(
                 title,
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 fontWeight = FontWeight.SemiBold,
                 color = ink,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            if (onOpen != null) Text("↗", fontSize = 11.sp, color = ink.copy(alpha = 0.45f))
+            if (onOpen != null) Text("↗", fontSize = KeryxType.micro, color = ink.copy(alpha = 0.45f))
         }
         Spacer(Modifier.height(6.dp))
         if (meta.isNotEmpty()) {
             Text(
                 meta.joinToString(" · "),
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = ink.copy(alpha = 0.5f),
                 maxLines = 1,
@@ -73,7 +73,7 @@ fun KeryxRunCard(
                 Spacer(Modifier.width(6.dp))
                 Text(
                     activity,
-                    fontSize = 11.5.sp,
+                    fontSize = KeryxType.caption,
                     color = ink.copy(alpha = 0.7f),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -82,7 +82,7 @@ fun KeryxRunCard(
         } else if (summary.isNotBlank()) {
             Text(
                 summary,
-                fontSize = 11.5.sp,
+                fontSize = KeryxType.caption,
                 lineHeight = 16.sp,
                 color = summaryColor,
                 maxLines = summaryLines,

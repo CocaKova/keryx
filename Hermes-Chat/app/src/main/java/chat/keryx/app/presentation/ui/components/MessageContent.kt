@@ -385,7 +385,7 @@ fun TelemetryBlock(segment: MessageParser.Segment.Telemetry, baseColor: Color) {
             Text(
                 text = segment.text,
                 color = muted,
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 modifier = Modifier.padding(top = 4.dp),
             )
@@ -393,7 +393,7 @@ fun TelemetryBlock(segment: MessageParser.Segment.Telemetry, baseColor: Color) {
         else -> Text(
             text = segment.text,
             color = muted,
-            fontSize = 12.sp,
+            fontSize = KeryxType.caption,
             fontFamily = FontFamily.Monospace,
             modifier = Modifier
                 .fillMaxWidth()
@@ -434,12 +434,12 @@ fun ActionOutputCard(
             .padding(horizontal = 11.dp, vertical = 9.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("▣", color = accent, fontSize = 13.sp)
+            Text("▣", color = accent, fontSize = KeryxType.body)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = action.tool,
                 color = baseColor,
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Monospace,
                 modifier = Modifier.weight(1f),
@@ -447,18 +447,18 @@ fun ActionOutputCard(
             Text(
                 text = when (action.success) { true -> "SUCCESS"; false -> "FAILED"; null -> "ACTION" },
                 color = statusColor,
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.2.sp,
             )
         }
         action.params.take(6).forEach { (k, v) ->
             Row(modifier = Modifier.padding(top = 4.dp)) {
-                Text("$k ", color = accent.copy(alpha = 0.75f), fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                Text("$k ", color = accent.copy(alpha = 0.75f), fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace)
                 Text(
                     v,
                     color = baseColor.copy(alpha = 0.68f),
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -472,7 +472,7 @@ fun ActionOutputCard(
             Text(
                 text = actionResult,
                 color = baseColor.copy(alpha = 0.78f),
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
                 modifier = Modifier
                     .padding(top = 6.dp)
                     .fillMaxWidth()
@@ -486,7 +486,7 @@ fun ActionOutputCard(
             Text(
                 text = action.raw,
                 color = baseColor.copy(alpha = 0.55f),
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 modifier = Modifier.padding(top = 6.dp).horizontalScroll(rawScroll, enabled = rawScroll.maxValue > 0),
                 softWrap = false,
@@ -540,16 +540,16 @@ internal fun ReasoningCanvas(text: String, baseColor: Color, active: Boolean) {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 9.dp),
         ) {
-            Text("💭", fontSize = 13.sp)
+            Text("💭", fontSize = KeryxType.body)
             Spacer(modifier = Modifier.width(7.dp))
             Text(
                 text = if (active) "Reasoning…" else "Reasoning",
                 color = accent.copy(alpha = 0.92f),
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f),
             )
-            Text(if (expanded) "▾" else "▸", color = muted, fontSize = 12.sp)
+            Text(if (expanded) "▾" else "▸", color = muted, fontSize = KeryxType.caption)
         }
         AnimatedVisibility(
             visible = expanded,
@@ -557,7 +557,7 @@ internal fun ReasoningCanvas(text: String, baseColor: Color, active: Boolean) {
             exit = keryxConceal(),
         ) {
             val reasonStyle = MaterialTheme.typography.bodyMedium.copy(
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 fontStyle = FontStyle.Italic,
             )
             if (active) {
@@ -648,7 +648,7 @@ private fun ScrollableCodeBlock(code: String, textColor: Color, language: String
             Text(
                 text = coloured,
                 color = textColor.copy(alpha = 0.85f),
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
                 fontFamily = FontFamily.Monospace,
                 softWrap = false,
             )
@@ -657,7 +657,7 @@ private fun ScrollableCodeBlock(code: String, textColor: Color, language: String
             Text(
                 text = lang,
                 color = textColor.copy(alpha = 0.45f),
-                fontSize = 9.5.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 letterSpacing = 0.5.sp,
                 modifier = Modifier.align(Alignment.TopStart).padding(start = 10.dp, top = 6.dp),
@@ -666,7 +666,7 @@ private fun ScrollableCodeBlock(code: String, textColor: Color, language: String
         Text(
             text = if (copied) "✓" else "❐",
             color = if (copied) Color(0xFF4CAF7D) else textColor.copy(alpha = 0.45f),
-            fontSize = 13.sp,
+            fontSize = KeryxType.body,
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(4.dp)
@@ -734,7 +734,7 @@ private fun TableRow(
             Text(
                 text = tableCellAnnotated(cells.getOrElse(c) { "" }),
                 color = textColor,
-                fontSize = 13.sp,
+                fontSize = KeryxType.body,
                 fontWeight = if (isHeader) FontWeight.Bold else FontWeight.Normal,
                 modifier = Modifier.width(colWidth).padding(horizontal = 10.dp, vertical = 7.dp),
             )

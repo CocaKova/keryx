@@ -82,7 +82,7 @@ internal fun TurnFailureCard(
                 Text(
                     listOf(failure.layer, failure.code).filter { it.isNotBlank() }.joinToString(" · "),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     modifier = Modifier.padding(top = 2.dp),
                 )
@@ -99,10 +99,10 @@ internal fun TurnFailureCard(
             Spacer(Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 if (failure.retryable) TextButton(onClick = { viewModel.retryLastTurn() }) {
-                    Text("Retry", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Retry", fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold)
                 }
                 if (viewModel.transportIsDirect) TextButton(onClick = { logOpen = true }) {
-                    Text("Gateway log", fontSize = 12.sp)
+                    Text("Gateway log", fontSize = KeryxType.caption)
                 }
                 TextButton(onClick = {
                     val details = buildString {
@@ -116,7 +116,7 @@ internal fun TurnFailureCard(
                         ?.setPrimaryClip(android.content.ClipData.newPlainText("Keryx failure", details))
                     android.widget.Toast.makeText(context, "Details copied", android.widget.Toast.LENGTH_SHORT).show()
                 }) {
-                    Text("Copy details", fontSize = 12.sp)
+                    Text("Copy details", fontSize = KeryxType.caption)
                 }
             }
         }

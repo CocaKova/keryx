@@ -66,12 +66,12 @@ internal fun ArrivalMark(message: Message) {
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 12.dp, top = 10.dp, bottom = 2.dp),
     ) {
-        HeraldSigil(light, fontSize = 11.sp)
+        HeraldSigil(light, fontSize = KeryxType.micro)
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = "${light.name} · unprompted · $clock",
             color = light.accent.copy(alpha = 0.85f),
-            fontSize = 10.sp,
+            fontSize = KeryxType.micro,
             fontWeight = FontWeight.Medium,
         )
         Spacer(modifier = Modifier.width(8.dp))
@@ -218,12 +218,12 @@ fun MessageBubble(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(start = 4.dp, bottom = 2.dp),
                 ) {
-                    HeraldSigil(herald, fontSize = 11.sp)
+                    HeraldSigil(herald, fontSize = KeryxType.micro)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = shortSender(message.senderName),
                         color = herald.accent,
-                        fontSize = 11.sp,
+                        fontSize = KeryxType.micro,
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
@@ -231,7 +231,7 @@ fun MessageBubble(
                 Text(
                     text = shortSender(message.senderName),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(start = 4.dp, bottom = 2.dp),
                 )
@@ -374,7 +374,7 @@ fun MessageBubble(
                 if (bloom.value < 1f) {
                     Text(
                         "❤️",
-                        fontSize = 34.sp,
+                        fontSize = KeryxType.splash,
                         modifier = Modifier
                             .align(Alignment.Center)
                             .graphicsLayer {
@@ -422,8 +422,8 @@ fun MessageBubble(
         if (confirmUndo) {
             androidx.compose.material3.AlertDialog(
                 onDismissRequest = { confirmUndo = false },
-                title = { Text("Take back the last exchange?", fontSize = 16.sp) },
-                text = { Text("Your message and this reply leave the session's history on the gateway. The next thing you say continues from before them.", fontSize = 13.sp) },
+                title = { Text("Take back the last exchange?", fontSize = KeryxType.titleLarge) },
+                text = { Text("Your message and this reply leave the session's history on the gateway. The next thing you say continues from before them.", fontSize = KeryxType.body) },
                 confirmButton = {
                     TextButton(onClick = { confirmUndo = false; onUndoTurn?.invoke() }) {
                         Text("Take it back", color = MaterialTheme.colorScheme.error)
@@ -438,8 +438,8 @@ fun MessageBubble(
         if (confirmDelete) {
             androidx.compose.material3.AlertDialog(
                 onDismissRequest = { confirmDelete = false },
-                title = { Text("Delete message?", fontSize = 16.sp) },
-                text = { Text("It's removed for everyone — this can't be undone.", fontSize = 13.sp) },
+                title = { Text("Delete message?", fontSize = KeryxType.titleLarge) },
+                text = { Text("It's removed for everyone — this can't be undone.", fontSize = KeryxType.body) },
                 confirmButton = {
                     TextButton(onClick = { confirmDelete = false; onDelete?.invoke() }) {
                         Text("Delete", color = MaterialTheme.colorScheme.error)
@@ -463,7 +463,7 @@ fun MessageBubble(
                 Text(
                     text = formatClock(message.timestamp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 10.sp,
+                    fontSize = KeryxType.micro,
                 )
             }
             if (isMine) {
@@ -471,7 +471,7 @@ fun MessageBubble(
                 // Sent indicator (Element-style). The message is a real timeline event, so it's
                 // delivered. Accent at 0.8 measured 2.62:1 on paper; keryxAccentInk is the same
                 // hue pressed into it (and the raw accent back again on the void).
-                Text("✓", color = keryxAccentInk(), fontSize = 11.sp)
+                Text("✓", color = keryxAccentInk(), fontSize = KeryxType.micro)
             }
             if (speaking && onSpeak != null) {
                 Spacer(modifier = Modifier.width(6.dp))
@@ -523,11 +523,11 @@ private fun ReplyQuote(replyTo: Message, textColor: Color, onClick: (() -> Unit)
     ) {
         Box(modifier = Modifier.width(3.dp).fillMaxHeight().background(accent.copy(alpha = 0.7f)))
         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)) {
-            Text(shortSender(replyTo.senderName), color = accent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            Text(shortSender(replyTo.senderName), color = accent, fontSize = KeryxType.micro, fontWeight = FontWeight.SemiBold)
             Text(
                 text = replyPreviewText(replyTo),
                 color = textColor.copy(alpha = 0.7f),
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -555,12 +555,12 @@ private fun ReactionChips(reactions: List<MessageReaction>, isMine: Boolean, onR
                     .clickable { onReact(r.emoji) }
                     .padding(horizontal = 8.dp, vertical = 3.dp),
             ) {
-                Text(r.emoji, fontSize = 13.sp)
+                Text(r.emoji, fontSize = KeryxType.body)
                 if (r.count > 1) {
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         r.count.toString(),
-                        fontSize = 11.sp,
+                        fontSize = KeryxType.micro,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -646,7 +646,7 @@ private fun ReactionPickerRow(
                         )
                         Text(
                             emoji,
-                            fontSize = 20.sp,
+                            fontSize = KeryxType.display,
                             modifier = Modifier
                                 .graphicsLayer { scaleX = scale; scaleY = scale; alpha = scale.coerceIn(0f, 1f) }
                                 .clip(RoundedCornerShape(8.dp))

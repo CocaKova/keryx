@@ -70,14 +70,14 @@ fun MentionChips(
                     }
                     .padding(horizontal = 9.dp, vertical = 5.dp),
             ) {
-                HeraldSigil(light, fontSize = 11.sp)
+                HeraldSigil(light, fontSize = KeryxType.micro)
                 Spacer(Modifier.width(5.dp))
                 // The herald palette clears AA at FULL strength on bare paper; a 14% wash of
                 // the same hue underneath lifts the ground and drops every bot to 4.05–4.11:1.
-                Text("@" + bot.handle, fontSize = 12.sp, color = keryxAccentInk(light.accent), fontWeight = FontWeight.Medium)
+                Text("@" + bot.handle, fontSize = KeryxType.caption, color = keryxAccentInk(light.accent), fontWeight = FontWeight.Medium)
                 if (bot.label != BotRoster.pretty(bot.name) && bot.label != bot.handle) {
                     Spacer(Modifier.width(5.dp))
-                    Text(bot.label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(bot.label, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

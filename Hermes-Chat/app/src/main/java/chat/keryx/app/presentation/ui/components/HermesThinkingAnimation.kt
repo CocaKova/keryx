@@ -115,7 +115,7 @@ fun HermesThinkingAnimation(
                 ),
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
                 letterSpacing = 1.2.sp,
             ),
         )
@@ -196,7 +196,7 @@ fun AsciiWaveSpinner() {
             color = MaterialTheme.colorScheme.primary,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
-            fontSize = 14.sp
+            fontSize = KeryxType.bodyLarge
         )
     }
 }

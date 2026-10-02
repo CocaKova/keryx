@@ -60,7 +60,7 @@ fun CitationsBar(items: List<MessageParser.Citation>, baseColor: Color) {
             // alpha, so every `accent.copy(alpha = …)` label in this file was between 2.16:1
             // and 2.87:1 there. keryxAccentInk presses the same hue into the paper and hands
             // the raw accent straight back on the void, so dark mode is untouched.
-            Text("Sources", color = keryxAccentInk(accent), fontSize = 11.sp, fontWeight = FontWeight.Medium)
+            Text("Sources", color = keryxAccentInk(accent), fontSize = KeryxType.micro, fontWeight = FontWeight.Medium)
             items.forEach { c ->
                 val sel = selected == c.n
                 Box(
@@ -76,7 +76,7 @@ fun CitationsBar(items: List<MessageParser.Citation>, baseColor: Color) {
                         .clickable { selected = if (sel) null else c.n }
                         .padding(horizontal = 9.dp, vertical = 3.dp),
                 ) {
-                    Text("${c.n}", color = baseColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("${c.n}", color = baseColor, fontSize = KeryxType.caption, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -97,22 +97,22 @@ fun CitationsBar(items: List<MessageParser.Citation>, baseColor: Color) {
                         .padding(10.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(kindEmoji(c.kind), fontSize = 13.sp)
+                        Text(kindEmoji(c.kind), fontSize = KeryxType.body)
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             c.kind.ifBlank { "source" },
                             color = keryxAccentInk(accent),
-                            fontSize = 11.sp,
+                            fontSize = KeryxType.micro,
                             fontWeight = FontWeight.SemiBold,
                         )
                     }
                     if (c.label.isNotBlank()) {
                         Spacer(modifier = Modifier.padding(top = 3.dp))
-                        Text(c.label, color = baseColor, fontSize = 13.sp)
+                        Text(c.label, color = baseColor, fontSize = KeryxType.body)
                     }
                     if (c.detail.isNotBlank()) {
                         Spacer(modifier = Modifier.padding(top = 2.dp))
-                        Text(c.detail, color = baseColor.copy(alpha = 0.6f), fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                        Text(c.detail, color = baseColor.copy(alpha = 0.6f), fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace)
                     }
                 }
             }
@@ -178,18 +178,18 @@ fun QuickActionTiles(options: List<String>, baseColor: Color) {
                         .clip(CircleShape)
                         .background(Brush.linearGradient(listOf(accent, accent2))),
                 ) {
-                    Text("↩", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("↩", color = Color.White, fontSize = KeryxType.caption, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.width(11.dp))
                 Text(
                     option,
                     color = baseColor,
-                    fontSize = 14.sp,
+                    fontSize = KeryxType.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("›", color = keryxAccentInk(accent), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("›", color = keryxAccentInk(accent), fontSize = KeryxType.headline, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -254,7 +254,7 @@ fun HandsTiles(actions: List<chat.keryx.core.model.PhoneAction>, baseColor: Colo
                 Text(
                     action.label,
                     color = baseColor,
-                    fontSize = 14.sp,
+                    fontSize = KeryxType.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
                     modifier = Modifier.weight(1f),
@@ -264,7 +264,7 @@ fun HandsTiles(actions: List<chat.keryx.core.model.PhoneAction>, baseColor: Colo
                 // "dials a number" on a tile whose whole consent model IS the tap. It was
                 // 2.16:1 on parchment, the least readable string in the family.
                 Text(
-                    handWhere(action.kind), color = keryxAccentInk(accent), fontSize = 9.5.sp,
+                    handWhere(action.kind), color = keryxAccentInk(accent), fontSize = KeryxType.micro,
                     letterSpacing = 1.sp,
                 )
             }
@@ -319,12 +319,12 @@ fun SkillDistilledPill(skill: MessageParser.Segment.SkillDistilled, baseColor: C
                 .clickable { open = !open }
                 .padding(horizontal = 12.dp, vertical = 6.dp),
         ) {
-            Text("✦", fontSize = 12.sp)
+            Text("✦", fontSize = KeryxType.caption)
             Spacer(modifier = Modifier.width(7.dp))
-            Text("Skill Distilled", color = accent.copy(alpha = 0.92f), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Text("Skill Distilled", color = accent.copy(alpha = 0.92f), fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold)
             if (skill.name.isNotBlank()) {
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("· ${skill.name}", color = baseColor, fontSize = 12.sp)
+                Text("· ${skill.name}", color = baseColor, fontSize = KeryxType.caption)
             }
         }
         AnimatedVisibility(
@@ -342,7 +342,7 @@ fun SkillDistilledPill(skill: MessageParser.Segment.SkillDistilled, baseColor: C
                     .padding(10.dp),
             ) {
                 if (skill.summary.isNotBlank()) {
-                    Text(skill.summary, color = baseColor.copy(alpha = 0.85f), fontSize = 13.sp)
+                    Text(skill.summary, color = baseColor.copy(alpha = 0.85f), fontSize = KeryxType.body)
                 }
                 Spacer(modifier = Modifier.padding(top = 4.dp))
                 val openForge = LocalSkillForgeOpener.current
@@ -350,7 +350,7 @@ fun SkillDistilledPill(skill: MessageParser.Segment.SkillDistilled, baseColor: C
                 Text(
                     "Open in Skill Forge →",
                     color = keryxAccentInk(accent),
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier
                         .heightIn(min = 40.dp)

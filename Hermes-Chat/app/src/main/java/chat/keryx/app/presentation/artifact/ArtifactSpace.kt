@@ -46,6 +46,7 @@ import chat.keryx.app.util.saveMediaToDevice
 import chat.keryx.app.util.shareMedia
 import chat.keryx.core.model.MediaKind
 import kotlinx.coroutines.launch
+import chat.keryx.app.presentation.ui.components.KeryxType
 
 /**
  * The artifact viewer (2.13): a page the agent wrote, drawn by a WebView inside a [KeryxSpace]
@@ -107,7 +108,7 @@ fun ArtifactSpace(
                     ready?.let { append("  ·  ").append(humanSize(it.bytes.size)) }
                 },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 11.sp,
+                fontSize = KeryxType.micro,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -156,7 +157,7 @@ fun ArtifactSpace(
             Page.Loading -> Text(
                 // Honest on both doors: the bytes may come through the room, not the gateway.
                 "Opening ${dest.name}…",
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
             )
@@ -164,17 +165,17 @@ fun ArtifactSpace(
                 Text(
                     "Couldn't open ${dest.name}",
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 14.sp,
+                    fontSize = KeryxType.bodyLarge,
                 )
                 Text(
                     p.why,
                     color = MaterialTheme.colorScheme.error,
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     lineHeight = 17.sp,
                     modifier = Modifier.padding(top = 6.dp),
                 )
                 TextButton(onClick = { reloadTick++ }, modifier = Modifier.padding(top = 4.dp)) {
-                    Text("Try again", fontSize = 12.sp)
+                    Text("Try again", fontSize = KeryxType.caption)
                 }
             }
             is Page.Ready -> Box(

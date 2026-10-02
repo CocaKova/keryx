@@ -78,7 +78,7 @@ internal fun WorkingStatusBar(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (council && typingAgentIds.isNotEmpty()) {
                     typingAgentIds.forEach { id ->
-                        HeraldSigil(heraldLightFor(id, ""), fontSize = 12.sp)
+                        HeraldSigil(heraldLightFor(id, ""), fontSize = KeryxType.caption)
                         Spacer(modifier = Modifier.width(3.dp))
                     }
                     Spacer(modifier = Modifier.width(3.dp))
@@ -91,13 +91,13 @@ internal fun WorkingStatusBar(
                         if (tokPerSec > 2f) append(" · ≈${tokPerSec.toInt()} tok/s")
                     },
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     fontWeight = FontWeight.Medium,
                 )
                 // The door's handle: one glyph, so a tappable banner looks like one.
                 if (onTapIn != null) {
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("⤢", color = accent, fontSize = 12.sp)
+                    Text("⤢", color = accent, fontSize = KeryxType.caption)
                 }
             }
         }
@@ -185,13 +185,13 @@ internal fun StreamingBubble(
                             ).value
                         } else 0.9f
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("▍", color = lerp(accent2, accent, a).copy(alpha = a), fontSize = 13.sp)
+                            Text("▍", color = lerp(accent2, accent, a).copy(alpha = a), fontSize = KeryxType.body)
                             if (stream.charsPerSec > 8f) {
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "≈${(stream.charsPerSec / 4f).toInt()} tok/s",
                                     color = appearance.textColor.copy(alpha = 0.40f),
-                                    fontSize = 10.sp,
+                                    fontSize = KeryxType.micro,
                                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                                 )
                             }
@@ -209,12 +209,12 @@ internal fun StreamingBubble(
                     .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f))
                     .padding(horizontal = 10.dp, vertical = 5.dp),
             ) {
-                Text("⚡", fontSize = 11.sp)
+                Text("⚡", fontSize = KeryxType.micro)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = "Stream dropped — recovering via Matrix sync…",
                     color = MaterialTheme.colorScheme.onErrorContainer,
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                 )
             }
         }
@@ -279,7 +279,7 @@ internal fun PendingSendBubble(text: String, bubbleStyle: String, textScale: Flo
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 3.dp, end = 4.dp)) {
             // The pending tick breathes; the real bubble's steady ✓ takes over after the swap.
-            Text("✓", color = accent.copy(alpha = tickAlpha), fontSize = 11.sp)
+            Text("✓", color = accent.copy(alpha = tickAlpha), fontSize = KeryxType.micro)
         }
     }
 }
@@ -301,7 +301,7 @@ internal fun TelemetryMessageRow(message: Message, textScale: Float) {
             Text(
                 text = formatClock(message.timestamp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
-                fontSize = 9.sp,
+                fontSize = KeryxType.micro,
                 modifier = Modifier.padding(start = 4.dp, top = 1.dp),
             )
         }
@@ -390,7 +390,7 @@ internal fun WaitingIndicator() {
                         listOf(quipAccent.copy(alpha = 0.9f), quipAccent2.copy(alpha = 0.9f)),
                     ),
                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                    fontSize = 13.sp,
+                    fontSize = KeryxType.body,
                 ),
             )
         }

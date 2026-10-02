@@ -115,7 +115,7 @@ fun ToolTheaterRow(
             // a failure is the same red every failed thing in Keryx wears, unknown stays ink.
             Text(
                 when (ok) { true -> "✓"; false -> "✕"; null -> "·" },
-                fontSize = 9.sp,
+                fontSize = KeryxType.micro,
                 // No alpha on the verdicts. The paper palette is tuned so each status clears
                 // 4.5:1 on parchment EXACTLY (PaperContrastTest pins it), so an 0.8 wash on the
                 // tick dropped it to 3.24:1 while the cross beside it stayed at 4.51 — a run's
@@ -134,7 +134,7 @@ fun ToolTheaterRow(
             // before a single verb is read (2.6.2 tool-log pass).
             Text(
                 if (isSkill) "✦" else ToolGrammar.glyphOf(call.name),
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 // Same reason: KeryxToolTint's paper set is tuned to land ON the 4.5:1 line, so
                 // a 10% wash put four of the eight families under it. The tint is already the
                 // quiet version of itself.
@@ -144,7 +144,7 @@ fun ToolTheaterRow(
             Text(
                 text = ToolGrammar.title(call.name, "", running = false),
                 color = baseColor.copy(alpha = 0.72f),
-                fontSize = 11.sp,
+                fontSize = KeryxType.micro,
                 maxLines = 1,
             )
             if (target.isNotBlank()) {
@@ -152,7 +152,7 @@ fun ToolTheaterRow(
                 Text(
                     text = target,
                     color = baseColor.copy(alpha = 0.5f),
-                    fontSize = 10.5.sp,
+                    fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -169,7 +169,7 @@ fun ToolTheaterRow(
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     if (durS >= 1.0) "${durS.toInt()}s" else "${(durS * 1000).toInt()}ms",
-                    fontSize = 9.sp,
+                    fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     color = baseColor.copy(alpha = 0.35f),
                 )
@@ -186,7 +186,7 @@ fun ToolTheaterRow(
             Text(
                 text = Theater.reason(output),
                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
-                fontSize = 10.5.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
@@ -204,7 +204,7 @@ fun ToolTheaterRow(
             // 0.72 the tool's own title beside it already uses.
             Text(
                 if (showOutput) "▾ output" else "▸ output",
-                fontSize = 9.5.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = baseColor.copy(alpha = 0.72f),
                 modifier = Modifier
@@ -217,7 +217,7 @@ fun ToolTheaterRow(
                 Text(
                     text = output,
                     color = baseColor.copy(alpha = 0.78f),
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     modifier = Modifier
                         .padding(start = 19.dp, top = 2.dp, bottom = 2.dp)
@@ -235,7 +235,7 @@ fun ToolTheaterRow(
             }
             Text(
                 if (open) "▾ diff" else "▸ diff",
-                fontSize = 9.5.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = baseColor.copy(alpha = 0.72f),
                 modifier = Modifier
@@ -398,13 +398,13 @@ fun ToolTheaterRun(
                         }
                     }
                 },
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = label,
                 color = baseColor.copy(alpha = 0.8f),
-                fontSize = 12.5.sp,
+                fontSize = KeryxType.body,
                 fontWeight = FontWeight.Medium,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -417,7 +417,7 @@ fun ToolTheaterRun(
                 DiffStat(added = added, removed = removed)
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Text(if (expanded) "▾" else "▸", color = baseColor.copy(alpha = 0.5f), fontSize = 11.sp)
+            Text(if (expanded) "▾" else "▸", color = baseColor.copy(alpha = 0.5f), fontSize = KeryxType.micro)
         }
 
         AnimatedVisibility(
@@ -487,7 +487,7 @@ fun ToolTheaterRun(
                             is ToolRunEntry.Note -> Text(
                                 text = entry.text,
                                 color = baseColor.copy(alpha = 0.78f),
-                                fontSize = 12.sp,
+                                fontSize = KeryxType.caption,
                                 fontFamily = FontFamily.Monospace,
                                 modifier = Modifier
                                     .padding(start = 8.dp)
@@ -500,7 +500,7 @@ fun ToolTheaterRun(
                             is ToolRunEntry.Telemetry -> Text(
                                 text = entry.text,
                                 color = baseColor.copy(alpha = 0.45f),
-                                fontSize = 11.sp,
+                                fontSize = KeryxType.micro,
                                 fontFamily = FontFamily.Monospace,
                                 modifier = Modifier.padding(start = 8.dp, top = 2.dp, bottom = 2.dp),
                             )

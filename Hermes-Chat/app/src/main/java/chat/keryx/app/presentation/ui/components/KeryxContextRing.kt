@@ -72,7 +72,7 @@ fun KeryxContextRing(used: Long, max: Long, modifier: Modifier = Modifier, compa
                     if (g.left > 0L) "${used / 1000}k · ${(g.left + 999) / 1000}k to compaction"
                     else "${used / 1000}k · compacts next"
                 } ?: "${used / 1000}k / ${max / 1000}k",
-                fontSize = 9.5.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = meta,
             )

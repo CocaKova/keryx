@@ -51,13 +51,13 @@ internal fun ContextBreakdownSheet(viewModel: ChatViewModel, onDismiss: () -> Un
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
             val d = data
             when {
-                error != null -> Text(error!!, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+                error != null -> Text(error!!, color = MaterialTheme.colorScheme.error, fontSize = KeryxType.body)
                 d == null -> PanelLoading()
                 else -> {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             "${d.percent}%",
-                            fontSize = 26.sp,
+                            fontSize = KeryxType.hero,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
@@ -65,11 +65,11 @@ internal fun ContextBreakdownSheet(viewModel: ChatViewModel, onDismiss: () -> Un
                         Column {
                             Text(
                                 "${compact(d.used)} of ${compact(d.max)} tokens",
-                                fontSize = 13.sp,
+                                fontSize = KeryxType.body,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             if (d.model.isNotBlank()) Text(
-                                d.model, fontSize = 11.sp, fontFamily = FontFamily.Monospace,
+                                d.model, fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                             )
                         }
@@ -102,18 +102,18 @@ internal fun ContextBreakdownSheet(viewModel: ChatViewModel, onDismiss: () -> Un
                             Box(Modifier.size(9.dp).clip(CircleShape).background(hue(i)))
                             Spacer(Modifier.width(10.dp))
                             Text(
-                                c.label, fontSize = 13.sp,
+                                c.label, fontSize = KeryxType.body,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.weight(1f),
                             )
                             Text(
-                                compact(c.tokens), fontSize = 12.sp, fontFamily = FontFamily.Monospace,
+                                compact(c.tokens), fontSize = KeryxType.caption, fontFamily = FontFamily.Monospace,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(Modifier.width(10.dp))
                             Text(
                                 "${(100f * c.tokens / d.total).let { if (it < 1f) "<1" else it.toInt().toString() }}%",
-                                fontSize = 12.sp, fontFamily = FontFamily.Monospace,
+                                fontSize = KeryxType.caption, fontFamily = FontFamily.Monospace,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 modifier = Modifier.width(38.dp),
                             )
@@ -121,7 +121,7 @@ internal fun ContextBreakdownSheet(viewModel: ChatViewModel, onDismiss: () -> Un
                     }
                     if (d.categories.isEmpty()) Text(
                         "The gateway has no live agent for this session yet — send something first.",
-                        fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(16.dp))
                 }

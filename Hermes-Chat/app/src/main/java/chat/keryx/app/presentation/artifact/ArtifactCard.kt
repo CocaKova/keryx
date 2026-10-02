@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import chat.keryx.app.presentation.ui.components.KeryxGlyphs
 import chat.keryx.app.presentation.ui.components.KeryxRadius
 import chat.keryx.core.model.Artifacts
+import chat.keryx.app.presentation.ui.components.KeryxType
 
 /**
  * A page in the transcript (2.13): the glyph, the file's name, and the one verb. Replaces the
@@ -63,7 +64,7 @@ fun ArtifactCard(
             Text(
                 text = name,
                 color = textColor,
-                fontSize = 14.sp,
+                fontSize = KeryxType.bodyLarge,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -72,7 +73,7 @@ fun ArtifactCard(
             Text(
                 text = if (busy) "Opening…" else "Page · tap to open",
                 color = textColor.copy(alpha = 0.6f),
-                fontSize = 11.sp,
+                fontSize = KeryxType.micro,
                 maxLines = 1,
             )
         }
@@ -80,7 +81,7 @@ fun ArtifactCard(
         Text(
             text = "Open",
             color = textColor,
-            fontSize = 12.sp,
+            fontSize = KeryxType.caption,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier
                 .clip(RoundedCornerShape(KeryxRadius.chip))
@@ -129,7 +130,7 @@ fun ArtifactPathChips(
                 Text(
                     text = "Open $name",
                     color = textColor,
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
