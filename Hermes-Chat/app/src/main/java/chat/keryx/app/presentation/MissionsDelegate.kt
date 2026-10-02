@@ -1,6 +1,7 @@
 package chat.keryx.app.presentation
 
 import chat.keryx.app.data.remote.HermesStreamClient
+import chat.keryx.app.data.remote.HermesStreamClient.KanbanTask
 import chat.keryx.app.notify.MissionAlertsWorker
 import chat.keryx.app.presentation.ui.components.CardMove
 import chat.keryx.core.model.RoomProfile
@@ -153,6 +154,19 @@ class MissionsDelegate(
     }
 
     fun consumeOpenTask() { _openTaskRequest.value = null }
+
+    // "Since you looked" (2.16): each card's face as it was when the board last closed. Held for
+    // the process only — and a first look in a process sweeps nothing, so a cold start never
+    // lights the whole board as if everything were new.
+    private var lookedPrints: Map<String, Int>? = null
+
+    /** Cards changed (or new) since the board was last closed; empty on a first look. */
+    fun sinceLooked(tasks: Map<String, List<KanbanTask>>): Set<String> =
+        lookedPrints?.let { MissionSeen.changed(it, tasks) } ?: emptySet()
+
+    fun markLooked(tasks: Map<String, List<KanbanTask>>) {
+        if (tasks.isNotEmpty()) lookedPrints = MissionSeen.prints(tasks)
+    }
 
     /** A bulk archive in flight: how far along. Null = none running. */
     data class BulkProgress(val done: Int, val total: Int, val failed: Int = 0)

@@ -183,6 +183,14 @@ fun ChatScreen(
     // The harvest's instruments (plan §5) — quiet nulls on the Matrix path.
     val pendingApproval by viewModel.pendingApproval.collectAsState()
     val pendingBlocking by viewModel.pendingBlocking.collectAsState()
+    // "Waiting on you" (2.16): one distinct tick pattern the moment a request lands on screen —
+    // not when one is merely still there, and not for a room switch that reveals an old one.
+    val waitingNow = pendingApproval != null || pendingBlocking != null
+    var waitingSeen by remember(currentRoom?.id) { mutableStateOf(waitingNow) }
+    LaunchedEffect(waitingNow) {
+        if (waitingNow && !waitingSeen) turnHaptics.waiting()
+        waitingSeen = waitingNow
+    }
     val flightPlan by viewModel.flightPlan.collectAsState()
 
     // Several at once (2.16): a photo set, a few files, a camera shot — sent as one message.
@@ -639,7 +647,16 @@ fun ChatScreen(
         // Reserve space at the bottom equal to the (growing) composer height so messages never
         // slide underneath it as the user types a multi-line message.
         val bottomReserve = with(density) { composerHeightPx.toDp() } + 28.dp
-        androidx.compose.runtime.CompositionLocalProvider(chat.keryx.app.presentation.ui.components.LocalTurnRates provides turnRates) {
+        // Honest sand (2.16): the pour reads the live rate each frame through State, so it
+        // follows the stream (and stops on a stall) without recomposing anything.
+        val liveRateNow = androidx.compose.runtime.rememberUpdatedState(liveRate)
+        val sandPour = remember {
+            { chat.keryx.app.presentation.ui.components.sandPour(liveRateNow.value, System.currentTimeMillis()) }
+        }
+        androidx.compose.runtime.CompositionLocalProvider(
+            chat.keryx.app.presentation.ui.components.LocalTurnRates provides turnRates,
+            chat.keryx.app.presentation.ui.components.LocalSandPour provides sandPour,
+        ) {
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -1122,7 +1139,14 @@ fun ChatScreen(
                 setComposer("")
                 return t
             }
+            // The ring's 2.16 readings: a warm prefix cache gilds it, a compaction drains it.
+            val cacheHit by viewModel.cacheHitPct.collectAsState()
+            var drainSince by remember { mutableStateOf<Long?>(null) }
+            LaunchedEffect(compactingNow) { drainSince = if (compactingNow) System.currentTimeMillis() else null }
             Composer(
+                ringCacheWarm = (cacheHit ?: 0) >= 80,
+                ringDrainSince = drainSince,
+                ringDrainSeconds = compactionTypical,
                 onContextTap = if (viewModel.transportIsDirect) ({ showContext = true }) else null,
                 composerField = composerField,
                 onPasteImage = ::stagePastedImage,
@@ -1241,6 +1265,14 @@ fun ChatScreen(
         // before any real count has calibrated it; it falls toward zero during a stall).
         // Pinned at the top so it stays put for the whole run, unlike the per-message tool labels.
         val topRate = liveRate
+        // The cloud wears the running tool's colour (2.16): the newest call still executing in
+        // this turn, by its family's tint — the same tint its row in the run wears.
+        val runningTool = remember(renderItems) {
+            chat.keryx.app.presentation.tapin.TurnSlice.of(renderItems).calls.lastOrNull { it.running }?.name
+        }
+        val toolTint = runningTool?.let {
+            chat.keryx.app.presentation.ui.components.KeryxToolTint.of(chat.keryx.core.model.ToolGrammar.familyOf(it))
+        }
         // Compaction takes the banner over while it runs: the gateway's own count of what it is
         // summarizing, in place of a verb it is not doing (2.5.7). Everything else it says stays
         // where it was — the clock keeps counting, the cloud keeps its shape.
@@ -1302,6 +1334,7 @@ fun ChatScreen(
                 compacting = compacting != null,
                 startedAt = workStartedAt,
                 rate = topRate,
+                toolTint = toolTint,
                 typingAgentIds = typingAgentIds,
                 modifier = Modifier.padding(top = 6.dp),
                 onTapIn = { tapInOpen = true },

@@ -95,3 +95,20 @@ object MissionEditForm {
         }
     }
 }
+
+/**
+ * What a card looks like, reduced to a number (2.16 "since you looked"): the things its face
+ * shows — lane, whether it needs you, its ask, its latest word, failures, diagnostics, done.
+ */
+object MissionSeen {
+    fun print(t: KanbanTask): Int = listOf(
+        t.status, t.needsYou, t.ask, t.latestSummary, t.consecutiveFailures, t.diagCount, t.completedAt, t.title,
+    ).hashCode()
+
+    fun prints(tasks: Map<String, List<KanbanTask>>): Map<String, Int> =
+        tasks.values.flatten().associate { it.id to print(it) }
+
+    /** Ids whose face differs from [before], new cards included. */
+    fun changed(before: Map<String, Int>, tasks: Map<String, List<KanbanTask>>): Set<String> =
+        tasks.values.flatten().filter { before[it.id] != print(it) }.mapTo(HashSet()) { it.id }
+}

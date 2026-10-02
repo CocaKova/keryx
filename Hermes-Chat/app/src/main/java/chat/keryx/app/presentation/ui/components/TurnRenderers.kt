@@ -36,6 +36,8 @@ internal fun WorkingStatusBar(
     /** The live generation rate (2.16): labelled by core TokenRate — "≈41 tok/s" once a real
      *  count has calibrated it, "164 chars/s" before, and gone during a stall. */
     rate: chat.keryx.core.model.LiveRate? = null,
+    /** The running tool's family tint (2.16): the cloud's rim takes it while the tool runs. */
+    toolTint: androidx.compose.ui.graphics.Color? = null,
     /** Heralds typing right now — in a council room the bar wears one sigil each, so you can see
      *  *who* is working without waiting for the bubble (2.3 §1). */
     typingAgentIds: List<String> = emptyList(),
@@ -58,6 +60,9 @@ internal fun WorkingStatusBar(
         }
         val elapsed = startedAt?.let { ((now - it).coerceAtLeast(0L)) / 1000 } ?: 0L
         val clock = "${elapsed / 60}:${"%02d".format(elapsed % 60)}"
+        val rim by androidx.compose.animation.animateColorAsState(
+            toolTint ?: MaterialTheme.colorScheme.primary, label = "cloudRim",
+        )
         val accent = MaterialTheme.colorScheme.primary
         val council = LocalHeraldConfig.current.council
         // The banner itself is the cloud: bumpy orbiting edges + a gentle bob, with the label inside.
@@ -65,7 +70,7 @@ internal fun WorkingStatusBar(
             // Opaque fill so the scalloped edge stays crisp (translucency made the bumps ghost
             // through each other, which is what read as "circles" in light mode).
             fill = MaterialTheme.colorScheme.surfaceVariant,
-            border = accent.copy(alpha = 0.85f),
+            border = rim.copy(alpha = 0.85f),
             border2 = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f),
             // It floats over the transcript: its own ground first, so the text scrolling under
             // the glow and the scallops never reads through them (2.16, [CloudFloor]).

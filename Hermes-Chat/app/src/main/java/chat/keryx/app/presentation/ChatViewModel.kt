@@ -452,6 +452,13 @@ class ChatViewModel(
         ) { sideChannel, direct -> direct ?: sideChannel }
             .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
+    /** The open session's prefix-cache hit rate (2.16, `usage.cache_hit_pct`); null = unknown. */
+    val cacheHitPct: StateFlow<Int?> =
+        _currentRoom.flatMapLatest { r ->
+            val d = transport as? chat.keryx.app.transport.direct.DirectTransport
+            if (r == null || d == null) flowOf(null) else d.sessionMeta(r.id).map { it.cacheHitPct }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     /** Bumped when a compaction's length is recorded, so [compactionTypicalSeconds] re-reads. */
     private val _compactionSamples = MutableStateFlow(0)
 

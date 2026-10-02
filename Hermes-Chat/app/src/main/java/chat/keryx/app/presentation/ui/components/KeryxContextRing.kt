@@ -41,10 +41,34 @@ import androidx.compose.ui.unit.sp
  * from nowhere. The figure then reads "31k to compaction".
  */
 @Composable
-fun KeryxContextRing(used: Long, max: Long, modifier: Modifier = Modifier, compactAt: Long = 0L) {
+fun KeryxContextRing(
+    used: Long,
+    max: Long,
+    modifier: Modifier = Modifier,
+    compactAt: Long = 0L,
+    /** The prefix cache is warm (2.16, `cache_hit_pct` ≥ 80): a gilded inner edge. */
+    cacheWarm: Boolean = false,
+    /** A compaction running since this phone-clock instant (2.16): the ring drains toward empty
+     *  over [drainSeconds] (the typical compaction this app has measured), and snaps to the new
+     *  reading with one tick when it lands. Null = not compacting. */
+    drainSince: Long? = null,
+    drainSeconds: Int? = null,
+) {
     if (used <= 0L || max <= 0L) return
     val toCompaction = chat.keryx.core.model.CompactionGauge.of(used, compactAt.takeIf { it in 1..max })
-    val frac = toCompaction?.fraction ?: (used.toFloat() / max.toFloat()).coerceIn(0f, 1f)
+    val reading = toCompaction?.fraction ?: (used.toFloat() / max.toFloat()).coerceIn(0f, 1f)
+    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    androidx.compose.runtime.LaunchedEffect(drainSince) {
+        // On screen only, and only while a compaction runs: four reads a second is plenty.
+        while (drainSince != null) { now = System.currentTimeMillis(); kotlinx.coroutines.delay(250) }
+    }
+    val haptics = LocalKeryxHaptics.current
+    var wasDraining by remember { mutableStateOf(drainSince != null) }
+    androidx.compose.runtime.LaunchedEffect(drainSince != null) {
+        if (wasDraining && drainSince == null) haptics.commit()
+        wasDraining = drainSince != null
+    }
+    val frac = chat.keryx.core.model.CompactionGauge.drained(reading, drainSince, drainSeconds, now)
     val sweep by animateFloatAsState(frac * 360f, spring(stiffness = 60f, dampingRatio = 1f), label = "ctxSweep")
     val color = when {
         frac > 0.90f -> KeryxStatus.bad
@@ -82,6 +106,11 @@ fun KeryxContextRing(used: Long, max: Long, modifier: Modifier = Modifier, compa
             val trackStroke = 1.2.dp.toPx()
             val fillStroke = (1.2f + 1.9f * frac).dp.toPx()
             drawCircle(track, radius = (size.minDimension - trackStroke) / 2f, style = Stroke(trackStroke))
+            if (cacheWarm) {
+                // Gilt on the inside of the band: what the window holds is mostly already paid for.
+                val gild = 0.9.dp.toPx()
+                drawCircle(Gilt, radius = size.minDimension / 2f - fillStroke - gild, style = Stroke(gild))
+            }
             val inset = fillStroke / 2f
             drawArc(
                 color = color,
@@ -95,3 +124,6 @@ fun KeryxContextRing(used: Long, max: Long, modifier: Modifier = Modifier, compa
         }
     }
 }
+
+/** The cache-warm edge's gold (2.16). Decorative: it carries no text. */
+private val Gilt = androidx.compose.ui.graphics.Color(0xFFD4A537)

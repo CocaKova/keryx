@@ -53,4 +53,24 @@ class MissionBoardToolsTest {
         assertEquals(listOf("default", "sy"), MissionEditForm.parseAssignees("""{"assignees":[{"name":"default"},{"name":"sy"}]}"""))
         assertNull(MissionEditForm.parseAssignees("""{"detail":"Not Found"}"""))
     }
+
+    @Test
+    fun sinceYouLookedIsWhatChangedOnTheCardsFace() {
+        val before = chat.keryx.app.presentation.MissionSeen.prints(board)
+        assertTrue(chat.keryx.app.presentation.MissionSeen.changed(before, board).isEmpty())
+        val moved = board + ("done" to listOf(task("t4", "New card", "sy")))
+        val now = moved.mapValues { (lane, cards) ->
+            if (lane == "todo") cards.map { if (it.id == "t1") it.copy(status = "running") else it } else cards
+        }
+        assertEquals(setOf("t1", "t4"), chat.keryx.app.presentation.MissionSeen.changed(before, now))
+    }
+
+    @Test
+    fun sandPoursWithTheStreamAndStopsOnAStall() {
+        val ui = chat.keryx.app.presentation.ui.components.SAND_REFERENCE_TPS
+        assertEquals(1f, chat.keryx.app.presentation.ui.components.sandPour(null, 0L))
+        val rate = chat.keryx.core.model.LiveRate(cps = ui * 4f, lastAtMs = 1_000L, charsPerToken = 4f)
+        assertEquals(1f, chat.keryx.app.presentation.ui.components.sandPour(rate, 1_200L))
+        assertEquals(0f, chat.keryx.app.presentation.ui.components.sandPour(rate, 30_000L))
+    }
 }

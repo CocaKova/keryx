@@ -278,6 +278,15 @@ fun MissionsScreen(
         chat.keryx.app.presentation.MissionFilter.apply(allTasks, query, ownerFilter)
     }
     val filtering = query.isNotBlank() || ownerFilter != null
+    // "Since you looked" (2.16): the cards whose face changed since the board was last closed,
+    // decided once per opening; the board's state is recorded again on the way out.
+    val sinceLooked = remember(board != null) {
+        if (board == null) emptySet() else viewModel.missions.sinceLooked(allTasks)
+    }
+    val latestTasks = androidx.compose.runtime.rememberUpdatedState(allTasks)
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { viewModel.missions.markLooked(latestTasks.value) }
+    }
     val sections = missionSections(tasks)
     val runningCount = tasks["running"]?.size ?: 0
     val needsCount = sections.firstOrNull { it.key == NEEDS_YOU }?.cards?.size ?: 0
@@ -500,6 +509,7 @@ fun MissionsScreen(
                     items(cards, key = { it.id }) { task ->
                         MissionCard(
                             task = task,
+                            sinceLooked = task.id in sinceLooked,
                             subscribed = subs[task.id]?.isNotEmpty() == true,
                             selecting = selecting,
                             selected = task.id in chosen,
@@ -738,8 +748,17 @@ private fun MissionCard(
     selected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    /** Changed since you last looked (2.16): one pass of light as the board opens. */
+    sinceLooked: Boolean = false,
 ) {
     val color = if (task.needsYou) statusColor(NEEDS_YOU) else statusColor(task.status)
+    val sweep = remember(task.id) { androidx.compose.animation.core.Animatable(0f) }
+    androidx.compose.runtime.LaunchedEffect(task.id, sinceLooked) {
+        if (sinceLooked && sweep.value == 0f) {
+            kotlinx.coroutines.delay(180)
+            sweep.animateTo(1f, androidx.compose.animation.core.tween(760))
+        }
+    }
     val running = task.status == "running"
     val accent = MaterialTheme.colorScheme.primary
     val shape = RoundedCornerShape(KeryxRadius.card)
@@ -752,6 +771,7 @@ private fun MissionCard(
         breathing = running && !selecting,
         modifier = (if (task.status == "done" && !selected) Modifier.alpha(0.55f) else Modifier)
             .clip(shape)
+            .keryxLightSweep(color, MaterialTheme.colorScheme.tertiary, core = keryxSweepCore()) { sweep.value }
             .then(if (selected) Modifier.border(2.dp, accent, shape) else Modifier)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {

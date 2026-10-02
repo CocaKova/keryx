@@ -85,3 +85,17 @@ class TokenRateTest {
         assertNull(TokenRate.lookup(emptyMap(), "x", "room", "The answer."))
     }
 }
+
+class CompactionDrainTest {
+    @Test
+    fun theRingDrainsOverTheTypicalLengthAndHoldsAtTheFloor() {
+        val g = chat.keryx.core.model.CompactionGauge
+        assertEquals(0.9f, g.drained(0.9f, since = null, typicalSeconds = 30, nowMs = 5_000))
+        assertEquals(0.9f, g.drained(0.9f, since = 1_000, typicalSeconds = 30, nowMs = 1_000))
+        val half = g.drained(0.9f, since = 0, typicalSeconds = 10, nowMs = 5_000)
+        assertTrue(half in 0.48f..0.50f, "half way: $half")
+        assertEquals(g.DRAIN_FLOOR, g.drained(0.9f, since = 0, typicalSeconds = 10, nowMs = 60_000))
+        // A ring already below the floor does not fill up to drain.
+        assertEquals(0.05f, g.drained(0.05f, since = 0, typicalSeconds = 10, nowMs = 60_000))
+    }
+}

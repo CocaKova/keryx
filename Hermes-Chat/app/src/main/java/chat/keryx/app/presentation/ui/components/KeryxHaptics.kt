@@ -68,8 +68,25 @@ class KeryxHaptics(
         }
     }
 
+    /**
+     * Something is waiting on you (2.16): an approval, a question or a sudo prompt just landed.
+     * Three short ticks, unlike the two of [completion], so a pocket can tell "done" from "your
+     * turn" without a look.
+     */
+    fun waiting() {
+        if (!enabled()) return
+        scope.launch {
+            repeat(WAITING_TICKS) { i ->
+                if (i > 0) delay(WAITING_GAP_MS)
+                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+            }
+        }
+    }
+
     companion object {
         const val COMPLETION_GAP_MS = 90L
+        const val WAITING_TICKS = 3
+        const val WAITING_GAP_MS = 70L
     }
 }
 

@@ -50,7 +50,12 @@ fun Modifier.keryxMagicDust(
     active: Boolean,
     shape: Shape,
     grains: Int = 96,
+    /** Honest sand (2.16): how hard to pour right now, read every frame — 1 = the designed
+     *  rate, 0 = none. Defaults to [LocalSandPour], which the chat binds to the live token
+     *  rate, so a stalled model stops the sand instead of pouring on a timer. */
+    pour: (() -> Float)? = null,
 ): Modifier {
+    val pourNow = pour ?: LocalSandPour.current
     val reduced by rememberReducedMotion()
     val enabled = active && !reduced
     val accent = MaterialTheme.colorScheme.primary
@@ -164,7 +169,7 @@ fun Modifier.keryxMagicDust(
                         val sway = sin(simT * e.omega + e.phase) * 0.3f
                         val sdx = dx * cos(sway) - dy * sin(sway)
                         val sdy = dx * sin(sway) + dy * cos(sway)
-                        e.carry += 16f * (0.7f + 0.3f * scale) * dt
+                        e.carry += 16f * (0.7f + 0.3f * scale) * pourNow().coerceIn(0f, 2f) * dt
                         while (e.carry >= 1f) {
                             e.carry -= 1f
                             val g = pool.firstOrNull { !it.alive } ?: break
@@ -393,3 +398,16 @@ private val Starlight = Color(0xFFE2D9F3)
 
 /** The light-room wash — deep violet ink; sand must darken, not glow, on bright ground. */
 private val Inkfall = Color(0xFF43356B)
+
+/**
+ * The sand's pour (2.16): a reading of the live generation rate, scaled so a typical stream is
+ * 1. Null rate (no measurement on this door) keeps the designed pour; a measured rate that has
+ * decayed to nothing pours nothing.
+ */
+val LocalSandPour = androidx.compose.runtime.staticCompositionLocalOf<() -> Float> { { 1f } }
+
+/** Tokens per second that pour at the designed rate. */
+const val SAND_REFERENCE_TPS = 40f
+
+fun sandPour(rate: chat.keryx.core.model.LiveRate?, nowMs: Long): Float =
+    rate?.let { (it.intensity(nowMs) / SAND_REFERENCE_TPS).coerceIn(0f, 1.6f) } ?: 1f

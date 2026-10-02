@@ -331,6 +331,25 @@ data class CompactionGauge(val used: Long, val trigger: Long) {
         /** From a (used, max) reading plus the trigger — null when either half is unknown. */
         fun of(used: Long, trigger: Long?): CompactionGauge? =
             if (used > 0L && trigger != null && trigger > 0L) CompactionGauge(used, trigger) else null
+
+        /** The ring never drains past this while a compaction runs: the summary is not nothing. */
+        const val DRAIN_FLOOR = 0.08f
+
+        /**
+         * The ring's fill while a compaction runs (2.16): [reading] drained linearly toward
+         * [DRAIN_FLOOR] over [typicalSeconds] since [since] — the length this app has seen
+         * compactions take. Past the typical length it holds at the floor (it is late, not done);
+         * with no typical length it drains over [FALLBACK_SECONDS]. Not compacting: [reading].
+         */
+        fun drained(reading: Float, since: Long?, typicalSeconds: Int?, nowMs: Long): Float {
+            if (since == null) return reading
+            val span = ((typicalSeconds?.takeIf { it > 0 } ?: FALLBACK_SECONDS) * 1000L).toFloat()
+            val p = ((nowMs - since).coerceAtLeast(0L) / span).coerceIn(0f, 1f)
+            val floor = minOf(DRAIN_FLOOR, reading)
+            return if (p >= 1f) floor else reading + (floor - reading) * p
+        }
+
+        const val FALLBACK_SECONDS = 60
     }
 }
 

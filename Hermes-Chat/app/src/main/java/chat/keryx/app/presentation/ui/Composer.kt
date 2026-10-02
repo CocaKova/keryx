@@ -127,6 +127,10 @@ internal fun Composer(
     // keep the plain bar.
     caps: chat.keryx.app.data.remote.HermesStreamClient.ReasoningCaps? = null,
     contextUsage: ChatViewModel.ContextUsage? = null,
+    /** 2.16 ring: prefix cache warm (gilded edge), and a compaction's drain. */
+    ringCacheWarm: Boolean = false,
+    ringDrainSince: Long? = null,
+    ringDrainSeconds: Int? = null,
     roomId: String? = null,
     brains: chat.keryx.app.data.remote.HermesStreamClient.Brains? = null,
     catalog: chat.keryx.core.model.ModelCatalog? = null,
@@ -419,6 +423,9 @@ internal fun Composer(
     ComposerFooter(
         caps = caps,
         contextUsage = contextUsage,
+        ringCacheWarm = ringCacheWarm,
+        ringDrainSince = ringDrainSince,
+        ringDrainSeconds = ringDrainSeconds,
         roomId = roomId,
         brains = brains,
         catalog = catalog,
@@ -447,6 +454,9 @@ internal fun Composer(
 internal fun ComposerFooter(
     caps: chat.keryx.app.data.remote.HermesStreamClient.ReasoningCaps?,
     contextUsage: ChatViewModel.ContextUsage?,
+    ringCacheWarm: Boolean = false,
+    ringDrainSince: Long? = null,
+    ringDrainSeconds: Int? = null,
     roomId: String?,
     brains: chat.keryx.app.data.remote.HermesStreamClient.Brains?,
     catalog: chat.keryx.core.model.ModelCatalog?,
@@ -573,6 +583,9 @@ internal fun ComposerFooter(
         usage?.let {
             chat.keryx.app.presentation.ui.components.KeryxContextRing(
                 it.used, it.max, compactAt = it.compactAt,
+                cacheWarm = ringCacheWarm,
+                drainSince = ringDrainSince,
+                drainSeconds = ringDrainSeconds,
                 modifier = if (onContextTap != null) Modifier
                     .clip(androidx.compose.foundation.shape.CircleShape)
                     .clickable(onClickLabel = "What is in the context window", onClick = onContextTap)
