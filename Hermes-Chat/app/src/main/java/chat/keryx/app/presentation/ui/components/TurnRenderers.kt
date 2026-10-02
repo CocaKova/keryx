@@ -33,7 +33,9 @@ internal fun WorkingStatusBar(
     visible: Boolean,
     label: String,
     startedAt: Long?,
-    tokPerSec: Float = 0f,
+    /** The live generation rate (2.16): labelled by core TokenRate — "≈41 tok/s" once a real
+     *  count has calibrated it, "164 chars/s" before, and gone during a stall. */
+    rate: chat.keryx.core.model.LiveRate? = null,
     /** Heralds typing right now — in a council room the bar wears one sigil each, so you can see
      *  *who* is working without waiting for the bubble (2.3 §1). */
     typingAgentIds: List<String> = emptyList(),
@@ -103,8 +105,8 @@ internal fun WorkingStatusBar(
                     text = buildString {
                         if (compacting) append("🗜 ")
                         append("$label · $clock")
-                        // Live generation speed while tokens stream over the side-channel.
-                        if (tokPerSec > 2f) append(" · ≈${tokPerSec.toInt()} tok/s")
+                        // Live generation speed while text streams; decays on a stall.
+                        rate?.label(now)?.let { append(" · $it") }
                     },
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = KeryxType.caption,
@@ -187,11 +189,11 @@ internal fun StreamingBubble(
                     )
                     if (streaming) {
                         // A quiet blinking caret marks "still writing" without a layout-shifting
-                        // spinner; its blink crossfades accent 1 → accent 2. Beside it, a live
-                        // ≈tok/s readout — practical telemetry that also just looks alive.
-                        // Stilled, the caret holds solid rather than blinking — the text growing
-                        // above it is the liveness signal, and the ≈tok/s readout beside it moves
-                        // on its own without a frame clock.
+                        // spinner; its blink crossfades accent 1 → accent 2. Stilled, the caret
+                        // holds solid rather than blinking — the text growing above it is the
+                        // liveness signal. (The "≈ chars÷4 tok/s" that sat beside it until 2.16
+                        // was a character count dressed as tokens; the working banner carries the
+                        // honest rate now.)
                         val reducedMotion by chat.keryx.app.presentation.ui.components.rememberReducedMotion()
                         val a = if (!reducedMotion) {
                             rememberInfiniteTransition(label = "caret").animateFloat(
@@ -202,15 +204,6 @@ internal fun StreamingBubble(
                         } else 0.9f
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("▍", color = lerp(accent2, accent, a).copy(alpha = a), fontSize = KeryxType.body)
-                            if (stream.charsPerSec > 8f) {
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "≈${(stream.charsPerSec / 4f).toInt()} tok/s",
-                                    color = appearance.textColor.copy(alpha = 0.40f),
-                                    fontSize = KeryxType.micro,
-                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                )
-                            }
                         }
                     }
                 }

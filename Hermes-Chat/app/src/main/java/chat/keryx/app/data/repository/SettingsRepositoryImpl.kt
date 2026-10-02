@@ -249,6 +249,10 @@ class SettingsRepositoryImpl(
         get() = prefs.getFloat("message_text_scale", 1.0f)
         set(value) = prefs.edit().putFloat("message_text_scale", value).apply()
 
+    override var charsPerToken: Float
+        get() = prefs.getFloat("chars_per_token", 0f)
+        set(value) = prefs.edit().putFloat("chars_per_token", value).apply()
+
     override var syncToken: String?
         get() = prefs.getString("sync_token", null)
         set(value) = prefs.edit().putString("sync_token", value).apply()

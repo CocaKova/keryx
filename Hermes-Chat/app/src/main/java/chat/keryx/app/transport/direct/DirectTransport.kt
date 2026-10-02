@@ -97,6 +97,8 @@ class DirectTransport(
 
         /** Placeholder id for a tool.generating card, replaced by the real tool.start. */
         private const val STREAM_PUBLISH_MS = 100L
+        private const val RATE_PUBLISH_MS = 250L
+        private const val TURN_RATES_KEPT = 240
 private const val GHOST_TOOL_ID = "generating"
 /** How long a Stop waits for the gateway's own `message.complete` before sealing the stream itself. */
 private const val INTERRUPT_SEAL_MS = 4_000L
@@ -193,6 +195,13 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         var followJob: Job? = null
         /** The cached page is on screen (a paint, not a hydration — the wire still owes the truth). */
         var painted = false
+
+        /** Honest tok/s (2.16): this turn's streamed characters, timed, and the gateway's
+         *  cumulative output/call counters as they stood at `message.start`. */
+        val meter = chat.keryx.core.model.StreamRateMeter()
+        var baseOutput: Long? = null
+        var baseCalls: Int? = null
+        var lastRatePublishAt = 0L
 
         /** The agent's own `todo` plan — newest tool result wins, live or hydrated
          *  (every call returns the FULL list, so the latest one is the whole truth). */
@@ -477,7 +486,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             finalReasoning: String? = null,
             /** The gateway's account of a failed turn (2.10) — rides the final message. */
             failure: chat.keryx.core.model.TurnFailure? = null,
-        ) {
+        ): String? {
             streaming = false
             agentTyping.value = false
             val now = System.currentTimeMillis()
@@ -515,9 +524,11 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 )
             ) else emptyList()
             local = local + thoughtMsg + folded + finMsg
+            val settledId = (finMsg.lastOrNull() ?: folded.lastOrNull { it.content.isNotBlank() })?.id
             items.clear(); buffer = StringBuilder(); turnTag = 0L
             reasonBuf = StringBuilder(); reasonStartedAt = 0L; reasonEndedAt = 0L
             publish()
+            return settledId
         }
 
         /** Drop the rows this process life added on its own — a re-read is about to replace them. */
@@ -891,10 +902,11 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                         ?: listOf("once", "deny"),
                 ),
             )
-            "message.start" -> { store.streamStart(); noteRun(storedId, ev.type) }
+            "message.start" -> { store.streamStart(); rateTurnStart(store); noteRun(storedId, ev.type) }
             "message.delta" -> {
                 val t = pStr("text") ?: ""
                 store.streamDelta(t)
+                noteRate(store, t.length)
                 noteRun(storedId, ev.type)
                 _turnEvents.tryEmit(chat.keryx.core.model.TurnEvent.Delta(storedId, t))
             }
@@ -905,7 +917,12 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             // API call (conversation_loop.py → gateway thinking_callback). Desktop ignores it
             // outright (gateway-event.ts) — folding it in here stamped a kaomoji into the
             // reasoning disclosure once per call (Jonny's live-caught report, 08-15).
-            "reasoning.delta" -> { store.streamReasoning(pStr("text") ?: ""); noteRun(storedId, ev.type) }
+            "reasoning.delta" -> {
+                val t = pStr("text") ?: ""
+                store.streamReasoning(t)
+                noteRate(store, t.length)
+                noteRun(storedId, ev.type)
+            }
             "thinking.delta" -> { /* spinner status, not thought — working chip covers it */ }
             "reasoning.available" -> store.reasoningAvailable(pStr("text") ?: "")
             "message.interim" -> {
@@ -925,7 +942,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 // never got its `ready` (a heartbeat, a goal verdict, a done edge) outlived the
                 // turn and headlined Tap-In for every turn after it.
                 statusFlow(storedId).value = null
-                store.streamComplete(
+                val settledId = store.streamComplete(
                     finalText = pStr("text") ?: "",
                     error = pStr("status") == "error",
                     // complete carries the turn's reasoning too — authoritative over our
@@ -939,6 +956,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                     storedId, pStr("text") ?: "", error = pStr("status") == "error",
                 ))
                 applyMeta(storedId, p) // usage (incl. context_percent) rides on complete
+                // After the usage fold: the turn's real output count is the counter's move.
+                settleRate(store, settledId, pStr("text").orEmpty())
                 // A turn that died on a refused reasoning level lands here too, with
                 // status:"error" and the model's own words (measured live: "HTTP 400:
                 // Unexpected reasoning effort max. Supported types are xhigh (default),
@@ -1171,7 +1190,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 val text = pStr("message") ?: ""
                 // The turn ended, however it ended: a listener that only hears `message.complete`
                 // waits forever on the turns that die (the Call's channel never closes).
-                store.streamComplete(finalText = text, error = true, failure = pFailure())
+                store.streamComplete(finalText = text, error = true, failure = pFailure()); settleRate(store, null, "")
                 _turnEvents.tryEmit(chat.keryx.core.model.TurnEvent.End(storedId, text, error = true))
                 // A turn can die because the MODEL refused the reasoning level (a local
                 // template's supported set is narrower than Hermes' scale, and nothing knows
@@ -2803,6 +2822,70 @@ private const val INTERRUPT_SEAL_MS = 4_000L
 
     fun turnEvents(): Flow<chat.keryx.core.model.TurnEvent> = _turnEvents.events
 
+    // ---- Honest tok/s (2.16) ---------------------------------------------------------------
+    // Live: the streamed character rate, read with a chars-per-token ratio measured against the
+    // gateway's own output counter on an earlier single-call turn (0 until then, and the live
+    // label stays in chars/s). Settled: the counter's move over the turn, over the time the
+    // characters were flowing — real tokens, no estimate. See core TokenRate.
+
+    @Volatile private var charsPerToken: Float = settings.charsPerToken
+    private val liveRateFlows = java.util.concurrent.ConcurrentHashMap<String, MutableStateFlow<chat.keryx.core.model.LiveRate?>>()
+    private fun liveRateFlow(id: String) = liveRateFlows.getOrPut(id) { MutableStateFlow(null) }
+
+    /** The session's live rate while a turn streams; null between turns. */
+    fun liveRate(sessionId: String): StateFlow<chat.keryx.core.model.LiveRate?> = liveRateFlow(sessionId)
+
+    private val _turnRates = MutableStateFlow<Map<String, Double>>(emptyMap())
+    /** Settled real tok/s by finished-turn message id and by [TokenRate.answerKey]. */
+    val turnRates: StateFlow<Map<String, Double>> = _turnRates
+
+    private fun rateTurnStart(store: SessionStore) {
+        store.meter.reset()
+        val m = meta(store.storedId).value
+        store.baseOutput = m.outputTokens
+        store.baseCalls = m.apiCalls
+        store.lastRatePublishAt = 0L
+        liveRateFlow(store.storedId).value = null
+    }
+
+    private fun noteRate(store: SessionStore, chars: Int) {
+        if (chars <= 0) return
+        val now = System.currentTimeMillis()
+        store.meter.onChars(chars, now)
+        // A quarter second is plenty for a number read by eye, and keeps the flow quiet.
+        if (now - store.lastRatePublishAt >= RATE_PUBLISH_MS) {
+            store.lastRatePublishAt = now
+            liveRateFlow(store.storedId).value = store.meter.sample(charsPerToken)
+        }
+    }
+
+    private fun settleRate(store: SessionStore, messageId: String?, answer: String) {
+        liveRateFlow(store.storedId).value = null
+        val m = meta(store.storedId).value
+        val base = store.baseOutput
+        val out = m.outputTokens
+        val tokens = if (base != null && out != null && out >= base) out - base else null
+        val calls = store.baseCalls?.let { b -> m.apiCalls?.let { it - b } }
+        // Calibrate only on a turn that was one model call: a tool loop's output count includes
+        // tool-call arguments the stream never carried as text, which would skew the ratio.
+        if (tokens != null && (calls == null || calls == 1)) {
+            val next = chat.keryx.core.model.TokenRate.calibrate(charsPerToken, store.meter.chars, tokens)
+            if (next != charsPerToken) { charsPerToken = next; settings.charsPerToken = next }
+        }
+        chat.keryx.core.model.TokenRate.settled(tokens, store.meter.activeMs)?.let { tps ->
+            val add = buildMap {
+                messageId?.let { put(it, tps) }
+                answer.takeIf { it.isNotBlank() }?.let {
+                    put(chat.keryx.core.model.TokenRate.answerKey(store.storedId, it), tps)
+                }
+            }
+            if (add.isNotEmpty()) _turnRates.value = (_turnRates.value + add).let { all ->
+                if (all.size <= TURN_RATES_KEPT) all else all.entries.drop(all.size - TURN_RATES_KEPT).associate { it.toPair() }
+            }
+        }
+        store.meter.reset(); store.baseOutput = null; store.baseCalls = null
+    }
+
         /** (oldStoredId, newStoredId) each time compaction re-anchors a live session. */
     private val _sessionRotations = MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 8)
 
@@ -3075,7 +3158,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             val st = stores[sessionId] ?: return@launch
             if (!st.isStreaming) return@launch
             android.util.Log.w("KeryxGw", "stop ${sessionId.take(8)}: no message.complete after ${INTERRUPT_SEAL_MS} ms, sealing locally")
-            st.streamComplete(finalText = "", error = false)
+            st.streamComplete(finalText = "", error = false); settleRate(st, null, "")
             markBusy(sessionId, false)
             setBlocking(sessionId, null)
             statusFlow(sessionId).value = null

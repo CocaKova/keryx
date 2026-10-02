@@ -110,8 +110,12 @@ data class LiveStream(
     val startedAt: Long,
     /** The exact final body reported by the `stop` event (null until then). */
     val finalText: String? = null,
-    /** Live throughput of the side-channel (chars/s; ~4 chars ≈ a token). 0 until measurable. */
+    /** Live throughput of the side-channel in CHARACTERS per second (an EMA, see core
+     *  StreamRateMeter). 0 until measurable. Never print it as tokens: the Matrix door has no
+     *  token count, so only a ratio calibrated on the direct door may convert it (2.16). */
     val charsPerSec: Float = 0f,
+    /** When the last characters arrived, so a stall can read as one (TokenRate.decayed). */
+    val lastCharsAt: Long = 0L,
     /** Live reasoning/thinking text streamed ahead of (and between) answer tokens. Rendered as
      *  its own 💭 canvas above the answer; never partakes in handoff matching — the committed
      *  message carries its own folded reasoning block. */

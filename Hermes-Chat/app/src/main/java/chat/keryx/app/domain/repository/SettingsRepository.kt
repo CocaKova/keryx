@@ -23,6 +23,9 @@ interface SettingsRepository {
     var bubbleStyle: String
     /** Message text size multiplier (1.0 = default). */
     var messageTextScale: Float
+    /** Characters per token, measured against the gateway's real output counts (2.16 honest
+     *  tok/s); 0 = never calibrated, and the live readout then stays in chars/s. */
+    var charsPerToken: Float
     var syncToken: String?
     var accentColorHex: String
     var accentColor2Hex: String

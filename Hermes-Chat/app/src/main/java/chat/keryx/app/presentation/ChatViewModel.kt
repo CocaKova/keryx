@@ -118,14 +118,6 @@ class ChatViewModel(
         private const val STREAM_WINDOW_CHARS = MessageParser.STREAM_RENDER_WINDOW
         private const val STREAM_REASONING_WINDOW_CHARS = 6_000
 
-        // tok/s readout smoothing: an EMA of the *instantaneous* per-frame rate, not a cumulative
-        // average — the cumulative form was diluted by think-latency and tool-call gaps, so a
-        // 150 tok/s brain read ~32. Frames closer than MIN or farther than MAX apart are skipped
-        // (coalesced sub-frame bursts spike; tool/think stalls tank) so the number tracks live
-        // decode speed. Weight favors history for a steady readout.
-        private const val TPS_EMA_WEIGHT = 0.6f
-        private const val TPS_MIN_FRAME_MS = 15L
-        private const val TPS_MAX_FRAME_MS = 4_000L
         // How long to hold the overlay waiting for the final Matrix event after `stop` — sync is
         // normally sub-second; past this the commit clearly isn't coming as-streamed.
         private const val STREAM_SYNC_GRACE_MS = 20_000L
@@ -1236,10 +1228,9 @@ class ChatViewModel(
             val reasoningBuf = StreamTailTracker(STREAM_REASONING_WINDOW_CHARS, sanitize = false)
             var lastDispatch = 0L
             var charsSinceDispatch = 0
-            var firstDeltaAt = 0L
-            var lastDeltaAt = 0L
-            // EMA of the instantaneous delta rate (chars/s); see TPS_* constants.
-            var emaCps = 0f
+            // The character rate (EMA of the per-frame rate; core StreamRateMeter). Answer and
+            // reasoning both count: the model generated both.
+            val meter = chat.keryx.core.model.StreamRateMeter()
             var theater = chat.keryx.core.model.TheaterState()
             fun dispatch(status: LiveStreamStatus, finalText: String? = null) {
                 val cur = _liveStream.value ?: LiveStream(roomId, "", status, System.currentTimeMillis())
@@ -1251,7 +1242,8 @@ class ChatViewModel(
                                 else cur.matchText,
                     status = status,
                     finalText = finalText ?: cur.finalText,
-                    charsPerSec = emaCps,
+                    charsPerSec = meter.cps,
+                    lastCharsAt = meter.lastAtMs,
                     reasoning = reasoningBuf.windowText(),
                     theater = theater,
                 )
@@ -1292,17 +1284,7 @@ class ChatViewModel(
                         // not its `ready` arrived.
                         if (_matrixStatus.value != null) _matrixStatus.value = null
                         val now = System.currentTimeMillis()
-                        if (firstDeltaAt == 0L) {
-                            firstDeltaAt = now
-                        } else {
-                            val dt = now - lastDeltaAt
-                            if (dt in TPS_MIN_FRAME_MS..TPS_MAX_FRAME_MS && ev.text.isNotEmpty()) {
-                                val instant = ev.text.length * 1000f / dt
-                                emaCps = if (emaCps <= 0f) instant
-                                         else TPS_EMA_WEIGHT * emaCps + (1f - TPS_EMA_WEIGHT) * instant
-                            }
-                        }
-                        lastDeltaAt = now
+                        meter.onChars(ev.text.length, now)
                         buf.append(ev.text)
                         callTurnTap?.onDelta(ev.text)
                         charsSinceDispatch += ev.text.length
@@ -1317,6 +1299,7 @@ class ChatViewModel(
                         charsSinceDispatch += ev.text.length
                         if (buf.isEmpty() && _workLabel.value == "Working") _workLabel.value = "Reasoning"
                         val now = System.currentTimeMillis()
+                        meter.onChars(ev.text.length, now)
                         if (now - lastDispatch >= STREAM_DISPATCH_MS || charsSinceDispatch >= STREAM_DISPATCH_CHARS) {
                             dispatch(LiveStreamStatus.STREAMING)
                         }
@@ -2223,6 +2206,29 @@ class ChatViewModel(
         val room = _currentRoom.value ?: return null
         return direct?.contextBreakdown(room.id)
     }
+
+    /**
+     * The open room's live generation rate (2.16 honest tok/s): the direct door's meter, or the
+     * side-channel's character rate read with the ratio the direct door calibrated (0 = never,
+     * and the label stays in chars/s). Null between turns.
+     */
+    val liveRate: StateFlow<chat.keryx.core.model.LiveRate?> =
+        combine(
+            _liveStream,
+            _currentRoom.flatMapLatest { r ->
+                val d = transport as? chat.keryx.app.transport.direct.DirectTransport
+                if (r == null || d == null) flowOf(null) else d.liveRate(r.id)
+            },
+        ) { side, direct ->
+            direct ?: side?.takeIf {
+                it.roomId == _currentRoom.value?.id && it.status == LiveStreamStatus.STREAMING && it.charsPerSec > 0f
+            }?.let { chat.keryx.core.model.LiveRate(it.charsPerSec, it.lastCharsAt, settingsRepository.charsPerToken) }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** Settled real tok/s of finished turns (direct door), keyed by message id and answer text. */
+    val turnRates: StateFlow<Map<String, Double>> =
+        (transport as? chat.keryx.app.transport.direct.DirectTransport)?.turnRates
+            ?: MutableStateFlow(emptyMap())
 
     /** The open session's run numbers (2.16) for the same sheet: cache hit, speed, compactions,
      *  totals — live while the sheet collects it. Direct door only; a lone null elsewhere. */

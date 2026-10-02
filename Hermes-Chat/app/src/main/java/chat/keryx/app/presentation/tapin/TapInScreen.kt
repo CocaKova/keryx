@@ -215,10 +215,10 @@ private fun Headline(state: TapInState, ink: Color, accent: Color, reduced: Bool
                 fontFamily = FontFamily.Monospace,
                 color = if (state.running) accent else ink.copy(alpha = 0.6f),
             )
-            if (state.charsPerSec > 8f) {
+            state.rateLabel?.let { rate ->
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    "≈${(state.charsPerSec / 4f).toInt()} tok/s",
+                    rate,
                     fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     color = ink.copy(alpha = 0.45f),

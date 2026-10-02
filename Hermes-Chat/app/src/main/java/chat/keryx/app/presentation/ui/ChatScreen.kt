@@ -155,6 +155,8 @@ fun ChatScreen(
     val typingHumans by viewModel.typingHumans.collectAsState()
     val typingAgentIds by viewModel.typingAgentIds.collectAsState()
     val liveStream by viewModel.liveStream.collectAsState()
+    val liveRate by viewModel.liveRate.collectAsState()
+    val turnRates by viewModel.turnRates.collectAsState()
     val pendingSend by viewModel.pendingSend.collectAsState()
     val showTelemetry by viewModel.showTelemetry.collectAsState()
     val workStartedAt by viewModel.workStartedAt.collectAsState()
@@ -589,6 +591,7 @@ fun ChatScreen(
         // Reserve space at the bottom equal to the (growing) composer height so messages never
         // slide underneath it as the user types a multi-line message.
         val bottomReserve = with(density) { composerHeightPx.toDp() } + 28.dp
+        androidx.compose.runtime.CompositionLocalProvider(chat.keryx.app.presentation.ui.components.LocalTurnRates provides turnRates) {
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -836,6 +839,7 @@ fun ChatScreen(
                     }
                 }
             }
+        }
         }
 
         // Jump-to-now: while scrolled up into history, a frosted chip floats above the composer;
@@ -1137,12 +1141,10 @@ fun ChatScreen(
         // to the edge, the transient cloud beneath it.
         //
         // Compact top "working" counter: a small spinner + what the agent is doing + elapsed clock,
-        // plus a live ≈tok/s readout while side-channel tokens are flowing.
+        // plus the live rate while text is flowing (2.16: calibrated "≈ tok/s", or chars/s
+        // before any real count has calibrated it; it falls toward zero during a stall).
         // Pinned at the top so it stays put for the whole run, unlike the per-message tool labels.
-        val topTokPerSec = liveStream?.takeIf {
-            it.roomId == currentRoom?.id &&
-                it.status == chat.keryx.app.presentation.LiveStreamStatus.STREAMING
-        }?.charsPerSec?.div(4f) ?: 0f
+        val topRate = liveRate
         // Compaction takes the banner over while it runs: the gateway's own count of what it is
         // summarizing, in place of a verb it is not doing (2.5.7). Everything else it says stays
         // where it was — the clock keeps counting, the cloud keeps its shape.
@@ -1160,14 +1162,14 @@ fun ChatScreen(
                 }
             }
             WorkingStatusBar(
-                visible = awaitingReply || topTokPerSec > 0f || compacting != null,
+                visible = awaitingReply || (topRate?.cps ?: 0f) > 0f || compacting != null,
                 label = compacting?.headline(
                     fallbackTokens = contextUsageNow?.takeIf { it.roomId == currentRoom?.id }?.used,
                     typicalSeconds = compactionTypical,
                 ) ?: workLabel,
                 compacting = compacting != null,
                 startedAt = workStartedAt,
-                tokPerSec = topTokPerSec,
+                rate = topRate,
                 typingAgentIds = typingAgentIds,
                 modifier = Modifier.padding(top = 6.dp),
                 onTapIn = { tapInOpen = true },

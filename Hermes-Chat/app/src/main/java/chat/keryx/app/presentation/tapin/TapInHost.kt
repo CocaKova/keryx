@@ -40,6 +40,7 @@ fun TapInHost(
     val workLabel by viewModel.workLabel.collectAsState()
     val workStartedAt by viewModel.workStartedAt.collectAsState()
     val usage by viewModel.contextUsage.collectAsState()
+    val liveRate by viewModel.liveRate.collectAsState()
 
     val roomId = currentRoom?.id
     val stream = liveStream?.takeIf { it.roomId == roomId }
@@ -57,7 +58,7 @@ fun TapInHost(
     val answer = stream?.text?.takeIf { it.isNotBlank() } ?: slice.answer
     val roomUsage = usage?.takeIf { it.roomId == roomId }
 
-    val state = remember(slice, reasoning, answer, running, sessionStatus, workLabel, workStartedAt, now, roomUsage, stream?.charsPerSec) {
+    val state = remember(slice, reasoning, answer, running, sessionStatus, workLabel, workStartedAt, now, roomUsage, liveRate) {
         TapIn.project(
             running = running,
             status = sessionStatus,
@@ -71,7 +72,7 @@ fun TapInHost(
             usedTokens = roomUsage?.used,
             maxTokens = roomUsage?.max,
             model = roomUsage?.model.orEmpty(),
-            charsPerSec = stream?.charsPerSec ?: 0f,
+            rate = liveRate,
         )
     }
 

@@ -91,6 +91,9 @@ internal fun ArrivalMark(message: Message) {
 }
 
 @OptIn(ExperimentalFoundationApi::class)
+/** Settled real tok/s of finished turns, by message id and answer text (2.16; core TokenRate). */
+val LocalTurnRates = androidx.compose.runtime.compositionLocalOf<Map<String, Double>> { emptyMap() }
+
 @Composable
 fun MessageBubble(
     message: Message,
@@ -469,6 +472,22 @@ fun MessageBubble(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = KeryxType.micro,
                 )
+            }
+            // The finished turn's speed, settled (2.16): the gateway's real output count over
+            // the time the text was flowing — so no "≈". Only on the bubble that ended a turn
+            // this app watched; quiet, beside the clock.
+            if (!isMine) {
+                val rates = LocalTurnRates.current
+                val tps = remember(rates, message.id, message.content) {
+                    chat.keryx.core.model.TokenRate.lookup(rates, message.id, message.roomId, message.content)
+                }
+                if (tps != null) {
+                    Text(
+                        text = " · " + chat.keryx.core.model.TokenRate.settledLabel(tps),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = KeryxType.micro,
+                    )
+                }
             }
             if (isMine) {
                 Spacer(modifier = Modifier.width(4.dp))

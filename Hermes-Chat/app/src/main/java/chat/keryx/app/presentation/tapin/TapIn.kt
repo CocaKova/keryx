@@ -39,8 +39,9 @@ data class TapInState(
     val usedTokens: Long?,
     val maxTokens: Long?,
     val model: String,
-    /** Live side-channel throughput, chars/s; 0 when unknown. */
-    val charsPerSec: Float,
+    /** The live rate as a label (core TokenRate: "≈41 tok/s" calibrated, "164 chars/s" not);
+     *  null when nothing is flowing — it falls away during a stall. */
+    val rateLabel: String? = null,
 ) {
     val crewLanded: Int get() = crew.count { !it.run.running }
     val hasCrew: Boolean get() = crew.isNotEmpty()
@@ -85,7 +86,7 @@ object TapIn {
         usedTokens: Long? = null,
         maxTokens: Long? = null,
         model: String = "",
-        charsPerSec: Float = 0f,
+        rate: chat.keryx.core.model.LiveRate? = null,
     ): TapInState {
         val open = calls.count { it.running }
         val failed = calls.count { it.failed }
@@ -108,7 +109,7 @@ object TapIn {
             usedTokens = usedTokens,
             maxTokens = maxTokens,
             model = model,
-            charsPerSec = charsPerSec,
+            rateLabel = if (running) rate?.label(nowMs) else null,
         )
     }
 
