@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 import kotlin.math.PI
@@ -46,6 +47,8 @@ fun CloudBanner(
     fill: Color,
     border: Color,
     border2: Color = border,
+    /** The ground the cloud stands on (2.16) — see [CloudFloor]. Unspecified draws none. */
+    floor: Color = Color.Unspecified,
     content: @Composable () -> Unit,
 ) {
     // Three frame-clock clients for one banner, so Battery Saver takes all three at once: the
@@ -88,6 +91,7 @@ fun CloudBanner(
         modifier = modifier
             .graphicsLayer { translationY = sin(bobT * PI.toFloat()) * 2.5f.dp.toPx() }
             .drawBehind {
+                if (floor.isSpecified) drawCloudFloor(orbit, breath, floor)
                 drawCloudBanner(orbit, breath, fill, border, border2)
                 drawThoughtTrail(bobT, breath, fill, border)
             }
@@ -104,13 +108,52 @@ private fun jitter(i: Int): Float {
     return abs(x - x.toInt())
 }
 
-private fun DrawScope.drawCloudBanner(
-    orbit: Float,
-    breath: Float,
-    fill: Color,
-    border: Color,
-    border2: Color,
-) {
+/**
+ * The working cloud's floor (2.16). The cloud floats over the transcript, and its glow, its
+ * scalloped rim and the gaps between its bumps are all part-transparent, so whatever text
+ * scrolled under it read straight through the halo — the composer's bug at the other edge of the
+ * screen (2.11.8). The floor is the cloud's own silhouette grown past the glow, in the theme
+ * surface, with one fainter pass beyond it so the clearing meets the sky softly instead of
+ * cutting the text under it on a hard edge. [PaperContrastTest] holds the numbers.
+ */
+object CloudFloor {
+    /** Opacity of the clearing (theme surface). */
+    const val ALPHA = 0.96f
+    /** The outer, softer pass — the clearing's feathered edge. */
+    const val FEATHER_ALPHA = 0.5f
+    /** How far the glow's outer pass reaches past the body (x, y). */
+    const val GLOW_X = 1.16f
+    const val GLOW_Y = 1.34f
+    /** How far the clearing reaches — past the glow, so no halo is ever drawn over text. */
+    const val REACH_X = 1.22f
+    const val REACH_Y = 1.46f
+    /** The feather's reach, beyond the clearing. */
+    const val FEATHER_X = 1.30f
+    const val FEATHER_Y = 1.62f
+    /** A thought-trail puff's floor, as a multiple of the puff. */
+    const val PUFF_REACH = 1.7f
+}
+
+private fun DrawScope.drawCloudFloor(orbit: Float, breath: Float, floor: Color) {
+    val pivot = Offset(size.width / 2f, size.height / 2f)
+    scale(CloudFloor.FEATHER_X, CloudFloor.FEATHER_Y, pivot = pivot) {
+        drawCloudSilhouette(orbit, breath) { floor.copy(alpha = floor.alpha * CloudFloor.FEATHER_ALPHA) }
+    }
+    scale(CloudFloor.REACH_X, CloudFloor.REACH_Y, pivot = pivot) {
+        drawCloudSilhouette(orbit, breath) { floor }
+    }
+    // The thought trail's puffs hang below the box; each gets its own patch of floor.
+    val r = size.height * 0.30f
+    for ((c, rad) in thoughtPuffs(size.width, size.height, r)) {
+        drawCircle(floor, radius = rad * CloudFloor.PUFF_REACH, center = c)
+    }
+}
+
+/**
+ * The cloud's outline, every part in [colorFor]: the banner draws it four times (two glow
+ * passes, rim, fill) and its floor twice, all from this one geometry.
+ */
+private fun DrawScope.drawCloudSilhouette(orbit: Float, breath: Float, colorFor: (Offset) -> Color) {
     val w = size.width
     val h = size.height
     val r = h * 0.30f                                   // nominal bump radius
@@ -149,22 +192,33 @@ private fun DrawScope.drawCloudBanner(
         return r * base * swell
     }
 
-    fun silhouette(colorFor: (Offset) -> Color) {
-        // Bumps first…
-        for (i in 0 until bumps) {
-            val s = (i.toFloat() / bumps + orbit) * perimeter
-            val c = perim(s)
-            drawCircle(color = colorFor(c), radius = bumpRadius(i), center = c)
-        }
-        // …then the body over them, hiding each bump's inner half → scalloped semicircle edge.
-        // The body uses the color at the banner center so gradients stay coherent.
-        drawRoundRect(
-            color = colorFor(Offset(w / 2f, cy)),
-            topLeft = Offset(x0, y0),
-            size = Size(x1 - x0, y1 - y0),
-            cornerRadius = CornerRadius(cr, cr),
-        )
+    // Bumps first…
+    for (i in 0 until bumps) {
+        val s = (i.toFloat() / bumps + orbit) * perimeter
+        val c = perim(s)
+        drawCircle(color = colorFor(c), radius = bumpRadius(i), center = c)
     }
+    // …then the body over them, hiding each bump's inner half → scalloped semicircle edge.
+    // The body uses the color at the banner center so gradients stay coherent.
+    drawRoundRect(
+        color = colorFor(Offset(w / 2f, cy)),
+        topLeft = Offset(x0, y0),
+        size = Size(x1 - x0, y1 - y0),
+        cornerRadius = CornerRadius(cr, cr),
+    )
+}
+
+private fun DrawScope.drawCloudBanner(
+    orbit: Float,
+    breath: Float,
+    fill: Color,
+    border: Color,
+    border2: Color,
+) {
+    val w = size.width
+    val h = size.height
+    val cy = h / 2f
+    fun silhouette(colorFor: (Offset) -> Color) = drawCloudSilhouette(orbit, breath, colorFor)
 
     // Rim: accent→accent2 left-to-right, sampled per bump (cheap gradient over the silhouette).
     fun rimColor(at: Offset): Color = lerp(border, border2, (at.x / w).coerceIn(0f, 1f))
@@ -173,7 +227,7 @@ private fun DrawScope.drawCloudBanner(
     // lit from inside rather than sitting flat on the page. Two passes read as a soft falloff
     // without a blur (RenderEffect costs a layer per frame on a banner that animates forever).
     val glow = 0.10f + 0.06f * sin(breath * PI.toFloat())
-    scale(1.16f, 1.34f, pivot = Offset(w / 2f, cy)) { silhouette { rimColor(it).copy(alpha = glow * 0.5f) } }
+    scale(CloudFloor.GLOW_X, CloudFloor.GLOW_Y, pivot = Offset(w / 2f, cy)) { silhouette { rimColor(it).copy(alpha = glow * 0.5f) } }
     scale(1.07f, 1.15f, pivot = Offset(w / 2f, cy)) { silhouette { rimColor(it).copy(alpha = glow) } }
 
     silhouette(::rimColor)
@@ -201,11 +255,7 @@ private fun DrawScope.drawThoughtTrail(bobT: Float, breath: Float, fill: Color, 
     val w = size.width
     val r = h * 0.30f
     val rim = 1.4f.dp.toPx()
-    val puffs = listOf(
-        // (centre, radius, phase) — the larger puff hugs the cloud, the smaller strays further.
-        Triple(Offset(w * 0.11f, h + r * 0.62f), r * 0.30f, 0f),
-        Triple(Offset(w * 0.045f, h + r * 1.30f), r * 0.17f, 0.5f),
-    )
+    val puffs = thoughtPuffs(w, h, r).zip(listOf(0f, 0.5f)) { (c, rad), phase -> Triple(c, rad, phase) }
     for ((c, rad, phase) in puffs) {
         val lit = 0.55f + 0.45f * sin(((bobT + phase) % 1f) * PI.toFloat())
         val grow = 1f + 0.06f * sin((breath + phase) * 2f * PI.toFloat())
@@ -213,3 +263,10 @@ private fun DrawScope.drawThoughtTrail(bobT: Float, breath: Float, fill: Color, 
         drawCircle(fill, radius = (rad * grow - rim).coerceAtLeast(0f), center = c)
     }
 }
+
+/** The trail's two puffs, (centre, radius) — the larger hugs the cloud, the smaller strays
+ *  further. Shared by the trail and its floor so the two can never drift apart. */
+private fun thoughtPuffs(w: Float, h: Float, r: Float): List<Pair<Offset, Float>> = listOf(
+    Offset(w * 0.11f, h + r * 0.62f) to r * 0.30f,
+    Offset(w * 0.045f, h + r * 1.30f) to r * 0.17f,
+)

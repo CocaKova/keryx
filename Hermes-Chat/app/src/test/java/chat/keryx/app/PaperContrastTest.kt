@@ -1,6 +1,7 @@
 package chat.keryx.app
 
 import chat.keryx.app.presentation.ui.ComposerFloor
+import chat.keryx.app.presentation.ui.components.CloudFloor
 import chat.keryx.app.presentation.ui.components.FlightPlanFloor
 import chat.keryx.app.presentation.ui.components.KeryxToolTint
 import chat.keryx.core.model.Heralds
@@ -125,6 +126,47 @@ class PaperContrastTest {
             // never by enough to be a second line of text behind the draft.
             val rest = over(voidVariant, tintAlpha, over(voidSurface, floorAlpha, void))
             assertTrue("a bubble under the void composer shows through", contrast(ground, rest) < 1.15)
+        }
+    }
+
+    /**
+     * The working cloud floats over the transcript at the top edge (2.16). Its glow, rim and the
+     * gaps between its scallops are part-transparent, so the text scrolling under it read through
+     * the halo. The clearing it now stands on must reach past the glow, swallow what is under it,
+     * and leave the label on the cloud's fill readable.
+     */
+    @Test
+    fun `the working cloud's floor hides the transcript under it`() {
+        assertTrue("the clearing must reach past the glow (x)", CloudFloor.REACH_X > CloudFloor.GLOW_X)
+        assertTrue("the clearing must reach past the glow (y)", CloudFloor.REACH_Y > CloudFloor.GLOW_Y)
+        assertTrue("the feather lies outside the clearing", CloudFloor.FEATHER_X > CloudFloor.REACH_X &&
+            CloudFloor.FEATHER_Y > CloudFloor.REACH_Y)
+        val a = CloudFloor.ALPHA.toDouble()
+        val amber = 0xFFFFB300L
+        val dusk = 0xFF8B5CF6L
+        val paperVariant = 0xFFEBE5D9L
+        val voidVariant = 0xFF1D1D28L
+        // The fill is surfaceVariant kissed 10% by an 85%-alpha rim: 98.5% opaque.
+        val fillAlpha = 0.985
+        for (under in listOf(ink, void, amber, dusk)) {
+            val clearing = over(paperSurface, a, under)
+            val empty = over(paperSurface, a, paper)
+            assertTrue(
+                "text under the paper cloud reads through its floor (${under.toString(16)})",
+                contrast(clearing, empty) < 1.15,
+            )
+            val fill = over(paperVariant, fillAlpha, clearing)
+            assertTrue("paper cloud label over ${under.toString(16)}", contrast(ink, fill) >= AA)
+        }
+        for (under in listOf(voidInk, amber, paper, dusk)) {
+            val clearing = over(voidSurface, a, under)
+            val empty = over(voidSurface, a, void)
+            assertTrue(
+                "text under the void cloud reads through its floor (${under.toString(16)})",
+                contrast(clearing, empty) < 1.15,
+            )
+            val fill = over(voidVariant, fillAlpha, clearing)
+            assertTrue("void cloud label over ${under.toString(16)}", contrast(voidInk, fill) >= AA)
         }
     }
 

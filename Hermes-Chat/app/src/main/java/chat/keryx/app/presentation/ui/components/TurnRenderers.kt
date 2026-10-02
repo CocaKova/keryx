@@ -60,6 +60,9 @@ internal fun WorkingStatusBar(
             fill = MaterialTheme.colorScheme.surfaceVariant,
             border = accent.copy(alpha = 0.85f),
             border2 = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f),
+            // It floats over the transcript: its own ground first, so the text scrolling under
+            // the glow and the scallops never reads through them (2.16, [CloudFloor]).
+            floor = MaterialTheme.colorScheme.surface.copy(alpha = CloudFloor.ALPHA),
             // No clip: the cloud's scallops, glow and thought trail are drawn PAST the banner's
             // box on purpose, and the 2.12 rounded-rect clip (added for the tap-in ripple) sheared
             // them off. The press answers with a sink instead of a ripple, which needs no bounds.
