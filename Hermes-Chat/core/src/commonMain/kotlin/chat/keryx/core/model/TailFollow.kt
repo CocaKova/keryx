@@ -43,4 +43,37 @@ object TailFollow {
      */
     fun shouldFollow(following: Boolean, gestureInFlight: Boolean): Boolean =
         following && !gestureInFlight
+
+    /**
+     * How far a lazy list's content runs past its viewport's end, in px (≤ 0 = the end is in
+     * view). A lazy list has no single scroll extent to compare against — only the items it has
+     * laid out — so the question is asked of the last one: its end, plus the list's own bottom
+     * padding, against the viewport's end. Null when the last item is not laid out at all, which
+     * is as far from the tail as a list can be.
+     */
+    fun lazyOvershoot(
+        lastVisibleIndex: Int,
+        totalItems: Int,
+        lastItemEnd: Int,
+        afterPadding: Int,
+        viewportEnd: Int,
+    ): Int? {
+        if (totalItems <= 0) return 0
+        if (lastVisibleIndex < totalItems - 1) return null
+        return lastItemEnd + afterPadding - viewportEnd
+    }
+
+    /** [atTail] for a lazy list (2.16, Tap-In's rail): see [lazyOvershoot]. */
+    fun lazyAtTail(
+        lastVisibleIndex: Int,
+        totalItems: Int,
+        lastItemEnd: Int,
+        afterPadding: Int,
+        viewportEnd: Int,
+        slopPx: Int = 0,
+    ): Boolean {
+        val over = lazyOvershoot(lastVisibleIndex, totalItems, lastItemEnd, afterPadding, viewportEnd)
+            ?: return false
+        return atTail(offset = 0, extent = over, slopPx = slopPx)
+    }
 }

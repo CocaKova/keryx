@@ -64,7 +64,9 @@ import chat.keryx.app.presentation.ui.components.KeryxSectionHeader
 import chat.keryx.app.presentation.ui.components.KeryxSpace
 import chat.keryx.app.presentation.ui.components.KeryxStatus
 import chat.keryx.app.presentation.ui.components.KeryxToolTint
+import chat.keryx.app.presentation.ui.components.MessageContent
 import chat.keryx.app.presentation.ui.components.ToolTheaterRow
+import chat.keryx.app.presentation.ui.components.rememberLazyTailFollow
 import chat.keryx.app.presentation.ui.components.rememberReducedMotion
 import chat.keryx.core.model.Delegation
 import chat.keryx.core.model.ToolCall
@@ -131,6 +133,13 @@ fun TapInScreen(
         },
     ) {
         val list = rememberLazyListState()
+        // The rail grows a row per call and the answer a line per breath, both below the fold:
+        // ride them while the reader is at the bottom, and leave a reader who scrolled up alone
+        // (2.16 — it never moved at all, so the newest call was always off screen).
+        rememberLazyTailFollow(
+            list,
+            tail = Triple(state.rail.size, state.answer.length, state.rail.lastOrNull()?.status),
+        )
         LazyColumn(
             state = list,
             modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -146,7 +155,7 @@ fun TapInScreen(
             items(state.rail.size, key = { "rail-$it" }) { i ->
                 RailRow(state.rail[i], last = i == state.rail.size - 1, ink = ink, accent = accent, live = state.running)
             }
-            if (state.answer.isNotBlank()) item("answer") { Saying(state.answer, ink) }
+            if (state.answer.isNotBlank()) item("answer") { Saying(state.answer, ink, state.running) }
             if (state.isEmpty) item("empty") {
                 Text(
                     if (state.running) "The turn has not shown anything yet — the first tool or thought lands here."
@@ -393,15 +402,18 @@ private fun RailRow(call: ToolCall, last: Boolean, ink: Color, accent: Color, li
 // --- 5. Saying ---------------------------------------------------------------------------------
 
 @Composable
-private fun Saying(answer: String, ink: Color) {
+private fun Saying(answer: String, ink: Color, live: Boolean) {
     Column {
         KeryxSectionHeader("Saying")
         Spacer(Modifier.height(6.dp))
-        Text(
-            MessageParser.extractKeryx(answer).text.trim(),
-            fontSize = KeryxType.body,
-            lineHeight = 19.sp,
-            color = ink.copy(alpha = 0.85f),
+        // The chat's own markdown path (2.16): it was plain text, so a reply's headings, lists
+        // and code arrived here as asterisks and backticks. While the turn streams it renders
+        // the way the live bubble does — tail-windowed and cache-free, so the per-token re-parse
+        // stays bounded however long the answer grows; the whole body once it lands.
+        MessageContent(
+            content = answer,
+            textColor = ink.copy(alpha = 0.85f),
+            isStreaming = live,
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(KeryxRadius.card))
