@@ -6,7 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 
 /**
  * What every gateway-feature delegate needs and nothing more: the ViewModel's scope, the
- * settings store, the two client factories, and the toast lane. One instance, shared.
+ * settings store, the two client factories, and the toast lane (plain, or with an Undo). One instance, shared.
  *
  * [client] is the snapshot-caching client ([SettingsRepository.putHubSnapshot] rides along so
  * hub panels can seed offline); [bareClient] is the plain one for endpoints whose answers
@@ -19,4 +19,6 @@ class GatewayDeps(
     val client: () -> HermesStreamClient?,
     val bareClient: () -> HermesStreamClient?,
     val toast: (String) -> Unit,
+    /** The toast lane for a notice that carries an action (an Undo); plain text by default. */
+    val notice: (KeryxNotice) -> Unit = { toast(it.text) },
 )

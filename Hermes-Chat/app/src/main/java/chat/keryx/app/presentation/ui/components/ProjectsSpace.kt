@@ -200,11 +200,11 @@ private fun ProjectCard(
     onDelete: ((done: (String?) -> Unit) -> Unit)? = null,
 ) {
     val haptics = LocalKeryxHaptics.current
-    val toastCtx = androidx.compose.ui.platform.LocalContext.current
+    val snack = LocalKeryxSnack.current
     var menuOpen by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     fun report(err: String?, ok: String) {
-        android.widget.Toast.makeText(toastCtx, err ?: ok, android.widget.Toast.LENGTH_SHORT).show()
+        snack.show(err ?: ok)
     }
     val onLongPress: (() -> Unit)? =
         if (onArchive == null && onDelete == null) null

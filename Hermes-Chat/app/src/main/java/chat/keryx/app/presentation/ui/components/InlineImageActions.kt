@@ -3,7 +3,6 @@ package chat.keryx.app.presentation.ui.components
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -99,9 +98,6 @@ private suspend fun fetchBytes(url: String): ByteArray? = withContext(Dispatcher
     }.getOrNull()
 }
 
-private fun toast(context: Context, msg: String) =
-    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-
 /**
  * What you can do with an image you tapped. Copy and Open need nothing but the URL; Share and
  * Save need the file, so they fetch it and say so if the fetch fails rather than failing mute.
@@ -113,6 +109,9 @@ fun InlineImageSheet(url: String, onDismiss: () -> Unit) {
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
+    // Every verb here closes the sheet as it reports, so the notice lands on the window
+    // underneath (KeryxSnack follows the top layer) and outlives the sheet.
+    val snack = LocalKeryxSnack.current
     var busy by remember { mutableStateOf(false) }
     val name = remember(url) { MediaTags.nameOf(url) }
     val kind = remember(url) { MediaTags.kindOf(url) }
@@ -145,17 +144,17 @@ fun InlineImageSheet(url: String, onDismiss: () -> Unit) {
                         copyMediaToClipboard(context, bytes, name, kind, url)
                     busy = false
                     if (ok) {
-                        toast(context, "Image copied — paste it into a post")
+                        snack.show("Image copied — paste it into a post")
                     } else {
                         clipboard.setText(AnnotatedString(url))
-                        toast(context, "Couldn't fetch the image — link copied instead")
+                        snack.show("Couldn't fetch the image — link copied instead")
                     }
                     onDismiss()
                 }
             }
             SheetAction(KeryxGlyphs.Copy, "Copy link", enabled = !busy) {
                 clipboard.setText(AnnotatedString(url))
-                toast(context, "Link copied")
+                snack.show("Link copied")
                 onDismiss()
             }
             SheetAction(KeryxGlyphs.Share, if (busy) "Working…" else "Share", enabled = !busy) {
@@ -164,7 +163,7 @@ fun InlineImageSheet(url: String, onDismiss: () -> Unit) {
                     val bytes = fetchBytes(url)
                     busy = false
                     if (bytes == null || !shareMedia(context, bytes, name, kind)) {
-                        toast(context, "Couldn't fetch the image — link copied instead")
+                        snack.show("Couldn't fetch the image — link copied instead")
                         clipboard.setText(AnnotatedString(url))
                     }
                     onDismiss()
@@ -176,7 +175,7 @@ fun InlineImageSheet(url: String, onDismiss: () -> Unit) {
                     val bytes = fetchBytes(url)
                     val where = bytes?.let { saveMediaToDevice(context, it, name, kind) }
                     busy = false
-                    toast(context, where?.let { "Saved to $it" } ?: "Couldn't save that image")
+                    snack.show(where?.let { "Saved to $it" } ?: "Couldn't save that image")
                     onDismiss()
                 }
             }
@@ -186,7 +185,7 @@ fun InlineImageSheet(url: String, onDismiss: () -> Unit) {
                         Intent(Intent.ACTION_VIEW, Uri.parse(url))
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     )
-                }.onFailure { toast(context, "Nothing here opens that link") }
+                }.onFailure { snack.show("Nothing here opens that link") }
                 onDismiss()
             }
         }

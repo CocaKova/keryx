@@ -1020,7 +1020,7 @@ fun SettingsScreen(
                                 val text = lines.joinToString("\n") { (k, v) -> "$k: $v" }
                                 aboutContext.getSystemService(android.content.ClipboardManager::class.java)
                                     ?.setPrimaryClip(android.content.ClipData.newPlainText("Keryx diagnostics", text))
-                                android.widget.Toast.makeText(aboutContext, "Diagnostics copied", android.widget.Toast.LENGTH_SHORT).show()
+                                viewModel.toast("Diagnostics copied")
                             },
                             shape = RoundedCornerShape(KeryxRadius.field),
                         ) { Text("Copy diagnostics", fontSize = KeryxType.body) }

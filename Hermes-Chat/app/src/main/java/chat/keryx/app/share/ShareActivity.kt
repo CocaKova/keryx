@@ -204,6 +204,8 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
             sending.value = false
             result
                 .onSuccess {
+                    // Still a system Toast (2.16 moved the app onto KeryxSnack): this activity
+                    // finishes on the next line, and only a Toast outlives the window it came from.
                     Toast.makeText(this@ShareActivity, "Sent to $roomName", Toast.LENGTH_SHORT).show()
                     finish()
                 }

@@ -4,6 +4,7 @@ import chat.keryx.app.presentation.ui.ComposerFloor
 import chat.keryx.app.presentation.ui.components.CloudFloor
 import chat.keryx.app.presentation.ui.components.FlightPlanFloor
 import chat.keryx.app.presentation.ui.components.KeryxToolTint
+import chat.keryx.app.presentation.ui.components.KeryxSnackFloor
 import chat.keryx.core.model.Heralds
 import chat.keryx.app.presentation.ui.components.roomLightRaw
 import java.io.File
@@ -168,6 +169,40 @@ class PaperContrastTest {
             val fill = over(voidVariant, fillAlpha, clearing)
             assertTrue("void cloud label over ${under.toString(16)}", contrast(voidInk, fill) >= AA)
         }
+    }
+
+    /**
+     * Notices (2.16) float over the transcript, the drawer and the sheets — the system Toast they
+     * replace was a translucent grey pill a scrolling reply read through. Their ground is opaque
+     * ([KeryxSnackFloor.ALPHA]), so whatever is under one is the same pixel to the reader; on that
+     * ground the words (ink) and the action (the accent, pressed for paper) must clear AA.
+     */
+    @Test
+    fun `a notice keeps its words and its Undo readable over anything`() {
+        val alpha = KeryxSnackFloor.ALPHA.toDouble()
+        val tint = KeryxSnackFloor.TINT_ALPHA.toDouble()
+        val amber = 0xFFE55A00L // the default accent the action is set in
+        val paperVariant = 0xFFEBE5D9L
+        val voidVariant = 0xFF1D1D28L
+        val paperAction = argbOf(
+            chat.keryx.app.presentation.ui.components.paperAccentInk(colorOf(amber), colorOf(ink))
+        )
+        val paperGrounds = listOf(void, 0xFFFFB300L, voidSurface, 0xFF8B5CF6L, paper)
+            .map { under -> over(paperVariant, tint, over(paperSurface, alpha, under)) }
+        for (g in paperGrounds) {
+            assertTrue("paper notice text scores ${contrast(ink, g)}", contrast(ink, g) >= AA)
+            assertTrue("paper notice action scores ${contrast(paperAction, g)}", contrast(paperAction, g) >= AA)
+        }
+        assertEquals("something under a paper notice shows through", 1, paperGrounds.distinct().size)
+
+        val voidGrounds = listOf(0xFFFFFFFFL, 0xFFFFB300L, paper, 0xFF8B5CF6L, void)
+            .map { under -> over(voidVariant, tint, over(voidSurface, alpha, under)) }
+        for (g in voidGrounds) {
+            assertTrue("void notice text scores ${contrast(voidInk, g)}", contrast(voidInk, g) >= AA)
+            // On the void the accent is a light and is printed raw (keryxAccentInk passes it through).
+            assertTrue("void notice action scores ${contrast(amber, g)}", contrast(amber, g) >= AA)
+        }
+        assertEquals("something under a void notice shows through", 1, voidGrounds.distinct().size)
     }
 
     @Test

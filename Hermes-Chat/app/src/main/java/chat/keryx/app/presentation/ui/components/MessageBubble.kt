@@ -399,7 +399,7 @@ fun MessageBubble(
 
         if (showReactionPicker) {
             val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
-            val copyContext = androidx.compose.ui.platform.LocalContext.current
+            val copySnack = LocalKeryxSnack.current
             ReactionPickerRow(
                 onPick = { emoji -> showReactionPicker = false; onReact(emoji) },
                 onReply = { showReactionPicker = false; onReply() },
@@ -413,7 +413,7 @@ fun MessageBubble(
                             chat.keryx.core.protocol.MessageParser.extractKeryx(message.content).text,
                         ),
                     )
-                    android.widget.Toast.makeText(copyContext, "Copied", android.widget.Toast.LENGTH_SHORT).show()
+                    copySnack.show("Copied")
                 },
                 onDelete = onDelete?.let { { showReactionPicker = false; confirmDelete = true } },
                 onUndoTurn = onUndoTurn?.let { { showReactionPicker = false; confirmUndo = true } },

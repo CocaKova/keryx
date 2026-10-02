@@ -177,6 +177,8 @@ class NoteActivity : androidx.fragment.app.FragmentActivity() {
             sending.value = false
             result
                 .onSuccess {
+                    // Still a system Toast (2.16 moved the app onto KeryxSnack): this activity
+                    // finishes below, and only a Toast outlives the window it came from.
                     Toast.makeText(this@NoteActivity, getString(R.string.note_sent_to, room.name), Toast.LENGTH_SHORT).show()
                     // The card on the home screen now has a newer last line: yours.
                     KeryxWidget.refresh(this@NoteActivity)

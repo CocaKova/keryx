@@ -245,6 +245,7 @@ fun MessageMedia(
         // host listening (a preview) the card is the old file chip with a better face.
         val opener = chat.keryx.app.presentation.artifact.LocalArtifactOpener.current
         val context = androidx.compose.ui.platform.LocalContext.current
+        val snack = LocalKeryxSnack.current
         val scope = androidx.compose.runtime.rememberCoroutineScope()
         var opening by remember { mutableStateOf(false) }
         val name = fileName.ifBlank { "page.html" }
@@ -259,8 +260,8 @@ fun MessageMedia(
                 opening = true
                 scope.launch {
                     val bytes = loader()
-                    if (bytes != null) openExternally(context, bytes, name, kind)
-                    else android.widget.Toast.makeText(context, "Couldn't load attachment", android.widget.Toast.LENGTH_SHORT).show()
+                    if (bytes == null) snack.show("Couldn't load attachment")
+                    else if (!openExternally(context, bytes, name, kind)) snack.show(NO_APP_FOR_FILE)
                     opening = false
                 }
             }
@@ -346,6 +347,7 @@ fun MessageMedia(
         // Audio / files: tap to download (once) and hand off to the system viewer/player;
         // long-press saves a copy into Music/Download so it outlives the cache.
         val context = androidx.compose.ui.platform.LocalContext.current
+        val snack = LocalKeryxSnack.current
         val scope = androidx.compose.runtime.rememberCoroutineScope()
         var opening by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
         FileChip(
@@ -356,11 +358,7 @@ fun MessageMedia(
                 scope.launch {
                     val bytes = loader()
                     val where = bytes?.let { saveMediaToDevice(context, it, fileName.ifBlank { "file" }, kind) }
-                    android.widget.Toast.makeText(
-                        context,
-                        if (where != null) "Saved to $where" else "Couldn't save",
-                        android.widget.Toast.LENGTH_SHORT,
-                    ).show()
+                    snack.show(if (where != null) "Saved to $where" else "Couldn't save")
                     opening = false
                 }
             },
@@ -369,8 +367,8 @@ fun MessageMedia(
             opening = true
             scope.launch {
                 val bytes = loader()
-                if (bytes != null) openExternally(context, bytes, fileName.ifBlank { "file" }, kind)
-                else android.widget.Toast.makeText(context, "Couldn't load attachment", android.widget.Toast.LENGTH_SHORT).show()
+                if (bytes == null) snack.show("Couldn't load attachment")
+                else if (!openExternally(context, bytes, fileName.ifBlank { "file" }, kind)) snack.show(NO_APP_FOR_FILE)
                 opening = false
             }
         }
@@ -487,6 +485,8 @@ private fun formatDuration(ms: Long): String {
 @Composable
 private fun FullscreenVideoPlayer(file: java.io.File, fileName: String, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        // The lightbox is its own window: "Saved to …" is said here, not under it (2.16).
+        KeryxSnackLayer(Modifier.fillMaxSize()) {
         val context = androidx.compose.ui.platform.LocalContext.current
         val player = remember {
             androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
@@ -521,6 +521,7 @@ private fun FullscreenVideoPlayer(file: java.io.File, fileName: String, onDismis
                 modifier = Modifier.align(Alignment.TopEnd),
             )
         }
+        }
     }
 }
 
@@ -538,6 +539,7 @@ private fun FullscreenImageViewer(
     onDismiss: () -> Unit,
 ) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        KeryxSnackLayer(Modifier.fillMaxSize()) {
         var scale by androidx.compose.runtime.remember { mutableStateOf(1f) }
         var offset by androidx.compose.runtime.remember { mutableStateOf(Offset.Zero) }
         val transformState = rememberTransformableState { zoomChange, panChange, _ ->
@@ -593,6 +595,7 @@ private fun FullscreenImageViewer(
                 modifier = Modifier.align(Alignment.TopEnd),
             )
         }
+        }
     }
 }
 
@@ -609,6 +612,7 @@ private fun MediaActionBar(
     modifier: Modifier = Modifier,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val snack = LocalKeryxSnack.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
     Row(
@@ -624,11 +628,7 @@ private fun MediaActionBar(
             scope.launch {
                 val bytes = bytesProvider()
                 val where = bytes?.let { saveMediaToDevice(context, it, fileName, kind) }
-                android.widget.Toast.makeText(
-                    context,
-                    if (where != null) "Saved to $where" else "Couldn't save",
-                    android.widget.Toast.LENGTH_SHORT,
-                ).show()
+                snack.show(if (where != null) "Saved to $where" else "Couldn't save")
                 busy = false
             }
         }) {
@@ -644,7 +644,7 @@ private fun MediaActionBar(
             scope.launch {
                 val bytes = bytesProvider()
                 val ok = bytes != null && shareMedia(context, bytes, fileName, kind)
-                if (!ok) android.widget.Toast.makeText(context, "Couldn't share", android.widget.Toast.LENGTH_SHORT).show()
+                if (!ok) snack.show("Couldn't share")
                 busy = false
             }
         }) {
@@ -660,14 +660,18 @@ private fun MediaActionBar(
     }
 }
 
-/** Stage the bytes and offer the system's "Open with" chooser. Shared with the artifact viewer. */
+/** What a failed [openExternally] says, wherever it was asked from. */
+internal const val NO_APP_FOR_FILE = "No app can open this file"
+
+/** Stage the bytes and offer the system's "Open with" chooser. Shared with the artifact viewer.
+ *  False when nothing could take it — the caller says so on its own notice line ([NO_APP_FOR_FILE]). */
 internal suspend fun openExternally(
     context: android.content.Context,
     bytes: ByteArray,
     fileName: String,
     kind: MediaKind,
-) {
-    runCatching {
+): Boolean {
+    return runCatching {
         val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             val dir = java.io.File(context.cacheDir, "media").apply { mkdirs() }
             val safe = fileName.replace(Regex("[^A-Za-z0-9._-]"), "_").ifBlank { "file" }
@@ -680,9 +684,7 @@ internal suspend fun openExternally(
             addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         context.startActivity(android.content.Intent.createChooser(intent, "Open with").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
-    }.onFailure {
-        android.widget.Toast.makeText(context, "No app can open this file", android.widget.Toast.LENGTH_SHORT).show()
-    }
+    }.isSuccess
 }
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)

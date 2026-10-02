@@ -382,7 +382,7 @@ fun ChatScreen(
             .onSuccess { dictation = DictationPhase.RECORDING }
             .onFailure {
                 dictation = DictationPhase.IDLE
-                android.widget.Toast.makeText(context, "Mic unavailable", android.widget.Toast.LENGTH_SHORT).show()
+                viewModel.toast("Mic unavailable")
             }
     }
 
@@ -396,14 +396,14 @@ fun ChatScreen(
         viewModel.voice.transcribe(take) { result ->
             dictation = DictationPhase.IDLE
             result.onSuccess(::insertTranscript).onFailure {
-                android.widget.Toast.makeText(context, "Transcription failed: ${it.message}", android.widget.Toast.LENGTH_LONG).show()
+                viewModel.toast("Transcription failed: ${it.message}")
             }
         }
     }
 
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) startDictation()
-        else android.widget.Toast.makeText(context, "Keryx needs mic access to dictate", android.widget.Toast.LENGTH_SHORT).show()
+        else viewModel.toast("Keryx needs mic access to dictate")
     }
 
     fun onMicTap() {
@@ -426,7 +426,7 @@ fun ChatScreen(
     val ttsUrl by viewModel.voice.ttsUrl.collectAsState()
     val tts = remember {
         chat.keryx.app.audio.TtsController(context) { error ->
-            android.widget.Toast.makeText(context, error, android.widget.Toast.LENGTH_SHORT).show()
+            viewModel.toast(error)
         }
     }
     val ttsState by tts.state.collectAsState()
@@ -444,7 +444,7 @@ fun ChatScreen(
     fun speakMessage(message: Message) {
         val text = chat.keryx.app.presentation.TtsText.speakable(message.content)
         if (text.isBlank()) {
-            android.widget.Toast.makeText(context, "Nothing to read aloud", android.widget.Toast.LENGTH_SHORT).show()
+            viewModel.toast("Nothing to read aloud")
             return
         }
         if (ttsUrl.isBlank()) {
@@ -943,7 +943,9 @@ fun ChatScreen(
                 .align(Alignment.BottomCenter)
                 .padding(horizontal = 12.dp, vertical = 16.dp)
                 .fillMaxWidth()
-                .onSizeChanged { composerHeightPx = it.height },
+                .onSizeChanged { composerHeightPx = it.height }
+                // Notices (2.16) float above this edge, never on the draft.
+                .then(chat.keryx.app.presentation.ui.components.keryxSnackClearance()),
         ) {
             // Bot Mode (2.8): typing `@` in a bot's chat offers the roster. A tap completes
             // the handle; on send the ViewModel appends the note that tells the agent whom the

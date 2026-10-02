@@ -705,7 +705,11 @@ fun KeryxSpace(
             onDismissRequest = onClose,
             properties = DialogProperties(usePlatformDefaultWidth = false),
         ) {
-            KeryxSpaceBody(title, onClose, modifier, liveSlot, actions, floating, onBack, content)
+            // Its own window, so its own notice layer: a notice raised in here (Tap-In's
+            // "steered") is drawn in here, not under the dialog in the activity.
+            KeryxSnackLayer(Modifier.fillMaxSize()) {
+                KeryxSpaceBody(title, onClose, modifier, liveSlot, actions, floating, onBack, content)
+            }
         }
     } else {
         KeryxSpaceBody(title, onClose, modifier, liveSlot, actions, floating, onBack, content)
@@ -963,6 +967,9 @@ fun KeryxSheet(
             }
         },
     ) {
+        // A sheet is its own window: notices raised while it is open are drawn on it, where
+        // an Undo can still be tapped, not under its scrim (2.16).
+        KeryxSnackLayer(Modifier.fillMaxWidth()) {
         Column(
             Modifier.fillMaxWidth().nestedScroll(SheetFlingTamer).graphicsLayer {
                 alpha = 0.4f + 0.6f * arrival.value
@@ -978,6 +985,7 @@ fun KeryxSheet(
                 }
             }
             content()
+        }
         }
     }
 }

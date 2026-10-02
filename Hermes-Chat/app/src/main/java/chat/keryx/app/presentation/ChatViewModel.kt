@@ -309,20 +309,31 @@ class ChatViewModel(
             else local
         }.stateIn(viewModelScope, SharingStarted.Eagerly, if (transport.matrix == null) emptySet() else settingsRepository.pinnedRoomIds)
 
-    fun togglePin(roomId: String) {
+    /** [undoable]: say what happened with an Undo (2.16). The Undo itself flips back quietly —
+     *  an undo that offers to undo itself is a loop, not a safety net. */
+    fun togglePin(roomId: String, undoable: Boolean = true) {
         val gw = gateway
+        val name = _rooms.value.firstOrNull { it.id == roomId }?.name?.takeIf { it.isNotBlank() }
+        fun undo(pinnedNow: Boolean) {
+            if (!undoable) return
+            val what = (if (pinnedNow) "Pinned" else "Unpinned") + (name?.let { " “${it.take(40)}”" } ?: "")
+            _notices.tryEmit(KeryxNotice.undo(what) { togglePin(roomId, undoable = false) })
+        }
         if (gw != null) {
             val nowPinned = roomId in pinnedRoomIds.value
             viewModelScope.launch {
                 gw.pinSession(roomId, pinned = !nowPinned)
+                    .onSuccess { undo(pinnedNow = !nowPinned) }
                     .onFailure { _toasts.tryEmit("${if (nowPinned) "Unpin" else "Pin"} failed: ${it.message?.take(80)}") }
             }
             return
         }
         val updated = _localPinnedRoomIds.value.toMutableSet()
-        if (!updated.add(roomId)) updated.remove(roomId)
+        val pinnedNow = updated.add(roomId)
+        if (!pinnedNow) updated.remove(roomId)
         _localPinnedRoomIds.value = updated
         settingsRepository.pinnedRoomIds = updated
+        undo(pinnedNow)
     }
 
     /** Direct door: flip the gateway's read watermark to "explicitly unread" — the Desktop
@@ -331,6 +342,14 @@ class ChatViewModel(
         val gw = gateway ?: return
         viewModelScope.launch {
             gw.markSessionRead(sessionId, read = false)
+                .onSuccess {
+                    _notices.tryEmit(KeryxNotice.undo("Marked unread") {
+                        viewModelScope.launch {
+                            gw.markSessionRead(sessionId, read = true)
+                                .onFailure { _toasts.tryEmit("Couldn't mark read: ${it.message?.take(80)}") }
+                        }
+                    })
+                }
                 .onFailure { _toasts.tryEmit("Couldn't mark unread: ${it.message?.take(80)}") }
         }
     }
@@ -496,6 +515,7 @@ class ChatViewModel(
             else chat.keryx.app.data.remote.HermesStreamClient(url, _gatewayApiKey.value, settingsRepository.allowInsecure)
         },
         toast = { _toasts.tryEmit(it) },
+        notice = { _notices.tryEmit(it) },
     )
     // --- Direct-transport instruments (the harvest, plan §5). Null/quiet on Matrix. ---
     private val direct get() = transport as? chat.keryx.app.transport.direct.DirectTransport
@@ -665,6 +685,11 @@ class ChatViewModel(
     }
 
     fun toast(message: String) { _toasts.tryEmit(message) }
+
+    /** A notice with one action — "Archived · Undo". [onAction] runs only if it is tapped. */
+    fun toast(message: String, actionLabel: String, onAction: () -> Unit) {
+        _notices.tryEmit(KeryxNotice(message, actionLabel, onAction))
+    }
 
     /** For the Call's log line: the direct door's link state, or "matrix". */
     fun linkState(): String = direct?.connectionState?.value?.let { it::class.simpleName ?: "?" } ?: "matrix"
@@ -1896,6 +1921,12 @@ class ChatViewModel(
     private val _toasts = kotlinx.coroutines.flow.MutableSharedFlow<String>(extraBufferCapacity = 8)
     val toasts: kotlinx.coroutines.flow.SharedFlow<String> = _toasts
 
+    // The same lane for a notice that can be acted on (2.16) — an Undo above all. Plain strings
+    // keep going through [toasts]; both land on the one themed notice line (KeryxSnack).
+    private val _notices = kotlinx.coroutines.flow.MutableSharedFlow<KeryxNotice>(extraBufferCapacity = 8)
+    val notices: kotlinx.coroutines.flow.SharedFlow<KeryxNotice> = _notices
+    fun notice(notice: KeryxNotice) { _notices.tryEmit(notice) }
+
     fun setRoomAvatar(roomId: String, bytes: ByteArray, contentType: String) {
         viewModelScope.launch {
             matrix?.setRoomAvatar(roomId, bytes, contentType)
@@ -2280,19 +2311,37 @@ class ChatViewModel(
         }
     }
 
-    fun archiveSession(sessionId: String) {
+    /** Archive and its reverse each say so with an Undo that is the other (2.16); the Undo
+     *  runs quietly ([undoable] false) so the two never volley. */
+    fun archiveSession(sessionId: String, undoable: Boolean = true) {
+        val name = _rooms.value.firstOrNull { it.id == sessionId }?.name?.takeIf { it.isNotBlank() }
         viewModelScope.launch {
             gateway?.archiveSession(sessionId)
                 ?.onFailure { _toasts.tryEmit("Couldn't archive: ${it.message?.take(80)}") }
-                ?.onSuccess { _archivedRooms.value = _archivedRooms.value.filterNot { it.id == sessionId } }
+                ?.onSuccess {
+                    _archivedRooms.value = _archivedRooms.value.filterNot { it.id == sessionId }
+                    if (undoable) _notices.tryEmit(
+                        KeryxNotice.undo("Archived" + (name?.let { " “${it.take(40)}”" } ?: "")) {
+                            unarchiveSession(sessionId, undoable = false)
+                        }
+                    )
+                }
         }
     }
 
-    fun unarchiveSession(sessionId: String) {
+    fun unarchiveSession(sessionId: String, undoable: Boolean = true) {
+        val name = _archivedRooms.value.firstOrNull { it.id == sessionId }?.name?.takeIf { it.isNotBlank() }
         viewModelScope.launch {
             gateway?.unarchiveSession(sessionId)
                 ?.onFailure { _toasts.tryEmit("Couldn't restore: ${it.message?.take(80)}") }
-                ?.onSuccess { _archivedRooms.value = _archivedRooms.value.filterNot { it.id == sessionId } }
+                ?.onSuccess {
+                    _archivedRooms.value = _archivedRooms.value.filterNot { it.id == sessionId }
+                    if (undoable) _notices.tryEmit(
+                        KeryxNotice.undo("Restored" + (name?.let { " “${it.take(40)}”" } ?: "")) {
+                            archiveSession(sessionId, undoable = false)
+                        }
+                    )
+                }
         }
     }
 

@@ -208,6 +208,7 @@ fun HandsTiles(actions: List<chat.keryx.core.model.PhoneAction>, baseColor: Colo
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.tertiary
     val context = androidx.compose.ui.platform.LocalContext.current
+    val snack = LocalKeryxSnack.current
     val haptics = LocalKeryxHaptics.current
     val shape = RoundedCornerShape(14.dp)
     Column(
@@ -233,7 +234,7 @@ fun HandsTiles(actions: List<chat.keryx.core.model.PhoneAction>, baseColor: Colo
                     .keryxPressable {
                         haptics.commit()
                         chat.keryx.app.hands.PhoneHands.perform(context, action)?.let { why ->
-                            android.widget.Toast.makeText(context, why, android.widget.Toast.LENGTH_SHORT).show()
+                            snack.show(why)
                         }
                     }
                     .padding(horizontal = 14.dp, vertical = 13.dp),

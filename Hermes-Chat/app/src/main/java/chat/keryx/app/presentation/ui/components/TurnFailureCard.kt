@@ -56,6 +56,7 @@ internal fun TurnFailureCard(
     textScale: Float,
 ) {
     val context = LocalContext.current
+    val snack = LocalKeryxSnack.current
     val bad = KeryxStatus.bad
     var logOpen by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp)
@@ -114,7 +115,7 @@ internal fun TurnFailureCard(
                     }.trim()
                     context.getSystemService(android.content.ClipboardManager::class.java)
                         ?.setPrimaryClip(android.content.ClipData.newPlainText("Keryx failure", details))
-                    android.widget.Toast.makeText(context, "Details copied", android.widget.Toast.LENGTH_SHORT).show()
+                    snack.show("Details copied")
                 }) {
                     Text("Copy details", fontSize = KeryxType.caption)
                 }

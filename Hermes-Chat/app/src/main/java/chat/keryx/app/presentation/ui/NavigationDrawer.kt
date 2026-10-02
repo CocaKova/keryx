@@ -776,16 +776,14 @@ fun NavigationDrawerContent(
                             {
                                 val cm = moveCtx.getSystemService(android.content.ClipboardManager::class.java)
                                 cm?.setPrimaryClip(android.content.ClipData.newPlainText("session id", room.id))
-                                android.widget.Toast.makeText(moveCtx, "Session id copied", android.widget.Toast.LENGTH_SHORT).show()
+                                viewModel.toast("Session id copied")
                             }
                         } else null,
                         moveTargets = if (direct) moveTargets else emptyList(),
                         onMoveToProject = if (direct) {
                             { target ->
                                 viewModel.projects.moveSessionToProject(room.id, target) { err ->
-                                    android.widget.Toast.makeText(
-                                        moveCtx, err ?: "Moved to ${target.name}", android.widget.Toast.LENGTH_SHORT,
-                                    ).show()
+                                    viewModel.toast(err ?: "Moved to ${target.name}")
                                 }
                             }
                         } else null,

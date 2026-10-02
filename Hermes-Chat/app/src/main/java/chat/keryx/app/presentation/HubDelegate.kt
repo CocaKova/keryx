@@ -18,6 +18,7 @@ class HubDelegate(deps: GatewayDeps) {
     private val client = deps.client
     private val bareClient = deps.bareClient
     private val toast = deps.toast
+    private val notice = deps.notice
 
     private val _reasoningCaps = MutableStateFlow<chat.keryx.app.data.remote.HermesStreamClient.ReasoningCaps?>(null)
     val reasoningCaps: StateFlow<chat.keryx.app.data.remote.HermesStreamClient.ReasoningCaps?> = _reasoningCaps.asStateFlow()
@@ -234,13 +235,15 @@ class HubDelegate(deps: GatewayDeps) {
 
     fun cronJobPinned(name: String): Boolean = name in _pinnedJobs.value
 
-    fun cronSetJobPinned(name: String, pinned: Boolean) {
+    fun cronSetJobPinned(name: String, pinned: Boolean, undoable: Boolean = true) {
         val now = _pinnedJobs.value
         val next = if (pinned) (if (name in now) now else now + name) else now - name
         if (next == now) return
         _pinnedJobs.value = next
         settings.pinnedCronJobs = next
-        toast(if (pinned) "$name pinned to the top of your sessions" else "$name unpinned")
+        val said = if (pinned) "$name pinned to the top of your sessions" else "$name unpinned"
+        // The Undo flips back quietly — an undo that offers to undo itself is a loop.
+        if (undoable) notice(KeryxNotice.undo(said) { cronSetJobPinned(name, !pinned, undoable = false) })
     }
 
     /**
@@ -271,7 +274,7 @@ class HubDelegate(deps: GatewayDeps) {
      * back and says why, so the screen never shows a pin the server doesn't hold. The refresh
      * after success is the list confirming (and back-filling a kept run the window had lost).
      */
-    fun cronSetPinned(runId: String, pinned: Boolean) {
+    fun cronSetPinned(runId: String, pinned: Boolean, undoable: Boolean = true) {
         if (_cron.value.data == null) return
         val client = client() ?: run { toast("Hermes Link is off — enable it in Settings"); return }
         fun flip(to: Boolean) {
@@ -284,7 +287,8 @@ class HubDelegate(deps: GatewayDeps) {
         scope.launch {
             client.sessionPin(runId, pinned)
                 .onSuccess {
-                    toast(if (pinned) "Pinned — kept on the gateway" else "Unpinned")
+                    val said = if (pinned) "Pinned — kept on the gateway" else "Unpinned"
+                    if (undoable) notice(KeryxNotice.undo(said) { cronSetPinned(runId, !pinned, undoable = false) })
                     refreshCron()
                 }
                 .onFailure {
@@ -482,10 +486,13 @@ class HubDelegate(deps: GatewayDeps) {
         val client = client() ?: run { onDone(false, "Hermes Link is off"); return }
         scope.launch {
             client.skillDelete(name)
-                .onSuccess {
+                .onSuccess { trashId ->
                     refreshSkills()
                     refreshSkillTrash()
-                    toast("Moved “$name” to trash — restore it from Skills ▸ Trash")
+                    // The gateway hands back the trash id exactly so this can be one tap.
+                    val said = "Moved “$name” to trash — restore it from Skills ▸ Trash"
+                    if (trashId.isNotBlank()) notice(KeryxNotice.undo(said) { skillRestore(trashId, name) })
+                    else toast(said)
                     onDone(true, "moved to trash")
                 }
                 .onFailure {
@@ -563,14 +570,18 @@ class HubDelegate(deps: GatewayDeps) {
     }
 
     /** Pause/resume/run a scheduled job, then re-pull the list so the card reflects reality. */
-    fun jobAction(jobId: String, action: String) {
+    fun jobAction(jobId: String, action: String, undoable: Boolean = true) {
         val client = client() ?: return
         scope.launch {
             client.jobAction(jobId, action)
                 .onSuccess {
                     // Said out loud: from the Runs page a run fires in the background and the
                     // card only changes when it lands, so a silent tap read as a dead button.
-                    toast(when (action) { "run" -> "Running now"; "pause" -> "Paused"; "resume" -> "Resumed"; else -> "Done" })
+                    val said = when (action) { "run" -> "Running now"; "pause" -> "Paused"; "resume" -> "Resumed"; else -> "Done" }
+                    // Pause and resume are each other's undo; a run that has started is not.
+                    val back = when (action) { "pause" -> "resume"; "resume" -> "pause"; else -> null }
+                    if (back != null && undoable) notice(KeryxNotice.undo(said) { jobAction(jobId, back, undoable = false) })
+                    else toast(said)
                     refreshJobs(); refreshCron()
                 }
                 .onFailure { toast("Job $action failed: ${it.message?.take(80)}") }

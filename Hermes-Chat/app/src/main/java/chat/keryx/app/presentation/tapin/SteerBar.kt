@@ -74,7 +74,8 @@ fun SteerBar(
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.fillMaxWidth(),
+        // The "steered" notice that answers a send here sits above the bar, not on its text.
+        modifier = modifier.fillMaxWidth().then(chat.keryx.app.presentation.ui.components.keryxSnackClearance()),
     ) {
         Box(
             modifier = Modifier

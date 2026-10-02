@@ -77,6 +77,7 @@ fun ArtifactSpace(
     onClose: () -> Unit,
 ) {
     val context = LocalContext.current
+    val snack = chat.keryx.app.presentation.ui.components.LocalKeryxSnack.current
     val app = context.applicationContext as? KeryxApp
     val scope = rememberCoroutineScope()
     var reloadTick by remember { mutableIntStateOf(0) }
@@ -123,7 +124,7 @@ fun ArtifactSpace(
                     busy = true
                     scope.launch {
                         val where = saveMediaToDevice(context, ready.bytes, dest.name, MediaKind.FILE)
-                        toast(context, if (where != null) "Saved to $where" else "Couldn't save")
+                        snack.show(if (where != null) "Saved to $where" else "Couldn't save")
                         busy = false
                     }
                 }) { Icon(KeryxGlyphs.Download, contentDescription = "Save to device", tint = tint) }
@@ -131,7 +132,7 @@ fun ArtifactSpace(
                     if (busy) return@IconButton
                     busy = true
                     scope.launch {
-                        if (!shareMedia(context, ready.bytes, dest.name, MediaKind.FILE)) toast(context, "Couldn't share")
+                        if (!shareMedia(context, ready.bytes, dest.name, MediaKind.FILE)) snack.show("Couldn't share")
                         busy = false
                     }
                 }) { Icon(KeryxGlyphs.Share, contentDescription = "Share", tint = tint) }
@@ -139,7 +140,9 @@ fun ArtifactSpace(
                     if (busy) return@IconButton
                     busy = true
                     scope.launch {
-                        openExternally(context, ready.bytes, dest.name, MediaKind.FILE)
+                        if (!openExternally(context, ready.bytes, dest.name, MediaKind.FILE)) {
+                            snack.show(chat.keryx.app.presentation.ui.components.NO_APP_FOR_FILE)
+                        }
                         busy = false
                     }
                 }) { Icon(KeryxGlyphs.Exit, contentDescription = "Open with", tint = tint) }
@@ -281,8 +284,4 @@ private fun humanSize(bytes: Int): String = when {
     bytes < 1024 -> "$bytes B"
     bytes < 1024 * 1024 -> "${bytes / 1024} KB"
     else -> "%.1f MB".format(bytes / (1024f * 1024f))
-}
-
-private fun toast(context: android.content.Context, text: String) {
-    android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show()
 }

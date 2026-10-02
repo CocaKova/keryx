@@ -52,7 +52,7 @@ internal fun LinkHealthDot(
         chat.keryx.app.presentation.LinkHealth.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
         else -> chat.keryx.app.presentation.ui.components.KeryxStatus.bad.copy(alpha = 0.85f)
     }
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val snack = LocalKeryxSnack.current
     val label = when (health) {
         chat.keryx.app.presentation.LinkHealth.LIVE -> "Hermes Link: streaming live"
         chat.keryx.app.presentation.LinkHealth.OK -> "Hermes Link: connected"
@@ -88,7 +88,7 @@ internal fun LinkHealthDot(
                 role = androidx.compose.ui.semantics.Role.Button,
             ) {
                 onClick?.invoke()
-                    ?: android.widget.Toast.makeText(context, label, android.widget.Toast.LENGTH_SHORT).show()
+                    ?: snack.show(label)
             },
     ) {
         Box(

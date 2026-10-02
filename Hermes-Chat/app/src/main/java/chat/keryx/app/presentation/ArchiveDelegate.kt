@@ -23,6 +23,7 @@ class ArchiveDelegate(
 ) {
     private val scope = deps.scope
     private val toast = deps.toast
+    private val notice = deps.notice
 
     // --- The Archive (1.26 "Mnemosyne") -----------------------------------------------------
 
@@ -120,7 +121,7 @@ class ArchiveDelegate(
 
     /** Toggle "Keep" on a message: saved messages survive in the archive DB and list in the
      *  Archive's Saved tab. */
-    fun toggleSaved(message: Message) {
+    fun toggleSaved(message: Message, undoable: Boolean = true) {
         val store = archiveStore ?: return
         scope.launch(Dispatchers.IO) {
             val kept = message.id in _savedIds.value
@@ -145,7 +146,10 @@ class ArchiveDelegate(
                 )
             }
             _savedIds.value = store.savedIds(message.roomId)
-            toast(if (kept) "Removed from Saved" else "Kept — find it in the Archive")
+            val said = if (kept) "Removed from Saved" else "Kept — find it in the Archive"
+            // Un-keeping is the one that loses something; both directions get the same Undo.
+            if (undoable) notice(KeryxNotice.undo(said) { toggleSaved(message, undoable = false) })
+            else toast(said)
         }
     }
 

@@ -119,12 +119,14 @@ fun HermesApp(viewModel: ChatViewModel) {
     }
 
     // Surface one-shot status messages (e.g. room-photo set result) regardless of which screen
-    // triggered them, so failures are never silent.
-    val toastContext = androidx.compose.ui.platform.LocalContext.current
-    androidx.compose.runtime.LaunchedEffect(Unit) {
-        viewModel.toasts.collect { msg ->
-            android.widget.Toast.makeText(toastContext, msg, android.widget.Toast.LENGTH_LONG).show()
-        }
+    // triggered them, so failures are never silent. 2.16: on the themed notice line, not the
+    // system Toast — it wears the theme, stands above the composer, and can offer an Undo.
+    val snack = chat.keryx.app.presentation.ui.components.rememberKeryxSnack()
+    androidx.compose.runtime.LaunchedEffect(snack) {
+        viewModel.toasts.collect { msg -> snack.show(msg) }
+    }
+    androidx.compose.runtime.LaunchedEffect(snack) {
+        viewModel.notices.collect { notice -> snack.show(notice) }
     }
 
     // Drawer-open assist for gestures that start on a horizontal scrollable (code block, wide
@@ -203,10 +205,17 @@ fun HermesApp(viewModel: ChatViewModel) {
     CompositionLocalProvider(
         chat.keryx.app.presentation.ui.components.LocalKeryxHaptics provides keryxHaptics,
         chat.keryx.app.presentation.artifact.LocalArtifactOpener provides artifactOpener,
+        chat.keryx.app.presentation.ui.components.LocalKeryxSnack provides snack,
         LocalHeraldConfig provides HeraldConfig(
             ids = chat.keryx.core.model.Heralds.parseIds(heraldIds),
             overrides = heraldAccents,
         )
+    ) {
+    // The activity window's notice layer: above the composer at the floor; on the bottom edge
+    // when the drawer or a place covers the composer (the notice must never sit on its text).
+    chat.keryx.app.presentation.ui.components.KeryxSnackLayer(
+        modifier = Modifier.fillMaxSize(),
+        clearInput = nav.atFloor && drawerState.targetValue == DrawerValue.Closed,
     ) {
     KeryxNavHost(
         nav = nav,
@@ -617,6 +626,7 @@ fun HermesApp(viewModel: ChatViewModel) {
             }
         },
     )
+    }
     }
 }
 
