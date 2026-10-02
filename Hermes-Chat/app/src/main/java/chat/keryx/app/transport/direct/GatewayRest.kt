@@ -215,6 +215,7 @@ class GatewayRest(
                         )
                     } ?: emptyList(),
                     displayKind = o.str("display_kind"),
+                    displayText = (o["display_metadata"] as? JsonObject)?.str("display_text"),
                     // `display_metadata.reactions`: [{emoji, author, at}] — Tapback rows the
                     // gateway persists per author (the desktop's and the react tool's writes
                     // both land here).

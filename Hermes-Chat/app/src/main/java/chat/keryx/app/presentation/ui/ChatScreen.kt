@@ -730,6 +730,12 @@ fun ChatScreen(
                                 chat.keryx.app.presentation.ui.components.CompactionDivider(message)
                                 return@Box
                             }
+                            // Gateway machinery (a model switch, a resumed turn, a note left for
+                            // the model): the same quiet rule, never a bubble (2.16).
+                            message.mark?.let { mark ->
+                                chat.keryx.app.presentation.ui.components.TimelineMarkDivider(mark, "mark-${message.id}")
+                                return@Box
+                            }
                             // Automated telemetry never gets a chat bubble: it renders as a quiet,
                             // low-contrast block (or nothing at all when telemetry is hidden).
                             val isTelem = message.sender == SenderType.HERMES &&

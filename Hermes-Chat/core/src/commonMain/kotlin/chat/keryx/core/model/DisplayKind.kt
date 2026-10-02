@@ -44,6 +44,10 @@ object DisplayKind {
      */
     const val INTERNAL_NOTIFICATION = "internal_notification"
 
+    /** A background process the agent started has exited (`[IMPORTANT: Background process …`);
+     *  its `display_metadata.display_text` names the command and the outcome. */
+    const val PROCESS_COMPLETE = "process_complete"
+
     /**
      * Kinds that mean "this row is not the user speaking". [HIDDEN] is absent on purpose —
      * it is not a quiet row, it is a row with nothing in it (see [hidesText]).
@@ -54,6 +58,7 @@ object DisplayKind {
         AUTO_CONTINUE,
         ASYNC_DELEGATION_COMPLETE,
         INTERNAL_NOTIFICATION,
+        PROCESS_COMPLETE,
     )
 
     /** Does the gateway class this row as machinery rather than speech? */
@@ -74,6 +79,7 @@ object DisplayKind {
         AUTO_CONTINUE -> "resumed interrupted turn"
         PERSONALITY_SWITCH -> "personality changed"
         ASYNC_DELEGATION_COMPLETE -> "background agent work finished"
+        PROCESS_COMPLETE -> "background process finished"
         else -> null
     }
 }

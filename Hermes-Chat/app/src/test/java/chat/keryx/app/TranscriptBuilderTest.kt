@@ -29,10 +29,11 @@ class TranscriptBuilderTest {
         toolCalls: List<RestToolCall> = emptyList(),
         reasoning: String? = null,
         displayKind: String? = null,
+        displayText: String? = null,
     ) = MessageRow(
         id = id, role = role, content = content, toolName = toolName,
         timestamp = id * 1000, reasoning = reasoning, toolCallId = toolCallId, toolCalls = toolCalls,
-        displayKind = displayKind,
+        displayKind = displayKind, displayText = displayText,
     )
 
     @Test
@@ -338,5 +339,66 @@ class TranscriptBuilderTest {
         val msgs = TranscriptBuilder.build("s1", rows)
         assertEquals(SenderType.SYSTEM, msgs[0].sender)
         assertEquals("Sterling", msgs[0].agentDelivery?.sender)
+    }
+
+    // ── system rows as dividers (2.16) ──────────────────────────────────────────────────
+
+    private val switchMarker = "[System: The active model for this chat has changed to qwen3.8-27b via " +
+        "provider custom. From this point forward, use this runtime metadata when answering questions " +
+        "about what model/provider is active.]"
+
+    @Test
+    fun `a model switch names its model and carries a divider mark`() {
+        val msgs = TranscriptBuilder.build("s1", listOf(row(1, "user", switchMarker, displayKind = "model_switch")))
+        assertEquals(SenderType.SYSTEM, msgs[0].sender)
+        assertEquals("model → qwen3.8-27b", msgs[0].content)
+        assertEquals("model → qwen3.8-27b", msgs[0].mark?.label)
+    }
+
+    @Test
+    fun `the same switch stored twice draws once`() {
+        // Live state.db 91015/91026: two identical rows a couple of minutes apart, nothing between.
+        val msgs = TranscriptBuilder.build("s1", listOf(
+            row(1, "user", "hello"),
+            row(2, "user", switchMarker, displayKind = "model_switch"),
+            row(3, "user", switchMarker, displayKind = "model_switch"),
+            row(4, "assistant", "hi"),
+        ))
+        assertEquals(listOf("1", "3", "4"), msgs.map { it.id })
+    }
+
+    @Test
+    fun `gateway notes and system rows are marks, the user and the carry-over are not`() {
+        val msgs = TranscriptBuilder.build("s1", listOf(
+            row(1, "user", "[IMPORTANT: You are running as a scheduled cron job. DELIVERY: …]"),
+            row(2, "system", "Tool budget exhausted."),
+            row(3, "user", "[CONTEXT COMPACTION — REFERENCE ONLY] Earlier turns were compacted."),
+            row(4, "user", "a real question"),
+        ))
+        assertEquals("You are running as a scheduled cron job", msgs[0].mark?.label)
+        // The note keeps its own words as content; only the divider reads the label.
+        assertTrue(msgs[0].content.startsWith("[IMPORTANT:"))
+        assertEquals("Tool budget exhausted", msgs[1].mark?.label)
+        assertEquals(null, msgs[2].mark)
+        assertEquals(null, msgs[3].mark)
+    }
+
+    @Test
+    fun `a background process wears the gateway's own summary`() {
+        val msgs = TranscriptBuilder.build("s1", listOf(row(
+            1, "user", "[IMPORTANT: Background process proc_1 exited (exit code 1).\nCommand: make",
+            displayKind = "process_complete", displayText = "Background Process Failed (exit 1): make",
+        )))
+        assertEquals(SenderType.SYSTEM, msgs[0].sender)
+        assertEquals("Background Process Failed (exit 1): make", msgs[0].mark?.label)
+        assertTrue(msgs[0].mark?.detail.orEmpty().contains("Command: make"))
+    }
+
+    @Test
+    fun `the REST parser lifts display_text out of display_metadata`() {
+        val body = """{"messages":[{"id":7,"role":"user","content":"[IMPORTANT: x]","timestamp":1.0,""" +
+            """"display_kind":"process_complete","display_metadata":{"display_text":"Background Process Finished: ls"}}]}"""
+        val rows = GatewayRest("http://127.0.0.1:1", "t").parseMessages(body)
+        assertEquals("Background Process Finished: ls", rows[0].displayText)
     }
 }

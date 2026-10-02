@@ -32,6 +32,10 @@ data class Message(
     /** Set when this message is really one agent messaging another (2.3 §2) — it renders as an
      *  attributed notice, never as that sender simply speaking. */
     val agentDelivery: AgentDelivery? = null,
+    /** Set when this row is gateway machinery the timeline draws as a divider (2.16): a model
+     *  switch, a resumed turn, a note left for the model. Only the transcript builder sets it;
+     *  a local system line (slash-command output, a refused level) stays a bubble to be read. */
+    val mark: TimelineMark? = null,
     /** Set when this message IS a failed turn (2.10): the gateway's own account of which layer
      *  broke. Renders as the failure card, never as a reply that happens to say "Error:". */
     val failure: TurnFailure? = null,

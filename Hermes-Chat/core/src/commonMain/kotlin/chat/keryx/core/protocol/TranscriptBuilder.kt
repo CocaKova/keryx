@@ -6,6 +6,7 @@ import chat.keryx.core.model.DelegationReport
 import chat.keryx.core.model.DisplayKind
 import chat.keryx.core.model.Message
 import chat.keryx.core.model.SenderType
+import chat.keryx.core.model.TimelineMarks
 import chat.keryx.core.model.ToolCall
 import chat.keryx.core.model.ToolStatus
 import kotlinx.serialization.json.Json
@@ -75,23 +76,30 @@ object TranscriptBuilder {
                         // render something RICHER than a line of prose. Where we have
                         // desktop's wording for the event we use it; where we don't, the row's
                         // own text in the system voice beats inventing a phrase for it.
-                        DisplayKind.isMachinery(row.displayKind) ->
-                            text(roomId, row, SenderType.SYSTEM).let { m ->
-                                DisplayKind.timelineLabel(row.displayKind)
-                                    ?.let { m.copy(content = it) } ?: m
-                            }
+                        // 2.16: the label now names what changed ("model → qwen3.8-flash-next"),
+                        // and the row carries its mark so the timeline draws a divider.
+                        DisplayKind.isMachinery(row.displayKind) -> {
+                            val mark = TimelineMarks.of(row.displayKind, row.content, row.displayText)
+                            val named = DisplayKind.timelineLabel(row.displayKind) != null ||
+                                !row.displayText.isNullOrBlank()
+                            text(roomId, row, SenderType.SYSTEM)
+                                .copy(content = if (named) mark.label else row.content, mark = mark)
+                        }
                         // Machinery we recognise but can't structure still must not speak in
                         // your voice; the quiet system row is the safe floor. (The todo
-                        // re-injection is the FOURTH role:"user"-machinery instance.)
-                        isCompactionCarryOver(row.content) || DelegationReport.isReport(row.content) ||
+                        // re-injection is the FOURTH role:"user"-machinery instance.) The
+                        // compaction carry-over keeps its own divider and so carries no mark.
+                        isCompactionCarryOver(row.content) -> text(roomId, row, SenderType.SYSTEM)
+                        DelegationReport.isReport(row.content) ||
                             chat.keryx.core.model.TodoPlanParser.isTodoInjection(row.content) ||
                             MessageParser.isGatewayNote(row.content) ->
-                            text(roomId, row, SenderType.SYSTEM)
+                            markedNote(roomId, row)
                         else -> text(roomId, row, SenderType.ME)
                     }
                 }
                 "system" -> if (row.content.isNotBlank() && !DisplayKind.hidesText(row.displayKind)) {
-                    out += text(roomId, row, SenderType.SYSTEM)
+                    out += if (isCompactionCarryOver(row.content)) text(roomId, row, SenderType.SYSTEM)
+                    else markedNote(roomId, row)
                 }
                 "assistant" -> {
                     // The stored row's `reasoning` column (populated by every thinking model —
@@ -158,8 +166,14 @@ object TranscriptBuilder {
                 }
             }
         }
-        return out
+        // Consecutive marks that say the same thing (or a switch the next one overrode) are one
+        // divider, not a stack of them (2.16).
+        return TimelineMarks.collapse(out)
     }
+
+    /** A machine note in the system voice, drawn as a divider; its text stays behind the tap. */
+    private fun markedNote(roomId: String, row: MessageRow) = text(roomId, row, SenderType.SYSTEM)
+        .copy(mark = TimelineMarks.of(row.displayKind, row.content, row.displayText))
 
     private fun isCompactionCarryOver(content: String): Boolean = CompactionCarryOver.isCarryOver(content)
 

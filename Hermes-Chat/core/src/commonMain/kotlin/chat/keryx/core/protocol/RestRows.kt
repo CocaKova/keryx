@@ -23,6 +23,9 @@ data class MessageRow(
      * ordinary rows and on gateways predating the column.
      */
     val displayKind: String? = null,
+    /** The gateway's one-line summary of a machine row (`display_metadata.display_text`, set on
+     *  background-process and delegation rows) — the label its divider wears (2.16). */
+    val displayText: String? = null,
     /** Per-author reactions on this row (`display_metadata.reactions`); empty when nobody has. */
     val reactions: List<chat.keryx.core.model.RawReaction> = emptyList(),
 )
