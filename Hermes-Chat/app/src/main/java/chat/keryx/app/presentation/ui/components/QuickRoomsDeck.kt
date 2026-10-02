@@ -185,7 +185,7 @@ private fun QuickRoomAvatar(
                 unread -> MaterialTheme.colorScheme.onSurface
                 else -> MaterialTheme.colorScheme.onSurfaceVariant
             },
-            fontSize = 11.sp,
+            fontSize = KeryxType.micro,
             fontWeight = if (selected || unread) FontWeight.SemiBold else FontWeight.Normal,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -216,7 +216,7 @@ private fun MonogramAvatar(name: String, accent: Color, highlighted: Boolean) {
         Text(
             text = monogram(name),
             color = contrastColorFor(plate),
-            fontSize = 18.sp,
+            fontSize = KeryxType.headline,
             fontWeight = FontWeight.Bold,
         )
     }

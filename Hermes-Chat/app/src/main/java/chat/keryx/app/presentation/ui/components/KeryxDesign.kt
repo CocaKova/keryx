@@ -626,7 +626,7 @@ fun KeryxSectionHeader(
         }
         Text(
             label.uppercase(),
-            fontSize = 10.sp,
+            fontSize = KeryxType.micro,
             letterSpacing = 2.0.sp,
             fontWeight = FontWeight.SemiBold,
             fontFamily = chat.keryx.app.theme.CinzelFamily,
@@ -636,7 +636,7 @@ fun KeryxSectionHeader(
             Spacer(Modifier.width(6.dp))
             Text(
                 "· $count",
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -747,7 +747,7 @@ fun KeryxSegmented(
                 ),
                 icon = {},
             ) {
-                Text(label, fontSize = 12.sp, maxLines = 1, softWrap = false)
+                Text(label, fontSize = KeryxType.caption, maxLines = 1, softWrap = false)
             }
         }
     }
@@ -796,7 +796,7 @@ fun KeryxHubRow(
                 Text(
                     text = if (badge > 99) "99+" else badge.toString(),
                     color = contrastColorFor(MaterialTheme.colorScheme.primary),
-                    fontSize = 9.sp,
+                    fontSize = KeryxType.micro,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                 )
@@ -804,9 +804,9 @@ fun KeryxHubRow(
         }
         Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text(title, fontWeight = FontWeight.SemiBold, fontSize = KeryxType.title, color = MaterialTheme.colorScheme.onSurface)
             Text(
-                subtitle, fontSize = 12.sp,
+                subtitle, fontSize = KeryxType.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
@@ -875,7 +875,7 @@ private fun KeryxSpaceBody(
                 Column(modifier = Modifier.padding(start = 14.dp).weight(1f)) {
                     Text(
                         title.uppercase(),
-                        fontSize = 17.sp,
+                        fontSize = KeryxType.headline,
                         fontWeight = FontWeight.SemiBold,
                         letterSpacing = 5.sp,
                         fontFamily = chat.keryx.app.theme.CinzelFamily,

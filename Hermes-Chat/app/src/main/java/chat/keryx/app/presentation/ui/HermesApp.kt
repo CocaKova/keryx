@@ -57,6 +57,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.keryx.app.presentation.ui.components.KeryxType
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun HermesApp(viewModel: ChatViewModel) {
@@ -250,7 +251,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                 TopAppBar(
                     title = {
                         Column {
-                            chat.keryx.app.presentation.ui.components.KeryxWordmark(fontSize = 18.sp)
+                            chat.keryx.app.presentation.ui.components.KeryxWordmark(fontSize = KeryxType.headline)
                             currentRoom?.let { room ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     // Bot Mode (2.8): a bot's forever-chat wears the bot — its
@@ -259,13 +260,13 @@ fun HermesApp(viewModel: ChatViewModel) {
                                     val botHere = viewModel.bots.botForSession(room.id)
                                     if (botHere != null) {
                                         val light = chat.keryx.app.presentation.ui.components.botLightFor(botHere.name, botHere.label, botHere.isDefault)
-                                        chat.keryx.app.presentation.ui.components.HeraldSigil(light, fontSize = 12.sp)
+                                        chat.keryx.app.presentation.ui.components.HeraldSigil(light, fontSize = KeryxType.caption)
                                         Spacer(Modifier.width(4.dp))
                                     }
                                     Text(
                                         text = if (botHere != null) botHere.label else room.name,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontSize = 13.sp,
+                                        fontSize = KeryxType.body,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.weight(1f, fill = false),
@@ -284,7 +285,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                                         Text(
                                             text = "Bot Chat",
                                             color = chipInk,
-                                            fontSize = 10.sp,
+                                            fontSize = KeryxType.micro,
                                             maxLines = 1,
                                             modifier = Modifier
                                                 .clip(chipShape)
@@ -304,7 +305,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                                         Text(
                                             text = profile.replaceFirstChar { it.uppercase() },
                                             color = chipInk,
-                                            fontSize = 10.sp,
+                                            fontSize = KeryxType.micro,
                                             maxLines = 1,
                                             modifier = Modifier
                                                 .clip(chipShape)
@@ -486,11 +487,11 @@ fun HermesApp(viewModel: ChatViewModel) {
                                         chat.keryx.app.presentation.ui.components.KeryxRadius.sheet
                                     ),
                                     onDismissRequest = { confirmNewSession = false },
-                                    title = { Text("Start a new session?", fontSize = 16.sp) },
+                                    title = { Text("Start a new session?", fontSize = KeryxType.titleLarge) },
                                     text = {
                                         Text(
                                             "The agent is still working — /new ends the current run and its result is discarded.",
-                                            fontSize = 13.sp,
+                                            fontSize = KeryxType.body,
                                         )
                                     },
                                     confirmButton = {
@@ -654,7 +655,7 @@ internal fun ReasoningMenu(
             Text(
                 "REASONING",
                 color = accent,
-                fontSize = 10.sp,
+                fontSize = KeryxType.micro,
                 letterSpacing = 2.4.sp,
             )
             Text(
@@ -670,7 +671,7 @@ internal fun ReasoningMenu(
                     else -> "${caps.model.ifBlank { "model" }} · effort scale"
                 },
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
-                fontSize = 9.sp,
+                fontSize = KeryxType.micro,
             )
         }
         // Render exactly the levels the gateway declares for the active brain (it knows what
@@ -713,13 +714,13 @@ internal fun ReasoningMenu(
                         Text(
                             glyph,
                             color = accent.copy(alpha = 0.75f),
-                            fontSize = 11.sp,
+                            fontSize = KeryxType.micro,
                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                             modifier = Modifier.padding(end = 10.dp).width(38.dp),
                         )
                         Text(
                             label,
-                            fontSize = 14.sp,
+                            fontSize = KeryxType.bodyLarge,
                             fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
                             color = if (isCurrent) accent else Color.Unspecified,
                         )
@@ -732,7 +733,7 @@ internal fun ReasoningMenu(
             Text(
                 "This model takes no effort level — Hermes sends none.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
         } else {
@@ -743,7 +744,7 @@ internal fun ReasoningMenu(
                     ) {
                         Text(
                             if (everySession) "Every session" else "This session only",
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f),
                         )
@@ -762,16 +763,16 @@ internal fun ReasoningMenu(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
         )
         DropdownMenuItem(
-            text = { Text("Show reasoning", fontSize = 14.sp) },
+            text = { Text("Show reasoning", fontSize = KeryxType.bodyLarge) },
             onClick = { onCommand("show") },
         )
         DropdownMenuItem(
-            text = { Text("Hide reasoning", fontSize = 14.sp) },
+            text = { Text("Hide reasoning", fontSize = KeryxType.bodyLarge) },
             onClick = { onCommand("hide") },
         )
         DropdownMenuItem(
             text = {
-                Text("Reset session override", fontSize = 14.sp,
+                Text("Reset session override", fontSize = KeryxType.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             },
             onClick = { onCommand("reset") },

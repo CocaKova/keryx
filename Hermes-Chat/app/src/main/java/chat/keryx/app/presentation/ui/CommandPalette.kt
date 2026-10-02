@@ -80,6 +80,7 @@ import chat.keryx.app.presentation.ui.components.replyPreviewText
 import chat.keryx.app.presentation.ui.components.shortSender
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import chat.keryx.app.presentation.ui.components.KeryxType
 
 // The "/" palette over the composer. Split out of ChatScreen.kt in 2.10 (Phase E): a move,
 // zero behaviour change.
@@ -154,15 +155,15 @@ fun CommandPaletteMenu(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(sc.cmd, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                            Text(sc.cmd, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold, fontSize = KeryxType.title)
                             if (sc.takesArgs) {
                                 Spacer(Modifier.width(6.dp))
-                                Text("…", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 15.sp)
+                                Text("…", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = KeryxType.title)
                             }
                         }
-                        Text(sc.desc, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                        Text(sc.desc, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = KeryxType.caption)
                     }
-                    if (isRecent) Text("recent", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f), fontSize = 10.sp)
+                    if (isRecent) Text("recent", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f), fontSize = KeryxType.micro)
                 }
             }
         }

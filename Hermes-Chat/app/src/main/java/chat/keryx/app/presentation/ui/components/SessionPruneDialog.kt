@@ -123,20 +123,20 @@ fun SessionPruneDialog(
                 KeryxSectionHeader("Prune sessions")
                 Text(
                     "Deletes ended sessions from the gateway's record — permanently, transcripts included. Active sessions are never touched.",
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
                 )
                 Spacer(Modifier.height(14.dp))
 
-                Text("Older than", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Older than", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     AGE_PRESETS.forEach { days ->
                         val selected = days == ageDays
                         Text(
                             "${days}d",
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             color = if (selected) MaterialTheme.colorScheme.onPrimary
                                     else MaterialTheme.colorScheme.primary,
                             modifier = Modifier
@@ -155,15 +155,15 @@ fun SessionPruneDialog(
                     value = maxMessagesText,
                     onValueChange = { maxMessagesText = it.filter(Char::isDigit); voidPreview() },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Only sessions with ≤ N messages (optional)", fontSize = 11.sp) },
+                    label = { Text("Only sessions with ≤ N messages (optional)", fontSize = KeryxType.micro) },
                     singleLine = true,
-                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp),
+                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = KeryxType.body),
                 )
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         "Include archived sessions",
-                        fontSize = 13.sp,
+                        fontSize = KeryxType.body,
                         modifier = Modifier.weight(1f),
                     )
                     Switch(
@@ -174,28 +174,28 @@ fun SessionPruneDialog(
                 Spacer(Modifier.height(10.dp))
 
                 previewError?.let {
-                    Text(it, fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
+                    Text(it, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.height(6.dp))
                 }
                 preview?.let { p ->
                     if (p.matched == 0) {
                         Text(
                             "Nothing matches these filters.",
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     } else {
                         Text(
                             "${p.matched} session${if (p.matched == 1) "" else "s"} match · " +
                                 "oldest ${epochDate(p.oldestStartedAt)} · newest ${epochDate(p.newestStartedAt)}",
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.tertiary,
                         )
                         p.sample.take(5).forEach { s ->
                             Text(
                                 "· ${s.title?.takeIf { it.isNotBlank() } ?: s.id.take(12)} (${s.messageCount} msgs)",
-                                fontSize = 11.sp,
+                                fontSize = KeryxType.micro,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                             )
@@ -232,11 +232,11 @@ fun SessionPruneDialog(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmOpen = false },
-            title = { Text("Delete $matched sessions permanently?", fontSize = 16.sp) },
+            title = { Text("Delete $matched sessions permanently?", fontSize = KeryxType.titleLarge) },
             text = {
                 Text(
                     "Rows and transcript files are removed from the gateway. There is no undo.",
-                    fontSize = 13.sp,
+                    fontSize = KeryxType.body,
                 )
             },
             confirmButton = {

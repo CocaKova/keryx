@@ -88,6 +88,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
+import chat.keryx.app.presentation.ui.components.KeryxType
 
 /** The deck rows that are cron tiles, not roster sessions — see [chat.keryx.core.model.CronTiles]. */
 private const val CRON_TILE_SOURCE = "cron-tile"
@@ -141,7 +142,7 @@ private fun PaletteRow(
             Text(
                 title,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 15.sp,
+                fontSize = KeryxType.title,
                 fontWeight = FontWeight.Medium,
                 fontFamily = if (mono) androidx.compose.ui.text.font.FontFamily.Monospace else null,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -149,7 +150,7 @@ private fun PaletteRow(
             if (subtitle != null) Text(
                 subtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-                fontSize = 12.sp,
+                fontSize = KeryxType.caption,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
@@ -348,7 +349,7 @@ fun NavigationDrawerContent(
                         )
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        chat.keryx.app.presentation.ui.components.KeryxWordmark(fontSize = 22.sp)
+                        chat.keryx.app.presentation.ui.components.KeryxWordmark(fontSize = KeryxType.display)
                         petInfo?.let { pet ->
                             Spacer(modifier = Modifier.width(10.dp))
                             chat.keryx.app.presentation.ui.components.PetSprite(
@@ -370,7 +371,7 @@ fun NavigationDrawerContent(
                     currentUserId?.let {
                         Text(
                             text = it,
-                            fontSize = 12.sp,
+                            fontSize = KeryxType.caption,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -496,7 +497,7 @@ fun NavigationDrawerContent(
                             label = {
                                 Text(
                                     if (count > 0) "$label · $count" else label,
-                                    fontSize = 12.sp,
+                                    fontSize = KeryxType.caption,
                                 )
                             },
                             shape = RoundedCornerShape(50),
@@ -698,7 +699,7 @@ fun NavigationDrawerContent(
                                 else -> "No matches"
                             },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 14.sp,
+                            fontSize = KeryxType.bodyLarge,
                             modifier = Modifier.padding(8.dp),
                         )
                     }
@@ -808,7 +809,7 @@ fun NavigationDrawerContent(
                         Text(
                             if (loadingMore) "Reaching back…" else "Show older ${lexicon.plural}",
                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                            fontSize = 13.sp,
+                            fontSize = KeryxType.body,
                             fontWeight = FontWeight.Medium,
                         )
                     }
@@ -974,7 +975,7 @@ internal fun DrawerStatusStrip(
             Text(
                 text = words,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 11.sp,
+                fontSize = KeryxType.micro,
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -1027,14 +1028,14 @@ internal fun DrawerShelfHeader(
         Text(
             text = title.uppercase(),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 12.sp,
+            fontSize = KeryxType.caption,
             fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = count.toString(),
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-            fontSize = 11.sp,
+            fontSize = KeryxType.micro,
         )
         Spacer(modifier = Modifier.weight(1f))
         // Folded with unread inside: the same pill the doors wear, so "something new here"
@@ -1053,7 +1054,7 @@ internal fun DrawerShelfHeader(
                 Text(
                     text = DoorBadge.label(unread),
                     color = contrastColorFor(MaterialTheme.colorScheme.primary),
-                    fontSize = 9.sp,
+                    fontSize = KeryxType.micro,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                 )
@@ -1073,7 +1074,7 @@ fun DrawerSectionHeader(title: String) {
     Text(
         text = title.uppercase(),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        fontSize = 12.sp,
+        fontSize = KeryxType.caption,
         fontWeight = FontWeight.Bold,
         modifier = Modifier.padding(top = 8.dp, bottom = 8.dp, start = 8.dp)
     )
@@ -1167,7 +1168,7 @@ fun RoomRow(
                 Text(
                     text = room.name,
                     color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    fontSize = 16.sp,
+                    fontSize = KeryxType.titleLarge,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -1200,7 +1201,7 @@ fun RoomRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
                         alpha = if (room.hasUnread) 0.95f else 0.65f
                     ),
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     fontWeight = if (room.hasUnread) FontWeight.Medium else FontWeight.Normal,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -1214,7 +1215,7 @@ fun RoomRow(
                 Text(
                     text = formatRelativeTime(room.timestamp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                 )
             }
             // Unread arrives as itself — a pop, not a pixel switch — and leaves the same way.
@@ -1235,7 +1236,7 @@ fun RoomRow(
                         // the theme — so in dark mode the count was white on amber at 3.62:1,
                         // under the 4.5 a 10sp figure needs. Ask the ground.
                         color = contrastColorFor(MaterialTheme.colorScheme.primary),
-                        fontSize = 10.sp,
+                        fontSize = KeryxType.micro,
                         fontWeight = FontWeight.Bold,
                     )
                 }
@@ -1266,7 +1267,7 @@ fun RoomRow(
                     if (lexicon.pinHint.isNotBlank() && !isPinned) {
                         Text(
                             lexicon.pinHint,
-                            fontSize = 10.sp,
+                            fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -1293,7 +1294,7 @@ fun RoomRow(
                 text = {
                     Column {
                         Text("Archive")
-                        Text("Off the list, still on the gateway", fontSize = 10.sp,
+                        Text("Off the list, still on the gateway", fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
@@ -1355,7 +1356,7 @@ fun RoomRow(
                     Column {
                         Text(target.name)
                         target.anchorPath?.let {
-                            Text(it, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            Text(it, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                         }
                     }
@@ -1370,7 +1371,7 @@ fun RoomRow(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { inviteOpen = false },
-            title = { Text("Invite to ${room.name}", fontSize = 16.sp) },
+            title = { Text("Invite to ${room.name}", fontSize = KeryxType.titleLarge) },
             text = {
                 OutlinedTextField(
                     value = inviteId,
@@ -1395,8 +1396,8 @@ fun RoomRow(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmLeave = false },
-            title = { Text("Leave ${room.name}?", fontSize = 16.sp) },
-            text = { Text("You'll stop receiving its messages; rejoining needs a new invite.", fontSize = 13.sp) },
+            title = { Text("Leave ${room.name}?", fontSize = KeryxType.titleLarge) },
+            text = { Text("You'll stop receiving its messages; rejoining needs a new invite.", fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = { confirmLeave = false; onLeave?.invoke() }) {
                     Text("Leave", color = MaterialTheme.colorScheme.error)
@@ -1412,7 +1413,7 @@ fun RoomRow(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { renameOpen = false },
-            title = { Text("Rename session", fontSize = 16.sp) },
+            title = { Text("Rename session", fontSize = KeryxType.titleLarge) },
             text = {
                 OutlinedTextField(
                     value = newTitle,
@@ -1436,8 +1437,8 @@ fun RoomRow(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete ${room.name}?", fontSize = 16.sp) },
-            text = { Text("Deletes the session and its whole transcript from the gateway. This can't be undone.", fontSize = 13.sp) },
+            title = { Text("Delete ${room.name}?", fontSize = KeryxType.titleLarge) },
+            text = { Text("Deletes the session and its whole transcript from the gateway. This can't be undone.", fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = { confirmDelete = false; onDelete?.invoke() }) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
@@ -1469,7 +1470,7 @@ private fun InviteRow(
         Text(
             text = invite.name,
             color = MaterialTheme.colorScheme.onSurface,
-            fontSize = 15.sp,
+            fontSize = KeryxType.title,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -1477,14 +1478,14 @@ private fun InviteRow(
         Text(
             "You've been invited to this room",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 11.sp,
+            fontSize = KeryxType.micro,
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             TextButton(onClick = onDecline) {
-                Text("Decline", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                Text("Decline", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = KeryxType.body)
             }
             TextButton(onClick = onAccept) {
-                Text("Accept", color = MaterialTheme.colorScheme.primary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text("Accept", color = MaterialTheme.colorScheme.primary, fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -1527,7 +1528,7 @@ private fun SearchHitRow(
             Text(
                 text = hit.title,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 14.sp,
+                fontSize = KeryxType.bodyLarge,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -1538,14 +1539,14 @@ private fun SearchHitRow(
                 Text(
                     text = formatRelativeTime(hit.lastActive),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 11.sp,
+                    fontSize = KeryxType.micro,
                 )
             }
         }
         Text(
             text = snippet,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 12.sp,
+            fontSize = KeryxType.caption,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 1.dp),
@@ -1602,7 +1603,7 @@ private fun RoomAvatar(
                 Text(
                     text = room.name.trimStart('@', '#', '!').trim().firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "•",
                     color = contrastColorFor(plate),
-                    fontSize = 15.sp,
+                    fontSize = KeryxType.title,
                     fontWeight = FontWeight.Bold,
                 )
             }
@@ -1722,7 +1723,7 @@ private fun DrawerDoor(
                         // Same ground as the room list's pill, so the same rule: the accent
                         // decides, not the theme (see RoomRow). The urgent orb: its own hue.
                         color = contrastColorFor(orb),
-                        fontSize = 9.sp,
+                        fontSize = KeryxType.micro,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         softWrap = false,

@@ -83,11 +83,11 @@ fun PetPickerSheet(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Choose a pet", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text("Choose a pet", fontSize = KeryxType.headline, fontWeight = FontWeight.Bold)
                     Text(
                         text = gallery?.pets?.firstOrNull { it.slug == gallery?.active }?.displayName
                             ?.let { "$it rides along in the drawer" } ?: "Pets live on the gateway — every surface shows the same one",
-                        fontSize = 12.sp,
+                        fontSize = KeryxType.caption,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -121,7 +121,7 @@ fun PetPickerSheet(
             selectError?.let {
                 Text(
                     text = it,
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 8.dp),
                 )
@@ -157,7 +157,7 @@ fun PetPickerSheet(
                     item(key = "empty") {
                         Text(
                             text = if (query.isBlank()) "No pets available — is Hermes Link configured?" else "No pets match \"$query\"",
-                            fontSize = 13.sp,
+                            fontSize = KeryxType.body,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 24.dp),
                         )
@@ -172,7 +172,7 @@ fun PetPickerSheet(
 private fun PetSectionHeader(title: String) {
     Text(
         text = title.uppercase(),
-        fontSize = 11.sp,
+        fontSize = KeryxType.micro,
         fontWeight = FontWeight.SemiBold,
         letterSpacing = 1.2.sp,
         color = MaterialTheme.colorScheme.primary,
@@ -220,14 +220,14 @@ private fun PetRow(
                     modifier = Modifier.size(36.dp),
                 )
             } else {
-                Text("·ᴥ·", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("·ᴥ·", fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = pet.displayName,
-                fontSize = 14.sp,
+                fontSize = KeryxType.bodyLarge,
                 fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -240,7 +240,7 @@ private fun PetRow(
                 else -> ""
             }
             if (badge.isNotEmpty()) {
-                Text(badge, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(badge, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         when {

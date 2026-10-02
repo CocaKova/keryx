@@ -76,7 +76,7 @@ fun NewChatSheet(
                 var temporary by rememberSaveable { mutableStateOf(false) }
                 Text(
                     "A fresh gateway session. Name it now, or let the first exchange title it.",
-                    fontSize = 12.sp,
+                    fontSize = KeryxType.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(10.dp))
@@ -110,14 +110,14 @@ fun NewChatSheet(
                     Column(Modifier.weight(1f)) {
                         Text(
                             "Temporary",
-                            fontSize = 13.sp,
+                            fontSize = KeryxType.body,
                             fontWeight = FontWeight.Medium,
                             color = if (temporary) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
                             "Deleted from the gateway at the app's next launch",
-                            fontSize = 11.sp,
+                            fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -129,7 +129,7 @@ fun NewChatSheet(
                 }
                 error?.let {
                     Spacer(Modifier.height(6.dp))
-                    Text("⚠ $it", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                    Text("⚠ $it", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
                 }
                 return@Column
             }
@@ -212,7 +212,7 @@ fun NewChatSheet(
 
             error?.let {
                 Spacer(Modifier.height(6.dp))
-                Text("⚠ $it", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                Text("⚠ $it", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
             }
         }
     }
@@ -241,8 +241,8 @@ private fun NewChatRow(
             )
             Spacer(Modifier.width(12.dp))
             Column {
-                Text(title, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                Text(subtitle, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(title, fontSize = KeryxType.bodyLarge, fontWeight = FontWeight.Medium)
+                Text(subtitle, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         AnimatedVisibility(visible = open, enter = keryxReveal(), exit = keryxConceal()) {
