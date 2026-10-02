@@ -7,7 +7,8 @@ tokens live when the keryx-stream plugin is installed. The app is one APK, no di
 required, and it works against any stock Hermes gateway with nothing extra installed (live
 streaming then just falls back to committed turns).
 
-This folder is the user documentation. The version it describes is 2.12.0.
+This folder is the user documentation. The version it describes is 2.16.0; what changed since
+2.12 is in the [changelog](CHANGELOG.md), and some screenshots predate it (listed at the end).
 
 ## Pages
 
@@ -31,3 +32,23 @@ This folder is the user documentation. The version it describes is 2.12.0.
 
 The build-plan notes in `Hermes-Chat/docs/` are internal design history. They are not required
 reading and sometimes differ from what shipped; the pages here are checked against the source.
+
+## Stale screenshots
+
+Every image in `img/` was taken before 2.16, so all of them show the old type sizes. These also
+show something that has since changed, and should be retaken first:
+
+| Image | What changed |
+|---|---|
+| `turn-anatomy.jpg` | tok/s readout (now "≈ N tok/s" or chars/s), exit-code chips, model-switch divider |
+| `chat-folded.jpg` | exit-code chips in folded runs, model-switch divider |
+| `context-ring.jpg` | the sheet's run numbers; the ring's gilded edge and compaction drain |
+| `steer.jpg` | holding Steer now offers Queue / Ask aside / Redirect, and the hint reads "hold for more" |
+| `reasoning-dial.jpg` | one spelling per level ("X-High") |
+| `drawer.jpg` | running rows breathe; Export in the row menu |
+| `gateway-panel.jpg`, `controls-panel.jpg` | the Hub's Update and Memory spokes |
+| `missions-new.jpg` | priority and goal mode on create; its copy was already out of date |
+| `model-picker.jpg`, `bots.jpg`, `shipyard.jpg`, `account-transport.jpg`, `gateway-test-link.jpg` | type scale only |
+
+Missing entirely: Tap-In, the Missions board and a card sheet, Runs and the job editor, the
+widget, the artifact viewer, the goal strip, an aside, find in chat.

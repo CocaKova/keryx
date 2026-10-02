@@ -5,6 +5,93 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.16.0 · versionCode 120
+
+"The herald hears everything." Two rounds of work: everything that moves now reads something
+real, and the gateway's unused verbs reach the phone.
+
+**Honest numbers**
+- Tokens per second tell the truth. Live, in the working cloud and Tap-In, the character rate is
+  read through a chars-per-token ratio measured against the gateway's own output counter on an
+  earlier single-call turn, marked "≈", and it falls toward zero while the model stalls. Before
+  any real count has calibrated it, the readout stays in chars/s. A finished turn shows its real
+  rate beside the clock (the counter's move over the time the text was flowing). The context
+  sheet reads the gateway's own average. The "≈ tok/s" under the Matrix live bubble, which was
+  characters divided by four, is gone.
+- The context sheet reads the run numbers the gateway was already sending: prefix cache, tok/s
+  average, compactions, latency per call, the session's token totals; the mid-turn usage tick is
+  handled, so the ring moves during a turn.
+
+**The gateway's other hands**
+- Goal strip: a session's standing goal rides the instrument rail under the flight plan (turns
+  used of the max, gates going green, the verdict stamped) with pause, resume and clear;
+  Tap-In shows it above its headline. Needs `session.control.*` (stock Hermes); a gateway
+  without it shows nothing.
+- Hold Steer while a turn runs: Queue, Ask aside (`prompt.btw`: answered in a framed aside under
+  the chat that never enters the history) or Redirect (`session.redirect`: the reply starts over
+  with your correction; retired on an agent that cannot).
+- Branch from here: any saved line can start a new session holding the history up to it
+  (`session.branch`), opened with the room-switch dissolve.
+- Edit & resend: your own message goes back in the composer; on your newest message the
+  exchange is taken back first.
+- A dropped socket replays the frames it missed (`session.events.since`) instead of re-reading
+  the transcript, and reloads only when the gateway says the ring was truncated.
+
+**Places**
+- Runs makes and changes jobs: a schedule picker instead of a raw cron line, a delivery-targets
+  picker instead of a raw `matrix:<room>` string, blueprints, and each job's run history. The
+  Hub's Jobs spoke shares the same editor.
+- Missions: a new mission takes a priority and goal mode; the board has search and owner chips;
+  a card's title, brief, priority and owner can be edited after it is made (where the
+  dashboard's kanban plugin answers). Cards whose face changed since you last closed the board
+  take one pass of light when it opens.
+- The Hub reads what the agent remembers (Memory spoke) and can update Hermes again (Update
+  spoke: check, receipt, start behind a confirm, follow the log, the operator's preflight).
+- A session can be exported (Markdown or JSON) to the share sheet from the drawer.
+- Tap-In is a layer on the nav stack, not its own Dialog window: the back gesture scrubs it
+  predictively, and it grows out of the working cloud's bounds. Its rail follows new calls while
+  you are at the bottom, and the answer renders as markdown.
+
+**Chat**
+- One type scale (`KeryxType`) across the app, with a guard test; its smallest step is 11 sp.
+- A model switch is a divider naming the model, not two agent bubbles. A command's exit code is
+  a chip beside its output instead of a JSON envelope.
+- Up to six photos or files at once, or a shot from the system camera; the direct door sends
+  them as one turn. Find in chat. Select text from any message. An empty session offers a few
+  ways in. Every reasoning level has one spelling on every surface.
+- An artifact opened by path loads its CSS, scripts, images and sibling pages from its own
+  folder on the gateway, and nothing outside that folder.
+- Themed notices replace system Toasts: they sit above the composer (and Tap-In's steer bar),
+  never repeat themselves, and the reversible verbs offer Undo.
+- TalkBack hears the streaming reply, the working cloud and an approval waiting on you.
+- LaTeX stays the Unicode transform: no light renderer exists for Compose.
+
+**Motion that reads something**
+- The sand under a streaming reply pours at the live token rate and stops on a stall.
+- The working cloud stands on its own floor and wears the running tool's colour on its rim.
+- Three short ticks when an approval, question or sudo prompt lands, distinct from the turn's
+  two.
+- The context ring is gilded inside while the prefix cache is warm (≥ 80 %), drains toward empty
+  over the typical compaction length while one runs, and snaps back with one tick.
+- A running session's drawer row breathes in its own light; a row that turns unread takes one
+  pass of light.
+
+**Platform**
+- The locked phone cannot approve a command from the shade: Approve, Always and This session ask
+  for the device unlock (Android 12+); Deny stays one tap.
+- `keryx://` links (session, tapped-in session, new chat, composer, Missions or a card, Runs,
+  Archive, Projects, Bots), launcher shortcuts (New chat, Missions, Runs), and conversation
+  shortcuts for sessions that notify or are opened, so notifications land in the People section.
+- Android 16: the run notice asks to be a Live Update and draws the flight plan as progress
+  segments (system permitting; the Samsung Now Bar is unverified).
+- The widget says how many requests wait on you, and the picker shows a real preview.
+
+**Not in 2.16**
+- Switching gateways still restarts the process: the transport, its coroutines and the app's
+  notification observers are built once per process; doing it in place needs a scoped transport
+  with a shutdown and observer restarts, which needs a device walk to trust.
+- The wake word stays on its branch.
+
 ## 2.15.0 · versionCode 119
 
 - Mission alerts cross gateways. The background watcher only ever checked the gateway the app
