@@ -60,3 +60,16 @@ internal suspend fun GatewayRest.memoryDelete(id: String): Routed<String> =
         "DELETE", "/api/learning/node",
         buildJsonObject { put("id", JsonPrimitive(id)) }.toString(),
     ).map { parse(it)?.let(MemoryParser::mutationMessage) ?: "" }
+
+// --- Session export -------------------------------------------------------------------------
+
+/**
+ * `GET /api/sessions/{id}/export` — the session row plus every message row, as JSON (the only
+ * format the route serves). [profile] names a Bot Chat's own store; blank = the launch profile.
+ */
+internal suspend fun GatewayRest.sessionExport(sessionId: String, profile: String?): Routed<String> =
+    routed(
+        "GET",
+        "/api/sessions/" + enc(sessionId) + "/export" +
+            (profile?.trim()?.takeIf { it.isNotEmpty() }?.let { "?profile=" + enc(it) } ?: ""),
+    )

@@ -653,6 +653,8 @@ class ChatViewModel(
     val bots = BotsDelegate(deps, transport, hub) { id, title -> openSessionById(id, title) }
     /** The Hub's Memory spoke (2.16) — dashboard routes, so the direct door's REST client. */
     val memory = MemoryDelegate(deps) { direct?.restClient }
+    /** Export and share out (2.16): one session as a file, from the drawer's long-press menu. */
+    val exports = SessionExportDelegate({ direct?.restClient }, { direct?.profileForSession(it) })
 
     // --- Real push (UnifiedPush) — the caller drives PushManager (it needs a Context). ---
     private val _pushEnabled = MutableStateFlow(settingsRepository.pushEnabled)

@@ -262,6 +262,12 @@ fun NavigationDrawerContent(
         }
         pendingAvatarRoomId = null
     }
+    // Export (2.16): the session whose file is being made — one dialog for the whole drawer.
+    var exportRoom by remember { mutableStateOf<RoomProfile?>(null) }
+    val exportSupported by viewModel.exports.supported.collectAsState()
+    exportRoom?.let { r ->
+        chat.keryx.app.presentation.ui.components.SessionExportDialog(viewModel, r.id, r.name) { exportRoom = null }
+    }
     
     // Settings is a nav destination now (2.0 Phase 4) — see SettingsPlace.
     
@@ -763,6 +769,9 @@ fun NavigationDrawerContent(
                         onUnarchive = if (direct && lens == LENS_ARCHIVED) {
                             { viewModel.unarchiveSession(room.id) }
                         } else null,
+                        onExport = if (direct && exportSupported) {
+                            { exportRoom = room }
+                        } else null,
                         onCopyId = if (direct) {
                             {
                                 val cm = moveCtx.getSystemService(android.content.ClipboardManager::class.java)
@@ -1102,6 +1111,8 @@ fun RoomRow(
     onArchive: (() -> Unit)? = null,
     onUnarchive: (() -> Unit)? = null,
     onCopyId: (() -> Unit)? = null,
+    /** Export and share out (2.16) — the gateway's export as Markdown or JSON. */
+    onExport: (() -> Unit)? = null,
     /** Projects that can claim this session (they have a folder); empty = no menu entry. */
     moveTargets: List<chat.keryx.core.model.ProjectInfo> = emptyList(),
     onMoveToProject: ((chat.keryx.core.model.ProjectInfo) -> Unit)? = null,
@@ -1307,6 +1318,13 @@ fun RoomRow(
                 text = { Text("Restore to the list") },
                 leadingIcon = { Icon(KeryxGlyphs.Archive, contentDescription = null, modifier = Modifier.size(16.dp)) },
                 onClick = { menuOpen = false; onUnarchive() },
+            )
+        }
+        if (onExport != null) {
+            DropdownMenuItem(
+                text = { Text("Export…") },
+                leadingIcon = { Icon(KeryxGlyphs.Share, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                onClick = { menuOpen = false; onExport() },
             )
         }
         if (onCopyId != null) {
