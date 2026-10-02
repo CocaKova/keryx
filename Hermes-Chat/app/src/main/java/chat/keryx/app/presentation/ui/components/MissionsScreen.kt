@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -267,7 +268,16 @@ fun MissionsScreen(
         }
     }
 
-    val tasks = board?.tasks.orEmpty()
+    // Search + owner filter (2.16): the board narrows, every count and lane follows it.
+    var query by remember { mutableStateOf("") }
+    var ownerFilter by remember { mutableStateOf<String?>(null) }
+    var searchOpen by remember { mutableStateOf(false) }
+    val allTasks = board?.tasks.orEmpty()
+    val owners = remember(allTasks) { chat.keryx.app.presentation.MissionFilter.assignees(allTasks) }
+    val tasks = remember(allTasks, query, ownerFilter) {
+        chat.keryx.app.presentation.MissionFilter.apply(allTasks, query, ownerFilter)
+    }
+    val filtering = query.isNotBlank() || ownerFilter != null
     val sections = missionSections(tasks)
     val runningCount = tasks["running"]?.size ?: 0
     val needsCount = sections.firstOrNull { it.key == NEEDS_YOU }?.cards?.size ?: 0
@@ -364,6 +374,42 @@ fun MissionsScreen(
             )
         }
 
+        // Find on the board (2.16): words anywhere on a card, and whose card it is.
+        if (!selecting && (searchOpen || filtering || allTasks.values.sumOf { it.size } > 8)) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Find a mission", fontSize = KeryxType.body) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(KeryxRadius.field),
+                    trailingIcon = if (filtering) ({
+                        TextButton(onClick = { query = ""; ownerFilter = null }) { Text("Clear", fontSize = KeryxType.caption) }
+                    }) else null,
+                )
+                if (owners.size > 1) Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    owners.forEach { (owner, n) ->
+                        val on = ownerFilter == owner
+                        Text(
+                            (if (owner == chat.keryx.app.presentation.MissionFilter.UNASSIGNED) "Nobody" else owner.replaceFirstChar { it.uppercase() }) + " $n",
+                            fontSize = KeryxType.caption,
+                            maxLines = 1,
+                            color = if (on) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(KeryxRadius.chip))
+                                .background(if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                .clickable { ownerFilter = if (on) null else owner }
+                                .padding(horizontal = 10.dp, vertical = 5.dp),
+                        )
+                    }
+                }
+            }
+        }
+
         // Lane-jump chips: one per non-empty section, tap scrolls to that lane's header.
         if (sections.size > 1 && !selecting) {
             Row(
@@ -404,6 +450,10 @@ fun MissionsScreen(
             error != null && board == null -> MissionsEmptyState(
                 line1 = "Board unreachable",
                 line2 = error ?: "",
+            )
+            sections.isEmpty() && filtering -> MissionsEmptyState(
+                line1 = "Nothing matches",
+                line2 = "No card says that" + (ownerFilter?.let { " for this owner" } ?: "") + ". Clear the search to see the whole board.",
             )
             sections.isEmpty() -> MissionsEmptyState(
                 line1 = "No missions on the board",
@@ -475,8 +525,8 @@ fun MissionsScreen(
             profiles = missionAssignees(caps?.roomProfiles.orEmpty()),
             canNotify = viewModel.missions.alertRoom() != null,
             notifyUnavailableReason = viewModel.missions.alertUnavailableReason,
-            onCreate = { title, assignee, body, triage, notify ->
-                viewModel.missions.kanbanCreate(title, assignee, body, triage, notify)
+            onCreate = { title, assignee, body, triage, notify, priority, goalMode ->
+                viewModel.missions.kanbanCreate(title, assignee, body, triage, notify, priority, goalMode)
                 if (notify) viewModel.missions.armPhoneAlerts(createCtx)
                 createOpen = false
             },
@@ -895,6 +945,11 @@ private fun MissionDetailSheet(
     onOpenSession: (sessionId: String, title: String) -> Unit,
 ) {
     var detail by remember(taskId) { mutableStateOf<KanbanDetail?>(null) }
+    // Edit after create (2.16): only where the dashboard's kanban answers (probed once).
+    val canEdit by viewModel.missionEdit.canEdit.collectAsState()
+    val editOwners by viewModel.missionEdit.assignees.collectAsState()
+    LaunchedEffect(Unit) { viewModel.missionEdit.probe() }
+    var editing by remember(taskId) { mutableStateOf(false) }
     /** The run whose worker session is open in the transcript sheet (2.14.1). */
     var watchRun by remember(taskId) { mutableStateOf<KanbanRun?>(null) }
     var loadError by remember(taskId) { mutableStateOf<String?>(null) }
@@ -949,7 +1004,22 @@ private fun MissionDetailSheet(
                         )
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text(t.title, fontSize = KeryxType.headline, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(t.title, fontSize = KeryxType.headline, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        if (canEdit == true) TextButton(onClick = { editing = true }) {
+                            Text("Edit", fontSize = KeryxType.caption)
+                        }
+                    }
+                    if (editing) MissionEditDialog(
+                        task = t,
+                        owners = editOwners.ifEmpty { profiles },
+                        onSave = { title, body, priority, assignee ->
+                            viewModel.missionEdit.save(t, null, title, body, priority, assignee) { ok ->
+                                if (ok) { editing = false; reload++ }
+                            }
+                        },
+                        onDismiss = { editing = false },
+                    )
                     Spacer(Modifier.height(8.dp))
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
@@ -1633,9 +1703,11 @@ private fun MissionCreateDialog(
     profiles: List<String>,
     canNotify: Boolean,
     notifyUnavailableReason: String = "Open a room first — alerts land in a Matrix room",
-    onCreate: (title: String, assignee: String, body: String, triage: Boolean, notify: Boolean) -> Unit,
+    onCreate: (title: String, assignee: String, body: String, triage: Boolean, notify: Boolean, priority: Int, goalMode: Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    var priority by remember { mutableStateOf(0) }
+    var goalMode by remember { mutableStateOf(false) }
     var title by remember { mutableStateOf("") }
     var body by remember { mutableStateOf("") }
     var assignee by remember { mutableStateOf(profiles.firstOrNull() ?: "default") }
@@ -1696,7 +1768,22 @@ private fun MissionCreateDialog(
                         )
                     }
                 }
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(10.dp))
+                MissionPriorityPicker(priority) { priority = it }
+                Spacer(Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Work until the brief is met", fontSize = KeryxType.body)
+                        Text(
+                            if (goalMode) "Goal mode — a judge re-reads the brief after each turn"
+                            else "One run, then it reports back",
+                            fontSize = KeryxType.micro,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = goalMode, onCheckedChange = { goalMode = it })
+                }
+                Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("Park in triage", fontSize = KeryxType.body)
@@ -1731,8 +1818,97 @@ private fun MissionCreateDialog(
                     TextButton(onClick = onDismiss) { Text("Cancel") }
                     TextButton(
                         enabled = title.isNotBlank(),
-                        onClick = { onCreate(title.trim(), assignee, body.trim(), triage, notify && canNotify) },
+                        onClick = { onCreate(title.trim(), assignee, body.trim(), triage, notify && canNotify, priority, goalMode) },
                     ) { Text("Create") }
+                }
+            }
+        }
+    }
+}
+
+/** Priority steps (2.16): the gateway orders higher numbers first, the card shows "P<n>". */
+@Composable
+internal fun MissionPriorityPicker(priority: Int, onPick: (Int) -> Unit) {
+    Text("Priority — higher runs first", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Spacer(Modifier.height(4.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        val steps = (chat.keryx.app.presentation.MissionEditForm.PRIORITIES + priority).distinct().sorted()
+        steps.forEach { p ->
+            val on = p == priority
+            Text(
+                chat.keryx.app.presentation.MissionEditForm.priorityLabel(p),
+                fontSize = KeryxType.caption,
+                maxLines = 1,
+                color = if (on) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(KeryxRadius.chip))
+                    .background(if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                    .clickable { onPick(p) }
+                    .padding(horizontal = 10.dp, vertical = 5.dp),
+            )
+        }
+    }
+}
+
+/** Edit a mission after it was made (2.16): words, priority, owner. */
+@Composable
+internal fun MissionEditDialog(
+    task: KanbanTask,
+    owners: List<String>,
+    onSave: (title: String, body: String, priority: Int, assignee: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var title by remember(task.id) { mutableStateOf(task.title) }
+    var body by remember(task.id) { mutableStateOf(task.body) }
+    var priority by remember(task.id) { mutableStateOf(task.priority) }
+    var assignee by remember(task.id) { mutableStateOf(task.assignee) }
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = RoundedCornerShape(KeryxRadius.sheet), color = MaterialTheme.colorScheme.surface) {
+            Column(modifier = Modifier.padding(20.dp).verticalScroll(rememberScrollState())) {
+                KeryxSectionHeader("Edit mission")
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = title, onValueChange = { title = it }, modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Title") }, singleLine = true, shape = RoundedCornerShape(KeryxRadius.field),
+                    isError = chat.keryx.app.presentation.MissionEditForm.problem(title) != null,
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = body, onValueChange = { body = it }, modifier = Modifier.fillMaxWidth().height(140.dp),
+                    label = { Text("Brief") }, shape = RoundedCornerShape(KeryxRadius.field),
+                )
+                Spacer(Modifier.height(10.dp))
+                MissionPriorityPicker(priority) { priority = it }
+                if (owners.isNotEmpty()) {
+                    Spacer(Modifier.height(10.dp))
+                    Text("Owner", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(4.dp))
+                    androidx.compose.foundation.layout.FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        (owners + task.assignee).filter { it.isNotBlank() }.distinct().forEach { p ->
+                            val on = p == assignee
+                            Text(
+                                p.replaceFirstChar { it.uppercase() },
+                                fontSize = KeryxType.caption, maxLines = 1, softWrap = false,
+                                color = if (on) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(KeryxRadius.chip))
+                                    .background(if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                    .clickable { assignee = p }
+                                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(14.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    TextButton(
+                        enabled = chat.keryx.app.presentation.MissionEditForm.problem(title) == null,
+                        onClick = { onSave(title, body, priority, assignee) },
+                    ) { Text("Save") }
                 }
             }
         }

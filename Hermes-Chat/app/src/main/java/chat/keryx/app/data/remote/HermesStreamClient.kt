@@ -737,18 +737,25 @@ class HermesStreamClient(
         HubJson.kanbanDetail(kanbanCall("/keryx/kanban/task/$taskId"), taskId)
     }
 
-    /** Create a mission. [triage] parks it spec-first; false lets the dispatcher pick it up. */
+    /** Create a mission. [triage] parks it spec-first; false lets the dispatcher pick it up.
+     *  [priority] is the dispatcher's tiebreaker (higher = sooner); [goalMode] runs the worker
+     *  in a goal loop — a judge re-reads the brief after each turn and it keeps going until the
+     *  judge agrees (2.16; the plugin has read both since its kanban create landed). */
     suspend fun kanbanCreate(
         title: String,
         assignee: String,
         body: String,
         triage: Boolean,
+        priority: Int = 0,
+        goalMode: Boolean = false,
     ): Result<String> = runCatching {
         val payload = kotlinx.serialization.json.buildJsonObject {
             put("title", kotlinx.serialization.json.JsonPrimitive(title))
             put("assignee", kotlinx.serialization.json.JsonPrimitive(assignee))
             if (body.isNotBlank()) put("body", kotlinx.serialization.json.JsonPrimitive(body))
             put("triage", kotlinx.serialization.json.JsonPrimitive(triage))
+            if (priority != 0) put("priority", kotlinx.serialization.json.JsonPrimitive(priority))
+            if (goalMode) put("goal_mode", kotlinx.serialization.json.JsonPrimitive(true))
         }
         val obj = kanbanCall("/keryx/kanban/task", post = payload)
         (obj["task_id"] as? JsonPrimitive)?.content ?: error("no task_id in response")
@@ -942,6 +949,11 @@ class HermesStreamClient(
         val scriptOnly: Boolean = false,
         /** Consecutive failed runs, as the scheduler counts them. */
         val failureStreak: Int = 0,
+        /** The job's own model pin (2.16) — blank = the gateway's default. Read so the Runs
+         *  editor opens on what the job really runs with; only the dashboard's cron routes
+         *  can change it. */
+        val model: String = "",
+        val provider: String = "",
     )
 
     /** One persisted Hermes session from `GET /api/sessions` (epoch-seconds timestamps). */
@@ -1319,6 +1331,17 @@ class HermesStreamClient(
         Unit
     }
 
+    /** The same PATCH with only the fields that changed (2.16 Runs editor): an untouched
+     *  schedule the gateway displays as `once at …` must never be sent back as text its parser
+     *  cannot read. The gateway whitelists the keys; unknown ones are dropped server side. */
+    suspend fun jobPatch(jobId: String, fields: Map<String, String>): Result<Unit> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            fields.forEach { (k, v) -> put(k, kotlinx.serialization.json.JsonPrimitive(v)) }
+        }
+        apiCall("/api/jobs/$jobId", method = "PATCH", body = payload)
+        Unit
+    }
+
     suspend fun models(): Result<List<HubModel>> =
         runCatching { HubJson.models(apiCall("/v1/models")) }
 
@@ -1655,6 +1678,8 @@ internal object HubJson {
                 prompt = j.str("prompt"),
                 scriptOnly = j.bool("no_agent"),
                 failureStreak = j.long("failure_streak").toInt(),
+                model = j.str("model"),
+                provider = j.str("provider"),
             )
         }
 

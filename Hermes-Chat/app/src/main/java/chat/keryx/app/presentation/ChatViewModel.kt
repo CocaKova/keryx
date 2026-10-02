@@ -639,6 +639,8 @@ class ChatViewModel(
     }
 
     val hub = HubDelegate(deps)
+    /** Create and edit scheduled jobs (2.16) — the Runs page and the Hub's Jobs spoke share it. */
+    val runsEditor = RunsEditorDelegate(deps, hub) { direct?.restClient }
     val models = ModelDelegate(
         deps, transport, { _currentRoom.value?.id },
         sendRoomCommand = { sendMessage(it) },
@@ -655,6 +657,9 @@ class ChatViewModel(
     val shipyard = ShipyardDelegate(deps)
     val pet = PetDelegate(deps)
     val missions = MissionsDelegate(deps) { _rooms.value }
+
+    /** Edit a mission after it was made (2.16): words, priority, owner. */
+    val missionEdit = MissionEditDelegate(deps, missions) { direct?.restClient }
     val console = ConsoleDelegate(deps)
     val voice = VoiceDelegate(deps)
     val archive = ArchiveDelegate(

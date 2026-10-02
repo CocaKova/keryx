@@ -517,6 +517,15 @@ class GatewayRest(
 
     private suspend fun get(path: String): Result<String> = send("GET", path, null)
 
+    /**
+     * One dashboard REST call for a surface that keeps its own parsing elsewhere (2.16: the
+     * Runs editor's `/api/cron/…`, the mission editor's `/api/plugins/kanban/…`). Same auth and
+     * rotate-once retry as every call here — never a second client beside this one. A non-2xx
+     * fails as `HTTP <code> for <path> — <body>`, the server's words included.
+     */
+    suspend fun call(method: String, path: String, jsonBody: String? = null): Result<String> =
+        send(method, path, jsonBody)
+
     // The Shipyard moved to ShipyardRest (Hermes Link base) — this base never mounts the
     // git routes (2.6.0 device walk, 08-31).
 

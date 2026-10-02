@@ -136,6 +136,12 @@ fun RunsSpace(
     }
 
     val board = panel.data
+    // The job editor (2.16): Runs is where jobs are made and changed now, not only read.
+    // Null job = a new one. The job row is the one the sheet opened on — a poll mid-edit
+    // must not rewrite what is being typed.
+    var editorOpen by remember { mutableStateOf(false) }
+    var editorJob by remember { mutableStateOf<HubJob?>(null) }
+    fun openEditor(job: HubJob?) { editorJob = job; editorOpen = true }
     fun openRun(run: CronRun) {
         viewModel.hub.cronMarkSeen(run.id)
         if (viewModel.transportIsDirect) {
@@ -148,6 +154,7 @@ fun RunsSpace(
         open = ::openRun,
         setPinned = { run, pinned -> viewModel.hub.cronSetPinned(run.id, pinned) },
         markRead = { run -> viewModel.hub.cronMarkSeen(run.id) },
+        edit = { job -> openEditor(job) },
         askFix = { card, job ->
             // A fresh chat rather than the open one: a repair is its own thread, and the brief
             // lands in the composer, not sent — you read what the agent is about to be told.
@@ -245,6 +252,9 @@ fun RunsSpace(
             }
         },
         actions = {
+            IconButton(onClick = { openEditor(null) }) {
+                Icon(KeryxGlyphs.Plus, contentDescription = "New job", tint = MaterialTheme.colorScheme.primary)
+            }
             // Only where there is something to clear: a permanent "mark all read" on a quiet
             // screen is a button that does nothing, which teaches people not to press buttons.
             // Folded, the rail's own summary line carries it — one button, not two (unless
@@ -261,12 +271,19 @@ fun RunsSpace(
         when {
             board == null -> PanelLoading()
             board.cards.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    "No scheduled work yet.\nThe agent creates jobs with the cronjob tool.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = KeryxType.body, lineHeight = 19.sp,
-                    modifier = Modifier.padding(32.dp),
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
+                    Text(
+                        "No scheduled work yet.\nSchedule a job here, or ask the agent — it has the cronjob tool.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = KeryxType.body, lineHeight = 19.sp,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    TextButton(onClick = { openEditor(null) }) {
+                        Icon(KeryxGlyphs.Plus, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("New job", fontSize = KeryxType.body)
+                    }
+                }
             }
             else -> {
                 // Outside the list, so it never scrolls away: with two hundred rows, the way
@@ -383,6 +400,9 @@ fun RunsSpace(
             }
         }
     }
+    if (editorOpen) {
+        JobEditorSheet(viewModel = viewModel, job = editorJob, onDismiss = { editorOpen = false })
+    }
 }
 
 /** The view prefs file and its one knob. Values are words, so a future third density reads. */
@@ -415,6 +435,8 @@ private class RunVerbs(
     val open: (CronRun) -> Unit,
     val setPinned: (CronRun, Boolean) -> Unit,
     val markRead: (CronRun) -> Unit,
+    /** Open the job editor on this job (2.16). */
+    val edit: (HubJob) -> Unit,
     /** Hand a failing job to the agent: a fresh chat, the brief in the composer. */
     val askFix: (CronJobCard, HubJob) -> Unit,
 )
@@ -1120,7 +1142,8 @@ private fun JobMenu(
     // only collapsed the sheet (device walk 09-27).
     val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
     KeryxSheet(onDismiss = onDismiss, title = card.name, sheetState = sheetState) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
+        // Scrolls: with the history under the verbs (2.16) a tall error no longer fits a screen.
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             if (job != null) {
                 val paused = !job.enabled || job.state.equals("paused", ignoreCase = true)
                 Text(
@@ -1188,6 +1211,9 @@ private fun JobMenu(
                 ) {
                     onDismiss(); viewModel.hub.jobAction(job.id, if (paused) "resume" else "pause")
                 }
+                SheetAction(KeryxGlyphs.Sliders, "Edit job", "Prompt, schedule, where the report goes") {
+                    onDismiss(); verbs.edit(job)
+                }
             }
             SheetAction(
                 if (jobPinned) KeryxGlyphs.PinFilled else KeryxGlyphs.Pin,
@@ -1200,6 +1226,10 @@ private fun JobMenu(
             if (job != null) {
                 SheetAction(KeryxGlyphs.Trash, "Delete job", "Removes the schedule; past runs stay", tint = KeryxStatus.bad) {
                     confirmDelete = true
+                }
+                // Every run, script fires included, where the dashboard serves the list.
+                JobHistorySection(viewModel, job.id) { run ->
+                    onDismiss(); verbs.open(CronRun(id = run.id, title = run.title, timestamp = run.startedAt))
                 }
             }
         }

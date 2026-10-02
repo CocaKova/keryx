@@ -286,10 +286,18 @@ class MissionsDelegate(
 
     /** Create a mission and refresh the board; toasts the outcome either way. [notify] chains a
      *  terminal-event subscription for the current alert room onto the fresh task. */
-    fun kanbanCreate(title: String, assignee: String, body: String, triage: Boolean, notify: Boolean = false) {
+    fun kanbanCreate(
+        title: String,
+        assignee: String,
+        body: String,
+        triage: Boolean,
+        notify: Boolean = false,
+        priority: Int = 0,
+        goalMode: Boolean = false,
+    ) {
         val client = client() ?: return
         scope.launch {
-            client.kanbanCreate(title, assignee, body, triage)
+            client.kanbanCreate(title, assignee, body, triage, priority = priority, goalMode = goalMode)
                 .onSuccess { taskId ->
                     toast("Mission created${if (triage) " (triage)" else ""}")
                     val room = alertRoom()

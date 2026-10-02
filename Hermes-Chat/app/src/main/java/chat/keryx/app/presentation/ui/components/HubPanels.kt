@@ -341,7 +341,6 @@ internal fun StatusTab(
 @Composable
 internal fun JobsTab(viewModel: ChatViewModel) {
     val panel by viewModel.hub.jobs.collectAsState()
-    val currentRoom by viewModel.currentRoom.collectAsState()
     var createOpen by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<HubJob?>(null) }
     var editTarget by remember { mutableStateOf<HubJob?>(null) }
@@ -389,27 +388,13 @@ internal fun JobsTab(viewModel: ChatViewModel) {
         }
     }
 
+    // One editor for jobs (2.16): the Runs page's. It replaced the two dialogs that lived here
+    // and asked for a raw cron line and a raw `matrix:<room>` string.
     if (createOpen) {
-        JobCreateDialog(
-            // "Deliver to this room" is a Matrix delivery (`matrix:<room>`); a gateway session
-            // id in that slot is a job whose output goes nowhere. Direct door: local only.
-            currentRoomId = if (viewModel.transportIsDirect) null else currentRoom?.id,
-            onCreate = { name, schedule, prompt, deliver ->
-                viewModel.hub.jobCreate(name, schedule, prompt, deliver)
-                createOpen = false
-            },
-            onDismiss = { createOpen = false },
-        )
+        JobEditorSheet(viewModel = viewModel, job = null, onDismiss = { createOpen = false })
     }
     editTarget?.let { job ->
-        JobEditDialog(
-            job = job,
-            onSave = { name, schedule, prompt, deliver ->
-                viewModel.hub.jobEdit(job.id, name, schedule, prompt, deliver)
-                editTarget = null
-            },
-            onDismiss = { editTarget = null },
-        )
+        JobEditorSheet(viewModel = viewModel, job = job, onDismiss = { editTarget = null })
     }
     deleteTarget?.let { job ->
         AlertDialog(
@@ -503,129 +488,6 @@ private fun nextRunEta(job: HubJob): String? {
         mins < 60 -> "next in ${mins}m"
         mins < 60 * 24 -> "next in ${mins / 60}h ${mins % 60}m"
         else -> "next in ${mins / (60 * 24)}d"
-    }
-}
-
-@Composable
-private fun JobCreateDialog(
-    currentRoomId: String?,
-    onCreate: (name: String, schedule: String, prompt: String, deliver: String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var name by remember { mutableStateOf("") }
-    var schedule by remember { mutableStateOf("") }
-    var prompt by remember { mutableStateOf("") }
-    // Where the run's output lands: this room's chat, or quietly in the gateway log.
-    var toRoom by remember { mutableStateOf(currentRoomId != null) }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                Text("New scheduled job", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = name, onValueChange = { name = it },
-                    modifier = Modifier.fillMaxWidth(), label = { Text("Name") }, singleLine = true,
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = schedule, onValueChange = { schedule = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Schedule (cron, e.g. 0 7 * * *)") },
-                    singleLine = true,
-                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = KeryxType.body),
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = prompt, onValueChange = { prompt = it },
-                    modifier = Modifier.fillMaxWidth().height(110.dp),
-                    label = { Text("Prompt (what the agent does each run)") },
-                )
-                if (currentRoomId != null) {
-                    Spacer(Modifier.height(10.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("Deliver to this room", fontSize = KeryxType.body)
-                            Text(
-                                if (toRoom) "Each run's result posts into the open chat"
-                                else "Runs quietly — results stay in the gateway log",
-                                fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Switch(checked = toRoom, onCheckedChange = { toRoom = it })
-                    }
-                }
-                Spacer(Modifier.height(14.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
-                    TextButton(
-                        enabled = name.isNotBlank() && schedule.isNotBlank() && prompt.isNotBlank(),
-                        onClick = {
-                            val deliver = if (toRoom && currentRoomId != null) "matrix:$currentRoomId" else "local"
-                            onCreate(name.trim(), schedule.trim(), prompt.trim(), deliver)
-                        },
-                    ) { Text("Schedule") }
-                }
-            }
-        }
-    }
-}
-
-/** Edit an existing job (1.20): prefilled from the list row (the gateway sends `prompt` there),
- *  saved via PATCH. Deliver stays a raw string field — it can point anywhere ("local",
- *  "matrix:<room>"), and second-guessing an operator's target helps nobody. */
-@Composable
-private fun JobEditDialog(
-    job: HubJob,
-    onSave: (name: String, schedule: String, prompt: String, deliver: String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var name by remember { mutableStateOf(job.name) }
-    var schedule by remember { mutableStateOf(job.scheduleDisplay) }
-    var prompt by remember { mutableStateOf(job.prompt) }
-    var deliver by remember { mutableStateOf(job.deliver.ifBlank { "local" }) }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                Text("Edit job", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = name, onValueChange = { name = it },
-                    modifier = Modifier.fillMaxWidth(), label = { Text("Name") }, singleLine = true,
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = schedule, onValueChange = { schedule = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Schedule (cron)") },
-                    singleLine = true,
-                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = KeryxType.body),
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = prompt, onValueChange = { prompt = it },
-                    modifier = Modifier.fillMaxWidth().height(110.dp),
-                    label = { Text("Prompt") },
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = deliver, onValueChange = { deliver = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Deliver to (\"local\" or \"matrix:<room>\")") },
-                    singleLine = true,
-                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = KeryxType.caption),
-                )
-                Spacer(Modifier.height(14.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
-                    TextButton(
-                        enabled = name.isNotBlank() && schedule.isNotBlank() && prompt.isNotBlank(),
-                        onClick = { onSave(name.trim(), schedule.trim(), prompt.trim(), deliver.trim()) },
-                    ) { Text("Save") }
-                }
-            }
-        }
     }
 }
 
