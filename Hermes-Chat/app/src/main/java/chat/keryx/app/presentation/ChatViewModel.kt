@@ -2304,7 +2304,7 @@ class ChatViewModel(
     /**
      * The open room's live generation rate (2.16 honest tok/s): the direct door's meter, or the
      * side-channel's character rate read with the ratio the direct door calibrated (0 = never,
-     * and the label stays in chars/s). Null between turns.
+     * and the label uses the default ratio). Null between turns.
      */
     val liveRate: StateFlow<chat.keryx.core.model.LiveRate?> =
         combine(

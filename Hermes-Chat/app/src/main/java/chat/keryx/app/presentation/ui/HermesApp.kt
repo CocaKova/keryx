@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.draw.scale
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -697,10 +699,15 @@ internal fun ReasoningMenu(
 ) {
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.tertiary
-    val shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+    // Compact (2.16.1): the panel took the model's full name as its width and 48 dp rows, so it
+    // stood tall and wide off the pill. Now a capped width, one-line header, and short rows.
+    val rowHeight = 38.dp
+    val rowPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp)
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
+        modifier = Modifier.widthIn(max = 220.dp),
         shape = shape,
         containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
         shadowElevation = 16.dp,
@@ -709,7 +716,7 @@ internal fun ReasoningMenu(
             brush = Brush.verticalGradient(listOf(accent.copy(alpha = 0.45f), accent2.copy(alpha = 0.22f))),
         ),
     ) {
-        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
             Text(
                 "REASONING",
                 color = accent,
@@ -730,6 +737,8 @@ internal fun ReasoningMenu(
                 },
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                 fontSize = KeryxType.micro,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
         }
         // Render exactly the levels the gateway declares for the active brain (it knows what
@@ -769,17 +778,23 @@ internal fun ReasoningMenu(
                             color = accent.copy(alpha = 0.75f),
                             fontSize = KeryxType.micro,
                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                            modifier = Modifier.padding(end = 10.dp).width(38.dp),
+                            // Five blocks need the room: at 32 dp X-High's ladder wrapped a block
+                            // onto a second line under the row.
+                            maxLines = 1,
+                            softWrap = false,
+                            modifier = Modifier.padding(end = 8.dp).width(44.dp),
                         )
                         Text(
                             label,
-                            fontSize = KeryxType.bodyLarge,
+                            fontSize = KeryxType.body,
                             fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
                             color = if (isCurrent) accent else Color.Unspecified,
                         )
                     }
                 },
                 onClick = { onCommand(if (everySession) "$arg --global" else arg) },
+                modifier = Modifier.height(rowHeight),
+                contentPadding = rowPadding,
             )
         }
         if (noDial) {
@@ -804,11 +819,13 @@ internal fun ReasoningMenu(
                         Switch(
                             checked = everySession,
                             onCheckedChange = { everySession = it },
-                            modifier = Modifier.padding(start = 12.dp).height(24.dp),
+                            modifier = Modifier.padding(start = 8.dp).scale(0.8f),
                         )
                     }
                 },
                 onClick = { everySession = !everySession },
+                modifier = Modifier.height(rowHeight + 4.dp),
+                contentPadding = rowPadding,
             )
         }
         HorizontalDivider(
@@ -816,19 +833,25 @@ internal fun ReasoningMenu(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
         )
         DropdownMenuItem(
-            text = { Text("Show reasoning", fontSize = KeryxType.bodyLarge) },
+            text = { Text("Show reasoning", fontSize = KeryxType.body) },
             onClick = { onCommand("show") },
+            modifier = Modifier.height(rowHeight),
+            contentPadding = rowPadding,
         )
         DropdownMenuItem(
-            text = { Text("Hide reasoning", fontSize = KeryxType.bodyLarge) },
+            text = { Text("Hide reasoning", fontSize = KeryxType.body) },
             onClick = { onCommand("hide") },
+            modifier = Modifier.height(rowHeight),
+            contentPadding = rowPadding,
         )
         DropdownMenuItem(
             text = {
-                Text("Reset session override", fontSize = KeryxType.bodyLarge,
+                Text("Reset session override", fontSize = KeryxType.body,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             },
             onClick = { onCommand("reset") },
+            modifier = Modifier.height(rowHeight),
+            contentPadding = rowPadding,
         )
         // Steering left this menu in 2.6.2: mid-turn the composer's send button IS the steer
         // (tap steers, hold queues) — a verb hidden behind the reasoning pill was the

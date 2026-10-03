@@ -40,7 +40,7 @@ show something that has since changed, and should be retaken first:
 
 | Image | What changed |
 |---|---|
-| `turn-anatomy.jpg` | tok/s readout (now "≈ N tok/s" or chars/s), exit-code chips, model-switch divider |
+| `turn-anatomy.jpg` | tok/s readout (now "≈ N tok/s"), exit-code chips, model-switch divider |
 | `chat-folded.jpg` | exit-code chips in folded runs, model-switch divider |
 | `context-ring.jpg` | the sheet's run numbers; the ring's gilded edge and compaction drain |
 | `steer.jpg` | holding Steer now offers Queue / Ask aside / Redirect, and the hint reads "hold for more" |

@@ -12,9 +12,9 @@ import kotlin.test.assertTrue
 class TokenRateTest {
 
     @Test
-    fun uncalibratedLiveRateSaysCharactersNotTokens() {
-        // The pre-2.16 lie: 160 chars/s ÷ 4 printed as "≈40 tok/s".
-        assertEquals("160 chars/s", TokenRate.liveLabel(160f, charsPerToken = 0f))
+    fun uncalibratedLiveRateReadsTokensAtTheDefaultRatio() {
+        // 2.16.1: tokens, not characters, from the first turn; calibration refines the ratio.
+        assertEquals("≈40 tok/s", TokenRate.liveLabel(160f, charsPerToken = 0f))
         assertEquals("≈40 tok/s", TokenRate.liveLabel(160f, charsPerToken = 4f))
         assertEquals("≈50 tok/s", TokenRate.liveLabel(160f, charsPerToken = 3.2f))
     }
@@ -23,7 +23,7 @@ class TokenRateTest {
     fun nothingWorthSayingIsNull() {
         assertNull(TokenRate.liveLabel(0f, 4f))
         assertNull(TokenRate.liveLabel(2f, 4f)) // half a token a second
-        assertNull(TokenRate.liveLabel(3f, 0f))
+        assertNull(TokenRate.liveLabel(3f, 0f)) // under a token a second at the default ratio
     }
 
     @Test

@@ -33,8 +33,8 @@ internal fun WorkingStatusBar(
     visible: Boolean,
     label: String,
     startedAt: Long?,
-    /** The live generation rate (2.16): labelled by core TokenRate — "≈41 tok/s" once a real
-     *  count has calibrated it, "164 chars/s" before, and gone during a stall. */
+    /** The live generation rate (2.16): labelled by core TokenRate — "≈41 tok/s", through a
+     *  calibrated ratio once a real count exists and the default before; gone during a stall. */
     rate: chat.keryx.core.model.LiveRate? = null,
     /** The running tool's family tint (2.16): the cloud's rim takes it while the tool runs. */
     toolTint: androidx.compose.ui.graphics.Color? = null,
@@ -72,9 +72,8 @@ internal fun WorkingStatusBar(
             fill = MaterialTheme.colorScheme.surfaceVariant,
             border = rim.copy(alpha = 0.85f),
             border2 = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f),
-            // It floats over the transcript: its own ground first, so the text scrolling under
-            // the glow and the scallops never reads through them (2.16, [CloudFloor]).
-            floor = MaterialTheme.colorScheme.surface.copy(alpha = CloudFloor.ALPHA),
+            // No floor (2.16.1): the clearing [CloudFloor] drew around the cloud read as a halo
+            // of after-effects on the real chat ground, so the cloud stands on the sky again.
             // No clip: the cloud's scallops, glow and thought trail are drawn PAST the banner's
             // box on purpose, and the 2.12 rounded-rect clip (added for the tap-in ripple) sheared
             // them off. The press answers with a sink instead of a ripple, which needs no bounds.

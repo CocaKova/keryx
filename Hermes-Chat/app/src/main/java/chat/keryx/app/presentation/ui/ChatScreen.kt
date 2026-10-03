@@ -1256,8 +1256,8 @@ fun ChatScreen(
         // to the edge, the transient cloud beneath it.
         //
         // Compact top "working" counter: a small spinner + what the agent is doing + elapsed clock,
-        // plus the live rate while text is flowing (2.16: calibrated "≈ tok/s", or chars/s
-        // before any real count has calibrated it; it falls toward zero during a stall).
+        // plus the live rate while text is flowing (2.16: "≈ tok/s", through the calibrated ratio
+        // or the default one before a real count exists; it falls toward zero during a stall).
         // Pinned at the top so it stays put for the whole run, unlike the per-message tool labels.
         val topRate = liveRate
         // The cloud wears the running tool's colour (2.16): the newest call still executing in

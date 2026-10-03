@@ -3027,7 +3027,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     // ---- Honest tok/s (2.16) ---------------------------------------------------------------
     // Live: the streamed character rate, read with a chars-per-token ratio measured against the
     // gateway's own output counter on an earlier single-call turn (0 until then, and the live
-    // label stays in chars/s). Settled: the counter's move over the turn, over the time the
+    // label uses TokenRate's default ratio). Settled: the counter's move over the turn, over the time the
     // characters were flowing — real tokens, no estimate. See core TokenRate.
 
     @Volatile private var charsPerToken: Float = settings.charsPerToken

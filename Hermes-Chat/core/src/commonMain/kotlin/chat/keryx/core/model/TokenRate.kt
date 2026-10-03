@@ -11,10 +11,10 @@ import kotlin.math.roundToInt
  * when the gateway counted the tokens. So there are three readings, and each says what it is:
  *
  *  - **live** (the working cloud, Tap-In): the measured character rate, converted with a
- *    chars-per-token ratio that was itself measured against the gateway's real output count on an
- *    earlier turn, and marked "≈". Before any turn has calibrated it, the live reading stays in
- *    characters ("chars/s"), because that is all it knows. It falls toward zero while the model
- *    stalls instead of freezing on its last good number.
+ *    chars-per-token ratio measured against the gateway's real output count on an earlier turn,
+ *    and marked "≈". Until a turn has calibrated it, the ratio is [DEFAULT_CHARS_PER_TOKEN] —
+ *    still "≈ tok/s", because Jonny reads speed in tokens, not characters (2.16.1). It falls
+ *    toward zero while the model stalls instead of freezing on its last good number.
  *  - **settled** (the finished turn's meta): the turn's real output tokens (the gateway's
  *    cumulative `usage.output`, before and after) over the time the tokens were flowing. No "≈".
  *  - **average** (the context sheet): the gateway's own `avg_tps`, untouched ([SessionUsage]).
@@ -34,6 +34,11 @@ object TokenRate {
      *  arguments, a provider that counts strangely), not a property of the model. */
     const val MIN_CHARS_PER_TOKEN = 1.5f
     const val MAX_CHARS_PER_TOKEN = 8f
+
+    /** The ratio the live readout uses before any turn has calibrated one: the usual figure for
+     *  English prose and code on a BPE tokenizer. Calibration replaces it after the first
+     *  single-call turn with a real output count. */
+    const val DEFAULT_CHARS_PER_TOKEN = 4f
 
     /** Too few tokens or too little time and the division is noise. */
     const val MIN_TOKENS = 24L
@@ -62,17 +67,14 @@ object TokenRate {
     }
 
     /**
-     * The live readout: "≈41 tok/s" with a calibrated [charsPerToken], "164 chars/s" without one,
-     * null when there is nothing worth saying (stalled, or under one token a second).
+     * The live readout, "≈41 tok/s": through a calibrated [charsPerToken], or
+     * [DEFAULT_CHARS_PER_TOKEN] before one exists (0). Null when there is nothing worth saying
+     * (stalled, or under one token a second).
      */
     fun liveLabel(cps: Float, charsPerToken: Float): String? {
         if (cps <= 0f) return null
-        return if (charsPerToken > 0f) {
-            val tps = cps / charsPerToken
-            if (tps < 1f) null else "≈${tps.roundToInt()} tok/s"
-        } else {
-            if (cps < 4f) null else "${cps.roundToInt()} chars/s"
-        }
+        val tps = cps / (if (charsPerToken > 0f) charsPerToken else DEFAULT_CHARS_PER_TOKEN)
+        return if (tps < 1f) null else "≈${tps.roundToInt()} tok/s"
     }
 
     /** Real tokens per second for a finished turn, or null when the numbers can't support one. */
@@ -104,11 +106,11 @@ data class LiveRate(
     fun label(nowMs: Long): String? =
         TokenRate.liveLabel(TokenRate.decayed(cps, lastAtMs, nowMs), charsPerToken)
 
-    /** Tokens (or, uncalibrated, token-equivalents at 4 chars) per second right now, for the
-     *  things that only need a magnitude — the sand's pour rate, never a printed number. */
+    /** Tokens per second right now (uncalibrated: at the default ratio), for the things that
+     *  only need a magnitude — the sand's pour rate. */
     fun intensity(nowMs: Long): Float {
         val c = TokenRate.decayed(cps, lastAtMs, nowMs)
-        return c / (if (charsPerToken > 0f) charsPerToken else 4f)
+        return c / (if (charsPerToken > 0f) charsPerToken else TokenRate.DEFAULT_CHARS_PER_TOKEN)
     }
 }
 

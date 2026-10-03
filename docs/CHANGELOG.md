@@ -5,6 +5,24 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.16.1 · versionCode 121
+
+Fixes from the first walk of 2.16.0.
+
+- Tap-In no longer crashes. Its arrival out of the working cloud rode a spring that overshoots,
+  and past the end the rounded corner went below zero, which Compose refuses. The grow is
+  clamped to 0..1.
+- The working cloud is clean again. Its glow, rim and fill are each two dozen overlapping
+  circles under a pill, painted translucent one shape at a time, so every overlap stacked: a ring
+  of ghost bumps past the rim and a box behind the label. 2.16.0's clearing added two more such
+  passes, which is what read as after-effects. Each pass is now painted opaque in its own layer
+  and faded as one piece, the gradients run across the whole shape, and the clearing is gone.
+- The live rate reads in tokens from the first turn: "≈ N tok/s" through the default 4 chars per
+  token until a real count calibrates the ratio, never "chars/s".
+- The reasoning menu is smaller: capped at 220 dp wide, the model line on one row, shorter rows,
+  so it sits by its pill instead of hanging off the side. X-High's five-block ladder no longer
+  wraps a block onto a second line.
+
 ## 2.16.0 · versionCode 120
 
 "The herald hears everything." Two rounds of work: everything that moves now reads something

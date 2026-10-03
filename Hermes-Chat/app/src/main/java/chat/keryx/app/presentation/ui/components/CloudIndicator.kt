@@ -15,9 +15,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
@@ -136,11 +139,12 @@ object CloudFloor {
 
 private fun DrawScope.drawCloudFloor(orbit: Float, breath: Float, floor: Color) {
     val pivot = Offset(size.width / 2f, size.height / 2f)
-    scale(CloudFloor.FEATHER_X, CloudFloor.FEATHER_Y, pivot = pivot) {
-        drawCloudSilhouette(orbit, breath) { floor.copy(alpha = floor.alpha * CloudFloor.FEATHER_ALPHA) }
+    val solid = SolidColor(floor.copy(alpha = 1f))
+    inLayer(floor.alpha * CloudFloor.FEATHER_ALPHA) {
+        scale(CloudFloor.FEATHER_X, CloudFloor.FEATHER_Y, pivot = pivot) { drawCloudSilhouette(orbit, breath, solid) }
     }
-    scale(CloudFloor.REACH_X, CloudFloor.REACH_Y, pivot = pivot) {
-        drawCloudSilhouette(orbit, breath) { floor }
+    inLayer(floor.alpha) {
+        scale(CloudFloor.REACH_X, CloudFloor.REACH_Y, pivot = pivot) { drawCloudSilhouette(orbit, breath, solid) }
     }
     // The thought trail's puffs hang below the box; each gets its own patch of floor.
     val r = size.height * 0.30f
@@ -150,10 +154,29 @@ private fun DrawScope.drawCloudFloor(orbit: Float, breath: Float, floor: Color) 
 }
 
 /**
- * The cloud's outline, every part in [colorFor]: the banner draws it four times (two glow
- * passes, rim, fill) and its floor twice, all from this one geometry.
+ * Paints [block] into an offscreen layer and composites it once at [alpha] (2.16.1).
+ *
+ * The silhouette is two dozen overlapping circles under a pill. Painted translucent one shape
+ * at a time, every overlap stacked its alpha, so each glow pass showed a ring of ghost bumps
+ * past the rim and the fill showed a box behind the label: the "after effects" Jonny saw around
+ * the cloud. Painted opaque inside a layer and faded as one piece, the overlaps cannot show.
  */
-private fun DrawScope.drawCloudSilhouette(orbit: Float, breath: Float, colorFor: (Offset) -> Color) {
+private inline fun DrawScope.inLayer(alpha: Float, block: DrawScope.() -> Unit) {
+    val w = size.width
+    val h = size.height
+    // A layer clips to its bounds, and the glow reaches well past the banner's box.
+    drawContext.canvas.saveLayer(Rect(-w * 0.5f, -h * 1.5f, w * 1.5f, h * 2.5f), Paint().apply { this.alpha = alpha })
+    block()
+    drawContext.canvas.restore()
+}
+
+/**
+ * The cloud's outline, every part in one [brush] laid over the banner's own coordinates, so a
+ * gradient runs smoothly across the bumps and the body instead of one flat colour per shape.
+ * The banner draws it four times (two glow passes, rim, fill) and its floor twice. Translucent
+ * passes go through [inLayer] with an opaque brush.
+ */
+private fun DrawScope.drawCloudSilhouette(orbit: Float, breath: Float, brush: Brush) {
     val w = size.width
     val h = size.height
     val r = h * 0.30f                                   // nominal bump radius
@@ -196,12 +219,11 @@ private fun DrawScope.drawCloudSilhouette(orbit: Float, breath: Float, colorFor:
     for (i in 0 until bumps) {
         val s = (i.toFloat() / bumps + orbit) * perimeter
         val c = perim(s)
-        drawCircle(color = colorFor(c), radius = bumpRadius(i), center = c)
+        drawCircle(brush = brush, radius = bumpRadius(i), center = c)
     }
     // …then the body over them, hiding each bump's inner half → scalloped semicircle edge.
-    // The body uses the color at the banner center so gradients stay coherent.
     drawRoundRect(
-        color = colorFor(Offset(w / 2f, cy)),
+        brush = brush,
         topLeft = Offset(x0, y0),
         size = Size(x1 - x0, y1 - y0),
         cornerRadius = CornerRadius(cr, cr),
@@ -218,19 +240,20 @@ private fun DrawScope.drawCloudBanner(
     val w = size.width
     val h = size.height
     val cy = h / 2f
-    fun silhouette(colorFor: (Offset) -> Color) = drawCloudSilhouette(orbit, breath, colorFor)
+    fun silhouette(brush: Brush) = drawCloudSilhouette(orbit, breath, brush)
 
-    // Rim: accent→accent2 left-to-right, sampled per bump (cheap gradient over the silhouette).
-    fun rimColor(at: Offset): Color = lerp(border, border2, (at.x / w).coerceIn(0f, 1f))
+    // Rim: accent→accent2 left-to-right. Opaque in the brush; its alpha is the layer's.
+    val rimBrush = Brush.horizontalGradient(listOf(border.copy(alpha = 1f), border2.copy(alpha = 1f)), startX = 0f, endX = w)
+    val rimAlpha = maxOf(border.alpha, border2.alpha)
 
     // Glow (2.14): the same silhouette, grown and faint, breathing with the bumps — the cloud
     // lit from inside rather than sitting flat on the page. Two passes read as a soft falloff
     // without a blur (RenderEffect costs a layer per frame on a banner that animates forever).
     val glow = 0.10f + 0.06f * sin(breath * PI.toFloat())
-    scale(CloudFloor.GLOW_X, CloudFloor.GLOW_Y, pivot = Offset(w / 2f, cy)) { silhouette { rimColor(it).copy(alpha = glow * 0.5f) } }
-    scale(1.07f, 1.15f, pivot = Offset(w / 2f, cy)) { silhouette { rimColor(it).copy(alpha = glow) } }
+    inLayer(glow * 0.5f) { scale(CloudFloor.GLOW_X, CloudFloor.GLOW_Y, pivot = Offset(w / 2f, cy)) { silhouette(rimBrush) } }
+    inLayer(glow) { scale(1.07f, 1.15f, pivot = Offset(w / 2f, cy)) { silhouette(rimBrush) } }
 
-    silhouette(::rimColor)
+    inLayer(rimAlpha) { silhouette(rimBrush) }
     val rim = 1.6f.dp.toPx()
     val sx = ((w - 2f * rim) / w).coerceIn(0f, 1f)
     val sy = ((h - 2f * rim) / h).coerceIn(0f, 1f)
@@ -240,9 +263,10 @@ private fun DrawScope.drawCloudBanner(
     // to preserve label contrast in either theme.
     val crown = lerp(fill, Color.White, 0.07f)
     val belly = lerp(fill, Color.Black, 0.05f)
-    fun fillColor(at: Offset): Color =
-        lerp(lerp(crown, belly, (at.y / h).coerceIn(0f, 1f)), rimColor(at), 0.10f)
-    scale(sx, sy, pivot = Offset(w / 2f, cy)) { silhouette(::fillColor) }
+    scale(sx, sy, pivot = Offset(w / 2f, cy)) {
+        silhouette(Brush.verticalGradient(listOf(crown, belly), startY = 0f, endY = h))
+        inLayer(0.10f) { silhouette(rimBrush) }
+    }
 }
 
 /**

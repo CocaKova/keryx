@@ -265,19 +265,22 @@ fun KeryxNavHost(
                             val p = layer.progress.value
                             val origin = originOf(layer.dest)?.takeIf { size.width > 0f && size.height > 0f }
                             if (origin != null) {
+                                // The settle spring overshoots past 1, and a corner radius below
+                                // zero throws (2.16.0 crashed opening Tap-In): clamp first.
+                                val g = p.coerceIn(0f, 1f)
                                 // Grows out of (and, on back, folds into) the thing it came from:
                                 // scaled from that thing's size about its centre, clipped round.
                                 val sx = (origin.width / size.width).coerceIn(0.05f, 1f)
                                 val sy = (origin.height / size.height).coerceIn(0.03f, 1f)
-                                alpha = (0.35f + 0.65f * p).coerceIn(0f, 1f) * (if (p < 0.02f) p * 50f else 1f)
-                                scaleX = sx + (1f - sx) * p
-                                scaleY = sy + (1f - sy) * p
+                                alpha = (0.35f + 0.65f * g).coerceIn(0f, 1f) * (if (g < 0.02f) g * 50f else 1f)
+                                scaleX = sx + (1f - sx) * g
+                                scaleY = sy + (1f - sy) * g
                                 transformOrigin = androidx.compose.ui.graphics.TransformOrigin(
                                     (origin.center.x / size.width).coerceIn(0f, 1f),
                                     (origin.center.y / size.height).coerceIn(0f, 1f),
                                 )
                                 clip = true
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(((1f - p) * 48f).dp)
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(((1f - g) * 48f).dp)
                                 return@graphicsLayer
                             }
                             alpha = p
