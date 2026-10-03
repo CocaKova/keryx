@@ -67,8 +67,9 @@ The full walkthrough, including how to reach a gateway that only binds to loopba
   Matrix room isn't flooded with `m.replace` edits. Without the plugin the app shows the committed
   turn.
 - **A parser built for agent output.** Folded reasoning, grouped tool runs with verdicts, structured
-  JSON as cards, footers and cron check-ins as low-contrast telemetry. GFM tables, scrollable code
-  blocks with copy, repaired code fences, Mermaid diagrams.
+  JSON as cards, footers and cron check-ins as low-contrast telemetry. Sortable GFM tables,
+  scrollable code blocks with copy, repaired code fences, typeset math, Mermaid diagrams, and
+  fences the agent can draw with: charts, diffs, timelines, progress, swatches, cards, SVG.
 - **Two doors.** Matrix (rooms, with a per-agent color when several agents share a room) or the
   direct door to the gateway (sessions, projects, runs, bots, the hub panels). The UI uses the noun
   of the door you're on.

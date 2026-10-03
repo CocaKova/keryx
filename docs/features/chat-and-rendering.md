@@ -79,17 +79,50 @@ classifying lines by their leading character, or every `+`/`-` count reads zero.
 
 The renderer holds up on real agent output rather than on a demo corpus.
 
-- GFM tables become real grids.
-- Code blocks scroll horizontally and carry a copy button.
+- GFM tables become real grids: columns sized to their content, the separator row's alignment
+  honoured, inline markdown (links, code, italics, math) inside cells, and a tap on a header sorts a
+  table of three rows or more (numbers as numbers). A ` ```csv ` or ` ```tsv ` fence becomes the same
+  table.
+- Code blocks scroll horizontally and carry a copy button. While a reply streams, highlighting runs
+  off the main thread and the last colours stay up meanwhile.
 - Unclosed fences are healed: a message that ends inside a ` ``` ` gets a closing one appended, so a
   half-streamed block does not eat the rest of the transcript.
 - A trailing half-written marker or fence from a live stream is stripped rather than rendered.
+- The paragraph still streaming is formatted as it types: bold, code, links, headings, bullets and
+  quotes show styled with their markers hidden, instead of raw until the paragraph completes.
 - Bold and strike work in their structured forms, so a link inside bold is still tappable. That last
   one is a 2.11.4 fix; earlier builds dropped the link.
-- Mermaid blocks are parsed into a diagram rather than dumped as text.
+- Quotes, lists, links and inline code take the bubble's own ink. GitHub alerts (`> [!NOTE]`,
+  `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`) render as callouts.
+- Math: display math (`$$…$$` or `\[…\]` on its own lines, or a ` ```math ` fence) is typeset by a
+  pure-Compose engine ported from Kai (see [THIRD-PARTY](../THIRD-PARTY.md)). Inline `$…$` is
+  rewritten to Unicode (x², α ≤ β, ℝⁿ, x̂), which keeps money (`$5 and $10`) and shell variables
+  alone. A formula the typesetter can't parse falls back to the Unicode form.
+- Mermaid `graph`/`flowchart` blocks are drawn as a diagram; other diagram types show as a code
+  block.
+- A settled thought in the reasoning disclosure reads as light markdown.
 
-The highlighter's grammar list is what the on-device corpus walks, so a grammar or alias added to
-`CodeHighlighting.knownTags` is covered the day it lands.
+### Rich blocks
+
+Fences the app draws natively. Anywhere else they are ordinary code, and a body that doesn't parse
+falls back to a code block here too. The keryx-stream plugin teaches the agent this list.
+
+| Fence | Drawn as |
+|---|---|
+| ` ```chart ` | Bar, horizontal bar, line, area, pie or donut chart from a small JSON spec: `{"type":"bar","title":…,"labels":[…],"series":[{"name":…,"values":[…]}],"unit":…}` |
+| ` ```diff ` / ` ```patch ` | Unified diff with added and removed lines tinted, copyable, folded past 45 lines |
+| ` ```timeline ` | One event per line (`2026-09-01 · Shipped`), `[x]` marks done |
+| ` ```progress ` | `Label: 60%` or `Label: 3/5` bars |
+| ` ```swatch ` | Colour chips (`name: #RRGGBB`); a tap copies the hex |
+| ` ```card ` | `title:`, `subtitle:`, `body:`, `image:`, `url:` and free `key: value` fields |
+| ` ```details ` | First line is the title; the rest is markdown, collapsed |
+| ` ```svg ` | The drawing itself (AndroidSVG: no scripts, no fetches); a tap shows the source |
+
+The Hermes desktop app's `::preview{file="…html"}` line reads as the file's name; the page opens
+from the artifact chip under the reply.
+
+The highlighter's grammar list and the rich-fence languages are what the on-device corpus walks, so
+a grammar, alias or fence added later is covered the day it lands.
 
 ## Media
 

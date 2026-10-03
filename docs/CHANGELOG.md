@@ -5,6 +5,54 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.17.0 · versionCode 122
+
+"Beautiful to be in." A rendering pass: what the chat already drew looks finished, the paragraph
+being written no longer arrives raw, and the agent has new things to draw with.
+
+**The renderer**
+- The markdown renderer moves from 0.35 to 0.45 (Kotlin 2.4.10, compileSdk 37, AGP 9.3.3, Gradle
+  9.7.1; the app module builds on Java 21 because the renderer and the highlighter now ship Java 21
+  bytecode). GitHub alerts (`> [!NOTE]` and friends) render as callouts.
+- Every markdown slot is themed from the bubble's own ink: quotes, lists, links (leaning toward the
+  accent but always legible on the bubble), inline code on a rounded pill, dividers.
+- The paragraph still streaming is formatted as it types, with its fade kept: bold, code, links,
+  headings, bullets and quotes appear styled and their markers hidden, instead of raw asterisks that
+  snapped into place when the paragraph finished.
+- Tables size each column to its content, honour `:--:` alignment, keep a pipe inside code or `\|`
+  in its cell, carry links, italics, code and inline math, stripe their rows, and sort by a tap on a
+  header (numbers as numbers).
+- A settled thought reads as light markdown.
+
+**Math**
+- Display math is typeset: `$$…$$` or `\[…\]` on its own lines and ` ```math ` fences go through a
+  pure-Compose engine ported from Kai (Apache-2.0, see THIRD-PARTY.md): stacked fractions, radicals,
+  limits, matrices, `cases`. It replaces the `⟦ … ⟧` paragraph 2.6.2 left behind, which nothing ever
+  drew, so readers saw the brackets.
+- The inline Unicode transform reads nested braces (`\frac{-b \pm \sqrt{b^2-4ac}}{2a}`),
+  `\mathbb`/`\mathcal`, accents, escapes, environments and a wider symbol set, and still leaves
+  `$5 and $10` and `$HOME` alone.
+- The 2.16 changelog said no light math renderer exists for Compose; that was wrong.
+
+**Rich blocks the agent can write**
+- ` ```chart ` (bar, horizontal bar, line, area, pie, donut from a small JSON spec, drawn on Canvas
+  with a one-time draw-in), ` ```diff `, ` ```timeline `, ` ```progress `, ` ```swatch `, ` ```card `,
+  ` ```details `, ` ```svg `, ` ```csv ` / ` ```tsv `. A body that doesn't parse, or a fence still
+  streaming in, shows as a code block. keryx-stream teaches the agent the list in its own prompt
+  section.
+- The Hermes desktop app's `::preview{file=…}` line reads as the file's name, with the artifact chip
+  under the reply.
+
+**Lighter**
+- Mermaid lines no longer breathe on an infinite animation that recomposed every visible diagram on
+  every frame; a diagram scrolls sideways only when it is wider than the bubble, and a diagram type
+  the parser doesn't model shows as a proper code block.
+- The markdown annotator is remembered instead of rebuilt on every recomposition; the parse-ahead
+  warmer skips bodies it has already warmed; the footer check no longer makes the per-tick parse
+  quadratic.
+- The skill viewer renders through the chat's own path instead of the async overload that flashed
+  an empty box.
+
 ## 2.16.1 · versionCode 121
 
 Fixes from the first walk of 2.16.0.
