@@ -4,7 +4,6 @@ plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlin.serialization)
-  alias(libs.plugins.ksp)
 }
 
 // Release signing comes from local.properties (never committed):
@@ -21,7 +20,7 @@ val releaseKeystorePath: String? = localProps.getProperty("keryx.keystore")
 
 android {
     namespace = "chat.keryx.app"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         applicationId = "chat.keryx.app"
         // 26, not 24: the app uses java.time and named regex groups, both of which exist only
@@ -70,8 +69,10 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        // 21 since 2.17: the markdown renderer (0.40+) and highlights 1.1 ship Java 21 bytecode,
+        // and the JVM unit tests load them.
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
     buildFeatures {
       compose = true
@@ -88,7 +89,7 @@ android {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
 }
 
 dependencies {
