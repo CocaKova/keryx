@@ -142,6 +142,10 @@ object KeryxType {
 
     /** Ascending, for tests and for anything that steps through the scale. */
     val steps: List<TextUnit> get() = listOf(micro, caption, body, bodyLarge, title, titleLarge, headline, display, hero, splash)
+
+    /** Not a reading size: characters that must keep their place in a string but take no room
+     *  (the live paragraph's hidden markdown markers). Outside [steps] on purpose. */
+    val vanish: TextUnit = 0.01.sp
 }
 
 /** Semantic status colors — the exact values already used across the Hub and board, named. */

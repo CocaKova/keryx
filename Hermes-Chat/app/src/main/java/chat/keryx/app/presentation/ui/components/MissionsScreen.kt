@@ -1246,8 +1246,9 @@ private fun MissionProse(text: String, color: Color = MaterialTheme.colorScheme.
     )
     com.mikepenz.markdown.m3.Markdown(
         markdownState = state,
-        colors = com.mikepenz.markdown.m3.markdownColor(text = color),
-        typography = chatMarkdownTypography(),
+        colors = chatMarkdownColors(color),
+        typography = chatMarkdownTypography(color),
+        extendedSpans = chatExtendedSpans(),
     )
 }
 

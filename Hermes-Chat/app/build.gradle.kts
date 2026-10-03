@@ -30,8 +30,8 @@ android {
         // not cover.
         minSdk = 26
         targetSdk = 36
-        versionCode = 121
-        versionName = "2.16.1"
+        versionCode = 122
+        versionName = "2.17.0"
         // The on-device canary (app/src/androidTest) runs on this; without it `connectedCheck`
         // finds no instrumentation and reports green having run nothing.
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -167,6 +167,8 @@ dependencies {
   // Animated GIF/WebP for the markdown renderer's inline `![](…)` images; the MEDIA:
   // bubble path animates through the platform decoder in MessageMedia, not through coil.
   implementation(libs.coil3.gif)
+  // ```svg fences the agent draws (2.17); AndroidSVG renders, it never runs scripts.
+  implementation(libs.coil3.svg)
 
   // Room (Removed - Migrating to Matrix Server)
 

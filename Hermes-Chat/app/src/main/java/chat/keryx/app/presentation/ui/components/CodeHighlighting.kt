@@ -31,9 +31,12 @@ object CodeHighlighting {
      * Spans for [code] in [language]; empty when the language is unknown or blank, and empty
      * (never a throw) when the tokenizer chokes — a fence is text first, colour second.
      */
-    fun spans(code: String, language: String?, darkMode: Boolean): List<Span> {
+    fun spans(code: String, language: String?, darkMode: Boolean, cache: Boolean = true): List<Span> {
         val lang = languageOf(language) ?: return emptyList()
         if (code.isEmpty()) return emptyList()
+        // A block still streaming has a new length every tick; caching each one only evicts
+        // the settled blocks the cache exists for.
+        if (!cache) return compute(code, lang, darkMode)
         // A fence scrolled out of a LazyColumn loses its composition and, with it, every
         // `remember`; scrolling it back in tokenized the whole block again on the UI thread
         // — one of the frame drops behind "a long message lags when I swipe up" (2.8).

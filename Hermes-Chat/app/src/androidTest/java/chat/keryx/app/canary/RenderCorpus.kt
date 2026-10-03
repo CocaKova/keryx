@@ -82,8 +82,44 @@ object RenderCorpus {
         }),
     )
 
+    /**
+     * Every fence language the app draws natively (2.17), generated from [RichBlocks.LANGS] plus
+     * the parser's own math/table/svg tags: a sample body that parses, and a broken one that must
+     * fall back to a code block. A new rich language is covered the day it is added.
+     */
+    val rich: List<Case> = (chat.keryx.core.protocol.RichBlocks.LANGS + setOf("math", "latex", "csv", "tsv", "svg"))
+        .sorted()
+        .flatMap { lang ->
+            listOf(
+                Case("rich:$lang", "Before.\n\n```$lang\n${richSample(lang)}\n```\n\nAfter."),
+                Case("rich-broken:$lang", "```$lang\n{ not [ valid\n```"),
+                Case("rich-open:$lang", "Streaming:\n```$lang\n${richSample(lang).lines().first()}"),
+            )
+        } + listOf(
+            Case("rich:display-math", "Energy:\n\n$$\n\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}\n$$\n\nand \\[ \\sum_{i=0}^{n} x_i \\]"),
+            Case("rich:display-math-matrix", "$$\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}$$"),
+            Case("rich:alerts", "> [!NOTE]\n> A note.\n\n> [!WARNING]\n> Careful **now**.\n\n> [!CAUTION]\n> Last one."),
+            Case("rich:preview-directive", "Built it.\n::preview{file=\"/tmp/widget.html\"}"),
+            Case("rich:table-aligned", "| a | b | c |\n|:--|:-:|--:|\n| `x\\|y` | **2** | [l](https://example.invalid) |\n| 3 | 1 | 2 |\n| 1 | 3 | 1 |"),
+        )
+
+    private fun richSample(lang: String): String = when (lang) {
+        "chart" -> """{"type":"bar","title":"Tokens","labels":["Mon","Tue","Wed"],"series":[{"name":"in","values":[3,5,2]},{"name":"out","values":[1,2,4]}],"unit":"k"}"""
+        "diff", "patch" -> "--- a/x\n+++ b/x\n@@ -1,2 +1,2 @@\n-old line\n+new line\n same"
+        "timeline" -> "- [x] 2026-09-01 · Shipped 2.16\n- [ ] 2026-10-03 · Rendering pass — charts and math"
+        "progress" -> "Build: 60%\nTests: 3/5"
+        "swatch", "colors", "colours", "palette" -> "ink: #1B1A17\npaper: #F4EFE6\naccent: #C4572A"
+        "card" -> "title: Keryx 2.17\nsubtitle: rendering\nurl: https://example.invalid\nversion: 122\nbody: Charts, math and more."
+        "details", "collapse" -> "Why it matters\nBecause **pictures** beat prose sometimes.\n\n- one\n- two"
+        "math", "latex" -> "\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}"
+        "csv" -> "name,score\nAda,3\n\"Lovelace, A\",5"
+        "tsv" -> "name\tscore\nAda\t3"
+        "svg" -> """<svg xmlns="http://www.w3.org/2000/svg" width="120" height="60"><rect width="120" height="60" rx="8" fill="#C4572A"/><circle cx="30" cy="30" r="18" fill="#F4EFE6"/></svg>"""
+        else -> "x"
+    }
+
     /** Everything, in a stable order. */
-    val all: List<Case> = fences + unknownFences + math + prose
+    val all: List<Case> = fences + unknownFences + math + prose + rich
 
     data class Case(val name: String, val body: String)
 

@@ -16,7 +16,15 @@ object MarkdownWarmer {
         )
     }
 
+    /** Bodies already warmed. The timeline re-runs the warmer on every list change (a new
+     *  message, a reaction); without this each pass re-segmented and re-ran the regex chain over
+     *  every long body in the window just to find its trees already cached. */
+    private val done = object : LinkedHashMap<String, Unit>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Unit>) = size > 400
+    }
+
     fun warm(content: String) {
+        if (synchronized(done) { done.put(content, Unit) } != null) return
         // Only the prose segments reach the markdown renderer; tables, fences-as-segments and
         // markers take their own paths. Warm exactly what the bubble will ask for.
         val segments = runCatching {

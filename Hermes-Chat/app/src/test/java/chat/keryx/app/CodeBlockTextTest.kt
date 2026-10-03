@@ -37,7 +37,36 @@ class CodeBlockTextTest {
 
     @Test
     fun `table cells shed bold and code markers`() {
-        val cell = chat.keryx.app.presentation.ui.components.tableCellAnnotated("**Free** uses `xurl`")
+        val cell = inline("**Free** uses `xurl`")
         assertEquals("Free uses xurl", cell.text)
     }
+
+    @Test
+    fun `table cells carry italic strike and tappable links`() {
+        val cell = inline("*new* ~~old~~ [docs](https://example.com/a) and https://x.dev/b.")
+        assertEquals("new old docs and https://x.dev/b.", cell.text)
+        val links = cell.getLinkAnnotations(0, cell.length).map { (it.item as androidx.compose.ui.text.LinkAnnotation.Url).url }
+        assertEquals(listOf("https://example.com/a", "https://x.dev/b"), links)
+    }
+
+    @Test
+    fun `unmatched markers and snake_case stay literal`() {
+        assertEquals("a ** b", inline("a ** b").text)
+        assertEquals("max_tokens_total", inline("max_tokens_total").text)
+        assertEquals("[x](not-a-url)", inline("[x](not-a-url)").text)
+    }
+
+    @Test
+    fun `numbers sort as numbers`() {
+        val n = { s: String -> chat.keryx.app.presentation.ui.components.tableNumber(s) }
+        assertEquals(1204.0, n("1,204"))
+        assertEquals(3.5, n("$3.50"))
+        assertEquals(42.0, n("42%"))
+        assertEquals(-7.0, n("-7 ms"))
+        assertEquals(null, n("n/a"))
+    }
+
+    private fun inline(s: String) = chat.keryx.app.presentation.ui.components.inlineMarkdownAnnotated(
+        s, androidx.compose.ui.graphics.Color.Blue,
+    )
 }

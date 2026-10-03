@@ -157,6 +157,10 @@ private fun segmentsToParts(segs: List<MessageParser.Segment>): MsgParts {
                 if (t.isNotBlank()) entries += ToolRunEntry.Note(t)
             }
             is MessageParser.Segment.Mermaid -> if (seg.code.isNotBlank()) entries += ToolRunEntry.Note(seg.code)
+            // Rich blocks inside a tool run keep their source as a note; the run is a log.
+            is MessageParser.Segment.Math -> entries += ToolRunEntry.Note("$$" + seg.tex + "$$")
+            is MessageParser.Segment.Rich -> entries += ToolRunEntry.Note(seg.raw)
+            is MessageParser.Segment.Svg -> entries += ToolRunEntry.Note("```svg\n" + seg.code + "\n```")
             is MessageParser.Segment.ActionOutput -> entries += ToolRunEntry.Action(seg)
             is MessageParser.Segment.Telemetry -> if (seg.text.isNotBlank()) entries += ToolRunEntry.Telemetry(seg.text)
             is MessageParser.Segment.Citations -> Unit

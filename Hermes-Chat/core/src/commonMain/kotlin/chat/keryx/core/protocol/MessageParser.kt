@@ -26,7 +26,21 @@ object MessageParser {
 
     sealed interface Segment {
         data class Text(val text: String) : Segment
-        data class Table(val header: List<String>, val rows: List<List<String>>) : Segment
+        /** A GFM table, or a ```csv / ```tsv fence. [align] is per column, from the separator row's
+         *  colons (`:--` start, `:-:` center, `--:` end); missing entries mean start. */
+        data class Table(
+            val header: List<String>,
+            val rows: List<List<String>>,
+            val align: List<ColumnAlign> = emptyList(),
+        ) : Segment
+        /** Display math: a `$$…$$` / `\[…\]` block on its own lines, or a ```math fence. Typeset
+         *  by the app; the TeX source travels as-is. */
+        data class Math(val tex: String) : Segment
+        /** A fence the app draws natively (chart, diff, timeline…). [raw] is the whole fence, kept
+         *  for copy and for the code-block fallback. */
+        data class Rich(val block: RichBlock, val raw: String) : Segment
+        /** A ```svg fence: an inline drawing (the app renders it without scripts or fetches). */
+        data class Svg(val code: String) : Segment
         data class Thinking(val text: String) : Segment
         data class Tools(val calls: List<ToolCall>) : Segment
         data class Mermaid(val code: String) : Segment
@@ -61,6 +75,8 @@ object MessageParser {
     }
 
     enum class TelemetryKind { FOOTER, CHECKIN, SUBTEXT }
+
+    enum class ColumnAlign { START, CENTER, END }
 
     private val SEPARATOR = Regex("""^\s*\|?\s*:?-{1,}:?\s*(\|\s*:?-{1,}:?\s*)+\|?\s*$""")
     private const val BRAIN = "🧠"
@@ -857,6 +873,9 @@ object MessageParser {
         }
         fun flushAll() { flushText(); flushThink(); flushTools(); flushTelemetry() }
 
+        // The footer may only be the LAST non-blank line. Found once: asking `drop(i + 1).all {}`
+        // per line made the walk quadratic in allocation, and it runs on every streaming tick.
+        val lastContentIndex = lines.indexOfLast { it.isNotBlank() }
         var i = 0
         while (i < lines.size) {
             val line = lines[i]
@@ -868,7 +887,7 @@ object MessageParser {
             val tool = if (agentChrome) parseTool(trimmed, bulleted) else null
             val headerTool = if (agentChrome) parseHeaderTool(lines, i) else null
             // Only the message's LAST non-blank line can be the runtime footer.
-            val isLastContentLine = lines.drop(i + 1).all { it.isBlank() }
+            val isLastContentLine = i >= lastContentIndex
             when {
                 line.trimStart().lowercase().startsWith("```mermaid") -> {
                     flushAll()
@@ -880,6 +899,53 @@ object MessageParser {
                     }
                     i++ // past the closing ``` fence (tolerates EOF: loop simply ends)
                     segments.add(Segment.Mermaid(code.toString().trim('\n')))
+                    continue
+                }
+                // Display math on its own lines → typeset. An unclosed block (mid-stream) stays
+                // prose until its closing delimiter lands, so half a formula is never typeset.
+                isDisplayMathStart(line) -> {
+                    val block = readDisplayMath(lines, i)
+                    if (block != null) {
+                        flushAll()
+                        segments.add(Segment.Math(block.first))
+                        i = block.second
+                    } else {
+                        textBuf.append(line).append('\n')
+                        i++
+                    }
+                    continue
+                }
+                // Fences the app draws natively. A body that doesn't parse — or a fence still
+                // streaming in — falls through to the opaque-fence branch below and shows as code.
+                fenceLang(line).let { it != null && (it in MATH_LANGS || it in TABLE_LANGS || it == "svg" || it in RichBlocks.LANGS) } -> {
+                    val lang = fenceLang(line)!!
+                    val (body, end, closed) = readFence(lines, i)
+                    val segment = when {
+                        !closed -> null
+                        lang in MATH_LANGS -> body.trim().takeIf { it.isNotEmpty() }?.let { Segment.Math(it) }
+                        lang in TABLE_LANGS -> delimitedTable(body, if (lang == "tsv") '\t' else ',')
+                        lang == "svg" -> body.takeIf { it.contains("<svg", ignoreCase = true) && it.length <= SVG_MAX_CHARS }
+                            ?.let { Segment.Svg(it) }
+                        else -> RichBlocks.parse(lang, body)?.let { block ->
+                            Segment.Rich(block, lines.subList(i, end).joinToString("\n"))
+                        }
+                    }
+                    if (segment != null) {
+                        flushAll()
+                        segments.add(segment)
+                    } else {
+                        for (k in i until end) textBuf.append(lines[k]).append('\n')
+                    }
+                    i = end
+                    continue
+                }
+                // The desktop app's inline-widget directive. Keryx has no inline frame: the page
+                // opens from the artifact chip under the reply (Artifacts finds the quoted path),
+                // so the directive itself reads as the file's name instead of raw syntax.
+                PREVIEW_DIRECTIVE.matches(line.trim()) -> {
+                    val path = PREVIEW_DIRECTIVE.matchEntire(line.trim())!!.groupValues[1]
+                    textBuf.append("▸ `").append(path.substringAfterLast('/')).append("`\n")
+                    i++
                     continue
                 }
                 // ```json fences get a structured-parse attempt (Action Output card); on any
@@ -928,13 +994,14 @@ object MessageParser {
                 line.contains("|") && next != null && SEPARATOR.matches(next) -> {
                     flushAll()
                     val header = splitRow(line)
+                    val align = splitRow(next).map(::alignOf)
                     val rows = mutableListOf<List<String>>()
                     i += 2
                     while (i < lines.size && lines[i].contains("|") && lines[i].isNotBlank()) {
                         rows.add(splitRow(lines[i]))
                         i++
                     }
-                    segments.add(Segment.Table(header, rows))
+                    segments.add(Segment.Table(header, rows, align))
                     continue
                 }
                 agentChrome && trimmed.startsWith(BRAIN) -> {
@@ -1168,6 +1235,129 @@ object MessageParser {
         return Segment.ActionOutput(tool = tool, params = params, result = result, success = success, raw = candidate)
     }
 
-    private fun splitRow(line: String): List<String> =
-        line.trim().trim('|').split("|").map { it.trim() }
+    /**
+     * One table row's cells. A pipe inside a code span or escaped as `\|` is cell text, not a
+     * border: splitting on every `|` tore `a \| b` and `` `x|y` `` into extra columns.
+     */
+    internal fun splitRow(line: String): List<String> {
+        var row = line.trim()
+        if (row.startsWith("|")) row = row.substring(1)
+        if (row.endsWith("|") && !row.endsWith("\\|")) row = row.dropLast(1)
+        val cells = mutableListOf<String>()
+        val cell = StringBuilder()
+        var inCode = false
+        var k = 0
+        while (k < row.length) {
+            val c = row[k]
+            when {
+                c == '\\' && k + 1 < row.length && row[k + 1] == '|' -> { cell.append('|'); k++ }
+                c == '`' -> { inCode = !inCode; cell.append(c) }
+                c == '|' && !inCode -> { cells += cell.toString().trim(); cell.setLength(0) }
+                else -> cell.append(c)
+            }
+            k++
+        }
+        cells += cell.toString().trim()
+        return cells
+    }
+
+    private fun alignOf(sep: String): ColumnAlign {
+        val t = sep.trim()
+        val left = t.startsWith(":")
+        val right = t.endsWith(":")
+        return when {
+            left && right -> ColumnAlign.CENTER
+            right -> ColumnAlign.END
+            else -> ColumnAlign.START
+        }
+    }
+
+    private val MATH_LANGS = setOf("math", "latex", "tex", "katex")
+    private val TABLE_LANGS = setOf("csv", "tsv")
+    private const val SVG_MAX_CHARS = 200_000
+
+    /** `::preview{file="path.html"}` — the Hermes desktop app's inline-widget line. */
+    private val PREVIEW_DIRECTIVE = Regex("""::preview\{\s*file\s*=\s*"?([^"\}\s]+)"?\s*\}""")
+
+    /** The info string of a fence opener (```chart → "chart"), lowercased, or null. */
+    private fun fenceLang(line: String): String? {
+        val t = line.trimStart()
+        if (!t.startsWith("```")) return null
+        return t.trimStart('`').trim().substringBefore(' ').substringBefore('{').lowercase().ifBlank { null }
+    }
+
+    /** The body of the fence opening at [start], the index just past it, and whether it closed. */
+    private fun readFence(lines: List<String>, start: Int): Triple<String, Int, Boolean> {
+        val body = StringBuilder()
+        var j = start + 1
+        while (j < lines.size && lines[j].trim() != "```") {
+            body.append(lines[j]).append('\n'); j++
+        }
+        val closed = j < lines.size
+        return Triple(body.toString().trim('\n'), if (closed) j + 1 else j, closed)
+    }
+
+    private fun isDisplayMathStart(line: String): Boolean {
+        val t = line.trim()
+        return t.startsWith("$$") || t.startsWith("\\[")
+    }
+
+    /**
+     * A display-math block starting at [start]: `$$ … $$` or `\[ … \]`, on one line or many,
+     * with nothing after the closing delimiter. Returns the TeX and the index past the block,
+     * or null when it never closes (still streaming) or closes mid-line (inline use — that
+     * stays prose and goes through the Unicode transform).
+     */
+    internal fun readDisplayMath(lines: List<String>, start: Int): Pair<String, Int>? {
+        val first = lines[start].trim()
+        val (open, close) = if (first.startsWith("$$")) "$$" to "$$" else "\\[" to "\\]"
+        val rest = first.removePrefix(open)
+        // One line: $$ x $$
+        if (rest.contains(close)) {
+            val tex = rest.substringBefore(close)
+            val after = rest.substringAfter(close)
+            return if (after.isBlank() && tex.isNotBlank()) tex.trim() to start + 1 else null
+        }
+        val tex = StringBuilder(rest)
+        var j = start + 1
+        while (j < lines.size) {
+            val t = lines[j].trim()
+            if (t.contains(close)) {
+                if (t.substringAfter(close).isNotBlank()) return null
+                tex.append('\n').append(t.substringBefore(close))
+                val body = tex.toString().trim()
+                return if (body.isNotEmpty()) body to j + 1 else null
+            }
+            if (t.isEmpty()) return null // a blank line ends a paragraph; TeX never spans one here
+            tex.append('\n').append(lines[j])
+            j++
+        }
+        return null
+    }
+
+    /** A ```csv / ```tsv body → a table; quoted fields may hold the delimiter and `""`. */
+    internal fun delimitedTable(body: String, delimiter: Char): Segment.Table? {
+        val rows = body.lines().filter { it.isNotBlank() }.map { parseDelimited(it, delimiter) }
+        if (rows.size < 2 || rows.first().size < 2) return null
+        return Segment.Table(rows.first(), rows.drop(1).take(500))
+    }
+
+    private fun parseDelimited(line: String, d: Char): List<String> {
+        val out = mutableListOf<String>()
+        val cell = StringBuilder()
+        var quoted = false
+        var k = 0
+        while (k < line.length) {
+            val c = line[k]
+            when {
+                quoted && c == '"' && k + 1 < line.length && line[k + 1] == '"' -> { cell.append('"'); k++ }
+                c == '"' -> quoted = !quoted
+                c == d && !quoted -> { out += cell.toString().trim(); cell.setLength(0) }
+                else -> cell.append(c)
+            }
+            k++
+        }
+        out += cell.toString().trim()
+        return out
+    }
 }

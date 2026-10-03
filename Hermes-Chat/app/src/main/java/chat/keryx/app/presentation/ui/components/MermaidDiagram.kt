@@ -59,51 +59,35 @@ private data class Layout(
 )
 
 /**
- * Renders a Mermaid flowchart natively on a translucent, borderless canvas with softly pulsing
- * accent edges — matching the Keryx dream aesthetic. Falls back to the raw code block for diagram
- * types the parser doesn't model.
+ * Renders a Mermaid flowchart natively on a translucent, borderless canvas. Falls back to the
+ * ordinary code block (language tag, copy) for diagram types the parser doesn't model.
  */
 @Composable
 fun MermaidDiagram(code: String, baseColor: Color) {
     val accent = MaterialTheme.colorScheme.primary
     val graph = remember(code) { MermaidParser.parse(code) }
     if (graph == null) {
-        // Unsupported diagram → show the source so nothing is lost.
-        Text(
-            text = code,
-            color = baseColor.copy(alpha = 0.8f),
-            fontSize = KeryxType.caption,
-            fontFamily = FontFamily.Monospace,
-            modifier = Modifier
-                .padding(vertical = 4.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(baseColor.copy(alpha = 0.06f))
-                .padding(10.dp),
-        )
+        // Unsupported diagram → the source as a proper code block, so nothing is lost and it
+        // can still be copied.
+        ScrollableCodeBlock(code, baseColor, language = "mermaid")
         return
     }
 
     val layout = remember(graph) { layout(graph) }
 
-    // Breathing glow on the connection lines. A diagram is a static picture the moment it renders,
-    // so under Battery Saver the lines simply sit at full strength — nothing here is telling you
-    // that anything is still happening.
-    val reduced by rememberReducedMotion()
-    val pulse = if (!reduced) {
-        rememberInfiniteTransition(label = "mermaidPulse").animateFloat(
-            initialValue = 0.45f,
-            targetValue = 0.95f,
-            animationSpec = infiniteRepeatable(tween(1500), RepeatMode.Reverse),
-            label = "mermaidPulseAlpha",
-        ).value
-    } else 0.95f
+    // A diagram is a static picture the moment it renders: the lines sit still. They used to
+    // breathe on an infinite transition read in composition, which recomposed every visible
+    // diagram on every frame and told the reader nothing (2.17).
+    val pulse = 0.85f
+    val scroll = rememberScrollState()
 
     Box(
         modifier = Modifier
             .padding(vertical = 6.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(accent.copy(alpha = 0.05f))
-            .horizontalScroll(rememberScrollState())
+            // Only claim horizontal drags when the diagram is wider than the bubble (swipe rule).
+            .horizontalScroll(scroll, enabled = scroll.maxValue > 0)
             .padding(14.dp),
     ) {
         Box(modifier = Modifier.size(layout.width.dp, layout.height.dp)) {

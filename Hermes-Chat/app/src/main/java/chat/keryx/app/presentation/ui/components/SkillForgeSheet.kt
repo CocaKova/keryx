@@ -44,9 +44,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import chat.keryx.app.data.remote.HermesStreamClient.SkillDetail
 import chat.keryx.app.presentation.ChatViewModel
-import com.mikepenz.markdown.m3.Markdown
-import com.mikepenz.markdown.m3.markdownColor
-import org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor
 
 /**
  * Opens the Skill Forge from anywhere a skill name surfaces without ViewModel access —
@@ -178,10 +175,12 @@ fun SkillForgeSheet(
                                 .fillMaxSize()
                                 .verticalScroll(rememberScrollState()),
                         ) {
-                            Markdown(
+                            // The chat's own renderer: sync parse (the async overload flashed an
+                            // empty box first), plus Keryx's tables, code blocks and math.
+                            MessageContent(
                                 content = d.content,
-                                colors = markdownColor(text = MaterialTheme.colorScheme.onSurface),
-                                flavour = GFMFlavourDescriptor(),
+                                textColor = MaterialTheme.colorScheme.onSurface,
+                                isAgent = false,
                             )
                             if (d.files.isNotEmpty()) {
                                 Spacer(Modifier.height(16.dp))

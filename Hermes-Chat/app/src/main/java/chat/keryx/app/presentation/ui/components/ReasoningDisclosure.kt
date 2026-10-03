@@ -29,6 +29,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -156,8 +157,16 @@ fun ReasoningDisclosure(
             val following = rememberTailFollow(scroll, reasoning.length, enabled = streaming)
             val scope = rememberCoroutineScope()
             Box {
+                // Settled thoughts read as light markdown (bold, code, links, bullets, inline
+                // TeX) instead of raw asterisks; a live one stays plain text, re-formatting
+                // a growing think on every token is not worth its cost.
+                val linkColor = chatLinkColor(quiet)
+                val shown = remember(reasoning, streaming, linkColor) {
+                    if (streaming) androidx.compose.ui.text.AnnotatedString(reasoning.trim())
+                    else quietMarkdownAnnotated(reasoning.trim(), linkColor)
+                }
                 Text(
-                    reasoning.trim(),
+                    shown,
                     fontSize = KeryxType.caption,
                     lineHeight = 17.sp,
                     color = quiet.copy(alpha = 0.62f),
