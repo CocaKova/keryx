@@ -5,6 +5,15 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.17.2 · versionCode 124
+
+- Keryx no longer gets closed out from under you. Android's automatic cloud backup tried to copy
+  all of Keryx's storage to Google Drive, hit the 25 MB per-app limit, and then (as Android always
+  does when a backup ends) killed the process, even with Keryx open on screen. Seen on the device
+  on 10-04: `Transport quota exceeded for package: chat.keryx.app`, then `Killing agent host
+  process`, then the window died. Keryx now opts out of cloud backup. Your conversations live on
+  the gateway, so nothing is lost, and the gateway login token no longer gets copied to Drive.
+
 ## 2.17.1 · versionCode 123
 
 Fixes from the first day on 2.17.0.
