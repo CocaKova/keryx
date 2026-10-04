@@ -143,7 +143,10 @@ stream observer hooks Hermes ships.
 
 ## License
 
-There is no license file in this repository yet.
+Keryx is MIT licensed, see [LICENSE](LICENSE). It includes the math typesetter from
+[Kai](https://github.com/SimonSchubert/Kai) by Simon Schubert (Apache-2.0) and the
+[Cinzel](https://github.com/NDISCOVER/Cinzel) typeface by Natanael Gama (OFL-1.1).
+[THIRD-PARTY.md](docs/THIRD-PARTY.md) lists everything taken from elsewhere and what changed.
 
 ---
 
