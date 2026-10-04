@@ -22,6 +22,15 @@ Fixes from the first day on 2.17.0.
 - Opening a collapsible block or a thought keeps its header on screen. The chat is anchored to
   the bottom, so a section growing pushed the line you tapped off the top, which read as the tap
   doing nothing. A collapsible block also stays open when it scrolls away and back.
+- The context ring sits beside the reasoning pill instead of directly under the send/stop
+  button, where reaching for it mid-turn could land on Stop.
+- Edge cases from a hostile-input pass, all now in the on-device canary: a half-written
+  fraction (`\frac{1}{`) crashed the math layout; it draws an empty denominator. A code fence
+  inside a collapsible block closed the block early and swallowed the rest of the message;
+  nested fences and longer (````) outer fences work. Chart numbers past ±10¹⁵ read as gaps
+  (a chart of nothing else shows as code) and an overflowing axis can no longer throw. A
+  palette keeps its good colours when one line is a typo. A slice under half a percent reads
+  "<1%". A CSV byte-order mark no longer lands in the first header.
 
 ## 2.17.0 · versionCode 122
 

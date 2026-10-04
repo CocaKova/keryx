@@ -1286,16 +1286,37 @@ object MessageParser {
         return t.trimStart('`').trim().substringBefore(' ').substringBefore('{').lowercase().ifBlank { null }
     }
 
-    /** The body of the fence opening at [start], the index just past it, and whether it closed. */
+    /**
+     * The body of the fence opening at [start], the index just past it, and whether it closed.
+     *
+     * A fence closes on a line of backticks at least as long as its opener, so ````details can
+     * hold ``` code. A ```details block also tracks code fences opened INSIDE it (a line of
+     * backticks followed by a language): models nest them without lengthening the outer fence,
+     * and the first inner ``` used to close the block and leave a stray fence that swallowed
+     * the rest of the message.
+     */
     private fun readFence(lines: List<String>, start: Int): Triple<String, Int, Boolean> {
+        val opener = lines[start].trimStart()
+        val ticks = opener.takeWhile { it == '`' }.length.coerceAtLeast(3)
+        val nests = fenceLang(lines[start]) in DETAILS_LANGS
         val body = StringBuilder()
+        var depth = 0
         var j = start + 1
-        while (j < lines.size && lines[j].trim() != "```") {
+        while (j < lines.size) {
+            val t = lines[j].trim()
+            val run = t.takeWhile { it == '`' }.length
+            if (run >= 3 && run == t.length) {
+                if (depth > 0) depth-- else if (run >= ticks) break
+            } else if (nests && run >= 3 && t.length > run) {
+                depth++
+            }
             body.append(lines[j]).append('\n'); j++
         }
         val closed = j < lines.size
         return Triple(body.toString().trim('\n'), if (closed) j + 1 else j, closed)
     }
+
+    private val DETAILS_LANGS = setOf("details", "collapse", "collapsible")
 
     private fun isDisplayMathStart(line: String): Boolean {
         val t = line.trim()
@@ -1337,7 +1358,7 @@ object MessageParser {
 
     /** A ```csv / ```tsv body → a table; quoted fields may hold the delimiter and `""`. */
     internal fun delimitedTable(body: String, delimiter: Char): Segment.Table? {
-        val rows = body.lines().filter { it.isNotBlank() }.map { parseDelimited(it, delimiter) }
+        val rows = body.removePrefix("\uFEFF").lines().filter { it.isNotBlank() }.map { parseDelimited(it, delimiter) }
         if (rows.size < 2 || rows.first().size < 2) return null
         return Segment.Table(rows.first(), rows.drop(1).take(500))
     }

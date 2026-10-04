@@ -567,6 +567,22 @@ internal fun ComposerFooter(
                 onCommand = { arg -> reasoningMenu = false; onReasoningCommand(arg) },
             )
         }
+        // The ring rides with the pills, not at the far end: there it sat directly under the
+        // send/stop button, and a reach for the context sheet mid-turn could land on Stop
+        // (device, 10-03: "deathly close to the stop run button").
+        if (usage != null) Spacer(Modifier.width(6.dp))
+        usage?.let {
+            chat.keryx.app.presentation.ui.components.KeryxContextRing(
+                it.used, it.max, compactAt = it.compactAt,
+                cacheWarm = ringCacheWarm,
+                drainSince = ringDrainSince,
+                drainSeconds = ringDrainSeconds,
+                modifier = if (onContextTap != null) Modifier
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .clickable(onClickLabel = "What is in the context window", onClick = onContextTap)
+                else Modifier,
+            )
+        }
         if (busyAction == "steer") {
             Spacer(Modifier.width(10.dp))
             Text(
@@ -580,18 +596,6 @@ internal fun ComposerFooter(
             )
         }
         Spacer(modifier = Modifier.weight(1f))
-        usage?.let {
-            chat.keryx.app.presentation.ui.components.KeryxContextRing(
-                it.used, it.max, compactAt = it.compactAt,
-                cacheWarm = ringCacheWarm,
-                drainSince = ringDrainSince,
-                drainSeconds = ringDrainSeconds,
-                modifier = if (onContextTap != null) Modifier
-                    .clip(androidx.compose.foundation.shape.CircleShape)
-                    .clickable(onClickLabel = "What is in the context window", onClick = onContextTap)
-                else Modifier,
-            )
-        }
     }
 }
 

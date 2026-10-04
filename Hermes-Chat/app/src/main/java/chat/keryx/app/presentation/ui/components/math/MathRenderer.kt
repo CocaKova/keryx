@@ -7,7 +7,7 @@
  * Unless required by applicable law or agreed to in writing, software distributed under the
  * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.
  *
- * Modified for Keryx: package moved; kotlinx.collections.immutable replaced with plain List; public entry is internal MathFormulaContent taking an explicit colour (MathBlock wraps it); scripts sized relative to their base (em) instead of a fixed 12.sp
+ * Modified for Keryx: fraction and accent parts Box-wrapped so empty parts can't break measure indexing; package moved; kotlinx.collections.immutable replaced with plain List; public entry is internal MathFormulaContent taking an explicit colour (MathBlock wraps it); scripts sized relative to their base (em) instead of a fixed 12.sp
  */
 package chat.keryx.app.presentation.ui.components.math
 
@@ -336,9 +336,12 @@ private fun FractionRenderer(
     Layout(
         modifier = Modifier.padding(horizontal = horizontalPadding),
         content = {
-            AtomRenderer(frac.num, display, baseSize, color)
+            // Box wrappers: one measurable per part, always. An empty numerator or denominator
+            // (`\frac{1}{` cut off mid-stream) emits no composable of its own, and the indexing
+            // below then read past the end — IndexOutOfBounds in measure (Keryx canary, 10-03).
+            Box { AtomRenderer(frac.num, display, baseSize, color) }
             HorizontalBar(barColor, thickness = 1.dp)
-            AtomRenderer(frac.den, display, baseSize, color)
+            Box { AtomRenderer(frac.den, display, baseSize, color) }
         },
     ) { measurables, constraints ->
         // Strip min-width so numerator/denominator measure at their intrinsic content size.
@@ -453,7 +456,8 @@ private fun AccentRenderer(
             } else {
                 HorizontalBar(color, lineThicknessDp)
             }
-            AtomRenderer(accent.base, display, baseSize, color)
+            // Box: one measurable even when the base is empty (`\hat{}`); see FractionRenderer.
+            Box { AtomRenderer(accent.base, display, baseSize, color) }
         },
     ) { measurables, constraints ->
         val childConstraints = constraints.copy(minWidth = 0)

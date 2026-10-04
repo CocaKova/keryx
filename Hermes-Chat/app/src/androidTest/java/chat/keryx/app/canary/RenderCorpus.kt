@@ -103,6 +103,32 @@ object RenderCorpus {
             Case("rich:table-aligned", "| a | b | c |\n|:--|:-:|--:|\n| `x\\|y` | **2** | [l](https://example.invalid) |\n| 3 | 1 | 2 |\n| 1 | 3 | 1 |"),
         )
 
+    /** Hostile and degenerate inputs for the 2.17 blocks: everything must draw or fall back. */
+    val edge: List<Case> = listOf(
+        Case("edge:chart-huge", "```chart\n{\"type\":\"bar\",\"labels\":[\"a\",\"b\"],\"values\":[1e308,-1e308]}\n```"),
+        Case("edge:chart-tiny", "```chart\n{\"type\":\"line\",\"values\":[1e-300,2e-300,3e-300]}\n```"),
+        Case("edge:chart-zeros", "```chart\n{\"type\":\"bar\",\"labels\":[\"a\",\"b\"],\"values\":[0,0]}\n```"),
+        Case("edge:chart-one-point", "```chart\n{\"type\":\"area\",\"labels\":[\"only\"],\"values\":[7]}\n```"),
+        Case("edge:chart-gaps", "```chart\n{\"type\":\"line\",\"values\":[null,3,null,null,5,null]}\n```"),
+        Case("edge:chart-200", "```chart\n{\"type\":\"line\",\"values\":[" + (1..200).joinToString(",") + "]}\n```"),
+        Case("edge:chart-labels", "```chart\n{\"type\":\"hbar\",\"title\":\"" + "Very long title ".repeat(12) + "\",\"labels\":[\"🌧️ rain\",\"" + "x".repeat(120) + "\",\"日本語\"],\"values\":[3,2,1],\"unit\":\"%\"}\n```"),
+        Case("edge:chart-stacked-negative", "```chart\n{\"type\":\"bar\",\"stacked\":true,\"labels\":[\"a\",\"b\"],\"series\":[{\"values\":[3,-2]},{\"values\":[-1,4]}]}\n```"),
+        Case("edge:donut-sliver", "```chart\n{\"type\":\"donut\",\"labels\":[\"big\",\"tiny\"],\"values\":[1000000,0.0001]}\n```"),
+        Case("edge:details-nested", "```details\nOuter\n```kotlin\nval x = 1\n```\n```details\nInner\nbody\n```\n```\nAfter."),
+        Case("edge:details-empty", "```details\nTitle only\n```"),
+        Case("edge:svg-hostile", "```svg\n<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100\" height=\"40\"><script>alert(1)</script><image href=\"https://example.invalid/x.png\" width=\"10\" height=\"10\"/><rect width=\"100\" height=\"40\" fill=\"red\"/></svg>\n```"),
+        Case("edge:svg-broken", "```svg\n<svg><rect width=\n```"),
+        Case("edge:svg-giant", "```svg\n<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100000\" height=\"100000\"><rect width=\"100000\" height=\"100000\"/></svg>\n```"),
+        Case("edge:card-hostile", "```card\ntitle: X\nurl: javascript:alert(1)\nimage: http://example.invalid/a.png\n" + "field: v\n".repeat(30) + "```"),
+        Case("edge:progress-odd", "```progress\nOver: 150%\nZero: 0/0\nNeg: -5%\n```"),
+        Case("edge:timeline-long", "```timeline\n" + (1..60).joinToString("\n") { "2026-01-${(it % 28) + 1} · Event $it — " + "detail ".repeat(10) } + "\n```"),
+        Case("edge:table-wide", "| " + (1..30).joinToString(" | ") { "col$it" } + " |\n|" + "---|".repeat(30) + "\n| " + (1..30).joinToString(" | ") { "v$it" } + " |"),
+        Case("edge:math-broken", "$$\n\\frac{1}{\n$$\n\nand $$\\begin{cases} x & y \\end{pmatrix}$$"),
+        Case("edge:math-deep", "$$" + "\\frac{1}{".repeat(30) + "x" + "}".repeat(30) + "$$"),
+        Case("edge:diff-long", "```diff\n" + (1..300).joinToString("\n") { if (it % 2 == 0) "+added line $it" else "-removed line $it" } + "\n```"),
+        Case("edge:everything-open", "```chart\n{\"type\":\"bar\""),
+    )
+
     private fun richSample(lang: String): String = when (lang) {
         "chart" -> """{"type":"bar","title":"Tokens","labels":["Mon","Tue","Wed"],"series":[{"name":"in","values":[3,5,2]},{"name":"out","values":[1,2,4]}],"unit":"k"}"""
         "diff", "patch" -> "--- a/x\n+++ b/x\n@@ -1,2 +1,2 @@\n-old line\n+new line\n same"
@@ -119,7 +145,7 @@ object RenderCorpus {
     }
 
     /** Everything, in a stable order. */
-    val all: List<Case> = fences + unknownFences + math + prose + rich
+    val all: List<Case> = fences + unknownFences + math + prose + rich + edge
 
     data class Case(val name: String, val body: String)
 

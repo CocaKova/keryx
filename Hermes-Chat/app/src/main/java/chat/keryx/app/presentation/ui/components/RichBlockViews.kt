@@ -229,8 +229,12 @@ private fun niceAxis(minV: Double, maxV: Double, target: Int = 4, includeZero: B
     if (hi == lo) { lo -= 1.0; hi += 1.0 }
     if (!includeZero) { val pad = (hi - lo) * 0.12; lo -= pad; hi += pad }
     val raw = (hi - lo) / target
+    // A range past what a Double can step through (±1e308 in one chart) has no nice ticks;
+    // `first {}` below would throw in the middle of drawing. Plain quarters instead.
+    if (!raw.isFinite() || raw <= 0.0) return Axis(0.0, 1.0, 0.25)
     val mag = 10.0.pow(floor(log10(raw)))
-    val step = listOf(1.0, 2.0, 2.5, 5.0, 10.0).map { it * mag }.first { it >= raw }
+    val step = listOf(1.0, 2.0, 2.5, 5.0, 10.0).map { it * mag }.firstOrNull { it >= raw && it.isFinite() }
+        ?: return Axis(lo, hi, raw)
     lo = floor(lo / step) * step
     hi = ceil(hi / step) * step
     return Axis(lo, hi, step)
@@ -620,7 +624,7 @@ private fun PieChart(c: RichBlock.Chart, palette: List<Color>, textColor: Color,
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        "${chartNumber(v / total * 100)}%",
+                        (v / total * 100).let { pct -> if (pct > 0 && pct < 0.5) "<1%" else "${chartNumber(pct)}%" },
                         color = textColor.copy(alpha = 0.55f), fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                     )
                 }

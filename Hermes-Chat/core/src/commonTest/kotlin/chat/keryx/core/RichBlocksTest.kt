@@ -187,8 +187,9 @@ class RichBlocksTest {
     }
 
     @Test
-    fun `swatches refuse lines without a colour`() {
-        assertNull(RichBlocks.parse("swatch", "#fff\nnot a colour"))
+    fun `swatches skip lines without a colour and refuse a palette with none`() {
+        assertEquals(1, (RichBlocks.parse("swatch", "#fff\nnot a colour") as RichBlock.Swatches).colors.size)
+        assertNull(RichBlocks.parse("swatch", "not a colour\nnor this"))
         assertNull(RichBlocks.parse("colors", "#12345"))
         assertNull(RichBlocks.parse("colors", ""))
     }

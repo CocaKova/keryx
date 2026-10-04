@@ -75,6 +75,9 @@ object RichBlocks {
 
     const val MAX_SERIES = 12
     const val MAX_POINTS = 200
+    /** Past this a number has no honest place on a phone-sized axis (±1e308 drew an empty
+     *  grid); it reads as a gap, and a chart of nothing but gaps falls back to code. */
+    private const val MAX_MAGNITUDE = 1e15
     private const val MAX_ITEMS = 60
     private const val MAX_SWATCHES = 48
     private const val MAX_DIFF_LINES = 2000
@@ -199,7 +202,7 @@ object RichBlocks {
     private fun num(el: JsonElement?): Double? = when (el) {
         is JsonPrimitive -> el.doubleOrNull ?: el.contentOrNull?.trim()?.removeSuffix("%")?.replace(",", "")?.toDoubleOrNull()
         else -> null
-    }?.takeIf { it.isFinite() }
+    }?.takeIf { it.isFinite() && kotlin.math.abs(it) <= MAX_MAGNITUDE }
 
     /** A JSON array as numbers; nulls (and unreadable entries) are gaps. Null if not an array. */
     private fun numbers(el: JsonElement?): List<Double?>? {
@@ -322,17 +325,19 @@ object RichBlocks {
             val line = rawLine.replace(BULLET, "").trim()
             if (line.isEmpty()) continue
             val hits = HEX.findAll(line).toList()
-            if (hits.isEmpty()) return null
+            // A line with no readable colour (a typo'd hex, a comment) is skipped, not fatal:
+            // one bad entry used to turn a whole palette back into code. None at all → code.
+            if (hits.isEmpty()) continue
             if (hits.size == 1) {
                 // `name: #hex`, `name #hex`, `#hex name`, `#hex — name`
                 val hit = hits[0]
                 val name = (line.removeRange(hit.range))
                     .trim().trim(':', '-', '—', '–', '=', '|', ',', '(', ')').trim()
                     .ifEmpty { null }
-                out += swatch(hit.groupValues[1], name) ?: return null
+                out += swatch(hit.groupValues[1], name) ?: continue
             } else {
                 // A run of colours on one line: `#111 #222, #333`. Anything else on it is noise.
-                hits.forEach { out += swatch(it.groupValues[1], null) ?: return null }
+                hits.forEach { h -> swatch(h.groupValues[1], null)?.let { out += it } }
             }
             if (out.size > MAX_SWATCHES) return null
         }
