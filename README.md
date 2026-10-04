@@ -9,8 +9,9 @@
   <a href="https://github.com/CocaKova/keryx/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/CocaKova/keryx/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/CocaKova/keryx/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/CocaKova/keryx?label=APK&color=3ddc84"></a>
   <img alt="Android 8.0+" src="https://img.shields.io/badge/Android-8.0%2B%20(minSdk%2026)-3ddc84">
-  <img alt="Kotlin 2.1.21, Compose" src="https://img.shields.io/badge/Kotlin-2.1.21%20%C2%B7%20Compose-7f52ff">
+  <img alt="Kotlin 2.4, Compose" src="https://img.shields.io/badge/Kotlin-2.4%20%C2%B7%20Compose-7f52ff">
   <a href="https://github.com/CocaKova/keryx-stream"><img alt="Gateway plugin: keryx-stream" src="https://img.shields.io/badge/gateway%20plugin-keryx--stream-555"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue"></a>
 </p>
 
 Keryx is an Android chat app for [Hermes](https://github.com/NousResearch/hermes-agent) agents.
@@ -68,8 +69,9 @@ The full walkthrough, including how to reach a gateway that only binds to loopba
   turn.
 - **A parser built for agent output.** Folded reasoning, grouped tool runs with verdicts, structured
   JSON as cards, footers and cron check-ins as low-contrast telemetry. Sortable GFM tables,
-  scrollable code blocks with copy, repaired code fences, typeset math, Mermaid diagrams, and
-  fences the agent can draw with: charts, diffs, timelines, progress, swatches, cards, SVG.
+  scrollable code blocks with copy, repaired code fences, typeset math (the engine is ported from
+  [Kai](https://github.com/SimonSchubert/Kai) by Simon Schubert), Mermaid diagrams, and fences
+  the agent can draw with: charts, diffs, timelines, progress, swatches, cards, SVG.
 - **Two doors.** Matrix (rooms, with a per-agent color when several agents share a room) or the
   direct door to the gateway (sessions, projects, runs, bots, the hub panels). The UI uses the noun
   of the door you're on.
