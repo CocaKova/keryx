@@ -956,6 +956,21 @@ class ChatViewModel(
                 refreshReasoningCaps()
             }
         }
+        // A gateway that restarted forgets nothing we can't re-ask for, but the composer's model
+        // and reasoning pills hide while their caps are unknown, and nothing re-probed them on
+        // a reconnect: a restart left the pills gone until the app was reopened (2.17.1).
+        viewModelScope.launch {
+            var wasReady = true
+            while (true) {
+                val state = direct?.connectionState
+                if (state == null) { delay(2_000); continue }
+                state.collect { s ->
+                    val ready = s is chat.keryx.app.transport.direct.GatewayRpc.ConnState.Ready
+                    if (ready && !wasReady) { models.clear(); refreshReasoningCaps() }
+                    wasReady = ready
+                }
+            }
+        }
         viewModelScope.launch {
             matrix?.getInvites()?.collectLatest { _invites.value = it }
         }

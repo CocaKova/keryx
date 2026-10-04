@@ -907,13 +907,14 @@ private fun CardBlock(
 private fun DetailsBlock(
     d: RichBlock.Details, textColor: Color, renderMarkdown: @Composable (String) -> Unit, modifier: Modifier,
 ) {
-    var open by remember(d) { mutableStateOf(false) }
+    var open by androidx.compose.runtime.saveable.rememberSaveable(d.hashCode()) { mutableStateOf(false) }
     val turn by animateFloatAsState(if (open) 90f else 0f, KeryxMotion.glide, label = "detailsChevron")
     Column(modifier = modifier.blockSurface(textColor)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
+                .keepInViewWhenOpened(open)
                 .clickable { open = !open }
                 .padding(horizontal = 12.dp, vertical = 10.dp),
         ) {

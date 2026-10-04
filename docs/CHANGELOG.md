@@ -5,6 +5,24 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.17.1 · versionCode 123
+
+Fixes from the first day on 2.17.0.
+
+- Much less data while Keryx is open. Every "the session store moved" signal re-read fifty
+  conversations and a hundred scheduled runs (about a quarter of a megabyte), and a turn running
+  anywhere sends one every couple of seconds, so a phone watching Sy work pulled megabytes a
+  minute (10–20 MB per two hours on screen, measured on the device). Now a signal reads the top
+  eight of each and merges them into the list already held, at most every four seconds; the full
+  read runs at most every ninety seconds, which is what still catches deletions and archives.
+- Watching a session that moves elsewhere (a run, the desktop, another client) reads only the
+  rows that just appeared instead of the whole 120-row page each time it grows.
+- The model and reasoning pills come back after the gateway restarts; they used to stay hidden
+  until the app was reopened.
+- Opening a collapsible block or a thought keeps its header on screen. The chat is anchored to
+  the bottom, so a section growing pushed the line you tapped off the top, which read as the tap
+  doing nothing. A collapsible block also stays open when it scrolls away and back.
+
 ## 2.17.0 · versionCode 122
 
 "Beautiful to be in." A rendering pass: what the chat already drew looks finished, the paragraph

@@ -118,8 +118,19 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         /** Floors between roster refreshes driven by `sessions.changed` (2.13.10). A running
          *  turn anywhere moves the store every ~2 s; on screen the drawer keeps that pace,
          *  off screen the roster only feeds notifications, which can wait half a minute. */
-        private const val LIST_REFRESH_FLOOR_FG_MS = 2_000L
+        private const val LIST_REFRESH_FLOOR_FG_MS = 4_000L
         private const val LIST_REFRESH_FLOOR_BG_MS = 30_000L
+        /** Rows a `sessions.changed` refresh asks for (2.17.1). What moved is by definition the
+         *  most recently active, and `order=recent` puts it on top, so a short page merged into
+         *  the held roster is the whole change. */
+        private const val QUICK_PAGE = 8
+        /** A foreign turn that grew the session by more than this re-reads the whole page. */
+        private const val TAIL_REREAD_MAX = 60L
+        /** Rows of overlap a tail read asks for, so a gap is detectable rather than silent. */
+        private const val TAIL_OVERLAP = 4L
+        /** A full roster read at most this often while changes stream in: it is what catches
+         *  deletions, archives and rows that fell out of the top few. */
+        private const val FULL_REFRESH_EVERY_MS = 90_000L
         /** The roster's page — the REST cap is 100; fifty keeps the first pull light. */
         private const val SESSION_PAGE = 50
 
@@ -294,6 +305,28 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             history.value = history.value.copy(
                 hasMore = more, loading = false, loaded = hydratedRows.size,
             )
+            publish()
+        }
+
+        /** Newest row id held, or null before the first page (2.17.1). */
+        fun newestRowId(): Long? = hydratedRows.maxOfOrNull { it.id }
+
+        /**
+         * A newer page, appended (2.17.1): the tail a foreign turn just wrote. Same identity
+         * rule as [prependHistory]; rebuilt from ALL rows so a call and its result pair even
+         * when the call was held and only the result is new.
+         */
+        fun appendHistory(newer: List<MessageRow>) {
+            val have = hydratedRows.mapTo(HashSet()) { it.id }
+            val fresh = newer.filterNot { it.id in have }.sortedBy { it.id }
+            if (fresh.isEmpty()) return
+            hydratedRows = hydratedRows + fresh
+            seedReactions(fresh)
+            hydratedMessages = chat.keryx.core.protocol.TranscriptBuilder.build(storedId, hydratedRows)
+            history.value = history.value.copy(loading = false, loaded = hydratedRows.size)
+            fresh.lastOrNull { it.role == "tool" && it.toolName == "todo" }?.let { row ->
+                chat.keryx.core.model.TodoPlanParser.parse(row.content)?.let { todoPlan.value = it }
+            }
             publish()
         }
 
@@ -1237,7 +1270,32 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     /** `sessions.changed` → one roster refresh per floor; see [RefreshCoalescer]. */
     private val listRefresh = RefreshCoalescer(
         scope, foreground, LIST_REFRESH_FLOOR_FG_MS, LIST_REFRESH_FLOOR_BG_MS,
-    ) { refreshSessions(); reconcileRuntimes() }
+    ) { refreshSessionsQuick(); reconcileRuntimes() }
+
+    private var lastFullRefreshAt = 0L
+
+    /**
+     * The change-driven roster read (2.17.1). Every `sessions.changed` used to re-read fifty
+     * conversations AND a hundred scheduled runs — about a quarter of a megabyte — and a turn
+     * running anywhere fires one every couple of seconds, so a phone with Keryx open while Sy
+     * worked pulled megabytes a minute (device, 10-03: 10–20 MB per two hours on screen).
+     * Now: the top few of each, merged into what is held; the full read only every
+     * [FULL_REFRESH_EVERY_MS], or when nothing is held yet.
+     */
+    private suspend fun refreshSessionsQuick() {
+        val now = System.currentTimeMillis()
+        if (_sessionRows.value.isEmpty() || now - lastFullRefreshAt >= FULL_REFRESH_EVERY_MS) {
+            refreshSessions()
+            return
+        }
+        val r = rest ?: return
+        r.sessions(limit = QUICK_PAGE, excludeSources = listOf(CRON_SOURCE)).onSuccess { rows ->
+            _sessionRows.value = mergeRecent(_sessionRows.value, rows)
+        }
+        r.sessions(limit = QUICK_PAGE, sources = listOf(CRON_SOURCE)).onSuccess { rows ->
+            _cronRows.value = mergeRecent(_cronRows.value, rows).take(100)
+        }
+    }
 
     private fun onSessionsChanged() = listRefresh.poke()
 
@@ -1385,6 +1443,26 @@ private const val INTERRUPT_SEAL_MS = 4_000L
      * the user had already paged in — dropping them back to one page would silently undo a
      * deliberate scroll into the past.
      */
+    /**
+     * A foreign turn grew the session by [grownBy] rows: read just that tail plus a little
+     * overlap and append it (2.17.1). Re-reading the whole page — 120 rows and every tool
+     * output in them — on each growth made watching a session Sy drove from elsewhere pull the
+     * same transcript every few seconds. Falls back to the full re-read when nothing is held
+     * yet, the jump is large, or the tail doesn't reach back to what is held (a gap).
+     */
+    private suspend fun rehydrateTail(storedId: String, st: SessionStore, grownBy: Long) {
+        val rest = rest ?: return
+        val heldNewest = st.newestRowId()
+        if (!st.hydrated || heldNewest == null || grownBy !in 1..TAIL_REREAD_MAX) {
+            rehydrate(storedId, st); return
+        }
+        val want = (grownBy + TAIL_OVERLAP).toInt()
+        val rows = rest.parseMessages(rest.messagesRaw(storedId, limit = want).getOrThrow())
+        val overlaps = rows.any { it.id <= heldNewest }
+        if (!overlaps && rows.size >= want) { rehydrate(storedId, st); return }
+        st.appendHistory(rows.filter { it.id > heldNewest })
+    }
+
     private suspend fun rehydrate(storedId: String, st: SessionStore) {
         val rest = rest ?: return
         val want = st.history.value.loaded.coerceIn(HISTORY_PAGE, 500)
@@ -1523,6 +1601,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
 
     private suspend fun refreshSessions() {
         val r = rest ?: return
+        lastFullRefreshAt = System.currentTimeMillis()
         // Two fetches, not one filtered locally: scheduled runs can outnumber conversations
         // several to one, so a single page would be mostly machinery either way.
         r.sessions(limit = SESSION_PAGE, excludeSources = listOf(CRON_SOURCE)).onSuccess { rows ->
@@ -1928,6 +2007,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             val busy = storedId in _busyStored.value
             val pulse = if (rest == null || busy) null
                 else rest.sessionPulse(storedId, profileFor(storedId)).getOrNull()
+            val seenBefore = state.seenCount
             val (next, action) = ForeignFollow.step(state, pulse, busyLocally = busy)
             state = next
             val now = System.currentTimeMillis()
@@ -1942,7 +2022,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             if (busy) nudgeUsage(storedId, minGapMs = USAGE_POLL_MS)
             if (action == ForeignFollow.Action.REHYDRATE) {
                 android.util.Log.w("KeryxGw", "follow ${storedId.take(8)}: gateway holds ${pulse?.messageCount} rows, re-reading")
-                runCatching { rehydrate(storedId, st) }
+                val grown = (pulse?.messageCount ?: 0L) - seenBefore
+                runCatching { rehydrateTail(storedId, st, grown) }
                     .onFailure { android.util.Log.w("KeryxGw", "follow ${storedId.take(8)}: re-read failed", it) }
             }
             delayMs = ForeignFollow.nextDelayMs(pulse, now, action)

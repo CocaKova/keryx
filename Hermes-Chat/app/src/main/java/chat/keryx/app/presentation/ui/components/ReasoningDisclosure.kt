@@ -104,6 +104,9 @@ fun ReasoningDisclosure(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
+                // Only a tap the reader made pins the header; a live think opening by itself
+                // must not pull the list away from the tail it is following.
+                .keepInViewWhenOpened(userOpen == true && !streaming)
                 .clip(RoundedCornerShape(KeryxRadius.chip))
                 .clickable(onClickLabel = if (open) "Hide the reasoning" else "Show the reasoning") { userOpen = !open }
                 .semantics { stateDescription = if (open) "Open" else "Folded" }
