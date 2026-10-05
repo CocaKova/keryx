@@ -112,6 +112,11 @@ interface SettingsRepository {
      *  own read mark, since a hidden cross-profile row never reaches the gateway's list call. */
     var botSeenAt: Map<String, Long>
 
+    /** Sessions that live outside the launch profile, stored id → profile name. A relaunch
+     *  restores the last open session before any list call has said whose it is — without this
+     *  its resume would ask the launch profile's store and find nothing. */
+    var sessionProfiles: Map<String, String>
+
     /** Bots pinned to the top of the session list, in pin order (a phone ledger, like jobs). */
     var pinnedBots: List<String>
 

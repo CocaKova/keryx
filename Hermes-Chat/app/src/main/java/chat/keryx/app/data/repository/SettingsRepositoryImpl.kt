@@ -324,6 +324,14 @@ class SettingsRepositoryImpl(
             ledgerKey("bot_seen_at"), value.entries.joinToString("\u001E") { (n, t) -> "$n\u001F$t" },
         ).apply()
 
+    override var sessionProfiles: Map<String, String>
+        get() = prefs.getString(ledgerKey("session_profiles"), "")!!.split('\u001E').filter { it.isNotBlank() }
+            .mapNotNull { e -> e.split('\u001F').takeIf { it.size == 2 }?.let { (id, p) -> id to p } }
+            .toMap()
+        set(value) = prefs.edit().putString(
+            ledgerKey("session_profiles"), value.entries.joinToString("\u001E") { (id, p) -> "$id\u001F$p" },
+        ).apply()
+
     override var pinnedBots: List<String>
         get() = prefs.getString(ledgerKey("pinned_bots"), "")!!.split('\u001F').filter { it.isNotBlank() }
         set(value) = prefs.edit().putString(ledgerKey("pinned_bots"), value.joinToString("\u001F")).apply()

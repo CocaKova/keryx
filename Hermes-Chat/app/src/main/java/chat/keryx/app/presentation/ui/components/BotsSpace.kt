@@ -192,6 +192,12 @@ fun BotsSpace(
                         pinned = bot.name in pinned,
                         routines = routineCounts[bot.name.lowercase()] ?: 0,
                         onOpen = { open(bot) },
+                        onNewSession = {
+                            viewModel.createSession("", profile = bot) { err ->
+                                err?.let { viewModel.toast("Couldn't start a session with ${bot.label}: $it") }
+                            }
+                            onOpened()
+                        },
                         onPin = { bots.setPinned(bot.name, !(bot.name in pinned)) },
                         onEdit = { editing = bot },
                         onHide = { bots.configure(bot, hidden = !bot.hidden) { err -> err?.let(viewModel::toast) } },
@@ -322,6 +328,8 @@ private fun BotRow(
     pinned: Boolean,
     routines: Int,
     onOpen: () -> Unit,
+    /** A separate session on this bot's profile — the Bot Chat itself stays as it is. */
+    onNewSession: () -> Unit,
     onPin: () -> Unit,
     onEdit: () -> Unit,
     onHide: () -> Unit,
@@ -388,6 +396,7 @@ private fun BotRow(
         }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
             DropdownMenuItem(text = { Text("Open chat") }, onClick = { menu = false; onOpen() })
+            DropdownMenuItem(text = { Text("New session with ${bot.label}") }, onClick = { menu = false; onNewSession() })
             DropdownMenuItem(
                 text = { Text(if (pinned) "Unpin from sessions" else "Pin to top of sessions") },
                 onClick = { menu = false; onPin() },

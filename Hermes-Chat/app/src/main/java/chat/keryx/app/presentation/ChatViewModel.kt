@@ -1995,6 +1995,21 @@ class ChatViewModel(
         return deferred.await()
     }
 
+    /** The bot whose Bot Chat just got a bare `/new` — the floor asks what that meant. */
+    private val _botNewChoice = MutableStateFlow<chat.keryx.core.model.BotProfile?>(null)
+    val botNewChoice: StateFlow<chat.keryx.core.model.BotProfile?> = _botNewChoice.asStateFlow()
+
+    /** Answer the `/new` question: [fresh] = a new session with that bot; else compact here. */
+    fun resolveBotNew(fresh: Boolean?) {
+        val bot = _botNewChoice.value ?: return
+        _botNewChoice.value = null
+        when (fresh) {
+            null -> Unit
+            true -> createSession("", profile = bot) { err -> err?.let { toast("Couldn't start a session: $it") } }
+            false -> sendMessage("/compact")
+        }
+    }
+
     // One-shot user-facing messages (e.g. avatar set result) — collected once at the app root.
     private val _toasts = kotlinx.coroutines.flow.MutableSharedFlow<String>(extraBufferCapacity = 8)
     val toasts: kotlinx.coroutines.flow.SharedFlow<String> = _toasts
@@ -2032,12 +2047,13 @@ class ChatViewModel(
         // hand off with its message_agent tool instead of guessing (desktop parity: the
         // user's words are never forwarded verbatim; the bot composes its own message).
         val inBotChat = bots.isCanonicalChat(session.id)
+        // `/new` here is a question, not a reset (2.17.3): compact this chat, or start a
+        // separate session with the same bot. Nothing is sent until you pick.
+        if (chat.keryx.core.model.BotRoster.reroute(rawContent, inBotChat) != null) {
+            _botNewChoice.value = bots.botForSession(session.id)
+            return
+        }
         val content = run {
-            val rerouted = chat.keryx.core.model.BotRoster.reroute(rawContent, inBotChat)
-            if (rerouted != null) {
-                _toasts.tryEmit("This chat never resets — compacting instead. For a throwaway session, start a new one.")
-                return@run rerouted
-            }
             val roster = bots.roster.value.data
             if (inBotChat && roster != null && roster.messagingArmed && rawContent.contains('@')) {
                 val mentioned = chat.keryx.core.model.BotRoster.mentions(rawContent, roster.bots)
@@ -2279,12 +2295,22 @@ class ChatViewModel(
         }
     }
 
-    fun createSession(title: String, temporary: Boolean = false, onDone: (String?) -> Unit) {
+    /**
+     * A fresh gateway session, opened. [profile] picks the agent it runs as (2.17.3); null or
+     * the launch profile is the gateway's own. Another agent's session runs on that agent's
+     * own model, so the "last model picked" pin is for the launch profile's sessions only.
+     */
+    fun createSession(
+        title: String,
+        temporary: Boolean = false,
+        profile: chat.keryx.core.model.BotProfile? = null,
+        onDone: (String?) -> Unit,
+    ) {
         viewModelScope.launch {
-            gateway?.createSession(title.trim().ifBlank { null })
+            gateway?.createSession(title.trim().ifBlank { null }, profile)
                 ?.onSuccess { sessionId ->
                     if (temporary) markTemporary(sessionId)
-                    applyStickyModel(sessionId)
+                    if (profile == null || profile.isDefault) applyStickyModel(sessionId)
                     openRoomById(sessionId); onDone(null)
                 }
                 ?.onFailure { onDone(it.message?.take(120) ?: "couldn't create the session") }

@@ -232,8 +232,9 @@ object BotRoster {
     /**
      * The forever-chat rule: `/new` (or `/reset`) inside a canonical Bot Chat would fork the
      * relationship into a scratch session — the one thing Bot Mode promises never happens.
-     * Rerouted to `/compact` (fresh working context, SAME conversation). Regular sessions on
-     * the same profile keep full `/new` freedom. Returns the text to send, or null = unchanged.
+     * Its safe reading is `/compact` (fresh working context, SAME conversation); since 2.17.3
+     * the floor asks first, offering that or a separate session with the bot. Regular sessions
+     * on the same profile keep full `/new` freedom. Returns the compact text, or null = unchanged.
      */
     fun reroute(text: String, inCanonicalChat: Boolean): String? =
         if (inCanonicalChat && SLASH_NEW_RE.matches(text.trim())) "/compact" else null

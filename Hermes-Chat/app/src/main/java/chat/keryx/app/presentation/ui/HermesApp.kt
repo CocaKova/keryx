@@ -193,6 +193,31 @@ fun HermesApp(viewModel: ChatViewModel) {
         }
     }
 
+    // `/new` in a bot's forever-chat (2.17.3): it never resets, so ask which of the two things
+    // a fresh start can mean here — a clean working context in THIS chat, or a separate
+    // session with the same bot. Dismissing sends nothing.
+    val botNewChoice by viewModel.botNewChoice.collectAsState()
+    botNewChoice?.let { bot ->
+        AlertDialog(
+            shape = RoundedCornerShape(chat.keryx.app.presentation.ui.components.KeryxRadius.sheet),
+            onDismissRequest = { viewModel.resolveBotNew(null) },
+            title = { Text("Start fresh with ${bot.label}?", fontSize = KeryxType.titleLarge) },
+            text = {
+                Text(
+                    "This is ${bot.label}'s Bot Chat — it never resets. Compact it to clear the working " +
+                        "context and keep the conversation, or open a separate session with ${bot.label}.",
+                    fontSize = KeryxType.body,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.resolveBotNew(true) }) { Text("New session") }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.resolveBotNew(false) }) { Text("Compact this chat") }
+            },
+        )
+    }
+
     // 2.3 §1: the configured heralds, resolved once for the whole app — every bubble, sigil and
     // spinner below reads its sender's light out of this. (Body left at its original indent so the
     // wrapper stays a two-line diff.)
@@ -299,8 +324,11 @@ fun HermesApp(viewModel: ChatViewModel) {
                                     // sigil in its own light, its name, and the one-word chip
                                     // that says this conversation never resets.
                                     val botHere = viewModel.bots.botForSession(room.id)
-                                    if (botHere != null) {
-                                        val light = chat.keryx.app.presentation.ui.components.botLightFor(botHere.name, botHere.label, botHere.isDefault)
+                                    // A plain session on another profile (2.17.3) wears its
+                                    // agent's sigil too — just not the forever-chat chip.
+                                    val agentHere = botHere ?: viewModel.bots.agentOf(room.id)
+                                    if (agentHere != null) {
+                                        val light = chat.keryx.app.presentation.ui.components.botLightFor(agentHere.name, agentHere.label, agentHere.isDefault)
                                         chat.keryx.app.presentation.ui.components.HeraldSigil(light, fontSize = KeryxType.caption)
                                         Spacer(Modifier.width(4.dp))
                                     }
@@ -454,7 +482,9 @@ fun HermesApp(viewModel: ChatViewModel) {
                                         enabled = !creating,
                                         onClick = {
                                             creating = true
-                                            viewModel.createSession("") { err ->
+                                            // New is "another one of THESE": in a bot's chat or
+                                            // session, the fresh session runs as that bot.
+                                            viewModel.createSession("", profile = viewModel.bots.agentOf(currentRoom?.id)) { err ->
                                                 creating = false
                                                 if (err != null) viewModel.toast("Couldn't start a session: $err")
                                             }

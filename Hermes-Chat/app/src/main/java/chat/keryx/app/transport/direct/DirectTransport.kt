@@ -148,6 +148,25 @@ private const val INTERRUPT_SEAL_MS = 4_000L
          * SHORT known list: an unrecognized source is assumed to be a human somewhere.
          */
         val QUIET_SOURCES = setOf("api_server", "kanban", "hermes_browser")
+
+        /** The `source` the gateway stamps on a session an app (Keryx, the desktop) minted. */
+        const val APP_SOURCE = "tui"
+
+        /**
+         * The cross-profile page minus the launch profile's own rows: the launch list already
+         * carries those, keyed by id, and the gateway's launch profile is whatever ITS rows are
+         * tagged — not necessarily `default` (a fleet gateway can run as any profile).
+         */
+        internal fun foreignRows(
+            all: List<GatewayRest.SessionRow>,
+            launch: List<GatewayRest.SessionRow>,
+        ): List<GatewayRest.SessionRow> {
+            val launchProfile = launch.firstOrNull { it.profile.isNotBlank() }?.profile ?: "default"
+            val launchIds = launch.mapTo(HashSet()) { it.id }
+            return all.filter {
+                it.profile.isNotBlank() && it.profile != launchProfile && it.id !in launchIds && !it.archived
+            }
+        }
     }
 
     private var rpc: GatewayRpc? = null
@@ -168,9 +187,24 @@ private const val INTERRUPT_SEAL_MS = 4_000L
      * live OUTSIDE the launch profile are registered (a Bot Chat opened from the roster);
      * every session-scoped call — resume, hydrate, page, PATCH, DELETE — reads its profile
      * here and names it on the wire, so a bot's forever-chat resolves in the right store.
+     * (2.17.3) Plain sessions made on another profile register here too, and the map is
+     * persisted: a relaunch restores the last open session before any list has said whose it is.
      */
-    private val profileOf = java.util.concurrent.ConcurrentHashMap<String, String>()
+    private val profileOf = java.util.concurrent.ConcurrentHashMap<String, String>(settings.sessionProfiles)
     private fun profileFor(storedId: String): String? = profileOf[storedId]
+
+    private fun rememberProfile(storedId: String, profile: String) {
+        if (profileOf.put(storedId, profile) != profile) settings.sessionProfiles = profileOf.toMap()
+    }
+
+    private fun forgetProfile(storedId: String) {
+        if (profileOf.remove(storedId) != null) settings.sessionProfiles = profileOf.toMap()
+    }
+
+    override fun sessionProfile(sessionId: String): String? = profileFor(forwarded(sessionId))
+
+    /** Plain sessions on OTHER profiles that this install's apps made (`tui`), newest first. */
+    private val _profileRows = MutableStateFlow<List<GatewayRest.SessionRow>>(emptyList())
 
     /**
      * The profile that holds [storedId] on the wire, or null for the launch profile's own — for
@@ -1614,6 +1648,16 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             _sessionRows.value = live + tail
             if (tail.isEmpty()) _hasMoreSessions.value = rows.size >= SESSION_PAGE
         }
+        // Sessions started from an app on ANOTHER profile (2.17.3): the launch list cannot
+        // carry them, so they come from the cross-profile page — `tui` only, which is what
+        // Keryx and the desktop mint; a bot's Discord threads, cron and kanban stay out. Bot
+        // Chats are hidden rows and never appear here. An older gateway without the route
+        // just keeps the list it had.
+        r.profileSessions(limit = SESSION_PAGE, sources = listOf(APP_SOURCE)).onSuccess { rows ->
+            val foreign = foreignRows(rows, _sessionRows.value)
+            foreign.forEach { rememberProfile(it.id, it.profile) }
+            _profileRows.value = foreign
+        }
         r.sessions(limit = 100, sources = listOf(CRON_SOURCE)).onSuccess { rows ->
             _cronRows.value = rows.filter { !it.archived }
             // Late recognition: a run adopted before this page landed (a cold start that
@@ -1896,7 +1940,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     override fun busySessionIds(): Flow<Set<String>> = _busyStored
 
     private fun serverRooms(): Flow<List<RoomProfile>> =
-        combine(_loggedIn, _sessionRows, _cronRows, _joinedCron) { ok, rows, cron, joined ->
+        combine(_loggedIn, _sessionRows, _cronRows, _joinedCron, _profileRows) { ok, rows, cron, joined, foreign ->
             if (!ok) emptyList()
             else {
                 // The roster page is cron-free by construction (`exclude_sources`), so a run
@@ -1907,7 +1951,11 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 val promoted = cron
                     .filter { it.id in joined && it.id !in listed }
                     .map { toProfile(it).copy(source = "") }
-                rows.map(::toProfile) + promoted
+                // Another profile's session wears that agent's sigil, as its Bot Chat does.
+                val others = foreign
+                    .filter { it.id !in listed }
+                    .map { toProfile(it).copy(heraldIds = listOf(it.profile)) }
+                rows.map(::toProfile) + promoted + others
             }
         }.onStart { scope.launch { refreshSessions() } }
 
@@ -2489,7 +2537,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         rest.deleteSession(sessionId, profile = profileFor(sessionId)).getOrThrow()
         // Drop any live mapping + store; then re-pull the list so the row leaves the drawer.
         _pendingNew.value = _pendingNew.value.filterNot { it.id == sessionId }
-        profileOf.remove(sessionId)
+        forgetProfile(sessionId)
         storedToLive.remove(sessionId)?.let { liveToStored.remove(it) }
         stores.remove(sessionId)
         refreshSessions()
@@ -2699,7 +2747,14 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         // Per-profile skill walks on the gateway side — a slow-ish call, so callers poll it
         // on a place's cadence, never per keystroke.
         val res = rpc.request("profiles.list", buildJsonObject {}, timeoutMs = 45_000)
-        chat.keryx.core.model.BotsJson.snapshot(res, System.currentTimeMillis()).also { _agents.value = it.bots }
+        chat.keryx.core.model.BotsJson.snapshot(res, System.currentTimeMillis()).also { snap ->
+            _agents.value = snap.bots
+            // Every known Bot Chat names its store from here on, relaunch included — not
+            // only the ones this process happened to open by tapping a bot.
+            snap.bots.forEach { bot ->
+                bot.canonical?.let { c -> registerProfile(c.id, bot); registerProfile(c.openId, bot) }
+            }
+        }
     }
 
     /** The last roster anyone fetched — the shade names a session's agent from it. */
@@ -2717,7 +2772,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
 
     /** Remember which store holds [storedId] so every later call names it. */
     private fun registerProfile(storedId: String, bot: chat.keryx.core.model.BotProfile) {
-        if (!bot.isDefault) profileOf[storedId] = bot.name
+        if (!bot.isDefault) rememberProfile(storedId, bot.name)
     }
 
     override suspend fun openBotChat(
@@ -3194,6 +3249,9 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         storedToLive[newStored] = liveSid
         rotationOrigins[newStored] = old
         rotationForward[old] = newStored
+        // The continuation lives in the SAME profile's store. Without this a bot's chat that
+        // compacted re-hydrated its tip from the launch profile's store — and found nothing.
+        profileOf[old]?.let { rememberProfile(newStored, it) }
         // Carry live runtime state across; the transcript re-hydrates fresh under the new
         // id (REST serves the compaction summary + carried turns — exactly what happened).
         metaFlows[old]?.let { metaFlows.putIfAbsent(newStored, it) }
@@ -3711,23 +3769,36 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         _loggedIn.value = false
     }
 
-    override suspend fun createSession(title: String?): Result<String> = createSession(title, null)
+    override suspend fun createSession(title: String?, profile: chat.keryx.core.model.BotProfile?): Result<String> =
+        createSession(title, null, profile)
 
     /** Create a fresh gateway session and return its stored id (used by New Chat UI).
      *  [cwd] anchors the session in a workspace (a project's folder); absent = the gateway's
      *  launch directory, i.e. the Home bucket. Kept as a separate overload so the seam stays
      *  workspace-free until the Projects surface lands and gives cwd a real picker. */
-    suspend fun createSession(title: String?, cwd: String?): Result<String> = runCatching {
+    suspend fun createSession(
+        title: String?,
+        cwd: String?,
+        profile: chat.keryx.core.model.BotProfile? = null,
+    ): Result<String> = runCatching {
         val rpc = rpc ?: error("gateway not connected")
+        val onProfile = profile?.takeIf { !it.isDefault }
         val res = rpc.request("session.create", buildJsonObject {
             put("cols", JsonPrimitive(100))
             if (!title.isNullOrBlank()) put("title", JsonPrimitive(title))
             if (!cwd.isNullOrBlank()) put("cwd", JsonPrimitive(cwd))
+            // Another agent's session runs as that agent: its store, and its config live —
+            // the same create a Bot Chat gets, minus the canonical title and the hiding.
+            if (onProfile != null) {
+                putProfile(onProfile)
+                put("follow_profile_config", JsonPrimitive(true))
+            }
         })
         val live = res["session_id"]?.jsonPrimitive?.contentOrNull ?: error("create returned no sid")
         val stored = res["stored_session_id"]?.jsonPrimitive?.contentOrNull ?: live
         storedToLive[stored] = live
         liveToStored[live] = stored
+        if (onProfile != null) registerProfile(stored, onProfile)
         // Carry it locally so it's selectable and visible before its first message.
         _pendingNew.value = _pendingNew.value.filterNot { it.id == stored } + RoomProfile(
             id = stored,
@@ -3737,6 +3808,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             messageCount = 0,
             source = "",
             isActive = true,
+            heraldIds = listOfNotNull(onProfile?.name),
         )
         store(stored).hydrated = true // nothing to hydrate; skip the REST round trip
         refreshSessions()

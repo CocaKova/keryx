@@ -97,8 +97,15 @@ interface ChatTransport {
  * branching on a transport flag.
  */
 interface GatewayCapabilities {
-    /** Create a fresh gateway session, optionally titled, and return its stored id. */
-    suspend fun createSession(title: String?): Result<String>
+    /**
+     * Create a fresh gateway session, optionally titled, and return its stored id. [profile]
+     * names the agent it runs as (null or the launch profile = the gateway's own); a session
+     * on another profile lives in THAT profile's store and every later call names it there.
+     */
+    suspend fun createSession(title: String?, profile: chat.keryx.core.model.BotProfile? = null): Result<String>
+
+    /** The profile that holds [sessionId] when it is not the launch profile's own, else null. */
+    fun sessionProfile(sessionId: String): String?
 
     /** Retitle a session (the drawer name; the gateway's auto-title stops competing). */
     suspend fun renameSession(sessionId: String, title: String): Result<Unit>

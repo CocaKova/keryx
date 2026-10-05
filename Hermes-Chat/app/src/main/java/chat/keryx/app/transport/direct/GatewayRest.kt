@@ -78,6 +78,8 @@ class GatewayRest(
         val source: String,
         /** The gateway's read watermark, derived server-side (activity after the last read). */
         val unread: Boolean = false,
+        /** The profile whose store holds the row, as the gateway tagged it ("" = untagged). */
+        val profile: String = "",
     )
 
     // MessageRow / RestToolCall moved to chat.keryx.core.protocol (:shared) —
@@ -142,6 +144,39 @@ class GatewayRest(
                     pinned = o.bool("pinned"),
                     source = o.str("source") ?: "",
                     unread = o.bool("unread"),
+                    profile = o.str("profile") ?: "",
+                )
+            }.distinctBy { it.id }
+        }
+
+    /**
+     * `/api/profiles/sessions` (2.17.3): one page across EVERY profile's store, newest first,
+     * each row tagged with the profile that owns it. Read-only and window-merged server-side.
+     */
+    suspend fun profileSessions(
+        limit: Int = 50,
+        sources: List<String> = emptyList(),
+    ): Result<List<SessionRow>> =
+        get(
+            "/api/profiles/sessions?profile=all&order=recent&limit=${limit.coerceAtMost(500)}" +
+                (if (sources.isEmpty()) "" else "&sources=" + sources.joinToString(","))
+        ).map { body ->
+            val rows = json.parseToJsonElement(body).jsonObject["sessions"]?.jsonArray ?: JsonArray(emptyList())
+            rows.mapNotNull { el ->
+                val o = el.jsonObject
+                SessionRow(
+                    id = o.str("id") ?: return@mapNotNull null,
+                    title = o.str("title") ?: "",
+                    preview = o.str("preview") ?: "",
+                    startedAt = o.epochMs("started_at"),
+                    lastActive = o.epochMs("last_active"),
+                    messageCount = o["message_count"]?.jsonPrimitive?.longOrNull ?: 0,
+                    isActive = o.bool("is_active"),
+                    archived = o.bool("archived"),
+                    pinned = o.bool("pinned"),
+                    source = o.str("source") ?: "",
+                    unread = o.bool("unread"),
+                    profile = o.str("profile") ?: return@mapNotNull null,
                 )
             }.distinctBy { it.id }
         }

@@ -1,7 +1,11 @@
 package chat.keryx.app.presentation.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +37,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -74,6 +81,16 @@ fun NewChatSheet(
             if (viewModel.transportIsDirect) {
                 var title by rememberSaveable { mutableStateOf("") }
                 var temporary by rememberSaveable { mutableStateOf(false) }
+                // Who the session runs as (2.17.3). Starts on the agent of the session you came
+                // from, so "another one of these" is the default; the launch profile is "".
+                var agentName by rememberSaveable {
+                    mutableStateOf(viewModel.bots.agentOf(viewModel.currentRoom.value?.id)?.name.orEmpty())
+                }
+                androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.bots.refresh() }
+                val roster by viewModel.bots.roster.collectAsState()
+                val agents = roster.data?.bots.orEmpty()
+                    .filter { !it.hidden || it.name == agentName }
+                    .sortedByDescending { it.isDefault }
                 Text(
                     "A fresh gateway session. Name it now, or let the first exchange title it.",
                     fontSize = KeryxType.caption,
@@ -88,6 +105,22 @@ fun NewChatSheet(
                     modifier = Modifier.fillMaxWidth(),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.field),
                 )
+                if (agents.size > 1) {
+                    Spacer(Modifier.height(10.dp))
+                    Text("Agent", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(4.dp))
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+                    ) {
+                        agents.forEach { bot ->
+                            val key = if (bot.isDefault) "" else bot.name
+                            AgentPill(bot = bot, selected = key == agentName) { agentName = key }
+                        }
+                    }
+                }
                 Spacer(Modifier.height(6.dp))
                 // Temporary: a scratch conversation that owes the roster nothing. It behaves
                 // like any session while the app lives; the next cold start deletes it from
@@ -125,7 +158,11 @@ fun NewChatSheet(
                 }
                 SheetActionRow(busy = busy, enabled = true, label = "Create") {
                     busy = true; error = null
-                    viewModel.createSession(title, temporary, ::done)
+                    // Picked by name, so a roster that has not landed yet still creates on it.
+                    val agent = agentName.takeIf { it.isNotBlank() }?.let { n ->
+                        agents.firstOrNull { it.name == n } ?: chat.keryx.core.model.BotProfile(name = n)
+                    }
+                    viewModel.createSession(title, temporary, profile = agent, onDone = ::done)
                 }
                 error?.let {
                     Spacer(Modifier.height(6.dp))
@@ -248,6 +285,32 @@ private fun NewChatRow(
         AnimatedVisibility(visible = open, enter = keryxReveal(), exit = keryxConceal()) {
             Column(Modifier.padding(top = 8.dp, start = 32.dp)) { content() }
         }
+    }
+}
+
+/** One agent to start the session as: its sigil in its own light, its name. */
+@Composable
+private fun AgentPill(bot: chat.keryx.core.model.BotProfile, selected: Boolean, onClick: () -> Unit) {
+    val light = botLightFor(bot.name, bot.label, bot.isDefault)
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.chip)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(shape)
+            .background(if (selected) light.accent.copy(alpha = 0.16f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .border(1.dp, if (selected) light.accent else Color.Transparent, shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+    ) {
+        HeraldSigil(light, fontSize = KeryxType.caption)
+        Spacer(Modifier.width(5.dp))
+        Text(
+            bot.label,
+            fontSize = KeryxType.body,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (selected) keryxAccentInk(light.accent) else MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+        )
     }
 }
 

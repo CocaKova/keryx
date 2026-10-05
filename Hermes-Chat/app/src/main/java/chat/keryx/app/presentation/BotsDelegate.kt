@@ -186,6 +186,18 @@ class BotsDelegate(
             ?: pendingOpens[sessionId]?.let { name -> bots.firstOrNull { it.name == name } }
     }
 
+    /**
+     * The agent [sessionId] runs as when that is not the launch profile: its Bot Chat's bot,
+     * or the profile a plain session was started on (2.17.3). Null = the gateway's own agent.
+     */
+    fun agentOf(sessionId: String?): BotProfile? {
+        sessionId ?: return null
+        botForSession(sessionId)?.let { return it }
+        val name = gateway?.sessionProfile(sessionId) ?: return null
+        val roster = _roster.value.data ?: return BotProfile(name = name) // named, until the roster lands
+        return roster.byName(name)?.takeIf { !it.isDefault }
+    }
+
     /** Whether [sessionId] is a Bot's forever-chat — the sessions the /new rule guards. */
     fun isCanonicalChat(sessionId: String?): Boolean = botForSession(sessionId) != null
 
