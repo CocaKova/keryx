@@ -308,7 +308,9 @@ private fun walkRange(
      *  it or the first turn of every resumed suffix would lose its banner. */
     prevBeforeRange: Message? = null,
 ): RangeWalk {
-    val chrono = mergeRuntimeFooters(chronoRange)
+    // A bot that chose to stay silent (`[SILENT]`, `NO_REPLY`, 2.17.3) keeps its turn in the
+    // transcript but shows nothing — the Bot Mode contract, and the desktop's rendering.
+    val chrono = mergeRuntimeFooters(chronoRange.filterNot(chat.keryx.core.model.SilenceTokens::isSilentReply))
     val out = mutableListOf<ChatRenderItem>()
     // The user's most recent message so far in the walk. An agent quote pointing at it is the
     // gateway's per-chunk reply-threading, not a meaningful reference — those quotes are hidden.

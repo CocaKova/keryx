@@ -312,6 +312,7 @@ class GatewayRest(
         pinned: Boolean? = null,
         unread: Boolean? = null,
         profile: String? = null,
+        hidden: Boolean? = null,
     ): Result<Unit> =
         send("PATCH", "/api/sessions/$sessionId", buildString {
             append("{")
@@ -320,6 +321,7 @@ class GatewayRest(
             archived?.let { parts += "\"archived\":$it" }
             pinned?.let { parts += "\"pinned\":$it" }
             unread?.let { parts += "\"unread\":$it" }
+            hidden?.let { parts += "\"hidden\":$it" }
             // The PATCH names its profile in the BODY (the router's SessionRename model),
             // where GET/DELETE take it as a query — the gateway's own asymmetry, mirrored.
             profile?.takeIf { it.isNotBlank() }?.let { parts += "\"profile\":${kotlinx.serialization.json.JsonPrimitive(it)}" }

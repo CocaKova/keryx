@@ -199,6 +199,19 @@ interface GatewayCapabilities {
      */
     suspend fun openBotChat(bot: chat.keryx.core.model.BotProfile, kickoff: Boolean = false): Result<chat.keryx.core.model.BotChatRef>
 
+    /**
+     * Retire [bot]'s Bot Chat (2.17.3): renamed off the canonical title and archived, history
+     * kept. The next [openBotChat] then mints a fresh one — the desktop's "archive retires it".
+     */
+    suspend fun retireBotChat(bot: chat.keryx.core.model.BotProfile): Result<Unit>
+
+    /** [bot]'s other conversations, newest first, and the Bot Chats it has retired. */
+    suspend fun botSessions(bot: chat.keryx.core.model.BotProfile): Result<chat.keryx.core.model.BotSessions>
+
+    /** Make a session on [profile]'s store (null = the launch profile's) openable by id under
+     *  [title] — [adoptSession] that also remembers whose store to ask. */
+    fun adoptProfileSession(sessionId: String, profile: String?, title: String)
+
     /** `profiles.configure`: the `hermes-bots` ui_meta block (whole, see [chat.keryx.core.model.BotProfile.meta]) and/or the description. */
     suspend fun configureBot(name: String, meta: kotlinx.serialization.json.JsonObject?, description: String?): Result<Unit>
 

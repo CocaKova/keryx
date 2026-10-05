@@ -35,6 +35,12 @@ data class BotChatRef(
     val openId: String get() = resolvedId.ifBlank { id }
 }
 
+/** A bot's conversations beyond its Bot Chat: [recent] side sessions and runs, [past] retired Bot Chats. */
+data class BotSessions(
+    val recent: List<RoomProfile> = emptyList(),
+    val past: List<RoomProfile> = emptyList(),
+)
+
 data class BotProfile(
     /** The profile name — the one stable key (`default`, `theo`, `research-buddy`). */
     val name: String,
@@ -238,6 +244,18 @@ object BotRoster {
      */
     fun reroute(text: String, inCanonicalChat: Boolean): String? =
         if (inCanonicalChat && SLASH_NEW_RE.matches(text.trim())) "/compact" else null
+
+    /**
+     * What a retired Bot Chat is renamed to (2.17.3), followed by when. Retiring frees the
+     * canonical title so the next open mints a fresh Bot Chat; the rename is also what keeps it
+     * retired — an archive alone is undone by the gateway when the chat's last end looks like
+     * an accident (`ws_orphan_reap`), and it is how Keryx finds the bot's past chats again.
+     */
+    const val RETIRED_PREFIX = "Bot Chat · retired"
+
+    fun retiredTitle(stamp: String): String = "$RETIRED_PREFIX $stamp".trim()
+
+    fun isRetiredTitle(title: String?): Boolean = title?.startsWith(RETIRED_PREFIX) == true
 
     /** The message a brand-new bot gets first, so it introduces itself (desktop's kickoff). */
     const val KICKOFF = "Hey, tell me about yourself!"

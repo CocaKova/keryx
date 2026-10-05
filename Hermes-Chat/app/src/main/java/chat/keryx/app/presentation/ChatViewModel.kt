@@ -1999,13 +1999,14 @@ class ChatViewModel(
     private val _botNewChoice = MutableStateFlow<chat.keryx.core.model.BotProfile?>(null)
     val botNewChoice: StateFlow<chat.keryx.core.model.BotProfile?> = _botNewChoice.asStateFlow()
 
-    /** Answer the `/new` question: [fresh] = a new session with that bot; else compact here. */
+    /** Answer the `/new` question: [fresh] = retire this Bot Chat and start a new one; false =
+     *  compact it (same conversation, clean working context); null = dismissed, nothing sent. */
     fun resolveBotNew(fresh: Boolean?) {
         val bot = _botNewChoice.value ?: return
         _botNewChoice.value = null
         when (fresh) {
             null -> Unit
-            true -> createSession("", profile = bot) { err -> err?.let { toast("Couldn't start a session: $it") } }
+            true -> bots.startFresh(bot)
             false -> sendMessage("/compact")
         }
     }

@@ -7,6 +7,7 @@ import chat.keryx.core.model.BotRosterSnapshot
 import chat.keryx.core.model.BotsJson
 import chat.keryx.core.model.RoomProfile
 import chat.keryx.core.model.RoomType
+import chat.keryx.core.model.SilenceTokens
 import chat.keryx.core.transport.ChatTransport
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -168,7 +169,7 @@ class BotsDelegate(
                 timestamp = chat.lastActive,
                 messageCount = chat.messageCount,
                 source = BOT_SOURCE,
-                preview = chat.preview,
+                preview = chat.preview.takeUnless(SilenceTokens::isSilent).orEmpty(),
                 unread = BotRoster.unread(bot, seen),
                 // The bot's key rides as the row's one herald: the notification watcher
                 // names the speaker by it, and the light it wears matches the roster's.
@@ -229,6 +230,42 @@ class BotsDelegate(
                     deps.toast("Couldn't open ${bot.label}: ${e.message?.take(100) ?: "try again"}")
                 }
         }
+    }
+
+    /**
+     * A fresh Bot Chat (2.17.3): retire the current one — renamed "Bot Chat · retired …" and
+     * archived, history kept and listed under the bot's past chats — then open, which mints the
+     * new canonical chat. No kickoff: a fresh start is an empty page, not a new bot's hello.
+     */
+    fun startFresh(bot: BotProfile) {
+        val gw = gateway ?: return
+        scope.launch {
+            val current = _roster.value.data?.byName(bot.name) ?: bot
+            if (current.canonical == null) { open(current); return@launch }
+            gw.retireBotChat(current)
+                .onSuccess {
+                    current.canonical?.let { old -> pendingOpens.remove(old.id); pendingOpens.remove(old.openId) }
+                    val cleared = current.copy(canonical = null)
+                    _roster.value.data?.let { snap ->
+                        val patched = snap.copy(bots = snap.bots.map { if (it.name == bot.name) cleared else it })
+                        _roster.value = _roster.value.copy(data = patched)
+                        publishRows(patched)
+                    }
+                    open(cleared)
+                }
+                .onFailure { e -> deps.toast("Couldn't retire ${bot.label}'s chat: ${e.message?.take(100) ?: "try again"}") }
+        }
+    }
+
+    /** [bot]'s side sessions and retired Bot Chats, for its Sessions sheet. */
+    suspend fun sessions(bot: BotProfile): Result<chat.keryx.core.model.BotSessions> =
+        gateway?.botSessions(bot) ?: Result.failure(IllegalStateException("not connected to a gateway"))
+
+    /** Open one of [bot]'s other sessions on the floor, in the bot's own store. */
+    fun openSessionOf(bot: BotProfile, room: chat.keryx.core.model.RoomProfile) {
+        val gw = gateway ?: return
+        gw.adoptProfileSession(room.id, bot.name.takeIf { !bot.isDefault }, room.name)
+        openSession(room.id, room.name)
     }
 
     /** Open by profile name (a deck tile, a notification) — resolves against the roster. */

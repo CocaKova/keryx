@@ -193,9 +193,9 @@ fun HermesApp(viewModel: ChatViewModel) {
         }
     }
 
-    // `/new` in a bot's forever-chat (2.17.3): it never resets, so ask which of the two things
-    // a fresh start can mean here — a clean working context in THIS chat, or a separate
-    // session with the same bot. Dismissing sends nothing.
+    // `/new` in a bot's forever-chat (2.17.3): it never resets on its own, so ask which of the
+    // two things a fresh start can mean here — a clean working context in THIS conversation, or
+    // a new Bot Chat (this one retired, kept under the bot's past chats). Dismissing sends nothing.
     val botNewChoice by viewModel.botNewChoice.collectAsState()
     botNewChoice?.let { bot ->
         AlertDialog(
@@ -204,16 +204,17 @@ fun HermesApp(viewModel: ChatViewModel) {
             title = { Text("Start fresh with ${bot.label}?", fontSize = KeryxType.titleLarge) },
             text = {
                 Text(
-                    "This is ${bot.label}'s Bot Chat — it never resets. Compact it to clear the working " +
-                        "context and keep the conversation, or open a separate session with ${bot.label}.",
+                    "Compact keeps this conversation and clears ${bot.label}'s working context.\n\n" +
+                        "A fresh Bot Chat retires this one — it stays readable under ${bot.label}'s " +
+                        "past chats — and starts a new one.",
                     fontSize = KeryxType.body,
                 )
             },
             confirmButton = {
-                TextButton(onClick = { viewModel.resolveBotNew(true) }) { Text("New session") }
+                TextButton(onClick = { viewModel.resolveBotNew(true) }) { Text("Fresh Bot Chat") }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.resolveBotNew(false) }) { Text("Compact this chat") }
+                TextButton(onClick = { viewModel.resolveBotNew(false) }) { Text("Compact") }
             },
         )
     }

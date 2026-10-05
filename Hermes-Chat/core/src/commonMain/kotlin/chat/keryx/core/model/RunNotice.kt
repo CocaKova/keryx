@@ -172,6 +172,8 @@ object AlertPolicy {
         last.sender == SenderType.ME -> Verdict.SILENT_MINE
         busy || last.isStreaming -> Verdict.SILENT_BUSY
         last.content.isBlank() && last.mediaKind == null && last.failure == null -> Verdict.SILENT_EMPTY
+        // A bot that chose silence said nothing worth a notification either.
+        SilenceTokens.isSilentReply(last) -> Verdict.SILENT_EMPTY
         keyOf(last) == lastAlertedKey -> Verdict.SILENT_SEEN
         else -> Verdict.ALERT
     }

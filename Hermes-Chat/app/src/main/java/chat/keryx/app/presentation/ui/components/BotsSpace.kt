@@ -98,6 +98,8 @@ fun BotsSpace(
     var editing by remember { mutableStateOf<BotProfile?>(null) }
     var creating by remember { mutableStateOf(false) }
     var routinesFor by remember { mutableStateOf<BotProfile?>(null) }
+    var sessionsFor by remember { mutableStateOf<BotProfile?>(null) }
+    var freshFor by remember { mutableStateOf<BotProfile?>(null) }
     var enabling by remember { mutableStateOf(false) }
 
     // The place's own cadence: rosters move on the gateway's clock (a bot's last word, a
@@ -202,6 +204,8 @@ fun BotsSpace(
                         onEdit = { editing = bot },
                         onHide = { bots.configure(bot, hidden = !bot.hidden) { err -> err?.let(viewModel::toast) } },
                         onRoutines = { routinesFor = bot },
+                        onSessions = { sessionsFor = bot },
+                        onFresh = { freshFor = bot },
                     )
                 }
                 item(key = "messaging") {
@@ -244,6 +248,101 @@ fun BotsSpace(
     }
     routinesFor?.let { bot ->
         BotRoutinesSheet(bot = bot, viewModel = viewModel, onOpenRuns = { routinesFor = null; onOpenRuns() }, onDismiss = { routinesFor = null })
+    }
+    sessionsFor?.let { bot ->
+        BotSessionsSheet(
+            bot = bot,
+            viewModel = viewModel,
+            onOpen = { room -> sessionsFor = null; bots.openSessionOf(bot, room); onOpened() },
+            onDismiss = { sessionsFor = null },
+        )
+    }
+    freshFor?.let { bot ->
+        androidx.compose.material3.AlertDialog(
+            shape = RoundedCornerShape(KeryxRadius.sheet),
+            onDismissRequest = { freshFor = null },
+            title = { Text("Start a fresh Bot Chat?", fontSize = KeryxType.titleLarge) },
+            text = {
+                Text(
+                    "${bot.label}'s current Bot Chat is retired — kept and readable under Sessions — " +
+                        "and a new, empty Bot Chat takes its place.",
+                    fontSize = KeryxType.body,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { freshFor = null; bots.startFresh(bot); onOpened() }) { Text("Start fresh") }
+            },
+            dismissButton = { TextButton(onClick = { freshFor = null }) { Text("Cancel") } },
+        )
+    }
+}
+
+/**
+ * A bot's conversations beyond its Bot Chat (2.17.3): its side sessions and routine runs,
+ * newest first (the desktop's "Open recent session", as a list), and the Bot Chats it has
+ * retired. Each opens on the floor in the bot's own store.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BotSessionsSheet(
+    bot: BotProfile,
+    viewModel: ChatViewModel,
+    onOpen: (chat.keryx.core.model.RoomProfile) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val result by produceState<Result<chat.keryx.core.model.BotSessions>?>(initialValue = null, bot.name) {
+        value = viewModel.bots.sessions(bot)
+    }
+    KeryxSheet(onDismiss = onDismiss, title = "${bot.label} · sessions") {
+        Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
+            Spacer(Modifier.height(6.dp))
+            val r = result
+            when {
+                r == null -> Text("Loading…", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                r.isFailure -> Text(
+                    "Couldn't load sessions: ${r.exceptionOrNull()?.message?.take(100) ?: "try again"}",
+                    fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error,
+                )
+                else -> {
+                    val data = r.getOrThrow()
+                    SessionSection("Recent", data.recent, "No side sessions or runs yet — the Bot Chat is the only one.", onOpen)
+                    Spacer(Modifier.height(12.dp))
+                    SessionSection("Past Bot Chats", data.past, "None retired yet.", onOpen)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SessionSection(
+    title: String,
+    rows: List<chat.keryx.core.model.RoomProfile>,
+    empty: String,
+    onOpen: (chat.keryx.core.model.RoomProfile) -> Unit,
+) {
+    Text(title, fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Spacer(Modifier.height(4.dp))
+    if (rows.isEmpty()) {
+        Text(empty, fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
+        return
+    }
+    rows.forEach { room ->
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(KeryxRadius.chip))
+                .clickable { onOpen(room) }
+                .padding(vertical = 8.dp, horizontal = 4.dp),
+        ) {
+            Text(room.name, fontSize = KeryxType.body, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val meta = buildString {
+                if (room.timestamp > 0) append(relativeWhen(room.timestamp))
+                if (room.source.isNotBlank()) { if (isNotEmpty()) append(" · "); append(room.source) }
+                if (room.messageCount > 0) { if (isNotEmpty()) append(" · "); append("${room.messageCount} msgs") }
+            }
+            if (meta.isNotEmpty()) Text(meta, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 
@@ -334,6 +433,10 @@ private fun BotRow(
     onEdit: () -> Unit,
     onHide: () -> Unit,
     onRoutines: () -> Unit,
+    /** The bot's side sessions and retired Bot Chats. */
+    onSessions: () -> Unit,
+    /** Retire the Bot Chat and start a new one (asks first). */
+    onFresh: () -> Unit,
 ) {
     val haptics = LocalKeryxHaptics.current
     var menu by remember { mutableStateOf(false) }
@@ -373,7 +476,7 @@ private fun BotRow(
                     }
                     if (routines > 0) Chip("$routines routine${if (routines == 1) "" else "s"}", light.accent)
                 }
-                val line = bot.canonical?.preview?.takeIf { it.isNotBlank() }
+                val line = bot.canonical?.preview?.takeIf { it.isNotBlank() && !chat.keryx.core.model.SilenceTokens.isSilent(it) }
                     ?: bot.description.takeIf { it.isNotBlank() }
                     ?: "Tap to start ${bot.label}'s chat"
                 Text(
@@ -396,7 +499,11 @@ private fun BotRow(
         }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
             DropdownMenuItem(text = { Text("Open chat") }, onClick = { menu = false; onOpen() })
-            DropdownMenuItem(text = { Text("New session with ${bot.label}") }, onClick = { menu = false; onNewSession() })
+            DropdownMenuItem(text = { Text("Sessions") }, onClick = { menu = false; onSessions() })
+            DropdownMenuItem(text = { Text("New side session") }, onClick = { menu = false; onNewSession() })
+            if (bot.canonical != null) {
+                DropdownMenuItem(text = { Text("Start a fresh Bot Chat") }, onClick = { menu = false; onFresh() })
+            }
             DropdownMenuItem(
                 text = { Text(if (pinned) "Unpin from sessions" else "Pin to top of sessions") },
                 onClick = { menu = false; onPin() },

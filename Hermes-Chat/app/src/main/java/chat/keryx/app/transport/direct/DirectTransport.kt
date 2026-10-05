@@ -2850,6 +2850,44 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         chat.keryx.core.model.BotChatRef(id = stored, resolvedId = stored, lastActive = System.currentTimeMillis())
     }
 
+    override suspend fun retireBotChat(bot: chat.keryx.core.model.BotProfile): Result<Unit> = runCatching {
+        val rest = rest ?: error("gateway not connected")
+        val ref = bot.canonical ?: error("${bot.label} has no Bot Chat yet")
+        val profile = bot.name.takeIf { !bot.isDefault }
+        // The gateway refuses to rename a HIDDEN canonical chat (its title is its identity), so
+        // it is shown first, then renamed and archived in one PATCH (title applies before the
+        // flags). Renamed rather than only archived: an archive is undone on the next lookup
+        // when the chat's last end reads as an accident, which a long-lived Bot Chat's often does.
+        rest.patchSession(ref.id, hidden = false, profile = profile).getOrThrow()
+        val stamp = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US).format(java.util.Date())
+        rest.patchSession(
+            ref.id, title = chat.keryx.core.model.BotRoster.retiredTitle(stamp), archived = true, profile = profile,
+        ).onFailure {
+            // Put it back the way it was rather than leave the forever-chat visible in lists.
+            rest.patchSession(ref.id, hidden = true, profile = profile)
+        }.getOrThrow()
+        refreshSessions()
+    }
+
+    override suspend fun botSessions(bot: chat.keryx.core.model.BotProfile): Result<chat.keryx.core.model.BotSessions> =
+        runCatching {
+            val rest = rest ?: error("gateway not connected")
+            val profile = bot.name.takeIf { !bot.isDefault }
+            // The listing hides hidden rows, so the Bot Chat itself never appears in [recent].
+            val recent = rest.sessions(limit = 20, profile = profile).getOrThrow()
+            val past = rest.sessions(limit = 50, profile = profile, archived = "only").getOrThrow()
+                .filter { chat.keryx.core.model.BotRoster.isRetiredTitle(it.title) }
+            chat.keryx.core.model.BotSessions(
+                recent = recent.filter { !it.archived }.map(::toProfile),
+                past = past.map(::toProfile),
+            )
+        }
+
+    override fun adoptProfileSession(sessionId: String, profile: String?, title: String) {
+        profile?.let { rememberProfile(sessionId, it) }
+        adoptSession(sessionId, title)
+    }
+
     override suspend fun configureBot(
         name: String,
         meta: kotlinx.serialization.json.JsonObject?,
