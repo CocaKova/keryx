@@ -43,16 +43,20 @@ object TranscriptBuilder {
                 "user" -> if (row.content.isNotBlank() && !DisplayKind.hidesText(row.displayKind)) {
                     val wings = if (DelegationReport.isReport(row.content))
                         DelegationReport.parse(row.content) else emptyList()
+                    // Another AGENT talking to this one ("bot mode", upstream 08-14) — or, 2.18,
+                    // a teammate's REPLY coming back into the sender's chat as the completion of
+                    // its message_agent delivery. Both arrive on the user role because alternation
+                    // requires it, and neither is the human speaking: the bubble is the other
+                    // bot's, its words the content (they were blank here — "relayed · Juno" over
+                    // nothing — while the Matrix door always carried them).
                     val delivery = chat.keryx.core.model.AgentDelivery.parse(row.content)
+                        ?: chat.keryx.core.model.AgentDeliveryCommand.completionReply(row.content)
                     out += when {
-                        // Another AGENT talking to this one ("bot mode", upstream 08-14): the
-                        // delivery arrives on the user role because alternation requires it,
-                        // but it is not the human speaking — attributed notice, not your bubble.
                         delivery != null -> Message(
                             id = row.id.toString(),
                             roomId = roomId,
                             sender = SenderType.SYSTEM,
-                            content = "",
+                            content = delivery.body,
                             timestamp = row.timestamp,
                             agentDelivery = delivery,
                         )

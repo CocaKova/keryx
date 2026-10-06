@@ -75,10 +75,60 @@ object AgentDeliveryCommand {
      * brain chose to render that turn, not on anything we control.
      */
     fun targetOfCall(toolName: String, args: String): String? {
+        if (toolName == MESSAGE_AGENT) return messageAgentField(args, "target")?.let(::cleanTarget)
         if (toolName != "terminal") return null
         val command = jsonStringField(args, "command") ?: args
         return targetOf(command)
     }
+
+    /** The Bot Mode tool (2.18 renders it): `message_agent(target=…, message=…)`. */
+    const val MESSAGE_AGENT = "message_agent"
+
+    /** What a `message_agent` call said, or null for any other call. */
+    fun messageOfCall(toolName: String, args: String): String? =
+        if (toolName == MESSAGE_AGENT) messageAgentField(args, "message")?.trim()?.ifBlank { null } else null
+
+    /**
+     * The arguments as the call carries them: JSON from the model, or — on a transcript that
+     * compaction summarised — the gateway's one-line `target=juno message=…` digest.
+     */
+    private fun messageAgentField(args: String, field: String): String? {
+        jsonStringField(args, field)?.let { return it }
+        val digest = Regex("\\b$field=(.*?)(?=\\s+\\w+=|\\s+\\(\\d[\\d,]* chars|$)", RegexOption.DOT_MATCHES_ALL)
+        return digest.find(args)?.groupValues?.get(1)?.trim()?.ifBlank { null }
+    }
+
+    /** `@Juno` / `juno` / `spark/researcher` → the name to show; the `@` is addressing. */
+    private fun cleanTarget(raw: String): String? = raw.trim().removePrefix("@").trim().ifBlank { null }
+
+    /**
+     * The teammate's reply to a `message_agent` call, as it comes back into the SENDER's chat:
+     * the delivery runs as a background process, and its completion notification carries the
+     * reply as the process output —
+     * `[IMPORTANT: Background process … completed normally (exit code 0).\nCommand: …bot_mode_dm.py
+     * … hermes -p milo chat … -c 'Bot Chat' …\nOutput:\n<reply>]`. Read back into what it is: a
+     * message from that bot. Only a clean, single completion of a delivery counts; a failed one
+     * (non-zero exit, a typed `[reason: …]`) stays the gateway's own notice, because when the
+     * mechanism breaks the mechanism is what you need to see.
+     */
+    fun completionReply(content: String): AgentDelivery? {
+        val text = content.trim()
+        if (!text.startsWith(COMPLETION_HEAD)) return null
+        if (text.indexOf(COMPLETION_HEAD, 1) >= 0) return null // a batch of several: leave it whole
+        val head = text.substringBefore('\n')
+        if (!head.contains("(exit code 0)")) return null
+        val command = Regex("(?m)^Command: (.*)$").find(text)?.groupValues?.get(1) ?: return null
+        if (!command.contains(DELIVERY_SCRIPT)) return null
+        val target = DELIVERY_TARGET.find(command)?.groupValues?.get(2)?.lowercase() ?: return null
+        val outputAt = text.indexOf("\nOutput:\n").takeIf { it >= 0 } ?: return null
+        val output = text.substring(outputAt + "\nOutput:\n".length).removeSuffix("]").trim()
+        val reply = replyText(output).ifBlank { return null }
+        return AgentDelivery(sender = BotRoster.pretty(target), handle = target, body = reply)
+    }
+
+    private const val COMPLETION_HEAD = "[IMPORTANT: Background process"
+    private const val DELIVERY_SCRIPT = "bot_mode_dm.py"
+    private val DELIVERY_TARGET = Regex("(?:^|\\s)-p\\s+(['\"]?)([a-z0-9][a-z0-9_-]{0,63})\\1\\s+chat\\b", RegexOption.IGNORE_CASE)
 
     /**
      * The recipient's reply, dug out of the terminal output.
@@ -106,9 +156,16 @@ object AgentDeliveryCommand {
         raw = stripFence(raw)
         val lines = raw.lines()
         val boundary = lines.indexOfLast { SESSION_ID_LINE.matches(it.trim()) }
-        val body = (if (boundary >= 0) lines.drop(boundary + 1) else lines)
-            .joinToString("\n")
-            .trim()
+        val after = if (boundary >= 0) lines.drop(boundary + 1).joinToString("\n").trim() else ""
+        // The CLI prints its session line on EITHER side of the answer: before it under the shell
+        // convention, after it as the delivery process's last line (seen live: Milo's whole reply
+        // above `session_id:` and nothing below — cutting after it kept nothing). Nothing after
+        // the boundary means the answer is above it, minus the run's own bookkeeping.
+        val body = when {
+            boundary < 0 -> lines.joinToString("\n").trim()
+            after.isNotEmpty() -> after
+            else -> lines.take(boundary).filterNot { CLI_BOOKKEEPING.matches(it.trim()) }.joinToString("\n").trim()
+        }
         // The recipient may echo the convention back in its own answer; the prefix is addressing,
         // not content, and the notice already names who replied.
         return AgentDelivery.parse(body)?.body ?: body
@@ -124,6 +181,9 @@ object AgentDeliveryCommand {
     }
 
     private val SESSION_ID_LINE = Regex("^session_id:\\s.*$")
+
+    /** Lines the resumed one-shot run prints about itself, never part of what the agent said. */
+    private val CLI_BOOKKEEPING = Regex("^(?:Session \\S+ found but has no messages\\. Starting fresh\\.|↻ Resumed session .*)$")
 
     private val json = Json { ignoreUnknownKeys = true }
 

@@ -94,10 +94,14 @@ fun ToolTheaterRow(
     if (call.name == "react_to_message" && !call.failed) return
     val deliveryTarget = if (call.failed) null else deliveryTargetOf(call)
     if (deliveryTarget != null) {
+        // message_agent (2.18) is fire-and-forget: its own result is a dispatch receipt, and the
+        // teammate's reply arrives later as a message of its own. The notice carries what was said.
+        val viaTool = call.name == chat.keryx.core.model.AgentDeliveryCommand.MESSAGE_AGENT
         AgentDeliverySentNotice(
             target = deliveryTarget,
             pending = call.verdictOk == null,
-            reply = deliveryReply.orEmpty(),
+            reply = if (viaTool) "" else deliveryReply.orEmpty(),
+            message = chat.keryx.core.model.AgentDeliveryCommand.messageOfCall(call.name, call.argsJson.ifBlank { call.context }),
             stateKey = "delivery:$deliveryTarget:${call.context.hashCode()}",
             accent = accent,
         )
@@ -332,7 +336,7 @@ private fun ToolOutputToggle(
 
 /** The profile an inter-agent delivery is addressed to, or null for an ordinary tool call. */
 internal fun deliveryTargetOf(call: ToolCall): String? =
-    chat.keryx.core.model.AgentDeliveryCommand.targetOfCall(call.name, call.context)
+    chat.keryx.core.model.AgentDeliveryCommand.targetOfCall(call.name, call.argsJson.ifBlank { call.context })
 
 /**
  * A run of consecutive tool-only Hermes messages, collapsed into one compact bubble. While the
@@ -503,6 +507,28 @@ fun ToolTheaterRun(
             )
         }
 
+        // Bot-to-bot messages are conversation, not machinery (2.18): they stay on the page under
+        // the run's header, folded or not, and the expanded steps skip them. A FAILED delivery is
+        // not lifted — it stays a tool row inside, where the mechanism is what you need to see.
+        val deliveryIdx = remember(run.entries) {
+            run.entries.indices.filterTo(HashSet()) { i ->
+                (run.entries[i] as? ToolRunEntry.Call)?.call?.let { !it.failed && deliveryTargetOf(it) != null } == true
+            }
+        }
+        if (deliveryIdx.isNotEmpty()) {
+            Column(modifier = Modifier.padding(top = 4.dp, start = 8.dp)) {
+                deliveryIdx.sorted().forEach { i ->
+                    ToolTheaterRow(
+                        (run.entries[i] as ToolRunEntry.Call).call,
+                        accent,
+                        baseColor,
+                        deliveryReply = (run.entries.getOrNull(i + 1) as? ToolRunEntry.Note)
+                            ?.let { chat.keryx.core.model.AgentDeliveryCommand.replyText(it.text) },
+                    )
+                }
+            }
+        }
+
         AnimatedVisibility(
             visible = expanded,
             enter = keryxReveal(),
@@ -543,7 +569,7 @@ fun ToolTheaterRun(
                     // Consecutive wings are one dispatch — one rail, not one header per wing.
                     var wingGroupStart = -1
                     run.entries.forEachIndexed { i, entry ->
-                        if (i in consumed) return@forEachIndexed
+                        if (i in consumed || i in deliveryIdx) return@forEachIndexed
                         if (entry is ToolRunEntry.Delegated) {
                             if (wingGroupStart < 0) {
                                 wingGroupStart = i

@@ -200,4 +200,35 @@ class AgentDeliveryCommandTest {
     fun `a plain reply passes through untouched`() {
         assertEquals("all done\nno errors", AgentDeliveryCommand.replyText("all done\nno errors"))
     }
+
+    // ---- message_agent (2.18) ----------------------------------------------------------------
+
+    @Test fun messageAgentCallsNameTheirTargetAndMessage() {
+        val args = """{"target": "@Milo", "message": "Check Spire for me"}"""
+        kotlin.test.assertEquals("Milo", AgentDeliveryCommand.targetOfCall("message_agent", args))
+        kotlin.test.assertEquals("Check Spire for me", AgentDeliveryCommand.messageOfCall("message_agent", args))
+        // A compaction digest instead of JSON still reads.
+        val digest = "target=sterling message=Bot-chat test + real ask. Jonny wants to (324 chars result)"
+        kotlin.test.assertEquals("sterling", AgentDeliveryCommand.targetOfCall("message_agent", digest))
+        kotlin.test.assertEquals("Bot-chat test + real ask. Jonny wants to", AgentDeliveryCommand.messageOfCall("message_agent", digest))
+        kotlin.test.assertEquals(null, AgentDeliveryCommand.messageOfCall("terminal", args))
+    }
+
+    @Test fun onlyACleanSingleDeliveryCompletionIsAReply() {
+        val ok = "[IMPORTANT: Background process p completed normally (exit code 0).\nCommand: python bot_mode_dm.py --run-delivery q hermes -p theo chat -c 'Bot Chat' -Q\nOutput:\nOn it.]"
+        kotlin.test.assertEquals("On it.", AgentDeliveryCommand.completionReply(ok)?.body)
+        kotlin.test.assertEquals(null, AgentDeliveryCommand.completionReply(ok.replace("bot_mode_dm.py", "build.sh")))
+        kotlin.test.assertEquals(null, AgentDeliveryCommand.completionReply(ok + "\n" + ok))
+    }
+
+    @Test fun aReplyAboveTheSessionLineIsKept() {
+        // The live layout of a delivery's output (Sy's history, 09-03): answer first, then the
+        // CLI's own bookkeeping, then `session_id:` as the last line.
+        val out = "Reported to @hermes.\nSPIRE HEALTH\n- Running clean.\n" +
+            "Session 20260903_224452_11a96c found but has no messages. Starting fresh.\n\n" +
+            "session_id: 20260903_224452_11a96c\n"
+        assertEquals("Reported to @hermes.\nSPIRE HEALTH\n- Running clean.", AgentDeliveryCommand.replyText(out))
+        // The shell convention's layout still cuts after the line.
+        assertEquals("pong", AgentDeliveryCommand.replyText("warming up\nsession_id: abc\npong"))
+    }
 }

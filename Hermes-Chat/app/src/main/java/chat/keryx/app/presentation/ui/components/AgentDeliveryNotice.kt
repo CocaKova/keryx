@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -94,6 +95,8 @@ fun AgentDeliverySentNotice(
     modifier: Modifier = Modifier,
     stateKey: String = "",
     accent: Color? = null,
+    /** What this agent said to [target] (message_agent carries it; the shell convention doesn't). */
+    message: String? = null,
 ) {
     val quiet = MaterialTheme.colorScheme.onSurfaceVariant
     val mark = accent ?: quiet
@@ -116,6 +119,22 @@ fun AgentDeliverySentNotice(
                 fontSize = KeryxType.caption,
                 fontWeight = FontWeight.Medium,
                 color = mark,
+            )
+        }
+        // The words themselves (2.18): an exchange between bots reads as conversation, so what
+        // was said to the teammate is on the page, not behind the tool card.
+        message?.let { said ->
+            Text(
+                "→ @$target: $said",
+                fontSize = KeryxType.caption,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 6,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .padding(start = 22.dp, end = 4.dp, bottom = 4.dp)
+                    .clip(RoundedCornerShape(KeryxRadius.chip))
+                    .background(mark.copy(alpha = 0.08f))
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
             )
         }
         if (!pending && reply.isNotBlank()) {

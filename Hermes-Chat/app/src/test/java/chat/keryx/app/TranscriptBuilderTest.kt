@@ -227,7 +227,29 @@ class TranscriptBuilderTest {
         assertEquals(SenderType.SYSTEM, msgs[0].sender)
         assertEquals("Sterling", msgs[0].agentDelivery?.sender)
         assertEquals("invoice sent", msgs[0].agentDelivery?.body)
-        assertEquals("", msgs[0].content)
+        // The words are the bubble's (2.18): blank content drew "relayed · Sterling" over nothing.
+        assertEquals("invoice sent", msgs[0].content)
+    }
+
+    @Test
+    fun `a teammate's reply to message_agent reads as a message from that bot`() {
+        val completion = "[IMPORTANT: Background process proc_1f1d completed normally (exit code 0).\n" +
+            "Command: /x/venv/bin/python /x/tools/bot_mode_dm.py --run-delivery query-file /tmp/dm.txt " +
+            "hermes -p milo chat --in '~' -c 'Bot Chat' --create-if-missing -Q\n" +
+            "Output:\nsession_id: 20260903_224452_11a96c\nSpire is healthy.]"
+        val msgs = TranscriptBuilder.build("s1", listOf(row(1, "user", completion, displayKind = "process_complete")))
+        assertEquals(SenderType.SYSTEM, msgs[0].sender)
+        assertEquals("milo", msgs[0].agentDelivery?.handle)
+        assertEquals("Spire is healthy.", msgs[0].content)
+    }
+
+    @Test
+    fun `a failed delivery keeps the gateway's own notice`() {
+        val failed = "[IMPORTANT: Background process proc_1 exited (exit code 1).\n" +
+            "Command: python bot_mode_dm.py --run-delivery q hermes -p milo chat -c 'Bot Chat' -Q\n" +
+            "Output:\n[reason: runtime_offline] target offline]"
+        val msgs = TranscriptBuilder.build("s1", listOf(row(1, "user", failed, displayKind = "process_complete")))
+        assertEquals(null, msgs[0].agentDelivery)
     }
 
     @Test
