@@ -212,6 +212,22 @@ interface GatewayCapabilities {
      *  [title] — [adoptSession] that also remembers whose store to ask. */
     fun adoptProfileSession(sessionId: String, profile: String?, title: String)
 
+    // ---- Group chats (2.18): rooms of 2–6 bots hosted by this gateway (`groups.*`) ----------
+
+    suspend fun groupRooms(): Result<List<chat.keryx.core.model.GroupRoom>>
+    suspend fun createGroup(name: String, bots: List<chat.keryx.core.model.BotProfile>): Result<chat.keryx.core.model.GroupRoom>
+    /** The room and its driver: who is working, what waits on the user. */
+    suspend fun groupState(roomId: String): Result<Pair<chat.keryx.core.model.GroupRoom, chat.keryx.core.model.GroupDriver>>
+    /** Room log events after [sinceSeq], oldest first. */
+    suspend fun groupLog(roomId: String, sinceSeq: Long, limit: Int = 200): Result<chat.keryx.core.model.GroupLogPage>
+    /** Post the user's message into [threadId]; [clientEventId] makes a retry idempotent. */
+    suspend fun sendToGroup(roomId: String, text: String, threadId: String, clientEventId: String): Result<Unit>
+    suspend fun renameGroup(roomId: String, name: String): Result<Unit>
+    suspend fun stopGroup(roomId: String): Result<Unit>
+    suspend fun disbandGroup(roomId: String): Result<Unit>
+    suspend fun approveInGroup(roomId: String, approval: chat.keryx.core.model.GroupApproval, choice: String): Result<Unit>
+    suspend fun retryInGroup(roomId: String, taskId: String): Result<Unit>
+
     /** `profiles.configure`: the `hermes-bots` ui_meta block (whole, see [chat.keryx.core.model.BotProfile.meta]) and/or the description. */
     suspend fun configureBot(name: String, meta: kotlinx.serialization.json.JsonObject?, description: String?): Result<Unit>
 

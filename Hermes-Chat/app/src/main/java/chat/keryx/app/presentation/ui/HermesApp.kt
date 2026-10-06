@@ -673,6 +673,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                     // floor is the same move a run makes.
                     onOpened = { nav.back() },
                     onOpenRuns = { nav.open(KeryxDest.Runs) },
+                    onOpenGroup = { room -> nav.open(KeryxDest.Group(room.roomId, room.name)) },
                     onClose = nav::back,
                 )
                 KeryxDest.Missions -> chat.keryx.app.presentation.ui.components.MissionsScreen(
@@ -698,6 +699,12 @@ fun HermesApp(viewModel: ChatViewModel) {
                         standalone = false,
                     )
                 }
+                // A group chat (2.18): a hosted room of bots, followed while it is open.
+                is KeryxDest.Group -> chat.keryx.app.presentation.ui.components.GroupChatSpace(
+                    dest = dest,
+                    viewModel = viewModel,
+                    onClose = nav::back,
+                )
                 // A page the agent wrote (2.13): the one place that carries its own arguments.
                 is KeryxDest.Artifact -> chat.keryx.app.presentation.artifact.ArtifactSpace(
                     dest = dest,

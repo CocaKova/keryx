@@ -40,6 +40,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -2886,6 +2887,101 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     override fun adoptProfileSession(sessionId: String, profile: String?, title: String) {
         profile?.let { rememberProfile(sessionId, it) }
         adoptSession(sessionId, title)
+    }
+
+    // ---- Group chats (2.18) ---------------------------------------------------------------
+
+    private suspend fun groups(method: String, params: JsonObject, timeoutMs: Long = 30_000): JsonObject {
+        val rpc = rpc ?: error("gateway not connected")
+        return rpc.request(method, params, timeoutMs = timeoutMs)
+    }
+
+    override suspend fun groupRooms(): Result<List<chat.keryx.core.model.GroupRoom>> = runCatching {
+        chat.keryx.core.model.GroupChats.rooms(groups("groups.list", buildJsonObject { put("limit", JsonPrimitive(100)) }))
+    }
+
+    override suspend fun createGroup(
+        name: String,
+        bots: List<chat.keryx.core.model.BotProfile>,
+    ): Result<chat.keryx.core.model.GroupRoom> = runCatching {
+        val res = groups("groups.create", buildJsonObject {
+            put("room_id", JsonPrimitive(chat.keryx.core.model.GroupChats.newId("room")))
+            put("name", JsonPrimitive(name.trim()))
+            put("members", kotlinx.serialization.json.JsonArray(chat.keryx.core.model.GroupChats.membersFor(bots)))
+        })
+        (res["room"] as? JsonObject)?.let(chat.keryx.core.model.GroupChats::room) ?: error("create returned no room")
+    }
+
+    override suspend fun groupState(roomId: String) = runCatching {
+        val res = groups("groups.state", buildJsonObject { put("room_id", JsonPrimitive(roomId)) })
+        val room = (res["room"] as? JsonObject)?.let(chat.keryx.core.model.GroupChats::room) ?: error("no such room")
+        room to chat.keryx.core.model.GroupChats.driver(res)
+    }
+
+    override suspend fun groupLog(roomId: String, sinceSeq: Long, limit: Int) = runCatching {
+        chat.keryx.core.model.GroupChats.page(groups("groups.log", buildJsonObject {
+            put("room_id", JsonPrimitive(roomId))
+            put("since_seq", JsonPrimitive(sinceSeq))
+            put("limit", JsonPrimitive(limit))
+        }))
+    }
+
+    override suspend fun sendToGroup(roomId: String, text: String, threadId: String, clientEventId: String): Result<Unit> = runCatching {
+        groups("groups.send", buildJsonObject {
+            put("room_id", JsonPrimitive(roomId))
+            put("event_id", JsonPrimitive(clientEventId))
+            put("payload", buildJsonObject {
+                put("text", JsonPrimitive(text))
+                put("thread_id", JsonPrimitive(threadId))
+            })
+        })
+        Unit
+    }
+
+    override suspend fun renameGroup(roomId: String, name: String): Result<Unit> = runCatching {
+        groups("groups.rename", buildJsonObject {
+            put("room_id", JsonPrimitive(roomId))
+            put("event_id", JsonPrimitive(chat.keryx.core.model.GroupChats.newId("rename")))
+            put("name", JsonPrimitive(name.trim()))
+        })
+        Unit
+    }
+
+    override suspend fun stopGroup(roomId: String): Result<Unit> = runCatching {
+        groups("groups.stop", buildJsonObject {
+            put("room_id", JsonPrimitive(roomId))
+            put("cancel_id", JsonPrimitive(chat.keryx.core.model.GroupChats.newId("keryx-stop")))
+        })
+        Unit
+    }
+
+    override suspend fun disbandGroup(roomId: String): Result<Unit> = runCatching {
+        groups("groups.disband", buildJsonObject { put("room_id", JsonPrimitive(roomId)) }, timeoutMs = 60_000)
+        Unit
+    }
+
+    override suspend fun approveInGroup(
+        roomId: String,
+        approval: chat.keryx.core.model.GroupApproval,
+        choice: String,
+    ): Result<Unit> = runCatching {
+        groups("groups.approve", buildJsonObject {
+            put("room_id", JsonPrimitive(roomId))
+            put("member_id", JsonPrimitive(approval.memberId))
+            put("task_id", JsonPrimitive(approval.taskId))
+            put("execution_generation", JsonPrimitive(approval.executionGeneration))
+            put("choice", JsonPrimitive(choice))
+            put("request_id", JsonPrimitive(approval.requestId))
+        })
+        Unit
+    }
+
+    override suspend fun retryInGroup(roomId: String, taskId: String): Result<Unit> = runCatching {
+        groups("groups.retry", buildJsonObject {
+            put("room_id", JsonPrimitive(roomId))
+            put("task_id", JsonPrimitive(taskId))
+        })
+        Unit
     }
 
     override suspend fun configureBot(

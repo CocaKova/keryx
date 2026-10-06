@@ -85,9 +85,14 @@ fun BotsSpace(
     /** The floor has the bot's chat open — the place can step aside. */
     onOpened: () -> Unit,
     onOpenRuns: () -> Unit,
+    /** Open a group chat (2.18) — a place of its own on the stack, above this one. */
+    onOpenGroup: (chat.keryx.core.model.GroupRoom) -> Unit = {},
     onClose: () -> Unit,
 ) {
     val bots = viewModel.bots
+    val groupsPanel by viewModel.groups.rooms.collectAsState()
+    LaunchedEffect(Unit) { viewModel.groups.refresh() }
+    var creatingGroup by remember { mutableStateOf(false) }
     val panel by bots.roster.collectAsState()
     val seen by bots.seenAt.collectAsState()
     val busy by bots.busyNames.collectAsState()
@@ -185,6 +190,34 @@ fun BotsSpace(
                         )
                     }
                 }
+                // Group chats (2.18): rooms of 2–6 bots the gateway runs, above the roster.
+                val groupRows = groupsPanel.data.orEmpty()
+                if (groupRows.isNotEmpty() || all.size >= chat.keryx.core.model.GroupChats.MIN_MEMBERS) {
+                    item(key = "groups-head") {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                "Group chats",
+                                fontSize = KeryxType.caption,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(onClick = { creatingGroup = true }) { Text("New group chat") }
+                        }
+                    }
+                    items(groupRows, key = { "group:" + it.room.roomId }) { row ->
+                        GroupRoomRow(row = row, onOpen = { onOpenGroup(row.room) })
+                    }
+                    item(key = "bots-head") {
+                        Text(
+                            "Bots",
+                            fontSize = KeryxType.caption,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 6.dp),
+                        )
+                    }
+                }
                 items(ordered, key = { it.name }) { bot ->
                     BotRow(
                         bot = bot,
@@ -246,6 +279,14 @@ fun BotsSpace(
             onCreated = onOpened,
         )
     }
+    if (creatingGroup) {
+        NewGroupSheet(
+            bots = all.filter { !it.hidden },
+            viewModel = viewModel,
+            onCreated = { room -> creatingGroup = false; onOpenGroup(room) },
+            onDismiss = { creatingGroup = false },
+        )
+    }
     routinesFor?.let { bot ->
         BotRoutinesSheet(bot = bot, viewModel = viewModel, onOpenRuns = { routinesFor = null; onOpenRuns() }, onDismiss = { routinesFor = null })
     }
@@ -274,6 +315,114 @@ fun BotsSpace(
             },
             dismissButton = { TextButton(onClick = { freshFor = null }) { Text("Cancel") } },
         )
+    }
+}
+
+/** One group chat in the list: its members' sigils, its name, and the newest thing said. */
+@Composable
+private fun GroupRoomRow(row: chat.keryx.app.presentation.GroupsDelegate.RoomRow, onOpen: () -> Unit) {
+    KeryxCard(onClick = onOpen) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            row.room.members.take(chat.keryx.core.model.GroupChats.MAX_MEMBERS).forEach { m ->
+                HeraldSigil(botLightFor(m.profile, m.label, m.profile == "default"), fontSize = KeryxType.caption)
+            }
+            Spacer(Modifier.width(8.dp))
+            Text(
+                row.room.name,
+                fontSize = KeryxType.title,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            if (row.room.updatedAt > 0) {
+                Text(relativeWhen(row.room.updatedAt), fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        Text(
+            row.preview ?: row.room.members.joinToString(", ") { it.label },
+            fontSize = KeryxType.caption,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/** Start a group chat: a name and 2–6 bots. The gateway hosts it from then on. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NewGroupSheet(
+    bots: List<BotProfile>,
+    viewModel: ChatViewModel,
+    onCreated: (chat.keryx.core.model.GroupRoom) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by rememberSaveable { mutableStateOf("") }
+    var picked by remember { mutableStateOf(setOf<String>()) }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val count = picked.size
+    KeryxSheet(onDismiss = onDismiss, title = "New group chat") {
+        Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                singleLine = true,
+                placeholder = { Text("Room name") },
+                shape = RoundedCornerShape(KeryxRadius.field),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Pick ${chat.keryx.core.model.GroupChats.MIN_MEMBERS}–${chat.keryx.core.model.GroupChats.MAX_MEMBERS} bots · $count picked",
+                fontSize = KeryxType.caption,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            bots.forEach { bot ->
+                val on = bot.name in picked
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(KeryxRadius.chip))
+                        .clickable {
+                            picked = if (on) picked - bot.name
+                            else if (count < chat.keryx.core.model.GroupChats.MAX_MEMBERS) picked + bot.name else picked
+                        }
+                        .padding(vertical = 8.dp),
+                ) {
+                    androidx.compose.material3.Checkbox(checked = on, onCheckedChange = null)
+                    Spacer(Modifier.width(6.dp))
+                    HeraldSigil(botLightFor(bot.name, bot.label, bot.isDefault), fontSize = KeryxType.caption)
+                    Spacer(Modifier.width(4.dp))
+                    Text(bot.label, fontSize = KeryxType.body)
+                    if (bot.description.isNotBlank()) {
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            bot.description,
+                            fontSize = KeryxType.micro,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+            error?.let { Text("⚠ $it", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error) }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(
+                    enabled = !busy && name.isNotBlank() && chat.keryx.core.model.GroupChats.canCreate(count),
+                    onClick = {
+                        busy = true; error = null
+                        viewModel.groups.create(name, bots.filter { it.name in picked }) { room, err ->
+                            busy = false
+                            if (room != null) onCreated(room) else error = err
+                        }
+                    },
+                ) { Text(if (busy) "Creating…" else "Create") }
+            }
+        }
     }
 }
 

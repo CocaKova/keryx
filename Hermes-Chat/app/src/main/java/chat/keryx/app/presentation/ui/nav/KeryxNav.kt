@@ -111,6 +111,21 @@ sealed interface KeryxDest {
         }
     }
 
+    /** A group chat (2.18): a hosted room of bots, by room id; [name] titles it until it loads. */
+    data class Group(val roomId: String, val name: String) : KeryxDest {
+        override val route: String
+            get() = "$GROUP_ROUTE?room=${enc(roomId)}&name=${enc(name)}"
+
+        companion object {
+            internal fun parse(route: String): Group? {
+                if (!route.startsWith("$GROUP_ROUTE?")) return null
+                val q = route.substringAfter('?').split('&').associate { kv -> kv.substringBefore('=') to dec(kv.substringAfter('=', "")) }
+                val room = q["room"].orEmpty().ifBlank { return null }
+                return Group(room, q["name"].orEmpty().ifBlank { "Group chat" })
+            }
+        }
+    }
+
     companion object {
         private val all = listOf(Archive, Missions, Projects, Shipyard, Runs, Bots, Gateway, Settings, TapIn)
 
@@ -122,11 +137,12 @@ sealed interface KeryxDest {
         private val aliases = mapOf("hub" to Gateway, "workshop" to Gateway)
 
         fun fromRoute(route: String): KeryxDest? =
-            all.firstOrNull { it.route == route } ?: aliases[route] ?: Artifact.parse(route)
+            all.firstOrNull { it.route == route } ?: aliases[route] ?: Artifact.parse(route) ?: Group.parse(route)
     }
 }
 
 private const val ARTIFACT_ROUTE = "artifact"
+private const val GROUP_ROUTE = "group"
 private fun enc(v: String): String = java.net.URLEncoder.encode(v, "UTF-8")
 private fun dec(v: String): String = runCatching { java.net.URLDecoder.decode(v, "UTF-8") }.getOrDefault(v)
 
