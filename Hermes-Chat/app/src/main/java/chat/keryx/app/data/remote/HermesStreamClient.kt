@@ -348,6 +348,33 @@ class HermesStreamClient(
         }
     }
 
+    /** Starter prompts for an empty chat (2.17.3), written by the gateway's title model from what
+     *  this profile's user talks about. [pending] = nothing cached yet; ask again shortly. */
+    data class StarterSuggestions(val prompts: List<String>, val pending: Boolean)
+
+    /** `GET /keryx/suggestions` — 404 on a gateway whose keryx-stream predates it (callers keep
+     *  their generic starters). [profile] null = the gateway's own profile. */
+    suspend fun suggestions(profile: String?): Result<StarterSuggestions> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            val q = profile?.takeIf { it.isNotBlank() }?.let { "?profile=" + java.net.URLEncoder.encode(it, "UTF-8") }.orEmpty()
+            val request = Request.Builder()
+                .url(baseUrl.trimEnd('/') + "/keryx/suggestions" + q)
+                .apply { if (apiKey.isNotBlank()) header("Authorization", "Bearer $apiKey") }
+                .build()
+            val probe = client.newBuilder().readTimeout(8, TimeUnit.SECONDS).build()
+            probe.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) error("HTTP ${resp.code}")
+                val obj = json.parseToJsonElement(resp.body?.string().orEmpty()).jsonObject
+                StarterSuggestions(
+                    prompts = (obj["prompts"] as? kotlinx.serialization.json.JsonArray)
+                        ?.mapNotNull { (it as? JsonPrimitive)?.content?.trim()?.takeIf(String::isNotEmpty) }
+                        .orEmpty(),
+                    pending = (obj["pending"] as? JsonPrimitive)?.content == "true",
+                )
+            }
+        }
+    }
+
     /** The active petdex mascot (from `GET /keryx/pet`) — spritesheet plus render geometry.
      *  Pets are configured server-side (`display.pet.*`), so the phone shows exactly the pet the
      *  desktop and TUI show. */

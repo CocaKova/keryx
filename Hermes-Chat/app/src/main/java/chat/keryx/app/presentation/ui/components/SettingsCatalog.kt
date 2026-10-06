@@ -26,6 +26,7 @@ enum class SettingsRow(
     AGENT_TELEMETRY("Show telemetry", listOf("check-ins", "footer", "cron"), "Agent", "Agent"),
     AGENT_ALERTS("Mission alerts", listOf("notify", "kanban", "board"), "Agent", "Agent"),
     AGENT_RESUME("Reopen last chat on launch", listOf("resume", "start", "fresh"), "Agent", "Agent"),
+    AGENT_STARTERS("Suggestions in empty chats", listOf("starter", "prompts", "suggestions", "reminders", "fresh page", "ai"), "Agent", "Agent"),
     AGENT_STICKY_MODEL("New sessions use the last model picked", listOf("default model", "sticky", "brain", "new session"), "Agent", null),
     COMPANION_PICK("Companion", listOf("pet", "mascot", "petdex"), "Companion", "Companion"),
     CONNECTION_GATEWAY("Gateways", listOf("url", "host", "dashboard", "connections", "add gateway", "remote", "instances", "switch", "fleet", "primary"), "Gateway", null),

@@ -627,13 +627,6 @@ fun ChatScreen(
     Box(modifier = modifier.fillMaxSize().imePadding()) {
         if (currentRoom == null) {
             EmptyChat(viewModel = viewModel, modifier = Modifier.align(Alignment.Center))
-        } else if (messages.isEmpty() && !awaitingReply && pendingSend == null && liveStream == null) {
-            // A fresh session (2.16): a few ways in instead of a blank page. A tap fills the
-            // composer — your words to change — rather than sending on your behalf.
-            StarterPrompts(
-                onPick = { setComposer(it) },
-                modifier = Modifier.align(Alignment.Center),
-            )
         }
         // The instrument rail (flight plan + working banner) is composed at the END of this Box —
         // see "TOP INSTRUMENTS" below. Both are pinned to the top edge and both float over the
@@ -927,6 +920,48 @@ fun ChatScreen(
                 }
             }
         }
+        }
+
+        // A fresh session (2.16): a few ways in instead of a blank page. A tap fills the composer —
+        // your words to change — rather than sending on your behalf. Drawn AFTER the transcript
+        // (2.17.3): the empty LazyColumn fills the screen and, composed on top, took every tap.
+        // 2.17.3: reminders lead (things already waiting on you, no model call), then prompts the
+        // gateway's title model wrote from what you talk about — each part switchable in Settings.
+        val startersOn by viewModel.starterSuggestions.collectAsState()
+        if (startersOn && currentRoom != null && messages.isEmpty() && !awaitingReply && pendingSend == null && liveStream == null) {
+            val aiOn by viewModel.starterAiPrompts.collectAsState()
+            val remindersOn by viewModel.starterReminders.collectAsState()
+            val aiStarters by viewModel.aiStarters.collectAsState()
+            val roomId = currentRoom?.id
+            LaunchedEffect(roomId, aiOn) { if (aiOn) viewModel.loadStarters(roomId) }
+            val prompts = aiStarters[viewModel.starterKey(roomId)]?.takeIf { aiOn && it.isNotEmpty() } ?: STARTER_PROMPTS
+            val needsYou by viewModel.missions.needsYouCount.collectAsState()
+            val jobsPanel by viewModel.hub.jobs.collectAsState()
+            LaunchedEffect(remindersOn) { if (remindersOn && jobsPanel.data == null) viewModel.hub.refreshJobs() }
+            val reminders = if (!remindersOn) emptyList() else remember(needsYou, rooms, jobsPanel.data, roomId) {
+                chat.keryx.core.model.StarterReminders.pick(
+                    needsYou = needsYou,
+                    rooms = rooms,
+                    currentRoomId = roomId,
+                    routines = jobsPanel.data.orEmpty().map {
+                        chat.keryx.core.model.StarterReminders.Routine(it.name, it.nextRunAt, it.enabled)
+                    },
+                    nowMs = System.currentTimeMillis(),
+                )
+            }
+            StarterPrompts(
+                prompts = prompts,
+                reminders = reminders,
+                onPick = { setComposer(it) },
+                onReminder = { action ->
+                    when (action) {
+                        chat.keryx.core.model.StarterReminders.Action.Missions -> viewModel.requestSpace("missions")
+                        chat.keryx.core.model.StarterReminders.Action.Runs -> viewModel.requestSpace("runs")
+                        is chat.keryx.core.model.StarterReminders.Action.Room -> viewModel.openSessionById(action.id, action.title)
+                    }
+                },
+                modifier = Modifier.align(Alignment.Center),
+            )
         }
 
         // Jump-to-now: while scrolled up into history, a frosted chip floats above the composer;
@@ -1420,16 +1455,23 @@ private fun EmptyChat(viewModel: ChatViewModel, modifier: Modifier = Modifier) {
     }
 }
 
-/** Ways into an empty session (2.16). */
+/** Ways into an empty session (2.16) — the generic set, for any user on any gateway: shown when
+ *  AI starters are off, not yet written, or the gateway has no `/keryx/suggestions`. */
 internal val STARTER_PROMPTS = listOf(
     "What can you do in this session?",
     "What's on my plate today?",
-    "How is the brain doing right now?",
+    "What did we work on recently?",
     "Help me plan something small, step by step.",
 )
 
 @Composable
-private fun StarterPrompts(onPick: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun StarterPrompts(
+    prompts: List<String>,
+    reminders: List<chat.keryx.core.model.StarterReminders.Reminder>,
+    onPick: (String) -> Unit,
+    onReminder: (chat.keryx.core.model.StarterReminders.Action) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier.padding(horizontal = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -1447,7 +1489,25 @@ private fun StarterPrompts(onPick: (String) -> Unit, modifier: Modifier = Modifi
             fontSize = KeryxType.caption,
         )
         Spacer(Modifier.height(14.dp))
-        STARTER_PROMPTS.forEach { prompt ->
+        // Reminders read as status, not as words to send: an outlined chip that GOES somewhere.
+        reminders.forEach { r ->
+            Text(
+                "● " + r.label,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = KeryxType.caption,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .padding(vertical = 3.dp)
+                    .clip(RoundedCornerShape(KeryxRadius.chip))
+                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f), RoundedCornerShape(KeryxRadius.chip))
+                    .clickable { onReminder(r.action) }
+                    .padding(horizontal = 14.dp, vertical = 7.dp),
+            )
+        }
+        if (reminders.isNotEmpty()) Spacer(Modifier.height(8.dp))
+        prompts.forEach { prompt ->
             Text(
                 prompt,
                 color = chat.keryx.app.presentation.ui.components.keryxAccentInk(),

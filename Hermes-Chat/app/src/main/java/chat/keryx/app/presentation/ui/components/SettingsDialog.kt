@@ -426,6 +426,30 @@ fun SettingsScreen(
                                 checked = resume,
                                 onCheckedChange = { viewModel.setResumeLastRoom(it) },
                             )
+                            val starters by viewModel.starterSuggestions.collectAsState()
+                            SettingsSwitchRow(
+                                anchor = SettingsRow.AGENT_STARTERS,
+                                title = "Suggestions in empty chats",
+                                subtitle = "A new chat offers reminders and things to ask instead of a blank page",
+                                checked = starters,
+                                onCheckedChange = { viewModel.setStarterSuggestions(it) },
+                            )
+                            if (starters) {
+                                val aiStarters by viewModel.starterAiPrompts.collectAsState()
+                                SettingsSwitchRow(
+                                    title = "Written from your chats",
+                                    subtitle = "The gateway's title model drafts them from your recent topics and profile notes, refreshed every few hours. Off: a generic set",
+                                    checked = aiStarters,
+                                    onCheckedChange = { viewModel.setStarterAiPrompts(it) },
+                                )
+                                val reminders by viewModel.starterReminders.collectAsState()
+                                SettingsSwitchRow(
+                                    title = "Reminders",
+                                    subtitle = "Missions waiting on you, unread replies, and a routine due soon",
+                                    checked = reminders,
+                                    onCheckedChange = { viewModel.setStarterReminders(it) },
+                                )
+                            }
                             if (direct) {
                                 val sticky by viewModel.stickyModel.collectAsState()
                                 SettingsSwitchRow(

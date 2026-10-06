@@ -41,6 +41,12 @@ interface SettingsRepository {
     /** New sessions start on the last model you picked (2.10) — the Desktop's sticky picker.
      *  Off = the gateway's profile default, every time. */
     var stickyModel: Boolean
+
+    /** Empty chats offer ways in (2.17.3): the whole starter page, its AI-written prompts, and
+     *  its reminder chips — each switchable on its own. */
+    var starterSuggestions: Boolean
+    var starterAiPrompts: Boolean
+    var starterReminders: Boolean
     /** Slash commands the user has used most recently (most-recent first), for the command palette. */
     var recentCommands: List<String>
     /** Whether we've already asked the user to exempt the app from battery optimization (ask once). */

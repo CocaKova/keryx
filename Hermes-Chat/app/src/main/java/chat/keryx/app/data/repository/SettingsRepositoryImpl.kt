@@ -221,6 +221,18 @@ class SettingsRepositoryImpl(
         get() = prefs.getBoolean("sticky_model", true)
         set(value) = prefs.edit().putBoolean("sticky_model", value).apply()
 
+    override var starterSuggestions: Boolean
+        get() = prefs.getBoolean("starter_suggestions", true)
+        set(value) = prefs.edit().putBoolean("starter_suggestions", value).apply()
+
+    override var starterAiPrompts: Boolean
+        get() = prefs.getBoolean("starter_ai_prompts", true)
+        set(value) = prefs.edit().putBoolean("starter_ai_prompts", value).apply()
+
+    override var starterReminders: Boolean
+        get() = prefs.getBoolean("starter_reminders", true)
+        set(value) = prefs.edit().putBoolean("starter_reminders", value).apply()
+
     override var collapsedRosterGroups: Set<String>
         get() = prefs.getStringSet("collapsed_roster_groups", emptySet())?.toSet() ?: emptySet()
         set(value) = prefs.edit().putStringSet("collapsed_roster_groups", value).apply()
