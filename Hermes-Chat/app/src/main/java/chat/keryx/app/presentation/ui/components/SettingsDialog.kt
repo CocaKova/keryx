@@ -438,7 +438,7 @@ fun SettingsScreen(
                                 val aiStarters by viewModel.starterAiPrompts.collectAsState()
                                 SettingsSwitchRow(
                                     title = "Written from your chats",
-                                    subtitle = "The gateway's title model drafts them from your recent topics and profile notes, refreshed every few hours. Off: a generic set",
+                                    subtitle = "The gateway's title model drafts them from your recent topics and profile notes — one small model call per agent every few hours, billed if that model is a paid cloud one. Off: a generic set, no model calls",
                                     checked = aiStarters,
                                     onCheckedChange = { viewModel.setStarterAiPrompts(it) },
                                 )

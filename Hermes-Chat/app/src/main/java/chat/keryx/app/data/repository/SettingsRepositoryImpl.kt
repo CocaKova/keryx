@@ -225,8 +225,9 @@ class SettingsRepositoryImpl(
         get() = prefs.getBoolean("starter_suggestions", true)
         set(value) = prefs.edit().putBoolean("starter_suggestions", value).apply()
 
+    // Off until asked for: on a paid cloud model each refresh is a (small) billed call.
     override var starterAiPrompts: Boolean
-        get() = prefs.getBoolean("starter_ai_prompts", true)
+        get() = prefs.getBoolean("starter_ai_prompts", false)
         set(value) = prefs.edit().putBoolean("starter_ai_prompts", value).apply()
 
     override var starterReminders: Boolean

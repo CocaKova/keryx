@@ -43,7 +43,8 @@ interface SettingsRepository {
     var stickyModel: Boolean
 
     /** Empty chats offer ways in (2.17.3): the whole starter page, its AI-written prompts, and
-     *  its reminder chips — each switchable on its own. */
+     *  its reminder chips — each switchable on its own. The AI prompts default OFF: they cost a
+     *  model call, and on a paid cloud model that is the user's money to spend, not ours. */
     var starterSuggestions: Boolean
     var starterAiPrompts: Boolean
     var starterReminders: Boolean
