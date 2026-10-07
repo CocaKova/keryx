@@ -44,12 +44,14 @@ class GroupsDelegate(
         val lines: List<GroupLine> = emptyList(),
         val working: Set<String> = emptySet(),
         val driver: GroupDriver = GroupDriver(),
+        /** The room owes a reply (see [GroupChats.discussionOpen]); drives the thinking row. */
+        val thinking: Boolean = false,
         val loading: Boolean = true,
         val error: String? = null,
     ) {
         /** Member names with a turn in flight, for the "… is thinking" line. */
         val workingNames: List<String> get() = working.map { id -> room?.member(id)?.label ?: id }
-        val busy: Boolean get() = working.isNotEmpty() || driver.working
+        val busy: Boolean get() = working.isNotEmpty() || driver.working || thinking
     }
 
     private val _view = MutableStateFlow<RoomView?>(null)
@@ -118,6 +120,11 @@ class GroupsDelegate(
                     more = page.hasMore && page.events.isNotEmpty()
                 }
                 val working = GroupChats.working(events)
+                // A discussion the gateway never closed (a crashed turn) stops spinning after 3 min.
+                val quietFor = System.currentTimeMillis() - (events.lastOrNull()?.createdAt ?: 0L)
+                val thinking = working.isNotEmpty() || driver.working ||
+                    (GroupChats.discussionOpen(events) && quietFor < 180_000) ||
+                    System.currentTimeMillis() - lastSendAt < 3_000
                 _view.value = RoomView(
                     roomId = roomId,
                     room = room,
@@ -125,9 +132,10 @@ class GroupsDelegate(
                     lines = GroupChats.lines(events, room),
                     working = working,
                     driver = driver,
+                    thinking = thinking,
                     loading = false,
                 )
-                val hot = working.isNotEmpty() || driver.working || System.currentTimeMillis() - lastSendAt < 20_000
+                val hot = thinking || System.currentTimeMillis() - lastSendAt < 20_000
                 kotlinx.coroutines.withTimeoutOrNull(if (hot) 1_500L else 5_000L) { wake.receive() }
             }
         }

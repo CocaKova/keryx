@@ -60,6 +60,34 @@ class GroupChatsTest {
         assertEquals(setOf("milo"), GroupChats.working(settled))
     }
 
+    // The real 10-06 juno+milo room, trimmed: the gateway never logs turn.started, so a room is
+    // "thinking" from the user's message until the room.activity that names it.
+    private fun real(seq: Int, id: String, kind: String, payload: String) = GroupChats.event(obj(
+        """{"room_id":"room-pmtxstukmrtlaf5cqdob","seq":$seq,"event_id":"$id","kind":"$kind",
+            "actor":{"kind":"gateway","id":"install:aa49"},"payload":$payload,"created_at":1791338029.17517}"""
+    ))!!
+    private val ask = "user:89a1d3deda1e1480355743ee972ccc9412d9aece304fae6f65bf84896ffcdbad"
+
+    @Test fun aRoomIsThinkingUntilTheGatewayClosesTheDiscussion() {
+        val asked = listOf(
+            real(1, ask, "message.user", """{"text":"@juno can you send a test ping to milo?","thread_id":"t"}"""),
+        )
+        val mid = asked + listOf(
+            real(2, "dmessage:ae5e", "message.member",
+                """{"discussion_event_id":"$ask","member_id":"juno","round_index":0,"task_id":"dtask:ae5e","text":"Hey @milo","thread_id":"t"}"""),
+            real(3, "dterminal:ae5e", "turn.settled",
+                """{"discussion_event_id":"$ask","member_id":"juno","passed":false,"round_index":0,"task_id":"dtask:ae5e","thread_id":"t"}"""),
+        )
+        val done = mid + real(10, "dactivity:$ask:max_rounds", "room.activity",
+            """{"discussion_event_id":"$ask","reason_code":"max_rounds","status":"bounded","thread_id":"t"}""")
+        assertTrue(GroupChats.working(mid).isEmpty()) // why the old indicator never showed
+        assertTrue(GroupChats.discussionOpen(asked))
+        assertTrue(GroupChats.discussionOpen(mid))
+        assertTrue(!GroupChats.discussionOpen(done))
+        assertTrue(!GroupChats.discussionOpen(mid + real(11, "stop", "room.stop_requested", "{}")))
+        assertTrue(!GroupChats.discussionOpen(emptyList()))
+    }
+
     @Test fun approvalsAndRetriesComeFromTheDriverStatus() {
         val d = GroupChats.driver(obj("""
             {"room":{},"driver_status":{"running":true,"working":true,"blocked":false,"counts":{},

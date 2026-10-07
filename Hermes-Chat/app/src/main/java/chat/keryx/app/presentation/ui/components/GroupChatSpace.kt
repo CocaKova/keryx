@@ -70,6 +70,7 @@ fun GroupChatSpace(dest: KeryxDest.Group, viewModel: ChatViewModel, onClose: () 
         onDispose { groups.close() }
     }
     val view by groups.view.collectAsState()
+    val animationStyle by viewModel.animationStyle.collectAsState()
     val v = view?.takeIf { it.roomId == dest.roomId }
     val room = v?.room
     var menu by remember { mutableStateOf(false) }
@@ -123,7 +124,7 @@ fun GroupChatSpace(dest: KeryxDest.Group, viewModel: ChatViewModel, onClose: () 
             val threadHeads = remember(lines) {
                 lines.filterIsInstance<GroupLine.Mine>().groupBy { it.threadId }.mapValues { it.value.first() }
             }
-            LaunchedEffect(lines.size, v?.workingNames) {
+            LaunchedEffect(lines.size, v?.busy) {
                 if (lines.isNotEmpty()) listState.animateScrollToItem(lines.size)
             }
             LazyColumn(
@@ -166,14 +167,23 @@ fun GroupChatSpace(dest: KeryxDest.Group, viewModel: ChatViewModel, onClose: () 
                         onReply = { tid, snippet -> replyThread = tid; replySnippet = snippet },
                     )
                 }
-                v?.workingNames?.takeIf { it.isNotEmpty() }?.let { names ->
-                    item {
-                        Text(
-                            names.joinToString(", ") + if (names.size == 1) " is thinking…" else " are thinking…",
-                            fontSize = KeryxType.caption,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 8.dp),
-                        )
+                if (v?.busy == true) {
+                    item(key = "thinking") {
+                        // Names only when the log says who; the gateway logs a turn once it ends.
+                        val names = v.workingNames
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
+                            HermesThinkingAnimation(style = animationStyle)
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                when (names.size) {
+                                    0 -> "The room is thinking…"
+                                    1 -> names.single() + " is thinking…"
+                                    else -> names.joinToString(", ") + " are thinking…"
+                                },
+                                fontSize = KeryxType.caption,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }

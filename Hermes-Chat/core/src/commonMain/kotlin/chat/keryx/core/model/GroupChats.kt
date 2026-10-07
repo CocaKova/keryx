@@ -221,6 +221,19 @@ object GroupChats {
         return open.values.toSet()
     }
 
+    /**
+     * Whether the room still owes a reply: the newest user message has no `room.activity`
+     * (settled/bounded) naming it and no stop after it. The gateway logs a turn only once it ends
+     * (message + `turn.settled`, never `turn.started`), so [working] alone stays empty mid-turn.
+     */
+    fun discussionOpen(events: List<GroupEvent>): Boolean {
+        val asked = events.lastOrNull { it.kind == "message.user" } ?: return false
+        return events.none { e ->
+            e.seq > asked.seq && (e.kind == "room.stop_requested" ||
+                (e.kind == "room.activity" && e.str("discussion_event_id") == asked.eventId))
+        }
+    }
+
     /** The row's second line in a room list: the newest thing said, with who said it. */
     fun preview(lines: List<GroupLine>): String? = lines.lastOrNull { it !is GroupLine.Note }?.let {
         when (it) {
