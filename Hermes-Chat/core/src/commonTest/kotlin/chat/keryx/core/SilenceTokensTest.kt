@@ -4,6 +4,7 @@ import chat.keryx.core.model.Message
 import chat.keryx.core.model.SenderType
 import chat.keryx.core.model.SilenceTokens
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -35,5 +36,28 @@ class SilenceTokensTest {
         assertTrue(SilenceTokens.isSilentReply(msg(SenderType.HERMES, "[SILENT]")))
         assertFalse(SilenceTokens.isSilentReply(msg(SenderType.ME, "[SILENT]")))
         assertFalse(SilenceTokens.isSilentReply(msg(SenderType.HERMES, "NO_REPLY", streaming = true)))
+    }
+
+    private fun m(id: String, sender: SenderType, content: String) =
+        Message(id = id, roomId = "r", content = content, sender = sender, timestamp = 0L)
+
+    @Test fun aMachineTurnMayVanishButYourTurnKeepsItsAnswer() {
+        val chrono = listOf(
+            m("1", SenderType.ME, "Anything to add?"),
+            m("2", SenderType.HERMES, "No reply."),
+            m("3", SenderType.SYSTEM, "Message from Milo: status?"),
+            m("4", SenderType.HERMES, "[SILENT]"),
+            m("5", SenderType.ME, "And now?"),
+            m("6", SenderType.HERMES, "Checking."),
+            m("7", SenderType.HERMES, "SILENT"),
+        )
+        assertEquals(setOf("4"), SilenceTokens.vanishingIds(chrono))
+    }
+
+    @Test fun anUnknownTriggerKeepsTheWords() {
+        val reply = m("9", SenderType.HERMES, "[SILENT]")
+        assertTrue(SilenceTokens.vanishingIds(listOf(reply)).isEmpty())
+        assertEquals(setOf("9"), SilenceTokens.vanishingIds(listOf(reply), before = m("8", SenderType.SYSTEM, "cron")))
+        assertFalse(SilenceTokens.mayVanish(reply, trigger = m("8", SenderType.ME, "hi")))
     }
 }

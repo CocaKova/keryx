@@ -122,8 +122,22 @@ object AgentDeliveryCommand {
         val target = DELIVERY_TARGET.find(command)?.groupValues?.get(2)?.lowercase() ?: return null
         val outputAt = text.indexOf("\nOutput:\n").takeIf { it >= 0 } ?: return null
         val output = text.substring(outputAt + "\nOutput:\n".length).removeSuffix("]").trim()
-        val reply = replyText(output).ifBlank { return null }
+        val reply = (liveOwnerReply(output) ?: replyText(output)).ifBlank { return null }
         return AgentDelivery(sender = BotRoster.pretty(target), handle = target, body = reply)
+    }
+
+    /**
+     * When the recipient's Bot Chat is open somewhere, the delivery hands the message to that live
+     * chat and prints one JSON line instead of the CLI's text: `{"reply": …, "status": "settled",
+     * "delivery_id": …}`, exit 0 also for `queued` and `claimed` (`bot_mode_dm.py`
+     * `_wait_live_dm`). Only `settled` with a reply is an answer; anything else has not been
+     * answered yet, so it returns "" and the gateway's own notice stays. Null: not that layout.
+     */
+    private fun liveOwnerReply(output: String): String? {
+        if (!output.startsWith("{")) return null
+        val status = jsonStringField(output, "status") ?: return null
+        if (jsonStringField(output, "delivery_id") == null) return null
+        return if (status == "settled") jsonStringField(output, "reply")?.trim().orEmpty() else ""
     }
 
     private const val COMPLETION_HEAD = "[IMPORTANT: Background process"

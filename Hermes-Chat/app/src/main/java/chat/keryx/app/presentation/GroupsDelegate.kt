@@ -12,6 +12,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -25,6 +26,8 @@ import kotlinx.coroutines.launch
 class GroupsDelegate(
     private val deps: GatewayDeps,
     private val transport: ChatTransport,
+    /** False while Keryx is in the background: an open room stops polling until it comes back. */
+    private val isForeground: () -> Boolean = { true },
 ) {
     private val scope get() = deps.scope
     private val gateway get() = transport.gateway
@@ -58,7 +61,10 @@ class GroupsDelegate(
     val view: StateFlow<RoomView?> = _view.asStateFlow()
 
     private var follow: Job? = null
-    private var lastSendAt = 0L
+    /** The room the user last spoke in, and when: only that room reads as thinking right after. */
+    private var lastSend: Pair<String, Long>? = null
+    private fun sinceSend(roomId: String): Long =
+        lastSend?.takeIf { it.first == roomId }?.let { System.currentTimeMillis() - it.second } ?: Long.MAX_VALUE
     /** Wakes the follow loop early — after a send, a stop, an approval — instead of on its tick. */
     private val wake = kotlinx.coroutines.channels.Channel<Unit>(kotlinx.coroutines.channels.Channel.CONFLATED)
     private fun poke() { wake.trySend(Unit) }
@@ -101,7 +107,14 @@ class GroupsDelegate(
             var cursor = 0L
             var events = emptyList<GroupEvent>()
             while (isActive) {
+                // The room keeps going on the gateway; nobody is looking, so nothing is read.
+                if (!isForeground()) {
+                    kotlinx.coroutines.withTimeoutOrNull(2_000) { wake.receive() }
+                    continue
+                }
                 val state = gw.groupState(roomId)
+                // The calls fold a cancellation into a failure; a closed room must not write back.
+                ensureActive()
                 val snapshot = state.getOrNull()
                 if (snapshot == null) {
                     _view.value = _view.value?.copy(loading = false, error = state.exceptionOrNull()?.message?.take(160))
@@ -119,12 +132,13 @@ class GroupsDelegate(
                     }
                     more = page.hasMore && page.events.isNotEmpty()
                 }
+                ensureActive()
                 val working = GroupChats.working(events)
                 // A discussion the gateway never closed (a crashed turn) stops spinning after 3 min.
                 val quietFor = System.currentTimeMillis() - (events.lastOrNull()?.createdAt ?: 0L)
                 val thinking = working.isNotEmpty() || driver.working ||
                     (GroupChats.discussionOpen(events) && quietFor < 180_000) ||
-                    System.currentTimeMillis() - lastSendAt < 3_000
+                    sinceSend(roomId) < 3_000
                 _view.value = RoomView(
                     roomId = roomId,
                     room = room,
@@ -135,7 +149,7 @@ class GroupsDelegate(
                     thinking = thinking,
                     loading = false,
                 )
-                val hot = thinking || System.currentTimeMillis() - lastSendAt < 20_000
+                val hot = thinking || sinceSend(roomId) < 20_000
                 kotlinx.coroutines.withTimeoutOrNull(if (hot) 1_500L else 5_000L) { wake.receive() }
             }
         }
@@ -153,7 +167,7 @@ class GroupsDelegate(
         val gw = gateway ?: return
         val roomId = _view.value?.roomId ?: return
         val body = text.trim().ifEmpty { return }
-        lastSendAt = System.currentTimeMillis()
+        lastSend = roomId to System.currentTimeMillis()
         scope.launch {
             gw.sendToGroup(roomId, body, threadId ?: GroupChats.newId("thread"), GroupChats.newId("keryx"))
                 .onSuccess { poke() } // read it back now rather than on the next tick

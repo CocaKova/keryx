@@ -162,4 +162,13 @@ class RunNoticeTest {
         assertEquals(Verdict.SILENT_EMPTY, AlertPolicy.decide(msg("  "), busy = false, lastAlertedKey = null))
         assertTrue(AlertPolicy.keyOf(msg("a")) != AlertPolicy.keyOf(msg("b")))
     }
+
+    @Test fun aBareMarkerAlertsOnlyWhenYouStartedTheTurn() {
+        val marker = msg("[SILENT]")
+        assertEquals(Verdict.SILENT_EMPTY, AlertPolicy.decide(marker, busy = false, lastAlertedKey = null))
+        assertEquals(
+            Verdict.ALERT,
+            AlertPolicy.decide(marker, busy = false, lastAlertedKey = null, trigger = msg("ok?", sender = SenderType.ME)),
+        )
+    }
 }

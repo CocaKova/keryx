@@ -168,12 +168,14 @@ object AlertPolicy {
 
     enum class Verdict { ALERT, SILENT_BUSY, SILENT_SEEN, SILENT_MINE, SILENT_EMPTY }
 
-    fun decide(last: Message, busy: Boolean, lastAlertedKey: String?): Verdict = when {
+    /** [trigger] is the message that started [last]'s turn, when known (see [SilenceTokens.mayVanish]). */
+    fun decide(last: Message, busy: Boolean, lastAlertedKey: String?, trigger: Message? = null): Verdict = when {
         last.sender == SenderType.ME -> Verdict.SILENT_MINE
         busy || last.isStreaming -> Verdict.SILENT_BUSY
         last.content.isBlank() && last.mediaKind == null && last.failure == null -> Verdict.SILENT_EMPTY
-        // A bot that chose silence said nothing worth a notification either.
-        SilenceTokens.isSilentReply(last) -> Verdict.SILENT_EMPTY
+        // A bot that chose silence said nothing worth a notification either. With the trigger
+        // unknown (the roster pass) a bare marker stays quiet; a turn you started still alerts.
+        SilenceTokens.isSilentReply(last) && trigger?.sender != SenderType.ME -> Verdict.SILENT_EMPTY
         keyOf(last) == lastAlertedKey -> Verdict.SILENT_SEEN
         else -> Verdict.ALERT
     }

@@ -677,7 +677,7 @@ class ChatViewModel(
     /** Bot Mode (2.8): the roster of profiles and the door into each one's forever-chat. */
     val bots = BotsDelegate(deps, transport, hub) { id, title -> openSessionById(id, title) }
     /** Group chats (2.18): the gateway's hosted rooms of 2–6 bots. Direct door only. */
-    val groups = GroupsDelegate(deps, transport)
+    val groups = GroupsDelegate(deps, transport, isForeground = { isAppForeground?.invoke() != false })
     /** The Hub's Memory spoke (2.16) — dashboard routes, so the direct door's REST client. */
     val memory = MemoryDelegate(deps) { direct?.restClient }
     /** Export and share out (2.16): one session as a file, from the drawer's long-press menu. */

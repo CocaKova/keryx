@@ -5,7 +5,7 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
-## 2.18.0 · versionCode 127
+## 2.18.0 · versionCode 128
 
 Group chats, and Bot Chats that read like conversations. Ships together with 2.17.3, which was
 never released on its own.
@@ -23,13 +23,14 @@ never released on its own.
   (Allow once / Deny), and a turn that ended unclear can be retried.
 - Rename, and Disband (asks first).
 - The gateway does not push room events, so an open room checks for news every 1.5 s while
-  anyone is working and every 5 s when quiet, and not at all once you leave it. No notifications
-  for rooms yet.
+  anyone is working and every 5 s when quiet, and not at all once you leave it or Keryx goes to
+  the background. No notifications for rooms yet.
 
 **Bot Chats**
 - When one bot messages another, the chat shows "Messaged @milo" and the words sent, on the page
   instead of folded into the tool run. The reply comes back as a message from that bot, not as a
-  background-process notice.
+  background-process notice. A message still waiting for an answer keeps the gateway's own notice
+  instead of posing as a reply.
 - Fix: a message relayed from another bot drew an empty bubble on the direct door.
 - Fix: a bot's reply came through empty because the delivery printed its session id after the
   answer, not before.
@@ -50,7 +51,8 @@ never released on its own.
 - A fresh Bot Chat retires the old one as "Bot Chat · retired <when>". Long-press a bot for
   Sessions to find its past Bot Chats, side sessions and runs.
 - A reply that is only a silence marker ([SILENT], NO_REPLY, ...) shows nothing and raises no
-  notification.
+  notification when another bot or a background job started the turn. A turn you started always
+  shows its answer.
 
 **Empty-chat starters**
 - Fix: the starter prompts in an empty chat could not be tapped.

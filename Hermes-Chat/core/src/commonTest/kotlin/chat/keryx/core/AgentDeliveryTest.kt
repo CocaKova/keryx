@@ -231,4 +231,16 @@ class AgentDeliveryCommandTest {
         // The shell convention's layout still cuts after the line.
         assertEquals("pong", AgentDeliveryCommand.replyText("warming up\nsession_id: abc\npong"))
     }
+
+    @Test fun aLiveChatDeliveryIsAReplyOnlyOnceSettled() {
+        // The recipient's Bot Chat was open: bot_mode_dm.py `_wait_live_dm` prints one JSON line.
+        fun done(json: String) = "[IMPORTANT: Background process p completed normally (exit code 0).\n" +
+            "Command: python bot_mode_dm.py --run-delivery q hermes -p milo chat -c 'Bot Chat' -Q\nOutput:\n$json]"
+        val settled = done("""{"reply": "Spire is healthy.", "status": "settled", "delivery_id": "d1"}""")
+        assertEquals("Spire is healthy.", AgentDeliveryCommand.completionReply(settled)?.body)
+        val queued = done("""{"status": "queued", "delivery_id": "d1", "detail": "Delivery remains pending or its outcome is unknown."}""")
+        assertEquals(null, AgentDeliveryCommand.completionReply(queued))
+        assertEquals(null, AgentDeliveryCommand.completionReply(queued.replace("queued", "claimed")))
+        assertEquals(null, AgentDeliveryCommand.completionReply(done("""{"status": "settled", "delivery_id": "d1"}""")))
+    }
 }

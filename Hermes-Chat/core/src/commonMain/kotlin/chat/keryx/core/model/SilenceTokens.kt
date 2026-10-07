@@ -2,8 +2,11 @@ package chat.keryx.core.model
 
 /**
  * Intentional silence (Bot Mode, 2.17.3): an agent with nothing to add may end a turn with one
- * of these markers. The turn stays in the transcript; a Bot Chat renders nothing for it and
- * nobody is notified. Ported from the gateway's `gateway/response_filters.py` so both sides
+ * of these markers. The turn stays in the transcript; Keryx renders nothing for it and nobody
+ * is notified, but only when a machine started the turn (another bot, a background process,
+ * a scheduled run). A turn you started always shows its answer, even a bare "No reply.": the
+ * gateway's `silence_allowed` gives a human turn a visible fallback, and the direct door has no
+ * such fallback, so Keryx keeps the words. Ported from `gateway/response_filters.py` so both sides
  * agree on exactly which replies are silence: the WHOLE reply must be the marker (case and
  * spacing normalized, stray edge punctuation like `*NO_REPLY*` forgiven); prose that merely
  * mentions one, a blank reply, or a failed turn is never silence.
@@ -24,10 +27,28 @@ object SilenceTokens {
         return canonical(stripped) in MARKERS || canonical(bare) in MARKERS
     }
 
-    /** A finished agent reply that is pure silence — the transcript and the notifier drop it. */
+    /** A finished agent reply that is only a marker. Whether it may vanish is [mayVanish]'s call. */
     fun isSilentReply(m: Message): Boolean =
         m.sender == SenderType.HERMES && m.mediaKind == null && m.failure == null &&
             !m.isStreaming && isSilent(m.content)
+
+    /**
+     * May [reply] render as nothing? [trigger] is the nearest earlier message not from the agent
+     * (the row that started its turn). Unknown (null) or yours: no, the words stay.
+     */
+    fun mayVanish(reply: Message, trigger: Message?): Boolean =
+        isSilentReply(reply) && trigger != null && trigger.sender != SenderType.ME
+
+    /** Ids in [chrono] (oldest first) that [mayVanish]; [before] is the message just before it. */
+    fun vanishingIds(chrono: List<Message>, before: Message? = null): Set<String> {
+        var trigger = before?.takeIf { it.sender != SenderType.HERMES }
+        val out = HashSet<String>()
+        for (m in chrono) {
+            if (m.sender != SenderType.HERMES) trigger = m
+            else if (mayVanish(m, trigger)) out += m.id
+        }
+        return out
+    }
 
     private fun canonical(s: String): String = s.trim().uppercase().split(Regex("\\s+")).joinToString(" ")
 

@@ -305,8 +305,11 @@ class KeryxApp : Application() {
                 // A turn stopped with nothing said (Stop from the shade, an interrupt) is not news.
                 if (ev.finalText.isBlank() && !ev.error) return@collect
                 val room = roomsById[ev.sessionId] ?: return@collect
-                val last = withTimeoutOrNull(4_000L) { direct.peekLatest(ev.sessionId, 2) }?.lastOrNull() ?: return@collect
-                alertFor(room, last, failed = ev.error, turnOver = true)
+                // A few rows back, so the row that started the turn is in reach past its tool steps.
+                val latest = withTimeoutOrNull(4_000L) { direct.peekLatest(ev.sessionId, 12) }
+                val last = latest?.lastOrNull() ?: return@collect
+                val trigger = latest.dropLast(1).lastOrNull { it.sender != SenderType.HERMES }
+                alertFor(room, last, failed = ev.error, turnOver = true, trigger = trigger)
             }
         }
     }
@@ -316,12 +319,16 @@ class KeryxApp : Application() {
      * [turnOver] is the End path's knowledge that the busy mark (cleared in the same breath, on
      * another thread's clock) no longer applies.
      */
-    private fun alertFor(room: chat.keryx.core.model.RoomProfile, last: Message, failed: Boolean = false, turnOver: Boolean = false) {
+    private fun alertFor(
+        room: chat.keryx.core.model.RoomProfile, last: Message, failed: Boolean = false,
+        turnOver: Boolean = false, trigger: Message? = null,
+    ) {
         val direct = transport as? DirectTransport
         val verdict = chat.keryx.core.model.AlertPolicy.decide(
             last = last,
             busy = !turnOver && room.id in busySessions,
             lastAlertedKey = lastAlerted[room.id],
+            trigger = trigger,
         )
         when (verdict) {
             // You spoke: whatever the agent says next is new, even word for word.
