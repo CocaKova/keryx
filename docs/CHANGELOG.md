@@ -5,6 +5,61 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.18.0 · versionCode 127
+
+Group chats, and Bot Chats that read like conversations. Ships together with 2.17.3, which was
+never released on its own.
+
+**Group chats**
+- Bots has a Group chats section: each room with its members' sigils and newest line, plus New
+  group chat (a name and 2 to 6 of your bots). These are the gateway's hosted rooms, so a room
+  keeps going with the app closed.
+- A room is one conversation. Your words sit on the right; each member's sit on the left in its
+  own light, as markdown. Long-press a message to reply in its thread.
+- "@juno ..." sends to just the members you name; chips fill in the handles, and @all reaches
+  everyone.
+- "... is thinking" shows from your message until the room settles, with the chat's thinking
+  animation. Stop cancels the room's work. A member's command approval is answered in the room
+  (Allow once / Deny), and a turn that ended unclear can be retried.
+- Rename, and Disband (asks first).
+- The gateway does not push room events, so an open room checks for news every 1.5 s while
+  anyone is working and every 5 s when quiet, and not at all once you leave it. No notifications
+  for rooms yet.
+
+**Bot Chats**
+- When one bot messages another, the chat shows "Messaged @milo" and the words sent, on the page
+  instead of folded into the tool run. The reply comes back as a message from that bot, not as a
+  background-process notice.
+- Fix: a message relayed from another bot drew an empty bubble on the direct door.
+- Fix: a bot's reply came through empty because the delivery printed its session id after the
+  answer, not before.
+
+## 2.17.3 · versionCode 125 (not released on its own; ships in 2.18.0)
+
+**Sessions as any agent**
+- The top-bar + starts the new session as the agent of the session you are in. Holding + opens
+  the sheet with an Agent picker. Long-press a bot in Bots for New side session.
+- Sessions an app started on another agent show up in the drawer wearing that agent's sigil.
+- Keryx remembers which agent holds each session, so a relaunch reopens it in the right place.
+- Fix: a bot's chat that compacted came back empty, because the new tip was read from the wrong
+  agent's store.
+
+**Bot Chats**
+- /new or /reset in a Bot Chat asks: Compact (same conversation, clean context) or Fresh Bot
+  Chat. It used to quietly compact.
+- A fresh Bot Chat retires the old one as "Bot Chat · retired <when>". Long-press a bot for
+  Sessions to find its past Bot Chats, side sessions and runs.
+- A reply that is only a silence marker ([SILENT], NO_REPLY, ...) shows nothing and raises no
+  notification.
+
+**Empty-chat starters**
+- Fix: the starter prompts in an empty chat could not be tapped.
+- Reminder chips come first: missions that need you, chats with unread replies, and a routine
+  due within 12 hours.
+- Optional prompts written from your own recent chats (needs keryx-stream's
+  `/keryx/suggestions`). Off by default: on a paid cloud model each refresh is a small billed
+  call. Settings > Agent > Suggestions in empty chats.
+
 ## 2.17.2 · versionCode 124
 
 - Keryx no longer gets closed out from under you. Android's automatic cloud backup tried to copy
