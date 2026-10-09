@@ -2078,6 +2078,23 @@ class ChatViewModel(
             _botNewChoice.value = bots.botForSession(session.id)
             return
         }
+        // `/branch` sent as text met Hermes' command worker, which has no copy of this chat.
+        chat.keryx.core.model.BranchCommand.parse(rawContent)?.let { name ->
+            val d = direct
+            if (d != null) {
+                recordCommandUse("/branch")
+                settingsRepository.setDraft(session.id, "")
+                viewModelScope.launch {
+                    d.branchWhole(session.id, name)
+                        .onSuccess { (stored, title) ->
+                            openSessionById(stored, title)
+                            toast("Branched — a copy of this whole conversation")
+                        }
+                        .onFailure { toast("Branch failed: ${it.message?.take(80)}") }
+                }
+                return
+            }
+        }
         val content = run {
             val roster = bots.roster.value.data
             if (inBotChat && roster != null && roster.messagingArmed && rawContent.contains('@')) {

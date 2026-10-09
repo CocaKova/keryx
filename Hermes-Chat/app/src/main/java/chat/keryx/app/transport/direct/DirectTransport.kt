@@ -3371,6 +3371,22 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         newStored to (res.strOrNull("title") ?: "Branch")
     }
 
+    /** The whole conversation as a new session (`session.branch` with no count) — a typed
+     *  `/branch [name]` (2.19). Returns (new stored id, title). */
+    suspend fun branchWhole(sessionId: String, name: String): Result<Pair<String, String>> = runCatching {
+        val rpc = rpc ?: error("gateway not connected")
+        val live = attach(forwarded(sessionId))
+        val res = rpc.request("session.branch", buildJsonObject {
+            put("session_id", JsonPrimitive(live))
+            if (name.isNotBlank()) put("name", JsonPrimitive(name))
+        })
+        val newLive = res.strOrNull("session_id") ?: error("branch returned no session")
+        val newStored = res.strOrNull("stored_session_id") ?: error("branch returned no stored id")
+        storedToLive[newStored] = newLive
+        liveToStored[newLive] = newStored
+        newStored to (res.strOrNull("title") ?: "Branch")
+    }
+
     // ---- Honest tok/s (2.16) ---------------------------------------------------------------
     // Live: the streamed character rate, read with a chars-per-token ratio measured against the
     // gateway's own output counter on an earlier single-call turn (0 until then, and the live

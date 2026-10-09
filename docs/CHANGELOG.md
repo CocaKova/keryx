@@ -5,7 +5,7 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
-## 2.19.0 · versionCode 130
+## 2.19.0 · versionCode 131
 
 Catching up with Hermes, and a tripwire so the next rename can't slip past.
 
@@ -44,6 +44,8 @@ Catching up with Hermes, and a tripwire so the next rename can't slip past.
 - Bots whose profile name has "_" are greyed out in New group chat, with the reason. Hermes
   rooms can't hold them, and creating the room used to fail with a bare error.
 - Starting a fresh Bot Chat twice in one minute no longer fails.
+- Typing `/branch` (or `/fork`, optionally with a name) forks the whole conversation and opens
+  the fork. Sent to Hermes as text, it always answered "No conversation to branch".
 
 **Under the hood**
 - `tools/hermes_drift.py` checks every Hermes name Keryx relies on against a live Hermes (tools

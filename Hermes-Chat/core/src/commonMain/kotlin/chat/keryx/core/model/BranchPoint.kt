@@ -35,3 +35,22 @@ object BranchPoint {
         return n.takeIf { it > 0 }
     }
 }
+
+/**
+ * A typed `/branch [name]` or `/fork [name]` (2.19). Sent as text it reaches Hermes' command
+ * worker, which holds no copy of the chat and answers "No conversation to branch — send a
+ * message first." every time (device, 2026-10-09). Keryx forks the whole conversation itself,
+ * through the same `session.branch` the message menu uses. `--here` is a thread option for
+ * messaging platforms; a Keryx fork always opens as its own conversation, so it is dropped.
+ */
+object BranchCommand {
+    private val RE = Regex("""^/(branch|fork)(?:\s+(.*))?$""", RegexOption.IGNORE_CASE)
+
+    /** The fork's name ("" = let Hermes name it), or null when [text] isn't the command. */
+    fun parse(text: String): String? {
+        val m = RE.matchEntire(text.trim()) ?: return null
+        return (m.groupValues[2]).split(Regex("\\s+")).filter { it.isNotBlank() && it != "--here" }
+            .joinToString(" ")
+    }
+}
+

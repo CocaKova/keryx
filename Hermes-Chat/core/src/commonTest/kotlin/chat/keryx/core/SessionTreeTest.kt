@@ -78,4 +78,13 @@ class SessionTreeTest {
             SessionTree.dropSuperseded(rows, { it.id }, { it.lineage }).map { it.id },
         )
     }
+
+    @Test
+    fun `a typed branch command is read with its name`() {
+        assertEquals("", chat.keryx.core.model.BranchCommand.parse("/branch"))
+        assertEquals("try plan B", chat.keryx.core.model.BranchCommand.parse("/fork  try plan B"))
+        assertEquals("alt", chat.keryx.core.model.BranchCommand.parse("/branch --here alt"))
+        assertEquals(null, chat.keryx.core.model.BranchCommand.parse("/branches"))
+        assertEquals(null, chat.keryx.core.model.BranchCommand.parse("let's branch out"))
+    }
 }
