@@ -5,6 +5,13 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.18.1 · versionCode 129
+
+- The Flight Plan strip shows again. Hermes renamed its `todo` tool to `todo_list` (the old name
+  stays as an alias, and a deferred call arrives through `tool_call`), and Keryx was still
+  matching the exact name `todo`, so new sessions never showed their plan. All three names are
+  recognised now.
+
 ## 2.18.0 · versionCode 128
 
 Group chats, and Bot Chats that read like conversations. Ships together with 2.17.3, which was
