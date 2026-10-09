@@ -836,7 +836,7 @@ fun NavigationDrawerContent(
                 // didn't already match, so the two sections never show the same row twice.
                 if (deepHits.isNotEmpty()) {
                     val shown = filtered.mapTo(HashSet()) { it.id }
-                    val extras = deepHits.filterNot { it.sessionId in shown }
+                    val extras = deepHits.filterNot { it.sessionId in shown }.distinctBy { it.sessionId }
                     if (extras.isNotEmpty()) {
                         item { DrawerSectionHeader("In transcripts") }
                         items(extras, key = { "hit-${it.sessionId}" }) { hit ->

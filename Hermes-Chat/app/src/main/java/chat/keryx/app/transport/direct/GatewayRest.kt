@@ -314,6 +314,10 @@ class GatewayRest(
                         messageCount = o["message_count"]?.jsonPrimitive?.longOrNull ?: 0,
                     )
                 }
+                    // One row per session (2.19): a compacted chat whose segments match
+                    // separately can come back twice under its tip's id, and the drawer keys
+                    // hits by session — a duplicate key crashed it on scroll (device, 10-09).
+                    .distinctBy { it.sessionId }
             }
 
     /** One PATCH covers rename + archive + pin + read state (server merges non-null fields).
