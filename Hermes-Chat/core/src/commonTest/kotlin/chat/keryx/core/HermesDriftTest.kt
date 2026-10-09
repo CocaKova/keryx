@@ -6,6 +6,7 @@ import chat.keryx.core.model.ToolGrammar
 import chat.keryx.core.model.ToolWire
 import chat.keryx.core.protocol.MessageRow
 import chat.keryx.core.protocol.RestToolCall
+import chat.keryx.core.protocol.ToolText
 import chat.keryx.core.protocol.TranscriptBuilder
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -126,5 +127,23 @@ class HermesDriftTest {
         val msg = TranscriptBuilder.build("r", listOf(row)).single()
         assertEquals(SenderType.ME, msg.sender)
         assertEquals("use the staging db instead", msg.content)
+    }
+
+    // --- batch-shaped arguments (caught by tools/hermes_drift.py, 2026-10-09) --------------
+
+    @Test
+    fun `batch arguments preview their first item`() {
+        val clarify = obj("""{"questions":[{"question":"Which branch?","choices":["main","dev"]}]}""")
+        assertEquals("Which branch?", ToolText.contextPreview("clarify", clarify))
+        val tasks = obj("""{"tasks":[{"goal":"audit the tests"},{"goal":"fix the lint"}]}""")
+        assertEquals("audit the tests +1", ToolText.contextPreview("delegate_task", tasks))
+        val ops = obj("""{"operations":[{"action":"patch","name":"deploy-notes","old_string":"a","new_string":"b"}]}""")
+        assertEquals("deploy-notes", ToolText.contextPreview("skill_manage", ops))
+    }
+
+    @Test
+    fun `old single-item calls still preview`() {
+        assertEquals("ship it", ToolText.contextPreview("delegate_task", obj("""{"goal":"ship it"}""")))
+        assertEquals("Which one?", ToolText.contextPreview("clarify", obj("""{"question":"Which one?"}""")))
     }
 }

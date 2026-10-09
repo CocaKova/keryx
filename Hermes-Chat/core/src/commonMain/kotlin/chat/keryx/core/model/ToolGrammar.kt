@@ -207,6 +207,10 @@ object ToolGrammar {
         "Reading" to "read_file",
     ).sortedByDescending { it.first.length }
 
+    /** Every tool this grammar names outright — what [KnownWire.TOOLS] must cover. */
+    val namedTools: Set<String> get() =
+        VERBS.keys + FAMILIES.keys + PATH_TOOLS + TARGETLESS + GERUND_TOOLS.map { it.second }
+
     /** A friendly progress line resolved back to the tool that printed it. */
     data class Friendly(val name: String, val target: String)
 

@@ -60,6 +60,15 @@ SSH=(ssh -o BatchMode=yes -o ConnectTimeout=8 "$HOST")
 RSYNC_EX=(--exclude=build/ --exclude=.gradle/ --exclude=.kotlin/ --exclude=dist/
           --exclude=backups/ --exclude='*.apk' --exclude=local.properties)
 
+# The Hermes drift check needs a Hermes tree, and that lives here, not on the build host: run it
+# now and send the answer along with the source (ship.sh reads .ship-drift; rc on line 1).
+rm -f "$REPO_ROOT/.ship-drift"
+if [ -x "$REPO_ROOT/tools/hermes_drift.py" ]; then
+  python3 "$REPO_ROOT/tools/hermes_drift.py" --quiet > "$REPO_ROOT/.ship-drift.out" 2>&1
+  { echo $?; cat "$REPO_ROOT/.ship-drift.out"; } > "$REPO_ROOT/.ship-drift"
+  rm -f "$REPO_ROOT/.ship-drift.out"
+fi
+
 echo "── sync → $HOST:~/$REMOTE_ROOT"
 "${SSH[@]}" "mkdir -p ~/$REMOTE_ROOT" >/dev/null 2>&1 || amber "build host $HOST unreachable over ssh"
 rsync -a --delete "${RSYNC_EX[@]}" "$REPO_ROOT/" "$HOST:$REMOTE_ROOT/" || amber "rsync to $HOST failed"

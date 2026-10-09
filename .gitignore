@@ -34,3 +34,5 @@ Hermes-Chat/jdk.tar.gz
 # running tools/launcher_icon.py regenerates it every time.
 __pycache__/
 *.pyc
+.ship-drift
+.ship-drift.out

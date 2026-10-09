@@ -223,19 +223,15 @@ object ToolText {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    /** Gateway parity: which argument IS the call, per tool (agent/display.build_tool_preview). */
-    private val primaryArgs = mapOf(
-        "terminal" to "command", "web_search" to "query", "web_extract" to "urls",
-        "read_file" to "path", "write_file" to "path", "patch" to "path",
-        "search_files" to "pattern", "browser_navigate" to "url",
-        "browser_click" to "ref", "browser_type" to "text",
-        "image_generate" to "prompt", "text_to_speech" to "text",
-        "vision_analyze" to "question", "skill_view" to "name", "skills_list" to "category",
-        "cronjob_manage" to "action", "process_manage" to "action",
-        "ha_call_service" to "entity_id", "ha_get_state" to "entity_id", "ha_list_entities" to "domain",
-        "x_search" to "query", "video_analyze" to "question", "execute_code" to "code", "browser_exec" to "code",
-        "delegate_task" to "goal", "clarify" to "question", "skill_manage" to "name",
-    )
+    /** Gateway parity: which argument IS the call, per tool — [chat.keryx.core.model.KnownWire.PRIMARY_ARGS]. */
+    private val primaryArgs get() = chat.keryx.core.model.KnownWire.PRIMARY_ARGS
+
+    /** Hermes' own fallback order (`agent/display._FALLBACK_PREVIEW_KEYS`) plus the pre-batch
+     *  single-item keys, so an old transcript still previews after a tool went batch-shaped. */
+    private val FALLBACK_KEYS = listOf("query", "text", "command", "path", "name", "prompt", "code", "goal", "question")
+
+    /** What a batch item is called by: a question, a task goal, a skill op's target. */
+    private val ITEM_KEYS = listOf("question", "goal", "name", "text")
 
     fun parseArgs(argumentsJson: String): JsonObject? =
         runCatching { json.parseToJsonElement(argumentsJson) as? JsonObject }.getOrNull()
@@ -245,10 +241,24 @@ object ToolText {
     fun contextPreview(name: String, args: JsonObject?): String {
         args ?: return ""
         val primary = primaryArgs[chat.keryx.core.model.ToolWire.canonical(name)]?.let { args[it] }
+            ?: FALLBACK_KEYS.firstNotNullOfOrNull { args[it] }
             ?: args.values.firstOrNull { it is JsonPrimitive && it.isString }
         val raw = when (primary) {
             is JsonPrimitive -> primary.content
             null -> return ""
+            // 2.19: `clarify.questions`, `delegate_task.tasks`, `skill_manage.operations` —
+            // a batch of objects. Draw the first one by its own words, and say how many more.
+            is kotlinx.serialization.json.JsonArray -> {
+                val first = primary.firstOrNull() ?: return ""
+                val words = when (first) {
+                    is JsonPrimitive -> first.content
+                    is JsonObject -> ITEM_KEYS.firstNotNullOfOrNull { (first[it] as? JsonPrimitive)?.content }
+                        ?: first.values.firstNotNullOfOrNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.content }
+                        ?: return ""
+                    else -> first.toString()
+                }
+                if (primary.size > 1) "$words +${primary.size - 1}" else words
+            }
             else -> primary.toString()
         }
         val oneLine = raw.replace(Regex("\\s+"), " ").trim()

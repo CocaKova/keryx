@@ -16,7 +16,8 @@
 #   RED    a stage failed. The code is wrong. Do not ship, do not retry blindly.
 #   AMBER  a stage could not be run — no device, no network. NOTHING WAS LEARNED about the
 #          code. An agent that reads AMBER as RED reverts good work; one that reads it as
-#          GREEN ships untested work. It is neither.
+#          GREEN ships untested work. It is neither. Also AMBER: Hermes drift (2.19) — the
+#          build is sound but matches a Hermes name that moved; fix the name, don't revert.
 #
 # Usage:
 #   tools/ship.sh                 unit tests + debug APK
@@ -114,6 +115,32 @@ VCODE="$(grep -oP 'versionCode\s*=\s*\K[0-9]+' "$PROJECT/app/build.gradle.kts" |
 say "  branch $BRANCH @ $HEAD_SHA (${DIRTY} uncommitted) — $VERSION (vc$VCODE)"
 cd "$PROJECT" || exit 2
 
+# ── hermes drift ───────────────────────────────────────────────────────────────
+# Every Hermes name Keryx matches on (core/.../KnownWire.kt) against a live Hermes tree. The
+# check needs that tree, so it runs where Hermes lives: here if this machine has one, else
+# remote-ship.sh ran it before the hand-off and sent the answer along as .ship-drift.
+DRIFTED=(); DRIFT_NOTE=""
+step "hermes drift"
+DRIFT_FILE="$REPO_ROOT/.ship-drift"
+if [ -f "${HERMES_AGENT_DIR:-$HOME/.hermes/hermes-agent}/apps/shared/src/gateway-contract.openrpc.json" ]; then
+  python3 "$REPO_ROOT/tools/hermes_drift.py" --quiet > "$DRIFT_FILE.out" 2>&1
+  DRIFT_RC=$?
+  { echo "$DRIFT_RC"; cat "$DRIFT_FILE.out"; } > "$DRIFT_FILE"; rm -f "$DRIFT_FILE.out"
+fi
+if [ -f "$DRIFT_FILE" ]; then
+  DRIFT_RC="$(head -1 "$DRIFT_FILE")"
+  tail -n +2 "$DRIFT_FILE" | sed 's/^/  /' | tee -a "$LOG"
+  case "$DRIFT_RC" in
+    0) record "hermes drift" pass ;;
+    1) record "hermes drift" pass
+       mapfile -t DRIFTED < <(tail -n +2 "$DRIFT_FILE" | grep -o 'DRIFT  .*' | sed 's/^DRIFT  //') ;;
+    *) DRIFT_NOTE="drift not checked (the script could not read Hermes)" ;;
+  esac
+else
+  DRIFT_NOTE="drift not checked (no Hermes tree here, none sent along)"
+  say "  $DRIFT_NOTE"
+fi
+
 # ── unit ───────────────────────────────────────────────────────────────────────
 gradle_stage "core unit tests"  :core:jvmTest
 gradle_stage "app unit tests"   :app:testDebugUnitTest
@@ -177,7 +204,7 @@ fi
 
 # ── verdict ────────────────────────────────────────────────────────────────────
 if   [ ${#FAILED[@]}  -gt 0 ]; then VERDICT=RED
-elif [ ${#SKIPPED[@]} -gt 0 ]; then VERDICT=AMBER
+elif [ ${#SKIPPED[@]} -gt 0 ] || [ ${#DRIFTED[@]} -gt 0 ]; then VERDICT=AMBER
 else VERDICT=GREEN; fi
 
 # Test counts come from the reports gradle just wrote, not from a number typed here.
@@ -202,14 +229,22 @@ TESTS="$(count_tests)"
   printf 'STAGES:   %s\n' "${STAGES[*]:-none}"
   [ ${#FAILED[@]}  -gt 0 ] && printf 'FAILED:   %s\n' "${FAILED[*]}"
   [ ${#SKIPPED[@]} -gt 0 ] && printf 'SKIPPED:  %s\n' "${SKIPPED[*]}"
+  for d in "${DRIFTED[@]}"; do printf 'DRIFT:    %s\n' "$d"; done
+  [ -n "$DRIFT_NOTE" ] && printf 'NOTE:     %s\n' "$DRIFT_NOTE"
   [ -n "$DEVICE" ] && printf 'DEVICE:   %s\n' "$DEVICE"
   [ -n "${APK:-}" ] && [ -f "${APK:-}" ] && printf 'APK:      %s\n' "$APK"
   printf 'LOG:      %s\n' "$LOG"
   case "$VERDICT" in
     GREEN) printf 'MEANING:  every stage asked for passed.\n' ;;
     RED)   printf 'MEANING:  a stage failed. The code is wrong — read LOG, fix, re-run.\n' ;;
-    AMBER) printf 'MEANING:  a stage could not run. Nothing was learned about the code.\n'
-           printf '          Do NOT revert on AMBER and do NOT ship on AMBER.\n' ;;
+    AMBER) if [ ${#DRIFTED[@]} -gt 0 ] && [ ${#SKIPPED[@]} -eq 0 ]; then
+             printf 'MEANING:  the build is sound, but Hermes moved: Keryx matches names it no\n'
+             printf '          longer sends (DRIFT above; tools/hermes_drift.py for the detail).\n'
+             printf '          Fix the names, then ship. Do NOT revert.\n'
+           else
+             printf 'MEANING:  a stage could not run. Nothing was learned about the code.\n'
+             printf '          Do NOT revert on AMBER and do NOT ship on AMBER.\n'
+           fi ;;
   esac
   printf '───────────────────────────────────────────────────\n'
 } | tee -a "$LOG"

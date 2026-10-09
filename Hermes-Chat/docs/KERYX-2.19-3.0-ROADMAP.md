@@ -29,11 +29,13 @@ Ground rules that apply to both releases:
 | Decline Desktop-only requests (`tour`, `preview.*`, `terminal.read`, `window.read`) with **4404**, not -32601. Today the phone can kill Desktop's tour or preview on a shared session | `transport/direct/GatewayRpc.kt:327` |
 | Add `steer` to `DisplayKind` and render it as a steer chip, not a plain user bubble | `core/.../DisplayKind.kt` |
 | Group compressed continuations by `_lineage_root_id` on `session.list`; key rows on `message_uid` | sessions list, Archive |
+| ✅ Done (`abe1798`): one row per conversation via `_lineage_ids`, old ids forward to the tip, forks (`_branched_from`) nest under their parent. ⏭ `message_uid` deferred to 3.0: keying saves on it also means "open in context" has to find a message by uid | |
 | Grammar entries for `kanban_*`, `computer_use`, `browser_*`, `video_analyze`, `x_search`, `ha_*`. Remove dead entries (`list_files`, `edit_file`, `session_search_recall`) | `ToolGrammar.kt` |
 | Handle `approval.cancelled` and `tool.output_risk` (show a warning band on the tool row) | DirectTransport, `ApprovalCard` |
 
 ### B. Drift tripwire (so the next rename can't break things silently)
 - `tools/hermes_drift.py`: reads the live Hermes registry (`model_tools` alias table + `registry`) and `apps/shared/src/gateway-contract.openrpc.json`, then diffs them against every tool name, method and event Keryx matches on. Keryx exports that list from a single `KnownWire.kt` table, which replaces scattered string literals.
+- ✅ Done. Built as a declared table rather than a refactor: `KnownWire.kt` lists the names, and two tests keep it complete (`KnownWireTest` against ToolGrammar, `KnownWireSourceTest` against every dotted literal in the app). The script also checks each tool's preview argument against its schema. Its first run caught `clarify.questions`, `delegate_task.tasks` and `skill_manage.operations`, all blank previews before this fix.
 - Run it in the ship gate. A mismatch is AMBER with a readable diff.
 - Add it to the post-`hermes update` checklist in memory.
 
