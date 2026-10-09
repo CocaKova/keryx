@@ -170,21 +170,6 @@ class HermesUpdateDelegate(
         toast("Checked: " + UpdatePlanner.behindLine(UpdatePlanner.behind(b.plugin, b.check)).replaceFirstChar { it.lowercase() })
     }
 
-    /** The operator's preflight (`keryx.update.probe`) — minutes of work; [pollTick] waits. */
-    fun runProbe() {
-        if (_board.value?.probing == true) return
-        scope.launch {
-            when (val res = linkRead("/keryx/update/probe", "POST", buildJsonObject { })) {
-                is Routed.Ok -> {
-                    _board.value = (_board.value ?: Board()).copy(probing = true)
-                    readPlugin().valueOrNull?.let { p -> _board.value = _board.value?.copy(plugin = p) }
-                }
-                is Routed.Failed -> toast("Preflight refused: ${res.message.take(80)}")
-                Routed.Missing -> toast("This gateway has no preflight route.")
-            }
-        }
-    }
-
     // --- the update -----------------------------------------------------------------------
 
     /**

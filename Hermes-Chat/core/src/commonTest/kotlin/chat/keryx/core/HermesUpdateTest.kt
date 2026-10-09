@@ -109,8 +109,10 @@ class HermesUpdateTest {
     }
 
     @Test
-    fun plan_theOperatorsWrapperWinsOverStockUpdate() {
-        assertEquals(UpdatePlan(UpdateRoute.PLUGIN, "silas-update", true), UpdatePlanner.plan(plugin, check))
+    fun plan_isAlwaysStockHermesUpdate() {
+        // An operator's wrapper in config.yaml is never what the button runs (vanilla rule).
+        assertEquals(UpdatePlan(UpdateRoute.DASHBOARD, "hermes update", false), UpdatePlanner.plan(plugin, check))
+        assertNull(UpdatePlanner.plan(plugin, null))
         val stockPlugin = plugin.copy(commandSource = "default", label = "hermes update")
         assertEquals(UpdatePlan(UpdateRoute.DASHBOARD, "hermes update", false), UpdatePlanner.plan(stockPlugin, check))
         // No dashboard (the Matrix door): the plugin's default command still updates.

@@ -259,16 +259,15 @@ data class BehindReading(
 object UpdatePlanner {
 
     /**
-     * The button's route, in the plugin's own tiers: an operator's wrapper wins (an install
-     * carrying a patch layer or a verify-and-rollback step must never get a bare `hermes
-     * update`); else the dashboard's in-place update, which brings receipts and a live log;
-     * else the plugin's default command. Null = no way to update from here.
+     * The button's route: the dashboard's in-place `hermes update` (receipts and a live log),
+     * else the plugin's stock default command. Null = no way to update from here.
      */
     fun plan(plugin: PluginUpdateStatus?, check: UpdateCheck?): UpdatePlan? = when {
-        plugin != null && plugin.operatorCommand ->
-            UpdatePlan(UpdateRoute.PLUGIN, plugin.label.ifBlank { "the operator's update command" }, true)
+        // Vanilla only (Jonny, 2026-10-09): the button runs Hermes' own `hermes update`, never
+        // an operator's wrapper from config.yaml (`keryx.update.command`). People who install
+        // Keryx don't have anyone's private tooling, and the button must mean the same thing for them.
         check != null && check.canApply -> UpdatePlan(UpdateRoute.DASHBOARD, "hermes update", false)
-        plugin != null && plugin.commandConfigured ->
+        plugin != null && plugin.commandConfigured && plugin.commandSource == "default" ->
             UpdatePlan(UpdateRoute.PLUGIN, plugin.label.ifBlank { "hermes update" }, false)
         else -> null
     }

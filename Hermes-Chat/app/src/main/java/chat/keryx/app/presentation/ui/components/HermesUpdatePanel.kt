@@ -183,9 +183,6 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
                 }
             }
 
-            if (plugin != null && plugin.probeConfigured) {
-                item(key = "probe") { PreflightCard(plugin, probing = b.probing, onRun = { viewModel.hermesUpdate.runProbe() }) }
-            }
 
             val rv = runView
             item(key = "action") {
@@ -201,8 +198,7 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
                             Text("Update now…", fontSize = KeryxType.body, color = KeryxStatus.warn)
                         }
                         Text(
-                            "Runs `${plan.command}` on the gateway host" +
-                                if (plan.operatorWrapper) " — the operator's own update command." else ".",
+                            "Runs `${plan.command}` on the gateway host.",
                             fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -241,8 +237,7 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "Keryx asks the gateway to run `${p.command}`" +
-                            if (p.operatorWrapper) ", the operator's own update command from config.yaml." else ".",
+                        "Keryx asks the gateway to run `${p.command}`.",
                         fontSize = KeryxType.body,
                     )
                     Text(
@@ -252,14 +247,6 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
                         fontWeight = FontWeight.SemiBold,
                     )
                     n?.let { Text(if (it == 1) "1 commit will land." else "$it commits will land.", fontSize = KeryxType.body) }
-                    val probe = board?.plugin
-                    if (p.operatorWrapper && probe != null && probe.probeConfigured && probe.probeExit != 0) {
-                        Text(
-                            "The preflight (${probe.probeLabel.ifBlank { "preflight" }}) hasn't passed since the gateway started.",
-                            fontSize = KeryxType.caption,
-                            color = KeryxStatus.warn,
-                        )
-                    }
                 }
             },
             confirmButton = {
@@ -277,49 +264,6 @@ private const val POLL_MS = 3_000L
 /** A positive known count for the confirm's "N commits will land", else null. */
 private fun landingCount(b: HermesUpdateDelegate.Board?): Int? =
     UpdatePlanner.behind(b?.plugin, b?.check)?.count?.takeIf { it > 0 }
-
-@Composable
-private fun PreflightCard(plugin: PluginUpdateStatus, probing: Boolean, onRun: () -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    val exit = plugin.probeExit
-    val running = probing || plugin.probeRunning
-    KeryxCard(tint = when { running || exit == null -> null; exit == 0 -> KeryxStatus.good; else -> KeryxStatus.bad }) {
-        Text("Preflight · ${plugin.probeLabel.ifBlank { "preflight" }}", fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
-        Text(
-            when {
-                running -> "Running…"
-                // "Not run" and "passed" must never look alike: an update gated on a preflight
-                // nobody ran is an ungated update.
-                exit == null -> "Not run since the gateway started"
-                exit == 0 -> "Passed" + (UpdateText.ago(plugin.probeAt, System.currentTimeMillis())?.let { " $it" } ?: "")
-                else -> "Failed (exit $exit)" + (UpdateText.ago(plugin.probeAt, System.currentTimeMillis())?.let { " $it" } ?: "")
-            },
-            fontSize = KeryxType.caption,
-            color = when {
-                running || exit == null -> MaterialTheme.colorScheme.onSurfaceVariant
-                exit == 0 -> KeryxStatus.good
-                else -> KeryxStatus.bad
-            },
-        )
-        if (plugin.probeOutput.isNotBlank()) {
-            Text(
-                plugin.probeOutput,
-                fontSize = KeryxType.micro,
-                fontFamily = FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = if (expanded) Int.MAX_VALUE else 6,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-            TextButton(onClick = { expanded = !expanded }) {
-                Text(if (expanded) "Less" else "All output", fontSize = KeryxType.caption)
-            }
-        }
-        OutlinedButton(enabled = !running, onClick = onRun) {
-            Text(if (running) "Running…" else "Run preflight", fontSize = KeryxType.caption)
-        }
-    }
-}
 
 @Composable
 private fun RunCard(rv: HermesUpdateDelegate.RunView, onDismiss: () -> Unit) {

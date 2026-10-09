@@ -5,7 +5,7 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
-## 2.19.0 · versionCode 132
+## 2.19.0 · versionCode 133
 
 Catching up with Hermes, and a tripwire so the next rename can't slip past.
 
@@ -53,6 +53,9 @@ Catching up with Hermes, and a tripwire so the next rename can't slip past.
   "unknown").
 - "Check for updates" refreshes both sources, shows "Checking…" until both have answered, and
   then says what it found.
+- Update now always runs Hermes' own `hermes update`. An operator wrapper set in config.yaml
+  (`keryx.update.command`) is no longer what the button runs, and the operator preflight card
+  is gone. The button does the same thing on every install.
 - An update in progress shows three steps (Installing → Restarting → Coming back) with a
   moving bar, and a finished update gets a check that springs in. With reduced motion on, the
   bar fills by step instead of sweeping.
