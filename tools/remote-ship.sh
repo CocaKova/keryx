@@ -80,6 +80,7 @@ RC=$?
 
 echo "── fetch results ← $HOST"
 rsync -a "$HOST:$REMOTE_ROOT/Hermes-Chat/build/ship/" "$OUT/" || echo "  could not fetch build/ship (verdict above still stands)"
+mkdir -p "$REPO_ROOT/Hermes-Chat/app/build/outputs/apk"
 rsync -a --include='*/' --include='*.apk' --exclude='*' \
   "$HOST:$REMOTE_ROOT/Hermes-Chat/app/build/outputs/apk/" "$REPO_ROOT/Hermes-Chat/app/build/outputs/apk/" 2>/dev/null
 exit $RC
