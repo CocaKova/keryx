@@ -146,4 +146,34 @@ class HermesDriftTest {
         assertEquals("ship it", ToolText.contextPreview("delegate_task", obj("""{"goal":"ship it"}""")))
         assertEquals("Which one?", ToolText.contextPreview("clarify", obj("""{"question":"Which one?"}""")))
     }
+
+    // --- the interrupt sentinel -------------------------------------------------------------
+
+    private fun row(id: Long, role: String, content: String, kind: String? = null) = MessageRow(
+        id = id, role = role, content = content, toolName = null, timestamp = id, reasoning = null, displayKind = kind,
+    )
+
+    @Test
+    fun `a turn that carried on loses the interrupt line`() {
+        val rows = listOf(
+            row(1, "user", "build the sprite sheet"),
+            row(2, "assistant", "Operation interrupted: waiting for model response (1.7s elapsed)."),
+            row(3, "user", "[IMPORTANT: Background process proc_1 exited (exit code 255).]"),
+            row(4, "assistant", "The tunnel died; restarting it."),
+        )
+        val shown = TranscriptBuilder.build("r", rows).map { it.content }
+        assertEquals(false, shown.any { it.startsWith("Operation interrupted") || it == "interrupted" })
+    }
+
+    @Test
+    fun `a turn you stopped keeps a quiet divider`() {
+        val rows = listOf(
+            row(1, "user", "go"),
+            row(2, "assistant", "Operation interrupted: waiting for model response (33.4s elapsed)."),
+            row(3, "user", "Please continue, I accidently stopped the run"),
+        )
+        val msg = TranscriptBuilder.build("r", rows)[1]
+        assertEquals(SenderType.SYSTEM, msg.sender)
+        assertEquals("interrupted", msg.mark?.label)
+    }
 }

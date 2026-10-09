@@ -208,7 +208,13 @@ object GroupChats {
         }
     }
 
-    /** Members with a turn started and not yet settled, failed, cancelled or deferred. */
+    /**
+     * Members with a turn started and not yet settled, failed, cancelled or deferred. Today's
+     * gateway logs a turn only when it ends, so this is empty mid-turn and [discussionOpen]
+     * drives the room's thinking state. Kept on purpose: `turn.started` is still a kind the
+     * room log accepts (`hosted_rooms._EVENT_KINDS_BY_ACTOR`), and when the gateway writes it
+     * the speaking bot's sigil lights up with no client change.
+     */
     fun working(events: List<GroupEvent>): Set<String> {
         val open = LinkedHashMap<String, String>() // task_id -> member_id
         for (e in events) {
@@ -267,6 +273,16 @@ object GroupChats {
         prefix + "-" + (1..20).joinToString("") { "0123456789abcdefghijklmnopqrstuvwxyz"[random.nextInt(36)].toString() }
 
     fun canCreate(selected: Int): Boolean = selected in MIN_MEMBERS..MAX_MEMBERS
+
+    /**
+     * Whether a bot can sit in a room at all. Hermes allows `_` in a profile name, but a room
+     * member's `profile` and `member_id` must match `[A-Za-z0-9][A-Za-z0-9._:-]*`
+     * (gateway/hosted_rooms_common.IDENTIFIER_RE), and both have to BE the profile name — so
+     * `mc_builder` can never join, and `groups.create` answered with a bare 400 (2.19).
+     */
+    fun canJoin(bot: BotProfile): Boolean = ROOM_ID_RE.matches(bot.name)
+
+    private val ROOM_ID_RE = Regex("^[A-Za-z0-9][A-Za-z0-9._:-]*$")
 }
 
 private fun JsonArray?.orEmpty(): List<JsonElement> = this ?: emptyList()

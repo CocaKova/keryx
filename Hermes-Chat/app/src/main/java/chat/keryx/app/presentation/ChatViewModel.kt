@@ -944,8 +944,11 @@ class ChatViewModel(
                 // user asked every launch to start fresh (Settings → Agent).
                 if (_currentRoom.value == null && settingsRepository.resumeLastRoom) {
                     val lastId = settingsRepository.lastRoomId
-                    val room = roomList.firstOrNull { it.id == lastId }
+                    // A conversation compacted since it was last open continues under its tip.
+                    val wanted = lastId?.let { direct?.forwarded(it) ?: it }
+                    val room = roomList.firstOrNull { it.id == wanted }
                     if (room != null) setCurrentRoom(room)
+                    else if (wanted != null && roomList.isNotEmpty()) reopenUnlisted(wanted)
                 }
             }
         }
@@ -1616,6 +1619,24 @@ class ChatViewModel(
         openRoomById(sessionId)
     }
 
+    /**
+     * Cold start, and the last open conversation is not on the list's first page — a scheduled
+     * run you were reading, a bot's side session, an old chat (2.19). It used to land you on an
+     * empty screen. Asked once per process: the gateway confirms the session still exists (one
+     * small row), then it is adopted and opened like a project's session.
+     */
+    private var reopenTried = false
+    private fun reopenUnlisted(sessionId: String) {
+        val d = direct ?: return
+        if (reopenTried) return
+        reopenTried = true
+        viewModelScope.launch {
+            if (!d.sessionExists(sessionId)) return@launch
+            if (_currentRoom.value != null) return@launch // you picked something meanwhile
+            openSessionById(sessionId, settingsRepository.lastRoomTitle.orEmpty())
+        }
+    }
+
     fun openRoomById(requestedId: String) {
         // A notification for a session that has since compacted opens its continuation.
         val roomId = direct?.forwarded(requestedId) ?: requestedId
@@ -1688,6 +1709,7 @@ class ChatViewModel(
         // them age out of the LRU while the new room fills it.
         synchronized(reactionFlows) { reactionFlows.clear() }
         settingsRepository.lastRoomId = room.id
+        settingsRepository.lastRoomTitle = room.name
         _typingHumans.value = emptyList()
         // Warm the member store so sender display names resolve in cold group rooms.
         viewModelScope.launch { matrix?.ensureMembersLoaded(room.id) }

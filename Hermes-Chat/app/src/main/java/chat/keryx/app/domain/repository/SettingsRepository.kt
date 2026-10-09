@@ -31,6 +31,9 @@ interface SettingsRepository {
     var accentColor2Hex: String
     /** Room ID of the last conversation the user had open, restored on next launch. */
     var lastRoomId: String?
+    /** That conversation's name, so a cold start can reopen it even when the list doesn't
+     *  carry it (a scheduled run, an older page) — 2.19. */
+    var lastRoomTitle: String?
     /** Seconds this phone has watched [model]'s compactions take, newest last (2.13.11) —
      *  the banner's "usually ~40 s". See [chat.keryx.core.model.CompactionTimings]. */
     fun compactionSeconds(model: String): List<Int>

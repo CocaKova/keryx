@@ -281,6 +281,10 @@ class SettingsRepositoryImpl(
         get() = prefs.getString(ledgerKey("last_room_id"), null)
         set(value) = prefs.edit().putString(ledgerKey("last_room_id"), value).apply()
 
+    override var lastRoomTitle: String?
+        get() = prefs.getString(ledgerKey("last_room_title"), null)
+        set(value) = prefs.edit().putString(ledgerKey("last_room_title"), value).apply()
+
     // Per brain, not per gateway: the same model summarizes at the same speed wherever it runs.
     override fun compactionSeconds(model: String): List<Int> =
         chat.keryx.core.model.CompactionTimings.decode(prefs.getString("compaction_s_$model", null))

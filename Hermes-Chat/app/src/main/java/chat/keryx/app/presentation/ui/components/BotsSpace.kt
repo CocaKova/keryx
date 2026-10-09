@@ -46,6 +46,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -381,12 +382,16 @@ private fun NewGroupSheet(
             )
             bots.forEach { bot ->
                 val on = bot.name in picked
+                // A profile name with `_` can't be a room member on the gateway (2.19): shown,
+                // greyed, with the reason, rather than offered and refused with a 400.
+                val joinable = chat.keryx.core.model.GroupChats.canJoin(bot)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .alpha(if (joinable) 1f else 0.45f)
                         .clip(RoundedCornerShape(KeryxRadius.chip))
-                        .clickable {
+                        .clickable(enabled = joinable) {
                             picked = if (on) picked - bot.name
                             else if (count < chat.keryx.core.model.GroupChats.MAX_MEMBERS) picked + bot.name else picked
                         }
@@ -397,10 +402,10 @@ private fun NewGroupSheet(
                     HeraldSigil(botLightFor(bot.name, bot.label, bot.isDefault), fontSize = KeryxType.caption)
                     Spacer(Modifier.width(4.dp))
                     Text(bot.label, fontSize = KeryxType.body)
-                    if (bot.description.isNotBlank()) {
+                    if (!joinable || bot.description.isNotBlank()) {
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            bot.description,
+                            if (joinable) bot.description else "can't join rooms: \"_\" in its profile name",
                             fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,

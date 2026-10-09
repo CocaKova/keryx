@@ -34,6 +34,7 @@ object TranscriptBuilder {
             resultsByCallId.getOrPut(r.toolCallId) { r }
         }
         val consumed = HashSet<Long>()
+        val resumed = InterruptSentinel.resumedIn(rows)
         val out = ArrayList<Message>(rows.size)
         for (row in rows) {
             when (row.role) {
@@ -123,8 +124,22 @@ object TranscriptBuilder {
                         // 2026-09-25, a cron session compacted mid-turn): the summary of
                         // everything before it, not a thing the agent said to you. The system
                         // voice; the timeline draws it as the compaction divider (2.13.11).
-                        out += if (isCompactionCarryOver(row.content)) text(roomId, row, SenderType.SYSTEM)
-                        else text(roomId, row, SenderType.HERMES).copy(reasoning = thought)
+                        val shown = when {
+                            isCompactionCarryOver(row.content) -> text(roomId, row, SenderType.SYSTEM)
+                            // Hermes' stop sentinel, stored as if the agent said it (2.19). A turn
+                            // that carried on by itself (a steer, a background notice) loses it;
+                            // one that really stopped keeps a quiet divider.
+                            InterruptSentinel.matches(row.content) ->
+                                if (row.id in resumed) null
+                                else text(roomId, row, SenderType.SYSTEM).copy(
+                                    content = InterruptSentinel.LABEL,
+                                    mark = chat.keryx.core.model.TimelineMark(
+                                        InterruptSentinel.KIND, InterruptSentinel.LABEL, row.content.trim(),
+                                    ),
+                                )
+                            else -> text(roomId, row, SenderType.HERMES).copy(reasoning = thought)
+                        }
+                        shown?.let { out += it }
                     } else if (thought != null) {
                         out += Message(
                             id = "think-${row.id}",
@@ -336,6 +351,43 @@ object ToolText {
  * that compacted; either way it is machinery, and the timeline draws it as a divider — the one
  * mark a compaction leaves once its live banner is gone (2.13.11).
  */
+/**
+ * Hermes' interrupt sentinel (`agent/conversation_loop.INTERRUPT_WAITING_FOR_MODEL_PREFIX`, and
+ * the bare "Operation interrupted." a tool-tail close writes). The live gateway suppresses it
+ * (`tui_gateway/prompt_turn`, #7921) but the transcript keeps it as an assistant row: reopened,
+ * it read as the agent saying "Operation interrupted: waiting for model response (33.4s
+ * elapsed)." — even when a steer or a background notice had interrupted the call and the turn
+ * went straight on (2026-09-06 diagnosis, face 3).
+ */
+object InterruptSentinel {
+    const val KIND = "interrupted"
+    const val LABEL = "interrupted"
+
+    fun matches(content: String): Boolean {
+        val t = content.trim()
+        return t.startsWith("Operation interrupted: waiting for ") || t == "Operation interrupted."
+    }
+
+    /**
+     * Sentinel rows the turn carried on past by itself: the next row that says anything is the
+     * agent's (prose, tools, a tool result) or machinery — a steer, a gateway note — rather than
+     * a person speaking. A sentinel followed by your own message, or by nothing, really stopped.
+     */
+    fun resumedIn(rows: List<MessageRow>): Set<Long> {
+        val out = HashSet<Long>()
+        for ((i, row) in rows.withIndex()) {
+            if (row.role != "assistant" || !matches(row.content)) continue
+            val next = rows.subList(i + 1, rows.size).firstOrNull {
+                it.content.isNotBlank() || it.toolCalls.isNotEmpty()
+            } ?: continue
+            val human = next.role == "user" && next.displayKind == null &&
+                !MessageParser.isGatewayNote(next.content) && DisplayKind.steerText(null, next.content) == null
+            if (!human) out += row.id
+        }
+        return out
+    }
+}
+
 object CompactionCarryOver {
     /** The gateway's compaction preamble, verified on the wire:
      *  "[CONTEXT COMPACTION — REFERENCE ONLY] Earlier turns were compacted…". */

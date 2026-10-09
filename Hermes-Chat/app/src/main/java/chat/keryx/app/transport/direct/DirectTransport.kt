@@ -2752,6 +2752,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     override suspend fun createSessionIn(title: String?, cwd: String): Result<String> =
         createSession(title?.ifBlank { null }, cwd)
 
+    /** Whether the gateway still has [sessionId] (one small row; any failure reads as no). */
+    suspend fun sessionExists(sessionId: String): Boolean =
+        rest?.sessionPulse(sessionId, profileFor(sessionId))?.isSuccess == true
+
     override fun adoptSession(sessionId: String, title: String) {
         if (_pendingNew.value.any { it.id == sessionId }) return
         _pendingNew.value = _pendingNew.value + RoomProfile(
@@ -2924,10 +2928,19 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         // flags). Renamed rather than only archived: an archive is undone on the next lookup
         // when the chat's last end reads as an accident, which a long-lived Bot Chat's often does.
         rest.patchSession(ref.id, hidden = false, profile = profile).getOrThrow()
-        val stamp = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US).format(java.util.Date())
-        rest.patchSession(
-            ref.id, title = chat.keryx.core.model.BotRoster.retiredTitle(stamp), archived = true, profile = profile,
-        ).onFailure {
+        // Titles are unique on the gateway. Stamped to the minute, a second fresh start inside
+        // that minute asked for a title already taken and got a 400 (2.18 review); seconds make
+        // that rare, and a numbered retry makes it impossible.
+        val stamp = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date())
+        var renamed: Result<Unit> = Result.failure(IllegalStateException("not tried"))
+        for (suffix in listOf("", " (2)", " (3)")) {
+            renamed = rest.patchSession(
+                ref.id, title = chat.keryx.core.model.BotRoster.retiredTitle(stamp) + suffix, archived = true,
+                profile = profile,
+            ).map { }
+            if (renamed.isSuccess) break
+        }
+        renamed.onFailure {
             // Put it back the way it was rather than leave the forever-chat visible in lists.
             rest.patchSession(ref.id, hidden = true, profile = profile)
         }.getOrThrow()

@@ -1,7 +1,8 @@
-# Keryx R8 rules — prepared for minified release builds.
-# NOTE: minification is currently DISABLED in build.gradle.kts; these keeps have not yet been
-# verified on-device. Before flipping isMinifyEnabled=true, install a minified build and exercise
-# login, sync, send/receive, media, streaming, and notifications end to end.
+# Keryx R8 rules. Release builds are minified and resource-shrunk (isMinifyEnabled = true since
+# 1.19.0, see build.gradle.kts), so every rule here is load-bearing on the phone. After adding a
+# library or a reflective path, install a RELEASE build and walk login, send/receive, media,
+# streaming and notifications before shipping. Keep build/outputs/mapping/release/mapping.txt
+# for each release to deobfuscate crash logs.
 
 # --- kotlinx-serialization (reflection over @Serializable companions/serializers) ---
 -keepattributes *Annotation*, InnerClasses
