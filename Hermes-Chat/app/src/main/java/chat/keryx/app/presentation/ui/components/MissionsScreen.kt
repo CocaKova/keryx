@@ -458,7 +458,7 @@ fun MissionsScreen(
         when {
             error != null && board == null -> MissionsEmptyState(
                 line1 = "Board unreachable",
-                line2 = error ?: "",
+                line2 = chat.keryx.core.model.FriendlyError.of(error),
             )
             sections.isEmpty() && filtering -> MissionsEmptyState(
                 line1 = "Nothing matches",

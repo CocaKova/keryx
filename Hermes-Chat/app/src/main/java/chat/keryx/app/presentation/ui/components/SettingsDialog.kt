@@ -891,7 +891,7 @@ fun SettingsScreen(
                         SettingsSwitchRow(
                             anchor = SettingsRow.PRIVACY_LOCK,
                             title = "Biometric App Lock",
-                            subtitle = "Require FaceID/Fingerprint to open Keryx",
+                            subtitle = "Require your fingerprint, face or screen lock to open Keryx",
                             checked = biometricLockEnabled,
                             onCheckedChange = onBiometricLockChanged
                         )

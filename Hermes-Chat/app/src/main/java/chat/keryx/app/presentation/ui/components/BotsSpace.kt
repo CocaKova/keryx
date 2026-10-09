@@ -165,7 +165,7 @@ fun BotsSpace(
     ) {
         PanelErrorLine(panel.error)
         when {
-            snap == null -> PanelLoading()
+            snap == null -> if (panel.error == null) PanelLoading()
             all.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     "No profiles on this gateway yet.\nTap + to make the first bot.",
@@ -230,7 +230,7 @@ fun BotsSpace(
                         onOpen = { open(bot) },
                         onNewSession = {
                             viewModel.createSession("", profile = bot) { err ->
-                                err?.let { viewModel.toast("Couldn't start a session with ${bot.label}: $it") }
+                                err?.let { viewModel.toast("Couldn't start a session with ${bot.label}. ${chat.keryx.core.model.FriendlyError.of(it.toString())}") }
                             }
                             onOpened()
                         },

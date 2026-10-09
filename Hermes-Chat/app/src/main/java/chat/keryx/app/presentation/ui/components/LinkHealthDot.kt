@@ -56,8 +56,8 @@ internal fun LinkHealthDot(
     val label = when (health) {
         chat.keryx.app.presentation.LinkHealth.LIVE -> "Hermes Link: streaming live"
         chat.keryx.app.presentation.LinkHealth.OK -> "Hermes Link: connected"
-        chat.keryx.app.presentation.LinkHealth.UNKNOWN -> "Hermes Link: not tested yet"
-        else -> "Hermes Link: unreachable — replies fall back to Matrix sync"
+        chat.keryx.app.presentation.LinkHealth.UNKNOWN -> "Hermes Link: checking"
+        else -> "Hermes Link: unreachable"
     }
     // The dot is 7dp because it is a whisper. The TAP is not: the click used to sit on the dot
     // itself — a 7dp target, under 3mm, in a top bar whose neighbours are 48dp icon buttons, so

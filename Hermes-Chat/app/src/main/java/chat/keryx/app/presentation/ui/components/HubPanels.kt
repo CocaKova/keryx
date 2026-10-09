@@ -87,7 +87,7 @@ import kotlinx.coroutines.launch
 internal fun PanelErrorLine(error: String?) {
     if (error == null) return
     Text(
-        "⚠ $error",
+        "⚠ ${chat.keryx.core.model.FriendlyError.of(error)}",
         fontSize = KeryxType.micro,
         color = MaterialTheme.colorScheme.error,
         modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
@@ -364,7 +364,7 @@ internal fun JobsTab(viewModel: ChatViewModel) {
         }
         val jobs = panel.data
         when {
-            jobs == null -> PanelLoading()
+            jobs == null -> if (panel.error == null) PanelLoading()
             jobs.isEmpty() -> Text(
                 "No scheduled jobs — create one and the agent runs it on the cron you set.",
                 fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -535,7 +535,7 @@ internal fun SessionsTab(viewModel: ChatViewModel, closeSpace: () -> Unit = {}) 
         }
         val sessions = panel.data
         when {
-            sessions == null -> PanelLoading()
+            sessions == null -> if (panel.error == null) PanelLoading()
             sessions.isEmpty() -> Text(
                 "No sessions on record.",
                 fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -827,7 +827,7 @@ internal fun SkillsTab(viewModel: ChatViewModel) {
         PanelErrorLine(panel.error)
         val skills = panel.data
         when {
-            skills == null -> PanelLoading()
+            skills == null -> if (panel.error == null) PanelLoading()
             else -> {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 20.dp),
@@ -1027,7 +1027,7 @@ internal fun ToolsTab(viewModel: ChatViewModel) {
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
         )
         when {
-            hub == null -> PanelLoading()
+            hub == null -> if (panel.error == null) PanelLoading()
             else -> LazyColumn(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
                     start = 14.dp, end = 14.dp, bottom = 20.dp),

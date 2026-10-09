@@ -284,6 +284,10 @@ fun HermesApp(viewModel: ChatViewModel) {
         // The scrim carries a breath of the accent: the room dims into the void, not into grey.
         scrimColor = androidx.compose.ui.graphics.lerp(Color.Black, MaterialTheme.colorScheme.primary, 0.14f).copy(alpha = 0.55f),
         drawerContent = {
+            // BACK closes the open drawer; without this it fell through and left the app (QA 2.19.1).
+            androidx.activity.compose.BackHandler(enabled = drawerState.targetValue == DrawerValue.Open) {
+                scope.launch { drawerState.close() }
+            }
             ModalDrawerSheet(drawerShape = DrawerShape, drawerContainerColor = Color.Transparent) {
                 NavigationDrawerContent(
                     viewModel = viewModel,
@@ -489,7 +493,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                                             // session, the fresh session runs as that bot.
                                             viewModel.createSession("", profile = viewModel.bots.agentOf(currentRoom?.id)) { err ->
                                                 creating = false
-                                                if (err != null) viewModel.toast("Couldn't start a session: $err")
+                                                if (err != null) viewModel.toast("Couldn't start a session. ${chat.keryx.core.model.FriendlyError.of(err.toString())}")
                                             }
                                         },
                                         onLongClick = {

@@ -288,7 +288,7 @@ internal fun linkHealthColor(health: LinkHealth): Color = when (health) {
 internal fun linkHealthLabel(health: LinkHealth): String = when (health) {
     LinkHealth.LIVE -> "Streaming live"
     LinkHealth.OK -> "Connected"
-    LinkHealth.UNKNOWN -> "Not tested yet"
+    LinkHealth.UNKNOWN -> "Checking…"
     LinkHealth.OFF -> "Side-channel off"
-    else -> "Unreachable — using Matrix sync"
+    else -> "Unreachable"
 }

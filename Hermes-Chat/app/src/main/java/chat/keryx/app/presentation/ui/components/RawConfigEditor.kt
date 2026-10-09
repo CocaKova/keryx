@@ -114,7 +114,7 @@ fun RawConfigEditor(viewModel: ChatViewModel, onDismiss: () -> Unit) {
             }
             when {
                 loadError != null -> Text(
-                    "Couldn't load config.yaml: $loadError",
+                    "Couldn't load config.yaml. ${chat.keryx.core.model.FriendlyError.of(loadError)}",
                     color = MaterialTheme.colorScheme.error,
                     fontSize = KeryxType.caption,
                     modifier = Modifier.padding(vertical = 20.dp),

@@ -262,13 +262,25 @@ object ToolText {
 
     /** ≤80-char one-line preview of the call's primary argument — never a phrased label
      *  (the card owns its own verbs, same contract as the gateway's `context`). */
+    private val CODE_TOOLS = setOf("execute_code", "browser_exec")
+    private val CODE_PREAMBLE = Regex("""^(import\s|from\s+\S+\s+import\s|#|//|"use strict"|'use strict')""")
+
+    /** The first line of [code] past its imports and comments; the code itself when that's all. */
+    internal fun codeLine(code: String): String =
+        code.lineSequence().map { it.trim() }
+            .firstOrNull { it.isNotEmpty() && !CODE_PREAMBLE.containsMatchIn(it) }
+            ?: code
+
     fun contextPreview(name: String, args: JsonObject?): String {
         args ?: return ""
         val primary = primaryArgs[chat.keryx.core.model.ToolWire.canonical(name)]?.let { args[it] }
             ?: FALLBACK_KEYS.firstNotNullOfOrNull { args[it] }
             ?: args.values.firstOrNull { it is JsonPrimitive && it.isString }
         val raw = when (primary) {
-            is JsonPrimitive -> primary.content
+            // Code reads by its first line that does something: a script opens with imports, and
+            // "Ran from hermes_tools import terminal out = …" told you nothing (QA 2.19.1).
+            is JsonPrimitive -> if (chat.keryx.core.model.ToolWire.canonical(name) in CODE_TOOLS) codeLine(primary.content)
+                else primary.content
             null -> return ""
             // 2.19: `clarify.questions`, `delegate_task.tasks`, `skill_manage.operations` —
             // a batch of objects. Draw the first one by its own words, and say how many more.

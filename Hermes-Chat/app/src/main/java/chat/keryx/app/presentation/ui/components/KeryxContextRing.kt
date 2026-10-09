@@ -99,6 +99,10 @@ fun KeryxContextRing(
                 fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = meta,
+                // One line: wrapped, it made the composer grow a row (QA 2.19.1).
+                maxLines = 1,
+                softWrap = false,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
             Spacer(Modifier.width(5.dp))
         }

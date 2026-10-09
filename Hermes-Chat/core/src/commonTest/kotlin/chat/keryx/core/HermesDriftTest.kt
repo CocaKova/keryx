@@ -142,6 +142,15 @@ class HermesDriftTest {
     }
 
     @Test
+    fun `code previews skip imports and comments`() {
+        val code = obj("""{"code":"from hermes_tools import terminal\n# unlock\n\nout = terminal(\"bw unlock\")\nprint(out)"}""")
+        assertEquals("out = terminal(\"bw unlock\")", ToolText.contextPreview("execute_code", code))
+        // Nothing but imports: still says something.
+        val bare = obj("""{"code":"import os"}""")
+        assertEquals("import os", ToolText.contextPreview("execute_code", bare))
+    }
+
+    @Test
     fun `old single-item calls still preview`() {
         assertEquals("ship it", ToolText.contextPreview("delegate_task", obj("""{"goal":"ship it"}""")))
         assertEquals("Which one?", ToolText.contextPreview("clarify", obj("""{"question":"Which one?"}""")))

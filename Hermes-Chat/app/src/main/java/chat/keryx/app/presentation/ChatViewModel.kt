@@ -969,6 +969,19 @@ class ChatViewModel(
         // A gateway that restarted forgets nothing we can't re-ask for, but the composer's model
         // and reasoning pills hide while their caps are unknown, and nothing re-probed them on
         // a reconnect: a restart left the pills gone until the app was reopened (2.17.1).
+        // The status dot on the direct door is the gateway link itself (2.19.1): it only ever
+        // moved for the Matrix side-channel, so here it sat grey on "Not tested yet" for good.
+        direct?.let { d ->
+            viewModelScope.launch {
+                d.linkState().collect { s ->
+                    _linkHealth.value = when (s) {
+                        chat.keryx.core.model.LinkState.CONNECTED -> LinkHealth.OK
+                        chat.keryx.core.model.LinkState.CONNECTING -> LinkHealth.UNKNOWN
+                        else -> LinkHealth.UNREACHABLE
+                    }
+                }
+            }
+        }
         // linkState, not one client's state: it outlives a rebuilt client (the old loop stayed on
         // the dead one's flow), and the Matrix door has no direct link to poll at all.
         direct?.let { d ->
@@ -976,7 +989,13 @@ class ChatViewModel(
                 var wasReady = true
                 d.linkState().collect { s ->
                     val ready = s == chat.keryx.core.model.LinkState.CONNECTED
-                    if (ready && !wasReady) { models.clear(); refreshReasoningCaps() }
+                    if (ready && !wasReady) {
+                        models.clear(); refreshReasoningCaps()
+                        // Panels that failed while the link was down showed their error until
+                        // reopened (QA 2.19.1): the link is back, so ask again.
+                        bots.refresh(force = true)
+                        missions.refreshKanbanQuietly()
+                    }
                     wasReady = ready
                 }
             }
@@ -2157,7 +2176,7 @@ class ChatViewModel(
                 _awaitingReply.value = false
                 settingsRepository.setDraft(session.id, rawContent)
                 _unsent.tryEmit(session.id to rawContent)
-                toast("Not sent: ${e.message?.take(80) ?: "the gateway didn't take it"}")
+                toast("Not sent. ${chat.keryx.core.model.FriendlyError.of(e.message)}")
             }
         }
         _replyTarget.value = null

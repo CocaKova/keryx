@@ -269,7 +269,7 @@ fun RunsSpace(
     ) {
         PanelErrorLine(panel.error)
         when {
-            board == null -> PanelLoading()
+            board == null -> if (panel.error == null) PanelLoading()
             board.cards.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
                     Text(

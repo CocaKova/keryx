@@ -234,7 +234,7 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
                     } else {
                         Column {
                             SectionLabel("Last update")
-                            ReceiptCard(receipt, now)
+                            ReceiptCard(receipt, now, updating = rv?.phase is UpdatePhase.Working)
                         }
                     }
                 }
@@ -344,11 +344,15 @@ private fun RunCard(rv: HermesUpdateDelegate.RunView, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun ReceiptCard(r: UpdateReceipt, now: Long) {
+private fun ReceiptCard(r: UpdateReceipt, now: Long, updating: Boolean) {
     val outcome = UpdateText.receiptOutcome(r.outcome)
+    // A receipt left at "running" with nothing running now: Hermes never wrote how it ended
+    // (it happens when the update restarts the dashboard mid-run). Say that, not "Running".
+    val unfinished = r.outcome == "running" && !updating
     KeryxCard(tint = outcome?.let { outcomeColor(it) }) {
         Text(
-            (outcome?.let { UpdateText.outcomeTitle(it) } ?: r.outcome.replaceFirstChar { it.uppercase() }) +
+            (outcome?.let { UpdateText.outcomeTitle(it) }
+                ?: if (unfinished) "Ended without a record" else r.outcome.replaceFirstChar { it.uppercase() }) +
                 ((r.finishedAt ?: r.startedAt).let { UpdateText.ago(it, now) }?.let { " · $it" } ?: ""),
             fontSize = KeryxType.body,
             fontWeight = FontWeight.SemiBold,
@@ -356,7 +360,7 @@ private fun ReceiptCard(r: UpdateReceipt, now: Long) {
         )
         if (r.preSha.isNotBlank() || r.postSha.isNotBlank()) {
             Text(
-                r.preSha.take(8) + " → " + r.postSha.take(8).ifBlank { "?" } +
+                r.preSha.take(8) + (r.postSha.take(8).takeIf { it.isNotBlank() }?.let { " → $it" } ?: "") +
                     (r.postVersion.takeIf { it.isNotBlank() }?.let { "  ($it)" } ?: ""),
                 fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,

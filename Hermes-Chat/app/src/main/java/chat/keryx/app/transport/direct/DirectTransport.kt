@@ -1264,7 +1264,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 // skill's secret capture): that tool returning means the question resolved,
                 // here or on another client. Interactive tools are dispatch barriers on the
                 // gateway, so no unrelated tool can complete while one is waiting.
-                blockingFlow(storedId).value = null
+                setBlocking(storedId, null) // the shade too: its "needs you" notice outlived an answer given elsewhere
                 val rawName = pStr("name") ?: "tool"
                 val call = chat.keryx.core.model.ToolWire.unwrap(
                     rawName,
