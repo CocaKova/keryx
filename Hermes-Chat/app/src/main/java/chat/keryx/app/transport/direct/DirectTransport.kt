@@ -3827,26 +3827,22 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     }
 
     /**
-     * The gateway's OWN command registry (`commands.catalog`) — 246 commands here, versus
-     * the 11 hardcoded guesses the palette shipped with (which is why `/stop` was missing).
-     * `pairs` is [[name, description]]; the description carries "(usage: …)" for the ones
-     * that take arguments, which is exactly the fill-vs-send signal the palette needs.
+     * The gateway's OWN command registry (`commands.catalog`, stock Hermes): built-ins, quick
+     * commands, plugin commands AND every skill, each with its description. The "/" palette
+     * read only keryx-stream's list, which has no skills (2.19.1). Scoped to [sessionId]'s
+     * live session when there is one, else to its profile: skills are per profile.
+     * A registry description carries "(usage: …)" for commands that take arguments.
      */
-    suspend fun commandCatalog(): Result<List<chat.keryx.core.model.GatewayCommand>> =
+    suspend fun commandCatalog(sessionId: String? = null): Result<List<chat.keryx.app.data.remote.HermesStreamClient.GatewayCommand>> =
         runCatching {
             val rpc = rpc ?: error("gateway not connected")
-            val res = rpc.request("commands.catalog", buildJsonObject { }, timeoutMs = 30_000)
-            val pairs = res["pairs"] as? kotlinx.serialization.json.JsonArray ?: return@runCatching emptyList()
-            pairs.mapNotNull { el ->
-                val row = el as? kotlinx.serialization.json.JsonArray ?: return@mapNotNull null
-                val name = (row.getOrNull(0) as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
-                val desc = (row.getOrNull(1) as? JsonPrimitive)?.contentOrNull.orEmpty()
-                chat.keryx.core.model.GatewayCommand(
-                    cmd = name,
-                    description = desc.substringBefore(" (usage:").trim(),
-                    takesArgs = desc.contains("usage:"),
-                )
-            }
+            val stored = sessionId?.let(::forwarded)
+            val res = rpc.request("commands.catalog", buildJsonObject {
+                val live = stored?.let { storedToLive[it] }
+                if (live != null) put("session_id", JsonPrimitive(live))
+                else stored?.let(::profileFor)?.let { put("profile", JsonPrimitive(it)) }
+            }, timeoutMs = 30_000)
+            CommandCatalog.parse(res)
         }
 
     suspend fun interruptTurn(sessionId: String): Result<Unit> = runCatching {

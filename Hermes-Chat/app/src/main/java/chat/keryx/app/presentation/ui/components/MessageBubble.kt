@@ -627,6 +627,7 @@ private fun ReactionChips(reactions: List<MessageReaction>, isMine: Boolean, onR
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun ReactionPickerRow(
     onPick: (String) -> Unit,
@@ -719,96 +720,50 @@ private fun ReactionPickerRow(
                     modifier = Modifier.fillMaxWidth().height(1.dp)
                         .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)),
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                // Each action wears its name (2.19.1): eight bare icons asked you to remember
+                // what a curved arrow meant. Two rows of up to five, under the emoji.
+                val primary = MaterialTheme.colorScheme.primary
+                val danger = MaterialTheme.colorScheme.error.copy(alpha = 0.85f)
+                androidx.compose.foundation.layout.FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    maxItemsInEachRow = 5,
                 ) {
-                    IconButton(onClick = onReply, modifier = Modifier.size(32.dp)) {
-                        Icon(KeryxGlyphs.Reply, contentDescription = "Reply", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                    }
-                    IconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
-                        Icon(KeryxGlyphs.Copy, contentDescription = "Copy text", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                    }
+                    PickerAction(KeryxGlyphs.Reply, "Reply", "Reply", primary, onReply)
+                    PickerAction(KeryxGlyphs.Copy, "Copy", "Copy text", primary, onCopy)
                     if (onToggleKeep != null) {
-                        IconButton(onClick = onToggleKeep, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                if (kept == true) KeryxGlyphs.BookmarkFilled else KeryxGlyphs.Bookmark,
-                                contentDescription = if (kept == true) "Remove from Saved" else "Keep in Archive",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
+                        PickerAction(
+                            if (kept == true) KeryxGlyphs.BookmarkFilled else KeryxGlyphs.Bookmark,
+                            if (kept == true) "Saved" else "Save",
+                            if (kept == true) "Remove from Saved" else "Keep in Archive",
+                            primary, onToggleKeep,
+                        )
                     }
                     if (onSpeak != null) {
-                        IconButton(onClick = onSpeak, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                if (speaking) KeryxGlyphs.StopSquare else KeryxGlyphs.Volume,
-                                contentDescription = if (speaking) "Stop speaking" else "Read aloud",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
-                    }
-                    if (onUndoTurn != null) {
-                        IconButton(onClick = onUndoTurn, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                androidx.compose.material.icons.Icons.AutoMirrored.Filled.Undo,
-                                contentDescription = "Take back the last exchange",
-                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
-                    }
-                    if (onRetry != null) {
-                        // Beside the undo it rides on (2.11.9): take it back, say it again.
-                        IconButton(onClick = onRetry, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                KeryxGlyphs.Refresh,
-                                contentDescription = "Take it back and say it again",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
+                        PickerAction(
+                            if (speaking) KeryxGlyphs.StopSquare else KeryxGlyphs.Volume,
+                            if (speaking) "Stop" else "Read aloud",
+                            if (speaking) "Stop speaking" else "Read aloud",
+                            primary, onSpeak,
+                        )
                     }
                     if (onSelect != null) {
-                        IconButton(onClick = onSelect, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                androidx.compose.material.icons.Icons.Filled.TextFields,
-                                contentDescription = "Select text",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
+                        PickerAction(androidx.compose.material.icons.Icons.Filled.TextFields, "Select", "Select text", primary, onSelect)
                     }
                     if (onEdit != null) {
-                        IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                androidx.compose.material.icons.Icons.Filled.Edit,
-                                contentDescription = "Edit and send again",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
+                        PickerAction(androidx.compose.material.icons.Icons.Filled.Edit, "Edit", "Edit and send again", primary, onEdit)
+                    }
+                    if (onRetry != null) {
+                        PickerAction(KeryxGlyphs.Refresh, "Retry", "Take it back and say it again", primary, onRetry)
                     }
                     if (onBranch != null) {
-                        IconButton(onClick = onBranch, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                KeryxGlyphs.GitBranch,
-                                contentDescription = "Branch a new session from here",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
+                        PickerAction(KeryxGlyphs.GitBranch, "Branch", "Branch a new session from here", primary, onBranch)
+                    }
+                    if (onUndoTurn != null) {
+                        PickerAction(androidx.compose.material.icons.Icons.AutoMirrored.Filled.Undo, "Undo", "Take back the last exchange", danger, onUndoTurn)
                     }
                     if (onDelete != null) {
-                        IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                KeryxGlyphs.Trash,
-                                contentDescription = "Delete message",
-                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
+                        PickerAction(KeryxGlyphs.Trash, "Delete", "Delete message", danger, onDelete)
                     }
                 }
             }
@@ -817,7 +772,37 @@ private fun ReactionPickerRow(
             }
             }
 
-            internal fun replyPreviewText(m: Message): String = when {
+/** One action in the long-press menu: its icon over its name, one tap target. */
+@Composable
+private fun PickerAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    description: String,
+    tint: Color,
+    onClick: () -> Unit,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(58.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(onClickLabel = description, onClick = onClick)
+            .padding(vertical = 6.dp),
+    ) {
+        Icon(icon, contentDescription = description, tint = tint, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.height(3.dp))
+        Text(
+            label,
+            fontSize = KeryxType.micro,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            softWrap = false,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        )
+    }
+}
+
+internal fun replyPreviewText(m: Message): String = when {
     m.content.isNotBlank() -> m.content.lineSequence().firstOrNull { it.isNotBlank() }?.trim() ?: m.content.trim()
     m.mediaKind != null -> "📎 ${m.fileName.ifBlank { "attachment" }}"
     else -> "message"

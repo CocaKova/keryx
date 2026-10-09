@@ -5,7 +5,7 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
-## 2.19.1 · versionCode 138
+## 2.19.1 · versionCode 139
 
 A polish pass: a code audit (transport, speed, release safety) and a walk through every
 screen on the emulator. No new features.
@@ -18,6 +18,13 @@ screen on the emulator. No new features.
   on every open draws as plain text.
 - Answering from notifications failed on Android 8–11; the voice reader and the built-in push
   service could crash on older or background starts.
+
+**Asked for on the device**
+- The long-press menu on a message names each action under its icon (Reply, Copy, Save,
+  Read aloud, Select, Edit, Retry, Branch, Undo, Delete).
+- The "/" menu lists your skills with their descriptions, tagged "skill", for the chat's own
+  profile. It reads Hermes' own command catalog (keryx-stream's list has no skills); picking
+  a skill fills the composer so you can say what you want done.
 
 **Things that behaved wrong**
 - Skill and bundle slash commands do something on stock Hermes (they go through

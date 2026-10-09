@@ -307,6 +307,25 @@ class HermesStreamClient(
     }
 
     /** One slash command actually installed on the connected gateway (from `GET /keryx/commands`). */
+    companion object {
+        /** The gateway's catalog first (it has skills); the plugin's rows fill in what it lacks:
+         *  commands it doesn't list, plus a category, aliases or argument hint it left blank. */
+        fun mergeCommands(catalog: List<GatewayCommand>, plugin: List<GatewayCommand>): List<GatewayCommand> {
+            if (catalog.isEmpty()) return plugin
+            val pluginBy = plugin.associateBy { it.cmd }
+            val merged = catalog.map { c ->
+                val p = pluginBy[c.cmd] ?: return@map c
+                c.copy(
+                    category = c.category.ifBlank { p.category },
+                    argsHint = c.argsHint.ifBlank { p.argsHint },
+                    aliases = c.aliases.ifEmpty { p.aliases },
+                )
+            }
+            val have = merged.mapTo(HashSet()) { it.cmd }
+            return merged + plugin.filter { it.cmd !in have }
+        }
+    }
+
     data class GatewayCommand(
         val cmd: String,
         val description: String,

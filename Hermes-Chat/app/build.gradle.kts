@@ -30,7 +30,7 @@ android {
         // not cover.
         minSdk = 26
         targetSdk = 36
-        versionCode = 138
+        versionCode = 139
         versionName = "2.19.1"
         // The on-device canary (app/src/androidTest) runs on this; without it `connectedCheck`
         // finds no instrumentation and reports green having run nothing.

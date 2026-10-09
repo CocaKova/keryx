@@ -56,14 +56,31 @@ class HubDelegate(deps: GatewayDeps) {
         _gatewayCommands.asStateFlow()
     private var gatewayCommandsFetchedAt = 0L
 
-    fun refreshGatewayCommands() {
-        val client = bareClient() ?: return
+    private var gatewayCommandsScope: String? = null
+
+    /**
+     * [catalog]: the gateway's own `commands.catalog` (the direct door), which lists skills with
+     * their descriptions; keryx-stream's `/keryx/commands` has none. Both are read and merged,
+     * the catalog first. [scopeKey] names the chat it was asked for: skills are per profile, so
+     * moving to another chat asks again rather than waiting out the minute.
+     */
+    fun refreshGatewayCommands(
+        scopeKey: String? = null,
+        catalog: (suspend () -> Result<List<chat.keryx.app.data.remote.HermesStreamClient.GatewayCommand>>)? = null,
+    ) {
+        val client = bareClient()
+        if (client == null && catalog == null) return
         val now = System.currentTimeMillis()
-        if (_gatewayCommands.value.isNotEmpty() && now - gatewayCommandsFetchedAt < 60_000L) return
+        if (_gatewayCommands.value.isNotEmpty() && scopeKey == gatewayCommandsScope &&
+            now - gatewayCommandsFetchedAt < 60_000L
+        ) return
         gatewayCommandsFetchedAt = now
+        gatewayCommandsScope = scopeKey
         scope.launch {
-            client.commands()
-                .onSuccess { if (it.isNotEmpty()) _gatewayCommands.value = it }
+            val fromCatalog = catalog?.invoke()?.getOrNull().orEmpty()
+            val fromPlugin = client?.commands()?.getOrNull().orEmpty()
+            val merged = chat.keryx.app.data.remote.HermesStreamClient.mergeCommands(fromCatalog, fromPlugin)
+            if (merged.isNotEmpty()) _gatewayCommands.value = merged
         }
     }
 

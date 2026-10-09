@@ -90,6 +90,8 @@ internal data class SlashCommand(
     val desc: String,
     val takesArgs: Boolean,
     val aliases: List<String> = emptyList(),
+    /** A skill, not a console command: the row says so (2.19.1). */
+    val isSkill: Boolean = false,
 )
 
 /** Offline fallback: the palette before the gateway's live registry has been fetched. */
@@ -125,6 +127,7 @@ fun CommandPaletteMenu(
                 desc = it.description,
                 takesArgs = it.argsHint.isNotBlank(),
                 aliases = it.aliases,
+                isSkill = it.category == chat.keryx.app.transport.direct.CommandCatalog.SKILL,
             )
         }
     }
@@ -161,9 +164,16 @@ fun CommandPaletteMenu(
                                 Text("…", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = KeryxType.title)
                             }
                         }
-                        Text(sc.desc, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = KeryxType.caption)
+                        // Skill descriptions run long; two lines say enough to choose by.
+                        Text(
+                            sc.desc, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = KeryxType.caption,
+                            maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        )
                     }
-                    if (isRecent) Text("recent", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f), fontSize = KeryxType.micro)
+                    when {
+                        isRecent -> Text("recent", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f), fontSize = KeryxType.micro)
+                        sc.isSkill -> Text("skill", color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f), fontSize = KeryxType.micro)
+                    }
                 }
             }
         }

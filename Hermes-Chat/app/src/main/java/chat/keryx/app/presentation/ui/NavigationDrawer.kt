@@ -345,7 +345,7 @@ fun NavigationDrawerContent(
                             if (viewModel.hub.reasoningCaps.value != null) viewModel.hub.refreshCron()
                             // The palette's commands (2.10) — rate-limited inside, so this is
                             // one fetch a minute at most.
-                            viewModel.hub.refreshGatewayCommands()
+                            viewModel.refreshCommands()
                             // Wave hello when the drawer opens, then settle into the idle loop.
                             petGreeting = true
                             kotlinx.coroutines.delay(2200)

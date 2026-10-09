@@ -1117,7 +1117,7 @@ fun ChatScreen(
         LaunchedEffect(commandMenuVisible) {
             // Opening "/" refreshes the live registry (throttled in the VM); the preset list
             // covers the gap until the first successful fetch.
-            if (commandMenuVisible) viewModel.hub.refreshGatewayCommands()
+            if (commandMenuVisible) viewModel.refreshCommands()
         }
         AnimatedVisibility(
             visible = commandMenuVisible,

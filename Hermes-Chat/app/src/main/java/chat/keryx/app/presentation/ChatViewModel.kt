@@ -2063,6 +2063,14 @@ class ChatViewModel(
     }
 
     // One-shot user-facing messages (e.g. avatar set result) — collected once at the app root.
+    /** Refresh the "/" palette for the open chat: the gateway's own catalog (skills included,
+     *  for this chat's profile) plus keryx-stream's list. */
+    fun refreshCommands() {
+        val room = _currentRoom.value?.id
+        val d = direct
+        hub.refreshGatewayCommands(scopeKey = room, catalog = d?.let { dt -> { dt.commandCatalog(room) } })
+    }
+
     /** The voice call screen is up. Survives a rotation, never a process death. */
     val callShown = androidx.compose.runtime.mutableStateOf(false)
 
