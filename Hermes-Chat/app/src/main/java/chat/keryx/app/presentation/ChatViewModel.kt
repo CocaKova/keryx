@@ -2044,6 +2044,9 @@ class ChatViewModel(
     }
 
     // One-shot user-facing messages (e.g. avatar set result) — collected once at the app root.
+    /** The voice call screen is up. Survives a rotation, never a process death. */
+    val callShown = androidx.compose.runtime.mutableStateOf(false)
+
     /** A send that failed hands its words back: (room id, text) for the composer to refill. */
     private val _unsent = kotlinx.coroutines.flow.MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 1)
     val unsent: kotlinx.coroutines.flow.SharedFlow<Pair<String, String>> = _unsent

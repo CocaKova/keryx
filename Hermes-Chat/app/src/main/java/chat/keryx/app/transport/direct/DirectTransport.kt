@@ -766,12 +766,27 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             )
         }
 
+        /** The row each step was last drawn as, by seq. A step that hasn't changed hands back
+         *  the same Message: rebuilt every tick with a fresh timestamp, no finished row of a
+         *  live turn could ever skip recomposing (2.19.1). */
+        private val itemRows = HashMap<Int, Pair<TurnItem, Message>>()
+
+        private fun rowFor(item: TurnItem): Message {
+            val id = LiveTurnIds.item(turnTag, item.seq)
+            val prev = itemRows[item.seq]?.takeIf { it.second.id == id }
+            if (prev != null && prev.first == item) return prev.second
+            val row = itemMessage(item, id, prev?.second?.timestamp ?: System.currentTimeMillis())
+            itemRows[item.seq] = item to row
+            return row
+        }
+
         private fun publish() {
+            if (items.isEmpty()) itemRows.clear()
             val overlay = if (streaming) buildList {
                 val now = System.currentTimeMillis()
                 // Sealed items get seq-stable ids so Compose keys survive re-publishes — and
                 // the fold in [streamComplete], which hands the same rows the same names.
-                items.forEach { add(itemMessage(it, LiveTurnIds.item(turnTag, it.seq), now)) }
+                items.forEach { add(rowFor(it)) }
                 add(
                     Message(
                         id = LiveTurnIds.answer(turnTag),
@@ -885,6 +900,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         if (!settings.directLoggedIn) return
         android.util.Log.w("KeryxGw", "gateway credential rejected — signing the door out to re-onboard")
         settings.directLoggedIn = false
+        dropLiveState()
         _loggedIn.value = false
     }
 
@@ -2179,6 +2195,9 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             // each pulse the full session record, system prompt and all. Back on screen it
             // polls at once, so a foreign turn that moved meanwhile shows on the first frame.
             if (!foreground.value) foreground.first { it }
+            // The open's first page failed (a timeout, the link down): try it again here, or the
+            // room stayed blank until it was left and reopened.
+            if (!st.hydrated) runCatching { hydrate(storedId) }
             val rest = rest
             val busy = storedId in _busyStored.value
             val pulse = if (rest == null || busy) null
@@ -2386,10 +2405,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     // Uploaded-image bytes by local message id — serves the echo bubble's loader. A reloaded
     // session has no bytes; its user photos come back as `@image:<path>` lines, which
     // expandMediaTags lifts into media rows fetched over /api/files/download like MEDIA: files.
-    private val localMediaBytes = java.util.concurrent.ConcurrentHashMap<String, ByteArray>()
+    private val localMediaBytes = chat.keryx.app.util.BoundedByteCache(32L * 1024 * 1024) // every photo sent stayed in memory for the life of the process
 
     override suspend fun mediaBytes(sessionId: String, eventId: String): ByteArray? {
-        localMediaBytes[eventId]?.let { return it }
+        localMediaBytes.get(eventId)?.let { return it }
         val path = remoteMediaPaths[eventId] ?: recoverRemoteMediaPath(sessionId, eventId) ?: return null
         val r = rest ?: return null
         // A MEDIA: value is either a path on the gateway host or an absolute URL the agent
@@ -2500,7 +2519,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 }, timeoutMs = 60_000)
                 notes += res["text"]?.primitiveOrNull?.contentOrNull ?: "[image attached]"
                 val echoId = store(sessionId).localUserImage(echoCaption, f.name)
-                localMediaBytes[echoId] = f.bytes
+                localMediaBytes.put(echoId, f.bytes)
             } else {
                 val res = rpc.request("file.attach", buildJsonObject {
                     put("session_id", JsonPrimitive(live))
@@ -2532,7 +2551,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             }, timeoutMs = 60_000)
             val attachNote = res["text"]?.primitiveOrNull?.contentOrNull ?: "[image attached]"
             val echoId = store(sessionId).localUserImage(caption.orEmpty(), fileName)
-            localMediaBytes[echoId] = bytes
+            localMediaBytes.put(echoId, bytes)
             val text = caption?.takeIf { it.isNotBlank() } ?: ""
             try {
                 rpc.request("prompt.submit", buildJsonObject {
@@ -3215,7 +3234,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         if (accepted) {
             // The gateway records the correction on the inflight turn server-side; echo it
             // locally the same way slash sends do, so the user sees their words land NOW.
-            store(sessionId).localUserMessage(text)
+            // Under the pump's lock, like every other store write: a delta publishing at the
+            // same moment threw ConcurrentModification, and a steer the gateway had queued
+            // reported failure (so it was sent again).
+            synchronized(pumpLock) { store(sessionId).localUserMessage(text) }
         }
         accepted
     }
@@ -3839,14 +3861,18 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         // phone with nothing left to seal it. Give the gateway its say, then seal ourselves.
         scope.launch {
             delay(INTERRUPT_SEAL_MS)
-            val st = stores[sessionId] ?: return@launch
-            if (!st.isStreaming) return@launch
-            android.util.Log.w("KeryxGw", "stop ${sessionId.take(8)}: no message.complete after ${INTERRUPT_SEAL_MS} ms, sealing locally")
-            st.streamComplete(finalText = "", error = false); settleRate(st, null, "")
-            markBusy(sessionId, false)
-            setBlocking(sessionId, null)
-            statusFlow(sessionId).value = null
-            _turnEvents.tryEmit(chat.keryx.core.model.TurnEvent.End(sessionId, "", error = false))
+            // The session may have compacted into a continuation meanwhile: seal where it lives.
+            val storedId = forwarded(sessionId)
+            synchronized(pumpLock) {
+                val st = stores[storedId] ?: return@launch
+                if (!st.isStreaming) return@launch
+                android.util.Log.w("KeryxGw", "stop ${storedId.take(8)}: no message.complete after ${INTERRUPT_SEAL_MS} ms, sealing locally")
+                st.streamComplete(finalText = "", error = false); settleRate(st, null, "")
+            }
+            markBusy(storedId, false)
+            setBlocking(storedId, null)
+            statusFlow(storedId).value = null
+            _turnEvents.tryEmit(chat.keryx.core.model.TurnEvent.End(storedId, "", error = false))
         }
         Unit
     }
@@ -4113,9 +4139,24 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         pumpJob?.cancel()
         requestJob?.cancel()
         stateJob?.cancel()
+        dropLiveState()
+        rest = null
         _linkState.value = chat.keryx.core.model.LinkState.DISCONNECTED
         settings.directLoggedIn = false
         _loggedIn.value = false
+    }
+
+    /** Everything that described a turn or a request on the gateway we just left. Without it a
+     *  logout mid-turn kept the "agent running" notice and Gate notifications up for good, and
+     *  each open room's follower kept polling (2.19.1). */
+    private fun dropLiveState() {
+        stores.values.forEach { st -> st.followJob?.cancel(); st.followJob = null; st.agentTyping.value = false }
+        _runs.value = emptyMap()
+        _busyStored.value = emptySet()
+        _shadePending.value = emptyMap()
+        approvalFlows.values.forEach { it.value = null }
+        blockingFlows.values.forEach { it.value = null }
+        statusFlows.values.forEach { it.value = null }
     }
 
     override suspend fun createSession(title: String?, profile: chat.keryx.core.model.BotProfile?): Result<String> =

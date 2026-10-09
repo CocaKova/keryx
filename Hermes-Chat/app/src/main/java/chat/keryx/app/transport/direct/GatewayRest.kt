@@ -310,7 +310,8 @@ class GatewayRest(
                         preview = o.str("preview") ?: "",
                         snippet = o.str("snippet") ?: "",
                         role = o.str("role") ?: "",
-                        lastActive = o.epochMs("last_active"),
+                        // A text hit has no recency (null): its session's start, not 1970.
+                        lastActive = o.epochMs("last_active").takeIf { it > 0 } ?: o.epochMs("session_started"),
                         messageCount = (o["message_count"] as? JsonPrimitive)?.longOrNull ?: 0,
                     )
                 }

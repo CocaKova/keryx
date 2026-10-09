@@ -161,6 +161,13 @@ private fun readBounded(input: java.io.InputStream, max: Long): ByteArray? {
     return out.toByteArray()
 }
 
+/** Reads [rate] in its own scope, so a rate tick recomposes [content] and not its caller. */
+@Composable
+private fun ReadRate(
+    rate: androidx.compose.runtime.State<chat.keryx.core.model.LiveRate?>,
+    content: @Composable (chat.keryx.core.model.LiveRate?) -> Unit,
+) = content(rate.value)
+
 /** A turn shorter than this ends without the completion tick — you never looked away. */
 private const val COMPLETION_TICK_MIN_MS = 1_500L
 
@@ -208,7 +215,9 @@ fun ChatScreen(
     val typingHumans by viewModel.typingHumans.collectAsState()
     val typingAgentIds by viewModel.typingAgentIds.collectAsState()
     val liveStream by viewModel.liveStream.collectAsState()
-    val liveRate by viewModel.liveRate.collectAsState()
+    // Held as State, read only where drawn: a by-delegate read here recomposed the whole
+    // screen on every rate tick (about 4/s through a turn).
+    val liveRateState = viewModel.liveRate.collectAsState()
     val sessionControl by viewModel.sessionControl.collectAsState()
     val asides by viewModel.asides.collectAsState()
     val redirectAvailable by viewModel.redirectAvailable.collectAsState()
@@ -713,9 +722,8 @@ fun ChatScreen(
         val bottomReserve = with(density) { composerHeightPx.toDp() } + 28.dp
         // Honest sand (2.16): the pour reads the live rate each frame through State, so it
         // follows the stream (and stops on a stall) without recomposing anything.
-        val liveRateNow = androidx.compose.runtime.rememberUpdatedState(liveRate)
         val sandPour = remember {
-            { chat.keryx.app.presentation.ui.components.sandPour(liveRateNow.value, System.currentTimeMillis()) }
+            { chat.keryx.app.presentation.ui.components.sandPour(liveRateState.value, System.currentTimeMillis()) }
         }
         androidx.compose.runtime.CompositionLocalProvider(
             chat.keryx.app.presentation.ui.components.LocalTurnRates provides turnRates,
@@ -858,8 +866,15 @@ fun ChatScreen(
                             // what counts as thought), so "only" is judged by the parse, not by
                             // blankness.
                             val thought = message.reasoning?.takeIf { it.isNotBlank() }
-                            if (thought != null && (message.content.isBlank() ||
-                                    chat.keryx.core.protocol.MessageParser.isReasoningOnly(message.content))) {
+                            // Remembered by content, and parsed only when the body could hold a
+                            // thought marker at all: this ran a full parse of the streaming row
+                            // on every tick (2.19.1).
+                            val reasoningOnly = remember(message.content, thought != null) {
+                                thought != null && message.content.isNotBlank() &&
+                                    (message.content.contains('<') || message.content.contains('◁') || message.content.contains("💭") || message.content.contains("🧠")) &&
+                                    chat.keryx.core.protocol.MessageParser.isReasoningOnly(message.content)
+                            }
+                            if (thought != null && (message.content.isBlank() || reasoningOnly)) {
                                 chat.keryx.app.presentation.ui.components.ReasoningDisclosure(
                                     reasoning = thought,
                                     seconds = message.reasoningSeconds,
@@ -882,8 +897,10 @@ fun ChatScreen(
                             }
                             // Automated telemetry never gets a chat bubble: it renders as a quiet,
                             // low-contrast block (or nothing at all when telemetry is hidden).
-                            val isTelem = message.sender == SenderType.HERMES &&
-                                chat.keryx.app.presentation.ui.components.isTelemetryMessage(message)
+                            val isTelem = remember(message.content, message.sender) {
+                                message.sender == SenderType.HERMES &&
+                                    chat.keryx.app.presentation.ui.components.isTelemetryMessage(message)
+                            }
                             if (isTelem) {
                                 if (chat.keryx.app.presentation.ui.components.showsTelemetryRow(message, showTelemetry)) {
                                     TelemetryMessageRow(message, textScale = messageTextScale)
@@ -1370,7 +1387,6 @@ fun ChatScreen(
         // plus the live rate while text is flowing (2.16: "≈ tok/s", through the calibrated ratio
         // or the default one before a real count exists; it falls toward zero during a stall).
         // Pinned at the top so it stays put for the whole run, unlike the per-message tool labels.
-        val topRate = liveRate
         // The cloud wears the running tool's colour (2.16): the newest call still executing in
         // this turn, by its family's tint — the same tint its row in the run wears.
         val runningTool = remember(renderItems) {
@@ -1431,7 +1447,7 @@ fun ChatScreen(
                     chat.keryx.app.presentation.ui.components.GoalStrip(control, onAction = viewModel::goalAction)
                 }
             }
-            WorkingStatusBar(
+            ReadRate(liveRateState) { topRate -> WorkingStatusBar(
                 visible = awaitingReply || (topRate?.cps ?: 0f) > 0f || compacting != null,
                 label = compacting?.headline(
                     fallbackTokens = contextUsageNow?.takeIf { it.roomId == currentRoom?.id }?.used,
@@ -1447,7 +1463,7 @@ fun ChatScreen(
                     .padding(top = 6.dp)
                     .onGloballyPositioned { viewModel.cloudBounds = it.boundsInRoot() },
                 onTapIn = { openTapIn() },
-            )
+            ) }
         }
     }
 

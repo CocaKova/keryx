@@ -308,7 +308,9 @@ fun HermesApp(viewModel: ChatViewModel) {
         // shader now — one dithered pass, so no gradient edge can survive it.
         // The Call is a full-screen overlay drawn over the whole room (below), not a Dialog —
         // see CallScreen for why. Its state lives here so the top bar can open it.
-        var showCall by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+        // In the ViewModel, not saved state: a rotation keeps the call, but a process the system
+        // killed must not reopen it by itself and start the microphone (2.19.1).
+        var showCall by viewModel.callShown
         // The floor's sky rests while a place or the Call covers it (2.10): every place paints
         // its own opaque sky, so two shaders were running for one visible backdrop.
         Box(modifier = Modifier.fillMaxSize().keryxDuskSky(animate = nav.atFloor && !showCall)) {

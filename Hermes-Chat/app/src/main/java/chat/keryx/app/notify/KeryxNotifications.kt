@@ -156,6 +156,23 @@ object KeryxNotifications {
             .setWhen(timestamp)
             .setShowWhen(true)
             .setContentIntent(tapIntent(context, roomId))
+        // With the app lock on, what the agent said stays off a secure lock screen too: who
+        // wrote is shown, the words wait for the unlock (2.19.1). Gate notices already do this.
+        val appLocked = (context.applicationContext as? chat.keryx.app.KeryxApp)
+            ?.settingsRepository?.biometricLockEnabled == true
+        if (appLocked) {
+            builder.setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+                .setPublicVersion(
+                    NotificationCompat.Builder(context, CHANNEL_ID)
+                        .setSmallIcon(R.drawable.ic_stat_keryx)
+                        .setContentTitle(notice.conversation)
+                        .setContentText("New message")
+                        .setColor(if (failed) COLOR_FAILED else accentFor(notice.speakerKey, notice.speaker))
+                        .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                        .setContentIntent(tapIntent(context, roomId))
+                        .build(),
+                )
+        }
 
         // Decision buttons first (they're the point when present), then the universal Reply.
         quickActions.take(MAX_NOTIFICATION_OPTIONS).forEach { option ->

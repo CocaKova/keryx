@@ -54,8 +54,6 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
     // now locks at cold start and whenever the app returns after RELOCK_AFTER_MS in the
     // background; content is replaced (not overlaid) by the lock screen while locked.
     private val locked = androidx.compose.runtime.mutableStateOf(false)
-    private var lastStoppedAt = 0L
-    private var unlockedOnce = false
 
     private fun lockAvailable(): Boolean =
         androidx.biometric.BiometricManager.from(this).canAuthenticate(
@@ -108,6 +106,12 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
     }
 
     private companion object {
+        // Process-wide, not per activity: a rotation or a dark-mode switch builds a new
+        // activity, and per-instance fields asked for the fingerprint again each time (2.19.1).
+        // A cold start still locks: the process is new, so these are too.
+        var lastStoppedAt = 0L
+        var unlockedOnce = false
+
         /** Returning within this window skips re-auth (quick app switches stay fluid). */
         const val RELOCK_AFTER_MS = 60_000L
     }
@@ -166,10 +170,16 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
             }
         }
 
-        // A notification tap delivers the room id; open it.
-        handleNotificationIntent(intent)
-        handleAssistIntent(intent)
-        handleDeepLink(intent)
+        // A notification tap delivers the room id; open it. Only for a fresh intent: a restored
+        // activity, or one reopened from Recents, carries the old one again, and replaying it
+        // made a second "new chat" or reopened a long-handled notification (2.19.1).
+        val replayed = savedInstanceState != null ||
+            (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
+        if (!replayed) {
+            handleNotificationIntent(intent)
+            handleAssistIntent(intent)
+            handleDeepLink(intent)
+        }
 
         enableEdgeToEdge()
         setContent {
