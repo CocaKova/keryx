@@ -5,6 +5,51 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.19.1 · versionCode 138
+
+A polish pass: a code audit (transport, speed, release safety) and a walk through every
+screen on the emulator. No new features.
+
+**Crashes fixed**
+- A login page or captive portal answering instead of Hermes crashed Keryx on every connect.
+- Sending while the link was down crashed. It now says "Not sent" and puts your words back.
+- A very long message (a pasted log) froze the screen; past 64K characters a bubble shows the
+  start and a note, and Copy still takes it all. Deeply nested markdown that crashed the chat
+  on every open draws as plain text.
+- Answering from notifications failed on Android 8–11; the voice reader and the built-in push
+  service could crash on older or background starts.
+
+**Things that behaved wrong**
+- Skill and bundle slash commands do something on stock Hermes (they go through
+  `command.dispatch`, as Hermes asks).
+- Undo, resync and the "stopped" re-read work in Bot Chats and other profiles (they 404'd).
+- Your own turn no longer shows twice when another client adds to the open chat, and a reply
+  no longer stays "streaming" after a reconnect.
+- The Gate "Answer" text reaches the gateway; a retried shade answer only answers the request
+  it showed; answering no longer drops the connection.
+- Logging out mid-turn clears the run and Gate notices.
+- BACK closes the drawer instead of leaving the app.
+- The status dot shows the real connection; panels retry when the link returns, and errors
+  read as advice ("needs the keryx-stream plugin", "can't find the gateway") instead of
+  "HTTP 404".
+- The app lock no longer asks again on rotation; a reopened app doesn't replay its last link.
+- Code tool rows say what the code did, not its import line.
+
+**Speed and battery**
+- During a live turn only the row still changing redraws, and the chat screen no longer
+  redraws on every tok/s tick.
+- Photos are read and shrunk off the main thread, sent at most 2560 px, and turned upright.
+- Transcript pages skip inline image data; a settings cache that grew with every chat opened
+  (and was read at startup) is trimmed.
+- Background reconnects back off to 5 minutes; a network change or opening the app reconnects
+  at once.
+
+**Privacy and safety**
+- Reply and quick answers on notifications ask for the unlock, like Approve.
+- With the app lock on, message notifications hide their text on the lock screen.
+- Artifact pages can't load hidden files (`.env`) from the gateway; the share sheet only takes
+  files other apps share; downloads are capped at 64 MB; release logs carry no call speech.
+
 ## 2.19.0 · versionCode 137
 
 Catching up with Hermes, and a tripwire so the next rename can't slip past.
