@@ -245,4 +245,18 @@ class HermesUpdateTest {
         assertFalse(check.isUpdateRun)
         assertTrue(check.copy(outcome = "success").isUpdateRun)
     }
+
+    @Test
+    fun `the log tail starts at this run`() {
+        val tail = listOf(
+            "=== hermes-update started 2026-09-24 18:41:27 ===",
+            "✗ raw `hermes update` is disabled on this install",
+            "=== hermes-update started 2026-10-09 10:31:56 f10c1d6 ===",
+            "→ Fetching updates...",
+        )
+        assertEquals(tail.drop(2), HermesUpdateParser.currentRun(tail))
+        val older = listOf("old line", "=== hermes-update completed abc ===", "new line")
+        assertEquals(listOf("new line"), HermesUpdateParser.currentRun(older))
+        assertEquals(listOf("a", "b"), HermesUpdateParser.currentRun(listOf("a", "b")))
+    }
 }

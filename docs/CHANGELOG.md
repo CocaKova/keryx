@@ -5,7 +5,7 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
-## 2.19.0 · versionCode 136
+## 2.19.0 · versionCode 137
 
 Catching up with Hermes, and a tripwire so the next rename can't slip past.
 
@@ -62,6 +62,8 @@ Catching up with Hermes, and a tripwire so the next rename can't slip past.
 - "Check for updates" refreshes both sources and shows "Checking…" until both have answered.
   Then the card itself says when it last checked, so a repeat answer still looks answered. When
   Hermes knows a newer version exists but not how far behind you are, the card says that plainly.
+- The update's live log shows only this run. Hermes appends every update to one log file, so
+  the end of an older run used to appear above yours.
 - "Last update" only shows real update runs. Hermes' plugin-update check writes a receipt too
   ("Updates-available"), which used to be shown as if it were the last update.
 - Update now always runs Hermes' own `hermes update`. An operator wrapper set in config.yaml

@@ -227,9 +227,26 @@ object HermesUpdateParser {
         return UpdateActionStatus(
             running = o.bool("running"),
             exitCode = o.int("exit_code"),
-            lines = (o["lines"] as? JsonArray).orEmpty().mapNotNull { (it as? JsonPrimitive)?.contentOrNull },
+            lines = currentRun((o["lines"] as? JsonArray).orEmpty().mapNotNull { (it as? JsonPrimitive)?.contentOrNull }),
             receipt = receipt(o["receipt"]),
         )
+    }
+
+    private val RUN_START = Regex("""^=== hermes[- ]update started\b""")
+    private val RUN_END = Regex("""^=== hermes[- ]update (completed|failed|finished)\b""")
+
+    /**
+     * Only this run's lines. Hermes appends every update to one `update.log`, and the status
+     * route serves its tail — so a short run arrived under the end of an older one (device,
+     * 10-09: a 09-24 shim refusal mentioning silas-update sat above the run you started).
+     * Cut at the newest start marker; with none in the window, drop anything up to the last
+     * end marker, which belongs to a run already over.
+     */
+    fun currentRun(lines: List<String>): List<String> {
+        val start = lines.indexOfLast { RUN_START.containsMatchIn(it.trim()) }
+        if (start >= 0) return lines.drop(start)
+        val end = lines.indexOfLast { RUN_END.containsMatchIn(it.trim()) }
+        return if (end >= 0) lines.drop(end + 1) else lines
     }
 
     fun startAnswer(el: JsonElement): UpdateStartAnswer? {
