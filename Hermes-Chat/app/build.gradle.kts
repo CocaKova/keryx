@@ -30,8 +30,8 @@ android {
         // not cover.
         minSdk = 26
         targetSdk = 36
-        versionCode = 129
-        versionName = "2.18.1"
+        versionCode = 130
+        versionName = "2.19.0"
         // The on-device canary (app/src/androidTest) runs on this; without it `connectedCheck`
         // finds no instrumentation and reports green having run nothing.
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -90,6 +90,17 @@ android {
 
 kotlin {
     jvmToolchain(21)
+}
+
+// Compose stability reports (2.19, perf groundwork): which composables skip, which classes the
+// compiler can't prove stable. Opt-in, so everyday builds don't pay for it:
+//   ./gradlew :app:compileReleaseKotlin -Pkeryx.composeReports
+// Output: app/build/compose_compiler/ — summarised in docs/PERF-BASELINE.md.
+if (providers.gradleProperty("keryx.composeReports").isPresent) {
+    composeCompiler {
+        reportsDestination = layout.buildDirectory.dir("compose_compiler")
+        metricsDestination = layout.buildDirectory.dir("compose_compiler")
+    }
 }
 
 dependencies {

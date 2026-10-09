@@ -5,6 +5,51 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.19.0 · versionCode 130
+
+Catching up with Hermes, and a tripwire so the next rename can't slip past.
+
+**Hermes changed names; Keryx follows**
+- Hermes renamed five tools (`todo` → `todo_list`, `cronjob` → `cronjob_manage`, `process` →
+  `process_manage`, `tour` → `gui_tour`, `tip` → `show_tip`). Old and new names now read the
+  same, so the cron tool says "Scheduled" again.
+- Tools Hermes hides behind its `tool_call` bridge show as the real tool, live and in history
+  (Home Assistant, image generation, cron, process and others), instead of "tool call".
+- New verbs for kanban, Home Assistant, X search, video and computer-use tools. MCP and connector
+  tools show their app's name ("Linear create issue").
+- `clarify`, `delegate_task` and `skill_manage` now take lists. Their row previews show the
+  first question, task or skill, plus "+N" for the rest, instead of nothing.
+- The Flight Plan also follows Hermes' `todo.updated` event, so it no longer depends on a tool name.
+
+**The session list**
+- A conversation that compacted shows once, not beside its old self. A pin or notification that
+  still holds an old id opens the live conversation.
+- Forks sit under the conversation they came from, slightly indented with a fork mark, and move
+  through the day shelves together. `/new` resets stay separate conversations.
+- On launch, the conversation you last had open reopens even when it isn't on the list's first
+  page (a scheduled run, an older chat).
+
+**In the chat**
+- A mid-turn steer shows your words, not Hermes' out-of-band wrapper.
+- "Operation interrupted: waiting for model response" is no longer shown as the agent speaking.
+  A turn that carried on by itself drops the line; one that really stopped shows a quiet
+  "interrupted" divider.
+- An approval whose turn was stopped disappears instead of waiting forever.
+- When Hermes flags a tool's output (a prompt injection, a leaked secret), the tool row says so.
+  Live turns only, because Hermes doesn't save the flag.
+- With the Hermes desktop app on the same session, the phone no longer cancels its tours and
+  previews. It steps aside so Desktop can answer.
+
+**Smaller fixes**
+- Bots whose profile name has "_" are greyed out in New group chat, with the reason. Hermes
+  rooms can't hold them, and creating the room used to fail with a bare error.
+- Starting a fresh Bot Chat twice in one minute no longer fails.
+
+**Under the hood**
+- `tools/hermes_drift.py` checks every Hermes name Keryx relies on against a live Hermes (tools
+  and their arguments, gateway methods, events), and the ship gate runs it on every build. Its
+  first run found the three list-shaped tools above.
+
 ## 2.18.1 · versionCode 129
 
 - The Flight Plan strip shows again. Hermes renamed its `todo` tool to `todo_list` (the old name
