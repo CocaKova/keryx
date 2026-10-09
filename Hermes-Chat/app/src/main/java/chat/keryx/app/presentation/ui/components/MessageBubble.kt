@@ -672,8 +672,8 @@ private fun ReactionPickerRow(
         ) {
             Surface(
                 shape = RoundedCornerShape(22.dp),
-                // Translucent, faintly accent-tinted "frosted" fill for the dream aesthetic.
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                // Solid (2.19.1): at 92% the bubble under it read through the labels.
+                color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 10.dp,
                 modifier = Modifier
                     .padding(vertical = 4.dp)
