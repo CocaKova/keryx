@@ -184,4 +184,16 @@ class HermesDriftTest {
         val mixed = listOf(ToolGrammar.Mention("ha_list_entities", "light"), ToolGrammar.Mention("memory", ""))
         assertEquals("Used 2 tools", ToolGrammar.summarize(mixed, live = false))
     }
+
+    @Test
+    fun `a stopped reply keeps its words and says it was stopped`() {
+        val rows = listOf(
+            row(1, "user", "write a story"),
+            MessageRow(id = 2, role = "assistant", content = "Once upon a", toolName = null, timestamp = 2,
+                reasoning = null, interrupted = true),
+        )
+        val out = TranscriptBuilder.build("r", rows)
+        assertEquals("Once upon a", out[1].content)
+        assertEquals("stopped", out[2].mark?.label)
+    }
 }

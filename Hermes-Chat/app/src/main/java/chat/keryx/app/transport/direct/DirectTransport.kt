@@ -623,6 +623,9 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         /** Drop the rows this process life added on its own — a re-read is about to replace them. */
         fun clearLocal() { local = emptyList(); publish() }
 
+        /** [clearLocal] without the paint — the caller publishes the replacement next. */
+        fun dropLocalQuietly() { local = emptyList() }
+
         /** Paint now. A replay applies a burst of deltas inside one throttle window, and its
          *  last words must not wait for the next live frame to show (2.16). */
         fun republish() = publish()
@@ -647,21 +650,6 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 sender = SenderType.ME,
                 content = text,
                 timestamp = System.currentTimeMillis(),
-            )
-            publish()
-        }
-
-        /** A divider under the turn it closes — the same mark history draws for Hermes' own
-         *  interrupt sentinel ([chat.keryx.core.protocol.InterruptSentinel]). */
-        fun localMark(label: String) {
-            val now = System.currentTimeMillis()
-            local = local + Message(
-                id = "local-mark-$now",
-                roomId = storedId,
-                sender = SenderType.SYSTEM,
-                content = label,
-                timestamp = now,
-                mark = chat.keryx.core.model.TimelineMark(chat.keryx.core.protocol.InterruptSentinel.KIND, label),
             )
             publish()
         }
@@ -1080,7 +1068,11 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 )
                 // A turn you stopped ends mid-sentence; Hermes saves it as an ordinary reply, so
                 // without a mark the cut-off read as the agent trailing off (device, 10-09).
-                if (pStr("status") == "interrupted") store.localMark("stopped")
+                // Re-read rather than draw it locally: the persisted row carries the flag, and one
+                // source keeps the live view and history the same.
+                if (pStr("status") == "interrupted") {
+                    scope.launch { delay(500); runCatching { rehydrate(storedId, store, replaceLocal = true) } }
+                }
                 // After the fold, not before: the shade's end-of-turn alert re-reads the
                 // transcript on this event and must find the finished message there.
                 _turnEvents.tryEmit(chat.keryx.core.model.TurnEvent.End(
@@ -1567,11 +1559,14 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         st.appendHistory(rows.filter { it.id > heldNewest })
     }
 
-    private suspend fun rehydrate(storedId: String, st: SessionStore) {
+    private suspend fun rehydrate(storedId: String, st: SessionStore, replaceLocal: Boolean = false) {
         val rest = rest ?: return
         val want = st.history.value.loaded.coerceIn(HISTORY_PAGE, 500)
         val body = rest.messagesRaw(storedId, limit = want).getOrThrow()
         val rows = rest.parseMessages(body)
+        // The persisted page supersedes the folded live rows; swapped in the same publish so
+        // the timeline never paints the gap between dropping one and drawing the other.
+        if (replaceLocal) st.dropLocalQuietly()
         st.setHistory(rows, more = rows.size >= want)
         st.hydrated = true
         // The re-read is the freshest page there is; it is what the next cold open should paint.

@@ -140,6 +140,15 @@ object TranscriptBuilder {
                             else -> text(roomId, row, SenderType.HERMES).copy(reasoning = thought)
                         }
                         shown?.let { out += it }
+                        // Hermes keeps a stopped reply's words and marks the row; without a
+                        // divider the cut-off read as the agent trailing off (device, 10-09).
+                        if (row.interrupted && shown != null) {
+                            out += text(roomId, row, SenderType.SYSTEM).copy(
+                                id = "stopped-${row.id}",
+                                content = InterruptSentinel.STOPPED,
+                                mark = chat.keryx.core.model.TimelineMark(InterruptSentinel.KIND, InterruptSentinel.STOPPED),
+                            )
+                        }
                     } else if (thought != null) {
                         out += Message(
                             id = "think-${row.id}",
@@ -362,6 +371,8 @@ object ToolText {
 object InterruptSentinel {
     const val KIND = "interrupted"
     const val LABEL = "interrupted"
+    /** A reply you stopped: Hermes keeps its words, flagged `display_metadata.interrupted`. */
+    const val STOPPED = "stopped"
 
     fun matches(content: String): Boolean {
         val t = content.trim()

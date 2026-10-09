@@ -273,6 +273,8 @@ class GatewayRest(
                             val emoji = ro.str("emoji") ?: return@mapNotNull null
                             chat.keryx.core.model.RawReaction(emoji, ro.str("author") ?: "user")
                         } ?: emptyList(),
+                    interrupted = ((o["display_metadata"] as? JsonObject)?.get("interrupted") as? JsonPrimitive)
+                        ?.contentOrNull == "true",
                 )
             }
     }

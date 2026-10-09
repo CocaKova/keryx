@@ -5,7 +5,7 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
-## 2.19.0 · versionCode 134
+## 2.19.0 · versionCode 135
 
 Catching up with Hermes, and a tripwire so the next rename can't slip past.
 
@@ -35,7 +35,8 @@ Catching up with Hermes, and a tripwire so the next rename can't slip past.
   A turn that carried on by itself drops the line; one that really stopped shows a quiet
   "interrupted" divider.
 - An approval whose turn was stopped disappears instead of waiting forever.
-- A reply you stop keeps what it had written, followed by a quiet "stopped" divider, so the cut-off
+- A reply you stop keeps what it had written, followed by a quiet "stopped" divider, live and in
+  history (Hermes flags the row), so the cut-off
   doesn't read as the agent trailing off.
 - A run of tools that all did the same thing says what they did ("Listed devices ×2"), not
   "Used 2 tools".

@@ -28,6 +28,8 @@ data class MessageRow(
     val displayText: String? = null,
     /** Per-author reactions on this row (`display_metadata.reactions`); empty when nobody has. */
     val reactions: List<chat.keryx.core.model.RawReaction> = emptyList(),
+    /** `display_metadata.interrupted`: the partial reply of a turn that was stopped (2.19). */
+    val interrupted: Boolean = false,
 )
 
 /** One entry of an assistant row's `tool_calls[]`: `{id, function: {name, arguments}}`. */
