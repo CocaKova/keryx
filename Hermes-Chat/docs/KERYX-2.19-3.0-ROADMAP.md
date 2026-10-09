@@ -49,11 +49,16 @@ Ground rules that apply to both releases:
 - **Measure:** a macrobenchmark module plus a generated Baseline Profile, run on the VIRDARA emulator. Record cold start, time to first message and frame drops while streaming (known: direct door ~5%). Write the numbers down in `docs/PERF-BASELINE.md` as the targets 3.0 has to beat.
 - Turn on Compose compiler stability reports and commit the first report.
 - **Tour spike:** decide how the tour reaches the phone (see 3.0 §1).
+- ✅ **Decided (2026-10-09): option (a), a keryx-stream `keryx_tour` tool.** Plugins register tools with a `check_fn` (`hermes_cli/plugins.register_tool`), so the tool can be offered only while a Keryx client is attached, on stock Hermes, without an upstream change. To watch in 3.0: a tool that comes and goes changes the tool list, and that list is part of the prompt cache. Prefer "registered while keryx-stream is enabled, answers 'no phone attached'" over flapping, unless the cache cost measures as nothing.
+- ✅ Compose stability reports (opt-in `-Pkeryx.composeReports`) and `docs/PERF-BASELINE.md` with the method, the first report and the 3.0 targets. Device numbers are pending: the phone was offline at build time; `tools/perf_baseline.sh` fills them in. ⏭ The macrobenchmark module and Baseline Profile move to 3.0 §2, next to the speed work they measure.
 
 ### E. keryx-stream 0.6
+- ⏭ Moved to 3.0. It is a plugin release, independent of the APK, and its kanban hook push wants the 3.0 tour work in the same plugin release.
 - Bump GAPS.md to Hermes 0.21.6.
 - One test confirming hooks see the inner tool name for `tool_call`-bridged calls.
 - Push kanban changes via the `kanban_task_*` hooks instead of Keryx polling `kanban_db`.
+
+**2.19 status (2026-10-09):** 2.19.0 vc130 built (`0c9b286`), gate GREEN 1238, drift script CLEAN. A–D done as noted above; E moved to 3.0. Not pushed, tagged or released.
 
 **2.19 is done when:** gate GREEN, drift script clean against live Hermes, on a stock config (no `tool_search` opt-out) cron/process/image tools render with verbs, PERF-BASELINE written. Release 2.19.0. Fixes go out as 2.19.x.
 
