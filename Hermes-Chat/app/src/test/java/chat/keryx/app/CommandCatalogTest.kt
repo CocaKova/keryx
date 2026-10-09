@@ -11,10 +11,11 @@ import org.junit.Test
 class CommandCatalogTest {
     private val res = Json.parseToJsonElement(
         """
-        {"pairs": [["/model", "Switch model (usage: /model [name])"], ["/new", "Start fresh"],
+        {"pairs": [["/model", "Switch model (usage: /model [name])"], ["/new", "Start fresh"], ["/redraw", "Repaint"],
                    ["/deploy-notes", "Write release notes from the git log"]],
          "canon": {"/model": "/model", "/m": "/model", "/new": "/new"},
          "categories": [{"name": "Session", "pairs": [["/model", "x"], ["/new", "y"]]}],
+         "commands": {"/redraw": {"desktop": "terminal"}, "/model": {"desktop": null}},
          "skills": {"/deploy-notes": {"usage": 3, "origin": "agent"}}}
         """,
     ).jsonObject
@@ -34,6 +35,10 @@ class CommandCatalogTest {
         assertEquals("Session", model.category)
         assertEquals(listOf("/m"), model.aliases)
         assertEquals("", CommandCatalog.parse(res).first { it.cmd == "/new" }.argsHint)
+    }
+
+    @Test fun `terminal-only commands stay out of the app`() {
+        assertTrue(CommandCatalog.parse(res).none { it.cmd == "/redraw" })
     }
 
     @Test fun `the plugin list fills gaps but the catalog leads`() {

@@ -9,6 +9,7 @@ import kotlinx.serialization.json.contentOrNull
 /** Reads a `commands.catalog` answer into palette rows (2.19.1). Pure, so a test can hold it. */
 internal object CommandCatalog {
     const val SKILL = "Skill"
+    private val NOT_IN_APP = setOf("terminal", "hidden", "messaging", "composer-voice")
 
     fun parse(res: JsonObject): List<GatewayCommand> {
         val categoryOf = HashMap<String, String>()
@@ -25,11 +26,17 @@ internal object CommandCatalog {
             val to = (target as? JsonPrimitive)?.contentOrNull ?: return@forEach
             if (!alias.equals(to, ignoreCase = true)) aliasesOf.getOrPut(to) { mutableListOf() } += alias
         }
+        // Hermes says where each built-in belongs in an app client (`desktop`): null = offered;
+        // these mean it does nothing here (a terminal repaint, a Telegram topic, the voice key).
+        val notHere = (res["commands"] as? JsonObject)?.mapNotNull { (key, meta) ->
+            val where = ((meta as? JsonObject)?.get("desktop") as? JsonPrimitive)?.contentOrNull
+            key.takeIf { where in NOT_IN_APP }
+        }.orEmpty().toSet()
         val seen = HashSet<String>()
         return (res["pairs"] as? JsonArray).orEmpty().mapNotNull { el ->
             val row = el as? JsonArray ?: return@mapNotNull null
             val cmd = (row.getOrNull(0) as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
-            if (!seen.add(cmd)) return@mapNotNull null
+            if (cmd in notHere || !seen.add(cmd)) return@mapNotNull null
             val desc = (row.getOrNull(1) as? JsonPrimitive)?.contentOrNull.orEmpty()
             val usage = Regex("""\(usage:\s*([^)]*)\)""").find(desc)?.groupValues?.get(1)?.trim()
             val isSkill = cmd in skills
