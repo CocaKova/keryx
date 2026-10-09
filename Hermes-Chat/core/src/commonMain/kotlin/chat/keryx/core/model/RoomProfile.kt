@@ -38,6 +38,10 @@ data class RoomProfile(
      * flag is the direct door's one-bit equivalent, so a row is "unread" when either says so.
      */
     val unread: Boolean = false,
+    /** The session this one was forked from (`_branched_from`, direct door); null otherwise. */
+    val forkOf: String? = null,
+    /** How far under its parent the drawer draws this row ([SessionTree.nest] sets it). */
+    val forkDepth: Int = 0,
 ) {
     /** Either signal: a Matrix count, or the gateway's watermark. */
     val hasUnread: Boolean get() = unreadCount > 0L || unread

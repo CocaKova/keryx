@@ -583,6 +583,21 @@ object KeryxGlyphs {
         )
     }
 
+    /** Forked — one line that splits in two, the commit-graph shape. */
+    val Fork: ImageVector by lazy {
+        draw(
+            "fork",
+            listOf(
+                "M7,4.5 v15",
+                "M7,15.5 c0,-4 10,-3 10,-8 v-3",
+            ),
+            fills = listOf(
+                "M7,21.6 a2.1,2.1 0 1 0 0,-4.2 a2.1,2.1 0 1 0 0,4.2 z",
+                "M17,6.6 a2.1,2.1 0 1 0 0,-4.2 a2.1,2.1 0 1 0 0,4.2 z",
+            ),
+        )
+    }
+
     /** Pinned — a five-point star. */
     val Star: ImageVector by lazy {
         draw(

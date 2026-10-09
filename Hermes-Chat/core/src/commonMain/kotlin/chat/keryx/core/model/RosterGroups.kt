@@ -39,12 +39,23 @@ object RosterGroups {
      * Rows shelved in [RosterGroup] order, each shelf keeping the rows' incoming order (the
      * roster is already sorted by activity — a shelf never re-sorts, it only divides). Empty
      * shelves are not returned: a header over nothing is a lie about the list.
+     *
+     * A nested fork ([RoomProfile.forkDepth] > 0, laid out by [SessionTree.nest]) is shelved
+     * with the family it sits under, by the family's newest activity — a fork answered today
+     * pulls its week-old parent onto Today rather than splitting the pair across two shelves.
      */
     fun split(rows: List<RoomProfile>, startOfTodayMs: Long): List<RosterSection> {
         if (rows.isEmpty()) return emptyList()
         val buckets = LinkedHashMap<RosterGroup, MutableList<RoomProfile>>()
         for (g in RosterGroup.entries) buckets[g] = mutableListOf()
-        for (r in rows) buckets.getValue(groupOf(r.timestamp, startOfTodayMs)).add(r)
+        var i = 0
+        while (i < rows.size) {
+            var end = i + 1
+            while (end < rows.size && rows[end].forkDepth > 0) end++
+            val family = rows.subList(i, end)
+            buckets.getValue(groupOf(family.maxOf { it.timestamp }, startOfTodayMs)).addAll(family)
+            i = end
+        }
         return buckets.entries.filter { it.value.isNotEmpty() }.map { RosterSection(it.key, it.value) }
     }
 }

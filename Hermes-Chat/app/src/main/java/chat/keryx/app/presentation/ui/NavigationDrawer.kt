@@ -58,6 +58,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.lerp
@@ -583,7 +585,10 @@ fun NavigationDrawerContent(
             val hasMore by viewModel.hasMoreSessions.collectAsState()
             val loadingMore by viewModel.loadingMoreSessions.collectAsState()
             val sections = remember(listRooms, startOfToday, query) {
-                if (query.isBlank() && !lensed) chat.keryx.core.model.RosterGroups.split(listRooms, startOfToday)
+                // Forks sit under the conversation they came from (2.19), and shelve with it.
+                if (query.isBlank() && !lensed) {
+                    chat.keryx.core.model.RosterGroups.split(chat.keryx.core.model.SessionTree.nest(listRooms), startOfToday)
+                }
                 else listOf(chat.keryx.core.model.RosterSection(chat.keryx.core.model.RosterGroup.TODAY, listRooms))
             }
 
@@ -1162,7 +1167,24 @@ fun RoomRow(
         label = "roomFill",
     )
     val rowPress = remember { MutableInteractionSource() }
-    Box(modifier) {
+    // A fork nested under its parent (2.19): stepped in, with a quiet rail that turns into it,
+    // so the family reads as one without the rows merging.
+    val forkIndent = (room.forkDepth * 16).dp
+    val railColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+    Box(
+        modifier.then(
+            if (room.forkDepth <= 0) Modifier
+            else Modifier
+                .drawBehind {
+                    val x = forkIndent.toPx() - 8.dp.toPx()
+                    val mid = size.height / 2f
+                    val w = 1.25.dp.toPx()
+                    drawLine(railColor, Offset(x, 0f), Offset(x, mid), strokeWidth = w, cap = StrokeCap.Round)
+                    drawLine(railColor, Offset(x, mid), Offset(forkIndent.toPx() - 2.dp.toPx(), mid), strokeWidth = w, cap = StrokeCap.Round)
+                }
+                .padding(start = forkIndent)
+        )
+    ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -1215,6 +1237,15 @@ fun RoomRow(
                     Box(Modifier.semantics { contentDescription = "Running" }) {
                         chat.keryx.app.presentation.ui.components.KeryxBreathingDot(light, alive = true, size = 6.dp)
                     }
+                }
+                if (room.forkOf != null) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(
+                        imageVector = KeryxGlyphs.Fork,
+                        contentDescription = "Forked from another conversation",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.size(12.dp),
+                    )
                 }
                 if (isTemporary) {
                     Spacer(modifier = Modifier.width(6.dp))

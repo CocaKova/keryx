@@ -1375,6 +1375,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         }
         val r = rest ?: return
         r.sessions(limit = QUICK_PAGE, excludeSources = listOf(CRON_SOURCE)).onSuccess { rows ->
+            learnLineage(rows)
             _sessionRows.value = mergeRecent(_sessionRows.value, rows)
         }
         r.sessions(limit = QUICK_PAGE, sources = listOf(CRON_SOURCE)).onSuccess { rows ->
@@ -1638,7 +1639,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 .map { rows ->
                     val known = have.mapTo(HashSet()) { it.id }
                     val fresh = rows.filter { !it.archived && it.id !in known }
-                    _sessionRows.value = have + fresh
+                    learnLineage(fresh)
+                    _sessionRows.value = dropSuperseded(have + fresh)
                     _hasMoreSessions.value = rows.size >= SESSION_PAGE
                     fresh.size
                 }
@@ -1696,7 +1698,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             val liveIds = live.mapTo(HashSet()) { it.id }
             val oldest = live.minOfOrNull { it.lastActive } ?: 0L
             val tail = _sessionRows.value.filter { it.id !in liveIds && it.lastActive < oldest }
-            _sessionRows.value = live + tail
+            learnLineage(live)
+            _sessionRows.value = dropSuperseded(live + tail)
             if (tail.isEmpty()) _hasMoreSessions.value = rows.size >= SESSION_PAGE
         }
         // Sessions started from an app on ANOTHER profile (2.17.3): the launch list cannot
@@ -1742,7 +1745,18 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         preview = r.preview,
         pinned = r.pinned,
         unread = r.unread,
+        forkOf = r.forkOf?.let(::forwarded)?.takeIf { it != r.id },
     )
+
+    /**
+     * The list names every id a compacted conversation has worn; each old one forwards to the
+     * tip (2.19). A pin, a notification or a widget that still holds the root then opens the
+     * live conversation instead of resuming a sealed one, without waiting for this process to
+     * watch the rotation happen. A rotation seen live has already written the same entry.
+     */
+    private fun learnLineage(rows: List<GatewayRest.SessionRow>) {
+        for (r in rows) for (old in r.lineage) if (old != r.id) rotationForward.putIfAbsent(old, r.id)
+    }
 
     /**
      * The drawer's second line, at zero gateway cost. A row you have opened this process life

@@ -80,6 +80,14 @@ class GatewayRest(
         val unread: Boolean = false,
         /** The profile whose store holds the row, as the gateway tagged it ("" = untagged). */
         val profile: String = "",
+        /**
+         * Every id this conversation has worn through compaction, root first, tip (= [id]) last
+         * — `_lineage_ids`, or just `_lineage_root_id` from older gateways. Empty when it never
+         * compacted. A held row whose id is in here has been replaced by this one (2.19).
+         */
+        val lineage: List<String> = emptyList(),
+        /** The session this one was forked from (`_branched_from`); null for anything else. */
+        val forkOf: String? = null,
     )
 
     // MessageRow / RestToolCall moved to chat.keryx.core.protocol (:shared) —
@@ -145,6 +153,8 @@ class GatewayRest(
                     source = o.str("source") ?: "",
                     unread = o.bool("unread"),
                     profile = o.str("profile") ?: "",
+                    lineage = o.lineage(),
+                    forkOf = o.str("_branched_from")?.takeIf { it.isNotBlank() },
                 )
             }.distinctBy { it.id }
         }
@@ -177,6 +187,8 @@ class GatewayRest(
                     source = o.str("source") ?: "",
                     unread = o.bool("unread"),
                     profile = o.str("profile") ?: return@mapNotNull null,
+                    lineage = o.lineage(),
+                    forkOf = o.str("_branched_from")?.takeIf { it.isNotBlank() },
                 )
             }.distinctBy { it.id }
         }
@@ -567,6 +579,11 @@ class GatewayRest(
     // git routes (2.6.0 device walk, 08-31).
 
     private fun JsonObject.str(key: String): String? = this[key]?.jsonPrimitive?.contentOrNull
+    /** `_lineage_ids` (root → tip), else the bare `_lineage_root_id` an older gateway sends. */
+    private fun JsonObject.lineage(): List<String> =
+        (this["_lineage_ids"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+            ?: listOfNotNull(str("_lineage_root_id")?.takeIf { it.isNotBlank() })
+
     private fun JsonObject.bool(key: String): Boolean = this[key]?.jsonPrimitive?.contentOrNull == "true"
     /** Server timestamps are REAL epoch seconds (may be fractional); the app runs on millis. */
     private fun JsonObject.epochMs(key: String): Long =

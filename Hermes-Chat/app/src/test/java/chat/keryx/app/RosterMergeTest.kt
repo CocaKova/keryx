@@ -7,9 +7,11 @@ import org.junit.Test
 
 class RosterMergeTest {
 
-    private fun row(id: String, last: Long, title: String = id, archived: Boolean = false) = GatewayRest.SessionRow(
+    private fun row(
+        id: String, last: Long, title: String = id, archived: Boolean = false, lineage: List<String> = emptyList(),
+    ) = GatewayRest.SessionRow(
         id = id, title = title, preview = "", startedAt = 0, lastActive = last, messageCount = 1,
-        isActive = false, archived = archived, pinned = false, source = "tui",
+        isActive = false, archived = archived, pinned = false, source = "tui", lineage = lineage,
     )
 
     @Test
@@ -31,5 +33,12 @@ class RosterMergeTest {
         val held = listOf(row("a", 30), row("b", 20))
         assertEquals(listOf("b"), mergeRecent(held, listOf(row("a", 31, archived = true))).map { it.id })
         assertEquals(held, mergeRecent(held, emptyList()))
+    }
+
+    @Test
+    fun `a compacted chat replaces the row it continues instead of doubling`() {
+        val held = listOf(row("a", 30), row("root", 20))
+        val out = mergeRecent(held, listOf(row("tip", 40, lineage = listOf("root", "tip"))))
+        assertEquals(listOf("tip", "a"), out.map { it.id })
     }
 }
