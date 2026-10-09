@@ -171,7 +171,7 @@ class CallController(
                     delay(1_200) // don't spin a hot loop against a dead endpoint
                 }
                 .getOrNull()?.trim().orEmpty()
-            log("heard: \"${heard.take(80)}\"")
+            log("heard ${heard.length} chars")  // never the words: release logcat is readable by bug reports
             if (heard.isBlank()) continue
             _ui.update {
                 it.copy(phase = Phase.THINKING, heard = heard, speaking = "", error = null,

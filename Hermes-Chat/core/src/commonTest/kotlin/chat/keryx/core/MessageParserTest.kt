@@ -638,6 +638,25 @@ class MessageParserTest {
     }
 
     @Test
+    fun streamTailWindow_noBlankLine_cutsAtALineStart() {
+        val text = (1..400).joinToString("\n") { "| row $it | value |" }
+        val out = MessageParser.streamTailWindow(text, 200)
+        assertTrue(out.startsWith("…\n| row "))
+        assertTrue(out.length < 300)
+        assertTrue(out.endsWith("| row 400 | value |"))
+    }
+
+    @Test
+    fun renderCap_shortUntouched_longCutWithNote_fenceClosed() {
+        assertEquals("hi", MessageParser.renderCap("hi", 100))
+        val long = "```\n" + "line\n".repeat(100)
+        val out = MessageParser.renderCap(long, 100)
+        assertTrue(out.length < 200)
+        assertTrue(out.contains("\n```\n\n*… "))
+        assertTrue(out.endsWith("Copy the message for the full text.*"))
+    }
+
+    @Test
     fun streamTailWindow_giantUnclosedFence_returnedWhole() {
         val text = "```\n" + "x\n\n".repeat(50)
         assertEquals(text, MessageParser.streamTailWindow(text, 30))

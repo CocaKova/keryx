@@ -136,7 +136,7 @@ class KeryxSnack internal constructor(
     fun show(notice: KeryxNotice) {
         val s = scope
         if (s == null) {
-            fallback?.invoke(notice.text) ?: android.util.Log.w("KeryxSnack", "unhosted notice: ${notice.text}")
+            fallback?.invoke(notice.text) ?: chat.keryx.app.util.KLog.i("KeryxSnack") { "unhosted notice: ${notice.text}" }
             return
         }
         s.launch { enqueue(s, notice) }

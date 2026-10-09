@@ -119,7 +119,7 @@ fun MessageContent(
         val body = content.trim('\n')
         val bounded =
             if (isStreaming) MessageParser.streamTailWindow(body, MessageParser.STREAM_RENDER_WINDOW)
-            else body
+            else MessageParser.renderCap(body)
         MessageParser.parse(bounded, agentChrome = isAgent, cacheable = !isStreaming)
     }
     // Render **strong** spans heavier than the library's default (FontWeight.Bold looked too light).
@@ -693,7 +693,12 @@ internal fun ScrollableCodeBlock(code: String, textColor: Color, language: Strin
             }
         }
         val coloured = remember(trimmed, lang, onVoid, streaming, liveSpans) {
-            val spans = if (streaming) liveSpans else CodeHighlighting.spans(trimmed, lang, darkMode = onVoid)
+            // A pasted log or a minified bundle: colouring it costs seconds on the main thread.
+            val spans = when {
+                trimmed.length > CodeHighlighting.MAX_CHARS -> emptyList()
+                streaming -> liveSpans
+                else -> CodeHighlighting.spans(trimmed, lang, darkMode = onVoid)
+            }
             androidx.compose.ui.text.buildAnnotatedString {
                 append(trimmed)
                 for (span in spans) {

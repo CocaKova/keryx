@@ -40,9 +40,16 @@ object MarkdownCache {
     /** Parse (or fetch) [content]'s tree. Safe off the main thread; the parser is pure. */
     fun parse(content: String): State.Success {
         cached(content)?.let { return it }
-        val tree = parser.buildMarkdownTreeFromString(content)
+        // Thousands of nested quotes or list levels recurse the parser off the end of the
+        // stack, every time that chat opens. Such a body is drawn as plain code instead.
+        val (source, tree) = try {
+            content to parser.buildMarkdownTreeFromString(content)
+        } catch (e: StackOverflowError) {
+            val flat = "```\n" + content.replace("```", "ʼʼʼ") + "\n```"
+            flat to parser.buildMarkdownTreeFromString(flat)
+        }
         val handler = ReferenceLinkHandlerImpl()
-        val success = State.Success(node = tree, content = content, linksLookedUp = false, referenceLinkHandler = handler)
+        val success = State.Success(node = tree, content = source, linksLookedUp = false, referenceLinkHandler = handler)
         synchronized(cache) { cache[content] = success }
         return success
     }

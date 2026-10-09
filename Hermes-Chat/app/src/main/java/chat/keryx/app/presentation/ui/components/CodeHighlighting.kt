@@ -21,6 +21,9 @@ import dev.snipme.highlights.model.SyntaxThemes
  */
 object CodeHighlighting {
 
+    /** Past this a block draws plain: tokenizing a pasted log or a minified bundle took seconds. */
+    const val MAX_CHARS = 20_000
+
     /** One coloured or bold run in `[start, end)`; [rgb] is `0xRRGGBB`, null for bold-only. */
     data class Span(val start: Int, val end: Int, val rgb: Int?, val bold: Boolean)
 

@@ -223,6 +223,11 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
 
     /** Resolve a shared content:// URI into (bytes, display name, mime type). */
     private fun readShared(uri: Uri): Triple<ByteArray, String, String> {
+        // content:// only, and never our own provider: a shared file:// path (or our own
+        // authority) would have Keryx read its private files and send them to the agent.
+        if (uri.scheme != "content" || uri.authority?.startsWith(packageName) == true) {
+            error("Keryx can only send files shared from another app")
+        }
         val size = contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)
             ?.use { c -> if (c.moveToFirst() && !c.isNull(0)) c.getLong(0) else -1L } ?: -1L
         // sendAttachment buffers the whole file; refuse what neither RAM nor the homeserver's
@@ -235,9 +240,20 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
             ?: MimeTypeMap.getSingleton()
                 .getMimeTypeFromExtension(name.substringAfterLast('.', "").lowercase())
             ?: "application/octet-stream"
-        val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
-            ?: error("Couldn't read $name")
-        if (bytes.size > MAX_SHARE_BYTES) error("File too large to send")
+        // Bounded even when the size column lied or was missing: an endless stream ends here.
+        val bytes = contentResolver.openInputStream(uri)?.use { input ->
+            val out = java.io.ByteArrayOutputStream()
+            val buf = ByteArray(64 * 1024)
+            var total = 0L
+            while (true) {
+                val n = input.read(buf)
+                if (n < 0) break
+                total += n
+                if (total > MAX_SHARE_BYTES) error("File too large to send")
+                out.write(buf, 0, n)
+            }
+            out.toByteArray()
+        } ?: error("Couldn't read $name")
         return Triple(bytes, name, mime)
     }
 

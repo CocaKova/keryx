@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -228,7 +229,11 @@ class ChatViewModel(
                 .mapNotNull { MessageParser.parseRuntimeFooter(it.content) }
                 .firstOrNull()
         }
-        .stateIn(viewModelScope, SharingStarted.Lazily, null)
+        // Off the main thread, and only while the Hub shows it: Lazily kept this scan running
+        // on every streaming tick for the rest of the session once the Hub had been opened.
+        .flowOn(Dispatchers.Default)
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** Whether more history may exist (we keep paging until the loaded count stops growing). */
     private val _hasMoreHistory = MutableStateFlow(true)

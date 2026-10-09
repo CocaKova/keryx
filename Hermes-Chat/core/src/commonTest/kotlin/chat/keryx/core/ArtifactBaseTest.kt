@@ -19,6 +19,11 @@ class ArtifactBaseTest {
         assertNull(ArtifactBase.resolve(folder, host, "/etc/passwd"))
         assertNull(ArtifactBase.resolve(folder, "evil.example", "/home/me/site/style.css"))
         assertNull(ArtifactBase.resolve(folder, host, "/home/me/site"))
+        // 2.19.1: hidden paths and file kinds a page never loads stay on the gateway.
+        assertNull(ArtifactBase.resolve(folder, host, "/home/me/site/.env"))
+        assertNull(ArtifactBase.resolve(folder, host, "/home/me/site/.hermes/config.json"))
+        assertNull(ArtifactBase.resolve(folder, host, "/home/me/site/state.db"))
+        assertNull(ArtifactBase.resolve(folder, host, "/home/me/site/id_rsa"))
         assertEquals("text/css", ArtifactBase.mimeOf("a/b.CSS"))
         assertEquals("application/octet-stream", ArtifactBase.mimeOf("noext"))
     }

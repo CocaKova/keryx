@@ -95,22 +95,70 @@ import chat.keryx.app.presentation.ui.components.KeryxRadius
  * down to the nearest 32px avoids the mismatch at the source.
  */
 private fun normalizeImageBytes(bytes: ByteArray, contentType: String): Pair<ByteArray, String> {
-    val bitmap = runCatching { android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }.getOrNull()
-        ?: return bytes to contentType
-    val gridSize = 32
-    val targetWidth = (bitmap.width / gridSize) * gridSize
-    val targetHeight = (bitmap.height / gridSize) * gridSize
-    if (targetWidth <= 0 || targetHeight <= 0 ||
-        (targetWidth == bitmap.width && targetHeight == bitmap.height)
-    ) {
-        return bytes to contentType
-    }
+    // An animation re-encoded as JPEG would arrive as one still frame.
+    if (contentType == "image/gif") return bytes to contentType
+    // Size first, pixels later (2.19.1): a 50 MP photo decoded whole is ~200 MB, twice over.
+    val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    runCatching { android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds) }
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return bytes to contentType
+    // Cameras store a portrait shot sideways plus a rotation tag; the re-encode drops the tag,
+    // so turn the pixels upright first.
+    val rotation = runCatching {
+        when (android.media.ExifInterface(java.io.ByteArrayInputStream(bytes))
+            .getAttributeInt(android.media.ExifInterface.TAG_ORIENTATION, android.media.ExifInterface.ORIENTATION_NORMAL)) {
+            android.media.ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+            android.media.ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+            android.media.ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+            else -> 0f
+        }
+    }.getOrDefault(0f)
+    val longEdge = maxOf(bounds.outWidth, bounds.outHeight)
+    val aligned = bounds.outWidth % 32 == 0 && bounds.outHeight % 32 == 0
+    if (rotation == 0f && aligned && longEdge <= MAX_IMAGE_EDGE) return bytes to contentType
+    var sample = 1
+    while (longEdge / (sample * 2) >= MAX_IMAGE_EDGE) sample *= 2
+    val decoded = runCatching {
+        android.graphics.BitmapFactory.decodeByteArray(
+            bytes, 0, bytes.size, android.graphics.BitmapFactory.Options().apply { inSampleSize = sample },
+        )
+    }.getOrNull() ?: return bytes to contentType
     return runCatching {
-        val scaled = android.graphics.Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
+        val upright = if (rotation == 0f) decoded else android.graphics.Bitmap.createBitmap(
+            decoded, 0, 0, decoded.width, decoded.height,
+            android.graphics.Matrix().apply { postRotate(rotation) }, true,
+        )
+        val scale = minOf(1f, MAX_IMAGE_EDGE / maxOf(upright.width, upright.height).toFloat())
+        val gridSize = 32
+        val targetWidth = ((upright.width * scale).toInt() / gridSize) * gridSize
+        val targetHeight = ((upright.height * scale).toInt() / gridSize) * gridSize
+        if (targetWidth <= 0 || targetHeight <= 0) return bytes to contentType
+        val scaled = if (targetWidth == upright.width && targetHeight == upright.height) upright
+            else android.graphics.Bitmap.createScaledBitmap(upright, targetWidth, targetHeight, true)
         val out = java.io.ByteArrayOutputStream()
-        scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 92, out)
+        scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, out)
         out.toByteArray() to "image/jpeg"
     }.getOrDefault(bytes to contentType)
+}
+
+/** The longest side a photo is sent at; vision models scale down past this anyway. */
+private const val MAX_IMAGE_EDGE = 2560
+
+/** The biggest file Keryx reads into memory to send. */
+private const val MAX_ATTACHMENT_BYTES = 50L * 1024 * 1024
+
+/** [input] read whole, or null when it runs past [max] bytes. */
+private fun readBounded(input: java.io.InputStream, max: Long): ByteArray? {
+    val out = java.io.ByteArrayOutputStream()
+    val buf = ByteArray(64 * 1024)
+    var total = 0L
+    while (true) {
+        val n = input.read(buf)
+        if (n < 0) break
+        total += n
+        if (total > max) return null
+        out.write(buf, 0, n)
+    }
+    return out.toByteArray()
 }
 
 /** A turn shorter than this ends without the completion tick — you never looked away. */
@@ -199,18 +247,38 @@ fun ChatScreen(
     var pendingAttachments by remember { mutableStateOf<List<PendingAttachment>>(emptyList()) }
     var composerHeightPx by remember { mutableStateOf(0) }
 
+    // Read and shrink off the main thread (2.19.1): a full-size photo decoded in the picker's
+    // callback froze the screen, and several at once could run out of memory. In order, so a
+    // photo set keeps the order it was picked in.
+    fun stageAll(uris: List<android.net.Uri>, fallbackType: String) {
+        if (uris.isEmpty()) return
+        scope.launch {
+            for (uri in uris) {
+                val staged = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    runCatching {
+                        val rawBytes = context.contentResolver.openInputStream(uri)
+                            ?.use { readBounded(it, MAX_ATTACHMENT_BYTES) }
+                            ?: return@runCatching null
+                        // Trust the resolver's mime: the gallery hands out videos too now, and a
+                        // video forced through the image normalizer would come out corrupted.
+                        val rawType = context.contentResolver.getType(uri) ?: fallbackType
+                        val isImage = rawType.startsWith("image")
+                        val (bytes, type) = if (isImage) normalizeImageBytes(rawBytes, rawType) else rawBytes to rawType
+                        PendingAttachment(bytes, queryDisplayName(context, uri), type, isImage = isImage)
+                    }.getOrNull()
+                }
+                if (staged == null) {
+                    viewModel.toast("Couldn't attach that (unreadable, or over 50 MB)")
+                    continue
+                }
+                pendingAttachments = (pendingAttachments + staged).takeLast(MAX_ATTACHMENTS)
+            }
+        }
+    }
+
     fun stageFromUri(uri: android.net.Uri?, fallbackType: String): Boolean {
         if (uri == null) return false
-        val rawBytes = runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
-            ?: return false
-        // Trust the resolver's mime: the gallery hands out videos too now, and a video forced
-        // through the image normalizer would come out corrupted.
-        val rawType = context.contentResolver.getType(uri) ?: fallbackType
-        val isImage = rawType.startsWith("image")
-        val (bytes, type) = if (isImage) normalizeImageBytes(rawBytes, rawType) else rawBytes to rawType
-        val name = queryDisplayName(context, uri)
-        pendingAttachments = (pendingAttachments + PendingAttachment(bytes, name, type, isImage = isImage))
-            .takeLast(MAX_ATTACHMENTS)
+        stageAll(listOf(uri), fallbackType)
         return true
     }
 
@@ -224,14 +292,15 @@ fun ChatScreen(
     }
 
     val galleryPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(MAX_ATTACHMENTS)) { uris ->
-        uris.forEach { stageFromUri(it, fallbackType = "image/jpeg") }
+        stageAll(uris, fallbackType = "image/jpeg")
     }
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
-        uris.take(MAX_ATTACHMENTS).forEach { stageFromUri(it, fallbackType = "application/octet-stream") }
+        stageAll(uris.take(MAX_ATTACHMENTS), fallbackType = "application/octet-stream")
     }
     // Camera (2.16): the system camera writes into our cache through the FileProvider; no
     // CAMERA permission, because Keryx never opens the camera itself.
-    var cameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    // Saveable: the camera app often outlives a rotation, or this process, while it is up.
+    var cameraUri by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<android.net.Uri?>(null) }
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
         val uri = cameraUri
         if (saved && uri != null) stageFromUri(uri, fallbackType = "image/jpeg")

@@ -483,6 +483,7 @@ private fun formatDuration(ms: Long): String {
 
 /** Fullscreen in-app player: ExoPlayer + standard transport controls, save/share/✕ up top. */
 @Composable
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 private fun FullscreenVideoPlayer(file: java.io.File, fileName: String, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         // The lightbox is its own window: "Saved to …" is said here, not under it (2.16).

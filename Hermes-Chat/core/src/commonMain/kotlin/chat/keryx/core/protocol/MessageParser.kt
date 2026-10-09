@@ -443,15 +443,34 @@ object MessageParser {
         val minStart = text.length - max
         var offset = 0
         var inFence = false
+        // No blank line in the window (a long table or list streaming in): any line start
+        // outside a fence will do, or the whole body re-parsed on every tick again.
+        var lineCut = -1
         for (line in text.lineSequence()) {
             val trimmed = line.trimStart()
             if (trimmed.startsWith("```") || trimmed.startsWith("~~~")) inFence = !inFence
-            else if (!inFence && offset >= minStart && trimmed.isEmpty()) {
-                return "…\n" + text.substring(offset).trimStart('\n')
+            else if (!inFence && offset >= minStart) {
+                if (trimmed.isEmpty()) return "…\n" + text.substring(offset).trimStart('\n')
+                if (lineCut < 0) lineCut = offset
             }
             offset += line.length + 1 // +1 for the \n lineSequence stripped
         }
-        return text
+        return if (lineCut >= 0) "…\n" + text.substring(lineCut) else text
+    }
+
+    /** The most of a settled body a bubble draws (2.19.1); past it the parse and layout of a
+     *  pasted log stalled the main thread for seconds. Copy still takes the whole message. */
+    const val RENDER_CAP = 64_000
+
+    /** [text] cut to [max] at a line end, with a note saying how much is left out. */
+    fun renderCap(text: String, max: Int = RENDER_CAP): String {
+        if (text.length <= max) return text
+        val cut = text.lastIndexOf('\n', max).takeIf { it > max / 2 } ?: max
+        var head = text.substring(0, cut)
+        // A fence left open would swallow the note below it.
+        val fences = head.lineSequence().count { val t = it.trimStart(); t.startsWith("```") || t.startsWith("~~~") }
+        if (fences % 2 == 1) head += "\n```"
+        return head + "\n\n*… ${text.length - cut} more characters not shown. Copy the message for the full text.*"
     }
 
     // --- Reasoning extraction ----------------------------------------------------------------

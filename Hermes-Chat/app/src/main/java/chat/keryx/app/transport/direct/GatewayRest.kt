@@ -454,7 +454,7 @@ class GatewayRest(
                     val raw = resp.body?.string().orEmpty()
                     error("HTTP ${resp.code} for /api/files/download" + raw.take(160).let { if (it.isBlank()) "" else " — $it" })
                 }
-                resp.body?.bytes() ?: error("empty body for /api/files/download")
+                resp.body?.let(::boundedBytes) ?: error("empty body for /api/files/download")
             }
         }
     }
@@ -513,9 +513,28 @@ class GatewayRest(
             val dl = client.newBuilder().readTimeout(120, TimeUnit.SECONDS).build()
             dl.newCall(req).execute().use { resp ->
                 if (!resp.isSuccessful) error("HTTP ${resp.code} for $url")
-                resp.body?.bytes() ?: error("empty body for $url")
+                resp.body?.let(::boundedBytes) ?: error("empty body for $url")
             }
         }
+    }
+
+    /** A body read into memory, refused past [MAX_DOWNLOAD_BYTES] (a `MEDIA:` link to a disk
+     *  image ran the app out of memory). Checks the declared length, then counts. */
+    private fun boundedBytes(body: okhttp3.ResponseBody): ByteArray {
+        if (body.contentLength() > MAX_DOWNLOAD_BYTES) error("too large to open here (${body.contentLength() / (1024 * 1024)} MB)")
+        val out = java.io.ByteArrayOutputStream()
+        val buf = ByteArray(64 * 1024)
+        var total = 0L
+        body.byteStream().use { input ->
+            while (true) {
+                val n = input.read(buf)
+                if (n < 0) break
+                total += n
+                if (total > MAX_DOWNLOAD_BYTES) error("too large to open here (over ${MAX_DOWNLOAD_BYTES / (1024 * 1024)} MB)")
+                out.write(buf, 0, n)
+            }
+        }
+        return out.toByteArray()
     }
 
     /** Same scheme, host and port — a path prefix is not identity, and neither is a suffix match. */
@@ -615,3 +634,6 @@ class GatewayRest(
         }
     }
 }
+
+/** The most a media or file download reads into memory. */
+private const val MAX_DOWNLOAD_BYTES = 64L * 1024 * 1024

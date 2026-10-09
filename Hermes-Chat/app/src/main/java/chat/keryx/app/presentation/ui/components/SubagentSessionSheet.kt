@@ -1,5 +1,6 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -531,13 +532,18 @@ fun SessionTranscriptSheet(
     onDismiss: () -> Unit,
     onOpenInChat: (() -> Unit)? = null,
 ) {
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     val state by produceState<Result<List<HubMessage>>?>(initialValue = null, sessionId, live) {
-        while (isActive) {
-            val next = fetch(sessionId)
-            // A blip mid-watch must not wipe what is on screen; only a first load shows the error.
-            if (next.isSuccess || value?.isSuccess != true) value = next
-            if (!live) break
-            delay(LIVE_REFRESH_MS)
+        // Only while the app is on screen: a sheet left open kept re-reading the whole
+        // transcript every few seconds after you left the app (2.19.1).
+        lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            while (isActive) {
+                val next = fetch(sessionId)
+                // A blip mid-watch must not wipe what is on screen; only a first load shows the error.
+                if (next.isSuccess || value?.isSuccess != true) value = next
+                if (!live) break
+                delay(LIVE_REFRESH_MS)
+            }
         }
     }
     KeryxSheet(onDismiss = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {

@@ -45,6 +45,10 @@ class StreamTailTracker(
      *  small backward wobble of the sanitized end can never select a stale cut. */
     private val blankCuts = ArrayDeque<Int>()
 
+    /** Ascending starts of completed prose lines outside a fence (not blank, not a fence
+     *  marker): the fallback cut when the window holds no blank line (2.19.1). */
+    private val lineCuts = ArrayDeque<Int>()
+
     /** Rightmost ⟦ / ⟧ offsets, for the unterminated-marker truncation in O(1). */
     private var lastMarkOpen = -1
     private var lastMarkClose = -1
@@ -81,6 +85,7 @@ class StreamTailTracker(
         inFence = false
         hasNonWhitespace = false
         blankCuts.clear()
+        lineCuts.clear()
         lastMarkOpen = -1
         lastMarkClose = -1
         memoLen = -1
@@ -97,6 +102,9 @@ class StreamTailTracker(
         while (blankCuts.isNotEmpty() && blankCuts.first() < minStart - PRUNE_MARGIN) {
             blankCuts.removeFirst()
         }
+        while (lineCuts.isNotEmpty() && lineCuts.first() < minStart - PRUNE_MARGIN) {
+            lineCuts.removeFirst()
+        }
         var cut = -1
         for (o in blankCuts) {
             if (o >= c) break // ascending: nothing later can precede the sanitized end
@@ -106,6 +114,17 @@ class StreamTailTracker(
             // Raw mode keeps trailing whitespace, so the current incomplete line (or the empty
             // virtual line after a trailing '\n') is a legal cut too — lines() emits it.
             if (lineStart >= minStart && lineStart <= c && !inFence && currentLineBlank(c)) {
+                cut = lineStart
+            }
+        }
+        if (cut < 0) {
+            // No blank line in the window (a long table or list): the first prose line start.
+            for (o in lineCuts) {
+                if (o >= c) break
+                if (o >= minStart) { cut = o; break }
+            }
+            // ... or the line still arriving, when it is prose outside a fence.
+            if (cut < 0 && lineStart in minStart until c && !inFence && !currentLineBlank(c) && !currentLineFence(c)) {
                 cut = lineStart
             }
         }
@@ -133,6 +152,8 @@ class StreamTailTracker(
             if (!inFence) blankCuts.addLast(lineStart)
         } else if (matchesAt(j, newlinePos, "```") || matchesAt(j, newlinePos, "~~~")) {
             inFence = !inFence
+        } else if (!inFence) {
+            lineCuts.addLast(lineStart)
         }
         lineStart = newlinePos + 1
     }
@@ -141,6 +162,12 @@ class StreamTailTracker(
         if (end - start < token.length) return false
         for (k in token.indices) if (sb[start + k] != token[k]) return false
         return true
+    }
+
+    private fun currentLineFence(end: Int): Boolean {
+        var j = lineStart
+        while (j < end && sb[j].isWhitespace()) j++
+        return matchesAt(j, end, "```") || matchesAt(j, end, "~~~")
     }
 
     private fun currentLineBlank(end: Int): Boolean {

@@ -30,11 +30,15 @@ object ArtifactBase {
             when (seg) {
                 "", "." -> {}
                 ".." -> if (parts.isEmpty()) return null else parts.removeAt(parts.lastIndex)
-                else -> parts += seg
+                // Hidden files and folders are never a page's assets: a page saved in a home
+                // folder could otherwise fetch ~/.hermes/.env and post it anywhere (2.19.1).
+                else -> if (seg.startsWith('.')) return null else parts += seg
             }
         }
         val resolved = "/" + parts.joinToString("/")
         val root = "/" + folder.trim('/')
+        // Only the kinds of file a page loads; anything else (a key, a database) stays put.
+        if (mimeOf(resolved) == UNKNOWN) return null
         return resolved.takeIf { it.startsWith("$root/") }
     }
 
@@ -52,6 +56,21 @@ object ArtifactBase {
         "woff" -> "font/woff"
         "woff2" -> "font/woff2"
         "ttf" -> "font/ttf"
-        else -> "application/octet-stream"
+        "otf" -> "font/otf"
+        "ico" -> "image/x-icon"
+        "avif" -> "image/avif"
+        "txt" -> "text/plain"
+        "csv" -> "text/csv"
+        "md" -> "text/markdown"
+        "xml" -> "application/xml"
+        "wasm" -> "application/wasm"
+        "mp3" -> "audio/mpeg"
+        "wav" -> "audio/wav"
+        "ogg" -> "audio/ogg"
+        "mp4" -> "video/mp4"
+        "webm" -> "video/webm"
+        else -> UNKNOWN
     }
+
+    const val UNKNOWN = "application/octet-stream"
 }
