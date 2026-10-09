@@ -214,6 +214,22 @@ fun ToolTheaterRow(
         // and a `write_file` result with the syntax oracle's verdict appended had no window at all
         // (Jonny: "I don't see the tool payloads or failures"). A failure's reason is always on
         // show; the full payload is a fold, because a run of twelve calls is a wall otherwise.
+        // Hermes flagged what came back (2.19): said once, in the warning colour, so it is
+        // not lost in a long run. The model was warned too; this is the human's copy.
+        // The structured beat carries it on the live path; a call can carry it directly.
+        val risky = beat?.takeIf { it.flagged } ?: call.takeIf { it.flagged }
+        if (risky != null) {
+            Text(
+                text = "⚠ Hermes flagged this output" +
+                    risky.riskFindings.takeIf { it.isNotEmpty() }
+                        ?.joinToString(", ", prefix = ": ") { it.replace('_', ' ') }.orEmpty(),
+                color = KeryxStatus.warn,
+                fontSize = KeryxType.micro,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 19.dp, top = 1.dp),
+            )
+        }
         if (ok == false && output.isNotBlank()) {
             Text(
                 text = Theater.reason(output),

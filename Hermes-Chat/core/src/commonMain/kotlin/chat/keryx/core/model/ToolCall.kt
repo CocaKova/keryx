@@ -47,7 +47,17 @@ data class ToolCall(
     val batchId: String = "",
     /** True only with OBSERVED overlap — direct evidence, never an inference from grouping. */
     val concurrent: Boolean = false,
+    /** Hermes flagged what this call returned (`tool.output_risk`, 2.19): "high" when its
+     *  scanner found a prompt injection or a secret in the output; blank when nothing was
+     *  said. Advisory — the gateway neither blocks nor redacts on it. Live only: Hermes keeps
+     *  no record of it, so a reopened session shows the call without it. */
+    val risk: String = "",
+    /** The scanner's finding ids (`prompt_injection`, …), as the gateway named them. */
+    val riskFindings: List<String> = emptyList(),
 ) {
+    /** Worth a warning line: anything the gateway raised above "low". */
+    val flagged: Boolean get() = risk.isNotBlank() && risk != "low"
+
     val running: Boolean get() = status == ToolStatus.EXECUTING
     val failed: Boolean get() = status == ToolStatus.FAILED
     val hasDiff: Boolean get() = inlineDiff.isNotBlank()

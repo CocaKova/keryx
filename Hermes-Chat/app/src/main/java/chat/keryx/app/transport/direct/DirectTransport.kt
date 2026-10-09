@@ -498,11 +498,22 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                         // Completion frames carry neither the batch nor the overlap evidence.
                         batchId = prev.batchId,
                         concurrent = prev.concurrent,
+                        risk = done.risk.ifBlank { prev.risk },
+                        riskFindings = done.riskFindings.ifEmpty { prev.riskFindings },
                     ),
                 )
             } else {
                 items += TurnItem.Tool(seq++, done) // start frame lost (reconnect); still show it
             }
+            publish()
+        }
+
+        /** Hermes flagged a call's output. It arrives just after that call's completion. */
+        fun toolRisk(toolId: String, risk: String, findings: List<String>) {
+            val i = items.indexOfLast { it is TurnItem.Tool && it.call.toolId == toolId }
+            if (i < 0) return
+            val call = (items[i] as TurnItem.Tool).call
+            items[i] = TurnItem.Tool(items[i].seq, call.copy(risk = risk, riskFindings = findings))
             publish()
         }
 
@@ -901,6 +912,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         // Phones background constantly, so mobile meets the orphan reaper far more than
         // desktop does. Dropping the cached sid is the whole fix: the next send re-resumes.
         if (ev.type == "session.reclaimed") { onSessionReclaimed(ev.payload); return }
+        // Pending approvals dropped by an interrupt, reap or teardown (hermes #106678): they
+        // resolved as deny, not by anyone's hand. Also GLOBAL, ids in the payload. Without
+        // this the card stayed up after the turn that asked had already gone (2.19).
+        if (ev.type == "approval.cancelled") { onApprovalsCancelled(ev.payload); return }
         // Compaction forks the stored session (protocol: /compress ends the parent and
         // continues under a NEW stored id, same live sid). session.info carries the
         // authoritative stored id as `stored_session_id` (server-side that's the
@@ -1147,6 +1162,16 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             // whatever the todo tool is called this month, so it outlives the next rename.
             "todo.updated" -> chat.keryx.core.model.TodoPlanParser.parse(p?.toString().orEmpty())
                 ?.let { store.todoPlan.value = it }
+            // Hermes' scanner found a prompt injection or a secret in a tool's output
+            // (agent/tool_executor.py, after the completion). Advisory; the row says so.
+            "tool.output_risk" -> pStr("tool_id")?.takeIf { it.isNotBlank() }?.let { id ->
+                store.toolRisk(
+                    id,
+                    pStr("risk").orEmpty(),
+                    (p?.get("findings") as? kotlinx.serialization.json.JsonArray)
+                        ?.mapNotNull { it.jsonPrimitive.contentOrNull }.orEmpty(),
+                )
+            }
             "tool.generating" -> {
                 store.toolGenerating(pStr("name") ?: "tool")
                 noteRun(storedId, ev.type, toolName = pStr("name") ?: "tool")
@@ -3573,6 +3598,21 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         _shadePending.value = _shadePending.value.toMutableMap().apply {
             val next = fn(this[storedId] ?: chat.keryx.core.model.ShadePendingEntry())
             if (next.isEmpty) remove(storedId) else put(storedId, next)
+        }
+    }
+
+    private fun onApprovalsCancelled(p: kotlinx.serialization.json.JsonObject?) {
+        p ?: return
+        val ids = (p["request_ids"] as? kotlinx.serialization.json.JsonArray)
+            ?.mapNotNull { it.jsonPrimitive.contentOrNull?.takeIf(String::isNotBlank) }
+            ?.toSet().orEmpty()
+        val stored = p["stored_session_id"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+            ?: p["session_id"]?.jsonPrimitive?.contentOrNull?.let { liveToStored[it] }
+        for ((sid, flow) in approvalFlows) {
+            val rid = flow.value?.requestId ?: continue
+            // Every pending approval of that session was dropped, so its card goes whatever its
+            // id; the ids catch a card filed under a stored id we have since rotated away from.
+            if (sid == stored || rid in ids) setApproval(sid, null)
         }
     }
 
