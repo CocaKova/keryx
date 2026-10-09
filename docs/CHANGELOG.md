@@ -5,7 +5,7 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
-## 2.19.0 · versionCode 131
+## 2.19.0 · versionCode 132
 
 Catching up with Hermes, and a tripwire so the next rename can't slip past.
 
@@ -46,6 +46,16 @@ Catching up with Hermes, and a tripwire so the next rename can't slip past.
 - Starting a fresh Bot Chat twice in one minute no longer fails.
 - Typing `/branch` (or `/fork`, optionally with a name) forks the whole conversation and opens
   the fork. Sent to Hermes as text, it always answered "No conversation to branch".
+
+**Agent Hub → Update**
+- The commit count works again. When Hermes' own check only knows "behind, count unknown", the
+  count from the gateway's local copy of upstream fills in ("977 commits behind" instead of
+  "unknown").
+- "Check for updates" refreshes both sources, shows "Checking…" until both have answered, and
+  then says what it found.
+- An update in progress shows three steps (Installing → Restarting → Coming back) with a
+  moving bar, and a finished update gets a check that springs in. With reduced motion on, the
+  bar fills by step instead of sweeping.
 
 **Under the hood**
 - `tools/hermes_drift.py` checks every Hermes name Keryx relies on against a live Hermes (tools

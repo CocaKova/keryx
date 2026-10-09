@@ -1,5 +1,7 @@
 package chat.keryx.core
 
+import chat.keryx.core.model.PluginUpdateStatus
+import chat.keryx.core.model.UpdateCheck
 import chat.keryx.core.model.HermesUpdateParser
 import chat.keryx.core.model.UpdateActionStatus
 import chat.keryx.core.model.UpdateObservation
@@ -217,5 +219,21 @@ class HermesUpdateTest {
         assertNull(chat.keryx.core.model.UpdateText.ago("yesterday", ms))
         assertEquals(UpdateOutcome.FAILED, chat.keryx.core.model.UpdateText.receiptOutcome("failed"))
         assertNull(chat.keryx.core.model.UpdateText.receiptOutcome("running"))
+    }
+
+    @Test
+    fun `an unknown dashboard count borrows the plugin's, but a stale local zero never wins`() {
+        val plugin = PluginUpdateStatus(
+            supported = true, reason = "", behind = 977, ahead = 0, branch = "origin/main", head = "13dc3a7389",
+            headBranch = "main", version = "0.21.5", commandConfigured = true, label = "silas-update",
+            commandSource = "configured", checkedAt = "2026-10-09T11:30:03+00:00", checking = false, checkError = "",
+            probeConfigured = false, probeLabel = "", probeRunning = false, probeExit = null,
+            probeOutput = "", probeAt = "",
+        )
+        val check = UpdateCheck("git", "0.21.5", -1, true, true, "hermes update", null, emptyList())
+        assertEquals(977, UpdatePlanner.behind(plugin, check)!!.count)
+        assertEquals(-1, UpdatePlanner.behind(plugin.copy(behind = 0), check)!!.count)
+        assertEquals(977, UpdatePlanner.behind(plugin, check.copy(behind = null))!!.count)
+        assertEquals(5, UpdatePlanner.behind(plugin, check.copy(behind = 5))!!.count)
     }
 }

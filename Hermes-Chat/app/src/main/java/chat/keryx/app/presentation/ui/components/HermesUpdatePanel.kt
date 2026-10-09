@@ -1,5 +1,11 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -323,9 +329,20 @@ private fun RunCard(rv: HermesUpdateDelegate.RunView, onDismiss: () -> Unit) {
         UpdatePhase.Silent -> KeryxStatus.warn
         else -> null
     }
+    // Once the gateway has gone away and come back, the run is in its last stretch (2.19).
+    var sawRestart by remember(rv.run.startedAtMs) { mutableStateOf(false) }
+    if (phase is UpdatePhase.Working && phase.restarting) sawRestart = true
     KeryxCard(tint = tint, breathing = phase is UpdatePhase.Working) {
         when (phase) {
             is UpdatePhase.Working -> {
+                UpdateStages(
+                    stage = when {
+                        phase.restarting -> 1
+                        sawRestart -> 2
+                        else -> 0
+                    },
+                )
+                Spacer(Modifier.height(10.dp))
                 Text(
                     if (phase.restarting) "The gateway is restarting" else "Updating with `${rv.run.plan.command}`…",
                     fontSize = KeryxType.body,
@@ -340,8 +357,14 @@ private fun RunCard(rv: HermesUpdateDelegate.RunView, onDismiss: () -> Unit) {
                 LogTail(rv.lines)
             }
             is UpdatePhase.Finished -> {
-                Text(UpdateText.outcomeTitle(phase.outcome), fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold,
-                    color = outcomeColor(phase.outcome))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (phase.outcome == UpdateOutcome.SUCCESS) {
+                        SuccessMark(outcomeColor(phase.outcome))
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(UpdateText.outcomeTitle(phase.outcome), fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold,
+                        color = outcomeColor(phase.outcome))
+                }
                 Text(phase.detail, fontSize = KeryxType.caption)
                 phase.receipt?.let { ReceiptLines(it) }
                 LogTail(rv.lines)
@@ -399,6 +422,102 @@ private fun ReceiptLines(r: UpdateReceipt) {
                 overflow = TextOverflow.Ellipsis,
             )
         }
+}
+
+/**
+ * Where an update is (2.19): three steps, the current one lit and pulsing, the ones behind it
+ * checked, with a sweeping bar under them. An update through the operator's wrapper sends no
+ * log to the phone, so this is the whole picture — the gateway going away IS step two.
+ */
+@Composable
+private fun UpdateStages(stage: Int) {
+    val reduced by rememberReducedMotion()
+    val labels = listOf("Installing", "Restarting", "Coming back")
+    val accent = MaterialTheme.colorScheme.primary
+    val pulse = breathingAlpha(active = true, low = 0.35f, periodMillis = 1200)
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        labels.forEachIndexed { i, label ->
+            val done = i < stage
+            val current = i == stage
+            val dot by androidx.compose.animation.animateColorAsState(
+                when {
+                    done -> KeryxStatus.good
+                    current -> accent
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                },
+                label = "stageDot",
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                androidx.compose.foundation.layout.Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(18.dp)
+                        .graphicsLayer { alpha = if (current) pulse else 1f }
+                        .clip(CircleShape)
+                        .background(dot),
+                ) {
+                    if (done) {
+                        Icon(
+                            KeryxGlyphs.Check, contentDescription = null,
+                            tint = contrastColorFor(KeryxStatus.good), modifier = Modifier.size(12.dp),
+                        )
+                    }
+                }
+                Spacer(Modifier.width(5.dp))
+                Text(
+                    label,
+                    fontSize = KeryxType.micro,
+                    fontWeight = if (current) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (current || done) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (i < labels.lastIndex) {
+                androidx.compose.foundation.layout.Box(
+                    Modifier
+                        .weight(1f)
+                        .padding(horizontal = 6.dp)
+                        .height(1.5.dp)
+                        .background(if (done) KeryxStatus.good else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)),
+                )
+            }
+        }
+    }
+    Spacer(Modifier.height(8.dp))
+    if (reduced) {
+        androidx.compose.material3.LinearProgressIndicator(
+            progress = { (stage + 0.5f) / labels.size },
+            color = accent,
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(2.dp)),
+        )
+    } else {
+        androidx.compose.material3.LinearProgressIndicator(
+            color = accent,
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(2.dp)),
+        )
+    }
+}
+
+/** The finished update's check: it springs in once, then sits still. */
+@Composable
+private fun SuccessMark(color: Color) {
+    val reduced by rememberReducedMotion()
+    val scale = remember { androidx.compose.animation.core.Animatable(if (reduced) 1f else 0f) }
+    LaunchedEffect(Unit) {
+        if (!reduced) scale.animateTo(
+            1f,
+            androidx.compose.animation.core.spring(dampingRatio = 0.45f, stiffness = 380f),
+        )
+    }
+    androidx.compose.foundation.layout.Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(24.dp)
+            .graphicsLayer { scaleX = scale.value; scaleY = scale.value }
+            .clip(CircleShape)
+            .background(color),
+    ) {
+        Icon(KeryxGlyphs.Check, contentDescription = "Updated", tint = contrastColorFor(color), modifier = Modifier.size(15.dp))
+    }
 }
 
 @Composable

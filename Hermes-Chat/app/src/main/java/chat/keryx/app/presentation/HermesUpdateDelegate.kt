@@ -15,6 +15,7 @@ import chat.keryx.core.model.UpdateObservation
 import chat.keryx.core.model.UpdateOutcome
 import chat.keryx.core.model.UpdatePhase
 import chat.keryx.core.model.UpdatePlan
+import chat.keryx.core.model.UpdatePlanner
 import chat.keryx.core.model.UpdateReceipt
 import chat.keryx.core.model.UpdateRoute
 import chat.keryx.core.model.UpdateRun
@@ -139,8 +140,18 @@ class HermesUpdateDelegate(
         scope.launch {
             if (rest() != null && b?.checkMissing != true) {
                 _board.value = (b ?: Board()).copy(checking = true)
+                // The plugin's count is the one that survives a dashboard "count unknown" (2.19):
+                // have it fetch fresh refs too, and stay "Checking…" until it has.
+                val plugin = b?.plugin?.takeIf { it.supported }
+                val fetching = plugin != null &&
+                    linkRead("/keryx/update/check", "POST", buildJsonObject { }) is Routed.Ok
                 readAll(forceCheck = true)
-                _board.value = _board.value?.copy(checking = false)
+                if (fetching) {
+                    _board.value = _board.value?.copy(checking = true)
+                } else {
+                    _board.value = _board.value?.copy(checking = false)
+                    announceCheck()
+                }
                 return@launch
             }
             // The /keryx handler 400s a POST without a JSON body — an empty object is the body.
@@ -150,6 +161,13 @@ class HermesUpdateDelegate(
                 Routed.Missing -> toast("This gateway can't check for updates from the phone.")
             }
         }
+    }
+
+    /** A finished check says what it found: tapping the button used to change nothing visible
+     *  when the answer was the same as before, which read as "the button doesn't work". */
+    private fun announceCheck() {
+        val b = _board.value ?: return
+        toast("Checked: " + UpdatePlanner.behindLine(UpdatePlanner.behind(b.plugin, b.check)).replaceFirstChar { it.lowercase() })
     }
 
     /** The operator's preflight (`keryx.update.probe`) — minutes of work; [pollTick] waits. */
@@ -239,8 +257,9 @@ class HermesUpdateDelegate(
                 probing = (_board.value?.probing == true) && p.probeRunning,
             )
         }
-        if (b?.checking == true && plugin.valueOrNull?.checking == false && plugin.valueOrNull?.checkError?.isNotBlank() == true) {
-            toast("Check failed: ${plugin.valueOrNull?.checkError?.take(80)}")
+        if (b?.checking == true && plugin.valueOrNull?.checking == false) {
+            val err = plugin.valueOrNull?.checkError
+            if (!err.isNullOrBlank()) toast("Check failed: ${err.take(80)}") else announceCheck()
         }
         if (!inRun || view == null) return
 

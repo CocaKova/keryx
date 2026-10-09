@@ -279,12 +279,27 @@ object UpdatePlanner {
             ?: plugin?.reason?.takeIf { it.isNotBlank() }
             ?: "This gateway doesn't offer an update from the phone — update it on the host."
 
-    /** The dashboard's count when it has one (fresh from the update source), else the plugin's. */
-    fun behind(plugin: PluginUpdateStatus?, check: UpdateCheck?): BehindReading? = when {
-        check?.behind != null -> BehindReading(check.behind, fromLocalRefs = false, checkedAt = "")
-        plugin != null && plugin.supported -> BehindReading(plugin.behind, fromLocalRefs = true, checkedAt = plugin.checkedAt)
-        check != null -> BehindReading(null, fromLocalRefs = false, checkedAt = "")
-        else -> null
+    /**
+     * The best count either server has. The dashboard's when it is a number (fresh from the
+     * update source). When it only knows "behind, count unknown" (-1: the source names a newer
+     * commit but not the distance — 977 commits on 2026-10-09) or couldn't reach the source
+     * at all, the plugin's count against the host's refs fills in. A local 0 never overrides
+     * the dashboard's -1, though: the dashboard has seen upstream move, so the local refs are stale.
+     */
+    fun behind(plugin: PluginUpdateStatus?, check: UpdateCheck?): BehindReading? {
+        val dash = check?.behind
+        val p = plugin?.takeIf { it.supported }
+        val local = p?.behind
+        val localReading = p?.let { BehindReading(it.behind, fromLocalRefs = true, checkedAt = it.checkedAt) }
+        return when {
+            dash != null && dash >= 0 -> BehindReading(dash, fromLocalRefs = false, checkedAt = "")
+            dash == -1 && local != null && local > 0 -> localReading
+            dash == -1 -> BehindReading(-1, fromLocalRefs = false, checkedAt = "")
+            local != null && local >= 0 -> localReading
+            localReading != null -> localReading
+            check != null -> BehindReading(null, fromLocalRefs = false, checkedAt = "")
+            else -> null
+        }
     }
 
     /** One line for the count. A count nobody could take is never "up to date". */
