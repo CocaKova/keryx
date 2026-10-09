@@ -30,7 +30,13 @@ fun sessionMessagesQuery(
         // into nothing instead of into the past — measured at 81 of 168 rows on
         // a real session. Gateways predating the flag ignore the unknown query
         // param, so sending it is correct in both directions.
-        "&include_compacted=true"
+        "&include_compacted=true" +
+        // ── inline_images ──────────────────────────────────────────────────
+        // The server defaults to sending every stored image part back as a
+        // base64 data URI. Keryx only ever draws a placeholder for them, so a
+        // photo-heavy session's page ran to megabytes (and was disk-cached).
+        // `false` sends "[image]" in its place. Older gateways ignore it.
+        "&inline_images=false"
 
 /** The server's hard cap on rows per page; asking for more is clamped, not rejected. */
 const val MAX_PAGE: Int = 500

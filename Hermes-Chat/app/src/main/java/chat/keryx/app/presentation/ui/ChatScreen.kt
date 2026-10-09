@@ -347,6 +347,13 @@ fun ChatScreen(
         setComposer(draft)
     }
 
+    // A send that failed puts its words back, unless something new has been typed since.
+    LaunchedEffect(Unit) {
+        viewModel.unsent.collect { (roomId, text) ->
+            if (roomId == viewModel.currentRoom.value?.id && composerField.text.isBlank()) setComposer(text)
+        }
+    }
+
     // Dream dissolve on room switch: the timeline re-materializes through a soft blur+fade while
     // the arriving room's light streams across it as a braille wake — the app's signature
     // "crossing rooms" beat. Skipped on first open (no jarring boot blur), and skipped entirely

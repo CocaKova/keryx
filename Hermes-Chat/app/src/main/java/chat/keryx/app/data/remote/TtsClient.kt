@@ -67,7 +67,7 @@ class TtsClient(
 
     /** A live PCM reply: 16-bit little-endian mono at [sampleRate]. Close it to stop the server. */
     class PcmStream(val sampleRate: Int, private val response: okhttp3.Response) : Closeable {
-        val input: InputStream = response.body?.byteStream() ?: InputStream.nullInputStream()
+        val input: InputStream = response.body?.byteStream() ?: java.io.ByteArrayInputStream(ByteArray(0)) // nullInputStream() is API 33
         override fun close() = response.close()
     }
 

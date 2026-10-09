@@ -531,7 +531,20 @@ class SettingsRepositoryImpl(
         hubCache.getString(ledgerKey(path), null)
 
     override fun putHubSnapshot(path: String, json: String) {
-        hubCache.edit().putString(ledgerKey(path), json).apply()
+        if (!HubSnapshots.keeps(path)) return
+        val key = ledgerKey(path)
+        // Polls mostly return what they returned last time; rewriting the file then is waste.
+        if (hubCache.getString(key, null) == json) return
+        hubCache.edit().putString(key, json).apply()
+    }
+
+    init {
+        // 2.19.1: drop what older builds cached but never read back (every transcript opened).
+        if (!prefs.getBoolean("hub_cache_pruned_2191", false)) {
+            val stale = hubCache.all.keys.filterNot(HubSnapshots::keeps)
+            if (stale.isNotEmpty()) hubCache.edit().apply { stale.forEach { remove(it) } }.apply()
+            prefs.edit().putBoolean("hub_cache_pruned_2191", true).apply()
+        }
     }
 
     // Drafts are tiny strings keyed per room; empty text removes the key so prefs never

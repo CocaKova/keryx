@@ -964,13 +964,13 @@ class ChatViewModel(
         // A gateway that restarted forgets nothing we can't re-ask for, but the composer's model
         // and reasoning pills hide while their caps are unknown, and nothing re-probed them on
         // a reconnect: a restart left the pills gone until the app was reopened (2.17.1).
-        viewModelScope.launch {
-            var wasReady = true
-            while (true) {
-                val state = direct?.connectionState
-                if (state == null) { delay(2_000); continue }
-                state.collect { s ->
-                    val ready = s is chat.keryx.app.transport.direct.GatewayRpc.ConnState.Ready
+        // linkState, not one client's state: it outlives a rebuilt client (the old loop stayed on
+        // the dead one's flow), and the Matrix door has no direct link to poll at all.
+        direct?.let { d ->
+            viewModelScope.launch {
+                var wasReady = true
+                d.linkState().collect { s ->
+                    val ready = s == chat.keryx.core.model.LinkState.CONNECTED
                     if (ready && !wasReady) { models.clear(); refreshReasoningCaps() }
                     wasReady = ready
                 }
@@ -1983,7 +1983,10 @@ class ChatViewModel(
 
     fun sendAttachment(bytes: ByteArray, fileName: String, contentType: String, caption: String? = null) {
         val session = _currentRoom.value ?: return
-        viewModelScope.launch { transport.sendAttachment(session.id, bytes, fileName, contentType, caption) }
+        viewModelScope.launch {
+            runCatching { transport.sendAttachment(session.id, bytes, fileName, contentType, caption) }
+                .onFailure { if (it !is kotlinx.coroutines.CancellationException) toast("Couldn't send: ${it.message?.take(80)}") }
+        }
     }
 
     /**
@@ -2036,6 +2039,9 @@ class ChatViewModel(
     }
 
     // One-shot user-facing messages (e.g. avatar set result) — collected once at the app root.
+    /** A send that failed hands its words back: (room id, text) for the composer to refill. */
+    private val _unsent = kotlinx.coroutines.flow.MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 1)
+    val unsent: kotlinx.coroutines.flow.SharedFlow<Pair<String, String>> = _unsent
     private val _toasts = kotlinx.coroutines.flow.MutableSharedFlow<String>(extraBufferCapacity = 8)
     val toasts: kotlinx.coroutines.flow.SharedFlow<String> = _toasts
 
@@ -2130,8 +2136,21 @@ class ChatViewModel(
             _pendingSend.value = null
         }
         viewModelScope.launch {
-            if (replyTo != null) transport.sendReply(session.id, content, replyTo.id)
-            else transport.sendMessage(session.id, content)
+            try {
+                if (replyTo != null) transport.sendReply(session.id, content, replyTo.id)
+                else transport.sendMessage(session.id, content)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Link down, the session busy on another client, a refused command: say so and
+                // put the words back, instead of a crash or a bubble that never answers.
+                pendingSendClearJob?.cancel()
+                _pendingSend.value = null
+                _awaitingReply.value = false
+                settingsRepository.setDraft(session.id, rawContent)
+                _unsent.tryEmit(session.id to rawContent)
+                toast("Not sent: ${e.message?.take(80) ?: "the gateway didn't take it"}")
+            }
         }
         _replyTarget.value = null
         settingsRepository.setDraft(session.id, "")

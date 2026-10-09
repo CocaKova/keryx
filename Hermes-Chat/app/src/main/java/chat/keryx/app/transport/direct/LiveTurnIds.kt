@@ -30,4 +30,10 @@ internal object LiveTurnIds {
         val cut = id.lastIndexOf('-')
         return if (cut > "live-".length) id.substring(0, cut) else null
     }
+
+    /** A local row the gateway never persists: slash output, a review pill, a wing landing.
+     *  Everything else local (echoes, `local-img-`/`local-file-` sends, `live-` turns) gets a
+     *  persisted twin, and a re-read drops the local copy. */
+    fun isPhoneOnly(id: String): Boolean =
+        id.startsWith("local-sys-") || id.startsWith("local-review-") || id.startsWith("wing-")
 }

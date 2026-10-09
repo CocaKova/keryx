@@ -117,7 +117,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
         // tap racing a RemoteInput) must not send two answers to a gateway that has already
         // moved on — the second would resolve nothing, or worse, the NEXT request.
         WorkManager.getInstance(context).enqueueUniqueWork(
-            "keryx-gate-answer-$sessionId", ExistingWorkPolicy.KEEP, work,
+            // Keyed by request too: an answer to the NEXT request must not be dropped as a dup.
+            "keryx-gate-answer-$sessionId-${intent.getStringExtra(KeryxNotifications.EXTRA_GATE_REQUEST).orEmpty()}",
+            ExistingWorkPolicy.KEEP, work,
         )
     }
 
@@ -144,6 +146,9 @@ class GateAnswerWorker(
     params: WorkerParameters,
 ) : CoroutineWorker(context, params) {
 
+    override suspend fun getForegroundInfo(): androidx.work.ForegroundInfo =
+        KeryxNotifications.workerForeground(applicationContext, "Answering…")
+
     override suspend fun doWork(): Result {
         val app = applicationContext as? KeryxApp ?: return Result.failure()
         val direct = app.transport as? chat.keryx.app.transport.direct.DirectTransport
@@ -153,7 +158,6 @@ class GateAnswerWorker(
         val kind = inputData.getString(KEY_KIND) ?: return Result.failure()
         val answer = inputData.getString(KEY_ANSWER) ?: return Result.failure()
 
-        direct.connectIfConfigured()
         if (!direct.awaitConnected(CONNECT_WAIT_MS)) {
             if (runAttemptCount < MAX_ATTEMPTS) return Result.retry()
             KeryxNotifications.notifyGateResult(
@@ -164,7 +168,7 @@ class GateAnswerWorker(
 
         val outcome: kotlin.Result<String> =
             if (kind == KeryxNotifications.GATE_KIND_APPROVAL) {
-                direct.respondApproval(sessionId, answer).map { resolved ->
+                direct.respondApproval(sessionId, answer, inputData.getString(KEY_REQUEST)).map { resolved ->
                     // resolved=0 means the wait had already failed closed. Saying "approved"
                     // there would be a lie about a command that is not going to run.
                     if (resolved) "Answered — the agent is running again"
@@ -213,6 +217,9 @@ class SendTextWorker(
     context: Context,
     params: WorkerParameters,
 ) : CoroutineWorker(context, params) {
+
+    override suspend fun getForegroundInfo(): androidx.work.ForegroundInfo =
+        KeryxNotifications.workerForeground(applicationContext, "Sending…")
 
     override suspend fun doWork(): Result {
         val app = applicationContext as? KeryxApp ?: return Result.failure()

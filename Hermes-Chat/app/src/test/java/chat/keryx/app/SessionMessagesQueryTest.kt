@@ -15,7 +15,7 @@ class SessionMessagesQueryTest {
     @Test
     fun `hydration asks for the newest page by default`() {
         assertEquals(
-            "limit=120&offset=0&order=latest&include_compacted=true",
+            "limit=120&offset=0&order=latest&include_compacted=true&inline_images=false",
             sessionMessagesQuery(limit = 120),
         )
     }

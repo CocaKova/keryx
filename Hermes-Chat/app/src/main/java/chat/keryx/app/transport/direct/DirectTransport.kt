@@ -48,8 +48,12 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
-import kotlinx.serialization.json.jsonPrimitive
 import java.net.URI
+
+/** A wire field as a primitive, or null when Hermes sent an object, array or nothing (a
+ *  `.jsonPrimitive` on those throws, and one throw mid-event left a turn half-handled). */
+private val kotlinx.serialization.json.JsonElement.primitiveOrNull: JsonPrimitive?
+    get() = this as? JsonPrimitive
 
 /**
  * ChatRepository over a stock hermes-agent gateway (TALARIA-PROTOCOL.md) instead of Matrix.
@@ -623,8 +627,26 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         /** Drop the rows this process life added on its own — a re-read is about to replace them. */
         fun clearLocal() { local = emptyList(); publish() }
 
-        /** [clearLocal] without the paint — the caller publishes the replacement next. */
-        fun dropLocalQuietly() { local = emptyList() }
+        /**
+         * A persisted page now holds this process's turns: drop their local copies (echoes,
+         * folded live turns) or every turn shows twice once a re-read lands. Keeps what only
+         * the phone ever had: slash output, review pills, wing landings. No paint; the caller
+         * publishes the replacement next.
+         */
+        fun dropPersistedTwinsQuietly() { local = local.filter { LiveTurnIds.isPhoneOnly(it.id) } }
+
+        /**
+         * The turn on screen ended (or was lost) while the link was down, so no complete will
+         * come to settle it: without this the bubble streamed forever. A turn still running
+         * restarts its overlay with its next frame, and its complete carries the whole reply.
+         */
+        fun abandonTurnQuietly() {
+            if (!streaming) return
+            streaming = false
+            agentTyping.value = false
+            items.clear(); buffer = StringBuilder(); turnTag = 0L
+            reasonBuf = StringBuilder(); reasonStartedAt = 0L; reasonEndedAt = 0L
+        }
 
         /** Paint now. A replay applies a burst of deltas inside one throttle window, and its
          *  last words must not wait for the next live frame to show (2.16). */
@@ -643,14 +665,23 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             publish()
         }
 
-        fun localUserMessage(text: String) {
+        /** Echo what I sent; returns its id so a send that fails can take it back. */
+        fun localUserMessage(text: String): String {
+            val id = "local-${System.currentTimeMillis()}"
             local = local + Message(
-                id = "local-${System.currentTimeMillis()}",
+                id = id,
                 roomId = storedId,
                 sender = SenderType.ME,
                 content = text,
                 timestamp = System.currentTimeMillis(),
             )
+            publish()
+            return id
+        }
+
+        fun dropLocal(id: String) {
+            if (local.none { it.id == id }) return
+            local = local.filterNot { it.id == id }
             publish()
         }
 
@@ -800,6 +831,9 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         } ?: (_linkState.value == chat.keryx.core.model.LinkState.CONNECTED)
     }
 
+    // Synchronized: the app, a notification worker and a network nudge can all ask at once,
+    // and two GatewayRpc builds left an orphan socket redialling forever.
+    @Synchronized
     fun connectIfConfigured() {
         if (!settings.directLoggedIn) return
         val url = settings.directGatewayUrl
@@ -815,7 +849,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         // share a refresh mutex, so one expiry rotates once for everyone.
         val auth = DirectAuth(settings, settings.allowInsecure)
         rest = GatewayRest(url, token, settings.allowInsecure, auth)
-        rpc = GatewayRpc(url, { auth.wsCredentialQuery(url) }, settings.allowInsecure).also { r ->
+        rpc = GatewayRpc(url, { auth.wsCredentialQuery(url) }, settings.allowInsecure, idle = { !foreground.value }).also { r ->
             r.connect(scope)
             pumpJob = scope.launch { r.events.collect(::onEvent) }
             requestJob = scope.launch { r.serverRequests.collect(::onServerRequest) }
@@ -901,7 +935,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         if (ev.type == "sessions.changed") { onSessionsChanged(); return }
         // A fresh socket. Everything we know may be stale, so this is the resync point.
         if (ev.type == "gateway.ready") {
-            onGatewayReady(ev.payload?.get("replay_epoch")?.jsonPrimitive?.contentOrNull)
+            onGatewayReady(ev.payload?.get("replay_epoch")?.primitiveOrNull?.contentOrNull)
             return
         }
         // ⚠ The gateway can take a live session BACK — idle TTL, LRU eviction, or the
@@ -925,13 +959,13 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         // session_key) — re-anchor the moment it changes, or every later event lands in
         // the dead parent while the UI highlights nothing.
         if (ev.type == "session.info") {
-            val newStored = ev.payload?.get("stored_session_id")?.jsonPrimitive?.contentOrNull
+            val newStored = ev.payload?.get("stored_session_id")?.primitiveOrNull?.contentOrNull
             if (!newStored.isNullOrBlank()) maybeRotateStored(ev.sessionId, newStored)
         }
         val storedId = liveToStored[ev.sessionId] ?: return
         val store = stores[storedId] ?: return
         val p = ev.payload
-        fun pStr(key: String) = p?.get(key)?.jsonPrimitive?.contentOrNull
+        fun pStr(key: String) = p?.get(key)?.primitiveOrNull?.contentOrNull
         // A failed turn's descriptor (2.10): `error_surface` {layer, code, retryable} beside the
         // failure's words. A gateway without it yields a layer-less failure — still a card.
         fun pFailure(): chat.keryx.core.model.TurnFailure? {
@@ -939,9 +973,9 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             val surface = p?.get("error_surface") as? kotlinx.serialization.json.JsonObject
             val words = pStr("error") ?: pStr("message") ?: pStr("text").orEmpty()
             return chat.keryx.core.model.TurnFailure.fromWire(
-                layer = surface?.get("layer")?.jsonPrimitive?.contentOrNull,
-                code = surface?.get("code")?.jsonPrimitive?.contentOrNull,
-                retryable = surface?.get("retryable")?.jsonPrimitive?.booleanOrNull,
+                layer = surface?.get("layer")?.primitiveOrNull?.contentOrNull,
+                code = surface?.get("code")?.primitiveOrNull?.contentOrNull,
+                retryable = surface?.get("retryable")?.primitiveOrNull?.booleanOrNull,
                 message = words.removePrefix("Error: ").trim(),
             )
         }
@@ -978,7 +1012,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                     requestId = pStr("request_id") ?: "",
                     prompt = pStr("question") ?: "",
                     choices = (p?.get("choices") as? kotlinx.serialization.json.JsonArray)
-                        ?.mapNotNull { it.jsonPrimitive.contentOrNull } ?: emptyList(),
+                        ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull } ?: emptyList(),
                     multiSelect = pStr("multi_select") == "true",
                 ),
             )
@@ -1013,7 +1047,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                     command = pStr("command") ?: "",
                     description = pStr("description") ?: "",
                     choices = (p?.get("choices") as? kotlinx.serialization.json.JsonArray)
-                        ?.mapNotNull { it.jsonPrimitive.contentOrNull }
+                        ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
                         ?.ifEmpty { null }
                         ?: listOf("once", "deny"),
                 ),
@@ -1071,7 +1105,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 // Re-read rather than draw it locally: the persisted row carries the flag, and one
                 // source keeps the live view and history the same.
                 if (pStr("status") == "interrupted") {
-                    scope.launch { delay(500); runCatching { rehydrate(storedId, store, replaceLocal = true) } }
+                    scope.launch { delay(500); runCatching { rehydrate(storedId, store) } }
                 }
                 // After the fold, not before: the shade's end-of-turn alert re-reads the
                 // transcript on this event and must find the finished message there.
@@ -1179,7 +1213,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                     id,
                     pStr("risk").orEmpty(),
                     (p?.get("findings") as? kotlinx.serialization.json.JsonArray)
-                        ?.mapNotNull { it.jsonPrimitive.contentOrNull }.orEmpty(),
+                        ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.orEmpty(),
                 )
             }
             "tool.generating" -> {
@@ -1271,7 +1305,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                     ?: "${chat.keryx.core.model.Delegation.FALLBACK_PREFIX}${pStr("task_index") ?: "0"}"
                 fun pInt(k: String) = pStr(k)?.toDoubleOrNull()?.toInt()
                 fun pList(k: String) = (p?.get(k) as? kotlinx.serialization.json.JsonArray)
-                    ?.mapNotNull { it.jsonPrimitive.contentOrNull }
+                    ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
                 val text = pStr("text").orEmpty().trim()
                 store.delegation(key) { prev ->
                     val withIdentity = prev.copy(
@@ -1464,7 +1498,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                     if (live != null && catchUp(storedId, st, live, gen, wasBusy = storedId in wasBusy)) {
                         return@launch
                     }
-                    runCatching { rehydrate(storedId, st) }
+                    runCatching { rehydrate(storedId, st, abandonTurn = true) }
                         .onFailure { android.util.Log.w("KeryxGw", "resync failed for $storedId", it) }
                     // Re-lease so live events flow again without waiting for the user to type.
                     runCatching { attach(storedId) }
@@ -1553,21 +1587,30 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             rehydrate(storedId, st); return
         }
         val want = (grownBy + TAIL_OVERLAP).toInt()
-        val rows = rest.parseMessages(rest.messagesRaw(storedId, limit = want).getOrThrow())
+        val rows = rest.parseMessages(rest.messagesRaw(storedId, limit = want, profile = profileFor(storedId)).getOrThrow())
         val overlaps = rows.any { it.id <= heldNewest }
         if (!overlaps && rows.size >= want) { rehydrate(storedId, st); return }
-        st.appendHistory(rows.filter { it.id > heldNewest })
+        synchronized(pumpLock) {
+            // The tail reaches past this phone's own last turn: it is persisted now.
+            if (!st.isStreaming) st.dropPersistedTwinsQuietly()
+            st.appendHistory(rows.filter { it.id > heldNewest })
+        }
     }
 
-    private suspend fun rehydrate(storedId: String, st: SessionStore, replaceLocal: Boolean = false) {
+    /** [abandonTurn]: the link dropped, so a turn still drawn as streaming gets no complete. */
+    private suspend fun rehydrate(storedId: String, st: SessionStore, abandonTurn: Boolean = false) {
         val rest = rest ?: return
         val want = st.history.value.loaded.coerceIn(HISTORY_PAGE, 500)
-        val body = rest.messagesRaw(storedId, limit = want).getOrThrow()
+        val body = rest.messagesRaw(storedId, limit = want, profile = profileFor(storedId)).getOrThrow()
         val rows = rest.parseMessages(body)
         // The persisted page supersedes the folded live rows; swapped in the same publish so
-        // the timeline never paints the gap between dropping one and drawing the other.
-        if (replaceLocal) st.dropLocalQuietly()
-        st.setHistory(rows, more = rows.size >= want)
+        // the timeline never paints the gap between dropping one and drawing the other. Under
+        // the pump's lock: a frame landing mid-swap must not see half of it.
+        synchronized(pumpLock) {
+            if (abandonTurn) st.abandonTurnQuietly()
+            if (!st.isStreaming) st.dropPersistedTwinsQuietly()
+            st.setHistory(rows, more = rows.size >= want)
+        }
         st.hydrated = true
         // The re-read is the freshest page there is; it is what the next cold open should paint.
         if (want == HISTORY_PAGE) writeCachedPage(storedId, body)
@@ -1580,11 +1623,13 @@ private const val INTERRUPT_SEAL_MS = 4_000L
      * which is now definitively over.
      */
     private fun onSessionReclaimed(p: kotlinx.serialization.json.JsonObject?) {
-        val live = p?.get("session_id")?.jsonPrimitive?.contentOrNull.orEmpty()
+        val live = p?.get("session_id")?.primitiveOrNull?.contentOrNull.orEmpty()
         // Trust our own mapping over the payload's stored id: ours is what the UI keys on.
         val stored = liveToStored[live]
-            ?: p?.get("stored_session_id")?.jsonPrimitive?.contentOrNull.orEmpty()
+            ?: p?.get("stored_session_id")?.primitiveOrNull?.contentOrNull.orEmpty()
         if (live.isBlank() && stored.isBlank()) return
+        // Read before the busy mark is cleared below: a turn in flight here is worth a lease.
+        val wasBusy = stored.isNotBlank() && stored in _busyStored.value
         if (live.isNotBlank()) liveToStored.remove(live)
         if (stored.isNotBlank()) {
             // Only drop the forward mapping if it still points at the reclaimed sid — a
@@ -1601,13 +1646,14 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         }
         android.util.Log.i(
             "KeryxGw",
-            "session reclaimed by gateway (${p?.get("reason")?.jsonPrimitive?.contentOrNull}): $stored",
+            "session reclaimed by gateway (${p?.get("reason")?.primitiveOrNull?.contentOrNull}): $stored",
         )
         // A session we have OPEN must not sit deaf until the user happens to type: take a
         // fresh lease now so live events resume on their own. Sessions we merely know about
         // stay unresumed — re-leasing every reclaimed session would fight the very reaper
         // that just freed it.
-        if (stored.isNotBlank() && stores.containsKey(stored)) {
+        // `stores` holds every session touched since launch, so test what is open on screen.
+        if (stored.isNotBlank() && ((stores[stored]?.followers ?: 0) > 0 || wasBusy)) {
             scope.launch { runCatching { attach(stored) } }
         }
     }
@@ -1796,7 +1842,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 put("omit_messages", JsonPrimitive(true))
                 profileFor(storedId)?.let { put("profile", JsonPrimitive(it)) }
             })
-            val live = res["session_id"]?.jsonPrimitive?.contentOrNull ?: error("resume returned no sid")
+            val live = res["session_id"]?.primitiveOrNull?.contentOrNull ?: error("resume returned no sid")
             storedToLive[storedId] = live
             liveToStored[live] = storedId
             // Resuming a session compaction rotated out resumes its TIP: the gateway follows
@@ -1807,8 +1853,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             // (device, 2026-09-25). Rotate now, the same handoff a mid-turn compaction gets.
             chat.keryx.core.model.CompactionLineage.rotatedTip(
                 asked = storedId,
-                sessionKey = res["session_key"]?.jsonPrimitive?.contentOrNull,
-                resumed = res["resumed"]?.jsonPrimitive?.contentOrNull,
+                sessionKey = res["session_key"]?.primitiveOrNull?.contentOrNull,
+                resumed = res["resumed"]?.primitiveOrNull?.contentOrNull,
             )?.let { tip -> maybeRotateStored(live, tip) }
             // Questions the backend is still waiting on for this session (asked while we were
             // away, or before this process existed). The ack lists them as sent, plus the batch
@@ -1816,8 +1862,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             (res["open_requests"] as? kotlinx.serialization.json.JsonArray)
                 ?.mapNotNull { it as? kotlinx.serialization.json.JsonObject }
                 ?.forEach { o ->
-                    val id = o["id"]?.jsonPrimitive?.contentOrNull ?: return@forEach
-                    val method = o["method"]?.jsonPrimitive?.contentOrNull ?: return@forEach
+                    val id = o["id"]?.primitiveOrNull?.contentOrNull ?: return@forEach
+                    val method = o["method"]?.primitiveOrNull?.contentOrNull ?: return@forEach
                     val params = o["params"] as? kotlinx.serialization.json.JsonObject ?: return@forEach
                     onServerRequest(GatewayRpc.ServerRequest(id, method, params))
                 }
@@ -1828,7 +1874,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             // The lazy shape (`lazy: true`, no agent) names the gateway's default model, not
             // this session's — it carries no usage either, so it is skipped whole.
             val info = res["info"] as? kotlinx.serialization.json.JsonObject
-            if (info?.get("lazy")?.jsonPrimitive?.booleanOrNull != true) applyMeta(liveToStored[live] ?: storedId, info)
+            if (info?.get("lazy")?.primitiveOrNull?.booleanOrNull != true) applyMeta(liveToStored[live] ?: storedId, info)
             // Seed the model NOW: session.info only arrives after a turn completes, so an
             // untouched session had a blank model — which is why the composer's model pill
             // never appeared on a freshly opened chat.
@@ -1859,11 +1905,11 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         }.getOrNull() ?: return
         val flow = meta(storedId)
         flow.value = flow.value.seedGauge(
-            used = res["context_used"]?.jsonPrimitive?.longOrNull ?: 0L,
-            max = res["context_max"]?.jsonPrimitive?.longOrNull ?: 0L,
-            percent = res["context_percent"]?.jsonPrimitive?.intOrNull ?: 0,
+            used = res["context_used"]?.primitiveOrNull?.longOrNull ?: 0L,
+            max = res["context_max"]?.primitiveOrNull?.longOrNull ?: 0L,
+            percent = res["context_percent"]?.primitiveOrNull?.intOrNull ?: 0,
             model = res.strOrNull("model").orEmpty(),
-            compactAt = res["compact_at"]?.jsonPrimitive?.longOrNull ?: 0L,
+            compactAt = res["compact_at"]?.primitiveOrNull?.longOrNull ?: 0L,
         )
     }
 
@@ -1906,7 +1952,11 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             android.util.Log.w("KeryxPerf", "open ${storedId.take(8)}: painted ${rows.size} rows from cache in ${android.os.SystemClock.uptimeMillis() - t0} ms")
         }
         rest.messagesRaw(storedId, limit = HISTORY_PAGE, profile = profileFor(storedId)).onSuccess { body ->
-            val rows = rest.parseMessages(body)
+            // A body that isn't the messages JSON (a proxy's login page) keeps what's painted.
+            val rows = runCatching { rest.parseMessages(body) }.getOrElse {
+                android.util.Log.w("KeryxPerf", "open ${storedId.take(8)}: unreadable page: ${it.message}")
+                return@onSuccess
+            }
             // A full page means there is almost certainly more behind it. Being wrong here is
             // cheap and self-correcting: the next page comes back empty and the affordance
             // retires itself.
@@ -2262,26 +2312,64 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             val slashTimeout =
                 if (trimmed.startsWith("/compress") || trimmed.startsWith("/compact")) 600_000L
                 else 180_000L
-            val res = rpc.request("slash.exec", buildJsonObject {
-                put("session_id", JsonPrimitive(live))
-                put("command", JsonPrimitive(trimmed))
-            }, timeoutMs = slashTimeout)
-            val out = res["output"]?.jsonPrimitive?.contentOrNull.orEmpty().trim()
+            val res = try {
+                rpc.request("slash.exec", buildJsonObject {
+                    put("session_id", JsonPrimitive(live))
+                    put("command", JsonPrimitive(trimmed))
+                }, timeoutMs = slashTimeout)
+            } catch (e: GatewayRpc.RpcException) {
+                // Skills and skill bundles never run in the slash worker: Hermes answers 4018
+                // "use command.dispatch", which returns what to do with the command instead.
+                if (e.code != 4018 || "command.dispatch" !in e.message.orEmpty()) throw e
+                rpc.request("command.dispatch", buildJsonObject {
+                    put("session_id", JsonPrimitive(live))
+                    put("name", JsonPrimitive(trimmed.removePrefix("/").substringBefore(' ')))
+                    put("arg", JsonPrimitive(trimmed.substringAfter(' ', "").trim()))
+                }, timeoutMs = slashTimeout)
+            }
+            fun field(key: String) = (res[key] as? JsonPrimitive)?.contentOrNull.orEmpty().trim()
             // Several console verbs END this session and continue under a new stored id —
             // /new, /reset, /clear, /handoff all do. Nothing announces that, so reconcile
             // before echoing, or the output (and every later turn) addresses a dead session.
             reconcileStoredId(live)
-            store(liveToStored[live] ?: sessionId).localSystemMessage(out.ifBlank { "✓ $trimmed" })
+            val target = store(liveToStored[live] ?: sessionId)
+            when (field("type")) {
+                // A skill, /queue, /prompt and friends hand back the turn to send.
+                "send", "skill" -> {
+                    field("notice").takeIf { it.isNotBlank() }?.let(target::localSystemMessage)
+                    val message = field("message")
+                    if (message.isBlank()) target.localSystemMessage("✓ $trimmed")
+                    else rpc.request("prompt.submit", buildJsonObject {
+                        put("session_id", JsonPrimitive(live))
+                        put("text", JsonPrimitive(message))
+                    })
+                }
+                // /undo: the text to edit and resend. The composer isn't ours here; show it.
+                "prefill" -> target.localSystemMessage(
+                    listOf(field("notice"), field("message")).filter { it.isNotBlank() }
+                        .joinToString("\n\n").ifBlank { "✓ $trimmed" },
+                )
+                "alias" -> target.localSystemMessage(
+                    field("target").takeIf { it.isNotBlank() }?.let { "→ $it" } ?: "✓ $trimmed",
+                )
+                else -> target.localSystemMessage(field("output").ifBlank { "✓ $trimmed" })
+            }
             return
         }
         // The live session's stored id, not the one the room asked with: attach may have just
         // learned the room's session was compacted into a continuation (2.13.11).
         val stored = liveToStored[live] ?: sessionId
-        store(stored).localUserMessage(content)
-        rpc?.request("prompt.submit", buildJsonObject {
-            put("session_id", JsonPrimitive(live))
-            put("text", JsonPrimitive(content))
-        }) ?: error("gateway not connected")
+        val echo = store(stored).localUserMessage(content)
+        try {
+            rpc?.request("prompt.submit", buildJsonObject {
+                put("session_id", JsonPrimitive(live))
+                put("text", JsonPrimitive(content))
+            }) ?: error("gateway not connected")
+        } catch (e: Exception) {
+            // Not sent (link down, session busy elsewhere): no bubble that looks delivered.
+            store(stored).dropLocal(echo)
+            throw e
+        }
         // The gateway's preflight seeds a fresh session's reading before its first model call
         // answers; without this the ring stayed dark (or on last turn's number) until then.
         scope.launch {
@@ -2410,7 +2498,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                     put("content_base64", JsonPrimitive(b64))
                     if (f.name.isNotBlank()) put("filename", JsonPrimitive(f.name))
                 }, timeoutMs = 60_000)
-                notes += res["text"]?.jsonPrimitive?.contentOrNull ?: "[image attached]"
+                notes += res["text"]?.primitiveOrNull?.contentOrNull ?: "[image attached]"
                 val echoId = store(sessionId).localUserImage(echoCaption, f.name)
                 localMediaBytes[echoId] = f.bytes
             } else {
@@ -2419,8 +2507,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                     put("data_url", JsonPrimitive("data:${f.contentType};base64,$b64"))
                     if (f.name.isNotBlank()) put("name", JsonPrimitive(f.name))
                 }, timeoutMs = 120_000)
-                refs += res["ref_text"]?.jsonPrimitive?.contentOrNull ?: error("file.attach answered without a ref")
-                store(sessionId).localUserFile(echoCaption, f.name.ifBlank { res["name"]?.jsonPrimitive?.contentOrNull ?: "file" })
+                refs += res["ref_text"]?.primitiveOrNull?.contentOrNull ?: error("file.attach answered without a ref")
+                store(sessionId).localUserFile(echoCaption, f.name.ifBlank { res["name"]?.primitiveOrNull?.contentOrNull ?: "file" })
             }
         }
         val text = (listOfNotNull(caption?.takeIf { it.isNotBlank() }) + refs).joinToString("\n\n")
@@ -2442,7 +2530,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 put("content_base64", JsonPrimitive(b64))
                 if (fileName.isNotBlank()) put("filename", JsonPrimitive(fileName))
             }, timeoutMs = 60_000)
-            val attachNote = res["text"]?.jsonPrimitive?.contentOrNull ?: "[image attached]"
+            val attachNote = res["text"]?.primitiveOrNull?.contentOrNull ?: "[image attached]"
             val echoId = store(sessionId).localUserImage(caption.orEmpty(), fileName)
             localMediaBytes[echoId] = bytes
             val text = caption?.takeIf { it.isNotBlank() } ?: ""
@@ -2468,10 +2556,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 put("data_url", JsonPrimitive("data:$contentType;base64,$b64"))
                 if (fileName.isNotBlank()) put("name", JsonPrimitive(fileName))
             }, timeoutMs = 120_000)
-            val refText = res["ref_text"]?.jsonPrimitive?.contentOrNull
+            val refText = res["ref_text"]?.primitiveOrNull?.contentOrNull
                 ?: error("file.attach answered without a ref")
             store(sessionId).localUserFile(caption.orEmpty(), fileName.ifBlank {
-                res["name"]?.jsonPrimitive?.contentOrNull ?: "file"
+                res["name"]?.primitiveOrNull?.contentOrNull ?: "file"
             })
             rpc.request("prompt.submit", buildJsonObject {
                 put("session_id", JsonPrimitive(live))
@@ -2546,12 +2634,12 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             })
             val raw = (res["reactions"] as? kotlinx.serialization.json.JsonArray)?.mapNotNull { r ->
                 val o = r as? kotlinx.serialization.json.JsonObject ?: return@mapNotNull null
-                val e = o["emoji"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
-                RawReaction(e, o["author"]?.jsonPrimitive?.contentOrNull ?: "user")
+                val e = o["emoji"]?.primitiveOrNull?.contentOrNull ?: return@mapNotNull null
+                RawReaction(e, o["author"]?.primitiveOrNull?.contentOrNull ?: "user")
             } ?: emptyList()
             // Write under the key the bubble subscribed with AND the durable id the message
             // will wear after its next hydration, so the state survives the id handover.
-            val landed = res["row_id"]?.jsonPrimitive?.contentOrNull
+            val landed = res["row_id"]?.primitiveOrNull?.contentOrNull
             store(sessionId).setReactions(
                 listOfNotNull(key, landed).distinct(),
                 MessageReactions.aggregate(raw),
@@ -2891,8 +2979,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             put("follow_profile_config", JsonPrimitive(true))
             put("cols", JsonPrimitive(100))
         })
-        val live = created["session_id"]?.jsonPrimitive?.contentOrNull ?: error("create returned no sid")
-        val stored = created["stored_session_id"]?.jsonPrimitive?.contentOrNull ?: live
+        val live = created["session_id"]?.primitiveOrNull?.contentOrNull ?: error("create returned no sid")
+        val stored = created["stored_session_id"]?.primitiveOrNull?.contentOrNull ?: live
         storedToLive[stored] = live
         liveToStored[live] = stored
         registerProfile(stored, bot)
@@ -3086,7 +3174,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             if (description != null) put("description", JsonPrimitive(description))
         })
         val applied = res["applied"] as? kotlinx.serialization.json.JsonObject
-        if (meta != null && applied?.get("ui_meta")?.jsonPrimitive?.contentOrNull == "false") {
+        if (meta != null && applied?.get("ui_meta")?.primitiveOrNull?.contentOrNull == "false") {
             error("the gateway refused the bot's metadata" +
                 (applied["ui_meta_conflicts"]?.let { " (edited elsewhere — try again)" } ?: ""))
         }
@@ -3108,7 +3196,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             put("name", JsonPrimitive(name))
             put("asset", JsonPrimitive("avatar"))
         })
-        val data = res["data"]?.jsonPrimitive?.contentOrNull ?: return@runCatching null
+        val data = res["data"]?.primitiveOrNull?.contentOrNull ?: return@runCatching null
         val b64 = data.substringAfter(",", "")
         if (b64.isBlank()) null
         else runCatching { android.util.Base64.decode(b64, android.util.Base64.DEFAULT) }.getOrNull()
@@ -3207,7 +3295,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             put("session_id", JsonPrimitive(live))
             put("subagent_id", JsonPrimitive(subagentId))
         })
-        res["found"]?.jsonPrimitive?.booleanOrNull == true
+        res["found"]?.primitiveOrNull?.booleanOrNull == true
     }
 
     /** The last 16 KiB of a helper's live transcript — what it did before this window
@@ -3220,7 +3308,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             put("session_id", JsonPrimitive(live))
             put("subagent_id", JsonPrimitive(subagentId))
         })
-        if (res["available"]?.jsonPrimitive?.booleanOrNull == true) res.strOrNull("text").orEmpty() else ""
+        if (res["available"]?.primitiveOrNull?.booleanOrNull == true) res.strOrNull("text").orEmpty() else ""
     }
 
     /**
@@ -3560,14 +3648,14 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             chat.keryx.core.model.ContextCategory(
                 id = o.strOrNull("id").orEmpty(),
                 label = o.strOrNull("label") ?: o.strOrNull("id").orEmpty(),
-                tokens = o["tokens"]?.jsonPrimitive?.longOrNull ?: 0L,
+                tokens = o["tokens"]?.primitiveOrNull?.longOrNull ?: 0L,
             )
         }
         chat.keryx.core.model.ContextBreakdown(
             categories = cats,
-            used = res["context_used"]?.jsonPrimitive?.longOrNull ?: 0L,
-            max = res["context_max"]?.jsonPrimitive?.longOrNull ?: 0L,
-            percent = res["context_percent"]?.jsonPrimitive?.intOrNull ?: 0,
+            used = res["context_used"]?.primitiveOrNull?.longOrNull ?: 0L,
+            max = res["context_max"]?.primitiveOrNull?.longOrNull ?: 0L,
+            percent = res["context_percent"]?.primitiveOrNull?.intOrNull ?: 0,
             model = res.strOrNull("model").orEmpty(),
         )
     }
@@ -3584,7 +3672,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         val res = rpc.request("session.undo", buildJsonObject {
             put("session_id", JsonPrimitive(live))
         })
-        val removed = res["removed"]?.jsonPrimitive?.intOrNull ?: 0
+        val removed = res["removed"]?.primitiveOrNull?.intOrNull ?: 0
         val st = store(sessionId)
         st.clearLocal()
         rehydrate(sessionId, st)
@@ -3660,10 +3748,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     private fun onApprovalsCancelled(p: kotlinx.serialization.json.JsonObject?) {
         p ?: return
         val ids = (p["request_ids"] as? kotlinx.serialization.json.JsonArray)
-            ?.mapNotNull { it.jsonPrimitive.contentOrNull?.takeIf(String::isNotBlank) }
+            ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull?.takeIf(String::isNotBlank) }
             ?.toSet().orEmpty()
-        val stored = p["stored_session_id"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
-            ?: p["session_id"]?.jsonPrimitive?.contentOrNull?.let { liveToStored[it] }
+        val stored = p["stored_session_id"]?.primitiveOrNull?.contentOrNull?.takeIf { it.isNotBlank() }
+            ?: p["session_id"]?.primitiveOrNull?.contentOrNull?.let { liveToStored[it] }
         for ((sid, flow) in approvalFlows) {
             val rid = flow.value?.requestId ?: continue
             // Every pending approval of that session was dropped, so its card goes whatever its
@@ -3791,9 +3879,9 @@ private const val INTERRUPT_SEAL_MS = 4_000L
 
     private fun handleServerRequest(req: GatewayRpc.ServerRequest) {
         val p = req.params
-        fun pStr(key: String) = p[key]?.jsonPrimitive?.contentOrNull
+        fun pStr(key: String) = p[key]?.primitiveOrNull?.contentOrNull
         fun pList(key: String) = (p[key] as? kotlinx.serialization.json.JsonArray)
-            ?.mapNotNull { it.jsonPrimitive.contentOrNull } ?: emptyList()
+            ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull } ?: emptyList()
         val live = pStr("session_id").orEmpty()
         val storedId = liveToStored[live]
         if (storedId == null) {
@@ -3892,13 +3980,13 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                     put("answer", JsonPrimitive(answer))
                 })
                 batch.lock(qid, answer)
-                if (res["status"]?.jsonPrimitive?.contentOrNull == "expired") {
+                if (res["status"]?.primitiveOrNull?.contentOrNull == "expired") {
                     batches.remove(requestId)
                     setBlocking(sessionId, null)
                     return@runCatching
                 }
                 (res["remaining"] as? kotlinx.serialization.json.JsonArray)
-                    ?.mapNotNull { it.jsonPrimitive.contentOrNull }
+                    ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
                     ?.let(batch::syncRemaining)
                 val next = batch.current()
                 if (next == null) batches.remove(requestId)
@@ -3921,9 +4009,15 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         }
     }
 
-    suspend fun respondApproval(sessionId: String, choice: String): Result<Boolean> = runCatching {
+    /** [expectedRequestId]: the request a notification was posted for. When the pending one is
+     *  a different request (the first expired, the agent asked again), nothing is answered:
+     *  a retried shade tap must not approve a command its notice never showed. */
+    suspend fun respondApproval(sessionId: String, choice: String, expectedRequestId: String? = null): Result<Boolean> = runCatching {
         val rpc = rpc ?: error("gateway not connected")
         val live = attach(sessionId)
+        if (!expectedRequestId.isNullOrBlank() && approvalFlow(sessionId).value?.requestId != expectedRequestId) {
+            return@runCatching false
+        }
         // `approval.respond` outlived the protocol change on purpose: the approval queue owns
         // the wait (timeout, /approve all, coalescing) and settling the entry withdraws the
         // server request. `request_id` pins the exact entry when the gateway asked as a request;
@@ -3937,7 +4031,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         setApproval(sessionId, null)
         // resolved=0 means the wait already failed closed (approvals.timeout) — the caller
         // must say "expired", not "approved".
-        (res["resolved"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0) > 0
+        (res["resolved"]?.primitiveOrNull?.contentOrNull?.toIntOrNull() ?: 0) > 0
     }
 
     suspend fun runSlash(sessionId: String, command: String): Result<String> = runCatching {
@@ -3947,7 +4041,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             put("session_id", JsonPrimitive(live))
             put("command", JsonPrimitive(command))
         })
-        res["output"]?.jsonPrimitive?.contentOrNull ?: ""
+        res["output"]?.primitiveOrNull?.contentOrNull ?: ""
     }
 
     // --- per-session runtime meta (model, context meter) -----------------------------
@@ -3965,23 +4059,23 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         val flow = meta(storedId)
         val cur = flow.value
         flow.value = cur.copy(
-            model = (p["model"] ?: usage?.get("model"))?.jsonPrimitive?.contentOrNull
+            model = (p["model"] ?: usage?.get("model"))?.primitiveOrNull?.contentOrNull
                 ?.takeIf { it.isNotBlank() } ?: cur.model,
-            contextPercent = usage?.get("context_percent")?.jsonPrimitive?.contentOrNull
+            contextPercent = usage?.get("context_percent")?.primitiveOrNull?.contentOrNull
                 ?.toDoubleOrNull()?.toInt() ?: cur.contextPercent,
-            contextUsed = usage?.get("context_used")?.jsonPrimitive?.contentOrNull
+            contextUsed = usage?.get("context_used")?.primitiveOrNull?.contentOrNull
                 ?.toDoubleOrNull()?.toLong() ?: cur.contextUsed,
-            contextMax = usage?.get("context_max")?.jsonPrimitive?.contentOrNull
+            contextMax = usage?.get("context_max")?.primitiveOrNull?.contentOrNull
                 ?.toDoubleOrNull()?.toLong() ?: cur.contextMax,
             // The auto-compaction trigger (a SILAS gateway patch, 2026-09-25): absent on a
             // stock gateway, and then the ring reads against the window as it always did.
-            compactAt = usage?.get("compact_at")?.jsonPrimitive?.contentOrNull
+            compactAt = usage?.get("compact_at")?.primitiveOrNull?.contentOrNull
                 ?.toDoubleOrNull()?.toLong() ?: cur.compactAt,
             // A level picked on ANY surface (desktop's model menu, the TUI's /reasoning) rides
             // home on session.info — so the pill tells the truth about a session this app
             // didn't configure. Blank means "the gateway didn't say", which must not erase a
             // level we already know.
-            reasoningEffort = p["reasoning_effort"]?.jsonPrimitive?.contentOrNull
+            reasoningEffort = p["reasoning_effort"]?.primitiveOrNull?.contentOrNull
                 ?.takeIf { it.isNotBlank() } ?: cur.reasoningEffort,
         ).let {
             // The run numbers riding the same payload (2.16): cache hit, speed, latency,
@@ -4049,8 +4143,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 put("follow_profile_config", JsonPrimitive(true))
             }
         })
-        val live = res["session_id"]?.jsonPrimitive?.contentOrNull ?: error("create returned no sid")
-        val stored = res["stored_session_id"]?.jsonPrimitive?.contentOrNull ?: live
+        val live = res["session_id"]?.primitiveOrNull?.contentOrNull ?: error("create returned no sid")
+        val stored = res["stored_session_id"]?.primitiveOrNull?.contentOrNull ?: live
         storedToLive[stored] = live
         liveToStored[live] = stored
         if (onProfile != null) registerProfile(stored, onProfile)

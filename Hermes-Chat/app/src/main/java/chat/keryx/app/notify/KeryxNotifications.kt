@@ -175,7 +175,8 @@ object KeryxNotifications {
                         quick,
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                     ),
-                ).build(),
+                    // Anything that instructs the agent asks for the unlock first, like Approve.
+                ).setAuthenticationRequired(true).build(),
             )
         }
         // Hands next (2.8.1), only when no decision is pending: a decision is the point of its
@@ -217,6 +218,7 @@ object KeryxNotifications {
                 .setAllowGeneratedReplies(false)
                 .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
                 .setShowsUserInterface(false)
+                .setAuthenticationRequired(true)
                 .build(),
         )
         if (markReadable && quickActions.isEmpty()) {
@@ -458,7 +460,11 @@ object KeryxNotifications {
                 // every button and each of them answers whatever the first one said.
                 (sessionId + "|" + action + "|" + (value ?: "")).hashCode(),
                 intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                // The typed Answer rides in the intent: the system can only write it into a
+                // mutable one (an immutable Answer arrived empty and was dropped).
+                PendingIntent.FLAG_UPDATE_CURRENT or
+                    if (action == NotificationActionReceiver.ACTION_GATE_REPLY) PendingIntent.FLAG_MUTABLE
+                    else PendingIntent.FLAG_IMMUTABLE,
             )
         }
 
@@ -511,6 +517,7 @@ object KeryxNotifications {
                     .addRemoteInput(input)
                     .setAllowGeneratedReplies(false)
                     .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
+                    .setAuthenticationRequired(true)
                     .build(),
             )
         }
@@ -554,6 +561,25 @@ object KeryxNotifications {
     const val RUN_CHANNEL_ID = "keryx_runs"
     const val RUN_NOTIFICATION_ID = 0x52554E // "RUN"
     const val EXTRA_RUN_SESSION = "keryx.run.session"
+
+    /**
+     * Below Android 12 WorkManager runs an expedited job as a foreground service and asks the
+     * worker for this notice; the default answer throws, so shade replies, Gate answers and
+     * push syncs failed there. Quiet, on the low runs channel, gone when the job ends.
+     */
+    fun workerForeground(context: Context, text: String): androidx.work.ForegroundInfo {
+        ensureRunChannel(context)
+        val notice = NotificationCompat.Builder(context, RUN_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_keryx)
+            .setContentTitle("Keryx")
+            .setContentText(text)
+            .setSilent(true)
+            .setOngoing(true)
+            .build()
+        return androidx.work.ForegroundInfo(WORKER_NOTIFICATION_ID, notice)
+    }
+
+    private const val WORKER_NOTIFICATION_ID = 0x574B52 // "WKR"
 
     fun ensureRunChannel(context: Context) {
         val mgr = context.getSystemService(NotificationManager::class.java) ?: return

@@ -100,7 +100,7 @@ class GatewayRest(
     )
 
     /** Public probe — also the onboarding "test connection" call (no auth needed). */
-    suspend fun status(): Result<GatewayStatus> = get("/api/status").map { body ->
+    suspend fun status(): Result<GatewayStatus> = get("/api/status").mapCatching { body ->
         val o = json.parseToJsonElement(body).jsonObject
         GatewayStatus(
             version = o.str("version") ?: "?",
@@ -133,20 +133,20 @@ class GatewayRest(
                 (if (sources.isEmpty()) "" else "&sources=" + sources.joinToString(",")) +
                 (if (excludeSources.isEmpty()) "" else "&exclude_sources=" + excludeSources.joinToString(",")) +
                 profileQuery(profile)
-        ).map { body ->
+        ).mapCatching { body ->
             val rows = json.parseToJsonElement(body).jsonObject["sessions"]?.jsonArray ?: JsonArray(emptyList())
             // distinctBy: the drawer (and every other roster consumer) keys rows by session id,
             // and a LazyColumn duplicate key is a crash — id-uniqueness is this parser's
             // contract even when the gateway repeats a row.
             rows.mapNotNull { el ->
-                val o = el.jsonObject
+                val o = el as? JsonObject ?: return@mapNotNull null
                 SessionRow(
                     id = o.str("id") ?: return@mapNotNull null,
                     title = o.str("title") ?: "",
                     preview = o.str("preview") ?: "",
                     startedAt = o.epochMs("started_at"),
                     lastActive = o.epochMs("last_active"),
-                    messageCount = o["message_count"]?.jsonPrimitive?.longOrNull ?: 0,
+                    messageCount = (o["message_count"] as? JsonPrimitive)?.longOrNull ?: 0,
                     isActive = o.bool("is_active"),
                     archived = o.bool("archived"),
                     pinned = o.bool("pinned"),
@@ -170,17 +170,17 @@ class GatewayRest(
         get(
             "/api/profiles/sessions?profile=all&order=recent&limit=${limit.coerceAtMost(500)}" +
                 (if (sources.isEmpty()) "" else "&sources=" + sources.joinToString(","))
-        ).map { body ->
+        ).mapCatching { body ->
             val rows = json.parseToJsonElement(body).jsonObject["sessions"]?.jsonArray ?: JsonArray(emptyList())
             rows.mapNotNull { el ->
-                val o = el.jsonObject
+                val o = el as? JsonObject ?: return@mapNotNull null
                 SessionRow(
                     id = o.str("id") ?: return@mapNotNull null,
                     title = o.str("title") ?: "",
                     preview = o.str("preview") ?: "",
                     startedAt = o.epochMs("started_at"),
                     lastActive = o.epochMs("last_active"),
-                    messageCount = o["message_count"]?.jsonPrimitive?.longOrNull ?: 0,
+                    messageCount = (o["message_count"] as? JsonPrimitive)?.longOrNull ?: 0,
                     isActive = o.bool("is_active"),
                     archived = o.bool("archived"),
                     pinned = o.bool("pinned"),
@@ -219,9 +219,9 @@ class GatewayRest(
             val lastActive = listOf("last_active", "last_activity_at", "started_at")
                 .map { o.epochMs(it) }.firstOrNull { it > 0L } ?: 0L
             SessionPulse(
-                messageCount = o["message_count"]?.jsonPrimitive?.longOrNull ?: 0L,
+                messageCount = (o["message_count"] as? JsonPrimitive)?.longOrNull ?: 0L,
                 lastActiveMs = lastActive,
-                ended = o["ended_at"]?.jsonPrimitive?.doubleOrNull != null,
+                ended = (o["ended_at"] as? JsonPrimitive)?.doubleOrNull != null,
                 working = !o.str("last_activity_description").isNullOrBlank(),
             )
         }
@@ -243,9 +243,9 @@ class GatewayRest(
     fun parseMessages(body: String): List<MessageRow> {
             val rows = json.parseToJsonElement(body).jsonObject["messages"]?.jsonArray ?: JsonArray(emptyList())
             return rows.mapNotNull { el ->
-                val o = el.jsonObject
+                val o = el as? JsonObject ?: return@mapNotNull null
                 MessageRow(
-                    id = o["id"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null,
+                    id = (o["id"] as? JsonPrimitive)?.longOrNull ?: return@mapNotNull null,
                     role = o.str("role") ?: "assistant",
                     content = o.textContent(),
                     toolName = o.str("tool_name"),
@@ -299,11 +299,11 @@ class GatewayRest(
      */
     suspend fun searchSessions(query: String, limit: Int = 20): Result<List<SearchHit>> =
         get("/api/sessions/search?q=" + java.net.URLEncoder.encode(query, "UTF-8") + "&limit=$limit")
-            .map { body ->
+            .mapCatching { body ->
                 val rows = json.parseToJsonElement(body).jsonObject["results"]?.jsonArray
                     ?: JsonArray(emptyList())
                 rows.mapNotNull { el ->
-                    val o = el.jsonObject
+                    val o = el as? JsonObject ?: return@mapNotNull null
                     SearchHit(
                         sessionId = o.str("id") ?: o.str("session_id") ?: return@mapNotNull null,
                         title = o.str("title") ?: "",
@@ -311,7 +311,7 @@ class GatewayRest(
                         snippet = o.str("snippet") ?: "",
                         role = o.str("role") ?: "",
                         lastActive = o.epochMs("last_active"),
-                        messageCount = o["message_count"]?.jsonPrimitive?.longOrNull ?: 0,
+                        messageCount = (o["message_count"] as? JsonPrimitive)?.longOrNull ?: 0,
                     )
                 }
                     // One row per session (2.19): a compacted chat whose segments match
@@ -488,7 +488,7 @@ class GatewayRest(
                     text = o.str("text").orEmpty(),
                     language = o.str("language") ?: "text",
                     mimeType = o.str("mimeType") ?: "text/plain",
-                    byteSize = o["byteSize"]?.jsonPrimitive?.longOrNull ?: 0L,
+                    byteSize = (o["byteSize"] as? JsonPrimitive)?.longOrNull ?: 0L,
                     truncated = o.bool("truncated"),
                 )
             }
@@ -584,16 +584,21 @@ class GatewayRest(
     // The Shipyard moved to ShipyardRest (Hermes Link base) — this base never mounts the
     // git routes (2.6.0 device walk, 08-31).
 
-    private fun JsonObject.str(key: String): String? = this[key]?.jsonPrimitive?.contentOrNull
+    // Safe casts throughout: a field Hermes sends as an object or array reads as absent, never throws.
+    private fun JsonObject.str(key: String): String? = (this[key] as? JsonPrimitive)?.contentOrNull
     /** `_lineage_ids` (root → tip), else the bare `_lineage_root_id` an older gateway sends. */
     private fun JsonObject.lineage(): List<String> =
         (this["_lineage_ids"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
             ?: listOfNotNull(str("_lineage_root_id")?.takeIf { it.isNotBlank() })
 
-    private fun JsonObject.bool(key: String): Boolean = this[key]?.jsonPrimitive?.contentOrNull == "true"
+    private fun JsonObject.bool(key: String): Boolean = (this[key] as? JsonPrimitive)?.contentOrNull == "true"
     /** Server timestamps are REAL epoch seconds (may be fractional); the app runs on millis. */
     private fun JsonObject.epochMs(key: String): Long =
-        ((this[key]?.jsonPrimitive?.doubleOrNull) ?: 0.0).let { (it * 1000).toLong() }
+        (((this[key] as? JsonPrimitive)?.doubleOrNull) ?: 0.0).let { (it * 1000).toLong() }
+
+    private fun imagePlaceholders(text: String): String =
+        if ("[image]" !in text) text
+        else text.lines().joinToString("\n") { if (it.trim() == "[image]") "🖼 image" else it }.trim()
 
     /** `content` is a plain string OR a multimodal part array — flatten to displayable text. */
     private fun JsonObject.textContent(): String {
@@ -601,11 +606,12 @@ class GatewayRest(
         return when (el) {
             is JsonArray -> el.joinToString("\n") { part ->
                 val p = (part as? JsonObject) ?: return@joinToString ""
-                p["text"]?.jsonPrimitive?.contentOrNull
-                    ?: p["content"]?.jsonPrimitive?.contentOrNull
-                    ?: if (p["type"]?.jsonPrimitive?.contentOrNull == "image_url") "🖼 image" else ""
+                p.str("text") ?: p.str("content") ?: if (p.str("type") == "image_url") "🖼 image" else ""
             }.trim()
-            else -> el.jsonPrimitive.contentOrNull ?: ""
+            // Hermes stores dict content as-is; show its text if it has one.
+            is JsonObject -> el.str("text") ?: el.str("content") ?: ""
+            // `inline_images=false` (the page query) sends each image as an "[image]" line.
+            else -> (el as? JsonPrimitive)?.contentOrNull?.let(::imagePlaceholders) ?: ""
         }
     }
 }

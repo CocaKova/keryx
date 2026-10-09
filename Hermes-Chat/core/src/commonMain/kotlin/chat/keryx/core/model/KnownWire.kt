@@ -60,7 +60,7 @@ object KnownWire {
 
     /** Gateway JSON-RPC methods the app calls. */
     val METHODS: Set<String> = setOf(
-        "approval.respond", "clarify.lock", "client.capabilities", "commands.catalog",
+        "approval.respond", "clarify.lock", "client.capabilities", "command.dispatch", "commands.catalog",
         "complete.path", "config.get", "config.set", "file.attach", "groups.approve",
         "groups.create", "groups.disband", "groups.list", "groups.log", "groups.rename",
         "groups.retry", "groups.send", "groups.state", "groups.stop", "image.attach_bytes",

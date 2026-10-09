@@ -95,7 +95,16 @@ class BuiltinPushService : Service() {
         } else {
             0
         }
-        ServiceCompat.startForeground(this, NOTIF_ID, buildStatusNotification("Connecting…"), type)
+        // A sticky restart happens in the background, where Android 12+ refuses a foreground
+        // start; that throw used to take the whole app down. Bow out; the next launch restarts it.
+        val started = runCatching {
+            ServiceCompat.startForeground(this, NOTIF_ID, buildStatusNotification("Connecting…"), type)
+        }
+        if (started.isFailure) {
+            android.util.Log.w("KeryxPush", "foreground start refused", started.exceptionOrNull())
+            stopSelf()
+            return START_NOT_STICKY
+        }
         watchNetwork()
         connect()
         return START_STICKY

@@ -59,6 +59,9 @@ class GatewayRpc(
      *  so every attempt — first dial and every reconnect — needs a fresh mint. */
     private val credentialQuery: suspend () -> String,
     allowInsecure: Boolean = false,
+    /** True while nobody is looking (app in the background): retries stretch to minutes, not
+     *  seconds. A return to the foreground or a network change wakes the loop at once. */
+    private val idle: () -> Boolean = { false },
 ) {
     sealed interface ConnState {
         data object Disconnected : ConnState
@@ -157,6 +160,7 @@ class GatewayRpc(
     @Volatile private var wantConnected = false
     /** Did the CURRENT attempt reach `gateway.ready`? Decides whether backoff resets. */
     @Volatile private var reachedReady = false
+    @Volatile private var readyAt = 0L
     @Volatile private var scope: CoroutineScope? = null
 
     /**
@@ -201,7 +205,7 @@ class GatewayRpc(
                     _state.value = ConnState.Failed(e.message ?: "credential unavailable", if (dead) 4401 else null)
                     if (dead) break
                     withTimeoutOrNull(backoffMs) { wake.receive() }
-                    backoffMs = (backoffMs * 2).coerceAtMost(30_000L)
+                    backoffMs = (backoffMs * 2).coerceAtMost(if (idle()) IDLE_BACKOFF_MS else 30_000L)
                     continue
                 }
                 val closed = CompletableDeferred<Unit>()
@@ -223,10 +227,13 @@ class GatewayRpc(
                 // this line the socket has closed, so the state is Failed. The backoff only
                 // ever grew, pinned at 30 s after a few failures, and an overnight outage
                 // guaranteed the worst case for the morning's first launch.)
-                if (reachedReady) backoffMs = 1_000L
-                // Sleep out the backoff — unless something tells us the world changed.
-                withTimeoutOrNull(backoffMs) { wake.receive() }
-                backoffMs = (backoffMs * 2).coerceAtMost(30_000L)
+                // "Worked" means it stayed up a while: a gateway that accepts, says ready and
+                // closes again (1011 under load) must not be redialled every second.
+                if (reachedReady && System.currentTimeMillis() - readyAt >= STABLE_MS) backoffMs = 1_000L
+                // Sleep out the backoff — unless something tells us the world changed. Jitter
+                // keeps a fleet of phones from redialling a restarted gateway in lockstep.
+                withTimeoutOrNull(backoffMs + (backoffMs * kotlin.random.Random.nextDouble(0.0, 0.2)).toLong()) { wake.receive() }
+                backoffMs = (backoffMs * 2).coerceAtMost(if (idle()) IDLE_BACKOFF_MS else 30_000L)
             }
         }
     }
@@ -245,6 +252,14 @@ class GatewayRpc(
         socket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onMessage(webSocket: WebSocket, text: String) {
                 runCatching { json.parseToJsonElement(text).jsonObject }.getOrNull()?.let(::route)
+            }
+
+            // The server closing first (1011 on a send deadline, a shutdown) only reaches
+            // onClosed once we close back; without this the link read Ready for the 20-40 s
+            // until a ping failed, and the close code (4401/4403) was lost.
+            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                _state.value = ConnState.Failed(reason.ifBlank { "closed $code" }, code)
+                webSocket.close(1000, null)
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
@@ -272,6 +287,7 @@ class GatewayRpc(
                 val ev = inbound.event
                 if (ev.type == "gateway.ready") {
                     reachedReady = true
+                    readyAt = System.currentTimeMillis()
                     _state.value = ConnState.Ready(ev.payload?.get("skin") as? JsonObject)
                     // Say so on EVERY fresh socket: the backend keeps the flag per connection,
                     // and without it every clarify/approval/sudo for our sessions fails in the
@@ -383,6 +399,10 @@ class GatewayRpc(
     }
 
     companion object {
+        /** A socket up this long counts as having worked: the next drop retries promptly. */
+        private const val STABLE_MS = 30_000L
+        /** The retry ceiling while the app is in the background. */
+        private const val IDLE_BACKOFF_MS = 300_000L
         /** "No window here shows this session" (server_requests.py `NOT_SHOWN_CODE`). */
         const val NOT_SHOWN = 4404
 

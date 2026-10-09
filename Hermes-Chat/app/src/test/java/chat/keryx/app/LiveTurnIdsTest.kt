@@ -34,4 +34,14 @@ class LiveTurnIdsTest {
             assertNull(id, TranscriptPages.rowIdOf(id))
         }
     }
+
+    @Test
+    fun `a re-read keeps only what the gateway never saves`() {
+        for (id in listOf("local-sys-1", "local-review-2", "wing-a")) {
+            org.junit.Assert.assertTrue(id, LiveTurnIds.isPhoneOnly(id))
+        }
+        for (id in listOf("local-17", "local-img-3", "local-file-4", LiveTurnIds.answer(7L), LiveTurnIds.item(7L, 0))) {
+            org.junit.Assert.assertFalse(id, LiveTurnIds.isPhoneOnly(id))
+        }
+    }
 }

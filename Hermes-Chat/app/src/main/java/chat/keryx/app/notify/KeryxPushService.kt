@@ -87,6 +87,9 @@ class PushSyncWorker(
     params: WorkerParameters,
 ) : CoroutineWorker(context, params) {
 
+    override suspend fun getForegroundInfo(): androidx.work.ForegroundInfo =
+        KeryxNotifications.workerForeground(applicationContext, "Checking for messages…")
+
     override suspend fun doWork(): Result {
         val app = applicationContext as? KeryxApp ?: return Result.failure()
         val roomId = inputData.getString(KEY_ROOM_ID)

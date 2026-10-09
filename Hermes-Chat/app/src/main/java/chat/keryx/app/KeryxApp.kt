@@ -13,7 +13,9 @@ import chat.keryx.core.model.Message
 import chat.keryx.core.model.SenderType
 import chat.keryx.app.notify.KeryxNotifications
 import chat.keryx.core.protocol.MessageParser
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -78,7 +80,11 @@ class KeryxApp : Application() {
     lateinit var archiveIndexer: chat.keryx.app.data.archive.ArchiveSweeper
         private set
 
-    val appScope = CoroutineScope(Dispatchers.IO)
+    // Supervised, with a handler: one failed background job is logged, not a process crash.
+    val appScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.IO +
+            CoroutineExceptionHandler { _, e -> android.util.Log.e("Keryx", "background job failed", e) },
+    )
 
     // Foreground + currently-open-room tracking, so we only notify for messages the user isn't
     // already looking at. Updated by the activity lifecycle / the chat screen.
@@ -144,7 +150,7 @@ class KeryxApp : Application() {
                 settingsRepository, appScope,
                 cacheDir = transcriptCacheDir(gatewayId),
                 foreground = _foreground,
-            ).also { it.connectIfConfigured() }
+            ).also { it.connectIfConfigured(); watchLink(it) }
         } else {
             MatrixTransport(matrixService, settingsRepository)
         }
@@ -436,6 +442,22 @@ class KeryxApp : Application() {
      * Direct door only, and correctly so: `shadePending` is the gateway's own blocked state.
      * On Matrix the agent asks in the room and the message notification already carries it.
      */
+    /**
+     * Wake the gateway link the moment it could work again: the app comes back on screen, or the
+     * phone's network changes (Wi-Fi to LTE, back from a dead zone). Without these the socket sat
+     * out its backoff, up to 30 s (5 min in the background), showing "disconnected".
+     */
+    private fun watchLink(direct: DirectTransport) {
+        appScope.launch { _foreground.collect { if (it) direct.networkMayHaveChanged() } }
+        runCatching {
+            getSystemService(android.net.ConnectivityManager::class.java)?.registerDefaultNetworkCallback(
+                object : android.net.ConnectivityManager.NetworkCallback() {
+                    override fun onAvailable(network: android.net.Network) = direct.networkMayHaveChanged()
+                },
+            )
+        }
+    }
+
     private fun observeShadeGate() {
         val direct = transport as? DirectTransport ?: return
         KeryxNotifications.ensureGateChannel(applicationContext)
@@ -465,7 +487,7 @@ class KeryxApp : Application() {
                             sessionName = roomNames[sessionId] ?: "Keryx",
                             notice = notice,
                             kind = kind,
-                            requestId = blocking?.requestId,
+                            requestId = blocking?.requestId ?: entry.approval?.requestId?.takeIf { it.isNotBlank() },
                         )
                     }
                     // Answered anywhere, expired, or now on screen — all one thing to the shade.
