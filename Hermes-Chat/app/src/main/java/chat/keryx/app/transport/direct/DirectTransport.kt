@@ -1143,6 +1143,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             // copying that here would silently demote the review to plain prose.
             "review.summary" -> pStr("text")?.trim()?.takeIf { it.isNotEmpty() }
                 ?.let { store.localReviewSummary(it) }
+            // The plan as application data (tui_gateway/tool_progress.py): a full snapshot
+            // whatever the todo tool is called this month, so it outlives the next rename.
+            "todo.updated" -> chat.keryx.core.model.TodoPlanParser.parse(p?.toString().orEmpty())
+                ?.let { store.todoPlan.value = it }
             "tool.generating" -> {
                 store.toolGenerating(pStr("name") ?: "tool")
                 noteRun(storedId, ev.type, toolName = pStr("name") ?: "tool")
@@ -1151,8 +1155,14 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 // A tool only starts after the model response that called it has landed, and
                 // that response is what moves the gateway's context reading.
                 nudgeUsage(storedId)
-                val name = pStr("name") ?: "tool"
-                val args = p?.get("args") as? kotlinx.serialization.json.JsonObject
+                // A deferred tool arrives as the `tool_call` bridge; draw the call inside it.
+                val call = chat.keryx.core.model.ToolWire.unwrap(
+                    pStr("name") ?: "tool",
+                    p?.get("args") as? kotlinx.serialization.json.JsonObject,
+                    p?.get("labels") as? kotlinx.serialization.json.JsonArray,
+                )
+                val name = call.name
+                val args = call.args
                 noteRun(storedId, ev.type, pStr("tool_id").orEmpty(), name, pStr("context") ?: ToolText.contextPreview(name, args))
                 store.toolStart(
                     ToolCall(
@@ -1170,8 +1180,14 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 // here or on another client. Interactive tools are dispatch barriers on the
                 // gateway, so no unrelated tool can complete while one is waiting.
                 blockingFlow(storedId).value = null
-                val name = pStr("name") ?: "tool"
-                val args = p?.get("args") as? kotlinx.serialization.json.JsonObject
+                val rawName = pStr("name") ?: "tool"
+                val call = chat.keryx.core.model.ToolWire.unwrap(
+                    rawName,
+                    p?.get("args") as? kotlinx.serialization.json.JsonObject,
+                    p?.get("labels") as? kotlinx.serialization.json.JsonArray,
+                )
+                val name = call.name
+                val args = call.args
                 val result = p?.get("result")
                 val resultDisplay = ToolText.resultElementToDisplay(result)
                 store.toolComplete(
@@ -1189,8 +1205,11 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                     )
                 )
                 // The agent updated its plan — every `todo` result is the full list, so
-                // the Flight Plan strip repaints from this alone.
-                if (chat.keryx.core.model.TodoPlanParser.isTodoTool(name)) {
+                // the Flight Plan strip repaints from this alone. A gateway that also sends
+                // `todo.updated` repaints it again from that, identically.
+                if (chat.keryx.core.model.TodoPlanParser.isTodoTool(rawName) ||
+                    chat.keryx.core.model.TodoPlanParser.isTodoTool(name)
+                ) {
                     chat.keryx.core.model.TodoPlanParser.parse(resultDisplay)
                         ?.let { store.todoPlan.value = it }
                 }
@@ -3703,7 +3722,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                     }
                 } else {
                     val question = pStr("question").orEmpty()
-                    if (question.isBlank()) { rpc?.declineRequest(req.id, "empty clarify"); return }
+                    if (question.isBlank()) { rpc?.declineRequest(req.id, "empty clarify", GatewayRpc.INVALID_PARAMS); return }
                     val choices = pList("choices")
                     setBlocking(
                         storedId,
@@ -3744,8 +3763,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 ),
             )
             // Desktop-only bridges (terminal.read, preview.act, vault prompts, the tour): no
-            // surface for them on a phone. Say so at once — -32601 fails the tool fast with a
-            // clear reason instead of stalling the agent for the whole deadline.
+            // surface for them on a phone. Decline as "not shown here" — a Desktop window on
+            // the same session still answers, and with none attached the tool fails at once.
             else -> rpc?.declineRequest(req.id)
         }
     }

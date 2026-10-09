@@ -321,16 +321,25 @@ class GatewayRpc(
         }.toString())
     }
 
-    /** Refuse a [ServerRequest] this app has no surface for. `-32601` is the JSON-RPC
-     *  method-not-found code, which the backend reads as "no handler here" and fails the
-     *  tool fast instead of waiting out the deadline. */
-    fun declineRequest(id: String, message: String = "not supported by this client"): Boolean {
+    /**
+     * Refuse a [ServerRequest]. [NOT_SHOWN] (the default) says "nothing here shows this", which
+     * the backend counts as one vote: the request settles only once EVERY attached client said
+     * so (tui_gateway/server_requests.py `_decline`). So a Desktop window on the same session
+     * still gets to answer its own tour or preview, and with no Desktop at all the tool fails
+     * at once. Any other code settles the request on the spot — before 2.19 the phone sent
+     * -32601 and killed Desktop's tour from under it.
+     */
+    fun declineRequest(
+        id: String,
+        message: String = "not supported by this client",
+        code: Int = NOT_SHOWN,
+    ): Boolean {
         val ws = socket ?: return false
         return ws.send(buildJsonObject {
             put("jsonrpc", JsonPrimitive("2.0"))
             put("id", JsonPrimitive(id))
             put("error", buildJsonObject {
-                put("code", JsonPrimitive(-32601))
+                put("code", JsonPrimitive(code))
                 put("message", JsonPrimitive(message))
             })
         }.toString())
@@ -374,6 +383,12 @@ class GatewayRpc(
     }
 
     companion object {
+        /** "No window here shows this session" (server_requests.py `NOT_SHOWN_CODE`). */
+        const val NOT_SHOWN = 4404
+
+        /** JSON-RPC "invalid params": the request itself is unusable, settle it now. */
+        const val INVALID_PARAMS = -32602
+
         fun tokenQuery(token: String): String = "token=" + URLEncoder.encode(token, "UTF-8")
 
         /**

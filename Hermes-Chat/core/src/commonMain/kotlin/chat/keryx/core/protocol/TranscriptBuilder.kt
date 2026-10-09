@@ -51,7 +51,11 @@ object TranscriptBuilder {
                     // nothing — while the Matrix door always carried them).
                     val delivery = chat.keryx.core.model.AgentDelivery.parse(row.content)
                         ?: chat.keryx.core.model.AgentDeliveryCommand.completionReply(row.content)
+                    // A mid-turn steer is you, inside the marker the model trusts: your words,
+                    // without the wrapper (2.19 — it used to show the whole marker).
+                    val steer = DisplayKind.steerText(row.displayKind, row.content)
                     out += when {
+                        steer != null -> text(roomId, row, SenderType.ME).copy(content = steer)
                         delivery != null -> Message(
                             id = row.id.toString(),
                             roomId = roomId,
@@ -190,12 +194,13 @@ object TranscriptBuilder {
     )
 
     private fun toolCall(tc: RestToolCall, resultRow: MessageRow?): ToolCall {
-        val args = ToolText.parseArgs(tc.argumentsJson)
+        // A deferred tool is stored under the `tool_call` bridge; draw the call inside it.
+        val call = chat.keryx.core.model.ToolWire.unwrap(tc.name, ToolText.parseArgs(tc.argumentsJson))
         return ToolCall(
             toolId = tc.id,
-            name = tc.name,
-            context = ToolText.contextPreview(tc.name, args),
-            argsJson = tc.argumentsJson,
+            name = call.name,
+            context = ToolText.contextPreview(call.name, call.args),
+            argsJson = call.args?.toString() ?: tc.argumentsJson,
             status = when {
                 resultRow == null -> ToolStatus.COMPLETED // no result kept; assume it ran
                 else -> resultStatus(resultRow.content)
@@ -226,7 +231,9 @@ object ToolText {
         "browser_click" to "ref", "browser_type" to "text",
         "image_generate" to "prompt", "text_to_speech" to "text",
         "vision_analyze" to "question", "skill_view" to "name", "skills_list" to "category",
-        "cronjob" to "action", "execute_code" to "code", "browser_exec" to "code",
+        "cronjob_manage" to "action", "process_manage" to "action",
+        "ha_call_service" to "entity_id", "ha_get_state" to "entity_id", "ha_list_entities" to "domain",
+        "x_search" to "query", "video_analyze" to "question", "execute_code" to "code", "browser_exec" to "code",
         "delegate_task" to "goal", "clarify" to "question", "skill_manage" to "name",
     )
 
@@ -237,7 +244,7 @@ object ToolText {
      *  (the card owns its own verbs, same contract as the gateway's `context`). */
     fun contextPreview(name: String, args: JsonObject?): String {
         args ?: return ""
-        val primary = primaryArgs[name]?.let { args[it] }
+        val primary = primaryArgs[chat.keryx.core.model.ToolWire.canonical(name)]?.let { args[it] }
             ?: args.values.firstOrNull { it is JsonPrimitive && it.isString }
         val raw = when (primary) {
             is JsonPrimitive -> primary.content

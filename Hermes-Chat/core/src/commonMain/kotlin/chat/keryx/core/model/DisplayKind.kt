@@ -49,6 +49,27 @@ object DisplayKind {
     const val PROCESS_COMPLETE = "process_complete"
 
     /**
+     * A mid-turn `/steer` (agent/prompt_builder.py `steer_user_row`). This one IS the user
+     * speaking — but wrapped in the out-of-band marker the model is told to trust, so the
+     * row's text is the marker, then the words, then the closing tag. [steerText] keeps the
+     * words. Not machinery.
+     */
+    const val STEER = "steer"
+
+    private const val STEER_OPEN = "[OUT-OF-BAND USER MESSAGE"
+    private const val STEER_CLOSE = "[/OUT-OF-BAND USER MESSAGE]"
+
+    /** The user's own words out of a steer row, or null when [content] is not one. Also
+     *  recognised by its marker alone: rows written before the kind existed carry no kind. */
+    fun steerText(kind: String?, content: String): String? {
+        val text = content.trim()
+        if (kind != STEER && !text.startsWith(STEER_OPEN)) return null
+        if (!text.startsWith(STEER_OPEN)) return text
+        val body = text.substringAfter('\n', "").substringBeforeLast(STEER_CLOSE).trim()
+        return body.ifBlank { null }
+    }
+
+    /**
      * Kinds that mean "this row is not the user speaking". [HIDDEN] is absent on purpose —
      * it is not a quiet row, it is a row with nothing in it (see [hidesText]).
      */

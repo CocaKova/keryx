@@ -43,10 +43,23 @@ object ToolGrammar {
         "browser_click" to Verb("Clicked", "Clicking", "◍"),
         "browser_type" to Verb("Typed", "Typing", "◍"),
         "clarify" to Verb("Asked", "Asking", "?"),
-        "cronjob" to Verb("Scheduled", "Scheduling", "◷"),
+        "cronjob_manage" to Verb("Scheduled", "Scheduling", "◷"),
         "session_search_recall" to Verb("Recalled", "Recalling", "⌕"),
-        "todo" to Verb("Updated todos", "Updating todos", "⚙"),
         "todo_list" to Verb("Updated todos", "Updating todos", "⚙"),
+        "process_manage" to Verb("Checked process", "Checking process", "❯"),
+        "computer_use" to Verb("Used the computer", "Using the computer", "◍"),
+        "video_analyze" to Verb("Watched video", "Watching video", "◉"),
+        "x_search" to Verb("Searched X", "Searching X", "⌕"),
+        "gui_tour" to Verb("Showed the way", "Showing the way", "✦"),
+        "show_tip" to Verb("Showed a tip", "Showing a tip", "✦"),
+        "react_to_message" to Verb("Reacted", "Reacting", "✦"),
+        "tool_search" to Verb("Searched tools", "Searching tools", "⌕"),
+        "tool_describe" to Verb("Read tool details", "Reading tool details", "⌕"),
+        "manage_connections" to Verb("Managed connections", "Managing connections", "⚙"),
+        "ha_get_state" to Verb("Checked home", "Checking home", "⌂"),
+        "ha_list_entities" to Verb("Listed devices", "Listing devices", "⌂"),
+        "ha_list_services" to Verb("Listed home services", "Listing home services", "⌂"),
+        "ha_call_service" to Verb("Controlled home", "Controlling home", "⌂"),
     )
 
     /**
@@ -64,37 +77,68 @@ object ToolGrammar {
         "web_search" to Family.WEB, "web_extract" to Family.WEB,
         "memory" to Family.MIND, "skill_manage" to Family.MIND, "skill_view" to Family.MIND,
         "skills_list" to Family.MIND, "session_search" to Family.MIND,
-        "session_search_recall" to Family.MIND, "todo" to Family.MIND, "todo_list" to Family.MIND,
+        "session_search_recall" to Family.MIND, "todo_list" to Family.MIND,
+        "tool_search" to Family.MIND, "tool_describe" to Family.MIND,
+        "process_manage" to Family.SHELL, "computer_use" to Family.SHELL,
+        "x_search" to Family.WEB, "video_analyze" to Family.MEDIA,
         "vision_analyze" to Family.MEDIA, "image_generate" to Family.MEDIA,
         "video_generate" to Family.MEDIA, "text_to_speech" to Family.MEDIA,
-        "delegate_task" to Family.PEOPLE, "clarify" to Family.PEOPLE, "cronjob" to Family.PEOPLE,
+        "delegate_task" to Family.PEOPLE, "clarify" to Family.PEOPLE, "cronjob_manage" to Family.PEOPLE,
     )
 
-    fun familyOf(name: String): Family =
-        FAMILIES[name] ?: if (name.startsWith("browser_")) Family.WEB else Family.OTHER
+    fun familyOf(name: String): Family = ToolWire.canonical(name).let { n ->
+        FAMILIES[n] ?: when {
+            n.startsWith("browser_") -> Family.WEB
+            n.startsWith("kanban_") -> Family.PEOPLE
+            else -> Family.OTHER
+        }
+    }
 
-    fun verbOf(name: String): Verb =
-        VERBS[name]
-            ?: if (name.startsWith("browser_")) Verb("Browsed", "Browsing", "◍")
-            else Verb("Used ${friendly(name)}", "Using ${friendly(name)}", "⚙")
+    fun verbOf(name: String): Verb = ToolWire.canonical(name).let { n ->
+        VERBS[n] ?: when {
+            n.startsWith("browser_") -> Verb("Browsed", "Browsing", "◍")
+            n.startsWith("kanban_") -> kanbanVerb(n)
+            else -> Verb("Used ${friendly(n)}", "Using ${friendly(n)}", "⚙")
+        }
+    }
+
+    /** `kanban_comment` → "Board: comment". Fourteen tools, one shape. */
+    private fun kanbanVerb(name: String): Verb {
+        val what = name.removePrefix("kanban_").replace('_', ' ')
+        return Verb("Board: $what", "Board: $what", "▦")
+    }
 
     /** Success is silent, so the glyph is the tool's identity, not its verdict. */
     fun glyphOf(name: String): String = verbOf(name).glyph
 
-    fun friendly(name: String): String = name.replace('_', ' ')
+    /** `mcp__github__create_issue` → "GitHub create issue", as Hermes' own labels phrase it;
+     *  `connectors__slack__SLACK_SEND` the same. Anything else: underscores to spaces. */
+    fun friendly(name: String): String {
+        val parts = name.split("__", limit = 3)
+        if (parts.size >= 2 && (parts[0] == "mcp" || parts[0] == "connectors")) {
+            val app = parts[1].replace('-', ' ').replace('_', ' ')
+                .split(' ').filter { it.isNotBlank() }
+                .joinToString(" ") { it.replaceFirstChar { c -> c.uppercaseChar() } }
+            val tool = parts.getOrNull(2).orEmpty()
+                .removePrefix(parts[1].uppercase() + "_").replace('_', ' ').lowercase()
+            return if (tool.isBlank()) app else "$app $tool"
+        }
+        return name.replace('_', ' ')
+    }
 
     /** File-ish tools name a path; showing all of it buries the part that identifies it. */
     private val PATH_TOOLS = setOf("read_file", "write_file", "edit_file", "patch", "list_files")
 
     /** Tools whose argument is machinery, not a thing the reader wants named. */
     private val TARGETLESS =
-        setOf("memory", "skill_manage", "todo", "todo_list", "text_to_speech", "image_generate")
+        setOf("memory", "skill_manage", "todo_list", "text_to_speech", "image_generate")
 
     /**
      * The thing the verb acted on, from whatever text this surface has — a gateway preview, or
      * the argument the parser lifted out of the committed message.
      */
-    fun targetOf(name: String, raw: String): String {
+    fun targetOf(tool: String, raw: String): String {
+        val name = ToolWire.canonical(tool)
         if (name in TARGETLESS) return ""
         var t = raw.trim().trim('"', '“', '”', '`', '\'')
         if (t.isBlank()) return ""
@@ -152,7 +196,7 @@ object ToolGrammar {
         "Reading skill" to "skill_view",
         "Running code" to "execute_code",
         "Delegating" to "delegate_task",
-        "Scheduling" to "cronjob",
+        "Scheduling" to "cronjob_manage",
         "Browsing" to "browser_navigate",
         "Clicking" to "browser_click",
         "Typing" to "browser_type",
@@ -193,7 +237,7 @@ object ToolGrammar {
 
     enum class Category(val order: Int) { EDIT(0), EXPLORE(1), RUN(2), DELEGATE(3), OTHER(4) }
 
-    fun categoryOf(name: String): Category = when (name) {
+    fun categoryOf(name: String): Category = when (ToolWire.canonical(name)) {
         "edit_file", "patch", "write_file" -> Category.EDIT
         "read_file", "list_files", "search_files" -> Category.EXPLORE
         "terminal", "execute_code" -> Category.RUN
