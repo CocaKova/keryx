@@ -31,6 +31,14 @@ data class TodoPlan(val items: List<TodoItem>) {
 
 object TodoPlanParser {
 
+    /** Hermes renamed `todo` to `todo_list` (todo_tool.py, 2026-10); older sessions still
+     *  hold `todo` rows. When the tool is deferred, the call rides the `tool_call` bridge
+     *  under that name, so a bridge result counts too; [parse] still has to find a
+     *  `todos` array before anything reaches the strip. */
+    private val TOOL_NAMES = setOf("todo_list", "todo", "tool_call")
+
+    fun isTodoTool(name: String?): Boolean = name != null && name in TOOL_NAMES
+
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     /** The tool's result text → plan. `{"todos":[…]}` per todo_tool.py; anything else →

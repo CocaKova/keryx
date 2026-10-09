@@ -46,6 +46,7 @@ object ToolGrammar {
         "cronjob" to Verb("Scheduled", "Scheduling", "◷"),
         "session_search_recall" to Verb("Recalled", "Recalling", "⌕"),
         "todo" to Verb("Updated todos", "Updating todos", "⚙"),
+        "todo_list" to Verb("Updated todos", "Updating todos", "⚙"),
     )
 
     /**
@@ -63,7 +64,7 @@ object ToolGrammar {
         "web_search" to Family.WEB, "web_extract" to Family.WEB,
         "memory" to Family.MIND, "skill_manage" to Family.MIND, "skill_view" to Family.MIND,
         "skills_list" to Family.MIND, "session_search" to Family.MIND,
-        "session_search_recall" to Family.MIND, "todo" to Family.MIND,
+        "session_search_recall" to Family.MIND, "todo" to Family.MIND, "todo_list" to Family.MIND,
         "vision_analyze" to Family.MEDIA, "image_generate" to Family.MEDIA,
         "video_generate" to Family.MEDIA, "text_to_speech" to Family.MEDIA,
         "delegate_task" to Family.PEOPLE, "clarify" to Family.PEOPLE, "cronjob" to Family.PEOPLE,
@@ -87,7 +88,7 @@ object ToolGrammar {
 
     /** Tools whose argument is machinery, not a thing the reader wants named. */
     private val TARGETLESS =
-        setOf("memory", "skill_manage", "todo", "text_to_speech", "image_generate")
+        setOf("memory", "skill_manage", "todo", "todo_list", "text_to_speech", "image_generate")
 
     /**
      * The thing the verb acted on, from whatever text this surface has — a gateway preview, or
@@ -145,7 +146,7 @@ object ToolGrammar {
         "Generating speech" to "text_to_speech",
         "Searching files" to "search_files",
         "Updating memory" to "memory",
-        "Updating tasks" to "todo",
+        "Updating tasks" to "todo_list",
         "Updating skill" to "skill_manage",
         "Listing skills" to "skills_list",
         "Reading skill" to "skill_view",

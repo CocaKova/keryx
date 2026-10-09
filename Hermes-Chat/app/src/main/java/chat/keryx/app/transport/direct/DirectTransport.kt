@@ -320,7 +320,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             history.value = history.value.copy(hasMore = more, loading = false, loaded = rows.size)
             // Seed the Flight Plan from the newest persisted `todo` result — rows arrive
             // chronological here, so scan from the end.
-            rows.lastOrNull { it.role == "tool" && it.toolName == "todo" }?.let { row ->
+            rows.lastOrNull {
+                it.role == "tool" && chat.keryx.core.model.TodoPlanParser.isTodoTool(it.toolName) &&
+                    chat.keryx.core.model.TodoPlanParser.parse(it.content) != null
+            }?.let { row ->
                 chat.keryx.core.model.TodoPlanParser.parse(row.content)
                     ?.let { todoPlan.value = it }
             }
@@ -359,7 +362,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             seedReactions(fresh)
             hydratedMessages = chat.keryx.core.protocol.TranscriptBuilder.build(storedId, hydratedRows)
             history.value = history.value.copy(loading = false, loaded = hydratedRows.size)
-            fresh.lastOrNull { it.role == "tool" && it.toolName == "todo" }?.let { row ->
+            fresh.lastOrNull {
+                it.role == "tool" && chat.keryx.core.model.TodoPlanParser.isTodoTool(it.toolName) &&
+                    chat.keryx.core.model.TodoPlanParser.parse(it.content) != null
+            }?.let { row ->
                 chat.keryx.core.model.TodoPlanParser.parse(row.content)?.let { todoPlan.value = it }
             }
             publish()
@@ -1184,7 +1190,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 )
                 // The agent updated its plan — every `todo` result is the full list, so
                 // the Flight Plan strip repaints from this alone.
-                if (name == "todo") {
+                if (chat.keryx.core.model.TodoPlanParser.isTodoTool(name)) {
                     chat.keryx.core.model.TodoPlanParser.parse(resultDisplay)
                         ?.let { store.todoPlan.value = it }
                 }

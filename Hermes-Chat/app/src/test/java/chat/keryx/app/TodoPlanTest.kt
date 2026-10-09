@@ -62,4 +62,21 @@ class TodoPlanTest {
         assertFalse(TodoPlanParser.isTodoInjection("[CONTEXT COMPACTION — REFERENCE ONLY] …"))
         assertFalse(TodoPlanParser.isTodoInjection("Your active task list…"))
     }
+
+    @Test
+    fun `the renamed tool, the old name and the deferred bridge all feed the plan`() {
+        assertTrue(TodoPlanParser.isTodoTool("todo_list"))
+        assertTrue(TodoPlanParser.isTodoTool("todo"))
+        assertTrue(TodoPlanParser.isTodoTool("tool_call"))
+        assertFalse(TodoPlanParser.isTodoTool("terminal"))
+        assertFalse(TodoPlanParser.isTodoTool(null))
+    }
+
+    @Test
+    fun `the revisioned todo_list result still parses`() {
+        val plan = TodoPlanParser.parse(
+            """{"todos":[{"id":"1","content":"Wire it","status":"in_progress"}],"revision":3}""",
+        )!!
+        assertEquals("Wire it", plan.active?.content)
+    }
 }
