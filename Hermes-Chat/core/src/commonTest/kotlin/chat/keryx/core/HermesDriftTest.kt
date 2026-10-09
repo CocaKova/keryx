@@ -176,4 +176,12 @@ class HermesDriftTest {
         assertEquals(SenderType.SYSTEM, msg.sender)
         assertEquals("interrupted", msg.mark?.label)
     }
+
+    @Test
+    fun `a run of one action names it`() {
+        val two = listOf(ToolGrammar.Mention("ha_list_entities", "light"), ToolGrammar.Mention("ha_list_entities", "switch"))
+        assertEquals("Listed devices ×2", ToolGrammar.summarize(two, live = false))
+        val mixed = listOf(ToolGrammar.Mention("ha_list_entities", "light"), ToolGrammar.Mention("memory", ""))
+        assertEquals("Used 2 tools", ToolGrammar.summarize(mixed, live = false))
+    }
 }

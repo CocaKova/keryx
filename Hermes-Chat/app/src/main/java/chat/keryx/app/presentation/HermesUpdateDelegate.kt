@@ -63,6 +63,8 @@ class HermesUpdateDelegate(
         val checking: Boolean = false,
         /** The preflight the panel started is running. */
         val probing: Boolean = false,
+        /** When a "Check for updates" last finished (phone clock) — the card says so (2.19). */
+        val checkedAtMs: Long = 0L,
     ) {
         val anySource: Boolean get() = !(pluginMissing && checkMissing)
     }
@@ -122,6 +124,7 @@ class HermesUpdateDelegate(
             error = failure,
             checking = last?.checking == true && plugin.valueOrNull?.checking == true,
             probing = last?.probing == true && plugin.valueOrNull?.probeRunning != false,
+            checkedAtMs = last?.checkedAtMs ?: 0L,
         )
         _board.value = next
         // Once either server has answered, the spoke stays: a dashboard mid-restart reads as
@@ -167,6 +170,8 @@ class HermesUpdateDelegate(
      *  when the answer was the same as before, which read as "the button doesn't work". */
     private fun announceCheck() {
         val b = _board.value ?: return
+        // On the card itself: a toast raised from the Hub never showed (device, 10-09).
+        _board.value = b.copy(checkedAtMs = System.currentTimeMillis())
         toast("Checked: " + UpdatePlanner.behindLine(UpdatePlanner.behind(b.plugin, b.check)).replaceFirstChar { it.lowercase() })
     }
 

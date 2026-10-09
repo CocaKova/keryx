@@ -92,6 +92,18 @@ data class UpdateReceipt(
     val restartProblems: List<String> = emptyList(),
 ) {
     val finished: Boolean get() = outcome != "running" && outcome.isNotBlank()
+
+    /**
+     * Whether this receipt is an update run at all. The receipt route serves the newest receipt
+     * of any kind, and Hermes also writes them for its plugin-update check ("updates-available",
+     * "ok") — which read as "Last update · Updates-available", and could have passed for the end
+     * of an update the phone was watching (2.19).
+     */
+    val isUpdateRun: Boolean get() = outcome in UPDATE_OUTCOMES
+
+    companion object {
+        val UPDATE_OUTCOMES = setOf("running", "success", "partial", "failed", "refused")
+    }
 }
 
 /** `GET /api/actions/hermes-update/status`. */
@@ -351,7 +363,9 @@ object UpdateWatch {
     const val CEILING_MS = 20 * 60_000L
 
     fun phase(run: UpdateRun, obs: UpdateObservation, lastLines: List<String>): UpdatePhase {
-        val receipt = obs.receipt?.takeIf { it.finished && it.startedAt.isNotBlank() && it.startedAt != run.baselineReceipt }
+        val receipt = obs.receipt?.takeIf {
+            it.isUpdateRun && it.finished && it.startedAt.isNotBlank() && it.startedAt != run.baselineReceipt
+        }
         if (receipt != null) return finishedFrom(run, receipt, obs.pluginHead)
 
         val action = obs.action

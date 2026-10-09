@@ -138,6 +138,20 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                    if (behind?.count == -1) {
+                        Text(
+                            "Hermes sees a newer version but couldn't count the commits to it.",
+                            fontSize = KeryxType.micro,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (b.checkedAtMs > 0L && !b.checking) {
+                        Text(
+                            "Checked " + UpdateText.agoMs(b.checkedAtMs, now),
+                            fontSize = KeryxType.micro,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     plugin?.checkError?.takeIf { it.isNotBlank() }?.let {
                         Text("Last fetch failed: $it", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.error)
                     }
@@ -207,7 +221,7 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
                 }
             }
 
-            val receipt = b.receipt
+            val receipt = b.receipt?.takeIf { it.isUpdateRun }
             val showingRunReceipt = (rv?.phase as? UpdatePhase.Finished)?.receipt != null
             if (!b.receiptMissing && !showingRunReceipt) {
                 item(key = "last") {

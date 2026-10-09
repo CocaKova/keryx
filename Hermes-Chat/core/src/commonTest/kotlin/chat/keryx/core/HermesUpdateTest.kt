@@ -238,4 +238,11 @@ class HermesUpdateTest {
         assertEquals(977, UpdatePlanner.behind(plugin, check.copy(behind = null))!!.count)
         assertEquals(5, UpdatePlanner.behind(plugin, check.copy(behind = 5))!!.count)
     }
+
+    @Test
+    fun `a plugin-check receipt is not an update`() {
+        val check = UpdateReceipt("updates-available", "2026-10-08T23:00:00Z", "2026-10-08T23:00:05Z", "", "", "", "")
+        assertFalse(check.isUpdateRun)
+        assertTrue(check.copy(outcome = "success").isUpdateRun)
+    }
 }

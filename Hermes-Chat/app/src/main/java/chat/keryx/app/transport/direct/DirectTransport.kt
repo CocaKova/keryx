@@ -651,6 +651,21 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             publish()
         }
 
+        /** A divider under the turn it closes — the same mark history draws for Hermes' own
+         *  interrupt sentinel ([chat.keryx.core.protocol.InterruptSentinel]). */
+        fun localMark(label: String) {
+            val now = System.currentTimeMillis()
+            local = local + Message(
+                id = "local-mark-$now",
+                roomId = storedId,
+                sender = SenderType.SYSTEM,
+                content = label,
+                timestamp = now,
+                mark = chat.keryx.core.model.TimelineMark(chat.keryx.core.protocol.InterruptSentinel.KIND, label),
+            )
+            publish()
+        }
+
         /** A quiet system line (slash-command output, local notices). */
         fun localSystemMessage(text: String) {
             local = local + Message(
@@ -1063,6 +1078,9 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                     finalReasoning = pStr("reasoning"),
                     failure = pFailure(),
                 )
+                // A turn you stopped ends mid-sentence; Hermes saves it as an ordinary reply, so
+                // without a mark the cut-off read as the agent trailing off (device, 10-09).
+                if (pStr("status") == "interrupted") store.localMark("stopped")
                 // After the fold, not before: the shade's end-of-turn alert re-reads the
                 // transcript on this event and must find the finished message there.
                 _turnEvents.tryEmit(chat.keryx.core.model.TurnEvent.End(

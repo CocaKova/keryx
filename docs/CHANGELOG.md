@@ -5,7 +5,7 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
-## 2.19.0 · versionCode 133
+## 2.19.0 · versionCode 134
 
 Catching up with Hermes, and a tripwire so the next rename can't slip past.
 
@@ -35,6 +35,10 @@ Catching up with Hermes, and a tripwire so the next rename can't slip past.
   A turn that carried on by itself drops the line; one that really stopped shows a quiet
   "interrupted" divider.
 - An approval whose turn was stopped disappears instead of waiting forever.
+- A reply you stop keeps what it had written, followed by a quiet "stopped" divider, so the cut-off
+  doesn't read as the agent trailing off.
+- A run of tools that all did the same thing says what they did ("Listed devices ×2"), not
+  "Used 2 tools".
 - When Hermes flags a tool's output (a prompt injection, a leaked secret), the tool row says so.
   Live turns only, because Hermes doesn't save the flag.
 - With the Hermes desktop app on the same session, the phone no longer cancels its tours and
@@ -51,8 +55,11 @@ Catching up with Hermes, and a tripwire so the next rename can't slip past.
 - The commit count works again. When Hermes' own check only knows "behind, count unknown", the
   count from the gateway's local copy of upstream fills in ("977 commits behind" instead of
   "unknown").
-- "Check for updates" refreshes both sources, shows "Checking…" until both have answered, and
-  then says what it found.
+- "Check for updates" refreshes both sources and shows "Checking…" until both have answered.
+  Then the card itself says when it last checked, so a repeat answer still looks answered. When
+  Hermes knows a newer version exists but not how far behind you are, the card says that plainly.
+- "Last update" only shows real update runs. Hermes' plugin-update check writes a receipt too
+  ("Updates-available"), which used to be shown as if it were the last update.
 - Update now always runs Hermes' own `hermes update`. An operator wrapper set in config.yaml
   (`keryx.update.command`) is no longer what the button runs, and the operator preflight card
   is gone. The button does the same thing on every install.

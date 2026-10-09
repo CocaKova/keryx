@@ -270,6 +270,12 @@ object ToolGrammar {
             val t = only.target.ifBlank { friendly(only.name) }.take(40)
             if (t.isNotBlank()) return title(only.name, t, running = present)
         }
+        // A crowd of the SAME action says the action (2.19): "Listed devices ×2", not "Used 2
+        // tools" — the generic count told you nothing a Home Assistant or kanban run did.
+        if (cat == Category.OTHER) {
+            val verbs = calls.map { verbOf(it.name) }.distinct()
+            if (verbs.size == 1) return (if (present) verbs[0].present else verbs[0].past) + " ×$n"
+        }
         val verb = if (present) presV else pastV
         return "$verb $n $noun${if (n == 1) "" else "s"}"
     }
