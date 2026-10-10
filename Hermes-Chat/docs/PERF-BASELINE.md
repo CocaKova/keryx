@@ -74,6 +74,30 @@ publish: about 10 a second on the direct door. ChatScreen recomposes once per ti
   step 2. A fresh session has one row of yours. Step 2's fix (callbacks no longer capture
   `messages`) shows in a long chat with many of your own rows on screen.
 
+## After perf steps 1–5 (emulator trace, 2026-10-10)
+
+The same streamed turn on the benchmark build, both with reasoning (2.19.1 a 51 s turn, now a
+44 s turn with 22 s of thinking). Runs per second of turn:
+
+| Composable | 2.19.1 | Steps 1–5 |
+|---|---|---|
+| `ChatScreen` | 1.35 | 0.39 |
+| `RoomRow` (behind the closed drawer) | 6.94 | 0.30 |
+| `CloudBanner` (the working cloud) | 5.67 | 0.18 |
+| `ReasoningDisclosure` | 3.49 | 1.39 |
+| `MarkdownParagraph` | 5.31 | 1.32 |
+| `AnimatedVisibility` | 21.3 | 15.0 |
+| `collectAsState` | 151 | 55 |
+
+The emulator draws about 6 frames a second. The rows that fell most (`RoomRow`, `CloudBanner`,
+the thinking dot, the tool run's border) were recomposing once per frame, so on a 120 Hz phone
+they ran up to 120 times a second. Expect the device win to be larger than this table.
+Milliseconds per tick aren't compared here: they move with how much of a turn is thinking versus
+text, and one turn is never the same as the next. The phone's gfxinfo pass is the measure.
+
+Not from this work: on the emulator, message text shows faintly through the composer when a
+bubble sits behind it. 2.19.1 does the same. It goes to the redesign section.
+
 ## Compose stability (release, 2026-10-09)
 
 Strong skipping is on, so an unstable parameter doesn't stop a composable from skipping. It is
