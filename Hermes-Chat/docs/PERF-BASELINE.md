@@ -12,6 +12,12 @@ measurements and reports against this page.
   prompt that streams for about 30 s with tools, then `dumpsys gfxinfo chat.keryx.app`. Read
   "Janky frames" and the 90th/99th percentiles. A known reference: the direct door dropped
   about 5% of frames while streaming (2.17 notes).
+- **Which composables a turn costs:** build the benchmark type (`./gradlew :app:assembleBenchmark`:
+  release, profileable, composition tracing), `adb install -r` it over the release build (same
+  key, so the login stays), then `tools/perf_trace.sh out.pftrace` and
+  `tools/perf_composables.py out.pftrace`. Use the VIRDARA emulator for this: its frame times
+  are meaningless (92% of each frame waits on the software GPU), but the main thread's
+  composition work is real CPU. Compare builds per streaming tick (divide by ChatScreen's count).
 - **Compose stability:** `./gradlew :app:compileReleaseKotlin -Pkeryx.composeReports` writes the
   compiler's reports to `app/build/compose_compiler/`. Build on the build host, never on Spark 1.
 
@@ -44,6 +50,29 @@ not startup.
 | Drawer fling, janky frames | 0.45% (99th pct 17 ms) | < 2%; hold it, cut the 99th pct |
 | Streaming, janky frames | 6.21% (one run, p99 19 ms; 2.17 note ~5%) | 0 dropped on the direct door |
 | Background download | 75 KB/h (2.13.10) | no worse |
+
+## Where a streaming tick goes (emulator trace, 2026-10-10)
+
+From `tools/perf_trace.sh` on the benchmark build, VIRDARA emulator. A tick is one transcript
+publish: about 10 a second on the direct door. ChatScreen recomposes once per tick.
+
+| Composable (2.19.1, a 51 s turn with reasoning) | Runs | Total incl. children |
+|---|---|---|
+| `ChatScreen` (the whole screen body) | 69 | 681 ms (self 284) |
+| `RoomRow`, the drawer's rows behind the closed drawer | 354 | 511 ms |
+| `MessageContent`, the streaming reply's markdown | 48 | 327 ms |
+| `ReasoningDisclosure` | 178 | 301 ms |
+| `AnimatedVisibility` | 580 | 274 ms |
+
+- **The screen body:** 4–4.5 ms per tick on the emulator. Most of it is re-running the screen's
+  53 `collectAsState` and ~40 effects (`collectAsState` and `LaunchedEffect` each ran about
+  4,000 times in one turn).
+- **The streaming bubble:** 5–6 ms per tick, re-parsing the whole reply's markdown each time.
+- **Drawer rows:** about 5 per tick on 2.19.1, about 2 after perf step 1 (rows now compare by
+  equality).
+- **Message rows:** about 1 bubble per tick recomposes (the streaming one) both before and after
+  step 2. A fresh session has one row of yours. Step 2's fix (callbacks no longer capture
+  `messages`) shows in a long chat with many of your own rows on screen.
 
 ## Compose stability (release, 2026-10-09)
 

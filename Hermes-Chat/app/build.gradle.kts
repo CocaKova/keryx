@@ -67,6 +67,14 @@ android {
             signingConfig = if (releaseKeystorePath != null) signingConfigs.getByName("release")
                 else signingConfigs.getByName("debug")
         }
+        // 3.0 perf: the release build made profileable (src/benchmark/AndroidManifest.xml) and
+        // carrying composition tracing, so a Perfetto trace names the composables that ran. Same
+        // applicationId and signing as release: it installs over a logged-in release build on a
+        // test device and keeps the login. Never shipped; ship.sh --release still builds release.
+        create("benchmark") {
+            initWith(getByName("release"))
+            matchingFallbacks += listOf("release")
+        }
     }
     compileOptions {
         // 21 since 2.17: the markdown renderer (0.40+) and highlights 1.1 ship Java 21 bytecode,
@@ -137,6 +145,11 @@ dependencies {
   // Composition tracing: names composables inside perfetto traces (debug only — release
   // builds carry no tracing runtime).
   debugImplementation("androidx.compose.runtime:runtime-tracing")
+  add("benchmarkImplementation", "androidx.compose.runtime:runtime-tracing")
+  // The native half of androidx.tracing.perfetto, which runtime-tracing doesn't bundle; without it
+  // the TracingReceiver answers "dlopen failed" and the trace has no composable names. Keep the
+  // version equal to the tracing-perfetto that runtime-tracing resolves (the receiver checks).
+  add("benchmarkImplementation", "androidx.tracing:tracing-perfetto-binary:1.0.1")
   debugImplementation("androidx.tracing:tracing-perfetto-binary:1.0.0")
   implementation(libs.androidx.compose.material3)
   implementation(libs.androidx.material.icons.extended)
