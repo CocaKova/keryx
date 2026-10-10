@@ -9,6 +9,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,10 +57,12 @@ fun CloudBanner(
 ) {
     // Three frame-clock clients for one banner, so Battery Saver takes all three at once: the
     // cloud keeps its shape and its scalloped edge, it just stops drifting, bobbing and breathing.
+    // Held as State and read only while drawing (3.0 perf): read here, the three clocks recomposed
+    // the banner and its label every frame for the whole turn (120 a second on a 120 Hz phone).
     val reduced by rememberReducedMotion()
-    val orbit: Float
-    val bobT: Float
-    val breath: Float
+    val orbit: State<Float>
+    val bobT: State<Float>
+    val breath: State<Float>
     if (!reduced) {
         val t = rememberInfiniteTransition(label = "cloudBanner")
         // Scallops travel once around the edge every ~11s — slow and dreamlike.
@@ -68,35 +71,37 @@ fun CloudBanner(
             targetValue = 1f,
             animationSpec = infiniteRepeatable(tween(11000, easing = LinearEasing), RepeatMode.Restart),
             label = "orbit",
-        ).value
+        )
         // Independent gentle bob.
         bobT = t.animateFloat(
             initialValue = 0f,
             targetValue = 1f,
             animationSpec = infiniteRepeatable(tween(2800, easing = LinearEasing), RepeatMode.Reverse),
             label = "bob",
-        ).value
+        )
         // Slow breath: bump sizes swell and relax a touch, out of phase with the bob.
         breath = t.animateFloat(
             initialValue = 0f,
             targetValue = 1f,
             animationSpec = infiniteRepeatable(tween(4300, easing = LinearEasing), RepeatMode.Reverse),
             label = "breath",
-        ).value
+        )
     } else {
-        orbit = 0f
+        orbit = FixedFloat(0f)
         // sin(0.5 * PI) == 1 would hold the bob at the top of its travel; 0f sits it level.
-        bobT = 0f
-        breath = 0.5f
+        bobT = FixedFloat(0f)
+        breath = FixedFloat(0.5f)
     }
 
     Box(
         modifier = modifier
-            .graphicsLayer { translationY = sin(bobT * PI.toFloat()) * 2.5f.dp.toPx() }
+            .graphicsLayer { translationY = sin(bobT.value * PI.toFloat()) * 2.5f.dp.toPx() }
             .drawBehind {
-                if (floor.isSpecified) drawCloudFloor(orbit, breath, floor)
-                drawCloudBanner(orbit, breath, fill, border, border2)
-                drawThoughtTrail(bobT, breath, fill, border)
+                val o = orbit.value
+                val b = breath.value
+                if (floor.isSpecified) drawCloudFloor(o, b, floor)
+                drawCloudBanner(o, b, fill, border, border2)
+                drawThoughtTrail(bobT.value, b, fill, border)
             }
             // Insets so the label clears the scalloped edge.
             .padding(horizontal = 26.dp, vertical = 15.dp),
@@ -104,6 +109,8 @@ fun CloudBanner(
         content = { content() },
     )
 }
+
+private class FixedFloat(override val value: Float) : State<Float>
 
 /** Deterministic per-bump jitter in [0,1) — stable across frames so bumps keep their identity. */
 private fun jitter(i: Int): Float {

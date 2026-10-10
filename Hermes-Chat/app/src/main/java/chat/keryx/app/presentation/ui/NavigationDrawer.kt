@@ -736,6 +736,7 @@ fun NavigationDrawerContent(
                     RoomRow(
                         room = room,
                         running = room.id in busy,
+                        breathe = drawerVisible,
                         isSelected = currentRoom?.id == room.id,
                         isPinned = room.id in pinnedRoomIds,
                         isTemporary = room.id in tempSessionIds,
@@ -1127,13 +1128,16 @@ fun RoomRow(
     previewLoader: (suspend () -> String?)? = null,
     /** A turn is running in this session right now (2.16): the row breathes in its own light. */
     running: Boolean = false,
+    /** The drawer is on screen: the breath only animates then. The drawer stays composed while
+     *  shut, and a breathing row behind it repainted every frame of every turn (3.0 perf). */
+    breathe: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val haptics = chat.keryx.app.presentation.ui.components.LocalKeryxHaptics.current
-    // 2.16: the row's own light, for the running breath and the unread sweep. Both only exist
-    // while the drawer is composed (open), so they cost nothing with it shut.
+    // 2.16: the row's own light, for the running breath and the unread sweep. The drawer is
+    // composed while shut too, so the breath is gated on [breathe] and read while drawing.
     val light = chat.keryx.app.presentation.ui.components.roomLight(room.name)
-    val breath = chat.keryx.app.presentation.ui.components.breathingAlpha(active = running, low = 0.0f, periodMillis = 2200)
+    val breath = chat.keryx.app.presentation.ui.components.breathingAlphaState(active = running && breathe, low = 0.0f, periodMillis = 2200)
     val unreadSweep = remember { androidx.compose.animation.core.Animatable(0f) }
     var wasUnread by remember { mutableStateOf(room.hasUnread) }
     LaunchedEffect(room.hasUnread) {
@@ -1193,7 +1197,7 @@ fun RoomRow(
             .clip(RoundedCornerShape(10.dp))
             .background(rowFill)
             .then(
-                if (running) Modifier.background(light.copy(alpha = 0.04f + 0.08f * breath)) else Modifier
+                if (running) Modifier.drawBehind { drawRect(light.copy(alpha = 0.04f + 0.08f * breath.value)) } else Modifier
             )
             .keryxLightSweep(
                 light, MaterialTheme.colorScheme.tertiary,

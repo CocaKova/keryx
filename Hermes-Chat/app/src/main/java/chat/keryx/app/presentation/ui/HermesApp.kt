@@ -421,7 +421,9 @@ fun HermesApp(viewModel: ChatViewModel) {
                             }
                             lastUrgent = urgent
                         }
-                        val orb = chat.keryx.app.presentation.ui.components.breathingAlpha(active = urgent > 0, low = 0.45f, periodMillis = 2200)
+                        // Read inside the badge's own scope below: read here, the pulse recomposed the
+                        // whole app root every frame while something waited on you (3.0 perf).
+                        val orb = chat.keryx.app.presentation.ui.components.breathingAlphaState(active = urgent > 0, low = 0.45f, periodMillis = 2200)
                         IconButton(onClick = { focusManager.clearFocus(); scope.launch { drawerState.open() } }) {
                             BadgedBox(badge = {
                                 androidx.compose.animation.AnimatedVisibility(
@@ -430,7 +432,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                                     exit = chat.keryx.app.presentation.ui.components.keryxVanish(),
                                 ) {
                                     Badge(
-                                        containerColor = chat.keryx.app.presentation.ui.components.KeryxStatus.warn.copy(alpha = orb),
+                                        containerColor = chat.keryx.app.presentation.ui.components.KeryxStatus.warn.copy(alpha = orb.value),
                                         contentColor = chat.keryx.app.presentation.ui.components.contrastColorFor(chat.keryx.app.presentation.ui.components.KeryxStatus.warn),
                                     ) { Text(if (urgent > 9) "9+" else urgent.toString()) }
                                 }

@@ -63,6 +63,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -70,6 +71,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
@@ -413,17 +415,28 @@ fun Modifier.keryxPressable(
  * their own battery-saver check.
  */
 @Composable
-fun breathingAlpha(active: Boolean, low: Float = 0.35f, periodMillis: Int = 1600): Float {
+fun breathingAlpha(active: Boolean, low: Float = 0.35f, periodMillis: Int = 1600): Float =
+    breathingAlphaState(active, low, periodMillis).value
+
+/**
+ * [breathingAlpha] as State (3.0 perf). Read its value inside a draw lambda (`drawBehind`,
+ * `graphicsLayer`) or a small child scope: a composable that returns a value has no restart
+ * scope of its own, so the plain Float form recomposes its WHOLE caller every frame of the pulse.
+ * The drawer's running row did that behind the closed drawer for the length of every turn.
+ */
+@Composable
+fun breathingAlphaState(active: Boolean, low: Float = 0.35f, periodMillis: Int = 1600): State<Float> {
     val reduced by rememberReducedMotion()
-    if (!active || reduced) return 1f
-    val pulse by rememberInfiniteTransition(label = "keryxBreath").animateFloat(
+    if (!active || reduced) return StillBreath
+    return rememberInfiniteTransition(label = "keryxBreath").animateFloat(
         initialValue = low,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(tween(periodMillis), RepeatMode.Reverse),
         label = "keryxBreathAlpha",
     )
-    return pulse
 }
+
+private object StillBreath : State<Float> { override val value = 1f }
 
 /**
  * The shimmer ring (2.0): a slow conic gleam of accent→accent-2 traveling a hairline border —
@@ -602,8 +615,8 @@ fun rememberSweepProgress(
 /** A small status dot that breathes while [alive]; solid and still otherwise. */
 @Composable
 fun KeryxBreathingDot(color: Color, alive: Boolean, size: Dp = 7.dp) {
-    val alpha = breathingAlpha(active = alive)
-    Box(Modifier.size(size).clip(CircleShape).background(color.copy(alpha = color.alpha * alpha)))
+    val alpha = breathingAlphaState(active = alive)
+    Box(Modifier.size(size).clip(CircleShape).drawBehind { drawRect(color.copy(alpha = color.alpha * alpha.value)) })
 }
 
 // --- Section voice -----------------------------------------------------------------------------
