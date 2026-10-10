@@ -83,6 +83,7 @@ import chat.keryx.app.presentation.ui.components.WaitingIndicator
 import chat.keryx.app.presentation.ui.components.WorkingStatusBar
 import chat.keryx.app.presentation.ui.components.replyPreviewText
 import chat.keryx.app.presentation.ui.components.shortSender
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import chat.keryx.app.presentation.ui.components.KeryxType
@@ -177,9 +178,12 @@ fun ChatScreen(
     viewModel: ChatViewModel,
     modifier: Modifier = Modifier
 ) {
-    val messages by viewModel.messages.collectAsState()
+    // 3.0 perf step 3: the transcript is held as State and read only where it is drawn (the
+    // list's builder, derived state, effects' snapshotFlows). Read in this body, it re-ran the
+    // whole screen (~50 state reads, ~40 effects) on every streamed publish, ~10 a second.
+    val messagesState = viewModel.messages.collectAsState()
     // The newest reply — the one exchange the gateway can take back (2.10).
-    val lastAgentId = remember(messages) { messages.lastOrNull { it.sender == SenderType.HERMES }?.id }
+    val lastAgentId by remember { derivedStateOf { messagesState.value.lastOrNull { it.sender == SenderType.HERMES }?.id } }
     // The ring, itemised (2.10): a sheet over the chat, opened from the composer's ring.
     var showContext by remember { mutableStateOf(false) }
     if (showContext) chat.keryx.app.presentation.ui.components.ContextBreakdownSheet(
@@ -214,7 +218,9 @@ fun ChatScreen(
     }
     val typingHumans by viewModel.typingHumans.collectAsState()
     val typingAgentIds by viewModel.typingAgentIds.collectAsState()
-    val liveStream by viewModel.liveStream.collectAsState()
+    // Read in the list's builder; the body asks the derived questions below instead.
+    val liveStreamState = viewModel.liveStream.collectAsState()
+    val liveStream by liveStreamState
     // Held as State, read only where drawn: a by-delegate read here recomposed the whole
     // screen on every rate tick (about 4/s through a turn).
     val liveRateState = viewModel.liveRate.collectAsState()
@@ -352,14 +358,15 @@ fun ChatScreen(
     val commandFilter by viewModel.commandFilter.collectAsState()
 
     val isGroupRoom = rooms.firstOrNull { it.id == currentRoom?.id }?.type == RoomType.SHARED_GROUP
-    // reverseLayout: index 0 is the newest message, pinned to the bottom.
-    val ordered = messages.asReversed()
     // Quote lookups only: the old full id→message map was rebuilt on every emission and held
     // every message for the rare quoted-reply render; only actual reply targets are needed.
-    val byId = remember(messages) {
-        val targets = messages.mapNotNullTo(HashSet()) { it.replyToId }
-        if (targets.isEmpty()) emptyMap()
-        else messages.filter { it.id in targets }.associateBy { it.id }
+    val byId by remember {
+        derivedStateOf {
+            val messages = messagesState.value
+            val targets = messages.mapNotNullTo(HashSet()) { it.replyToId }
+            if (targets.isEmpty()) emptyMap()
+            else messages.filter { it.id in targets }.associateBy { it.id }
+        }
     }
     // Collapse runs of consecutive tool-only messages into one expandable "Ran N tools" group.
     // Incremental: during a streamed turn every sync tick re-emits the list with only the tail
@@ -367,10 +374,13 @@ fun ChatScreen(
     // agent block is re-walked (O(changed block), not O(timeline)). Plain holder, not snapshot
     // state — renderItems is already keyed on [messages].
     val groupCache = remember { arrayOfNulls<GroupedTimeline>(1) }
-    val groupedItems = remember(messages) {
-        val grouped = groupChatItemsIncremental(ordered, groupCache[0])
-        groupCache[0] = grouped
-        grouped.items
+    // reverseLayout: index 0 is the newest message, pinned to the bottom.
+    val groupedItems by remember {
+        derivedStateOf {
+            val grouped = groupChatItemsIncremental(messagesState.value.asReversed(), groupCache[0])
+            groupCache[0] = grouped
+            grouped.items
+        }
     }
     // The turn's theater: the live one while it runs, then the record of the one just watched.
     //
@@ -378,29 +388,35 @@ fun ChatScreen(
     // by the token dispatch and carries the same TheaterState instance between tool frames, so
     // this re-runs a handful of times per turn instead of ten times a second.
     val lastTurn by viewModel.lastTurnTheater.collectAsState()
-    val liveTheater = liveStream?.takeIf { it.roomId == currentRoom?.id }?.theater?.takeUnless { it.isEmpty }
-    val turnTheater = liveTheater ?: lastTurn?.takeIf { it.first == currentRoom?.id }?.second
+    val liveTheater by remember {
+        derivedStateOf { liveStream?.takeIf { it.roomId == currentRoom?.id }?.theater?.takeUnless { it.isEmpty } }
+    }
+    val turnTheater by remember {
+        derivedStateOf { liveTheater ?: lastTurn?.takeIf { it.first == currentRoom?.id }?.second }
+    }
     // 3.1 §A1: the side-channel's tool frames are a PRODUCER, not a second renderer. Calls the
     // committed transcript already carries get enriched below (`structured`); calls it doesn't
     // carry yet land as live rows in the same run. One grammar, live and settled.
-    val renderItems = remember(groupedItems, turnTheater, liveTheater != null) {
-        withLiveTheater(
-            groupedItems,
-            beats = turnTheater?.beats.orEmpty(),
-            delegations = turnTheater?.delegations.orEmpty(),
-            live = liveTheater != null,
-        )
+    val renderItems by remember {
+        derivedStateOf {
+            withLiveTheater(
+                groupedItems,
+                beats = turnTheater?.beats.orEmpty(),
+                delegations = turnTheater?.delegations.orEmpty(),
+                live = liveTheater != null,
+            )
+        }
     }
     // Which bubbles an arrival announced — they get the single light sweep as they first compose.
-    val arrivalIds = remember(renderItems) {
-        renderItems.filterIsInstance<ChatRenderItem.Arrival>().mapTo(HashSet()) { it.message.id }
+    val arrivalIds by remember {
+        derivedStateOf { renderItems.filterIsInstance<ChatRenderItem.Arrival>().mapTo(HashSet()) { it.message.id } }
     }
     // The run the theater's record belongs to (2.4). renderItems is newest-first under
     // reverseLayout, so the first ToolRun in it IS the newest one.
-    val newestToolRunKey = remember(renderItems) {
-        renderItems.firstOrNull { it is ChatRenderItem.ToolRun }?.key
+    val newestToolRunKey by remember {
+        derivedStateOf { renderItems.firstOrNull { it is ChatRenderItem.ToolRun }?.key }
     }
-    val lastTurnBeats = turnTheater?.beats.orEmpty()
+    val lastTurnBeats by remember { derivedStateOf { turnTheater?.beats.orEmpty() } }
     // A landed subagent the reader asked to see inside (2.4).
     var openSubagent by remember { mutableStateOf<chat.keryx.core.model.Delegation?>(null) }
     // The room the open helper belongs to. A room switch under the sheet (a notice tap) closes
@@ -414,7 +430,9 @@ fun ChatScreen(
     // reads the same render items the transcript draws, so both doors are already reconciled.
     // 2.16: Tap-In is a layer on the nav stack now (predictive back, the cloud-grown arrival);
     // the screen hands it the same reconciled items through the ViewModel and asks for it there.
-    LaunchedEffect(renderItems, lastTurnBeats) { viewModel.publishTapInFeed(renderItems, lastTurnBeats) }
+    LaunchedEffect(Unit) {
+        snapshotFlow { renderItems to lastTurnBeats }.collect { (items, beats) -> viewModel.publishTapInFeed(items, beats) }
+    }
     fun openTapIn() { currentRoom?.id?.let(viewModel::requestTapIn) }
 
     // Restore this room's unsent draft when it opens (and swap drafts when switching rooms) so
@@ -596,7 +614,7 @@ fun ChatScreen(
     // form re-ran ChatScreen top to bottom on every streamed token.
     LaunchedEffect(Unit) {
         snapshotFlow {
-            val sig = (messages.lastOrNull()?.let { "${it.id}:${it.content.length}:${it.toolCalls.size}" } ?: "") +
+            val sig = (messagesState.value.lastOrNull()?.let { "${it.id}:${it.content.length}:${it.toolCalls.size}" } ?: "") +
                 ":${liveStream?.text?.length ?: 0}"
             sig to awaitingReply
         }.collect {
@@ -605,7 +623,7 @@ fun ChatScreen(
         }
     }
     // A message I just sent always snaps to the newest, wherever I was scrolled.
-    val lastMineId = messages.lastOrNull()?.takeIf { it.sender == SenderType.ME }?.id
+    val lastMineId by remember { derivedStateOf { messagesState.value.lastOrNull()?.takeIf { it.sender == SenderType.ME }?.id } }
     LaunchedEffect(pendingSend?.sentAt, lastMineId) {
         if (pendingSend != null || lastMineId != null) listState.animateScrollToItem(0)
     }
@@ -617,11 +635,11 @@ fun ChatScreen(
     LaunchedEffect(Unit) { snapshotFlow { atBottom }.collect { viewModel.onViewportAtBottom(it) } }
 
     // Pagination: when the oldest loaded item scrolls into view, request more history.
-    LaunchedEffect(listState, renderItems.size) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+    LaunchedEffect(listState) {
+        snapshotFlow { (listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) to renderItems.size }
             .distinctUntilChanged()
-            .collect { lastVisible ->
-                if (renderItems.isNotEmpty() && lastVisible >= renderItems.size - 3) {
+            .collect { (lastVisible, size) ->
+                if (size > 0 && lastVisible >= size - 3) {
                     viewModel.loadOlderMessages()
                 }
             }
@@ -631,13 +649,15 @@ fun ChatScreen(
     // gets its markdown tree built off the main thread as soon as it is known, so when the
     // user swipes up into it the bubble composes from a cache hit instead of a blocking
     // parse. Bounded by what is loaded; the cache itself is bounded and content-keyed.
-    LaunchedEffect(messages) {
+    LaunchedEffect(Unit) {
+        snapshotFlow { messagesState.value }.collectLatest { messages ->
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
             for (m in messages) {
                 if (m.isStreaming || m.sender != SenderType.HERMES) continue
                 if (m.content.length < chat.keryx.app.presentation.ui.components.MarkdownCache.MIN_CHARS) continue
                 chat.keryx.app.presentation.ui.components.MarkdownWarmer.warm(m.content)
             }
+        }
         }
     }
 
@@ -646,10 +666,11 @@ fun ChatScreen(
     // to its fold, so a mark taken mid-turn is the only one that id ever gets — and the
     // gateway's watermark would sit before the answer it then called "read". Keying on the
     // streaming flag re-asks the moment the reply settles.
-    val tail = messages.lastOrNull()
-    LaunchedEffect(currentRoom?.id, tail?.id, tail?.isStreaming) {
+    val tail by remember { derivedStateOf { messagesState.value.lastOrNull()?.let { it.id to it.isStreaming } } }
+    LaunchedEffect(currentRoom?.id, tail) {
         val roomId = currentRoom?.id
-        if (roomId != null && tail != null && !tail.isStreaming) viewModel.markRoomRead(roomId, tail.id)
+        val (tailId, tailStreaming) = tail ?: return@LaunchedEffect
+        if (roomId != null && !tailStreaming) viewModel.markRoomRead(roomId, tailId)
     }
 
     // Tap a reply-quote → sail to the original message and flash it briefly.
@@ -661,11 +682,13 @@ fun ChatScreen(
     val findOpen by viewModel.findOpen.collectAsState()
     var findQuery by remember { mutableStateOf("") }
     var findIndex by remember { mutableStateOf(0) }
-    val findHits = remember(renderItems, findQuery, findOpen) {
-        if (!findOpen) emptyList() else chat.keryx.core.model.FindInChat.hits(
-            renderItems.mapNotNull { (it as? ChatRenderItem.Single)?.message?.let { m -> m.id to m.content } },
-            findQuery,
-        )
+    val findHits by remember {
+        derivedStateOf {
+            if (!findOpen) emptyList() else chat.keryx.core.model.FindInChat.hits(
+                renderItems.mapNotNull { (it as? ChatRenderItem.Single)?.message?.let { m -> m.id to m.content } },
+                findQuery,
+            )
+        }
     }
     LaunchedEffect(currentRoom?.id) { viewModel.setFindOpen(false); findQuery = "" }
 
@@ -712,16 +735,20 @@ fun ChatScreen(
     // object whose callbacks read the moving state when tapped (MessageRowActions). Before this,
     // every row's callbacks captured `messages` and no bubble on screen skipped a streaming tick.
     val isDirect = viewModel.transportIsDirect
+    val transcriptEmpty by remember { derivedStateOf { messagesState.value.isEmpty() } }
+    val streamIdle by remember { derivedStateOf { liveStreamState.value == null } }
+    val streamInRoom by remember {
+        derivedStateOf { liveStreamState.value?.roomId.let { it != null && it == currentRoom?.id } }
+    }
     val canDeleteMessages = viewModel.canDeleteMessages
     val archiveAvailable = viewModel.archive.available
-    val canRetryLast = remember(messages) { ChatViewModel.retryPromptOf(messages) != null }
-    val latestMessages = rememberUpdatedState(messages)
+    val canRetryLast by remember { derivedStateOf { ChatViewModel.retryPromptOf(messagesState.value) != null } }
     val latestAwaiting = rememberUpdatedState(awaitingReply)
     val latestTts = rememberUpdatedState(ttsState)
     val latestSpeak = rememberUpdatedState<(Message) -> Unit>({ speakMessage(it) })
     val latestJump = rememberUpdatedState<(String) -> Unit>({ jumpToMessage(it) })
     val rowActions = remember(viewModel, tts) {
-        MessageRowActions(viewModel, tts, latestMessages, latestAwaiting, latestTts, latestSpeak, latestJump)
+        MessageRowActions(viewModel, tts, messagesState, latestAwaiting, latestTts, latestSpeak, latestJump)
     }
 
     // Background is supplied app-wide (gradient lives in HermesApp); keep this surface transparent.
@@ -822,7 +849,7 @@ fun ChatScreen(
             // Optimistic send: my message blooms into the chat the instant Send is tapped, instead
             // of waiting for the homeserver echo. Hidden the frame the real event is in the list.
             val pending = pendingSend
-            val echoLanded = pending != null && messages.lastOrNull()?.let {
+            val echoLanded = pending != null && messagesState.value.lastOrNull()?.let {
                 it.sender == SenderType.ME && ChatViewModel.pendingEchoMatches(it.content, pending.text)
             } == true
             if (pending != null && pending.roomId == currentRoom?.id && !echoLanded) {
@@ -908,7 +935,7 @@ fun ChatScreen(
         // 2.17.3: reminders lead (things already waiting on you, no model call), then prompts the
         // gateway's title model wrote from what you talk about — each part switchable in Settings.
         val startersOn by viewModel.starterSuggestions.collectAsState()
-        if (startersOn && currentRoom != null && messages.isEmpty() && !awaitingReply && pendingSend == null && liveStream == null) {
+        if (startersOn && currentRoom != null && transcriptEmpty && !awaitingReply && pendingSend == null && streamIdle) {
             val aiOn by viewModel.starterAiPrompts.collectAsState()
             val remindersOn by viewModel.starterReminders.collectAsState()
             val aiStarters by viewModel.aiStarters.collectAsState()
@@ -947,8 +974,9 @@ fun ChatScreen(
         // Jump-to-now: while scrolled up into history, a frosted chip floats above the composer;
         // it counts agent messages that landed meanwhile and sails back to the newest on tap.
         var missedWhileAway by remember { mutableStateOf(0) }
-        LaunchedEffect(messages.lastOrNull()?.id) {
-            val last = messages.lastOrNull() ?: return@LaunchedEffect
+        val lastId by remember { derivedStateOf { messagesState.value.lastOrNull()?.id } }
+        LaunchedEffect(lastId) {
+            val last = messagesState.value.lastOrNull() ?: return@LaunchedEffect
             if (!atBottom && last.sender != SenderType.ME) missedWhileAway++
         }
         LaunchedEffect(Unit) { snapshotFlow { atBottom }.collect { if (it) missedWhileAway = 0 } }
@@ -1130,7 +1158,7 @@ fun ChatScreen(
             // Only THIS room's stream counts: the overlay is app-wide and a turn running in the
             // session you just left made a fresh session read "steer" until you visited an ended
             // room and came back (device-caught 2026-09-06, the fleet walk).
-            val agentLive = (liveStream?.roomId != null && liveStream?.roomId == currentRoom?.id) ||
+            val agentLive = streamInRoom ||
                 typingAgentIds.isNotEmpty() || liveTurnSigns
             val busyNow = awaitingReply || agentLive || compactingNow
             val slashTyped = composerField.text.trimStart().startsWith("/")
@@ -1194,7 +1222,7 @@ fun ChatScreen(
                 // plain Boolean param recomposed the composer (and this whole screen) on every
                 // bottom-threshold crossing during scroll.
                 atBottom = { atBottom },
-                hasMessages = messages.isNotEmpty(),
+                hasMessages = !transcriptEmpty,
                 onFocusedAtBottom = { scope.launch { listState.animateScrollToItem(0) } },
                 focusRequester = focusRequester,
                 sttEnabled = sttUrl.isNotBlank(),
@@ -1254,8 +1282,8 @@ fun ChatScreen(
         // TalkBack hears the reply as it is written, a sentence at a time (2.16). Inert without
         // a screen reader.
         chat.keryx.app.presentation.ui.components.StreamAnnouncer(
-            sideStream = liveStream?.takeIf { it.roomId == currentRoom?.id },
-            messages = messages,
+            sideStream = { liveStreamState.value?.takeIf { it.roomId == currentRoom?.id } },
+            messages = { messagesState.value },
             roomKey = currentRoom?.id,
             modifier = Modifier.align(Alignment.TopStart),
         )
@@ -1276,8 +1304,8 @@ fun ChatScreen(
         // Pinned at the top so it stays put for the whole run, unlike the per-message tool labels.
         // The cloud wears the running tool's colour (2.16): the newest call still executing in
         // this turn, by its family's tint — the same tint its row in the run wears.
-        val runningTool = remember(renderItems) {
-            chat.keryx.app.presentation.tapin.TurnSlice.of(renderItems).calls.lastOrNull { it.running }?.name
+        val runningTool by remember {
+            derivedStateOf { chat.keryx.app.presentation.tapin.TurnSlice.of(renderItems).calls.lastOrNull { it.running }?.name }
         }
         val toolTint = runningTool?.let {
             chat.keryx.app.presentation.ui.components.KeryxToolTint.of(chat.keryx.core.model.ToolGrammar.familyOf(it))

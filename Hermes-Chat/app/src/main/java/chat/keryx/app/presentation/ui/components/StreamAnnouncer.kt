@@ -43,15 +43,18 @@ import kotlinx.coroutines.withContext
 @Composable
 fun StreamAnnouncer(
     /** The side-channel overlay, when this room's turn streams over it (Matrix door). */
-    sideStream: LiveStream?,
-    /** The room's messages — the direct door streams INTO the transcript. */
-    messages: List<Message>,
+    sideStream: () -> LiveStream?,
+    /** The room's messages — the direct door streams INTO the transcript. Lambdas, read here
+     *  after the screen-reader check, so the chat screen doesn't recompose on every publish. */
+    messages: () -> List<Message>,
     /** The room on screen: switching rooms drops whatever was being read. */
     roomKey: Any?,
     modifier: Modifier = Modifier,
 ) {
     if (!rememberScreenReaderOn()) return
-    val now = remember(sideStream, messages) { LiveTurnProse.of(sideStream, messages) }
+    val side = sideStream()
+    val msgs = messages()
+    val now = remember(side, msgs) { LiveTurnProse.of(side, msgs) }
     // The turn being read outlives its live rows by the flush at its end: the overlay goes the
     // moment the turn settles, and the words still to say went with it.
     val turn = remember(roomKey) { arrayOf<String?>(null) }
