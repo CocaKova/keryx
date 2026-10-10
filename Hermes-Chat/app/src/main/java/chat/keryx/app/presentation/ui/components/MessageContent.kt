@@ -65,7 +65,6 @@ import com.mikepenz.markdown.m3.markdownTypography
 import com.mikepenz.markdown.model.markdownAnnotator
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.ast.getTextInNode
-import org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor
 import chat.keryx.core.protocol.MessageParser
 
 /**
@@ -239,7 +238,8 @@ fun MessageContent(
                         } else {
                             com.mikepenz.markdown.model.rememberMarkdownState(
                                 content = source,
-                                flavour = GFMFlavourDescriptor(),
+                                flavour = MarkdownCache.flavour,
+                                parser = MarkdownCache.parser,
                                 immediate = true,
                             )
                         }
@@ -568,6 +568,8 @@ internal fun ReasoningCanvas(text: String, baseColor: Color, active: Boolean) {
     // Breathing glow while reasoning is actively streaming. Battery Saver holds it at the bright
     // end rather than the resting value, so a stream still reads as streaming.
     val reduced by rememberReducedMotion()
+    // Read while drawing the border (3.0 perf), not here: here it recomposed the live thought,
+    // text and all, every frame of a think.
     val glow = if (active && !reduced) {
         val t = rememberInfiniteTransition(label = "reasonPulse")
         t.animateFloat(
@@ -575,8 +577,9 @@ internal fun ReasoningCanvas(text: String, baseColor: Color, active: Boolean) {
             targetValue = 0.5f,
             animationSpec = infiniteRepeatable(tween(1200), RepeatMode.Reverse),
             label = "reasonPulseAlpha",
-        ).value
-    } else if (active) 0.5f else 0.18f
+        )
+    } else null
+    val restGlow = if (active) 0.5f else 0.18f
 
     Column(
         modifier = Modifier
@@ -587,7 +590,7 @@ internal fun ReasoningCanvas(text: String, baseColor: Color, active: Boolean) {
             .background(
                 Brush.verticalGradient(listOf(accent.copy(alpha = 0.13f), accent.copy(alpha = 0.04f)))
             )
-            .border(1.dp, accent.copy(alpha = glow), RoundedCornerShape(12.dp))
+            .drawnBorder(1.dp, RoundedCornerShape(12.dp)) { accent.copy(alpha = glow?.value ?: restGlow) }
             .clickable { userOverride = !expanded }
             .animateContentSize(),
     ) {

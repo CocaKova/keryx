@@ -63,20 +63,23 @@ fun FlightPlanStrip(plan: TodoPlan) {
     val good = KeryxStatus.good
 
     val reduced by rememberReducedMotion()
-    val pulse = if (reduced) 1f else rememberInfiniteTransition(label = "plan_pulse").animateFloat(
+    // Read while drawing each dot (3.0 perf): read here, the whole strip recomposed every frame
+    // a step was in flight.
+    val pulseState = if (reduced) null else rememberInfiniteTransition(label = "plan_pulse").animateFloat(
         initialValue = 0.45f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
         label = "plan_pulse_alpha",
-    ).value
+    )
+    val pulse: () -> Float = { pulseState?.value ?: 1f }
 
     @Composable
-    fun Dot(color: Color, size: Dp, alpha: Float) {
+    fun Dot(color: Color, size: Dp, alpha: () -> Float) {
         androidx.compose.foundation.layout.Box(
             Modifier
                 .size(size)
                 .clip(CircleShape)
-                .background(color.copy(alpha = color.alpha * alpha)),
+                .drawBehind { drawRect(color.copy(alpha = color.alpha * alpha())) },
         )
     }
 
@@ -98,7 +101,7 @@ fun FlightPlanStrip(plan: TodoPlan) {
             .animateContentSize(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Dot(if (plan.allDone) good else accent, 7.dp, if (plan.allDone) 0.9f else pulse)
+            Dot(if (plan.allDone) good else accent, 7.dp, if (plan.allDone) ({ 0.9f }) else pulse)
             Spacer(Modifier.width(8.dp))
             Text(
                 "FLIGHT PLAN",

@@ -28,8 +28,12 @@ object MarkdownCache {
     /** Bodies under this are cheap to parse in place; caching them only churns the map. */
     const val MIN_CHARS = 600
 
-    private val flavour = GFMFlavourDescriptor()
-    private val parser = MarkdownParser(flavour)
+    /** The one flavour and parser, also handed to every `rememberMarkdownState` in composition
+     *  (3.0 perf). The library keys its parsed state on both, so a `GFMFlavourDescriptor()`
+     *  written at the call made a new parser and re-parsed the text on every recomposition: the
+     *  streaming bubble's settled paragraphs, on every tick of every turn. Pure, so shared. */
+    internal val flavour = GFMFlavourDescriptor()
+    internal val parser = MarkdownParser(flavour)
 
     private val cache = object : LinkedHashMap<String, State.Success>(32, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, State.Success>) = size > MAX_ENTRIES

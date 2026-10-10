@@ -397,6 +397,8 @@ fun ToolTheaterRun(
     // Subtle breathing glow while the agent is actively invoking tools. Battery Saver holds it at
     // the bright end rather than the resting value, so an active run still reads as active.
     val reduced by rememberReducedMotion()
+    // Read while drawing the border (3.0 perf): read here, it recomposed the whole run, every
+    // call row in it, every frame the agent worked.
     val glow = if (active && !reduced) {
         val t = rememberInfiniteTransition(label = "toolPulse")
         t.animateFloat(
@@ -404,8 +406,8 @@ fun ToolTheaterRun(
             targetValue = 0.42f,
             animationSpec = infiniteRepeatable(tween(1100), RepeatMode.Reverse),
             label = "toolPulseAlpha",
-        ).value
-    } else if (active) 0.42f else 0.22f
+        )
+    } else null
 
     val calls = run.entries.filterIsInstance<ToolRunEntry.Call>().map { it.call }
     val wings = run.entries.filterIsInstance<ToolRunEntry.Delegated>().map { it.run }
@@ -471,11 +473,9 @@ fun ToolTheaterRun(
                 // Hairline, not a filled gradient card. This is scaffolding around the answer,
                 // and at rest it should read as quietly as the live theater does; only the
                 // border carries the "still working" breath.
-                .border(
-                    1.dp,
-                    if (active) accent.copy(alpha = glow) else baseColor.copy(alpha = 0.16f),
-                    RoundedCornerShape(10.dp),
-                )
+                .drawnBorder(1.dp, RoundedCornerShape(10.dp)) {
+                    if (active) accent.copy(alpha = glow?.value ?: 0.42f) else baseColor.copy(alpha = 0.16f)
+                }
                 .combinedClickable(
                     onClick = { expanded = !expanded; onToggle(expanded) },
                     onClickLabel = if (expanded) "Fold the steps away" else "Show the steps",

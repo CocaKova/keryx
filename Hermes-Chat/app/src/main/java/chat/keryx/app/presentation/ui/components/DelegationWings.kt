@@ -48,6 +48,7 @@ import chat.keryx.core.model.Delegation
 import chat.keryx.core.model.DelegationState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import androidx.compose.ui.draw.drawBehind
 
 /**
  * A delegation, live: the subagents a turn sent out, and what each is doing right now.
@@ -245,9 +246,9 @@ private fun Pulse(color: Color) {
             initialValue = 0.25f, targetValue = 0.9f,
             animationSpec = infiniteRepeatable(tween(760), RepeatMode.Reverse),
             label = "beatAlpha",
-        ).value
-    } else 0.9f
-    Box(Modifier.size(5.dp).clip(CircleShape).background(color.copy(alpha = a)))
+        )
+    } else null
+    Box(Modifier.size(5.dp).clip(CircleShape).drawBehind { drawRect(color.copy(alpha = a?.value ?: 0.9f)) })
 }
 
 private fun durationLabel(seconds: Double?): String? {

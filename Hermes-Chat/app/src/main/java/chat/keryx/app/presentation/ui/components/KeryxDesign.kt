@@ -72,6 +72,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
@@ -437,6 +438,23 @@ fun breathingAlphaState(active: Boolean, low: Float = 0.35f, periodMillis: Int =
 }
 
 private object StillBreath : State<Float> { override val value = 1f }
+
+/**
+ * A border whose colour is read while drawing (3.0 perf), for borders that breathe: the pulse
+ * then repaints the edge instead of recomposing everything inside it every frame. The stroke sits
+ * inside the bounds, as [androidx.compose.foundation.border] draws it.
+ */
+fun Modifier.drawnBorder(width: Dp, shape: androidx.compose.ui.graphics.Shape, color: () -> Color): Modifier =
+    drawWithCache {
+        val w = width.toPx()
+        val inner = androidx.compose.ui.geometry.Size((size.width - w).coerceAtLeast(0f), (size.height - w).coerceAtLeast(0f))
+        val outline = shape.createOutline(inner, layoutDirection, this)
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(w)
+        onDrawWithContent {
+            drawContent()
+            translate(w / 2f, w / 2f) { drawOutline(outline, color(), style = stroke) }
+        }
+    }
 
 /**
  * The shimmer ring (2.0): a slow conic gleam of accent→accent-2 traveling a hairline border —

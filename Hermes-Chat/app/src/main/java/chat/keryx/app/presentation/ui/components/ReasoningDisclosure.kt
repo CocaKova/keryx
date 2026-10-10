@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -84,16 +85,17 @@ fun ReasoningDisclosure(
 
     // The dot breathes while thinking — motion that carries information keeps moving; under
     // ReducedMotion it holds at the bright end rather than reading as "stopped".
+    // The pulse is read while drawing the dot (3.0 perf): read here, it recomposed the whole
+    // disclosure, the streaming thought included, every frame of a think.
     val reduced by rememberReducedMotion()
-    val dotAlpha = when {
-        !streaming -> 0.8f
-        reduced -> 0.9f
-        else -> rememberInfiniteTransition(label = "think_breathe").animateFloat(
+    val stillAlpha = if (!streaming) 0.8f else 0.9f
+    val dotPulse = if (streaming && !reduced) {
+        rememberInfiniteTransition(label = "think_breathe").animateFloat(
             initialValue = 0.45f, targetValue = 1f,
             animationSpec = infiniteRepeatable(tween(800), RepeatMode.Reverse),
             label = "think_breathe_alpha",
-        ).value
-    }
+        )
+    } else null
 
     Column(
         modifier = modifier
@@ -116,7 +118,7 @@ fun ReasoningDisclosure(
                 Modifier
                     .size(8.dp)
                     .clip(CircleShape)
-                    .background(accent.copy(alpha = dotAlpha)),
+                    .drawBehind { drawRect(accent.copy(alpha = dotPulse?.value ?: stillAlpha)) },
             )
             Spacer(Modifier.width(8.dp))
             Text(

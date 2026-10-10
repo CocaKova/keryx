@@ -1241,7 +1241,8 @@ private fun MissionProse(text: String, color: Color = MaterialTheme.colorScheme.
     val source = remember(text) { chat.keryx.core.protocol.MessageParser.extractKeryx(text).text.trim() }
     val state = com.mikepenz.markdown.model.rememberMarkdownState(
         content = source,
-        flavour = org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor(),
+        flavour = MarkdownCache.flavour,
+        parser = MarkdownCache.parser,
         immediate = true,
     )
     com.mikepenz.markdown.m3.Markdown(
