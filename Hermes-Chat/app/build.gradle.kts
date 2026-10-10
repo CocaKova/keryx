@@ -92,6 +92,14 @@ kotlin {
     jvmToolchain(21)
 }
 
+// Compose stability (3.0 perf §1). The core KMP module isn't run through the Compose compiler, so
+// it can't see that core.model classes are immutable, and every Message/BotProfile/ToolCall
+// parameter was compared by identity: a row whose data didn't change still recomposed while a
+// turn streamed. The file declares them stable; ModelStabilityContractTest keeps that true.
+composeCompiler {
+    stabilityConfigurationFiles.add(layout.projectDirectory.file("compose_stability.conf"))
+}
+
 // Compose stability reports (2.19, perf groundwork): which composables skip, which classes the
 // compiler can't prove stable. Opt-in, so everyday builds don't pay for it:
 //   ./gradlew :app:compileReleaseKotlin -Pkeryx.composeReports

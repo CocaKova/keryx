@@ -1,7 +1,7 @@
 package chat.keryx.core
 
 import chat.keryx.core.model.LiveRate
-import chat.keryx.core.model.StreamRateMeter
+import chat.keryx.core.transport.StreamRateMeter
 import chat.keryx.core.model.TokenRate
 import kotlin.test.Test
 import kotlin.test.assertEquals

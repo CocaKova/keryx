@@ -249,7 +249,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
 
         /** Honest tok/s (2.16): this turn's streamed characters, timed, and the gateway's
          *  cumulative output/call counters as they stood at `message.start`. */
-        val meter = chat.keryx.core.model.StreamRateMeter()
+        val meter = chat.keryx.core.transport.StreamRateMeter()
         var baseOutput: Long? = null
         var baseCalls: Int? = null
         var lastRatePublishAt = 0L

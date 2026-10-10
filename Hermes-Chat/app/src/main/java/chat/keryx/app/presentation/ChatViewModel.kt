@@ -1326,7 +1326,7 @@ class ChatViewModel(
             var charsSinceDispatch = 0
             // The character rate (EMA of the per-frame rate; core StreamRateMeter). Answer and
             // reasoning both count: the model generated both.
-            val meter = chat.keryx.core.model.StreamRateMeter()
+            val meter = chat.keryx.core.transport.StreamRateMeter()
             var theater = chat.keryx.core.model.TheaterState()
             fun dispatch(status: LiveStreamStatus, finalText: String? = null) {
                 val cur = _liveStream.value ?: LiveStream(roomId, "", status, System.currentTimeMillis())
