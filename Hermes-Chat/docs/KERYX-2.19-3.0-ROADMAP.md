@@ -87,6 +87,16 @@ One tour engine, three ways in:
 - Wording assumes stock Hermes ("your agent"), never Sy.
 
 ### 2. Speed (targets come from 2.19's PERF-BASELINE)
+**Re-weighted by the device baseline (2026-10-10, 2.19.1 on SM-S948U):**
+- **Streaming (6.21% janky):** the main target. All of the cost is on the main thread: 47 slow
+  UI-thread frames, and none from vsync or bitmap uploads. The stability, item-hoisting and
+  `collectAsState` items below aim right at it. Re-run `tools/perf_stream.sh` after each one.
+- **Drawer (0.45%):** already under target. Hold it, and drop the drawer derived-list memo
+  unless a re-run regresses.
+- **Cold start (165 ms on a flagship):** fast for Jonny. It matters for strangers on mid-range
+  phones, so measure it on the VIRDARA emulator with the macrobenchmark and keep the Baseline
+  Profile. Lazy `onCreate` work comes after streaming.
+
 - **Cold start:** move `KeryxApp.onCreate` work (`KeryxApp.kt:131-188`: archive indexer, four observers, HandsSync, transport connect) off the main thread or make it lazy. Ship the Baseline Profile.
 - **Streaming:** 0 frames dropped on the direct door.
   - Mark models `@Immutable`/`@Stable` per the stability report.
