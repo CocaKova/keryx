@@ -17,13 +17,22 @@ measurements and reports against this page.
 
 ## Device numbers
 
-Pending: the phone was off the LAN when 2.19.0 was built (2026-10-09). Fill in from
-`tools/perf_baseline.sh` on the first install.
+Measured on 2.19.1 (versionCode 139, the release APK), Galaxy SM-S948U, Android 17,
+2026-10-09. The phone was off the LAN for 2.19.0, and 2.19.1's speed fixes were to live turns,
+not startup.
 
-| Measure | 2.19.0 | 3.0 target |
+- **Cold start:** `LaunchState: COLD`. The 7 runs took 267, 175, 185, 165, 135, 116 and 123 ms.
+  They get faster as the system warms its caches, so compare medians from runs done the same
+  way.
+- **Drawer frames: not measured yet.** The first run opened the drawer with an edge swipe. This
+  phone uses gesture navigation, where an edge swipe is BACK, so the flings landed on the
+  launcher and only 18 frames rendered. The script now taps the Menu button. It also stops
+  with exit 3 (AMBER) if Keryx loses focus or fewer than 60 frames render.
+
+| Measure | 2.19.1 | 3.0 target |
 |---|---|---|
-| Cold start, median `TotalTime` | – | −30% |
-| Drawer fling, janky frames | – | < 2% |
+| Cold start, median `TotalTime` | 165 ms | −30% |
+| Drawer fling, janky frames | – (re-run pending) | < 2% |
 | Streaming, janky frames | ~5% (2.17 note) | 0 dropped on the direct door |
 | Background download | 75 KB/h (2.13.10) | no worse |
 
