@@ -66,6 +66,24 @@ Ground rules that apply to both releases:
 
 ## 3.0 "The Herald": the public launch
 
+**Order (agreed 2026-10-10): four sections, each ending in a beta on the phone.**
+1. **Performance:** §2 below. Ends in `3.0.0-beta.1`.
+   1. Mark the core models stable, then compare the compiler reports.
+   2. Split the message row into keyed, skippable pieces.
+   3. Cut `collectAsState` in `ChatScreen`.
+   4. Cold start: lazy `onCreate`, plus a Baseline Profile.
+   5. The `Pulse` polling scheduler.
+   6. Split the big files.
+   Re-run `tools/perf_stream.sh` after each of steps 1–3. The phone pass happens once per
+   batch, so Jonny lends the phone for 2 minutes, not after every commit.
+2. **Light redesign:** §3 below. Same identity, sharper icon and wordmark, one type system,
+   color tokens, motion language, empty states. Ends in `beta.2`.
+3. **The Herald and the rest:** §1 (tour engine, first-run tutorial, contextual hints, agent
+   tour through keryx-stream 0.6, QR pairing, demo door), then §4 polish. Ends in `beta.3` and
+   later betas.
+4. **Public launch:** §5 (release keystore behind a settings export, README and clip, 3.0.0,
+   the announcement).
+
 ### 1. Guided by the herald (headline)
 One tour engine, three ways in:
 1. **First-run tutorial.** The built-in tour, "quick" or "full", runs from the app's own steps. Works before any gateway is connected.
