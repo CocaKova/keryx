@@ -8,7 +8,7 @@ measurements and reports against this page.
 - **Cold start and drawer frames:** `tools/perf_baseline.sh` measures the installed release app
   over adb. It runs `am start -W` after a force-stop seven times and takes the median, then flings
   the session drawer and reads `dumpsys gfxinfo`. It doesn't install or change anything.
-- **Streaming frames (manual):** `adb shell dumpsys gfxinfo chat.keryx.app reset`, send a
+- **Streaming frames:** `tools/perf_stream.sh` does this pass on its own. By hand: `adb shell dumpsys gfxinfo chat.keryx.app reset`, send a
   prompt that streams for about 30 s with tools, then `dumpsys gfxinfo chat.keryx.app`. Read
   "Janky frames" and the 90th/99th percentiles. A known reference: the direct door dropped
   about 5% of frames while streaming (2.17 notes).
@@ -31,12 +31,18 @@ not startup.
   modern count. A first attempt opened the drawer with an edge swipe, which is BACK under
   gesture navigation, so it measured the launcher. The script now taps Menu and stops with
   exit 3 (AMBER) if Keryx loses focus or fewer than 60 frames render.
+- **Streaming frames** (`tools/perf_stream.sh`, 2026-10-10): a new session, one prompt that ran
+  2 terminal tools and then streamed about 3,000 characters for about 38 s. 3,061 frames, 190
+  janky (6.21%, legacy 5.72%). Frame times are 10/12/19 ms at the 50/90/99th percentiles. 47
+  frames had a slow UI thread, 7 were slow to issue draw commands, and none missed vsync or had
+  slow bitmap uploads. So the cost is composition on the main thread, not the GPU. This is one
+  run, and it agrees with the 2.17 note of about 5%.
 
 | Measure | 2.19.1 | 3.0 target |
 |---|---|---|
 | Cold start, median `TotalTime` | 165 ms | −30% |
 | Drawer fling, janky frames | 0.45% (99th pct 17 ms) | < 2%; hold it, cut the 99th pct |
-| Streaming, janky frames | ~5% (2.17 note) | 0 dropped on the direct door |
+| Streaming, janky frames | 6.21% (one run, p99 19 ms; 2.17 note ~5%) | 0 dropped on the direct door |
 | Background download | 75 KB/h (2.13.10) | no worse |
 
 ## Compose stability (release, 2026-10-09)
