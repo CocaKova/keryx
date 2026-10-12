@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Lets the startup benchmark find chat.keryx.app on Android 11+. -->
+    <queries>
+        <package android:name="chat.keryx.app" />
+    </queries>
+</manifest>

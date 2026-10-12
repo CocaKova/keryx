@@ -48,6 +48,18 @@ Google ships the Android emulator for `linux-x64`, `macosx-aarch64/x64` and `win
 only. This host is arm64 Linux, so **`--smoke` needs a real phone on adb.** That is what
 `AMBER` is for.
 
+## Performance (3.0) — method and numbers in `Hermes-Chat/docs/PERF-BASELINE.md`
+
+| | what it does |
+|---|---|
+| `perf_baseline.sh` | cold start (median of 7) and drawer frames on the phone |
+| `perf_stream.sh` | frames while a real reply streams on the phone |
+| `perf_trace.sh` + `perf_composables.py` | the same turn as a Perfetto trace with composable names (benchmark build), and which composables cost it |
+| `baseline_profile.sh` | re-records the Baseline Profile on a signed-in test device (the emulator, never the phone) |
+
+The benchmark build type is release made profileable, with composition tracing; profileGen is
+the same without R8, for recording the profile. Neither ships.
+
 ## Traps this project has actually hit
 
 - `source ~/android-buildenv/env.sh` before any gradle invocation — but **that PATH's `adb`

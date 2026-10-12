@@ -60,3 +60,4 @@ run {
 rootProject.name = "HermesChat"
 include(":app")
 include(":core")
+include(":baselineprofile")

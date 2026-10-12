@@ -75,7 +75,19 @@ android {
             initWith(getByName("release"))
             matchingFallbacks += listOf("release")
         }
+        // The Baseline Profile is recorded on this one (tools/baseline_profile.sh): benchmark
+        // without R8, so the recorded rules carry source names. R8 maps them onto the release
+        // build's obfuscated names itself; rules recorded from a minified build would match
+        // nothing. Never shipped.
+        create("profileGen") {
+            initWith(getByName("benchmark"))
+            isMinifyEnabled = false
+            isShrinkResources = false
+            matchingFallbacks += listOf("release")
+        }
     }
+    // profileGen is profileable like benchmark: the same one-line manifest.
+    sourceSets.getByName("profileGen").manifest.srcFile("src/benchmark/AndroidManifest.xml")
     compileOptions {
         // 21 since 2.17: the markdown renderer (0.40+) and highlights 1.1 ship Java 21 bytecode,
         // and the JVM unit tests load them.

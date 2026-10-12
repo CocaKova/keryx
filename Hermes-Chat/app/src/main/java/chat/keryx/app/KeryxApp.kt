@@ -136,16 +136,16 @@ class KeryxApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        CrashLog.install(applicationContext)
-        installAnimatedImageDecoder()
-        settingsRepository = SettingsRepositoryImpl(applicationContext)
-        matrixService = MatrixService(applicationContext)
+        traced("Keryx:crashLog") { CrashLog.install(applicationContext) }
+        traced("Keryx:imageDecoder") { installAnimatedImageDecoder() }
+        settingsRepository = traced("Keryx:settings") { SettingsRepositoryImpl(applicationContext) }
+        matrixService = traced("Keryx:matrixService") { MatrixService(applicationContext) }
         // The login screen's chosen door decides the spine for this whole process life —
         // a transport is not hot-swappable under a ViewModel, so switching doors restarts.
         // The fleet (2.11): which gateway this process life is on is decided BEFORE the
         // transport is built — every credential and ledger read below is the active gateway's.
-        val gatewayId = if (settingsRepository.transportMode == "direct") bootGateway() else ""
-        transport = if (settingsRepository.transportMode == "direct") {
+        val gatewayId = traced("Keryx:bootGateway") { if (settingsRepository.transportMode == "direct") bootGateway() else "" }
+        transport = traced("Keryx:transport") { if (settingsRepository.transportMode == "direct") {
             DirectTransport(
                 settingsRepository, appScope,
                 cacheDir = transcriptCacheDir(gatewayId),
@@ -153,17 +153,17 @@ class KeryxApp : Application() {
             ).also { it.connectIfConfigured(); watchLink(it) }
         } else {
             MatrixTransport(matrixService, settingsRepository)
-        }
-        archiveStore = chat.keryx.app.data.archive.ArchiveStore(
+        } }
+        archiveStore = traced("Keryx:archive") { chat.keryx.app.data.archive.ArchiveStore(
             applicationContext,
             chat.keryx.app.data.archive.ArchiveStore.nameFor(gatewayId, settingsRepository.legacyGatewayId),
-        )
+        ) }
         // One store, two producers: the Matrix timeline walk, or the gateway's REST pages.
         archiveIndexer = (transport as? DirectTransport)
             ?.let { direct -> chat.keryx.app.data.archive.RestArchiveIndexer({ direct.restClient }, archiveStore, direct::profileForSession) }
             ?: chat.keryx.app.data.archive.ArchiveIndexer(matrixService, archiveStore)
 
-        KeryxNotifications.ensureChannel(applicationContext)
+        traced("Keryx:channels") { KeryxNotifications.ensureChannel(applicationContext) }
         registerActivityLifecycleCallbacks(ForegroundTracker())
 
         // Restore an existing Matrix session exactly once for the whole process.
@@ -181,16 +181,18 @@ class KeryxApp : Application() {
             runCatching { chat.keryx.app.notify.PushManager.enable(this) }
         }
 
-        observeForNotifications()
-        observeShadeGate()
-        observeRuns()
+        traced("Keryx:observers") {
+            observeForNotifications()
+            observeShadeGate()
+            observeRuns()
+        }
         // A message notice for the room you walk back into is read: clearing only on a room
         // CHANGE left it standing whenever Keryx came back to the room it was already on.
         appScope.launch {
             attention.filterNotNull().collect { KeryxNotifications.clear(applicationContext, it) }
         }
         // The launcher's hands (2.13): the widget card and the tile follow the link from here.
-        chat.keryx.app.widget.HandsSync.observe(this)
+        traced("Keryx:handsSync") { chat.keryx.app.widget.HandsSync.observe(this) }
     }
 
     /**

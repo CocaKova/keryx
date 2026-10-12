@@ -98,6 +98,47 @@ text, and one turn is never the same as the next. The phone's gfxinfo pass is th
 Not from this work: on the emulator, message text shows faintly through the composer when a
 bubble sits behind it. 2.19.1 does the same. It goes to the redesign section.
 
+## Cold start (perf step 4, emulator traces, 2026-10-12)
+
+Wall-clock cold start on the VIRDARA emulator is about 1.5 s, against 165 ms on the phone. Most of
+it is the emulator's software GPU, not Keryx. The main thread sleeps about 380 ms while the render
+thread creates its EGL context (`eglGetDisplay` alone is 446 ms). The first frame then waits
+another ~400 ms, 115 ms of it on the GPU (`postAndWait`). Compiling the app
+(verify, speed-profile or full speed) moved wall-clock not at all (medians 1479, 1498 and
+1489 ms). So these numbers compare the **main thread's CPU time from `bindApplication` to the
+end of the first composed frame** instead (3 traces each):
+
+| Code state | Main-thread CPU (ms) | Of it, first frame |
+|---|---|---|
+| Nothing compiled (`verify`, a fresh sideload) | 455–676 | 237–400 |
+| Library profiles only (2.19.1 and earlier) | 353–438 | 124–149 |
+| With Keryx's own Baseline Profile | 241–303 | 100–110 |
+
+The profile (`app/src/main/baselineProfiles/baseline-prof.txt`, 33,594 rules, 4,294 of them in
+`chat.keryx.app`) is recorded by `tools/baseline_profile.sh`. It cuts the main thread's start-up
+work by about a quarter against the library profiles alone. A sideloaded install picks it up
+through profileinstaller on first launch and gets it compiled at the next idle maintenance.
+
+`StartupBenchmark` (same module) runs on the emulator too: time to initial display, 10 cold
+starts each, median 2,334 ms uncompiled and 2,220 ms with the profile. That's within the GPU's
+noise, like the wall-clock numbers above. Its real use is on a phone.
+
+What Keryx itself runs before the first frame, from the `Keryx:` trace sections (`traced()`), with
+the profile applied:
+
+| Section | ms | What it waits on |
+|---|---|---|
+| `Keryx:viewModel` (`ChatViewModel` built) | 61–68 | mostly CPU; five keystore2 calls opening sealed secrets |
+| `Keryx:transport` (`DirectTransport`, connect) | 31–55 | nine threads started, `requestNetwork` |
+| `Keryx:settings` | 3–25 | the prefs file loading |
+| `Keryx:observers` | 3–32 | lock contention with a starting dispatcher thread |
+| archive, channels, bootGateway, HandsSync | under 6 each | |
+
+About 100–180 ms on the emulator, and roughly a tenth of that on the phone's CPU. The
+roadmap's "lazy `onCreate`" items (archive indexer, observers, HandsSync) cost almost
+nothing. The two that do cost something are `ChatViewModel` and `DirectTransport`, the two files
+step 6 splits. Making their start lazy belongs with that split, not before it.
+
 ## Compose stability (release, 2026-10-09)
 
 Strong skipping is on, so an unstable parameter doesn't stop a composable from skipping. It is

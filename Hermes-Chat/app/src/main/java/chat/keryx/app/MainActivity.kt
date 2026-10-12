@@ -149,7 +149,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                 ) as T
             }
         }
-        viewModel = ViewModelProvider(this, factory)[ChatViewModel::class.java]
+        viewModel = traced("Keryx:viewModel") { ViewModelProvider(this, factory)[ChatViewModel::class.java] }
 
         // Clear a room's notification when it's opened. (KeryxApp.openRoomId itself is set
         // synchronously through the ViewModel hook above — this collector is a dispatch late.)

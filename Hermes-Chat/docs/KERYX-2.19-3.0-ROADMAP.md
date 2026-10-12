@@ -71,7 +71,10 @@ Ground rules that apply to both releases:
    1. Mark the core models stable, then compare the compiler reports.
    2. Split the message row into keyed, skippable pieces.
    3. Cut `collectAsState` in `ChatScreen`.
-   4. Cold start: lazy `onCreate`, plus a Baseline Profile.
+   4. Cold start: lazy `onCreate`, plus a Baseline Profile. ✅ Profile shipped (2026-10-12): the
+      main thread's start-up CPU falls about a quarter (PERF-BASELINE "Cold start"). Lazy
+      `onCreate` measured: only `ChatViewModel` and `DirectTransport` cost anything, so their lazy
+      start moves into step 6's split.
    5. The `Pulse` polling scheduler.
    6. Split the big files.
    Re-run `tools/perf_stream.sh` after each of steps 1–3. The phone pass happens once per
@@ -116,6 +119,7 @@ One tour engine, three ways in:
   Profile. Lazy `onCreate` work comes after streaming.
 
 - **Cold start:** move `KeryxApp.onCreate` work (`KeryxApp.kt:131-188`: archive indexer, four observers, HandsSync, transport connect) off the main thread or make it lazy. Ship the Baseline Profile.
+  - ✅ 2026-10-12: Baseline Profile in `app/src/main/baselineProfiles/`, recorded by `tools/baseline_profile.sh` through the new `:baselineprofile` module (also holds `StartupBenchmark`). Start-up is labelled with `Keryx:` trace sections. Of the listed work only the transport connect costs much (31–55 ms on the emulator). `ChatViewModel`'s construction (61–68 ms) is the other cost, and both go lazy with step 6's split.
 - **Streaming:** 0 frames dropped on the direct door.
   - Mark models `@Immutable`/`@Stable` per the stability report.
   - Hoist the ~180-line message item lambda (`ChatScreen.kt:739`) into keyed, skippable composables.
