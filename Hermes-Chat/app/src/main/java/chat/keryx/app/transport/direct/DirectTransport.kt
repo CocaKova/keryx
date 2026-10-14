@@ -1425,11 +1425,16 @@ private const val INTERRUPT_SEAL_MS = 4_000L
      * running anywhere fires one every couple of seconds, so a phone with Keryx open while Sy
      * worked pulled megabytes a minute (device, 10-03: 10–20 MB per two hours on screen).
      * Now: the top few of each, merged into what is held; the full read only every
-     * [FULL_REFRESH_EVERY_MS], or when nothing is held yet.
+     * [FULL_REFRESH_EVERY_MS], or when nothing is held yet. Off screen the full read waits for
+     * the user to come back (3.0): an agent working all night kept it running every 90 s, about
+     * 240 KB/h to 1.8 MB/h of background download (device, 10-13/14), for a drawer nobody had
+     * open. The top rows still arrive, so the notification watcher sees a turn end.
      */
     private suspend fun refreshSessionsQuick() {
         val now = System.currentTimeMillis()
-        if (_sessionRows.value.isEmpty() || now - lastFullRefreshAt >= FULL_REFRESH_EVERY_MS) {
+        if (_sessionRows.value.isEmpty() ||
+            (foreground.value && now - lastFullRefreshAt >= FULL_REFRESH_EVERY_MS)
+        ) {
             refreshSessions()
             return
         }
@@ -1677,6 +1682,15 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     // Raw REST rows kept alongside the domain list: the drawer's meta line (msgs · source)
     // and the live shimmer read facts the slim Session model deliberately doesn't carry.
     private val _sessionRows = MutableStateFlow<List<GatewayRest.SessionRow>>(emptyList())
+
+    // Back on screen with a full read overdue (it is skipped off screen): catch the drawer up.
+    private val fullReadOnReturn = scope.launch {
+        foreground.collect { fg ->
+            if (fg && _sessionRows.value.isNotEmpty() &&
+                System.currentTimeMillis() - lastFullRefreshAt >= FULL_REFRESH_EVERY_MS
+            ) listRefresh.poke()
+        }
+    }
 
     /** Cron sessions, kept apart from the conversation list (see [CRON_SOURCE]). */
     private val _cronRows = MutableStateFlow<List<GatewayRest.SessionRow>>(emptyList())
