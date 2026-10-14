@@ -139,6 +139,35 @@ roadmap's "lazy `onCreate`" items (archive indexer, observers, HandsSync) cost a
 nothing. The two that do cost something are `ChatViewModel` and `DirectTransport`, the two files
 step 6 splits. Making their start lazy belongs with that split, not before it.
 
+## Phone pass after steps 1–6 (2026-10-14)
+
+The release build of `15b769a`, with its Baseline Profile compiled (`speed-profile`), on the same
+SM-S948U (Android 17, build date 2026-09-28). The brain was GLM on TensorFold this time, not
+Flash-Next, so turns are shorter and tokens arrive faster than on 10-10.
+`tools/perf_stream.sh` now reads TensorFold's `requests_running` metric as well as vLLM's.
+
+- **Cold start:** median 154 ms (266, 184, 140, 154, 138, 156, 150). 2.19.1 was 165 ms. That run had
+  no compiled profile (`status=verify`), so the profile's effect is not in this number.
+- **Drawer frames:** 878 frames, 5 janky (0.57%), 10/12/17 ms at the 50/90/99th percentiles
+  (2.19.1: 12/15/17).
+- **Streaming frames:** we ran an A/B the same day, under the same brain, both builds compiled with `speed-profile`:
+
+| Run | Turn | Janky | p50/90/99 ms | Slow UI thread | Slow issue draw |
+|---|---|---|---|---|---|
+| 3.0 (no profile yet) | ~21 s | 13.64% | 16/20/25 | 8 | 255 |
+| 3.0 | ~14 s | 15.79% | 14/18/24 | 6 | 229 |
+| 3.0 | ~15 s | 16.82% | 16/20/26 | 5 | 251 |
+| 2.19.1 | ~14 s | 17.54% | 15/19/25 | 10 | 258 |
+| 2.19.1 | ~55 s | 52.20% | 16/18/25 | 28 | 1295 |
+
+The main-thread work the perf steps went after is down: slow UI-thread frames fell from 10 to 5–6 on
+comparable turns. Both builds now lose frames to **slow issue draw commands** on the render thread. On
+10-10 only 7 frames had that problem. Since 2.19.1 shows it too, Keryx did not cause it. Something
+on the device or in the turn changed (the faster brain, or a system update). The next step is a
+Perfetto trace of RenderThread on the phone, during a stream, to see what the draw is waiting on.
+The "0 dropped" streaming target can't be judged until that is understood.
+`animator_duration_scale` was 0.5 on the phone during these runs.
+
 ## Compose stability (release, 2026-10-09)
 
 Strong skipping is on, so an unstable parameter doesn't stop a composable from skipping. It is

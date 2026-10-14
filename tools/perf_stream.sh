@@ -3,7 +3,7 @@
 # No uiautomator dumps while the turn streams (a dump is an a11y walk and would add jank).
 # Same measure as docs/PERF-BASELINE.md "Streaming frames". Starts a new session from the top bar
 # (direct door), so it adds one short test chat to the list. The end of the turn is read from the
-# brain's vLLM /metrics (BRAIN_METRICS, default localhost:8000), because a uiautomator poll
+# brain's /metrics (BRAIN_METRICS, default localhost:8000; vLLM or TensorFold), because a uiautomator poll
 # during the turn would itself cost frames.
 # Usage: tools/perf_stream.sh   (phone on adb, unlocked, hands off for 1–2 minutes)
 set -uo pipefail
@@ -31,7 +31,7 @@ adb shell input text "$(sed 's/ /%s/g' <<<"$PROMPT")"; sleep 0.8
 adb shell input keyevent 111; sleep 0.8   # ESC hides the IME
 xy=$(center "$(dump)" 'content-desc="Send"') || { echo "no Send button" >&2; exit 3; }
 
-running() { curl -s -m 3 "${BRAIN_METRICS:-http://localhost:8000/metrics}" | awk '/^vllm:num_requests_running/{print int($2)}'; }
+running() { curl -s -m 3 "${BRAIN_METRICS:-http://localhost:8000/metrics}" | awk '/^(vllm:num_requests_running|tensorfold:requests_running)[ {]/{print int($NF); exit}'; }
 adb shell dumpsys gfxinfo $PKG reset >/dev/null
 t0=$(date +%s); tap $xy
 seen=0; idle=0
