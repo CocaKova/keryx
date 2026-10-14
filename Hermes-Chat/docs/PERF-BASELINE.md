@@ -163,9 +163,22 @@ Flash-Next, so turns are shorter and tokens arrive faster than on 10-10.
 The main-thread work the perf steps went after is down: slow UI-thread frames fell from 10 to 5–6 on
 comparable turns. Both builds now lose frames to **slow issue draw commands** on the render thread. On
 10-10 only 7 frames had that problem. Since 2.19.1 shows it too, Keryx did not cause it. Something
-on the device or in the turn changed (the faster brain, or a system update). The next step is a
-Perfetto trace of RenderThread on the phone, during a stream, to see what the draw is waiting on.
-The "0 dropped" streaming target can't be judged until that is understood.
+on the device or in the turn changed (the faster brain, or a system update). A Perfetto system trace on the phone, taken during a 3.0 stream (`perfetto -t 25s gfx view hal sched freq idle`,
+1,055 frames), shows where the time goes:
+
+| Where | Avg ms | Max ms |
+|---|---|---|
+| RenderThread `queueBuffer` (frame handed to the compositor) | 2.83 | 11.6 |
+| RenderThread `flush commands` (Keryx's GPU work) | 1.33 | 7.5 |
+| Main `traversal` (measure, layout, record) | 2.11 | 20.3 |
+| Main `animation` (Compose frame callbacks) | 0.70 | 4.9 |
+
+Keryx's own frame work fits the 8.3 ms budget at 120 Hz. The misses come from `queueBuffer`, the
+system side of the buffer queue, which Keryx can't speed up. The only lever the app has is drawing
+fewer frames while it streams: batch the stream's publishes to a slower cadence, and don't let a
+pulse request a frame when nothing visible changed. The "0 dropped" target is out of reach on this
+device and Android build. **New target: no slow UI-thread frames during a stream, and fewer frames per
+second of streaming.**
 `animator_duration_scale` was 0.5 on the phone during these runs.
 
 ## Compose stability (release, 2026-10-09)
