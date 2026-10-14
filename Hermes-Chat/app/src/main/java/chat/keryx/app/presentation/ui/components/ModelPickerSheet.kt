@@ -89,7 +89,8 @@ fun ModelPickerSheet(
     recents: List<String>,
     brains: HermesStreamClient.Brains?,
     onDismiss: () -> Unit,
-    onPick: (ModelChoice) -> Unit,
+    /** The pick, and whether it is for every session (`--global`) rather than this one. */
+    onPick: (ModelChoice, Boolean) -> Unit,
     onBrainPick: (String) -> Unit,
     onRefresh: () -> Unit,
 ) {
@@ -100,6 +101,9 @@ fun ModelPickerSheet(
     // Which folds are open, as one saveable string (a Set has no default saver).
     var expandedKeys by rememberSaveable { mutableStateOf("") }
     val expanded = remember(expandedKeys) { expandedKeys.split(KEY_SEP).filter { it.isNotEmpty() }.toSet() }
+    // Scope of a pick, as the reasoning menu has it: this session (the default) or every session
+    // (--global, config.yaml). Off on every open, so one scratch pick never rewrites the default.
+    var everySession by rememberSaveable { mutableStateOf(false) }
     fun toggle(key: String) {
         expandedKeys = (if (key in expanded) expanded - key else expanded + key).joinToString(KEY_SEP.toString())
     }
@@ -117,7 +121,7 @@ fun ModelPickerSheet(
 
     fun pick(m: ModelChoice) {
         haptics.commit()
-        onPick(m)
+        onPick(m, everySession)
         onDismiss()
     }
 
@@ -148,7 +152,9 @@ fun ModelPickerSheet(
                 textStyle = TextStyle(fontSize = KeryxType.bodyLarge),
                 modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
+            ScopeRow(everySession) { everySession = it }
+            Spacer(Modifier.height(4.dp))
             // Section rail: one chip per section, in list order; tap = jump.
             val sections = remember(rows) { rows.mapNotNull { it.section }.distinct() }
             AnimatedVisibility(sections.size > 1, enter = keryxReveal(), exit = keryxConceal()) {
@@ -324,6 +330,34 @@ private fun CurrentBrainCard(current: ModelChoice?, catalog: ModelCatalog?, load
                 )
             }
         }
+    }
+}
+
+/** "This session only" / "Every session" — the subtitle says who else a global pick moves. */
+@Composable
+private fun ScopeRow(everySession: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(KeryxRadius.field))
+            .keryxPressable(onClick = { onChange(!everySession) })
+            .padding(start = 4.dp, top = 2.dp, bottom = 2.dp),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                if (everySession) "Every session" else "This session only",
+                fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
+                color = if (everySession) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                if (everySession) "Becomes the gateway's default — every client and scheduled run follows it"
+                else "This chat — and this phone's new chats while “last model picked” is on in Settings",
+                fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+            )
+        }
+        androidx.compose.material3.Switch(checked = everySession, onCheckedChange = onChange)
     }
 }
 

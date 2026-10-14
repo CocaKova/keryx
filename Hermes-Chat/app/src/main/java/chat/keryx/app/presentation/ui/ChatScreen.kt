@@ -1237,7 +1237,7 @@ fun ChatScreen(
                 modelRecents = modelRecents,
                 onReasoningCommand = { viewModel.sendReasoningCommand(it) },
                 onBrainSelect = { viewModel.hub.brainSelect(it) },
-                onModelSelect = { viewModel.models.select(it) },
+                onModelSelect = { choice, global -> viewModel.models.select(choice, global) },
                 onRefreshCaps = { viewModel.refreshReasoningCaps(); viewModel.hub.refreshBrains() },
                 onRefreshCatalog = { viewModel.models.refresh() },
                 onRefreshCatalogHard = { viewModel.models.refresh(force = true) },

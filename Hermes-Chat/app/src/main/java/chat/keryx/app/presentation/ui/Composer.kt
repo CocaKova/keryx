@@ -138,7 +138,7 @@ internal fun Composer(
     modelRecents: List<String> = emptyList(),
     onReasoningCommand: (String) -> Unit = {},
     onBrainSelect: (String) -> Unit = {},
-    onModelSelect: (chat.keryx.core.model.ModelChoice) -> Unit = {},
+    onModelSelect: (chat.keryx.core.model.ModelChoice, Boolean) -> Unit = { _, _ -> },
     onRefreshCaps: () -> Unit = {},
     onRefreshCatalog: () -> Unit = {},
     /** The picker's own refresh button: past the catalog's TTL, straight to the wire. */
@@ -464,7 +464,7 @@ internal fun ComposerFooter(
     modelRecents: List<String>,
     onReasoningCommand: (String) -> Unit,
     onBrainSelect: (String) -> Unit,
-    onModelSelect: (chat.keryx.core.model.ModelChoice) -> Unit,
+    onModelSelect: (chat.keryx.core.model.ModelChoice, Boolean) -> Unit,
     onRefreshCaps: () -> Unit,
     onRefreshCatalog: () -> Unit,
     onRefreshCatalogHard: () -> Unit = onRefreshCatalog,

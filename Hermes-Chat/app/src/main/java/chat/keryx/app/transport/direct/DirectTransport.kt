@@ -2757,14 +2757,17 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         model: String,
         provider: String?,
         confirm: Boolean,
+        global: Boolean,
     ): Result<chat.keryx.core.model.ModelSwitchOutcome> = runCatching {
         val rpc = rpc ?: error("gateway not connected")
         val live = attach(sessionId)
         // There is no model.set — the setter is config.set with the raw /model grammar.
+        // `--global` writes config.yaml AND switches this live session in the same call (the
+        // gateway's one durable authority for a global pick); `--session` touches neither.
         val value = buildString {
             append(model)
             if (!provider.isNullOrBlank()) append(" --provider ").append(provider)
-            append(" --session")
+            append(if (global) " --global" else " --session")
         }
         val res = rpc.request("config.set", buildJsonObject {
             put("key", JsonPrimitive("model"))

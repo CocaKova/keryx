@@ -2409,14 +2409,25 @@ class ChatViewModel(
             // brain no longer carries (the local model was swapped under the same endpoint)
             // is skipped, not pinned: the gateway accepts any name for a custom endpoint and the
             // first turn dies on it later — and every new chat would reopen on the ghost.
+            // Every way out below says so: a silent skip read as "sticky model doesn't work".
             val catalog = gw.modelOptions(sessionId).getOrElse {
                 android.util.Log.w("KeryxModel", "sticky model: catalog unavailable: ${it.message}")
+                _toasts.tryEmit("Couldn't read the models — opened on the gateway's default")
                 return@launch
             }
-            val choice = chat.keryx.core.model.ModelPicker.stickyChoice(recents, catalog) ?: return@launch
+            val lastName = recents.first().substringAfter('|')
+            val choice = chat.keryx.core.model.ModelPicker.stickyChoice(recents, catalog) ?: run {
+                _toasts.tryEmit("$lastName isn't served now — opened on the gateway's default")
+                return@launch
+            }
+            // The ledger fell through to an older pick: say the newest one is gone, not "your last pick".
+            val fellBack = chat.keryx.core.model.ModelPicker.recentKey(choice) != recents.first()
             // Already this session's route: nothing to switch, and no "model changed" notice
             // to inject into a chat that has not started.
-            if (catalog.isCurrent(choice)) return@launch
+            if (catalog.isCurrent(choice)) {
+                if (fellBack) _toasts.tryEmit("$lastName isn't served now — opened on the gateway's default")
+                return@launch
+            }
             val model = choice.name
             gw.selectModel(sessionId, model, choice.provider)
                 .onSuccess { out ->
@@ -2425,10 +2436,16 @@ class ChatViewModel(
                         models.clear() // the pill re-reads this session's route on arrival
                         // Never silent: a chat that opens on a model other than the gateway's
                         // says so, and says why, so a surprise on the first turn is impossible.
-                        _toasts.tryEmit("Opened on $model — your last pick (sticky model, in Settings)")
+                        _toasts.tryEmit(
+                            if (fellBack) "Opened on $model — $lastName isn't served now"
+                            else "Opened on $model — your last pick (sticky model, in Settings)",
+                        )
                     }
                 }
-                .onFailure { android.util.Log.w("KeryxModel", "sticky model refused: ${it.message}") }
+                .onFailure {
+                    android.util.Log.w("KeryxModel", "sticky model refused: ${it.message}")
+                    _toasts.tryEmit("$model refused — opened on the gateway's default")
+                }
         }
     }
 

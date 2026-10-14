@@ -151,13 +151,16 @@ interface GatewayCapabilities {
 
     /**
      * Route [sessionId] to [model] on [provider] for the rest of the session (`/model … --session`
-     * grammar). [confirm] answers a prior [chat.keryx.core.model.ModelSwitchOutcome.confirmRequired].
+     * grammar), or — [global] — make it the gateway's default for every session (`--global`,
+     * written to config.yaml; every client of that gateway follows it, not just this phone).
+     * [confirm] answers a prior [chat.keryx.core.model.ModelSwitchOutcome.confirmRequired].
      */
     suspend fun selectModel(
         sessionId: String,
         model: String,
         provider: String?,
         confirm: Boolean = false,
+        global: Boolean = false,
     ): Result<chat.keryx.core.model.ModelSwitchOutcome>
 
     // ---- Projects: the gateway's native workspace grouping (`projects.*`). Membership is

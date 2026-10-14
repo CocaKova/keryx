@@ -83,20 +83,26 @@ class ModelDelegate(
         }
     }
 
-    fun select(choice: ModelChoice) {
+    /**
+     * Switch to [choice]. [global] makes it the gateway's default for every session (`--global`,
+     * config.yaml) — the reasoning menu's "every session" — instead of this session only.
+     * Every client of the gateway follows a global pick, not just this phone.
+     */
+    fun select(choice: ModelChoice, global: Boolean = false) {
         val roomId = currentRoomId() ?: return
         val gw = transport.gateway
         if (gw == null) {
             // A room command: the gateway pins the room's session to it and confirms in-line.
-            sendRoomCommand("/model ${choice.name} --provider ${choice.provider}")
+            sendRoomCommand("/model ${choice.name} --provider ${choice.provider}" + if (global) " --global" else "")
             remember(choice)
             awaitingConfirm = null
             return
         }
         val confirm = awaitingConfirm == choice
         awaitingConfirm = null
+        val reach = if (global) "every session" else "this session"
         scope.launch {
-            gw.selectModel(roomId, choice.name, choice.provider, confirm)
+            gw.selectModel(roomId, choice.name, choice.provider, confirm, global)
                 .onSuccess { out ->
                     when {
                         out.confirmRequired -> {
@@ -105,7 +111,7 @@ class ModelDelegate(
                         }
                         out.deferred -> {
                             remember(choice)
-                            toast("${out.model} takes over at the next turn")
+                            toast("${out.model} takes over at the next turn — $reach")
                             _catalog.value = _catalog.value?.copy(
                                 model = out.model.ifBlank { choice.name }, provider = choice.provider,
                             )
@@ -113,7 +119,7 @@ class ModelDelegate(
                         }
                         else -> {
                             remember(choice)
-                            toast("${out.model} — this session")
+                            toast("${out.model} — $reach")
                             _catalog.value = _catalog.value?.copy(
                                 model = out.model.ifBlank { choice.name }, provider = choice.provider,
                             )
