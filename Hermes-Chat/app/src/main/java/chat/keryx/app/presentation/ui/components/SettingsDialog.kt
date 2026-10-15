@@ -282,7 +282,27 @@ fun SettingsScreen(
                     }
 
                     // --- Account ---
-                    if (section == "Account") SettingsCard("Account", anchor = SettingsRow.ACCOUNT_IDENTITY) {
+                    // The demo (3.0 first run) has no account and no door to switch: just the way out.
+                    if (section == "Account" && viewModel.isDemo) SettingsCard("Account", anchor = SettingsRow.ACCOUNT_IDENTITY) {
+                        val demoContext = androidx.compose.ui.platform.LocalContext.current
+                        Text(
+                            text = "Demo",
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = KeryxType.title,
+                        )
+                        Text(
+                            text = "A pretend gateway on this phone. Nothing here leaves it.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = KeryxType.caption,
+                        )
+                        Spacer(Modifier.height(14.dp))
+                        Button(onClick = {
+                            viewModel.doors.leaveDemo()
+                            relaunchApp(demoContext)
+                        }) { Text("Connect your gateway") }
+                    }
+                    if (section == "Account" && !viewModel.isDemo) SettingsCard("Account", anchor = SettingsRow.ACCOUNT_IDENTITY) {
                         Text(
                             text = currentUserId ?: "Not signed in",
                             color = MaterialTheme.colorScheme.onSurface,
@@ -310,7 +330,7 @@ fun SettingsScreen(
                     // (Phase 4's second door, made a switch: the Matrix session stays in
                     // Trixnity's store, the sealed direct token stays in prefs — flipping the
                     // door just decides which spine the next process life boots.)
-                    if (section == "Account") SettingsCard("Transport", anchor = SettingsRow.ACCOUNT_TRANSPORT) {
+                    if (section == "Account" && !viewModel.isDemo) SettingsCard("Transport", anchor = SettingsRow.ACCOUNT_TRANSPORT) {
                         val direct = viewModel.transportIsDirect
                         val otherReady =
                             if (direct) viewModel.doors.matrixSessionOnFile else viewModel.doors.directCredentialsOnFile

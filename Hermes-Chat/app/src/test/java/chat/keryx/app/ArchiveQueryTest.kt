@@ -53,6 +53,13 @@ class ArchiveQueryTest {
     }
 
     @Test
+    fun `remembered lines drop the markdown the bubble renders away`() {
+        val (plain, ranges) = snippetRanges("the disk was **⟪full⟫**, see `df -h`")
+        assertEquals("the disk was full, see df -h", plain)
+        assertEquals(listOf(13 until 17), ranges)
+    }
+
+    @Test
     fun `unbalanced end marker is ignored`() {
         val (plain, ranges) = snippetRanges("odd⟫ text")
         assertEquals("odd text", plain)

@@ -161,7 +161,9 @@ class ChatViewModel(
                 m.content.trimStart().startsWith("🗜") -> "🗜 compacting context"
                 MessageParser.isTelemetryMessage(m.content) -> "⏳ status check-in"
                 else -> {
-                    val prose = StreamHandoff.normalize(m.content)
+                    // Flattened as a voice reads it (3.0): a preview line is no place for the
+                    // `**` and `- ` the bubble renders away ("**Good morning.** - **Weath…").
+                    val prose = TtsText.speakable(m.content)
                     if (prose.isNotBlank()) prose
                     else {
                         // Structure first (3.1 §C2): direct-door tool messages carry their work
@@ -299,8 +301,12 @@ class ChatViewModel(
     // Last known Hermes Link health, surfaced as the quiet top-bar dot. Session-scoped: it starts
     // UNKNOWN and is updated by every side-channel attempt and by the Settings "Test link" probe.
     private val _linkHealth = MutableStateFlow(
-        if (settingsRepository.sideChannelEnabled && settingsRepository.gatewayUrl.isNotBlank())
-            LinkHealth.UNKNOWN else LinkHealth.OFF
+        when {
+            // The demo's gateway is on the phone: always there.
+            transport is chat.keryx.app.transport.demo.DemoTransport -> LinkHealth.OK
+            settingsRepository.sideChannelEnabled && settingsRepository.gatewayUrl.isNotBlank() -> LinkHealth.UNKNOWN
+            else -> LinkHealth.OFF
+        }
     )
     val linkHealth: StateFlow<LinkHealth> = _linkHealth.asStateFlow()
 
@@ -321,7 +327,7 @@ class ChatViewModel(
         combine(
             _contextUsage,
             _currentRoom.flatMapLatest { r ->
-                val d = transport as? chat.keryx.app.transport.direct.DirectTransport
+                val d = transport as? chat.keryx.core.transport.SessionMetaSource
                 if (r == null || d == null) flowOf(null)
                 else d.sessionMeta(r.id).map { m ->
                     m.contextGauge?.let { (used, max) ->
@@ -335,7 +341,7 @@ class ChatViewModel(
     /** The open session's prefix-cache hit rate (2.16, `usage.cache_hit_pct`); null = unknown. */
     val cacheHitPct: StateFlow<Int?> =
         _currentRoom.flatMapLatest { r ->
-            val d = transport as? chat.keryx.app.transport.direct.DirectTransport
+            val d = transport as? chat.keryx.core.transport.SessionMetaSource
             if (r == null || d == null) flowOf(null) else d.sessionMeta(r.id).map { it.cacheHitPct }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -1941,6 +1947,9 @@ class ChatViewModel(
 
     /** This process rides the direct gateway door (login screen adapts; Matrix chrome hides). */
     val transportIsDirect: Boolean get() = transport.matrix == null
+
+    /** This process is the demo (3.0 herald): no gateway yet, a scripted one on the phone. */
+    val isDemo: Boolean get() = transport is chat.keryx.app.transport.demo.DemoTransport
 
     /** Login-screen prefill for the direct door (its own keys — never Hermes Link's). */
     val directGatewayUrl: String get() = settingsRepository.directGatewayUrl

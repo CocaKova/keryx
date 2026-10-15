@@ -44,6 +44,12 @@ class RoomPreviewTest {
     }
 
     @Test
+    fun markdown_isFlattenedToWhatTheBubbleShows() {
+        val p = ChatViewModel.previewOf(msg("**Good morning.**\n\n- **Weather:** clear and `mild`."))
+        assertEquals("Good morning. Weather: clear and mild.", p)
+    }
+
+    @Test
     fun imageMessage_showsPhotoStandIn() {
         assertEquals("🖼 Photo", ChatViewModel.previewOf(msg("", mediaKind = MediaKind.IMAGE)))
     }

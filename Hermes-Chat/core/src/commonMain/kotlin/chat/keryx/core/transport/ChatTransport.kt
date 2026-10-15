@@ -307,3 +307,12 @@ interface MatrixCapabilities {
     /** Leave a room — also how an invite is declined (same Matrix call). */
     suspend fun leaveRoom(roomId: String): Result<Unit>
 }
+
+/**
+ * A transport that knows each session's runtime facts (its model, how full its context is)
+ * without asking Hermes Link: the direct door from the gateway's own events, the demo from its
+ * script. The composer's model pill and context ring read this.
+ */
+interface SessionMetaSource {
+    fun sessionMeta(sessionId: String): Flow<chat.keryx.core.model.SessionMeta>
+}

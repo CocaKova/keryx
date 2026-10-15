@@ -27,11 +27,21 @@ object KeryxTour {
     const val ARCHIVE = "door-archive"
     const val MACHINE = "drawer-status"
 
+    /** Every id above, in tour order. */
+    val ALL = listOf(COMPOSER, MODEL, NEW_SESSION, DRAWER_BUTTON, LENSES, MISSIONS, RUNS, BOTS, ARCHIVE, MACHINE)
+
     /** Ends the tour by opening Settings › Gateways. */
     const val CTA_ADD_GATEWAY = "add-gateway"
 
-    /** What this gateway puts on screen: the direct door, and whether Hermes Link answers. */
-    data class Context(val direct: Boolean, val link: Boolean)
+    /** Ends the demo's tour by leaving the demo for the sign-in (3.0 first run). */
+    const val CTA_CONNECT = "connect-gateway"
+
+    /** A launch extra asking for the tour on arrival: a [TourPreset] wire name. */
+    const val EXTRA_TOUR = "chat.keryx.app.TOUR"
+
+    /** What this gateway puts on screen: the direct door, whether Hermes Link answers, and
+     *  whether it is the demo (no gateway yet, so the tour ends on getting one). */
+    data class Context(val direct: Boolean, val link: Boolean, val demo: Boolean = false)
 
     fun catalog(ctx: Context): List<TourTarget> = buildList {
         add(TourTarget(COMPOSER, "Message composer", TourPlace.CHAT))
@@ -52,7 +62,14 @@ object KeryxTour {
      * where the rest lives); full goes on into the drawer and ends on the gateway.
      */
     fun builtIn(preset: TourPreset, available: Set<String>, ctx: Context): List<TourStep> {
-        val quick = listOf(
+        // The demo's tour opens by saying what this is, in the middle of the screen.
+        val welcome = if (ctx.demo) listOf(
+            TourStep(
+                null, "Welcome to Keryx",
+                "This is a demo: a pretend gateway on your phone with a few chats in it. Here's a quick look around before you connect your own.",
+            ),
+        ) else emptyList()
+        val quick = welcome + listOf(
             TourStep(COMPOSER, "Ask for anything", "Give your agent a job in plain words. It keeps working if you leave, and Keryx lets you know when it's done."),
             TourStep(MODEL, "Which brain answers", "Switch the model for this session, or for every session from here on."),
             TourStep(NEW_SESSION, "A fresh page", "Start a new session. Hold it for options, like a title or a temporary session."),
@@ -64,7 +81,12 @@ object KeryxTour {
             TourStep(RUNS, "Runs", "Scheduled jobs, and what each run turned up."),
             TourStep(BOTS, "Bots", "Your agent's other profiles. Each keeps its own memory, skills and chats."),
             TourStep(ARCHIVE, "Archive", "Everything ever said, searchable on the phone, even with the gateway down."),
-            TourStep(
+            if (ctx.demo) TourStep(
+                MACHINE, "Your gateway",
+                "With your own Hermes, this shows the link, the model and the version. Everything you just saw " +
+                    "works the same on a real gateway: connect yours and it's live.",
+                cta = TourCta("Connect your gateway", CTA_CONNECT),
+            ) else TourStep(
                 MACHINE, "Your gateway",
                 "The link, the model and the Hermes version. Tap it for the Gateway; the gear opens Settings, where this tour lives too." +
                     if (ctx.direct) " Run more than one Hermes? Add it and switch between them here." else "",

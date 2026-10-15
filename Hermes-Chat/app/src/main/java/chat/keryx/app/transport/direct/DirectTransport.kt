@@ -80,7 +80,7 @@ class DirectTransport(
      *  see waits: the follow poll pauses and roster refreshes are spaced out (2.13.10).
      *  Defaults to "always on screen" so plain-JVM tests behave as before. */
     private val foreground: StateFlow<Boolean> = MutableStateFlow(true),
-) : ChatTransport, GatewayCapabilities {
+) : ChatTransport, GatewayCapabilities, chat.keryx.core.transport.SessionMetaSource {
 
     /** No Matrix here — the UI's Matrix affordances gate themselves off on exactly this. */
     override val matrix: MatrixCapabilities? get() = null
@@ -2954,7 +2954,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     private fun meta(storedId: String) =
         metaFlows.getOrPut(storedId) { MutableStateFlow(chat.keryx.core.model.SessionMeta()) }
 
-    fun sessionMeta(sessionId: String): Flow<chat.keryx.core.model.SessionMeta> = meta(sessionId)
+    override fun sessionMeta(sessionId: String): Flow<chat.keryx.core.model.SessionMeta> = meta(sessionId)
 
     /** Fold a `session.info` / `message.complete` payload's runtime facts into the meta flow.
      *  Absent fields keep their last value — events carry different subsets. */

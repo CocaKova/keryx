@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.os.Bundle
 import chat.keryx.app.transport.matrix.MatrixService
+import chat.keryx.app.transport.demo.DemoTransport
 import chat.keryx.app.transport.direct.DirectTransport
 import chat.keryx.app.transport.matrix.MatrixTransport
 import chat.keryx.core.transport.ChatTransport
@@ -145,29 +146,36 @@ class KeryxApp : Application() {
         // The fleet (2.11): which gateway this process life is on is decided BEFORE the
         // transport is built — every credential and ledger read below is the active gateway's.
         val gatewayId = traced("Keryx:bootGateway") { if (settingsRepository.transportMode == "direct") bootGateway() else "" }
-        transport = traced("Keryx:transport") { if (settingsRepository.transportMode == "direct") {
-            DirectTransport(
+        transport = traced("Keryx:transport") { when (settingsRepository.transportMode) {
+            "direct" -> DirectTransport(
                 settingsRepository, appScope,
                 cacheDir = transcriptCacheDir(gatewayId),
                 foreground = _foreground,
             ).also { it.connectIfConfigured(); watchLink(it) }
-        } else {
-            MatrixTransport(matrixService, settingsRepository)
+            // The demo (3.0): a gateway on the phone for someone who has none yet.
+            DemoTransport.MODE -> DemoTransport(appScope)
+            else -> MatrixTransport(matrixService, settingsRepository)
         } }
         archiveStore = traced("Keryx:archive") { chat.keryx.app.data.archive.ArchiveStore(
             applicationContext,
-            chat.keryx.app.data.archive.ArchiveStore.nameFor(gatewayId, settingsRepository.legacyGatewayId),
+            // The demo remembers in its own file, so leaving it leaves nothing in a real index.
+            chat.keryx.app.data.archive.ArchiveStore.nameFor(
+                if (transport is DemoTransport) DemoTransport.MODE else gatewayId, settingsRepository.legacyGatewayId,
+            ),
         ) }
-        // One store, two producers: the Matrix timeline walk, or the gateway's REST pages.
-        archiveIndexer = (transport as? DirectTransport)
-            ?.let { direct -> chat.keryx.app.data.archive.RestArchiveIndexer({ direct.restClient }, archiveStore, direct::profileForSession) }
-            ?: chat.keryx.app.data.archive.ArchiveIndexer(matrixService, archiveStore)
+        // One store, three producers: the Matrix timeline walk, the gateway's REST pages, or
+        // the demo's script.
+        archiveIndexer = when (val t = transport) {
+            is DirectTransport -> chat.keryx.app.data.archive.RestArchiveIndexer({ t.restClient }, archiveStore, t::profileForSession)
+            is DemoTransport -> chat.keryx.app.data.archive.DemoArchiveIndexer(archiveStore)
+            else -> chat.keryx.app.data.archive.ArchiveIndexer(matrixService, archiveStore)
+        }
 
         traced("Keryx:channels") { KeryxNotifications.ensureChannel(applicationContext) }
         registerActivityLifecycleCallbacks(ForegroundTracker())
 
         // Restore an existing Matrix session exactly once for the whole process.
-        if (!isDirectTransport) appScope.launch {
+        if (transport is MatrixTransport) appScope.launch {
             runCatching { matrixService.restore(allowInsecure = settingsRepository.allowInsecure) }
                 // Log.e survives release stripping ON PURPOSE: a swallowed restore failure
                 // renders as a silent logout (the login screen with settings intact) and is
@@ -177,11 +185,12 @@ class KeryxApp : Application() {
 
         // Keep the UnifiedPush registration fresh across app updates / distributor restarts —
         // idempotent, and a rotated endpoint comes back through onNewEndpoint → pusher update.
-        if (settingsRepository.pushEnabled && !isDirectTransport) {
+        if (settingsRepository.pushEnabled && transport is MatrixTransport) {
             runCatching { chat.keryx.app.notify.PushManager.enable(this) }
         }
 
-        traced("Keryx:observers") {
+        // The demo's agent is a script: nothing it says belongs in the shade or on the widget.
+        if (transport !is DemoTransport) traced("Keryx:observers") {
             observeForNotifications()
             observeShadeGate()
             observeRuns()
@@ -192,7 +201,7 @@ class KeryxApp : Application() {
             attention.filterNotNull().collect { KeryxNotifications.clear(applicationContext, it) }
         }
         // The launcher's hands (2.13): the widget card and the tile follow the link from here.
-        traced("Keryx:handsSync") { chat.keryx.app.widget.HandsSync.observe(this) }
+        if (transport !is DemoTransport) traced("Keryx:handsSync") { chat.keryx.app.widget.HandsSync.observe(this) }
     }
 
     /**

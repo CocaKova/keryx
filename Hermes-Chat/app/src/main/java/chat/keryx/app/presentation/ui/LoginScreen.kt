@@ -1,5 +1,6 @@
 package chat.keryx.app.presentation.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -86,6 +88,25 @@ fun LoginScreen(viewModel: ChatViewModel) {
     // The door change is a different process spine — relaunch cleanly into it.
     fun relaunch() = chat.keryx.app.presentation.ui.components.relaunchApp(context)
 
+    // The first run (3.0): a phone that has never had a door opens on the welcome, not a form.
+    var welcome by remember { mutableStateOf(viewModel.doors.firstRun) }
+
+    // The demo is its own process spine too; it arrives with the tour already running.
+    fun lookAround() {
+        viewModel.doors.answerWelcome()
+        viewModel.doors.enterDemo()
+        chat.keryx.app.presentation.ui.components.relaunchApp(context) {
+            putExtra(chat.keryx.app.presentation.tour.KeryxTour.EXTRA_TOUR, chat.keryx.core.tour.TourPreset.FULL.wire)
+        }
+    }
+
+    @Composable
+    fun LookAroundLink() {
+        TextButton(onClick = ::lookAround, enabled = !connecting, modifier = Modifier.padding(top = 8.dp)) {
+            Text("No gateway yet? Look around first", fontSize = KeryxType.body)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -116,6 +137,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
         )
         Text(
             text = when {
+                welcome -> "Your Hermes agent, in your pocket."
                 connecting -> "Connecting…"
                 directDoor -> "Connect straight to your gateway"
                 else -> "Connect to your homeserver"
@@ -124,6 +146,54 @@ fun LoginScreen(viewModel: ChatViewModel) {
             fontSize = KeryxType.bodyLarge,
             modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
         )
+
+        if (welcome) {
+            // What Keryx is for, in three lines: an agent at work, not a chat window.
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                for (line in listOf(
+                    "Give your agent a job and watch every step it takes.",
+                    "Know the moment it's done, right from your lock screen.",
+                    "Hand off long jobs as missions and come back to results.",
+                )) {
+                    Row(verticalAlignment = Alignment.Top) {
+                        Box(
+                            Modifier
+                                .padding(top = 9.dp, end = 12.dp)
+                                .size(6.dp)
+                                .background(accent, CircleShape)
+                        )
+                        Text(line, color = MaterialTheme.colorScheme.onSurface, fontSize = KeryxType.bodyLarge)
+                    }
+                }
+            }
+            Button(
+                onClick = {
+                    viewModel.doors.answerWelcome()
+                    welcome = false
+                    directDoor = true
+                },
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(52.dp),
+            ) {
+                Text("Connect your gateway", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
+            }
+            androidx.compose.material3.OutlinedButton(
+                onClick = ::lookAround,
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp).height(52.dp),
+            ) {
+                Text("Look around first", fontSize = KeryxType.titleLarge)
+            }
+            Text(
+                "A demo with a short tour. Nothing leaves your phone.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = KeryxType.caption,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 32.dp),
+            )
+            return@Column
+        }
 
         // The two doors. A quiet segmented pair — the door is a decision, not a setting.
         Row(
@@ -254,6 +324,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                     Text("Connect", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
                 }
             }
+            LookAroundLink()
             return@Column
         }
 
@@ -386,5 +457,6 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 Text("Connect", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
             }
         }
+        LookAroundLink()
     }
 }

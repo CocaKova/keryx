@@ -372,7 +372,7 @@ fun MissionsScreen(
                 onArchive = { pendingArchive = chosen.toList() to false },
                 onCancel = exitSelection,
             )
-        } else if (showAlertsHint(viewModel.transportIsDirect, alertsOn, hintDismissed)) {
+        } else if (showAlertsHint(viewModel.transportIsDirect && !viewModel.isDemo, alertsOn, hintDismissed)) {
             AlertsHintRow(
                 onTurnOn = {
                     viewModel.missions.setAlertsEnabled(true)

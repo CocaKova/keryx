@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.HermesChat" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- The window's own ground is the app's (3.0): before Compose draws, a cold start, or the
+         relaunch a door change does, showed the platform's white, in dark mode too. -->
+    <style name="Theme.HermesChat" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_ground</item>
+    </style>
 
     <!-- The note sheet (2.13): a floating dialog over whatever was on screen. The window is
          transparent because Compose draws the sheet — and its own ground, day or night — so the

@@ -20,6 +20,8 @@ class SettingsRepositoryImpl(
         /** The one settings file. Shared with [chat.keryx.app.presentation.ui.components.relaunchApp],
          *  which must flush this file's pending apply() writes before it kills the process. */
         const val PREFS_FILE = "hermes_settings"
+        /** `transport_mode` for the demo door (3.0) — the same word as DemoTransport.MODE. */
+        const val DEMO_MODE = "demo"
         private const val FLEET_KEY = "fleet_json"
         /** The active gateway id, duplicated out of the fleet JSON so every scoped read is one
          *  map lookup rather than a parse. Written only by [commitFleet]. */
@@ -58,13 +60,16 @@ class SettingsRepositoryImpl(
     /**
      * The gateway whose keys this instance reads: the pinned one, else the active one — and
      * only on the direct door. On Matrix the fleet may well exist (the user crossed doors)
-     * but the ledgers are the homeserver's, so they stay unsuffixed.
+     * but the ledgers are the homeserver's, so they stay unsuffixed. The demo (3.0) keeps its
+     * own, so a look around leaves nothing in a real door's ledgers.
      */
     private val gatewayScope: String
         get() = pinnedGatewayId
-            ?: if ((prefs.getString("transport_mode", "matrix") ?: "matrix") == "direct")
-                prefs.getString(FLEET_ACTIVE_KEY, "") ?: ""
-            else ""
+            ?: when (prefs.getString("transport_mode", "matrix") ?: "matrix") {
+                "direct" -> prefs.getString(FLEET_ACTIVE_KEY, "") ?: ""
+                DEMO_MODE -> DEMO_MODE
+                else -> ""
+            }
 
     /** A credential key is ALWAYS the gateway's (pinned or active) — credentials have no
      *  Matrix meaning. Falls back to the bare key only while no fleet exists at all. */
@@ -308,6 +313,10 @@ class SettingsRepositoryImpl(
         get() = prefs.getBoolean("battery_prompt_shown", false)
         set(value) = prefs.edit().putBoolean("battery_prompt_shown", value).apply()
 
+    override var welcomeSeen: Boolean
+        get() = prefs.getBoolean("welcome_seen", false)
+        set(value) = prefs.edit().putBoolean("welcome_seen", value).apply()
+
     override var gatewayUrl: String
         get() = (prefs.getString(ledgerKey("gateway_url"), "") ?: "").ifBlank { defaultGatewayUrl() }
         set(value) = prefs.edit().putString(ledgerKey("gateway_url"), value).apply()
@@ -446,7 +455,7 @@ class SettingsRepositoryImpl(
 
     private fun inheritedLinkKey(): String {
         val scope = gatewayScope
-        if (scope.isBlank()) return ""
+        if (scope.isBlank() || scope == DEMO_MODE) return ""
         val f = fleet
         val order = listOfNotNull(f.primaryId.takeIf { it.isNotBlank() }) + f.gateways.map { it.id }
         for (id in order.distinct()) {
@@ -565,6 +574,8 @@ class SettingsRepositoryImpl(
     // direct door (2.11) — a second gateway's Hub would otherwise stay dark until the link
     // URL was typed by hand. Port 8642 is the gateway's API server default on both.
     private fun defaultGatewayUrl(): String {
+        // The demo has no Hermes Link to find: none of a real gateway's routes are asked.
+        if (gatewayScope == DEMO_MODE) return ""
         val source = if (gatewayScope.isNotBlank()) directGatewayUrl else homeserverUrl
         val host = runCatching { URI(source).host }
             .getOrNull()

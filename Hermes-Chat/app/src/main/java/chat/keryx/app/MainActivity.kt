@@ -11,6 +11,7 @@ import chat.keryx.app.notify.KeryxNotifications
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
@@ -125,17 +126,6 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
         val settingsRepository = app.settingsRepository
         val transport = app.transport
 
-        // Ask once to be exempt from battery optimization. Without this, aggressive OEM power
-        // management (Samsung's "deep sleep" / Freecess) freezes the process in the background and
-        // kills the Matrix sync, so messages don't arrive until you reopen the app. Granting it lets
-        // sync keep running with no persistent notification.
-        maybeRequestBatteryExemption(settingsRepository)
-
-        // Ask for notification permission on Android 13+ (no-op on older versions).
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-        }
-
         val factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return ChatViewModel(
@@ -150,6 +140,23 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
             }
         }
         viewModel = traced("Keryx:viewModel") { ViewModelProvider(this, factory)[ChatViewModel::class.java] }
+
+        // The system asks wait until there is something to keep alive: a signed-in door, not the
+        // welcome screen and not the demo (3.0 — a stranger's first sight was two system dialogs).
+        lifecycleScope.launch {
+            viewModel.isLoggedIn.first { it }
+            if (viewModel.isDemo) return@launch
+            // Ask once to be exempt from battery optimization. Without this, aggressive OEM power
+            // management (Samsung's "deep sleep" / Freecess) freezes the process in the background and
+            // kills the Matrix sync, so messages don't arrive until you reopen the app. Granting it lets
+            // sync keep running with no persistent notification.
+            maybeRequestBatteryExemption(settingsRepository)
+
+            // Ask for notification permission on Android 13+ (no-op on older versions).
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
 
         // Clear a room's notification when it's opened. (KeryxApp.openRoomId itself is set
         // synchronously through the ViewModel hook above — this collector is a dispatch late.)
@@ -179,6 +186,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
             handleNotificationIntent(intent)
             handleAssistIntent(intent)
             handleDeepLink(intent)
+            handleTourIntent(intent)
         }
 
         enableEdgeToEdge()
@@ -232,6 +240,14 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
             is chat.keryx.core.model.KeryxLink.Space -> viewModel.requestSpace(link.route)
             is chat.keryx.core.model.KeryxLink.Mission -> viewModel.missions.requestOpenTask(link.taskId)
         }
+    }
+
+    /** A relaunch that asked for the tour on arrival (3.0: stepping into the demo). Consumed. */
+    private fun handleTourIntent(intent: Intent?) {
+        val preset = intent?.getStringExtra(chat.keryx.app.presentation.tour.KeryxTour.EXTRA_TOUR) ?: return
+        intent.removeExtra(chat.keryx.app.presentation.tour.KeryxTour.EXTRA_TOUR)
+        if (!::viewModel.isInitialized) return
+        viewModel.requestTour(chat.keryx.core.tour.TourPreset.of(preset) ?: chat.keryx.core.tour.TourPreset.FULL)
     }
 
     /** The assist gesture (long-press home/power with Keryx as the assist app) summons the

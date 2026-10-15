@@ -283,7 +283,7 @@ private fun SearchTab(
                     Spacer(Modifier.height(4.dp))
                     if (e.mediaKind != null) MediaLine(e)
                     else Text(
-                        e.body.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty(),
+                        unmarked(e.body.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty()),
                         fontSize = KeryxType.body, maxLines = 3, overflow = TextOverflow.Ellipsis,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -337,8 +337,17 @@ private fun SearchTab(
     }
 }
 
+/**
+ * What a remembered line shows: its words without the markdown the bubble renders away (3.0).
+ * The index keeps the body as written; only the row drops the `**`, `__` and backticks.
+ */
+internal fun unmarked(text: String): String = MARKDOWN_MARKS.replace(text, "")
+
+private val MARKDOWN_MARKS = Regex("""\*\*|__|`""")
+
 /** ⟪match⟫ markers from the FTS snippet become bold accent spans. */
-internal fun snippetRanges(snippet: String): Pair<String, List<IntRange>> {
+internal fun snippetRanges(raw: String): Pair<String, List<IntRange>> {
+    val snippet = unmarked(raw)
     val plain = StringBuilder()
     val ranges = mutableListOf<IntRange>()
     var i = 0
@@ -418,7 +427,7 @@ private fun SavedTab(
                         if (e.mediaKind != null) MediaLine(e)
                         if (e.body.isNotBlank()) {
                             Text(
-                                e.body,
+                                unmarked(e.body),
                                 fontSize = KeryxType.body,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                                 maxLines = 5,

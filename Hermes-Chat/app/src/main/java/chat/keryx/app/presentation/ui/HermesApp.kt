@@ -20,6 +20,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Column
@@ -266,6 +268,13 @@ fun HermesApp(viewModel: ChatViewModel) {
             openSpace(KeryxDest.Artifact(path = ref.path, name = ref.name, roomId = ref.roomId, eventId = ref.eventId))
         }
     }
+    // The demo (3.0 first run): leaving it is the sign-in, on a fresh process spine.
+    val appContext = androidx.compose.ui.platform.LocalContext.current
+    fun leaveDemo() {
+        viewModel.doors.leaveDemo()
+        chat.keryx.app.presentation.ui.components.relaunchApp(appContext)
+    }
+
     // The guided tour (3.0): where each pointable control is, one controller for every way in,
     // and the moves that take the app to the place a stop lives in (the chat, the drawer).
     val tourRegistry = remember { chat.keryx.app.presentation.tour.TourRegistry() }
@@ -273,6 +282,7 @@ fun HermesApp(viewModel: ChatViewModel) {
         fun context() = KeryxTour.Context(
             direct = viewModel.transportIsDirect,
             link = viewModel.hub.reasoningCaps.value != null,
+            demo = viewModel.isDemo,
         )
         chat.keryx.app.presentation.tour.TourController(
             // The chat and the drawer are always composed, so what they wear is the truth;
@@ -310,6 +320,21 @@ fun HermesApp(viewModel: ChatViewModel) {
             if (preset == null) return@collect
             viewModel.consumeTour()
             nav.home()
+            // A tour asked for on arrival (the demo) starts before the chat has drawn: the stops
+            // are chosen from what is worn when it starts, so the model pill, a beat behind the
+            // composer, was left out. Wait until what the screen wears has held still a moment
+            // (at once from Settings, where it already has).
+            kotlinx.coroutines.withTimeoutOrNull(TOUR_ARRIVAL_WAIT_MS) {
+                var worn = emptyList<String>()
+                var stillSince = System.currentTimeMillis()
+                while (true) {
+                    val now = KeryxTour.ALL.filter(tourRegistry::isWorn)
+                    if (now != worn) { worn = now; stillSince = System.currentTimeMillis() }
+                    if (KeryxTour.COMPOSER in worn && System.currentTimeMillis() - stillSince >= TOUR_ARRIVAL_SETTLE_MS) break
+                    kotlinx.coroutines.delay(50)
+                }
+            }
+            chat.keryx.app.util.KLog.i("KeryxTour") { "start $preset worn=${KeryxTour.ALL.filter(tourRegistry::isWorn)}" }
             val result = tour.start(preset)
             if (!result.success) result.error?.let { viewModel.toast(it) }
         }
@@ -405,6 +430,7 @@ fun HermesApp(viewModel: ChatViewModel) {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
+                Column {
                 TopAppBar(
                     title = {
                         Column {
@@ -703,6 +729,9 @@ fun HermesApp(viewModel: ChatViewModel) {
                         scrolledContainerColor = Color.Transparent
                     )
                 )
+                // The demo says so, and the way out to a real gateway is always one tap.
+                if (viewModel.isDemo) DemoStrip(onConnect = ::leaveDemo)
+                }
             }
         ) { paddingValues ->
             // Skill Forge opens from two places — the Workshop's Skills rows (direct ViewModel call)
@@ -822,6 +851,8 @@ fun HermesApp(viewModel: ChatViewModel) {
                     viewModel.jumpToSetting(chat.keryx.app.presentation.ui.components.SettingsRow.CONNECTION_GATEWAY.id)
                     openSpace(KeryxDest.Settings)
                 }
+                // The demo's tour ends on the real thing: out of the demo, into the sign-in.
+                KeryxTour.CTA_CONNECT -> leaveDemo()
             }
         },
     )
@@ -1005,5 +1036,44 @@ internal fun ReasoningMenu(
         // Steering left this menu in 2.6.2: mid-turn the composer's send button IS the steer
         // (tap steers, hold queues) — a verb hidden behind the reasoning pill was the
         // affordance nobody found.
+    }
+}
+
+/** How long a tour asked for on arrival waits for the chat to be drawn, and settles after. */
+private const val TOUR_ARRIVAL_WAIT_MS = 3_000L
+private const val TOUR_ARRIVAL_SETTLE_MS = 700L
+
+/**
+ * The demo's one line of chrome (3.0 first run): it says this is a demo and is the way out,
+ * a quiet accent-edged pill under the top bar.
+ */
+@Composable
+private fun DemoStrip(onConnect: () -> Unit) {
+    val accent = MaterialTheme.colorScheme.primary
+    Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp), contentAlignment = Alignment.Center) {
+        androidx.compose.material3.Surface(
+            onClick = onConnect,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
+            color = accent.copy(alpha = 0.10f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = 0.35f)),
+        ) {
+            Row(
+                Modifier.padding(horizontal = 14.dp, vertical = 6.dp).heightIn(min = 24.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Demo", color = accent, fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold)
+                Text(
+                    "  ·  Connect your gateway",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = KeryxType.caption,
+                )
+                Icon(
+                    androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+        }
     }
 }

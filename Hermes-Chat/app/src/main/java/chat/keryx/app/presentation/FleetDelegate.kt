@@ -211,6 +211,33 @@ class FleetDelegate(
         settings.commitTransportMode(mode)
     }
 
+    /**
+     * Step into the demo (3.0 first run): the next process life is the demo gateway, opening on
+     * its first chat. Its ledgers are its own (see SettingsRepositoryImpl), so nothing a real
+     * door holds is touched. The caller relaunches.
+     */
+    fun enterDemo() {
+        settings.commitTransportMode(chat.keryx.app.transport.demo.DemoTransport.MODE)
+        // Written after the switch, so it lands in the demo's ledger.
+        settings.lastRoomId = chat.keryx.core.demo.DemoScript.FIRST
+    }
+
+    /** A phone that has never had a door: no gateway, never a Matrix sign-in, and the welcome
+     *  not yet answered. The login screen opens on the welcome instead of a form. (Not the
+     *  Matrix store on disk: the Matrix door makes an empty one at every boot.) */
+    val firstRun: Boolean
+        get() = !settings.welcomeSeen && settings.fleet.gateways.isEmpty() &&
+            settings.lastMatrixUsername.isBlank() && settings.directGatewayUrl.isBlank()
+
+    fun answerWelcome() {
+        settings.welcomeSeen = true
+    }
+
+    /** Leave the demo for the sign-in, on the gateway door. The caller relaunches. */
+    fun leaveDemo() {
+        settings.commitTransportMode("direct")
+    }
+
     /** The other door's stored state — the toggle's "resumes signed in" hints. */
     val matrixSessionOnFile: Boolean get() = settings.matrixSessionOnFile
     val directCredentialsOnFile: Boolean

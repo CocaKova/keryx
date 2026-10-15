@@ -51,6 +51,16 @@ class KeryxTourTest {
     }
 
     @Test
+    fun `the demo's tour opens by saying what it is and ends on connecting a real gateway`() {
+        val demo = KeryxTour.Context(direct = true, link = false, demo = true)
+        val full = KeryxTour.builtIn(TourPreset.FULL, ids(demo), demo)
+        assertNull("the welcome is narration, mid-screen", full.first().target)
+        assertEquals(KeryxTour.MACHINE, full.last().target)
+        assertEquals(KeryxTour.CTA_CONNECT, full.last().cta?.id)
+        assertFalse(KeryxTour.RUNS in full.map { it.target })
+    }
+
+    @Test
     fun `every target the tour can name is worn by a control`() {
         val roots = listOf(File("src/main/java"), File("app/src/main/java"))
         val root = roots.first { it.exists() }

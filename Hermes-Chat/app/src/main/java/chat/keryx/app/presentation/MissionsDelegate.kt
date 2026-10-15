@@ -68,9 +68,13 @@ class MissionsDelegate(
     private val _kanbanError = MutableStateFlow<String?>(null)
     val kanbanError: StateFlow<String?> = _kanbanError.asStateFlow()
 
+    /** The demo (3.0): no board to reach, so an empty one, drawn as a fresh board is. */
+    private val demo get() = settings.transportMode == chat.keryx.app.transport.demo.DemoTransport.MODE
+
     fun refreshKanban() {
         val client = client() ?: run {
-            _kanbanError.value = "Hermes Link is off — enable it in Settings"
+            if (demo) _kanbanBoard.value = chat.keryx.app.data.remote.HermesStreamClient.KanbanBoard("default", emptyMap())
+            else _kanbanError.value = "Hermes Link is off — enable it in Settings"
             return
         }
         _kanbanRefreshing.value = true
@@ -309,7 +313,10 @@ class MissionsDelegate(
         priority: Int = 0,
         goalMode: Boolean = false,
     ) {
-        val client = client() ?: return
+        val client = client() ?: run {
+            if (demo) toast(chat.keryx.app.transport.demo.DemoTransport.DemoOnly("hand out missions").message.orEmpty())
+            return
+        }
         scope.launch {
             client.kanbanCreate(title, assignee, body, triage, priority = priority, goalMode = goalMode)
                 .onSuccess { taskId ->

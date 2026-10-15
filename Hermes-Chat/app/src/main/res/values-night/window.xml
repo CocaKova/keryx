@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The window ground before the first frame, at night: BackgroundDark (theme/Color.kt). -->
+    <color name="window_ground">#000000</color>
+</resources>

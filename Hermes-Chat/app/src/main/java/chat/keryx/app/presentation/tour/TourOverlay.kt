@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -390,25 +391,32 @@ private fun TourCard(
                 }
                 val fill = keryxAccentInk()
                 val cta = step.cta?.takeIf { run.isLast }
-                if (cta != null) {
-                    // The last stop hands over to the next thing to do; "Done" stays for anyone
-                    // who only wanted the look around.
-                    TextButton(onClick = onNext) { Text("Done") }
-                    Spacer(Modifier.width(4.dp))
-                }
-                Button(
-                    onClick = { if (cta != null) onCta(cta.id) else onNext() },
+                // The last stop hands over to the next thing to do, on a row of its own below
+                // (beside Back and Done it wrapped); "Done" stays for anyone who only wanted the
+                // look around.
+                if (cta != null) TextButton(onClick = onNext) { Text("Done") }
+                else Button(
+                    onClick = onNext,
                     colors = ButtonDefaults.buttonColors(containerColor = fill, contentColor = contrastColorFor(fill)),
                 ) {
                     Text(
                         when {
-                            cta != null -> cta.label
                             !run.paged -> "Got it"
                             run.isLast -> "Done"
                             else -> "Next"
                         },
                         fontWeight = FontWeight.SemiBold,
                     )
+                }
+            }
+            step.cta?.takeIf { run.isLast }?.let { cta ->
+                val fill = keryxAccentInk()
+                Button(
+                    onClick = { onCta(cta.id) },
+                    colors = ButtonDefaults.buttonColors(containerColor = fill, contentColor = contrastColorFor(fill)),
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp, end = 4.dp),
+                ) {
+                    Text(cta.label, fontWeight = FontWeight.SemiBold)
                 }
             }
         }

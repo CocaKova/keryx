@@ -960,13 +960,20 @@ fun NavigationDrawerContent(
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Settings)
                 },
             )
+            val stripContext = androidx.compose.ui.platform.LocalContext.current
             DrawerStatusStrip(
                 health = linkHealth,
-                model = caps?.model.orEmpty(),
+                model = if (viewModel.isDemo) "demo gateway" else caps?.model.orEmpty(),
                 version = hubHealth.data?.version.orEmpty(),
                 onOpenGateway = {
-                    viewModel.hub.refreshReasoningCaps()
-                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway)
+                    // The demo has no gateway page to show; the offer is the real one.
+                    if (viewModel.isDemo) viewModel.toast("Your gateway's page lives here once you connect one.", "Connect") {
+                        viewModel.doors.leaveDemo()
+                        chat.keryx.app.presentation.ui.components.relaunchApp(stripContext)
+                    } else {
+                        viewModel.hub.refreshReasoningCaps()
+                        onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway)
+                    }
                 },
                 onOpenSettings = { onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Settings) },
             )

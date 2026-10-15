@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The window ground before the first frame: BackgroundLight (theme/Color.kt). -->
+    <color name="window_ground">#F6F2EA</color>
+</resources>

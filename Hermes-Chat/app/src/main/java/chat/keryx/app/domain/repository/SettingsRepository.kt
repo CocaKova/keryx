@@ -57,6 +57,8 @@ interface SettingsRepository {
     var recentCommands: List<String>
     /** Whether we've already asked the user to exempt the app from battery optimization (ask once). */
     var batteryPromptShown: Boolean
+    /** The first-run welcome (3.0) was answered: connect, or look around first. Device-wide. */
+    var welcomeSeen: Boolean
 
     // --- Hermes side-channel streaming (tier-1) ---
     /** Base URL of the Hermes gateway API server (e.g. http://your-gateway-host:8642). Blank = disabled. */
