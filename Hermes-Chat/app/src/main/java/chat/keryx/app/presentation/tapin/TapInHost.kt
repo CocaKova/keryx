@@ -43,7 +43,7 @@ fun TapInHost(
     val workStartedAt by viewModel.workStartedAt.collectAsState()
     val usage by viewModel.contextUsage.collectAsState()
     val liveRate by viewModel.liveRate.collectAsState()
-    val control by viewModel.sessionControl.collectAsState()
+    val control by viewModel.turns.sessionControl.collectAsState()
 
     val roomId = currentRoom?.id
     val stream = liveStream?.takeIf { it.roomId == roomId }
@@ -89,11 +89,11 @@ fun TapInHost(
     }
     // The bar drives the same verbs the chat composer does mid-turn; only the direct door has
     // them, and there the view-model already toasts the outcome (steered / queued / stopped).
-    val steer = remember(viewModel.canInterruptTurn) {
-        if (!viewModel.canInterruptTurn) null else TapInSteer(
-            onSteer = { viewModel.steerTurn(it) },
-            onQueue = { viewModel.queueMessage(it) },
-            onStop = { viewModel.interruptTurn() },
+    val steer = remember(viewModel.turns.canInterruptTurn) {
+        if (!viewModel.turns.canInterruptTurn) null else TapInSteer(
+            onSteer = { viewModel.turns.steerTurn(it) },
+            onQueue = { viewModel.turns.queueMessage(it) },
+            onStop = { viewModel.turns.interruptTurn() },
         )
     }
     TapInScreen(state = shown, onClose = onClose, onOpenHelper = { helper = it; helperRoom = roomId }, steer = steer, standalone = standalone)
@@ -112,7 +112,7 @@ fun TapInHost(
             run = live,
             fetch = { id -> viewModel.hub.sessionMessages(id) },
             onDismiss = { helper = null },
-            crew = viewModel.crewControls(helperRoom),
+            crew = viewModel.turns.crewControls(helperRoom),
         )
     }
 }

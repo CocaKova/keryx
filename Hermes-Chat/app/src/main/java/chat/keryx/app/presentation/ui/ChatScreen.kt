@@ -224,9 +224,9 @@ fun ChatScreen(
     // Held as State, read only where drawn: a by-delegate read here recomposed the whole
     // screen on every rate tick (about 4/s through a turn).
     val liveRateState = viewModel.liveRate.collectAsState()
-    val sessionControl by viewModel.sessionControl.collectAsState()
-    val asides by viewModel.asides.collectAsState()
-    val redirectAvailable by viewModel.redirectAvailable.collectAsState()
+    val sessionControl by viewModel.turns.sessionControl.collectAsState()
+    val asides by viewModel.turns.asides.collectAsState()
+    val redirectAvailable by viewModel.turns.redirectAvailable.collectAsState()
     val turnRates by viewModel.turnRates.collectAsState()
     val pendingSend by viewModel.pendingSend.collectAsState()
     val showTelemetry by viewModel.showTelemetry.collectAsState()
@@ -802,7 +802,7 @@ fun ChatScreen(
                 item(key = "aside-${aside.taskId}") {
                     Box(modifier = Modifier.animateItem()) {
                         chat.keryx.app.presentation.ui.components.AsideBubble(
-                            aside, onDismiss = { viewModel.dismissAside(aside.taskId) },
+                            aside, onDismiss = { viewModel.turns.dismissAside(aside.taskId) },
                         )
                     }
                 }
@@ -1168,7 +1168,7 @@ fun ChatScreen(
                 !busyNow -> null
                 slashTyped -> null // slash runs inline even mid-turn
                 composerField.text.isBlank() && pendingAttachments.isEmpty() ->
-                    if (viewModel.canInterruptTurn) "stop" else null
+                    if (viewModel.turns.canInterruptTurn) "stop" else null
                 steerable -> "steer"
                 else -> "queue"
             }
@@ -1191,28 +1191,28 @@ fun ChatScreen(
                 onSend = ::doSend,
                 busyAction = busyAction,
                 onSteer = {
-                    if (composerField.text.isNotBlank()) viewModel.steerTurn(takeComposerText())
+                    if (composerField.text.isNotBlank()) viewModel.turns.steerTurn(takeComposerText())
                 },
                 onQueue = {
                     if (pendingAttachments.isNotEmpty()) {
                         viewModel.toast("Attachments can't queue — send after this turn finishes")
                     } else if (composerField.text.isNotBlank()) {
-                        viewModel.queueMessage(takeComposerText())
+                        viewModel.turns.queueMessage(takeComposerText())
                     }
                 },
-                onStop = { viewModel.interruptTurn() },
+                onStop = { viewModel.turns.interruptTurn() },
                 onStopHint = {
                     viewModel.toast("Type your correction first — then tap steers the turn, hold for more")
                 },
                 busyMenu = if (viewModel.transportIsDirect) buildList {
                     add("Queue for the next turn" to {
-                        if (composerField.text.isNotBlank()) viewModel.queueMessage(takeComposerText())
+                        if (composerField.text.isNotBlank()) viewModel.turns.queueMessage(takeComposerText())
                     })
                     add("Ask aside — answered outside the chat" to {
-                        if (composerField.text.isNotBlank()) viewModel.askAside(takeComposerText())
+                        if (composerField.text.isNotBlank()) viewModel.turns.askAside(takeComposerText())
                     })
                     if (redirectAvailable) add("Redirect — restart the reply with this" to {
-                        if (composerField.text.isNotBlank()) viewModel.redirectTurn(takeComposerText())
+                        if (composerField.text.isNotBlank()) viewModel.turns.redirectTurn(takeComposerText())
                     })
                 } else null,
                 onPickGallery = { galleryPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) },
@@ -1359,7 +1359,7 @@ fun ChatScreen(
             // GOAL STRIP (2.16): the session's standing goal, under the plan on the same floor.
             sessionControl?.takeIf { !it.isEmpty }?.let { control ->
                 Box(Modifier.zIndex(1f)) {
-                    chat.keryx.app.presentation.ui.components.GoalStrip(control, onAction = viewModel::goalAction)
+                    chat.keryx.app.presentation.ui.components.GoalStrip(control, onAction = viewModel.turns::goalAction)
                 }
             }
             ReadRate(liveRateState) { topRate -> WorkingStatusBar(
@@ -1399,7 +1399,7 @@ fun ChatScreen(
             run = live,
             fetch = { id -> viewModel.hub.sessionMessages(id) },
             onDismiss = { openSubagent = null },
-            crew = viewModel.crewControls(openSubagentRoom),
+            crew = viewModel.turns.crewControls(openSubagentRoom),
         )
     }
 }

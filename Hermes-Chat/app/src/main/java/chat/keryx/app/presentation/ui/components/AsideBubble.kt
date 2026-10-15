@@ -21,7 +21,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import chat.keryx.app.presentation.ChatViewModel
+import chat.keryx.app.presentation.TurnControlDelegate
 
 /**
  * An aside (2.16 `prompt.btw`): a question answered over a snapshot of the conversation while
@@ -31,7 +31,7 @@ import chat.keryx.app.presentation.ChatViewModel
  * flow (not floating), so it covers nothing.
  */
 @Composable
-fun AsideBubble(aside: ChatViewModel.Aside, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+fun AsideBubble(aside: TurnControlDelegate.Aside, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
     val quiet = MaterialTheme.colorScheme.onSurfaceVariant
     val ink = MaterialTheme.colorScheme.onSurface
     Column(

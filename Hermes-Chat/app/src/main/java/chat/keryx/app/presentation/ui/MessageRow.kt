@@ -47,7 +47,7 @@ internal class MessageRowActions(
     fun reactions(m: Message) = viewModel.reactionsFlow(m.roomId, m.id)
     fun undo() = viewModel.undoLastTurn()
     fun retry() = viewModel.retryExchange()
-    fun branch(m: Message) = viewModel.branchFrom(m)
+    fun branch(m: Message) = viewModel.turns.branchFrom(m)
 
     fun speakOrStop(m: Message) {
         val s = ttsState.value
