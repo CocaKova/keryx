@@ -189,7 +189,7 @@ fun NewChatSheet(
                 )
                 SheetActionRow(busy = busy, enabled = userId.isNotBlank(), label = "Start") {
                     busy = true; error = null
-                    viewModel.startDirectMessage(userId.trim(), ::done)
+                    viewModel.matrixRooms.startDirectMessage(userId.trim(), ::done)
                 }
             }
 
@@ -221,7 +221,7 @@ fun NewChatSheet(
                 )
                 SheetActionRow(busy = busy, enabled = name.isNotBlank(), label = "Create") {
                     busy = true; error = null
-                    viewModel.createRoom(name.trim(), invitee.trim(), ::done)
+                    viewModel.matrixRooms.createRoom(name.trim(), invitee.trim(), ::done)
                 }
             }
 
@@ -243,7 +243,7 @@ fun NewChatSheet(
                 )
                 SheetActionRow(busy = busy, enabled = address.isNotBlank(), label = "Join") {
                     busy = true; error = null
-                    viewModel.joinRoomByAddress(address.trim(), ::done)
+                    viewModel.matrixRooms.joinRoomByAddress(address.trim(), ::done)
                 }
             }
 

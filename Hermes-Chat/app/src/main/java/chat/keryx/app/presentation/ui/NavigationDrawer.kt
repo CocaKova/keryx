@@ -599,8 +599,8 @@ fun NavigationDrawerContent(
                     items(invites, key = { "invite-${it.id}" }) { invite ->
                         InviteRow(
                             invite = invite,
-                            onAccept = { viewModel.acceptInvite(invite.id) },
-                            onDecline = { viewModel.declineInvite(invite.id) },
+                            onAccept = { viewModel.matrixRooms.acceptInvite(invite.id) },
+                            onDecline = { viewModel.matrixRooms.declineInvite(invite.id) },
                         )
                     }
                     item { Spacer(modifier = Modifier.height(14.dp)) }
@@ -760,10 +760,10 @@ fun NavigationDrawerContent(
                             }
                         },
                         onLeave = if (direct) null else {
-                            { viewModel.leaveRoom(room.id) }
+                            { viewModel.matrixRooms.leaveRoom(room.id) }
                         },
                         onInvite = if (direct) null else {
-                            { userId -> viewModel.inviteUser(room.id, userId) }
+                            { userId -> viewModel.matrixRooms.inviteUser(room.id, userId) }
                         },
                         onRename = if (direct) {
                             { title -> viewModel.sessions.renameSession(room.id, title) }

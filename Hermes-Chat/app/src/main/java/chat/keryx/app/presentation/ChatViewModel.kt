@@ -614,6 +614,12 @@ class ChatViewModel(
         openRoomById = { openRoomById(it) },
         moveOffRoom = { moveOffRoom(it) },
     )
+    /** Matrix invites answered, rooms started/joined/left, redaction (3.0 split). */
+    val matrixRooms = MatrixRoomsDelegate(
+        deps, transport,
+        openRoomById = { openRoomById(it) },
+        moveOffRoom = { moveOffRoom(it) },
+    )
     val projects = ProjectsDelegate(
         deps, transport,
         openSession = { id, title -> openSessionById(id, title) },
@@ -2069,91 +2075,12 @@ class ChatViewModel(
         viewModelScope.launch { transport.setTyping(roomId, false) }
     }
 
-    // --- Room membership: invites, leaving ------------------------------------------------------
-    // (_invites/invites live up top with _rooms — see the init-order note there.)
-
-    fun acceptInvite(roomId: String) {
-        viewModelScope.launch {
-            matrix?.acceptInvite(roomId)
-                ?.onSuccess { _toasts.tryEmit("Joined — the room appears on the next sync") }
-                ?.onFailure { _toasts.tryEmit("Join failed: ${it.message?.take(80)}") }
-        }
-    }
-
-    fun declineInvite(roomId: String) {
-        viewModelScope.launch {
-            matrix?.leaveRoom(roomId)
-                ?.onSuccess { _toasts.tryEmit("Invite declined") }
-                ?.onFailure { _toasts.tryEmit("Decline failed: ${it.message?.take(80)}") }
-        }
-    }
-
-    // --- Starting conversations (NewChatSheet) --------------------------------------------------
-    // Each [onDone] gets null on success (the sheet closes; the room opens via openRoomById as
-    // soon as sync surfaces it) or the gateway/homeserver's own error text to show inline.
-
-    fun startDirectMessage(userId: String, onDone: (String?) -> Unit) {
-        viewModelScope.launch {
-            matrix?.startDirectMessage(userId)
-                ?.onSuccess { roomId -> openRoomById(roomId); onDone(null) }
-                ?.onFailure { onDone(it.message?.take(120) ?: "couldn't start the chat") }
-        }
-    }
-
-    fun createRoom(name: String, invitee: String, onDone: (String?) -> Unit) {
-        viewModelScope.launch {
-            matrix?.createRoom(name, listOf(invitee))
-                ?.onSuccess { roomId -> openRoomById(roomId); onDone(null) }
-                ?.onFailure { onDone(it.message?.take(120) ?: "couldn't create the room") }
-        }
-    }
-
-    fun joinRoomByAddress(address: String, onDone: (String?) -> Unit) {
-        viewModelScope.launch {
-            matrix?.joinRoomByAddress(address)
-                ?.onSuccess { roomId -> openRoomById(roomId); onDone(null) }
-                ?.onFailure { onDone(it.message?.take(120) ?: "couldn't join") }
-        }
-    }
-
-    fun inviteUser(roomId: String, userId: String) {
-        viewModelScope.launch {
-            matrix?.inviteUser(roomId, userId)
-                ?.onSuccess { _toasts.tryEmit("Invite sent") }
-                ?.onFailure { _toasts.tryEmit("Invite failed: ${it.message?.take(80)}") }
-        }
-    }
-
     /** If [roomId] is the open room, open the next one (or none): it was left or deleted. */
     private fun moveOffRoom(roomId: String) {
         if (_currentRoom.value?.id != roomId) return
         val next = _rooms.value.firstOrNull { it.id != roomId }
         if (next != null) selectRoom(next) else setCurrentRoom(null)
     }
-
-    fun leaveRoom(roomId: String) {
-        viewModelScope.launch {
-            matrix?.leaveRoom(roomId)
-                ?.onSuccess {
-                    _toasts.tryEmit("Left room")
-                    if (settingsRepository.lastRoomId == roomId) settingsRepository.lastRoomId = null
-                    // Move off the dead room so the chat pane never points at a membership we lost.
-                    moveOffRoom(roomId)
-                }
-                ?.onFailure { _toasts.tryEmit("Leave failed: ${it.message?.take(80)}") }
-        }
-    }
-
-    /** Delete (redact) a message. The event body vanishes for everyone on sync. */
-    fun deleteMessage(sessionId: String, eventId: String) {
-        viewModelScope.launch {
-            matrix?.redactMessage(sessionId, eventId)
-                ?.onFailure { _toasts.tryEmit("Delete failed: ${it.message?.take(80)}") }
-        }
-    }
-
-    /** Message redaction is a Matrix power; the gateway keeps its transcript. */
-    val canDeleteMessages: Boolean get() = matrix != null
 
     // --- Empty-chat starters (2.17.3): three switches, then the AI-written prompts by agent ---
     private val _starterSuggestions = MutableStateFlow(settingsRepository.starterSuggestions)

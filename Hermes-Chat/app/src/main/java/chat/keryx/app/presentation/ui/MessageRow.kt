@@ -41,7 +41,7 @@ internal class MessageRowActions(
     fun reply(m: Message) = viewModel.setReplyTarget(m)
     fun react(m: Message, emoji: String) = viewModel.media.sendReaction(m.id, emoji)
     fun jumpTo(id: String) = jump.value(id)
-    fun delete(m: Message) = viewModel.deleteMessage(m.roomId, m.id)
+    fun delete(m: Message) = viewModel.matrixRooms.deleteMessage(m.roomId, m.id)
     fun toggleKeep(m: Message) = viewModel.archive.toggleSaved(m)
     suspend fun media(m: Message): ByteArray? = viewModel.media.loadMessageMedia(m.roomId, m.id)
     fun reactions(m: Message) = viewModel.media.reactionsFlow(m.roomId, m.id)

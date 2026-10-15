@@ -740,7 +740,7 @@ fun ChatScreen(
     val streamInRoom by remember {
         derivedStateOf { liveStreamState.value?.roomId.let { it != null && it == currentRoom?.id } }
     }
-    val canDeleteMessages = viewModel.canDeleteMessages
+    val canDeleteMessages = viewModel.matrixRooms.canDeleteMessages
     val archiveAvailable = viewModel.archive.available
     val canRetryLast by remember { derivedStateOf { ChatViewModel.retryPromptOf(messagesState.value) != null } }
     val latestAwaiting = rememberUpdatedState(awaitingReply)
