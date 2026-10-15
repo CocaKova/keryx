@@ -81,7 +81,14 @@ Ground rules that apply to both releases:
       A shared tick can't beat those. The real excess was the 90 s full session read running off
       screen while agents work (240 KB/h–1.8 MB/h), fixed in `992308f`. Closing the socket off
       screen is the only lever left, and it costs live turn-end notifications: a later product call.
-   6. Split the big files.
+   6. ~~Split the big files.~~ Done 10-14, no behaviour change, gate GREEN throughout (1258 → 1272
+      tests). `DirectTransport` 4220 → 3084: GatewayCalls + ProjectOps/GroupOps/ProfileOps,
+      PendingAsks, SessionStore.kt, core DelegationFrames and ToolFrames. `ChatViewModel` 3328 → 2000:
+      ModelDelegate (reasoning), TurnControl (`turns`), Media (`media`), Fleet (`doors`), Sessions
+      (`sessions`), MatrixRooms (`matrixRooms`), Preferences (`prefs`), Starters (`starters`),
+      Composer (`composer`), core WorkState.read/subject. Emulator smoke: start, drawer, settings,
+      palette. Left in place on purpose: the event pump's side effects, the side-channel stream
+      engine and Hermes Link settings (10+ shared fields each).
    Re-run `tools/perf_stream.sh` after each of steps 1–3. The phone pass happens once per
    batch, so Jonny lends the phone for 2 minutes, not after every commit.
 2. **Light redesign:** §3 below. Same identity, sharper icon and wordmark, one type system,
