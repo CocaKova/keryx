@@ -7,6 +7,7 @@ import chat.keryx.core.model.ShadePendingEntry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -25,6 +26,13 @@ import java.util.concurrent.ConcurrentHashMap
  * Sy's 09-24 session asked three times and got three empty answers, each back in 20 ms.
  */
 internal class PendingAsks(private val rpc: () -> GatewayRpc?) {
+    companion object {
+        val LEGACY_EVENTS = setOf(
+            "clarify.request", "sudo.request", "secret.request",
+            "clarify.expire", "sudo.expire", "secret.expire", "approval.request",
+        )
+    }
+
     private val approvalFlows = ConcurrentHashMap<String, MutableStateFlow<ApprovalRequest?>>()
     private val blockingFlows = ConcurrentHashMap<String, MutableStateFlow<BlockingRequest?>>()
 
@@ -97,6 +105,61 @@ internal class PendingAsks(private val rpc: () -> GatewayRpc?) {
         _shade.value = emptyMap()
         approvalFlows.values.forEach { it.value = null }
         blockingFlows.values.forEach { it.value = null }
+    }
+
+    /**
+     * The ask as an EVENT, from gateways before hermes ebe8cda8 (2026-09-13); answered with
+     * `<kind>.respond` (see [respondBlocking]). Unlike approvals these carry a request_id and
+     * can expire server-side, so they clear on their own `.expire` twin (or when the turn
+     * moves on) — never on the blanket message.* and tool.* rule, which would wipe the card
+     * mid-question.
+     */
+    fun onLegacyEvent(type: String, storedId: String, p: JsonObject?) {
+        fun pStr(key: String) = (p?.get(key) as? JsonPrimitive)?.contentOrNull
+        fun pList(key: String) = (p?.get(key) as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+        when (type) {
+            "clarify.request" -> setBlocking(
+                storedId,
+                BlockingRequest(
+                    kind = BlockingKind.CLARIFY,
+                    requestId = pStr("request_id") ?: "",
+                    prompt = pStr("question") ?: "",
+                    choices = pList("choices") ?: emptyList(),
+                    multiSelect = pStr("multi_select") == "true",
+                ),
+            )
+            "sudo.request" -> setBlocking(
+                storedId,
+                BlockingRequest(
+                    kind = BlockingKind.SUDO,
+                    requestId = pStr("request_id") ?: "",
+                    prompt = "A command on the host needs your sudo password.",
+                ),
+            )
+            "secret.request" -> setBlocking(
+                storedId,
+                BlockingRequest(
+                    kind = BlockingKind.SECRET,
+                    requestId = pStr("request_id") ?: "",
+                    prompt = pStr("prompt") ?: "",
+                    envVar = pStr("env_var") ?: "",
+                ),
+            )
+            "clarify.expire", "sudo.expire", "secret.expire" -> {
+                val rid = pStr("request_id")
+                // Only the request that actually expired: a late twin must not clear a
+                // newer question the agent has already asked in its place.
+                if (rid != null && blockingFlow(storedId).value?.requestId == rid) setBlocking(storedId, null)
+            }
+            "approval.request" -> setApproval(
+                storedId,
+                ApprovalRequest(
+                    command = pStr("command") ?: "",
+                    description = pStr("description") ?: "",
+                    choices = pList("choices")?.ifEmpty { null } ?: listOf("once", "deny"),
+                ),
+            )
+        }
     }
 
     /** A request the gateway asked about [storedId] (already resolved from its live id). */

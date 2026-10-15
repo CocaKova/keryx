@@ -401,9 +401,6 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         }
         when (ev.type) {
             // ---- blocking requests: the agent is STOPPED until one of these is answered ----
-            // Unlike approvals these carry a request_id and can expire server-side, so they
-            // clear on their own `.expire` twin (or when the turn moves on) — never on the
-            // blanket message.*/tool.* rule above, which would wipe the card mid-question.
             // The backend withdrew a question it asked as a JSON-RPC request (timeout, the turn
             // was interrupted, the session closed, or another surface answered it). Only the
             // card wearing THAT id comes down — never a newer question asked in its place.
@@ -413,53 +410,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             }
             // ---- legacy blocking events (gateways before hermes ebe8cda8, 2026-09-13) ----
             // Current gateways ask these as server→client requests; see onServerRequest.
-            "clarify.request" -> asks.setBlocking(
-                storedId,
-                chat.keryx.core.model.BlockingRequest(
-                    kind = chat.keryx.core.model.BlockingKind.CLARIFY,
-                    requestId = pStr("request_id") ?: "",
-                    prompt = pStr("question") ?: "",
-                    choices = (p?.get("choices") as? kotlinx.serialization.json.JsonArray)
-                        ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull } ?: emptyList(),
-                    multiSelect = pStr("multi_select") == "true",
-                ),
-            )
-            "sudo.request" -> asks.setBlocking(
-                storedId,
-                chat.keryx.core.model.BlockingRequest(
-                    kind = chat.keryx.core.model.BlockingKind.SUDO,
-                    requestId = pStr("request_id") ?: "",
-                    prompt = "A command on the host needs your sudo password.",
-                ),
-            )
-            "secret.request" -> asks.setBlocking(
-                storedId,
-                chat.keryx.core.model.BlockingRequest(
-                    kind = chat.keryx.core.model.BlockingKind.SECRET,
-                    requestId = pStr("request_id") ?: "",
-                    prompt = pStr("prompt") ?: "",
-                    envVar = pStr("env_var") ?: "",
-                ),
-            )
-            "clarify.expire", "sudo.expire", "secret.expire" -> {
-                val rid = pStr("request_id")
-                // Only the request that actually expired: a late twin must not clear a
-                // newer question the agent has already asked in its place.
-                if (rid != null && asks.blocking(storedId).value?.requestId == rid) {
-                    asks.setBlocking(storedId, null)
-                }
-            }
-            "approval.request" -> asks.setApproval(
-                storedId,
-                chat.keryx.core.model.ApprovalRequest(
-                    command = pStr("command") ?: "",
-                    description = pStr("description") ?: "",
-                    choices = (p?.get("choices") as? kotlinx.serialization.json.JsonArray)
-                        ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
-                        ?.ifEmpty { null }
-                        ?: listOf("once", "deny"),
-                ),
-            )
+            in PendingAsks.LEGACY_EVENTS -> asks.onLegacyEvent(ev.type, storedId, p)
             "message.start" -> { store.streamStart(); rateTurnStart(store); noteRun(storedId, ev.type) }
             "message.delta" -> {
                 val t = pStr("text") ?: ""
@@ -693,13 +644,9 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 // After the plan: the tally moving is what makes the run notice re-read it.
                 noteRun(storedId, ev.type, pStr("tool_id").orEmpty(), name)
             }
-            // ---- delegation ------------------------------------------------------------
-            // Every subagent.* event carries the same identity block and adds what only it
-            // knows, so identity folds in once and the type decides state + activity line.
-            "subagent.spawn_requested", "subagent.start", "subagent.thinking",
-            "subagent.tool", "subagent.progress", "subagent.complete",
-            -> {
-                pStr("child_session_id")?.takeIf { it.isNotBlank() }?.let { child ->
+            // ---- delegation: folded by core DelegationFrames ------------------------------
+            in chat.keryx.core.protocol.DelegationFrames.TYPES -> {
+                chat.keryx.core.protocol.DelegationFrames.childSession(p)?.let { child ->
                     if (ev.type == "subagent.complete") {
                         flyingChildren.remove(child)
                         if (releaseOnLanding.remove(child)) releaseWatch(child)
@@ -707,83 +654,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                         flyingChildren.add(child)
                     }
                 }
-                // subagent_id is optional on the wire (older emitters omit it); the task
-                // index is the stable fallback within one dispatch.
-                val key = pStr("subagent_id")?.takeIf { it.isNotBlank() }
-                    ?: "${chat.keryx.core.model.Delegation.FALLBACK_PREFIX}${pStr("task_index") ?: "0"}"
-                fun pInt(k: String) = pStr(k)?.toDoubleOrNull()?.toInt()
-                fun pList(k: String) = (p?.get(k) as? kotlinx.serialization.json.JsonArray)
-                    ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
-                val text = pStr("text").orEmpty().trim()
-                store.delegation(key) { prev ->
-                    val withIdentity = prev.copy(
-                        goal = pStr("goal")?.takeIf { it.isNotBlank() } ?: prev.goal,
-                        taskIndex = pInt("task_index") ?: prev.taskIndex,
-                        taskCount = pInt("task_count") ?: prev.taskCount,
-                        model = pStr("model")?.takeIf { it.isNotBlank() } ?: prev.model,
-                        sessionId = pStr("child_session_id")?.takeIf { it.isNotBlank() }
-                            ?: prev.sessionId,
-                        depth = pInt("depth") ?: prev.depth,
-                        toolCount = pInt("tool_count") ?: prev.toolCount,
-                        // The first frame about a child is when this client learned it exists.
-                        // Stamped once, never moved — see Delegation.elapsedSeconds.
-                        startedAtMs = if (prev.startedAtMs == 0L) System.currentTimeMillis()
-                            else prev.startedAtMs,
-                    )
-                    when (ev.type) {
-                        "subagent.spawn_requested" -> withIdentity.copy(
-                            state = chat.keryx.core.model.DelegationState.SPAWNING,
-                        )
-                        "subagent.start" -> withIdentity.copy(
-                            state = chat.keryx.core.model.DelegationState.RUNNING,
-                            activity = "",
-                        )
-                        // The child's own tool: name it, with its preview as the object.
-                        // Kept twice — once as the live line, once in the record that
-                        // outlives the flight (Theater.trailWith bounds both doors alike).
-                        "subagent.tool" -> {
-                            val beat = chat.keryx.core.model.DelegationBeat(
-                                kind = "tool",
-                                name = pStr("tool_name")?.takeIf { it.isNotBlank() }.orEmpty(),
-                                text = (pStr("tool_preview") ?: text).takeIf { it.isNotBlank() }
-                                    .orEmpty(),
-                            )
-                            withIdentity.copy(
-                                state = chat.keryx.core.model.DelegationState.RUNNING,
-                                activity = beat.line,
-                                trail = chat.keryx.core.model.Theater
-                                    .trailWith(withIdentity.trail, beat),
-                            )
-                        }
-                        // A progress note is something the child chose to say about its work,
-                        // so it is kept; a thinking fragment is texture and is not.
-                        "subagent.progress" -> withIdentity.copy(
-                            state = chat.keryx.core.model.DelegationState.RUNNING,
-                            activity = text.ifBlank { prev.activity },
-                            trail = chat.keryx.core.model.Theater.trailWith(
-                                withIdentity.trail,
-                                chat.keryx.core.model.DelegationBeat("progress", text = text),
-                            ),
-                        )
-                        "subagent.thinking" -> withIdentity.copy(
-                            state = chat.keryx.core.model.DelegationState.RUNNING,
-                            activity = text.ifBlank { prev.activity },
-                        )
-                        else -> withIdentity.copy(
-                            state = chat.keryx.core.model.DelegationState
-                                .fromWire(pStr("status")),
-                            activity = "",
-                            summary = pStr("summary")?.takeIf { it.isNotBlank() } ?: text,
-                            durationSeconds = pStr("duration_seconds")?.toDoubleOrNull()
-                                ?: prev.durationSeconds,
-                            inputTokens = pInt("input_tokens") ?: prev.inputTokens,
-                            outputTokens = pInt("output_tokens") ?: prev.outputTokens,
-                            reasoningTokens = pInt("reasoning_tokens") ?: prev.reasoningTokens,
-                            apiCalls = pInt("api_calls") ?: prev.apiCalls,
-                            filesRead = pList("files_read") ?: prev.filesRead,
-                            filesWritten = pList("files_written") ?: prev.filesWritten,
-                        )
-                    }
+                store.delegation(chat.keryx.core.protocol.DelegationFrames.key(p)) { prev ->
+                    chat.keryx.core.protocol.DelegationFrames.fold(prev, ev.type, p, System.currentTimeMillis())
                 }
             }
             "error" -> {
