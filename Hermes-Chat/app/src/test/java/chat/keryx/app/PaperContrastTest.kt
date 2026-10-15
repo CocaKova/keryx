@@ -141,10 +141,13 @@ class PaperContrastTest {
             val ground = over(voidVariant, tintAlpha, over(voidSurface, floorAlpha, under))
             val c = contrast(voidFaded, ground)
             assertTrue("void composer over ${under.toString(16)} scores $c", c >= AA)
-            // What scrolls underneath must not READ through: it may move the ground by a hair,
-            // never by enough to be a second line of text behind the draft.
+            // What scrolls underneath must not show at all (3.0): the floor is solid, so the
+            // ground is the same whatever passes under it.
             val rest = over(voidVariant, tintAlpha, over(voidSurface, floorAlpha, void))
-            assertTrue("a bubble under the void composer shows through", contrast(ground, rest) < 1.15)
+            assertTrue("a bubble under the void composer shows through", contrast(ground, rest) < 1.005)
+            val paperRest = over(paperVariant, tintAlpha, over(paperSurface, floorAlpha, paper))
+            val paperUnder = over(paperVariant, tintAlpha, over(paperSurface, floorAlpha, under))
+            assertTrue("a bubble under the paper composer shows through", contrast(paperUnder, paperRest) < 1.005)
         }
     }
 

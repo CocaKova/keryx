@@ -859,8 +859,9 @@ internal val WAKE_DOTS = intArrayOf(0x19, 0x38, 0x34, 0x26, 0x07, 0x0B)
  * reserves room for it at rest, and a scrolled-up transcript passes underneath it.
  */
 object ComposerFloor {
-    /** Surface opacity of the floor under the tint. */
-    const val ALPHA = 0.94f
+    /** Surface opacity of the floor under the tint. Solid since 3.0: at 0.94 a bubble passing
+     *  underneath still showed as faint type behind the draft, and so did a room crossing. */
+    const val ALPHA = 1f
     /** The surfaceVariant tint laid on the floor (the composer's matte look). */
     const val TINT_ALPHA = 0.72f
 }

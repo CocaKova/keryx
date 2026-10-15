@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui
 
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.combinedClickable
 import chat.keryx.app.presentation.ui.components.HeraldConfig
 import chat.keryx.app.presentation.ui.components.LocalHeraldConfig
@@ -145,6 +148,8 @@ fun HermesApp(viewModel: ChatViewModel) {
         if (drawerState.targetValue == DrawerValue.Open) {
             focusManager.clearFocus()
             keyboard?.hide()
+            // The drawer is about to cover the room: photograph it for the crossing (3.0).
+            chat.keryx.app.presentation.ui.components.RoomCrossingCue.drawerOpening()
         }
     }
 
@@ -288,7 +293,29 @@ fun HermesApp(viewModel: ChatViewModel) {
             androidx.activity.compose.BackHandler(enabled = drawerState.targetValue == DrawerValue.Open) {
                 scope.launch { drawerState.close() }
             }
-            ModalDrawerSheet(drawerShape = DrawerShape, drawerContainerColor = Color.Transparent) {
+            // Where a press lands in the drawer is where Bloom opens the next room from (3.0).
+            // Observed on the Initial pass and never consumed, so every row behaves as before.
+            val sheetOrigin = androidx.compose.runtime.remember { floatArrayOf(0f, 0f) }
+            ModalDrawerSheet(
+                modifier = Modifier
+                    .onGloballyPositioned { val p = it.positionInRoot(); sheetOrigin[0] = p.x; sheetOrigin[1] = p.y }
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                                if (e.type == androidx.compose.ui.input.pointer.PointerEventType.Press) {
+                                    e.changes.firstOrNull()?.let {
+                                        chat.keryx.app.presentation.ui.components.RoomCrossingCue.noteTap(
+                                            androidx.compose.ui.geometry.Offset(it.position.x + sheetOrigin[0], it.position.y + sheetOrigin[1]),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    },
+                drawerShape = DrawerShape,
+                drawerContainerColor = Color.Transparent,
+            ) {
                 NavigationDrawerContent(
                     viewModel = viewModel,
                     onRoomSelected = { room ->

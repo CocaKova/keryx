@@ -936,6 +936,22 @@ fun SettingsScreen(
                                 onSelect = onAnimationStyleChanged,
                             )
                         }
+                        Spacer(Modifier.height(18.dp))
+                        SettingsAnchor(SettingsRow.APPEARANCE_TRANSITION) {
+                            val transition by viewModel.prefs.roomTransition.collectAsState()
+                            SettingsChoiceLabel("Room transition")
+                            KeryxSegmented(
+                                options = RoomTransition.entries.map { it.key to it.label },
+                                selected = transition.key,
+                                onSelect = { viewModel.prefs.setRoomTransition(RoomTransition.of(it)) },
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                transition.blurb + " Reduced motion skips it.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = KeryxType.caption,
+                            )
+                        }
                     }
 
                     // --- Sessions (direct door): what left the list, and the sweep ---

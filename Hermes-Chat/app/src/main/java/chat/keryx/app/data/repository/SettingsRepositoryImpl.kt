@@ -258,6 +258,10 @@ class SettingsRepositoryImpl(
         get() = prefs.getString("bubble_style", "Gilded") ?: "Gilded"
         set(value) = prefs.edit().putString("bubble_style", value).apply()
 
+    override var roomTransition: String
+        get() = prefs.getString("room_transition", "dissolve") ?: "dissolve"
+        set(value) = prefs.edit().putString("room_transition", value).apply()
+
     override var messageTextScale: Float
         get() = prefs.getFloat("message_text_scale", 1.0f)
         set(value) = prefs.edit().putFloat("message_text_scale", value).apply()

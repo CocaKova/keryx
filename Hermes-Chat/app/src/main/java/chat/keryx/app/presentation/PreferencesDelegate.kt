@@ -67,6 +67,12 @@ class PreferencesDelegate(private val settings: SettingsRepository) {
     private val _messageTextScale = MutableStateFlow(settings.messageTextScale)
     val messageTextScale: StateFlow<Float> = _messageTextScale.asStateFlow()
 
+    private val _roomTransition = MutableStateFlow(
+        chat.keryx.app.presentation.ui.components.RoomTransition.of(settings.roomTransition)
+    )
+    /** How the transcript crosses rooms (3.0, Appearance). */
+    val roomTransition: StateFlow<chat.keryx.app.presentation.ui.components.RoomTransition> = _roomTransition.asStateFlow()
+
     private val _showTelemetry = MutableStateFlow(settings.showTelemetry)
     val showTelemetry: StateFlow<Boolean> = _showTelemetry.asStateFlow()
 
@@ -132,6 +138,11 @@ class PreferencesDelegate(private val settings: SettingsRepository) {
     fun setBubbleStyle(style: String) {
         _bubbleStyle.value = style
         settings.bubbleStyle = style
+    }
+
+    fun setRoomTransition(style: chat.keryx.app.presentation.ui.components.RoomTransition) {
+        _roomTransition.value = style
+        settings.roomTransition = style.key
     }
 
     fun setMessageTextScale(scale: Float) {

@@ -1,5 +1,6 @@
 package chat.keryx.app.presentation.ui
 
+import chat.keryx.app.presentation.ui.components.roomCrossing
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -457,9 +458,18 @@ fun ChatScreen(
     var lastRoomForDissolve by remember { mutableStateOf<String?>(null) }
     val dissolve = remember { Animatable(1f) }
     val dissolveReduced by chat.keryx.app.presentation.ui.components.rememberReducedMotion()
+    // The crossing style (3.0, Appearance). Dissolve keeps the path below; the other four are
+    // drawn by roomCrossing on the transcript, from a photo of the room taken while the drawer
+    // covered it.
+    val roomTransition by viewModel.prefs.roomTransition.collectAsState()
+    val crossing = chat.keryx.app.presentation.ui.components.rememberRoomCrossing()
+    chat.keryx.app.presentation.ui.components.RoomCrossingEffect(
+        crossing, currentRoom?.id, roomTransition, reduced = dissolveReduced,
+        arrived = { key -> messagesState.value.firstOrNull()?.roomId == key },
+    )
     LaunchedEffect(currentRoom?.id) {
         val id = currentRoom?.id
-        if (dissolveReduced) {
+        if (dissolveReduced || roomTransition != chat.keryx.app.presentation.ui.components.RoomTransition.DISSOLVE) {
             dissolve.snapTo(1f)
             lastRoomForDissolve = id
             return@LaunchedEffect
@@ -776,16 +786,24 @@ fun ChatScreen(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer {
-                    alpha = 0.12f + 0.88f * dissolve.value
-                    translationY = (1f - dissolve.value) * 26.dp.toPx()
-                    val sc = 0.985f + 0.015f * dissolve.value
-                    scaleX = sc; scaleY = sc
-                }
                 .then(
-                    if (dissolve.value < 1f)
-                        Modifier.blur(((1f - dissolve.value) * 12f).dp)
-                    else Modifier
+                    if (roomTransition == chat.keryx.app.presentation.ui.components.RoomTransition.DISSOLVE) Modifier
+                        .graphicsLayer {
+                            alpha = 0.12f + 0.88f * dissolve.value
+                            translationY = (1f - dissolve.value) * 26.dp.toPx()
+                            val sc = 0.985f + 0.015f * dissolve.value
+                            scaleX = sc; scaleY = sc
+                        }
+                        .then(
+                            if (dissolve.value < 1f)
+                                Modifier.blur(((1f - dissolve.value) * 12f).dp)
+                            else Modifier
+                        )
+                    else Modifier.roomCrossing(
+                        crossing, roomTransition,
+                        amber = MaterialTheme.colorScheme.primary,
+                        violet = MaterialTheme.colorScheme.tertiary,
+                    )
                 ),
             reverseLayout = true,
             contentPadding = PaddingValues(top = 16.dp, bottom = bottomReserve, start = 16.dp, end = 16.dp),

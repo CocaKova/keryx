@@ -46,6 +46,7 @@ enum class SettingsRow(
     APPEARANCE_ACCENT("Accent colours", listOf("colour", "color", "hue", "accent 2", "gradient"), "Appearance", "Appearance"),
     APPEARANCE_HAPTICS("Haptic feedback", listOf("vibrate", "vibration"), "Appearance", "Appearance"),
     APPEARANCE_LOADING("Loading animation", listOf("caduceus", "braille", "dots", "wave", "spinner"), "Appearance", "Appearance"),
+    APPEARANCE_TRANSITION("Room transition", listOf("transition", "animation", "switch", "dissolve", "passage", "weave", "bloom", "rise", "motion"), "Appearance", "Appearance"),
     PRIVACY_LOCK("Biometric app lock", listOf("fingerprint", "face", "pin"), "Privacy & Security", "Privacy & Security"),
     PRIVACY_E2EE("End-to-end encryption", listOf("e2ee", "encrypt", "keys"), null, "Privacy & Security"),
     PRIVACY_SENSES("Senses", listOf("battery", "time", "place", "location", "context"), "Privacy & Security", "Privacy & Security"),
