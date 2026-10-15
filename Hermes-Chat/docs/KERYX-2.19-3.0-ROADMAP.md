@@ -75,7 +75,12 @@ Ground rules that apply to both releases:
       main thread's start-up CPU falls about a quarter (PERF-BASELINE "Cold start"). Lazy
       `onCreate` measured: only `ChatViewModel` and `DirectTransport` cost anything, so their lazy
       start moves into step 6's split.
-   5. The `Pulse` polling scheduler.
+   5. ~~The `Pulse` polling scheduler.~~ Dropped after measuring (10-14): only ~10 of the "34
+      loops" poll the network and nearly all already stop off screen. Idle background is 70 KB/h
+      (on the 75 KB/h line), almost all of it the socket's 20 s WS pings, which both sides send.
+      A shared tick can't beat those. The real excess was the 90 s full session read running off
+      screen while agents work (240 KB/h–1.8 MB/h), fixed in `992308f`. Closing the socket off
+      screen is the only lever left, and it costs live turn-end notifications: a later product call.
    6. Split the big files.
    Re-run `tools/perf_stream.sh` after each of steps 1–3. The phone pass happens once per
    batch, so Jonny lends the phone for 2 minutes, not after every commit.
