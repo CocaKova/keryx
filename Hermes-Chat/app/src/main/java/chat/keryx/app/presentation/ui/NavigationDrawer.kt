@@ -624,7 +624,7 @@ fun NavigationDrawerContent(
                                     else -> openCronTile(tile, viewModel, onRoomSelected, onOpenSpace)
                                 }
                             },
-                            avatarLoader = { viewModel.loadAvatar(it) },
+                            avatarLoader = { viewModel.media.loadAvatar(it) },
                             // Long-press a Quick Room to pin/unpin it — consistent with the
                             // room list below. Setting a room photo lives on the avatar
                             // long-press in the main list, so the two no longer collide.
@@ -797,8 +797,8 @@ fun NavigationDrawerContent(
                                 }
                             }
                         } else null,
-                        avatarLoader = { viewModel.loadAvatar(it) },
-                        previewLoader = { viewModel.roomPreview(room.id, room.timestamp) },
+                        avatarLoader = { viewModel.media.loadAvatar(it) },
+                        previewLoader = { viewModel.media.roomPreview(room.id, room.timestamp) },
                         // Rows glide to their new place when activity reorders the list.
                         modifier = Modifier.animateItem(),
                     )

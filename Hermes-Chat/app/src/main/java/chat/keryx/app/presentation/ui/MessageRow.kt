@@ -39,12 +39,12 @@ internal class MessageRowActions(
     private val jump: State<(String) -> Unit>,
 ) {
     fun reply(m: Message) = viewModel.setReplyTarget(m)
-    fun react(m: Message, emoji: String) = viewModel.sendReaction(m.id, emoji)
+    fun react(m: Message, emoji: String) = viewModel.media.sendReaction(m.id, emoji)
     fun jumpTo(id: String) = jump.value(id)
     fun delete(m: Message) = viewModel.deleteMessage(m.roomId, m.id)
     fun toggleKeep(m: Message) = viewModel.archive.toggleSaved(m)
-    suspend fun media(m: Message): ByteArray? = viewModel.loadMessageMedia(m.roomId, m.id)
-    fun reactions(m: Message) = viewModel.reactionsFlow(m.roomId, m.id)
+    suspend fun media(m: Message): ByteArray? = viewModel.media.loadMessageMedia(m.roomId, m.id)
+    fun reactions(m: Message) = viewModel.media.reactionsFlow(m.roomId, m.id)
     fun undo() = viewModel.undoLastTurn()
     fun retry() = viewModel.retryExchange()
     fun branch(m: Message) = viewModel.turns.branchFrom(m)

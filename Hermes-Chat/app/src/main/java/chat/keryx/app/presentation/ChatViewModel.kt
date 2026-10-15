@@ -125,9 +125,6 @@ class ChatViewModel(
         // Optimistic send bubble safety timeout: if the echo never matches (edited en route,
         // network hiccup), stop double-rendering after this long — the real event wins.
         private const val PENDING_SEND_TIMEOUT_MS = 12_000L
-        // Session-cache bounds (see the cache fields): retained reaction StateFlows and decoded
-        // pet-picker thumbnails were unbounded before 1.19.0.
-        private const val REACTION_FLOW_MAX = 200
         // How long to keep partial text + the alert after a mid-stream drop before giving the
         // timeline back to plain Matrix rendering.
         private const val STREAM_INTERRUPT_HOLD_MS = 60_000L
@@ -674,6 +671,8 @@ class ChatViewModel(
     )
     val shipyard = ShipyardDelegate(deps)
     val pet = PetDelegate(deps)
+    /** Message media, avatars, drawer previews, reaction flows (3.0 split). */
+    val media = MediaDelegate(deps, transport, currentRoom, rooms) { pet.trimThumbs() }
     val missions = MissionsDelegate(deps) { _rooms.value }
 
     /** Edit a mission after it was made (2.16): words, priority, owner. */
@@ -1735,9 +1734,7 @@ class ChatViewModel(
         // treated as "new activity" just because its last message differs from the previous room's.
         lastSeenId = null
         lastSeenLen = -1
-        // The old room's reaction flows are all unsubscribed now — drop them rather than letting
-        // them age out of the LRU while the new room fills it.
-        synchronized(reactionFlows) { reactionFlows.clear() }
+        media.onRoomSwitched()
         settingsRepository.lastRoomId = room.id
         settingsRepository.lastRoomTitle = room.name
         _typingHumans.value = emptyList()
@@ -1800,36 +1797,6 @@ class ChatViewModel(
     fun setReplyTarget(message: Message?) { _replyTarget.value = message }
     fun clearReplyTarget() { _replyTarget.value = null }
 
-    // Media/avatar downloads are owned by viewModelScope (NOT the Compose produceState coroutine),
-    // so a recomposition or a brief scroll-off no longer cancels an in-flight fetch ("The coroutine
-    // scope left the composition"). In-flight maps exist only to dedup concurrent requests — an
-    // entry is removed the moment its download completes; completed bytes live in BYTE-BUDGETED
-    // LRUs. The old unbounded Deferred maps kept every image/avatar ever viewed for the whole
-    // session — a direct driver of the 514 MB marathon RSS.
-    private val mediaInFlight = java.util.concurrent.ConcurrentHashMap<String, Deferred<ByteArray?>>()
-    private val avatarInFlight = java.util.concurrent.ConcurrentHashMap<String, Deferred<ByteArray?>>()
-    private val mediaBytesCache =
-        chat.keryx.app.util.BoundedByteCache((Runtime.getRuntime().maxMemory() / 8).coerceAtMost(64L shl 20))
-    private val avatarBytesCache = chat.keryx.app.util.BoundedByteCache(2L shl 20)
-
-    // Registered with CacheRegistry (driven by KeryxApp.onTrimMemory): under memory pressure the
-    // session caches shed weight — everything here re-fetches/re-decodes on demand. Unregistered
-    // in onCleared so a dead ViewModel isn't pinned by the process-wide registry.
-    private val cacheTrimmer: (Boolean) -> Unit = { aggressive ->
-        if (aggressive) {
-            mediaBytesCache.clear()
-            avatarBytesCache.clear()
-            pet.trimThumbs()
-        } else {
-            mediaBytesCache.trimToBytes(mediaBytesCache.sizeBytes / 2)
-            avatarBytesCache.trimToBytes(avatarBytesCache.sizeBytes / 2)
-        }
-    }
-
-    init {
-        chat.keryx.app.util.CacheRegistry.register(cacheTrimmer)
-    }
-
     // --- The Call (2.9.4): owned here, not by the screen ---------------------------------------
     // A rotation recreates the Activity and every `remember` in it; a call that lived in the
     // screen's composition hung up on every turn of the phone. The screen attaches to this one.
@@ -1846,70 +1813,8 @@ class ChatViewModel(
     override fun onCleared() {
         call?.end()
         call = null
-        chat.keryx.app.util.CacheRegistry.unregister(cacheTrimmer)
+        media.dispose()
         super.onCleared()
-    }
-
-    suspend fun loadMessageMedia(sessionId: String, eventId: String): ByteArray? {
-        mediaBytesCache.get(eventId)?.let { return it }
-        val deferred = mediaInFlight.getOrPut(eventId) {
-            viewModelScope.async(Dispatchers.IO) {
-                transport.mediaBytes(sessionId, eventId)?.also { mediaBytesCache.put(eventId, it) }
-            }.also { d -> d.invokeOnCompletion { mediaInFlight.remove(eventId, d) } }
-        }
-        return deferred.await() // cancellation propagates to the caller, not the download
-    }
-
-    // Drawer previews: the latest meaningful message per room, fetched lazily (only when a drawer
-    // row actually composes) and cached against the room's last-event timestamp so re-opening the
-    // drawer is free until new activity lands. Deliberately NOT folded into the rooms flow — that
-    // would keep a timeline flow alive per room for the whole session just to serve a snippet.
-    private val previewCache = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, String>>()
-
-    suspend fun roomPreview(roomId: String, stamp: Long): String? {
-        previewCache[roomId]?.let { (cachedStamp, preview) -> if (cachedStamp == stamp) return preview }
-        // Direct door: never fetch for a preview. Subscribing to a session's messages here
-        // hydrated its transcript AND resumed it on the gateway — one live agent per drawer
-        // row. The opened rows already hold their newest line; the rest carry the gateway's
-        // own recognition preview from the list call. (Not cached by stamp: both sources are
-        // already in memory, and the store's tail moves without the row's timestamp.)
-        direct?.let { d ->
-            d.peekPreview(roomId)?.let { return previewOf(it) }
-            return _rooms.value.firstOrNull { it.id == roomId }?.preview?.takeIf { it.isNotBlank() }
-        }
-        val msgs = withTimeoutOrNull(5_000L) {
-            transport.getMessages(roomId, 8).first { it.isNotEmpty() }
-        } ?: return previewCache[roomId]?.second
-        // Skip runtime footers so the preview reads as the conversation, not plumbing.
-        val last = msgs.lastOrNull { !MessageParser.isRuntimeFooterMessage(it.content) } ?: msgs.lastOrNull() ?: return null
-        val preview = previewOf(last)
-        previewCache[roomId] = stamp to preview
-        return preview
-    }
-
-    // Live reactions: a cold flow per event, from whichever transport is underneath (Matrix
-    // updates the instant anyone reacts; direct reflects hydration + our own reacts). Cached by
-    // event id so re-subscribing the same bubble during scroll reuses the running flow (shareIn
-    // keeps it hot briefly) instead of spinning up a fresh transport subscription.
-    // LRU-bounded: scrolling a marathon room used to leave one retained StateFlow per event id
-    // for the ViewModel's whole life. Eviction is safe — WhileSubscribed(5s) has already stopped
-    // an off-screen flow's upstream, and a re-scrolled bubble simply recreates it.
-    private val reactionFlows = object : LinkedHashMap<String, kotlinx.coroutines.flow.Flow<List<MessageReaction>>>(64, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, kotlinx.coroutines.flow.Flow<List<MessageReaction>>>) =
-            size > REACTION_FLOW_MAX
-    }
-
-    fun reactionsFlow(sessionId: String, eventId: String): kotlinx.coroutines.flow.Flow<List<MessageReaction>> =
-        synchronized(reactionFlows) {
-            reactionFlows.getOrPut(eventId) {
-                transport.reactionsFlow(sessionId, eventId)
-                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-            }
-        }
-
-    fun sendReaction(eventId: String, emoji: String) {
-        val session = _currentRoom.value ?: return
-        viewModelScope.launch { transport.react(session.id, eventId, emoji) }
     }
 
     fun toggleTheme(isDark: Boolean?) {
@@ -2040,16 +1945,6 @@ class ChatViewModel(
 
     fun markRoomRead(roomId: String, eventId: String) {
         viewModelScope.launch { transport.markRead(roomId, eventId) }
-    }
-
-    suspend fun loadAvatar(mxc: String): ByteArray? {
-        avatarBytesCache.get(mxc)?.let { return it }
-        val deferred = avatarInFlight.getOrPut(mxc) {
-            viewModelScope.async(Dispatchers.IO) {
-                matrix?.avatarBytes(mxc)?.also { avatarBytesCache.put(mxc, it) }
-            }.also { d -> d.invokeOnCompletion { avatarInFlight.remove(mxc, d) } }
-        }
-        return deferred.await()
     }
 
     /** The bot whose Bot Chat just got a bare `/new` — the floor asks what that meant. */

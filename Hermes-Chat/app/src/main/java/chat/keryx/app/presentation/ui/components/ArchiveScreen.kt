@@ -521,7 +521,7 @@ private fun MediaCell(e: ArchiveStore.Entry, viewModel: ChatViewModel, onOpen: (
             val cached = remember(cacheKey) { KeryxBitmapCache.get(cacheKey) }
             val bitmap by produceState<ImageBitmap?>(initialValue = cached, cacheKey) {
                 if (cached != null) return@produceState
-                value = viewModel.loadMessageMedia(e.roomId, e.eventId)?.let { bytes ->
+                value = viewModel.media.loadMessageMedia(e.roomId, e.eventId)?.let { bytes ->
                     decodeSampled(bytes, targetPx = 384)?.also { KeryxBitmapCache.put(cacheKey, it) }
                 }
             }
@@ -810,7 +810,7 @@ private fun ContextRow(m: Message, anchor: Boolean, viewModel: ChatViewModel) {
                     kind = mediaKind,
                     fileName = m.fileName,
                     textColor = MaterialTheme.colorScheme.onSurface,
-                    loader = { viewModel.loadMessageMedia(m.roomId, m.id) },
+                    loader = { viewModel.media.loadMessageMedia(m.roomId, m.id) },
                     roomId = m.roomId,
                     mediaPath = m.mediaUrl?.takeIf { it.startsWith("/") },
                 )

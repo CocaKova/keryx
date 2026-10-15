@@ -53,7 +53,7 @@ import chat.keryx.app.presentation.ui.components.KeryxType
  * on the nav stack, so back returns to the chat exactly where you were.
  *
  * Two sources, tried in this order. Bytes the transport already carries — the media message a
- * `MEDIA:` line became, on either door — are asked of [ChatViewModel.loadMessageMedia], which
+ * `MEDIA:` line became, on either door — are asked of [chat.keryx.app.presentation.MediaDelegate.loadMessageMedia], which
  * is the same cached download the card would have made. Failing that, a path on the gateway
  * host is read over the dashboard's `read-text` (direct door only); a file past the server's
  * preview cap comes down whole through the file download instead, since a mock cut off at
@@ -92,7 +92,7 @@ fun ArtifactSpace(
 
     val page by produceState<Page>(initialValue = Page.Loading, dest, reloadTick) {
         value = Page.Loading
-        value = load(dest, rest(), fetchMedia = { room, event -> viewModel.loadMessageMedia(room, event) })
+        value = load(dest, rest(), fetchMedia = { room, event -> viewModel.media.loadMessageMedia(room, event) })
     }
 
     var busy by remember { mutableStateOf(false) }
