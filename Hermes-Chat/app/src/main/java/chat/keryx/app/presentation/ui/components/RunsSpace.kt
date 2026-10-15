@@ -270,21 +270,13 @@ fun RunsSpace(
         PanelErrorLine(panel.error)
         when {
             board == null -> if (panel.error == null) PanelLoading()
-            board.cards.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
-                    Text(
-                        "No scheduled work yet.\nSchedule a job here, or ask the agent — it has the cronjob tool.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = KeryxType.body, lineHeight = 19.sp,
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    TextButton(onClick = { openEditor(null) }) {
-                        Icon(KeryxGlyphs.Plus, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("New job", fontSize = KeryxType.body)
-                    }
-                }
-            }
+            board.cards.isEmpty() -> KeryxEmptyState(
+                title = "Nothing scheduled yet",
+                body = "Schedule a job here, or ask your agent to. It can set one up with its cronjob tool.",
+                illustration = { RunsClockIllustration() },
+                actionLabel = "Schedule a job",
+                onAction = { openEditor(null) },
+            )
             else -> {
                 // Outside the list, so it never scrolls away: with two hundred rows, the way
                 // to narrow them has to be where your thumb already is.

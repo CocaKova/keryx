@@ -166,14 +166,13 @@ fun BotsSpace(
         PanelErrorLine(panel.error)
         when {
             snap == null -> if (panel.error == null) PanelLoading()
-            all.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    "No profiles on this gateway yet.\nTap + to make the first bot.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = KeryxType.body, lineHeight = 19.sp,
-                    modifier = Modifier.padding(32.dp),
-                )
-            }
+            all.isEmpty() -> KeryxEmptyState(
+                title = "No bots yet",
+                body = "Each bot is a profile on your gateway, with its own model, memory and chats.",
+                illustration = { BotsIllustration() },
+                actionLabel = "Make the first bot",
+                onAction = { creating = true },
+            )
             else -> LazyColumn(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),

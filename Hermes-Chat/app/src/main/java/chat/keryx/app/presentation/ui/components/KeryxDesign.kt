@@ -26,8 +26,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -765,15 +767,13 @@ fun KeryxSegmented(
     modifier: Modifier = Modifier,
 ) {
     // Up to four, the row divides the width evenly. Past that an even division is narrower than
-    // the labels, which are single-line and do not wrap — so the row sizes to its content and
-    // scrolls instead of silently clipping the names.
-    val crowded = options.size > 4
-    val rowModifier = if (crowded) {
-        modifier.horizontalScroll(rememberScrollState())
-    } else {
-        modifier.fillMaxWidth()
+    // the labels, so the set wraps into a grid (3.0): it used to scroll sideways, which hid the
+    // fifth option past the edge where nobody looked for it.
+    if (options.size > 4) {
+        KeryxChoiceGrid(options, selected, onSelect, modifier)
+        return
     }
-    SingleChoiceSegmentedButtonRow(modifier = rowModifier) {
+    SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
         options.forEachIndexed { i, (id, label) ->
             SegmentedButton(
                 selected = id == selected,
@@ -787,6 +787,56 @@ fun KeryxSegmented(
                 icon = {},
             ) {
                 Text(label, fontSize = KeryxType.caption, maxLines = 1, softWrap = false)
+            }
+        }
+    }
+}
+
+/**
+ * [KeryxSegmented] past four options: equal cells, three to a row, so every name is on screen.
+ * Same fill and outline as a segment; the chosen one is also set in SemiBold, so the choice
+ * doesn't rest on the tint alone.
+ */
+@Composable
+private fun KeryxChoiceGrid(
+    options: List<Pair<String, String>>,
+    selected: String,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    columns: Int = 3,
+) {
+    val shape = RoundedCornerShape(KeryxRadius.field)
+    Column(
+        modifier = modifier.fillMaxWidth().selectableGroup(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        options.chunked(columns).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                row.forEach { (id, label) ->
+                    val on = id == selected
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
+                            .clip(shape)
+                            .background(if (on) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else Color.Transparent)
+                            .border(1.dp, MaterialTheme.colorScheme.outline, shape)
+                            .selectable(selected = on, role = Role.RadioButton, onClick = { onSelect(id) })
+                            .padding(horizontal = 8.dp),
+                    ) {
+                        Text(
+                            label,
+                            fontSize = KeryxType.caption,
+                            fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (on) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                // A short last row keeps the cells the same width as the rows above it.
+                repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }

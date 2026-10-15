@@ -116,6 +116,17 @@ fun ProjectsSpace(
             return@KeryxSpace
         }
 
+        if (tree != null && nodes.isEmpty()) {
+            KeryxEmptyState(
+                title = "No projects yet",
+                body = "A project is a workspace folder. Sessions whose work lives there group under it.",
+                illustration = { ProjectsFolderIllustration() },
+                actionLabel = "New project",
+                onAction = { showCreate = true },
+            )
+            return@KeryxSpace
+        }
+
         LazyColumn(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -149,9 +160,7 @@ fun ProjectsSpace(
             if (nodes.isEmpty()) {
                 item {
                     Text(
-                        if (tree == null) (error ?: "Loading projects…")
-                        else "No projects yet.\nA project is a workspace folder — sessions " +
-                            "whose work lives there group under it.",
+                        error ?: "Loading projects…",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = KeryxType.body,
                         lineHeight = 19.sp,

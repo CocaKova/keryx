@@ -91,11 +91,22 @@ Ground rules that apply to both releases:
       engine and Hermes Link settings (10+ shared fields each).
    Re-run `tools/perf_stream.sh` after each of steps 1–3. The phone pass happens once per
    batch, so Jonny lends the phone for 2 minutes, not after every commit.
-2. **Light redesign:** §3 below. Same identity, sharper icon and wordmark, one type system,
-   color tokens, motion language, empty states. Ends in `beta.2`.
+2. **Light redesign:** §3 below. Ends in `beta.2`. Decided 10-14/15 from the mock-up canvas: keep
+   the launcher icon and the drawer mark as they are. Done: five room transitions picked in
+   Appearance (Dissolve, Passage, Weave, Bloom, Rise), the drawer (tinted monogram plates,
+   running ring, lens chips, Cinzel shelf heads), illustrated empty states for Missions, Runs,
+   Bots, Projects and the three Archive tabs, and choice rows of five or more wrap into a grid.
+   **Moved to after launch:** the color-token and type-system cleanup (invisible to a user).
+   Still open in §3: predictive back, shared elements, the splash, the thinking-style refresh.
 3. **The Herald and the rest:** §1 (tour engine, first-run tutorial, contextual hints, agent
    tour through keryx-stream 0.6, QR pairing, demo door), then §4 polish. Ends in `beta.3` and
-   later betas.
+   later betas. **Why it comes first after the redesign (10-15):** Nous announced an official,
+   consumer-focused Hermes mobile app (Series B, 10-07; no date or platforms yet). Keryx's lane
+   is the people running their own Hermes with agents at work: Live Update flight plans, lock
+   screen approvals, Missions, Runs, Fleet, multi-agent rooms. A stranger never sees those today,
+   so the tour, the demo door and QR pairing are what make the case. The tour itself is not a
+   moat (Nous owns `gui_tour`); what it shows is. Not pulled forward: phone as a tool host (that is
+   the consumer app's home ground) and an iOS port.
 4. **Public launch:** §5 (release keystore behind a settings export, README and clip, 3.0.0,
    the announcement).
 
@@ -158,6 +169,7 @@ One tour engine, three ways in:
 
 ### 5. Ready for the public
 - **Release keystore.** Today the build host's debug key signs everything. Changing keys forces one uninstall/reinstall, which wipes app data. Do it once, at 3.0, behind a settings export/import so nobody loses their gateways. Jonny's call on timing.
+- **Where strangers get it** (10-15): next to an official app in the stores, a sideloaded APK loses before features come up. Jonny's call: Google Play, F-Droid, Obtainium, or more than one.
 - README hero shots plus a short tutorial clip (reuse the keryx-ad pipeline), docs refresh, privacy note, credits near the top.
 - Releases: `3.0.0-beta.N` as GitHub pre-releases → 3.0.0. Then an announcement worth tagging Teknium.
 

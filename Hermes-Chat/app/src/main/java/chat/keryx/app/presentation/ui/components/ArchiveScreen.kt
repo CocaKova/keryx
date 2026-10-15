@@ -290,10 +290,14 @@ private fun SearchTab(
                 }
             }
         }
+        query.isBlank() && indexedCount == 0 -> KeryxEmptyState(
+            title = "Nothing remembered yet",
+            body = "The index fills as sessions are swept. Then every message the app has seen is one search away.",
+            illustration = { ArchiveScrollIllustration() },
+        )
         query.isBlank() -> Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
-                if (indexedCount == 0) "Nothing remembered yet — the index fills as sessions are swept."
-                else "Every message the app has ever seen, one search away.",
+                "Every message the app has ever seen, one search away.",
                 fontSize = KeryxType.body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -393,13 +397,11 @@ private fun SavedTab(
         return
     }
     if (entries.isEmpty()) {
-        Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-            Text(
-                "Nothing kept yet. Long-press a message and tap the bookmark.",
-                fontSize = KeryxType.body,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        KeryxEmptyState(
+            title = "Nothing kept yet",
+            body = "Long-press a message and tap the bookmark to keep it here.",
+            illustration = { ArchiveBookmarkIllustration() },
+        )
         return
     }
     LazyColumn(
@@ -481,13 +483,11 @@ private fun MediaTab(
         return
     }
     if (entries.isEmpty()) {
-        Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-            Text(
-                "No photos or files indexed yet.",
-                fontSize = KeryxType.body,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        KeryxEmptyState(
+            title = "No photos or files yet",
+            body = "Pictures and files from your chats gather here as the index fills.",
+            illustration = { ArchiveMediaIllustration() },
+        )
         return
     }
     LazyVerticalGrid(
