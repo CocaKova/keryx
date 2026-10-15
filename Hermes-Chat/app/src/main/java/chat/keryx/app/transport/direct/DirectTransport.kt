@@ -583,24 +583,9 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 // A tool only starts after the model response that called it has landed, and
                 // that response is what moves the gateway's context reading.
                 nudgeUsage(storedId)
-                // A deferred tool arrives as the `tool_call` bridge; draw the call inside it.
-                val call = chat.keryx.core.model.ToolWire.unwrap(
-                    pStr("name") ?: "tool",
-                    p?.get("args") as? kotlinx.serialization.json.JsonObject,
-                    p?.get("labels") as? kotlinx.serialization.json.JsonArray,
-                )
-                val name = call.name
-                val args = call.args
-                noteRun(storedId, ev.type, pStr("tool_id").orEmpty(), name, pStr("context") ?: ToolText.contextPreview(name, args))
-                store.toolStart(
-                    ToolCall(
-                        toolId = pStr("tool_id") ?: "tool-${System.nanoTime()}",
-                        name = name,
-                        context = pStr("context")
-                            ?: ToolText.contextPreview(name, args),
-                        argsJson = args?.toString() ?: "",
-                    )
-                )
+                val call = chat.keryx.core.protocol.ToolFrames.started(p, "tool-${System.nanoTime()}")
+                noteRun(storedId, ev.type, pStr("tool_id").orEmpty(), call.name, call.context)
+                store.toolStart(call)
             }
             "tool.complete" -> {
                 // The blocking bridges live INSIDE a tool call (clarify, terminal sudo, a
@@ -609,40 +594,19 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 // gateway, so no unrelated tool can complete while one is waiting.
                 asks.setBlocking(storedId, null) // the shade too: its "needs you" notice outlived an answer given elsewhere
                 val rawName = pStr("name") ?: "tool"
-                val call = chat.keryx.core.model.ToolWire.unwrap(
-                    rawName,
-                    p?.get("args") as? kotlinx.serialization.json.JsonObject,
-                    p?.get("labels") as? kotlinx.serialization.json.JsonArray,
-                )
-                val name = call.name
-                val args = call.args
-                val result = p?.get("result")
-                val resultDisplay = ToolText.resultElementToDisplay(result)
-                store.toolComplete(
-                    ToolCall(
-                        toolId = pStr("tool_id") ?: "tool-${System.nanoTime()}",
-                        name = name,
-                        context = ToolText.contextPreview(name, args),
-                        argsJson = args?.toString() ?: "",
-                        status = if (ToolText.elementLooksFailed(result)) ToolStatus.FAILED
-                        else ToolStatus.COMPLETED,
-                        result = resultDisplay,
-                        summary = pStr("summary") ?: "",
-                        durationS = (p?.get("duration_s") as? JsonPrimitive)?.contentOrNull?.toDoubleOrNull(),
-                        inlineDiff = pStr("inline_diff") ?: "",
-                    )
-                )
+                val call = chat.keryx.core.protocol.ToolFrames.completed(p, "tool-${System.nanoTime()}")
+                store.toolComplete(call)
                 // The agent updated its plan — every `todo` result is the full list, so
                 // the Flight Plan strip repaints from this alone. A gateway that also sends
                 // `todo.updated` repaints it again from that, identically.
                 if (chat.keryx.core.model.TodoPlanParser.isTodoTool(rawName) ||
-                    chat.keryx.core.model.TodoPlanParser.isTodoTool(name)
+                    chat.keryx.core.model.TodoPlanParser.isTodoTool(call.name)
                 ) {
-                    chat.keryx.core.model.TodoPlanParser.parse(resultDisplay)
+                    chat.keryx.core.model.TodoPlanParser.parse(call.result)
                         ?.let { store.todoPlan.value = it }
                 }
                 // After the plan: the tally moving is what makes the run notice re-read it.
-                noteRun(storedId, ev.type, pStr("tool_id").orEmpty(), name)
+                noteRun(storedId, ev.type, pStr("tool_id").orEmpty(), call.name)
             }
             // ---- delegation: folded by core DelegationFrames ------------------------------
             in chat.keryx.core.protocol.DelegationFrames.TYPES -> {
