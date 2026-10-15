@@ -80,6 +80,10 @@ fun LoginScreen(viewModel: ChatViewModel) {
     // The fleet (2.11): the device name the gateway wears everywhere. Prefilled from the row
     // this phone last stood on; blank = derived from the host when the sign-in lands.
     var directName by remember { mutableStateOf(viewModel.doors.fleet.value.active?.name.orEmpty()) }
+    // Pairing by QR (3.0): what was scanned, held until Connect. While it's set the address is the
+    // code's, not editable (the code only pairs that gateway's Link).
+    var pair by remember { mutableStateOf<chat.keryx.core.pair.PairingLink?>(null) }
+    var scanning by remember { mutableStateOf(false) }
 
     val accent = MaterialTheme.colorScheme.primary
     val focusManager = LocalFocusManager.current
@@ -90,6 +94,19 @@ fun LoginScreen(viewModel: ChatViewModel) {
 
     // The first run (3.0): a phone that has never had a door opens on the welcome, not a form.
     var welcome by remember { mutableStateOf(viewModel.doors.firstRun) }
+
+    if (scanning) {
+        chat.keryx.app.presentation.pair.PairScanDialog(
+            onDismiss = { scanning = false },
+            onScanned = { p ->
+                scanning = false
+                pair = p
+                directUrl = p.gateway
+                if (directName.isBlank()) directName = p.name
+                error = null
+            },
+        )
+    }
 
     // The demo is its own process spine too; it arrives with the tour already running.
     fun lookAround() {
@@ -216,6 +233,21 @@ fun LoginScreen(viewModel: ChatViewModel) {
         }
 
         if (directDoor) {
+            val scanned = pair
+            if (scanned == null) {
+                chat.keryx.app.presentation.pair.ScanPairingButton(
+                    enabled = !connecting,
+                    onClick = { scanning = true },
+                    modifier = Modifier.padding(bottom = 16.dp),
+                )
+            } else {
+                chat.keryx.app.presentation.pair.PairingBanner(
+                    scanned,
+                    onCancel = { pair = null; directUrl = ""; error = null },
+                    enabled = !connecting,
+                    modifier = Modifier.padding(bottom = 16.dp),
+                )
+            }
             OutlinedTextField(
                 value = directName,
                 onValueChange = { directName = it; error = null },
@@ -231,7 +263,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 label = { Text("Gateway URL") },
                 placeholder = { Text("http://your-host:8686") },
                 singleLine = true,
-                enabled = !connecting,
+                enabled = !connecting && pair == null,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -309,10 +341,13 @@ fun LoginScreen(viewModel: ChatViewModel) {
                             }
                         },
                         name = directName.trim(),
+                        pair = pair,
+                        deviceName = chat.keryx.app.presentation.pair.phoneName(context),
                     )
                 },
                 enabled = !connecting && directUrl.isNotBlank(),
-                modifier = Modifier.fillMaxWidth().height(52.dp).padding(top = 24.dp),
+                // Padding before the height: inside it, the 24 dp came out of the button.
+                modifier = Modifier.fillMaxWidth().padding(top = 24.dp).height(52.dp),
             ) {
                 if (connecting) {
                     CircularProgressIndicator(
@@ -340,7 +375,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
             )
             Button(
                 onClick = { viewModel.doors.switchTransport("matrix"); relaunch() },
-                modifier = Modifier.fillMaxWidth().height(52.dp).padding(top = 24.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 24.dp).height(52.dp),
             ) {
                 Text("Switch to Matrix", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
             }
@@ -445,7 +480,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 }
             },
             enabled = !connecting && homeserver.isNotBlank() && username.isNotBlank() && password.isNotBlank(),
-            modifier = Modifier.fillMaxWidth().height(52.dp).padding(top = 24.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 24.dp).height(52.dp),
         ) {
             if (connecting) {
                 CircularProgressIndicator(

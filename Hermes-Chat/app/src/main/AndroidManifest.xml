@@ -5,6 +5,10 @@
     <!-- 2.19.1: the gateway link redials when the network changes. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- 3.0: scanning a pairing code from `hermes keryx pair`. Asked for only when Scan is tapped;
+         frames are decoded on the phone and never kept. Not required: no camera, type the address. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <!-- Senses (2.3): town-level place, opt-in, last-known fix only — never a live location request. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- Save-to-device on pre-Q only; Android 10+ writes via MediaStore with no permission. -->

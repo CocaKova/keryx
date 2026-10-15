@@ -317,6 +317,10 @@ class SettingsRepositoryImpl(
         get() = prefs.getBoolean("welcome_seen", false)
         set(value) = prefs.edit().putBoolean("welcome_seen", value).apply()
 
+    override var pendingNotice: String
+        get() = prefs.getString("pending_notice", "") ?: ""
+        set(value) = prefs.edit().putString("pending_notice", value).apply()
+
     override var gatewayUrl: String
         get() = (prefs.getString(ledgerKey("gateway_url"), "") ?: "").ifBlank { defaultGatewayUrl() }
         set(value) = prefs.edit().putString(ledgerKey("gateway_url"), value).apply()
@@ -413,6 +417,14 @@ class SettingsRepositoryImpl(
             .putString(credKey("direct_access_token"), chat.keryx.app.data.local.TokenVault.seal(access))
             .putString(credKey("direct_refresh_token"), chat.keryx.app.data.local.TokenVault.seal(refresh))
             .putLong(credKey("direct_token_expires_at"), expiresAtSeconds)
+            .commit()
+    }
+
+    @Suppress("ApplySharedPref") // synchronous ON PURPOSE — see the interface doc.
+    override fun commitLink(url: String, apiKey: String) {
+        prefs.edit()
+            .putString(ledgerKey("gateway_url"), url)
+            .putString(ledgerKey("gateway_api_key"), chat.keryx.app.data.local.TokenVault.seal(apiKey))
             .commit()
     }
 

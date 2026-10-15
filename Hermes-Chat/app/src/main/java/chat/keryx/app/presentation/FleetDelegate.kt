@@ -20,6 +20,7 @@ class FleetDelegate(
 ) {
     private val scope = deps.scope
     private val settings: SettingsRepository = deps.settings
+    private val toast = deps.toast
     private val matrix get() = transport.matrix
 
     private val _fleet = MutableStateFlow(settings.fleet)
@@ -109,6 +110,11 @@ class FleetDelegate(
         onResult: (ok: Boolean, needsRestart: Boolean, message: String?) -> Unit,
         /** The fleet (2.11): the device name for this gateway. Blank = derived from the host. */
         name: String = "",
+        /** A scanned pairing code (3.0): once signed in, its one-time code buys this phone a
+         *  Hermes Link token of its own. [url] must be the code's gateway. */
+        pair: chat.keryx.core.pair.PairingLink? = null,
+        /** What the gateway lists this phone as (`hermes keryx devices`). */
+        deviceName: String = "",
     ) {
         scope.launch {
             // The fleet row first: a known URL is its existing row (renamed if a name was
@@ -138,7 +144,21 @@ class FleetDelegate(
             val onOk: (Boolean, Boolean, String?) -> Unit = { ok, restart, message ->
                 if (ok) onResult(true, restart || switched, message) else failed(message)
             }
+            if (pair != null && hostOf(entry.url) != pair.host) {
+                failed("The address changed after the scan. Scan the pairing code again.")
+                return@launch
+            }
             val insecure = settings.allowInsecure
+            // Pairing (3.0): spent only after the sign-in proved itself, so a phone that can't
+            // sign in never uses up the code. A failed claim doesn't undo the sign-in: the gateway
+            // works, and the Link can still be keyed by hand.
+            suspend fun claimLink(): Pair<Pair<String, String>?, String?> {
+                val p = pair ?: return null to null
+                return chat.keryx.app.transport.direct.LinkPairing.claim(p, deviceName, insecure).fold(
+                    onSuccess = { (p.link to it) to null },
+                    onFailure = { null to "Signed in. Hermes Link didn't pair: ${it.message}" },
+                )
+            }
             val probe = chat.keryx.app.transport.direct.GatewayRest(entry.url, apiKey, insecure)
             val st = probe.status().getOrElse {
                 failed(it.message?.take(160) ?: "Gateway unreachable")
@@ -146,11 +166,17 @@ class FleetDelegate(
             }
             if (!st.authRequired) {
                 // Ungated gateway: the legacy token dialect, exactly as before.
+                if (pair != null && apiKey.isBlank()) {
+                    // The code only pairs the Link; this dashboard wants its session token.
+                    failed("This gateway doesn't sign in through the browser. Enter its session token, then Connect.")
+                    return@launch
+                }
                 runCatching { if (apiKey.isNotBlank()) probe.validateToken().getOrThrow() }.fold(
                     onSuccess = {
                         settings.directAuthMode =
                             chat.keryx.app.transport.direct.DirectAuth.MODE_TOKEN
-                        commitDirectDoor(entry.url, apiKey, switched, onOk)
+                        val (link, notice) = claimLink()
+                        commitDirectDoor(entry.url, apiKey, switched, onOk, link, notice)
                     },
                     onFailure = { failed(it.message?.take(160) ?: "Gateway unreachable") },
                 )
@@ -172,7 +198,10 @@ class FleetDelegate(
                 chat.keryx.app.transport.direct.GatewayRest(entry.url, "", insecure, auth)
                     .validateToken().getOrThrow()
             }.fold(
-                onSuccess = { commitDirectDoor(entry.url, null, switched, onOk) },
+                onSuccess = {
+                    val (link, notice) = claimLink()
+                    commitDirectDoor(entry.url, null, switched, onOk, link, notice)
+                },
                 onFailure = { failed(it.message?.take(160) ?: "Browser sign-in failed") },
             )
         }
@@ -184,15 +213,26 @@ class FleetDelegate(
         /** The sign-in landed on a gateway other than the one this process was built for. */
         switched: Boolean,
         onResult: (Boolean, Boolean, String?) -> Unit,
+        /** A paired Link (3.0): its address and this phone's own token. */
+        link: Pair<String, String>? = null,
+        /** Said once the door is open (a pairing that didn't take). */
+        notice: String? = null,
     ) {
         // One synchronous commit: the caller relaunches the process on our answer,
         // and apply()'s async disk write loses that race (device-caught).
         settings.commitTransportDoor(url, apiKey, "direct", true)
+        // After the door commit: the Link's keys are the active gateway's, and only the direct
+        // door has one (see SettingsRepositoryImpl.ledgerKey).
+        link?.let { (linkUrl, token) -> settings.commitLink(linkUrl, token) }
         val direct = transport as? chat.keryx.app.transport.direct.DirectTransport
         if (direct != null && !switched) {
             direct.login()
+            notice?.let(toast)
             onResult(true, false, null)
         } else {
+            // The relaunch ends this process: the notice waits in prefs for the next one (not in
+            // the launch intent, which any app could fill in).
+            notice?.let { settings.pendingNotice = it }
             // A door crossing, or a different gateway than the spine was built for (2.11):
             // mark the relaunch as a switch so the boot lands on this row whatever the
             // start-up rule says.
@@ -200,6 +240,9 @@ class FleetDelegate(
             onResult(true, true, null)
         }
     }
+
+    private fun hostOf(url: String): String =
+        runCatching { java.net.URI(url.trim()).host?.lowercase() }.getOrNull().orEmpty()
 
     /**
      * The transport TOGGLE: flip the spine for the next process life, keeping BOTH credential

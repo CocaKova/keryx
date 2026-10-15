@@ -183,6 +183,12 @@ dependencies {
   implementation(libs.androidx.work.runtime)
   // Real background push for normal messages (UnifiedPush distributor -> PushService wake).
   implementation(libs.unifiedpush.connector)
+  // Pairing by QR (3.0): CameraX frames, decoded by ZXing on the phone. No Google Play services:
+  // Keryx stays usable on de-Googled phones and in F-Droid-style builds.
+  implementation(libs.androidx.camera.camera2)
+  implementation(libs.androidx.camera.lifecycle)
+  implementation(libs.androidx.camera.view)
+  implementation(libs.zxing.core)
   // The home-screen widget (2.13): Glance draws it as RemoteViews from a composable; material3
   // is only the day/night colour bridge, so the widget wears the app's own tokens.
   implementation(libs.androidx.glance.appwidget)

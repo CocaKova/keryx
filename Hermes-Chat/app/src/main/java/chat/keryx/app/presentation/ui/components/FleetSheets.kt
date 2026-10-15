@@ -267,6 +267,22 @@ fun AddGatewaySheet(
     var key by remember { mutableStateOf("") }
     var connecting by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    // Pairing by QR (3.0), as on the sign-in screen.
+    var pair by remember { mutableStateOf<chat.keryx.core.pair.PairingLink?>(null) }
+    var scanning by remember { mutableStateOf(false) }
+
+    if (scanning) {
+        chat.keryx.app.presentation.pair.PairScanDialog(
+            onDismiss = { scanning = false },
+            onScanned = { p ->
+                scanning = false
+                pair = p
+                url = p.gateway
+                if (name.isBlank()) name = p.name
+                error = null
+            },
+        )
+    }
 
     KeryxSheet(onDismiss = { if (!connecting) onDismiss() }, title = "Add gateway", sheetState = sheetState) {
         Text(
@@ -276,6 +292,21 @@ fun AddGatewaySheet(
             modifier = Modifier.padding(horizontal = 20.dp),
         )
         Spacer(Modifier.height(12.dp))
+        val scanned = pair
+        if (scanned == null) {
+            chat.keryx.app.presentation.pair.ScanPairingButton(
+                enabled = !connecting,
+                onClick = { scanning = true },
+                modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 12.dp),
+            )
+        } else {
+            chat.keryx.app.presentation.pair.PairingBanner(
+                scanned,
+                onCancel = { pair = null; url = ""; error = null },
+                enabled = !connecting,
+                modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 12.dp),
+            )
+        }
         OutlinedTextField(
             value = name,
             onValueChange = { name = it; error = null },
@@ -292,7 +323,7 @@ fun AddGatewaySheet(
             label = { Text("Gateway URL") },
             placeholder = { Text("http://your-host:9119") },
             singleLine = true,
-            enabled = !connecting,
+            enabled = !connecting && pair == null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
         )
@@ -331,6 +362,8 @@ fun AddGatewaySheet(
                         if (ok) onConnected(needsRestart) else error = message ?: "Could not connect"
                     },
                     name = name.trim(),
+                    pair = pair,
+                    deviceName = chat.keryx.app.presentation.pair.phoneName(context),
                 )
             },
             enabled = !connecting && url.isNotBlank() && name.isNotBlank(),

@@ -59,6 +59,9 @@ interface SettingsRepository {
     var batteryPromptShown: Boolean
     /** The first-run welcome (3.0) was answered: connect, or look around first. Device-wide. */
     var welcomeSeen: Boolean
+    /** A notice for the next launch to show once (3.0): said across a relaunch, which ends the
+     *  process. Blank = none. Device-wide; only the app itself writes it. */
+    var pendingNotice: String
 
     // --- Hermes side-channel streaming (tier-1) ---
     /** Base URL of the Hermes gateway API server (e.g. http://your-gateway-host:8642). Blank = disabled. */
@@ -179,6 +182,11 @@ interface SettingsRepository {
      *  relaunch-race reason as [commitTransportDoor]: a login's last write is immediately
      *  followed by a process relaunch, and apply() loses that race. */
     fun commitDirectNativeTokens(access: String, refresh: String, expiresAtSeconds: Long)
+
+    /** Persist the active gateway's Hermes Link address and key SYNCHRONOUSLY (pairing by QR,
+     *  3.0): written right after the door commit and right before the relaunch, the same race
+     *  [commitDirectNativeTokens] guards. The key is sealed like [gatewayApiKey]. */
+    fun commitLink(url: String, apiKey: String)
 
     /**
      * Persist a door decision SYNCHRONOUSLY (commit, not apply) — the process relaunches the

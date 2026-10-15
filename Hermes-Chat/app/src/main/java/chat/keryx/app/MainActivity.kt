@@ -230,6 +230,13 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
      */
     private fun handleDeepLink(intent: Intent?) {
         if (intent?.action != Intent.ACTION_VIEW || !::viewModel.isInitialized) return
+        // A pairing code read by the camera app (3.0) arrives here as a link. Links from outside
+        // never pair anything; say where the scanner is instead of opening silently.
+        if (chat.keryx.core.pair.PairingLink.looksLikePairing(intent.dataString)) {
+            intent.data = null
+            viewModel.toast("Scan pairing codes inside Keryx: Connect your gateway › Scan a pairing code.")
+            return
+        }
         val link = chat.keryx.core.model.KeryxLink.parse(intent.dataString) ?: return
         intent.data = null
         when (link) {

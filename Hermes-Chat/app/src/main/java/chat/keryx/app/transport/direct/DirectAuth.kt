@@ -214,8 +214,20 @@ class DirectAuth(
                 put("code", JsonPrimitive(code))
                 put("code_verifier", JsonPrimitive(pending.verifier))
             }.toString()
-            val resp = post(base.trimEnd('/') + "/auth/native/token", body)
-                ?: throw IllegalStateException("token exchange failed")
+            val tokenUrl = base.trimEnd('/') + "/auth/native/token"
+            // The browser hands the code back while Keryx is still behind it, and Android cuts a
+            // background app off the network: the first POST can die in DNS before the user is
+            // back (device-caught 3.0, UnknownHostException). A network failure never reached
+            // Hermes, so the code is unspent; it lives 120 s (native_flow._CODE_TTL_SECONDS).
+            // Retry those until the user returns. An HTTP answer is final: Hermes spends the
+            // code on every redeem, good or bad.
+            val until = System.currentTimeMillis() + EXCHANGE_WINDOW_MS
+            var resp = post(tokenUrl, body)
+            while (resp == null && lastPostNetwork && System.currentTimeMillis() < until) {
+                kotlinx.coroutines.delay(1_500)
+                resp = post(tokenUrl, body)
+            }
+            resp ?: throw IllegalStateException("token exchange failed" + (lastPostError?.let { " ($it)" } ?: ""))
             storeTokens(resp)
             resp["user_id"]?.jsonPrimitive?.contentOrNull ?: ""
         }
@@ -235,18 +247,37 @@ class DirectAuth(
         settings.commitDirectNativeTokens(access, refresh, exp)
     }
 
+    /** Why the last [post] came back null: an HTTP status or an exception's class, never a body
+     *  (a token reply's body is a credential). For the sign-in's error line and the log. */
+    @Volatile private var lastPostError: String? = null
+    /** The last [post] never got an HTTP answer (DNS, connect, socket): nothing reached Hermes. */
+    @Volatile private var lastPostNetwork = false
+
     /** POST json, parse json; null on non-2xx or malformed reply (callers decide severity). */
     private suspend fun post(url: String, body: String): kotlinx.serialization.json.JsonObject? =
         withContext(Dispatchers.IO) {
+            lastPostError = null
+            lastPostNetwork = false
             runCatching {
                 val req = Request.Builder().url(url)
                     .post(body.toRequestBody("application/json".toMediaType()))
                     .build()
                 client.newCall(req).execute().use { resp ->
-                    if (!resp.isSuccessful) return@use null
+                    if (!resp.isSuccessful) {
+                        lastPostError = "HTTP ${resp.code}"
+                        return@use null
+                    }
                     json.parseToJsonElement(resp.body?.string().orEmpty()).jsonObject
                 }
-            }.getOrNull()
+            }.onFailure {
+                lastPostError = it.javaClass.simpleName
+                lastPostNetwork = it is java.io.IOException
+            }
+                .getOrNull()
+                .also {
+                    // Log.w: release builds strip v/d/i.
+                    if (it == null) android.util.Log.w("KeryxAuth", "POST ${url.substringAfterLast('/')} failed: $lastPostError")
+                }
         }
 
     private fun randomUrlSafe(bytes: Int): String =
@@ -277,6 +308,8 @@ class DirectAuth(
         private const val EXPIRY_MARGIN_S = 60L
         /** The whole interactive login window (the server's pending TTL is 10 min). */
         private const val LOGIN_TIMEOUT_MS = 600_000L
+        /** How long a network-failed token exchange is retried: inside Hermes' 120 s code life. */
+        private const val EXCHANGE_WINDOW_MS = 100_000L
         private val CALLBACK_PAGE = """
             HTTP/1.1 200 OK
             Content-Type: text/html; charset=utf-8
@@ -284,7 +317,7 @@ class DirectAuth(
 
             <!doctype html><meta name=viewport content="width=device-width,initial-scale=1">
             <body style="font-family:sans-serif;display:grid;place-items:center;height:90vh;background:#111;color:#eee">
-            <div style="text-align:center"><h2>Signed in ✓</h2><p>Return to Keryx.</p></div>
+            <div style="text-align:center"><h2>Signed in ✓</h2><p>Return to Keryx to finish.</p></div>
         """.trimIndent().replace("\n", "\r\n")
     }
 }

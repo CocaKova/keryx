@@ -796,6 +796,12 @@ class ChatViewModel(
         // Before anything restores a room: last launch's temporary sessions die first, and the
         // synchronous lastRoomId clear inside keeps a dead temp from being this launch's room.
         sessions.sweepTemporarySessions()
+        // What the last process wanted said after its relaunch (a pairing that didn't take).
+        settingsRepository.pendingNotice.takeIf { it.isNotBlank() }?.let { notice ->
+            settingsRepository.pendingNotice = ""
+            // The toast lane has no replay: give the screen time to start listening.
+            viewModelScope.launch { kotlinx.coroutines.delay(1_500); toast(notice) }
+        }
         viewModelScope.launch {
             transport.getRooms().collectLatest { roomList ->
                 _rooms.value = roomList
