@@ -158,7 +158,7 @@ fun RunsSpace(
         askFix = { card, job ->
             // A fresh chat rather than the open one: a repair is its own thread, and the brief
             // lands in the composer, not sent — you read what the agent is about to be told.
-            viewModel.createSession("Fix cron: ${card.name}") { err ->
+            viewModel.sessions.createSession("Fix cron: ${card.name}") { err ->
                 if (err == null) {
                     viewModel.prefillComposer(fixBrief(job))
                     onClose()

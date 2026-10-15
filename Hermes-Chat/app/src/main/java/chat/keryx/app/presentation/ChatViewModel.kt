@@ -298,64 +298,6 @@ class ChatViewModel(
     val lexicon: chat.keryx.core.model.DoorLexicon =
         chat.keryx.core.model.DoorLexicon.forDoor(direct = transport.matrix == null)
 
-    // Two pin ledgers, one per door, and the UI reads one set. Matrix rooms pin into the
-    // phone's own ledger (a homeserver has no such flag). Gateway sessions pin ON THE GATEWAY —
-    // the Desktop sidebar's durable "keep" flag, which also exempts the session from the
-    // auto-archive sweep — so on the direct door the set is read straight off the roster
-    // rows, and the phone's ledger is not consulted at all (it would drift from the truth the
-    // moment Desktop pinned something).
-    private val _localPinnedRoomIds = MutableStateFlow(settingsRepository.pinnedRoomIds)
-    val pinnedRoomIds: StateFlow<Set<String>> =
-        combine(_localPinnedRoomIds, _rooms) { local, rooms ->
-            if (transport.matrix == null) rooms.filter { it.pinned }.mapTo(LinkedHashSet()) { it.id }
-            else local
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, if (transport.matrix == null) emptySet() else settingsRepository.pinnedRoomIds)
-
-    /** [undoable]: say what happened with an Undo (2.16). The Undo itself flips back quietly —
-     *  an undo that offers to undo itself is a loop, not a safety net. */
-    fun togglePin(roomId: String, undoable: Boolean = true) {
-        val gw = gateway
-        val name = _rooms.value.firstOrNull { it.id == roomId }?.name?.takeIf { it.isNotBlank() }
-        fun undo(pinnedNow: Boolean) {
-            if (!undoable) return
-            val what = (if (pinnedNow) "Pinned" else "Unpinned") + (name?.let { " “${it.take(40)}”" } ?: "")
-            _notices.tryEmit(KeryxNotice.undo(what) { togglePin(roomId, undoable = false) })
-        }
-        if (gw != null) {
-            val nowPinned = roomId in pinnedRoomIds.value
-            viewModelScope.launch {
-                gw.pinSession(roomId, pinned = !nowPinned)
-                    .onSuccess { undo(pinnedNow = !nowPinned) }
-                    .onFailure { _toasts.tryEmit("${if (nowPinned) "Unpin" else "Pin"} failed: ${it.message?.take(80)}") }
-            }
-            return
-        }
-        val updated = _localPinnedRoomIds.value.toMutableSet()
-        val pinnedNow = updated.add(roomId)
-        if (!pinnedNow) updated.remove(roomId)
-        _localPinnedRoomIds.value = updated
-        settingsRepository.pinnedRoomIds = updated
-        undo(pinnedNow)
-    }
-
-    /** Direct door: flip the gateway's read watermark to "explicitly unread" — the Desktop
-     *  sidebar's Mark as unread. The row reads unread until it is opened again. */
-    fun markSessionUnread(sessionId: String) {
-        val gw = gateway ?: return
-        viewModelScope.launch {
-            gw.markSessionRead(sessionId, read = false)
-                .onSuccess {
-                    _notices.tryEmit(KeryxNotice.undo("Marked unread") {
-                        viewModelScope.launch {
-                            gw.markSessionRead(sessionId, read = true)
-                                .onFailure { _toasts.tryEmit("Couldn't mark read: ${it.message?.take(80)}") }
-                        }
-                    })
-                }
-                .onFailure { _toasts.tryEmit("Couldn't mark unread: ${it.message?.take(80)}") }
-        }
-    }
-
     /** Direct door: re-pull the session roster (the drawer asks on open — the list is the one
      *  thing another client, a cron run or a compaction can change behind the phone's back). */
     fun refreshRoster() {
@@ -666,10 +608,16 @@ class ChatViewModel(
         readRecents = { settingsRepository.recentModels },
         writeRecents = { settingsRepository.recentModels = it },
     )
+    /** The session list's verbs: pins, temporary, sticky model, archive, delete, paging (3.0 split). */
+    val sessions = SessionsDelegate(
+        deps, transport, rooms, models,
+        openRoomById = { openRoomById(it) },
+        moveOffRoom = { moveOffRoom(it) },
+    )
     val projects = ProjectsDelegate(
         deps, transport,
         openSession = { id, title -> openSessionById(id, title) },
-        onSessionCreated = { applyStickyModel(it) },
+        onSessionCreated = { sessions.applyStickyModel(it) },
     )
     val shipyard = ShipyardDelegate(deps)
     val pet = PetDelegate(deps)
@@ -938,7 +886,7 @@ class ChatViewModel(
     init {
         // Before anything restores a room: last launch's temporary sessions die first, and the
         // synchronous lastRoomId clear inside keeps a dead temp from being this launch's room.
-        sweepTemporarySessions()
+        sessions.sweepTemporarySessions()
         viewModelScope.launch {
             transport.getRooms().collectLatest { roomList ->
                 _rooms.value = roomList
@@ -2176,6 +2124,13 @@ class ChatViewModel(
         }
     }
 
+    /** If [roomId] is the open room, open the next one (or none): it was left or deleted. */
+    private fun moveOffRoom(roomId: String) {
+        if (_currentRoom.value?.id != roomId) return
+        val next = _rooms.value.firstOrNull { it.id != roomId }
+        if (next != null) selectRoom(next) else setCurrentRoom(null)
+    }
+
     fun leaveRoom(roomId: String) {
         viewModelScope.launch {
             matrix?.leaveRoom(roomId)
@@ -2183,11 +2138,7 @@ class ChatViewModel(
                     _toasts.tryEmit("Left room")
                     if (settingsRepository.lastRoomId == roomId) settingsRepository.lastRoomId = null
                     // Move off the dead room so the chat pane never points at a membership we lost.
-                    if (_currentRoom.value?.id == roomId) {
-                        val next = _rooms.value.firstOrNull { it.id != roomId }
-                        if (next != null) selectRoom(next)
-                        else setCurrentRoom(null)
-                    }
+                    moveOffRoom(roomId)
                 }
                 ?.onFailure { _toasts.tryEmit("Leave failed: ${it.message?.take(80)}") }
         }
@@ -2203,50 +2154,6 @@ class ChatViewModel(
 
     /** Message redaction is a Matrix power; the gateway keeps its transcript. */
     val canDeleteMessages: Boolean get() = matrix != null
-
-    // --- Gateway sessions (direct door): the lifecycle the homeserver would otherwise own -------
-    // The mirror of the membership block above — same shapes, gated on the other capability.
-
-    /** Sessions the user asked to be TEMPORARY — normal rooms until the next cold start,
-     *  which deletes them from the gateway (see [sweepTemporarySessions]). */
-    private val _temporarySessionIds = MutableStateFlow(settingsRepository.temporarySessionIds)
-    val temporarySessionIds: StateFlow<Set<String>> = _temporarySessionIds.asStateFlow()
-
-    private fun markTemporary(sessionId: String) {
-        settingsRepository.temporarySessionIds = settingsRepository.temporarySessionIds + sessionId
-        _temporarySessionIds.value = settingsRepository.temporarySessionIds
-    }
-
-    private fun unmarkTemporary(sessionId: String) {
-        settingsRepository.temporarySessionIds = settingsRepository.temporarySessionIds - sessionId
-        _temporarySessionIds.value = settingsRepository.temporarySessionIds
-    }
-
-    /**
-     * The temporary contract, kept at launch: every ledgered session is deleted from the
-     * gateway. Cold-start-only on purpose — deleting the moment you switch rooms would eat a
-     * conversation you meant to hop back to, and hooking app-background would kill the chat
-     * you are IN the moment you check a text. An id whose delete fails (offline, gateway
-     * down) stays ledgered and dies at the next launch instead; one already gone elsewhere
-     * comes off the ledger regardless, or it would be retried forever.
-     */
-    private fun sweepTemporarySessions() {
-        val doomed = settingsRepository.temporarySessionIds
-        if (doomed.isEmpty()) return
-        // Before the room restore runs: last night's temp must not greet you as today's room.
-        if (settingsRepository.lastRoomId in doomed) settingsRepository.lastRoomId = null
-        viewModelScope.launch {
-            val gw = gateway ?: return@launch
-            val remaining = doomed.filterNotTo(mutableSetOf()) { id ->
-                gw.deleteSession(id).isSuccess
-            }
-            // Self-heal: whatever the roster no longer carries is gone however it went.
-            val known = runCatching { _rooms.value.mapTo(HashSet()) { it.id } }.getOrNull()
-            settingsRepository.temporarySessionIds =
-                if (known.isNullOrEmpty()) remaining else remaining.intersect(known)
-            _temporarySessionIds.value = settingsRepository.temporarySessionIds
-        }
-    }
 
     // --- Empty-chat starters (2.17.3): three switches, then the AI-written prompts by agent ---
     private val _starterSuggestions = MutableStateFlow(settingsRepository.starterSuggestions)
@@ -2289,104 +2196,6 @@ class ChatViewModel(
         }
     }
 
-    private val _stickyModel = MutableStateFlow(settingsRepository.stickyModel)
-    val stickyModel: StateFlow<Boolean> = _stickyModel.asStateFlow()
-    fun setStickyModel(on: Boolean) {
-        _stickyModel.value = on
-        settingsRepository.stickyModel = on
-    }
-
-    /**
-     * A new session starts on the last model you picked (2.10) — the Desktop's rule ("pick a
-     * model once and the next new chat opens on it"), and the missing "default model for
-     * Keryx". Applies straight to the session, never to the profile default; the pick that
-     * needs confirming (an expensive model) is left to the picker, with a word.
-     */
-    private fun applyStickyModel(sessionId: String) {
-        if (!settingsRepository.stickyModel) return
-        val recents = settingsRepository.recentModels
-        if (recents.isEmpty()) return
-        val gw = gateway ?: return
-        viewModelScope.launch {
-            // Resolve the ledger against what the gateway serves NOW. A remembered route the
-            // brain no longer carries (the local model was swapped under the same endpoint)
-            // is skipped, not pinned: the gateway accepts any name for a custom endpoint and the
-            // first turn dies on it later — and every new chat would reopen on the ghost.
-            // Every way out below says so: a silent skip read as "sticky model doesn't work".
-            val catalog = gw.modelOptions(sessionId).getOrElse {
-                android.util.Log.w("KeryxModel", "sticky model: catalog unavailable: ${it.message}")
-                _toasts.tryEmit("Couldn't read the models — opened on the gateway's default")
-                return@launch
-            }
-            val lastName = recents.first().substringAfter('|')
-            val choice = chat.keryx.core.model.ModelPicker.stickyChoice(recents, catalog) ?: run {
-                _toasts.tryEmit("$lastName isn't served now — opened on the gateway's default")
-                return@launch
-            }
-            // The ledger fell through to an older pick: say the newest one is gone, not "your last pick".
-            val fellBack = chat.keryx.core.model.ModelPicker.recentKey(choice) != recents.first()
-            // Already this session's route: nothing to switch, and no "model changed" notice
-            // to inject into a chat that has not started.
-            if (catalog.isCurrent(choice)) {
-                if (fellBack) _toasts.tryEmit("$lastName isn't served now — opened on the gateway's default")
-                return@launch
-            }
-            val model = choice.name
-            gw.selectModel(sessionId, model, choice.provider)
-                .onSuccess { out ->
-                    if (out.confirmRequired) _toasts.tryEmit("$model needs confirming — pick it in the model picker")
-                    else {
-                        models.clear() // the pill re-reads this session's route on arrival
-                        // Never silent: a chat that opens on a model other than the gateway's
-                        // says so, and says why, so a surprise on the first turn is impossible.
-                        _toasts.tryEmit(
-                            if (fellBack) "Opened on $model — $lastName isn't served now"
-                            else "Opened on $model — your last pick (sticky model, in Settings)",
-                        )
-                    }
-                }
-                .onFailure {
-                    android.util.Log.w("KeryxModel", "sticky model refused: ${it.message}")
-                    _toasts.tryEmit("$model refused — opened on the gateway's default")
-                }
-        }
-    }
-
-    /**
-     * A fresh gateway session, opened. [profile] picks the agent it runs as (2.17.3); null or
-     * the launch profile is the gateway's own. Another agent's session runs on that agent's
-     * own model, so the "last model picked" pin is for the launch profile's sessions only.
-     */
-    fun createSession(
-        title: String,
-        temporary: Boolean = false,
-        profile: chat.keryx.core.model.BotProfile? = null,
-        onDone: (String?) -> Unit,
-    ) {
-        viewModelScope.launch {
-            gateway?.createSession(title.trim().ifBlank { null }, profile)
-                ?.onSuccess { sessionId ->
-                    if (temporary) markTemporary(sessionId)
-                    if (profile == null || profile.isDefault) applyStickyModel(sessionId)
-                    openRoomById(sessionId); onDone(null)
-                }
-                ?.onFailure { onDone(it.message?.take(120) ?: "couldn't create the session") }
-        }
-    }
-
-    fun renameSession(sessionId: String, title: String) {
-        viewModelScope.launch {
-            gateway?.renameSession(sessionId, title)
-                ?.onFailure { _toasts.tryEmit("Rename failed: ${it.message?.take(80)}") }
-        }
-    }
-
-    /**
-     * Archive (2.10): the row leaves the list and stays resumable — the gateway's soft-hide,
-     * the Desktop's "Archive". The open session stays open; you are in it, and the next
-     * message would put it straight back anyway. Never a move-off, never a toast of success:
-     * the row leaving is the feedback.
-     */
     /** Send the last thing you said again — the failure card's Retry. */
     fun retryLastTurn() {
         val last = messages.value.lastOrNull { it.sender == SenderType.ME && it.content.isNotBlank() } ?: return
@@ -2498,99 +2307,6 @@ class ChatViewModel(
                 }
         }
     }
-
-    /** Archive and its reverse each say so with an Undo that is the other (2.16); the Undo
-     *  runs quietly ([undoable] false) so the two never volley. */
-    fun archiveSession(sessionId: String, undoable: Boolean = true) {
-        val name = _rooms.value.firstOrNull { it.id == sessionId }?.name?.takeIf { it.isNotBlank() }
-        viewModelScope.launch {
-            gateway?.archiveSession(sessionId)
-                ?.onFailure { _toasts.tryEmit("Couldn't archive: ${it.message?.take(80)}") }
-                ?.onSuccess {
-                    _archivedRooms.value = _archivedRooms.value.filterNot { it.id == sessionId }
-                    if (undoable) _notices.tryEmit(
-                        KeryxNotice.undo("Archived" + (name?.let { " “${it.take(40)}”" } ?: "")) {
-                            unarchiveSession(sessionId, undoable = false)
-                        }
-                    )
-                }
-        }
-    }
-
-    fun unarchiveSession(sessionId: String, undoable: Boolean = true) {
-        val name = _archivedRooms.value.firstOrNull { it.id == sessionId }?.name?.takeIf { it.isNotBlank() }
-        viewModelScope.launch {
-            gateway?.unarchiveSession(sessionId)
-                ?.onFailure { _toasts.tryEmit("Couldn't restore: ${it.message?.take(80)}") }
-                ?.onSuccess {
-                    _archivedRooms.value = _archivedRooms.value.filterNot { it.id == sessionId }
-                    if (undoable) _notices.tryEmit(
-                        KeryxNotice.undo("Restored" + (name?.let { " “${it.take(40)}”" } ?: "")) {
-                            archiveSession(sessionId, undoable = false)
-                        }
-                    )
-                }
-        }
-    }
-
-    /** The Archived shelf's rows — fetched when the shelf is opened, never part of the roster. */
-    private val _archivedRooms = MutableStateFlow<List<RoomProfile>>(emptyList())
-    val archivedRooms: StateFlow<List<RoomProfile>> = _archivedRooms.asStateFlow()
-
-    fun loadArchivedSessions() {
-        viewModelScope.launch {
-            gateway?.archivedSessions()
-                ?.onSuccess { _archivedRooms.value = it }
-                ?.onFailure { _toasts.tryEmit("Couldn't read the archive: ${it.message?.take(80)}") }
-        }
-    }
-
-    /** The roster's next page (2.10) — the drawer's "show older" row. */
-    val hasMoreSessions: StateFlow<Boolean> =
-        (direct?.hasMoreSessions() ?: flowOf(false)).stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val loadingMoreSessions: StateFlow<Boolean> =
-        (direct?.loadingMoreSessions() ?: flowOf(false)).stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    fun loadMoreSessions() {
-        val d = direct ?: return
-        viewModelScope.launch {
-            d.loadMoreSessions().onFailure { _toasts.tryEmit("Couldn't load older sessions: ${it.message?.take(80)}") }
-        }
-    }
-
-    /** Stored ids with a decision waiting on you — an approval, a clarify, a secret, a sudo.
-     *  The drawer's "Needs you" filter; the shade already keeps this map for notifications. */
-    val needsYouIds: StateFlow<Set<String>> =
-        (direct?.shadePending() ?: flowOf(emptyMap()))
-            .map { it.keys }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
-
-    /** Stored ids with a turn in flight — the drawer's "Running" filter. */
-    val busySessionIds: StateFlow<Set<String>> =
-        (gateway?.busySessionIds() ?: flowOf(emptySet()))
-            .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
-
-    fun deleteSession(sessionId: String) {
-        viewModelScope.launch {
-            gateway?.deleteSession(sessionId)
-                ?.onSuccess {
-                    _toasts.tryEmit("Session deleted")
-                    unmarkTemporary(sessionId) // a hand-deleted temp owes the sweep nothing
-                    if (settingsRepository.lastRoomId == sessionId) settingsRepository.lastRoomId = null
-                    // Move off the dead session so the chat pane never points at a transcript
-                    // that's gone (same shape as leaveRoom's move-off).
-                    if (_currentRoom.value?.id == sessionId) {
-                        val next = _rooms.value.firstOrNull { it.id != sessionId }
-                        if (next != null) selectRoom(next)
-                        else setCurrentRoom(null)
-                    }
-                }
-                ?.onFailure { _toasts.tryEmit("Delete failed: ${it.message?.take(80)}") }
-        }
-    }
-
-    /** Server-side transcript search (drawer deep search). Empty off the direct door. */
-    suspend fun searchGatewaySessions(query: String): List<chat.keryx.core.transport.SessionSearchHit> =
-        gateway?.searchSessions(query)?.getOrNull() ?: emptyList()
 
     /** This process rides the direct gateway door (login screen adapts; Matrix chrome hides). */
     val transportIsDirect: Boolean get() = transport.matrix == null

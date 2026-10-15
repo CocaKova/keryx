@@ -235,8 +235,8 @@ fun NavigationDrawerContent(
     // the row, so selecting, restoring and notifying on an open run all still work.
     val allRooms by viewModel.rooms.collectAsState()
     val rooms = remember(allRooms) { allRooms.filterNot { it.source in HIDDEN_ROSTER_SOURCES } }
-    val pinnedRoomIds by viewModel.pinnedRoomIds.collectAsState()
-    val tempSessionIds by viewModel.temporarySessionIds.collectAsState()
+    val pinnedRoomIds by viewModel.sessions.pinnedRoomIds.collectAsState()
+    val tempSessionIds by viewModel.sessions.temporarySessionIds.collectAsState()
     // "Move to project…" — explicit projects with a folder (membership is cwd).
     val moveTargets by viewModel.projects.projectMoveTargets.collectAsState()
     val moveCtx = LocalContext.current
@@ -465,7 +465,7 @@ fun NavigationDrawerContent(
             LaunchedEffect(query) {
                 if (viewModel.transportIsDirect && query.trim().length >= 2) {
                     kotlinx.coroutines.delay(350)
-                    deepHits = viewModel.searchGatewaySessions(query.trim())
+                    deepHits = viewModel.sessions.searchGatewaySessions(query.trim())
                 } else {
                     deepHits = emptyList()
                 }
@@ -476,11 +476,11 @@ fun NavigationDrawerContent(
             // they narrow the deck and the shelves alike, so a pinned row the lens excludes is
             // excluded, not shown twice. The Desktop sidebar's filter menu, as chips.
             var lens by rememberSaveable { mutableStateOf<String?>(null) }
-            val needsYou by viewModel.needsYouIds.collectAsState()
-            val busy by viewModel.busySessionIds.collectAsState()
-            val archivedRooms by viewModel.archivedRooms.collectAsState()
+            val needsYou by viewModel.sessions.needsYouIds.collectAsState()
+            val busy by viewModel.sessions.busySessionIds.collectAsState()
+            val archivedRooms by viewModel.sessions.archivedRooms.collectAsState()
             LaunchedEffect(lens, drawerVisible) {
-                if (lens == LENS_ARCHIVED && drawerVisible) viewModel.loadArchivedSessions()
+                if (lens == LENS_ARCHIVED && drawerVisible) viewModel.sessions.loadArchivedSessions()
             }
             if (direct && query.isBlank()) {
                 Row(
@@ -582,8 +582,8 @@ fun NavigationDrawerContent(
             val startOfToday = remember(drawerVisible) { localMidnightMs() }
             val folded by viewModel.collapsedRosterGroups.collectAsState()
             val commands by viewModel.hub.gatewayCommands.collectAsState()
-            val hasMore by viewModel.hasMoreSessions.collectAsState()
-            val loadingMore by viewModel.loadingMoreSessions.collectAsState()
+            val hasMore by viewModel.sessions.hasMoreSessions.collectAsState()
+            val loadingMore by viewModel.sessions.loadingMoreSessions.collectAsState()
             val sections = remember(listRooms, startOfToday, query) {
                 // Forks sit under the conversation they came from (2.19), and shelve with it.
                 if (query.isBlank() && !lensed) {
@@ -634,7 +634,7 @@ fun NavigationDrawerContent(
                                     room.source == chat.keryx.app.presentation.BotsDelegate.BOT_TILE_SOURCE ->
                                         viewModel.bots.botForSession(room.id)?.let { viewModel.bots.setPinned(it.name, false) }
                                             ?: viewModel.bots.setPinned(room.id.removePrefix(chat.keryx.app.presentation.BotsDelegate.BOT_TILE_PREFIX), false)
-                                    tile == null -> viewModel.togglePin(room.id)
+                                    tile == null -> viewModel.sessions.togglePin(room.id)
                                     tile.job -> viewModel.hub.cronSetJobPinned(tile.name, false)
                                     else -> viewModel.hub.cronSetPinned(tile.id, false)
                                 }
@@ -741,14 +741,14 @@ fun NavigationDrawerContent(
                         isPinned = room.id in pinnedRoomIds,
                         isTemporary = room.id in tempSessionIds,
                         onClick = { onRoomSelected(room) },
-                        onTogglePin = { viewModel.togglePin(room.id) },
+                        onTogglePin = { viewModel.sessions.togglePin(room.id) },
                         lexicon = lexicon,
                         // Direct door only: the gateway's read watermark can be pushed back by
                         // hand (Desktop's "Mark as unread"). The open session is exempt — you
                         // are looking at it, and the next newest message would stamp it read
                         // again before you saw the mark.
                         onMarkUnread = if (direct && !room.hasUnread && currentRoom?.id != room.id) {
-                            { viewModel.markSessionUnread(room.id) }
+                            { viewModel.sessions.markSessionUnread(room.id) }
                         } else null,
                         // Each transport brings its own verbs to the long-press menu: Matrix
                         // rooms have membership and a server-side avatar; gateway sessions
@@ -766,18 +766,18 @@ fun NavigationDrawerContent(
                             { userId -> viewModel.inviteUser(room.id, userId) }
                         },
                         onRename = if (direct) {
-                            { title -> viewModel.renameSession(room.id, title) }
+                            { title -> viewModel.sessions.renameSession(room.id, title) }
                         } else null,
                         onDelete = if (direct) {
-                            { viewModel.deleteSession(room.id) }
+                            { viewModel.sessions.deleteSession(room.id) }
                         } else null,
                         // Archive (2.10): out of the list, still on the gateway; the Archived
                         // lens brings it back. A row already under that lens offers the reverse.
                         onArchive = if (direct && lens != LENS_ARCHIVED) {
-                            { viewModel.archiveSession(room.id) }
+                            { viewModel.sessions.archiveSession(room.id) }
                         } else null,
                         onUnarchive = if (direct && lens == LENS_ARCHIVED) {
-                            { viewModel.unarchiveSession(room.id) }
+                            { viewModel.sessions.unarchiveSession(room.id) }
                         } else null,
                         onExport = if (direct && exportSupported) {
                             { exportRoom = room }
@@ -814,7 +814,7 @@ fun NavigationDrawerContent(
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .clickable(enabled = !loadingMore) { viewModel.loadMoreSessions() }
+                            .clickable(enabled = !loadingMore) { viewModel.sessions.loadMoreSessions() }
                             .padding(horizontal = 12.dp, vertical = 12.dp),
                     ) {
                         Icon(

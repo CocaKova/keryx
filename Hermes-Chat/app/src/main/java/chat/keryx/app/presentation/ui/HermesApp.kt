@@ -408,7 +408,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                         // it is a summons — so it wears the warm status colour, breathes, and the
                         // glyph gives one small nudge when the count rises. The room you are in is
                         // excepted: its request is already on screen.
-                        val waiting by viewModel.needsYouIds.collectAsState()
+                        val waiting by viewModel.sessions.needsYouIds.collectAsState()
                         val missionsWaiting by viewModel.missions.needsYouCount.collectAsState()
                         val urgent = waiting.count { it != currentRoom?.id } + missionsWaiting
                         val nudge = remember { Animatable(0f) }
@@ -493,7 +493,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                                             creating = true
                                             // New is "another one of THESE": in a bot's chat or
                                             // session, the fresh session runs as that bot.
-                                            viewModel.createSession("", profile = viewModel.bots.agentOf(currentRoom?.id)) { err ->
+                                            viewModel.sessions.createSession("", profile = viewModel.bots.agentOf(currentRoom?.id)) { err ->
                                                 creating = false
                                                 if (err != null) viewModel.toast("Couldn't start a session. ${chat.keryx.core.model.FriendlyError.of(err.toString())}")
                                             }

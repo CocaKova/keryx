@@ -229,7 +229,7 @@ fun BotsSpace(
                         routines = routineCounts[bot.name.lowercase()] ?: 0,
                         onOpen = { open(bot) },
                         onNewSession = {
-                            viewModel.createSession("", profile = bot) { err ->
+                            viewModel.sessions.createSession("", profile = bot) { err ->
                                 err?.let { viewModel.toast("Couldn't start a session with ${bot.label}. ${chat.keryx.core.model.FriendlyError.of(it.toString())}") }
                             }
                             onOpened()

@@ -227,7 +227,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
         when (link) {
             is chat.keryx.core.model.KeryxLink.Session ->
                 if (link.tapIn) viewModel.requestTapIn(link.id) else viewModel.openRoomById(link.id)
-            chat.keryx.core.model.KeryxLink.NewChat -> viewModel.createSession("") { }
+            chat.keryx.core.model.KeryxLink.NewChat -> viewModel.sessions.createSession("") { }
             chat.keryx.core.model.KeryxLink.Composer -> viewModel.summonAssist()
             is chat.keryx.core.model.KeryxLink.Space -> viewModel.requestSpace(link.route)
             is chat.keryx.core.model.KeryxLink.Mission -> viewModel.missions.requestOpenTask(link.taskId)

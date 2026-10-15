@@ -162,7 +162,7 @@ fun NewChatSheet(
                     val agent = agentName.takeIf { it.isNotBlank() }?.let { n ->
                         agents.firstOrNull { it.name == n } ?: chat.keryx.core.model.BotProfile(name = n)
                     }
-                    viewModel.createSession(title, temporary, profile = agent, onDone = ::done)
+                    viewModel.sessions.createSession(title, temporary, profile = agent, onDone = ::done)
                 }
                 error?.let {
                     Spacer(Modifier.height(6.dp))

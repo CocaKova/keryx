@@ -271,7 +271,7 @@ fun SettingsScreen(
                                 if (e2eeEnabled && !direct) "E2EE" else null,
                             ).ifEmpty { listOf(if (direct) "App lock & senses" else "App lock & encryption") }.joinToString(" · ")) { section = "Privacy & Security" }
                         if (direct) {
-                            val archived by viewModel.archivedRooms.collectAsState()
+                            val archived by viewModel.sessions.archivedRooms.collectAsState()
                             KeryxHubRow(KeryxGlyphs.Stack, "Sessions",
                                 if (archived.isEmpty()) "Archived & pruning" else "${archived.size} archived") { section = "Sessions" }
                         }
@@ -451,13 +451,13 @@ fun SettingsScreen(
                                 )
                             }
                             if (direct) {
-                                val sticky by viewModel.stickyModel.collectAsState()
+                                val sticky by viewModel.sessions.stickyModel.collectAsState()
                                 SettingsSwitchRow(
                                     anchor = SettingsRow.AGENT_STICKY_MODEL,
                                     title = "New sessions use the last model picked",
                                     subtitle = "Off: every new session starts on the gateway's default",
                                     checked = sticky,
-                                    onCheckedChange = { viewModel.setStickyModel(it) },
+                                    onCheckedChange = { viewModel.sessions.setStickyModel(it) },
                                 )
                             }
                         }
@@ -940,8 +940,8 @@ fun SettingsScreen(
 
                     // --- Sessions (direct door): what left the list, and the sweep ---
                     if (section == "Sessions") SettingsCard("Archived", anchor = SettingsRow.SESSIONS_ARCHIVED) {
-                        val archived by viewModel.archivedRooms.collectAsState()
-                        LaunchedEffect(Unit) { viewModel.loadArchivedSessions() }
+                        val archived by viewModel.sessions.archivedRooms.collectAsState()
+                        LaunchedEffect(Unit) { viewModel.sessions.loadArchivedSessions() }
                         if (archived.isEmpty()) Text(
                             "Nothing archived. Long-press a session in the drawer to put it away — it stays on the gateway.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -967,7 +967,7 @@ fun SettingsScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                                 }
-                                TextButton(onClick = { viewModel.unarchiveSession(room.id) }) {
+                                TextButton(onClick = { viewModel.sessions.unarchiveSession(room.id) }) {
                                     Text("Restore", fontSize = KeryxType.caption)
                                 }
                             }
