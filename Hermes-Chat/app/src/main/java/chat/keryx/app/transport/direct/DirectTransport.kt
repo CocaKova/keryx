@@ -176,6 +176,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
 
     private var rpc: GatewayRpc? = null
     private var rest: GatewayRest? = null
+    private val gatewayCalls = GatewayCalls { rpc }
+    private val projects = ProjectOps(gatewayCalls) { refreshSessions() }
+    private val groupOps = GroupOps(gatewayCalls)
+    private val profileOps = ProfileOps(gatewayCalls)
     private var pumpJob: Job? = null
     /** Collector for the backend's questions to us (clarify / approval / sudo / secret). */
     private var requestJob: Job? = null
@@ -2809,82 +2813,15 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     // A mid-turn session refuses a move server-side (4009) rather than yanking the
     // workspace out from under its tools.
 
-    override suspend fun projectsTree(): Result<chat.keryx.core.model.ProjectsTree> = runCatching {
-        val rpc = rpc ?: error("gateway not connected")
-        chat.keryx.core.protocol.ProjectsParser.parseTree(
-            rpc.request("projects.tree", buildJsonObject { put("preview_limit", JsonPrimitive(3)) })
-        ) ?: error("unrecognized projects.tree payload")
-    }
-
-    override suspend fun projectSessions(projectId: String): Result<chat.keryx.core.model.ProjectTreeNode?> = runCatching {
-        val rpc = rpc ?: error("gateway not connected")
-        val res = rpc.request("projects.project_sessions", buildJsonObject {
-            put("project_id", JsonPrimitive(projectId))
-        })
-        chat.keryx.core.protocol.ProjectsParser.parseTreeNode(res["project"])
-    }
-
-    override suspend fun projectsCatalog(): Result<chat.keryx.core.model.ProjectsCatalog> = runCatching {
-        val rpc = rpc ?: error("gateway not connected")
-        chat.keryx.core.protocol.ProjectsParser.parseCatalog(rpc.request("projects.list"))
-            ?: error("unrecognized projects.list payload")
-    }
-
-    override suspend fun createProject(name: String, folderPath: String?): Result<chat.keryx.core.model.ProjectInfo> = runCatching {
-        val rpc = rpc ?: error("gateway not connected")
-        val res = rpc.request("projects.create", buildJsonObject {
-            put("name", JsonPrimitive(name))
-            if (!folderPath.isNullOrBlank()) {
-                put("primary_path", JsonPrimitive(folderPath))
-                put("folders", kotlinx.serialization.json.buildJsonArray { add(JsonPrimitive(folderPath)) })
-            }
-        })
-        chat.keryx.core.protocol.ProjectsParser.parseProject(res["project"]) ?: error("create returned no project")
-    }
-
-    override suspend fun deleteProject(projectId: String): Result<Unit> = runCatching {
-        val rpc = rpc ?: error("gateway not connected")
-        rpc.request("projects.delete", buildJsonObject { put("id", JsonPrimitive(projectId)) })
-        Unit
-    }
-
-    override suspend fun archiveProject(projectId: String, restore: Boolean): Result<Unit> = runCatching {
-        val rpc = rpc ?: error("gateway not connected")
-        rpc.request("projects.archive", buildJsonObject {
-            put("id", JsonPrimitive(projectId))
-            if (restore) put("restore", JsonPrimitive(true))
-        })
-        Unit
-    }
-
-    // `complete.path` in `@folder:` mode is the only stock directories-only listing. Its
-    // `text` is rebased on the gateway's completion cwd — only `display` is a usable name,
-    // so the caller keeps the prefix. Hard 30-item cap, unannounced (FolderPage.truncated).
-    override suspend fun listFolders(query: String): Result<chat.keryx.core.model.FolderPage> = runCatching {
-        val rpc = rpc ?: error("gateway not connected")
-        chat.keryx.core.protocol.FolderCompletionParser.parse(
-            rpc.request("complete.path", buildJsonObject { put("word", JsonPrimitive("@folder:$query")) })
-        )
-    }
-
-    override suspend fun folderExists(path: String): Result<Boolean> = runCatching {
-        val clean = path.trim().trimEnd('/')
-        if (clean.isBlank()) return@runCatching false
-        // Ask the PARENT for a child named exactly this — a listing of the folder itself
-        // can't tell "empty" from "absent".
-        val name = clean.substringAfterLast('/')
-        listFolders(clean).getOrThrow().names.any { it == name }
-    }
-
-    override suspend fun moveSessionToProject(sessionId: String, cwd: String): Result<Unit> = runCatching {
-        val rpc = rpc ?: error("gateway not connected")
-        // Keys on the STORED id (session_key) — no live agent needed.
-        rpc.request("session.workspace.move", buildJsonObject {
-            put("session_key", JsonPrimitive(sessionId))
-            put("cwd", JsonPrimitive(cwd))
-        })
-        refreshSessions()
-    }
+    override suspend fun projectsTree() = projects.tree()
+    override suspend fun projectSessions(projectId: String) = projects.sessions(projectId)
+    override suspend fun projectsCatalog() = projects.catalog()
+    override suspend fun createProject(name: String, folderPath: String?) = projects.create(name, folderPath)
+    override suspend fun deleteProject(projectId: String) = projects.delete(projectId)
+    override suspend fun archiveProject(projectId: String, restore: Boolean) = projects.archive(projectId, restore)
+    override suspend fun listFolders(query: String) = projects.listFolders(query)
+    override suspend fun folderExists(path: String) = projects.folderExists(path)
+    override suspend fun moveSessionToProject(sessionId: String, cwd: String) = projects.moveSession(sessionId, cwd)
 
     override suspend fun createSessionIn(title: String?, cwd: String): Result<String> =
         createSession(title?.ifBlank { null }, cwd)
@@ -3103,140 +3040,27 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         adoptSession(sessionId, title)
     }
 
-    // ---- Group chats (2.18) ---------------------------------------------------------------
+    // ---- Group chats (2.18) and bot profiles: see [GroupOps], [ProfileOps] ----------------
 
-    private suspend fun groups(method: String, params: JsonObject, timeoutMs: Long = 30_000): JsonObject {
-        val rpc = rpc ?: error("gateway not connected")
-        return rpc.request(method, params, timeoutMs = timeoutMs)
-    }
+    override suspend fun groupRooms() = groupOps.rooms()
+    override suspend fun createGroup(name: String, bots: List<chat.keryx.core.model.BotProfile>) =
+        groupOps.create(name, bots)
+    override suspend fun groupState(roomId: String) = groupOps.state(roomId)
+    override suspend fun groupLog(roomId: String, sinceSeq: Long, limit: Int) = groupOps.log(roomId, sinceSeq, limit)
+    override suspend fun sendToGroup(roomId: String, text: String, threadId: String, clientEventId: String) =
+        groupOps.send(roomId, text, threadId, clientEventId)
+    override suspend fun renameGroup(roomId: String, name: String) = groupOps.rename(roomId, name)
+    override suspend fun stopGroup(roomId: String) = groupOps.stop(roomId)
+    override suspend fun disbandGroup(roomId: String) = groupOps.disband(roomId)
+    override suspend fun approveInGroup(roomId: String, approval: chat.keryx.core.model.GroupApproval, choice: String) =
+        groupOps.approve(roomId, approval, choice)
+    override suspend fun retryInGroup(roomId: String, taskId: String) = groupOps.retry(roomId, taskId)
 
-    override suspend fun groupRooms(): Result<List<chat.keryx.core.model.GroupRoom>> = runCatching {
-        chat.keryx.core.model.GroupChats.rooms(groups("groups.list", buildJsonObject { put("limit", JsonPrimitive(100)) }))
-    }
-
-    override suspend fun createGroup(
-        name: String,
-        bots: List<chat.keryx.core.model.BotProfile>,
-    ): Result<chat.keryx.core.model.GroupRoom> = runCatching {
-        val res = groups("groups.create", buildJsonObject {
-            put("room_id", JsonPrimitive(chat.keryx.core.model.GroupChats.newId("room")))
-            put("name", JsonPrimitive(name.trim()))
-            put("members", kotlinx.serialization.json.JsonArray(chat.keryx.core.model.GroupChats.membersFor(bots)))
-        })
-        (res["room"] as? JsonObject)?.let(chat.keryx.core.model.GroupChats::room) ?: error("create returned no room")
-    }
-
-    override suspend fun groupState(roomId: String) = runCatching {
-        val res = groups("groups.state", buildJsonObject { put("room_id", JsonPrimitive(roomId)) })
-        val room = (res["room"] as? JsonObject)?.let(chat.keryx.core.model.GroupChats::room) ?: error("no such room")
-        room to chat.keryx.core.model.GroupChats.driver(res)
-    }
-
-    override suspend fun groupLog(roomId: String, sinceSeq: Long, limit: Int) = runCatching {
-        chat.keryx.core.model.GroupChats.page(groups("groups.log", buildJsonObject {
-            put("room_id", JsonPrimitive(roomId))
-            put("since_seq", JsonPrimitive(sinceSeq))
-            put("limit", JsonPrimitive(limit))
-        }))
-    }
-
-    override suspend fun sendToGroup(roomId: String, text: String, threadId: String, clientEventId: String): Result<Unit> = runCatching {
-        groups("groups.send", buildJsonObject {
-            put("room_id", JsonPrimitive(roomId))
-            put("event_id", JsonPrimitive(clientEventId))
-            put("payload", buildJsonObject {
-                put("text", JsonPrimitive(text))
-                put("thread_id", JsonPrimitive(threadId))
-            })
-        })
-        Unit
-    }
-
-    override suspend fun renameGroup(roomId: String, name: String): Result<Unit> = runCatching {
-        groups("groups.rename", buildJsonObject {
-            put("room_id", JsonPrimitive(roomId))
-            put("event_id", JsonPrimitive(chat.keryx.core.model.GroupChats.newId("rename")))
-            put("name", JsonPrimitive(name.trim()))
-        })
-        Unit
-    }
-
-    override suspend fun stopGroup(roomId: String): Result<Unit> = runCatching {
-        groups("groups.stop", buildJsonObject {
-            put("room_id", JsonPrimitive(roomId))
-            put("cancel_id", JsonPrimitive(chat.keryx.core.model.GroupChats.newId("keryx-stop")))
-        })
-        Unit
-    }
-
-    override suspend fun disbandGroup(roomId: String): Result<Unit> = runCatching {
-        groups("groups.disband", buildJsonObject { put("room_id", JsonPrimitive(roomId)) }, timeoutMs = 60_000)
-        Unit
-    }
-
-    override suspend fun approveInGroup(
-        roomId: String,
-        approval: chat.keryx.core.model.GroupApproval,
-        choice: String,
-    ): Result<Unit> = runCatching {
-        groups("groups.approve", buildJsonObject {
-            put("room_id", JsonPrimitive(roomId))
-            put("member_id", JsonPrimitive(approval.memberId))
-            put("task_id", JsonPrimitive(approval.taskId))
-            put("execution_generation", JsonPrimitive(approval.executionGeneration))
-            put("choice", JsonPrimitive(choice))
-            put("request_id", JsonPrimitive(approval.requestId))
-        })
-        Unit
-    }
-
-    override suspend fun retryInGroup(roomId: String, taskId: String): Result<Unit> = runCatching {
-        groups("groups.retry", buildJsonObject {
-            put("room_id", JsonPrimitive(roomId))
-            put("task_id", JsonPrimitive(taskId))
-        })
-        Unit
-    }
-
-    override suspend fun configureBot(
-        name: String,
-        meta: kotlinx.serialization.json.JsonObject?,
-        description: String?,
-    ): Result<Unit> = runCatching {
-        val rpc = rpc ?: error("gateway not connected")
-        val res = rpc.request("profiles.configure", buildJsonObject {
-            put("name", JsonPrimitive(name))
-            if (meta != null) put("ui_meta", buildJsonObject { put("hermes-bots", meta) })
-            if (description != null) put("description", JsonPrimitive(description))
-        })
-        val applied = res["applied"] as? kotlinx.serialization.json.JsonObject
-        if (meta != null && applied?.get("ui_meta")?.primitiveOrNull?.contentOrNull == "false") {
-            error("the gateway refused the bot's metadata" +
-                (applied["ui_meta_conflicts"]?.let { " (edited elsewhere — try again)" } ?: ""))
-        }
-    }
-
-    override suspend fun createBot(name: String, description: String?, cloneFrom: String?): Result<Unit> = runCatching {
-        val rpc = rpc ?: error("gateway not connected")
-        rpc.request("profiles.create", buildJsonObject {
-            put("name", JsonPrimitive(name))
-            description?.takeIf { it.isNotBlank() }?.let { put("description", JsonPrimitive(it)) }
-            cloneFrom?.takeIf { it.isNotBlank() }?.let { put("clone_from", JsonPrimitive(it)) }
-        }, timeoutMs = 90_000)
-        Unit
-    }
-
-    override suspend fun botAvatar(name: String): Result<ByteArray?> = runCatching {
-        val rpc = rpc ?: error("gateway not connected")
-        val res = rpc.request("profiles.get_asset", buildJsonObject {
-            put("name", JsonPrimitive(name))
-            put("asset", JsonPrimitive("avatar"))
-        })
-        val data = res["data"]?.primitiveOrNull?.contentOrNull ?: return@runCatching null
-        val b64 = data.substringAfter(",", "")
-        if (b64.isBlank()) null
-        else runCatching { android.util.Base64.decode(b64, android.util.Base64.DEFAULT) }.getOrNull()
-    }
+    override suspend fun configureBot(name: String, meta: kotlinx.serialization.json.JsonObject?, description: String?) =
+        profileOps.configure(name, meta, description)
+    override suspend fun createBot(name: String, description: String?, cloneFrom: String?) =
+        profileOps.create(name, description, cloneFrom)
+    override suspend fun botAvatar(name: String) = profileOps.avatar(name)
 
     suspend fun steerTurn(sessionId: String, text: String): Result<Boolean> = runCatching {
         val rpc = rpc ?: error("gateway not connected")
