@@ -306,7 +306,7 @@ internal fun StatusTab(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
                         .clickable(enabled = haveRoom) {
-                            viewModel.recordCommandUse(cmd)
+                            viewModel.composer.recordCommandUse(cmd)
                             viewModel.sendMessage(cmd)
                             onDismiss()
                         }

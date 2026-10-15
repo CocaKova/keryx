@@ -343,19 +343,19 @@ fun ChatScreen(
             selection = TextRange(caret.coerceIn(0, text.length))
         }
         composerReported.text = text
-        viewModel.onComposerTextChanged(text)
+        viewModel.composer.onComposerTextChanged(text)
     }
     LaunchedEffect(composerField) {
         snapshotFlow { composerField.text.toString() }.collect { t ->
             if (t != composerReported.text) {
                 composerReported.text = t
-                viewModel.onComposerTextChanged(t)
+                viewModel.composer.onComposerTextChanged(t)
             }
         }
     }
-    val commandMenuVisible by viewModel.commandMenuVisible.collectAsState()
-    val recentCommands by viewModel.recentCommands.collectAsState()
-    val commandFilter by viewModel.commandFilter.collectAsState()
+    val commandMenuVisible by viewModel.composer.commandMenuVisible.collectAsState()
+    val recentCommands by viewModel.composer.recentCommands.collectAsState()
+    val commandFilter by viewModel.composer.commandFilter.collectAsState()
 
     val isGroupRoom = rooms.firstOrNull { it.id == currentRoom?.id }?.type == RoomType.SHARED_GROUP
     // Quote lookups only: the old full id→message map was rebuilt on every emission and held
@@ -439,7 +439,7 @@ fun ChatScreen(
     // half-typed thoughts survive room hops and app restarts.
     LaunchedEffect(currentRoom?.id) {
         val roomId = currentRoom?.id ?: return@LaunchedEffect
-        val draft = viewModel.draftFor(roomId)
+        val draft = viewModel.composer.draftFor(roomId)
         setComposer(draft)
     }
 
@@ -717,7 +717,7 @@ fun ChatScreen(
         }
         if (text.isNotBlank()) {
             if (caption == null) {
-                if (text.startsWith("/")) viewModel.recordCommandUse(text)
+                if (text.startsWith("/")) viewModel.composer.recordCommandUse(text)
                 // 2.3 §4: the herald carries news back. Senses appends its marker here, on the way
                 // out and inside the message body, so it is E2EE-wrapped like everything else and
                 // the gateway needs no change. Self-guards: off by default, never on a slash
@@ -1059,7 +1059,7 @@ fun ChatScreen(
                         runCatching { focusRequester.requestFocus() }
                     } else {
                         // No arguments -> send immediately and clear.
-                        viewModel.recordCommandUse(command)
+                        viewModel.composer.recordCommandUse(command)
                         viewModel.sendMessage(command)
                         setComposer("")
                     }

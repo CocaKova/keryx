@@ -245,16 +245,6 @@ class ChatViewModel(
     private val _replyTarget = MutableStateFlow<Message?>(null)
     val replyTarget: StateFlow<Message?> = _replyTarget.asStateFlow()
 
-    // Command menu state
-    private val _commandMenuVisible = MutableStateFlow(false)
-    val commandMenuVisible: StateFlow<Boolean> = _commandMenuVisible.asStateFlow()
-
-    private val _commandFilter = MutableStateFlow("")
-    val commandFilter: StateFlow<String> = _commandFilter.asStateFlow()
-
-    private val _recentCommands = MutableStateFlow(settingsRepository.recentCommands)
-    val recentCommands: StateFlow<List<String>> = _recentCommands.asStateFlow()
-
     private val _allowInsecure = MutableStateFlow(settingsRepository.allowInsecure)
     val allowInsecure: StateFlow<Boolean> = _allowInsecure.asStateFlow()
 
@@ -537,11 +527,13 @@ class ChatViewModel(
     val hub = HubDelegate(deps)
     /** Create and edit scheduled jobs (2.16) — the Runs page and the Hub's Jobs spoke share it. */
     val runsEditor = RunsEditorDelegate(deps, hub) { direct?.restClient }
+    /** The "/" palette, recent commands, drafts, the typing notice (3.0 split). */
+    val composer = ComposerDelegate(deps, transport, currentRoom)
     /** Steer, queue, stop, redirect, branch, asides, standing orders, the crew (3.0 split). */
     val turns = TurnControlDelegate(
         deps, transport, currentRoom,
         sendMessage = { sendMessage(it) },
-        recordCommandUse = { recordCommandUse(it) },
+        recordCommandUse = { composer.recordCommandUse(it) },
         openSessionById = { id, title -> openSessionById(id, title) },
     )
     /** The fleet and both sign-in doors (3.0 split). */
@@ -550,7 +542,7 @@ class ChatViewModel(
         deps, transport, { _currentRoom.value?.id },
         sendRoomCommand = { sendMessage(it) },
         hub = hub,
-        recordCommandUse = { recordCommandUse(it) },
+        recordCommandUse = { composer.recordCommandUse(it) },
         readRecents = { settingsRepository.recentModels },
         writeRecents = { settingsRepository.recentModels = it },
     )
@@ -1644,28 +1636,6 @@ class ChatViewModel(
         super.onCleared()
     }
 
-    fun onComposerTextChanged(text: String) {
-        // Show the palette only while typing the command token itself (before the first space),
-        // so it auto-dismisses once a command is chosen and the user moves on to its arguments.
-        _commandMenuVisible.value = text.startsWith("/") && !text.contains(' ')
-        if (text.startsWith("/")) _commandFilter.value = text.removePrefix("/").substringBefore(' ')
-        // Keep the per-room draft current so an app kill / room switch never loses typed text.
-        _currentRoom.value?.id?.let { settingsRepository.setDraft(it, text) }
-        broadcastTyping(text)
-    }
-
-    /** The saved (unsent) composer text for [roomId] — restored when the room opens. */
-    fun draftFor(roomId: String): String = settingsRepository.getDraft(roomId)
-
-    /** Remember a slash command the user picked, so the palette can surface recents first. */
-    fun recordCommandUse(command: String) {
-        val cmd = command.trim().substringBefore(' ')
-        if (cmd.isBlank()) return
-        val updated = (listOf(cmd) + _recentCommands.value.filter { it != cmd }).take(8)
-        _recentCommands.value = updated
-        settingsRepository.recentCommands = updated
-    }
-
     fun sendAttachment(bytes: ByteArray, fileName: String, contentType: String, caption: String? = null) {
         val session = _currentRoom.value ?: return
         viewModelScope.launch {
@@ -1774,7 +1744,7 @@ class ChatViewModel(
         chat.keryx.core.model.BranchCommand.parse(rawContent)?.let { name ->
             val d = direct
             if (d != null) {
-                recordCommandUse("/branch")
+                composer.recordCommandUse("/branch")
                 settingsRepository.setDraft(session.id, "")
                 viewModelScope.launch {
                     d.branchWhole(session.id, name)
@@ -1840,33 +1810,7 @@ class ChatViewModel(
         }
         _replyTarget.value = null
         settingsRepository.setDraft(session.id, "")
-        stopTypingBroadcast(session.id)
-    }
-
-    // --- Outgoing typing (m.typing) — so other clients see us composing ------------------------
-
-    private var typingSentAt = 0L
-    private var typingRoomId: String? = null
-
-    /** Throttled m.typing broadcast driven by composer text changes. A refresh every ~4s keeps the
-     *  30s server-side timeout alive while composing; clearing the composer stops it eagerly. */
-    private fun broadcastTyping(text: String) {
-        val room = _currentRoom.value?.id ?: return
-        val now = System.currentTimeMillis()
-        if (text.isBlank()) {
-            stopTypingBroadcast(room)
-        } else if (now - typingSentAt > 4_000L || typingRoomId != room) {
-            typingSentAt = now
-            typingRoomId = room
-            viewModelScope.launch { transport.setTyping(room, true) }
-        }
-    }
-
-    private fun stopTypingBroadcast(roomId: String) {
-        if (typingRoomId == null) return
-        typingSentAt = 0L
-        typingRoomId = null
-        viewModelScope.launch { transport.setTyping(roomId, false) }
+        composer.stopTypingBroadcast(session.id)
     }
 
     /** If [roomId] is the open room, open the next one (or none): it was left or deleted. */

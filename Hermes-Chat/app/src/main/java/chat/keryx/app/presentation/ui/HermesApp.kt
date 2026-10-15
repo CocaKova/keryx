@@ -551,7 +551,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                             if (!viewModel.transportIsDirect) IconButton(onClick = {
                                 if (liveTurn || awaitingReply) confirmNewSession = true
                                 else {
-                                    viewModel.recordCommandUse("/new")
+                                    viewModel.composer.recordCommandUse("/new")
                                     viewModel.sendMessage("/new")
                                 }
                             }) {
@@ -577,7 +577,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                                     confirmButton = {
                                         TextButton(onClick = {
                                             confirmNewSession = false
-                                            viewModel.recordCommandUse("/new")
+                                            viewModel.composer.recordCommandUse("/new")
                                             viewModel.sendMessage("/new")
                                         }) { Text("End run & start new", color = MaterialTheme.colorScheme.error) }
                                     },
