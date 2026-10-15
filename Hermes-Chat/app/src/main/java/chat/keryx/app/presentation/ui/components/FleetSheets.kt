@@ -66,7 +66,7 @@ fun GatewayRegistry(
     /** The workspace moved to another gateway: the process must come back up on it. */
     onRelaunch: () -> Unit,
 ) {
-    val fleet by viewModel.fleet.collectAsState()
+    val fleet by viewModel.doors.fleet.collectAsState()
     var renaming by remember { mutableStateOf<GatewayEntry?>(null) }
     var removing by remember { mutableStateOf<GatewayEntry?>(null) }
     var adding by remember { mutableStateOf(false) }
@@ -126,14 +126,14 @@ fun GatewayRegistry(
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         if (!active) DropdownMenuItem(
                             text = { Text("Switch to") },
-                            onClick = { menu = false; if (viewModel.switchGateway(entry.id)) onRelaunch() },
+                            onClick = { menu = false; if (viewModel.doors.switchGateway(entry.id)) onRelaunch() },
                         )
                         DropdownMenuItem(
                             text = { Text("Test") },
                             onClick = {
                                 menu = false
                                 testing = testing + entry.id
-                                viewModel.testGateway(entry.id) { ok, message ->
+                                viewModel.doors.testGateway(entry.id) { ok, message ->
                                     testing = testing - entry.id
                                     verdicts = verdicts + (entry.id to (ok to message))
                                 }
@@ -142,7 +142,7 @@ fun GatewayRegistry(
                         DropdownMenuItem(text = { Text("Rename") }, onClick = { menu = false; renaming = entry })
                         if (!primary) DropdownMenuItem(
                             text = { Text("Make primary") },
-                            onClick = { menu = false; viewModel.setPrimaryGateway(entry.id) },
+                            onClick = { menu = false; viewModel.doors.setPrimaryGateway(entry.id) },
                         )
                         if (!active) DropdownMenuItem(
                             text = { Text("Remove", color = MaterialTheme.colorScheme.error) },
@@ -196,7 +196,7 @@ fun GatewayRegistry(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val problem = viewModel.renameGateway(entry.id, name)
+                    val problem = viewModel.doors.renameGateway(entry.id, name)
                     if (problem == null) renaming = null else error = problem
                 }) { Text("Save") }
             },
@@ -216,7 +216,7 @@ fun GatewayRegistry(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.removeGateway(entry.id)?.let { viewModel.toast(it) }
+                    viewModel.doors.removeGateway(entry.id)?.let { viewModel.toast(it) }
                     removing = null
                 }) { Text("Remove", color = MaterialTheme.colorScheme.error) }
             },
@@ -319,7 +319,7 @@ fun AddGatewaySheet(
             onClick = {
                 error = null
                 connecting = true
-                viewModel.loginToGateway(
+                viewModel.doors.loginToGateway(
                     url.trim(), key.trim(),
                     launchBrowser = { authorize ->
                         context.startActivity(

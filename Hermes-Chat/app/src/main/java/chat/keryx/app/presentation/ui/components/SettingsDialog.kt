@@ -244,7 +244,7 @@ fun SettingsScreen(
                         // connection and Hermes Link is its API server, so they share a page.
                         // Matrix keeps two — the homeserver is one thing, the link another.
                         if (direct) {
-                            val fleet by viewModel.fleet.collectAsState()
+                            val fleet by viewModel.doors.fleet.collectAsState()
                             val where = fleet.active?.let { a ->
                                 if (fleet.hasChoice) "${a.name} · ${fleet.size} gateways" else "${a.name} · ${a.hostLabel}"
                             } ?: viewModel.directGatewayUrl.ifBlank { "Address, certificates & Hermes Link" }
@@ -313,7 +313,7 @@ fun SettingsScreen(
                     if (section == "Account") SettingsCard("Transport", anchor = SettingsRow.ACCOUNT_TRANSPORT) {
                         val direct = viewModel.transportIsDirect
                         val otherReady =
-                            if (direct) viewModel.matrixSessionOnFile else viewModel.directCredentialsOnFile
+                            if (direct) viewModel.doors.matrixSessionOnFile else viewModel.doors.directCredentialsOnFile
                         var confirmSwitch by remember { mutableStateOf(false) }
                         val settingsContext = androidx.compose.ui.platform.LocalContext.current
                         Text(
@@ -356,7 +356,7 @@ fun SettingsScreen(
                                 },
                                 confirmButton = {
                                     TextButton(onClick = {
-                                        viewModel.switchTransport(if (direct) "matrix" else "direct")
+                                        viewModel.doors.switchTransport(if (direct) "matrix" else "direct")
                                         relaunchApp(settingsContext)
                                     }) { Text("Switch & restart") }
                                 },
@@ -511,7 +511,7 @@ fun SettingsScreen(
                     if (section == "Gateway") SettingsCard("Gateways", anchor = SettingsRow.CONNECTION_GATEWAY) {
                         val settingsContext = androidx.compose.ui.platform.LocalContext.current
                         GatewayRegistry(viewModel, onRelaunch = { relaunchApp(settingsContext) })
-                        val fleet by viewModel.fleet.collectAsState()
+                        val fleet by viewModel.doors.fleet.collectAsState()
                         if (fleet.hasChoice) {
                             Spacer(Modifier.height(8.dp))
                             SettingsSwitchRow(
@@ -520,7 +520,7 @@ fun SettingsScreen(
                                 subtitle = if (fleet.resumeLastGateway) "A cold start opens where you left off"
                                 else "A cold start opens on Primary — the Desktop's default",
                                 checked = fleet.resumeLastGateway,
-                                onCheckedChange = viewModel::setResumeLastGateway,
+                                onCheckedChange = viewModel.doors::setResumeLastGateway,
                             )
                         }
                         Spacer(Modifier.height(12.dp))
@@ -1177,7 +1177,7 @@ fun SettingsPlace(viewModel: ChatViewModel, onClose: () -> Unit) {
         onMessageTextScaleChanged = { viewModel.setMessageTextScale(it) },
         onResetAppearance = { viewModel.resetMessageAppearance() },
         onLoginRequested = { user, pass, callback ->
-            viewModel.loginToMatrix(user, pass, callback)
+            viewModel.doors.loginToMatrix(user, pass, callback)
         },
         onLogout = {
             onClose()

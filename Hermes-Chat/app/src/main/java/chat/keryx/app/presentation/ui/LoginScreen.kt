@@ -62,7 +62,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
     val initialInsecure by viewModel.allowInsecure.collectAsState()
 
     var homeserver by remember { mutableStateOf(initialUrl) }
-    var username by remember { mutableStateOf(viewModel.lastMatrixUsername) }
+    var username by remember { mutableStateOf(viewModel.doors.lastMatrixUsername) }
     var password by remember { mutableStateOf("") }
     var agentId by remember { mutableStateOf(initialAgent) }
     var allowInsecure by remember { mutableStateOf(initialInsecure) }
@@ -77,7 +77,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
     var directKey by remember { mutableStateOf(viewModel.directApiKey) }
     // The fleet (2.11): the device name the gateway wears everywhere. Prefilled from the row
     // this phone last stood on; blank = derived from the host when the sign-in lands.
-    var directName by remember { mutableStateOf(viewModel.fleet.value.active?.name.orEmpty()) }
+    var directName by remember { mutableStateOf(viewModel.doors.fleet.value.active?.name.orEmpty()) }
 
     val accent = MaterialTheme.colorScheme.primary
     val focusManager = LocalFocusManager.current
@@ -215,7 +215,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                     error = null
                     connecting = true
                     viewModel.setAllowInsecure(allowInsecure)
-                    viewModel.loginToGateway(
+                    viewModel.doors.loginToGateway(
                         directUrl.trim(),
                         directKey.trim(),
                         launchBrowser = { url ->
@@ -268,7 +268,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             )
             Button(
-                onClick = { viewModel.switchTransport("matrix"); relaunch() },
+                onClick = { viewModel.doors.switchTransport("matrix"); relaunch() },
                 modifier = Modifier.fillMaxWidth().height(52.dp).padding(top = 24.dp),
             ) {
                 Text("Switch to Matrix", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
@@ -368,7 +368,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 viewModel.setMatrixUrl(homeserver.trim())
                 viewModel.setAgentMatrixId(agentId.trim())
                 viewModel.setAllowInsecure(allowInsecure)
-                viewModel.loginToMatrix(username.trim(), password) { success, message ->
+                viewModel.doors.loginToMatrix(username.trim(), password) { success, message ->
                     connecting = false
                     if (!success) error = message ?: "Login failed"
                 }

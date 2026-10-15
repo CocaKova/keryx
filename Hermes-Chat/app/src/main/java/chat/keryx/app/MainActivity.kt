@@ -254,8 +254,8 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
             intent.removeExtra(KeryxNotifications.EXTRA_MISSION_GATEWAY)
             if (!::viewModel.isInitialized) return
             if (chat.keryx.app.notify.MissionAlertsWorker.tapNeedsSwitch(
-                    gateway, viewModel.transportIsDirect, viewModel.fleet.value,
-                ) && viewModel.switchGateway(gateway!!)
+                    gateway, viewModel.transportIsDirect, viewModel.doors.fleet.value,
+                ) && viewModel.doors.switchGateway(gateway!!)
             ) {
                 chat.keryx.app.presentation.ui.components.relaunchApp(this) {
                     putExtra(KeryxNotifications.EXTRA_MISSION_TASK, taskId)
