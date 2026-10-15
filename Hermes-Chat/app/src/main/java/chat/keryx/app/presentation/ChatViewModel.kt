@@ -656,8 +656,8 @@ class ChatViewModel(
     val models = ModelDelegate(
         deps, transport, { _currentRoom.value?.id },
         sendRoomCommand = { sendMessage(it) },
-        // A switched brain owns a different ladder: re-probe the dial for this session.
-        onSwitched = { refreshReasoningCaps() },
+        hub = hub,
+        recordCommandUse = { recordCommandUse(it) },
         readRecents = { settingsRepository.recentModels },
         writeRecents = { settingsRepository.recentModels = it },
     )
@@ -963,7 +963,7 @@ class ChatViewModel(
             _currentRoom.map { it?.id }.distinctUntilChanged().collect { id ->
                 if (id == null) return@collect
                 models.clear()
-                refreshReasoningCaps()
+                models.refreshReasoningCaps()
             }
         }
         // A gateway that restarted forgets nothing we can't re-ask for, but the composer's model
@@ -990,7 +990,7 @@ class ChatViewModel(
                 d.linkState().collect { s ->
                     val ready = s == chat.keryx.core.model.LinkState.CONNECTED
                     if (ready && !wasReady) {
-                        models.clear(); refreshReasoningCaps()
+                        models.clear(); models.refreshReasoningCaps()
                         // Panels that failed while the link was down showed their error until
                         // reopened (QA 2.19.1): the link is back, so ask again.
                         bots.refresh(force = true)
@@ -1031,7 +1031,7 @@ class ChatViewModel(
         // the next one, and the next.
         direct?.let { d ->
             viewModelScope.launch {
-                d.reasoningRejections().collect { walkBackReasoning() }
+                d.reasoningRejections().collect { models.walkBackReasoning() }
             }
             // The gateway's `message.complete` is the turn's end, whatever the last row looks
             // like. A stopped turn folds as a thought with no answer under it, and the message
@@ -1163,7 +1163,7 @@ class ChatViewModel(
         // The typing indicator is the authoritative "busy" signal; this collector was defined but
         // never started, which is why the banner still died during long silent tool calls.
         observeTyping()
-        refreshReasoningCaps()
+        models.refreshReasoningCaps()
     }
 
     private fun workStateMessage(messages: List<Message>, latest: Message): Message {
@@ -2969,107 +2969,6 @@ class ChatViewModel(
     fun setShowTelemetry(enabled: Boolean) {
         _showTelemetry.value = enabled
         settingsRepository.showTelemetry = enabled
-    }
-
-    /** Dynamic reasoning control: rides Hermes' native `/reasoning` command (per-session scope). */
-    /** Re-probe the reasoning dial for the CURRENT room's brain, not the profile default.
-     *  Direct door: the session's live route (the catalog's model + provider, once fetched)
-     *  and its stored id, with the effective level read straight off the live agent. Matrix:
-     *  the global default, as before — a room has no session id the gateway can look up. */
-    /**
-     * Levels this process has watched a model refuse. In memory on purpose: the walk-back itself
-     * lands on the gateway, which remembers, so this only has to stop the SAME dead rung being
-     * tried twice inside one run.
-     */
-    private val refusedLevels: MutableSet<String> =
-        java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
-
-    /**
-     * A turn died because the brain refused the thinking level: step down one rung and say so.
-     *
-     * The scale is Hermes'; which rungs a brain can actually render is decided by its chat
-     * template, and nothing knows that list until a real turn dies on it. So the level that
-     * killed this turn is recorded and the next one down is set for this session — never
-     * globally, and never all the way to off (see [ReasoningEffort.fallbackBelow]).
-     *
-     * One dead turn can announce itself on three channels (`message.complete` with an error, the
-     * buffered lifecycle line, the `error` event). `refusedLevels.add` is the gate: the first
-     * announcement to name a rung owns the walk-back, and the other two return — otherwise one
-     * refusal would fall three rungs.
-     */
-    private suspend fun walkBackReasoning() {
-        val d = direct ?: return
-        val roomId = _currentRoom.value?.id ?: return
-        val caps = hub.reasoningCaps.value
-        val model = caps?.model.orEmpty().trim()
-        // Authoritative: what the gateway says is in force right now, not what the pill last drew.
-        val current = d.reasoningEffort(roomId).getOrNull()?.takeIf { it.isNotBlank() }
-            ?: caps?.current.orEmpty()
-        if (current.isBlank()) return
-        if (model.isBlank()) {
-            // Nothing to key the memory on — say the true thing rather than guess a rung.
-            _toasts.tryEmit("This brain refused that thinking level — pick a lower one.")
-            return
-        }
-        if (!refusedLevels.add(chat.keryx.core.model.ReasoningEffort.rejectionKey(model, current))) return
-
-        val label = { level: String ->
-            chat.keryx.core.model.ReasoningEffort.label(level, caps?.labels.orEmpty()).ifBlank { level }
-        }
-        val next = chat.keryx.core.model.ReasoningEffort.fallbackBelow(model, current, refusedLevels)
-        if (next == null) {
-            _toasts.tryEmit("This brain refused ${label(current)} thinking, and there's nothing lower to try.")
-            return
-        }
-        d.setReasoningEffort(roomId, next, global = false)
-            .onSuccess {
-                _toasts.tryEmit("This brain refused ${label(current)} thinking — dropped to ${label(next)}.")
-                refreshReasoningCaps()
-            }
-            .onFailure {
-                _toasts.tryEmit("This brain refused ${label(current)} thinking; couldn't drop to ${label(next)}.")
-            }
-    }
-
-    fun refreshReasoningCaps() {
-        val roomId = _currentRoom.value?.id
-        val d = direct
-        val catalog = if (d != null) models.catalog.value else null
-        hub.refreshReasoningCaps(
-            model = catalog?.model,
-            provider = catalog?.provider,
-            sessionId = if (d != null) roomId else null,
-            liveCurrent = if (d != null && roomId != null) ({ d.reasoningEffort(roomId).getOrNull() }) else null,
-        )
-    }
-
-    /** A pick from the reasoning menu: `<level>` (this session), `<level> --global` (every
-     *  session), or `show` / `hide` / `reset`. The direct door sets a level through the
-     *  gateway's own `config.set` — it lands on the live agent at once and echoes the
-     *  authoritative value — where the slash text only reaches a worker copy. Either way the
-     *  pill re-probes afterwards instead of waiting for the next tap. */
-    fun sendReasoningCommand(arg: String) {
-        recordCommandUse("/reasoning")
-        val parts = arg.trim().split(Regex("\\s+"))
-        val level = parts.firstOrNull().orEmpty()
-        val global = parts.drop(1).any { it == "--global" }
-        val d = direct
-        val roomId = _currentRoom.value?.id
-        val isLevel = level.isNotBlank() && level !in setOf("show", "hide", "reset", "status")
-        if (d != null && roomId != null && isLevel) {
-            viewModelScope.launch {
-                d.setReasoningEffort(roomId, level, global)
-                    .onSuccess { v ->
-                        val said = chat.keryx.core.model.ReasoningEffort.label(v.ifBlank { level }, hub.reasoningCaps.value?.labels.orEmpty())
-                        toast(if (global) "Reasoning → $said for every session" else "Reasoning → $said — this session")
-                        refreshReasoningCaps()
-                    }
-                    .onFailure { toast("Reasoning refused: ${it.message?.take(80)}") }
-            }
-            return
-        }
-        sendMessage("/reasoning $arg".trim())
-        viewModelScope.launch { delay(1200); refreshReasoningCaps() }
     }
 
     // --- Busy-turn inputs (the Talaria way: the send button IS the submit tree) ----------------
