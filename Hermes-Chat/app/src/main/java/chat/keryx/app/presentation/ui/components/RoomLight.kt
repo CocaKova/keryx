@@ -30,31 +30,63 @@ private val ROOM_LIGHTS = listOf(
  * ⚠️ Stable by name and hash — changing the palette's length or order re-colours every room in
  * the drawer, which reads to a user as the app forgetting who is who.
  */
-fun roomLightRaw(name: String): Color =
-    ROOM_LIGHTS[(name.hashCode() and 0x7FFFFFFF) % ROOM_LIGHTS.size]
+fun roomLightRaw(name: String): Color = ROOM_LIGHTS[roomLightIndex(name)]
+
+/** Which of the eight lights a room wears. Stable by name — see the warning above. */
+internal fun roomLightIndex(name: String): Int = (name.hashCode() and 0x7FFFFFFF) % ROOM_LIGHTS.size
 
 /**
- * The same light, for drawing *on* the background rather than under a monogram.
+ * A room's tinted plate (3.0 redesign): the same eight hue families in the same order as
+ * [ROOM_LIGHTS], so no room changes colour, pitched to Keryx's paper and void instead of
+ * Material 300s. On paper a soft ground under a deep monogram; on the void a deep ground under a
+ * light one. Every pair clears 4.5:1 (RoomTintTest): the monogram is ink, not a smudge.
+ */
+data class RoomTint(val ground: Color, val ink: Color)
+
+internal val ROOM_TINTS_PAPER = listOf(
+    RoomTint(Color(0xFFF2D7D0), Color(0xFF8A2F22)), // red → clay
+    RoomTint(Color(0xFFD6E1F0), Color(0xFF2A4A78)), // blue → slate
+    RoomTint(Color(0xFFD4E6DD), Color(0xFF245A45)), // green → verdigris
+    RoomTint(Color(0xFFF6DCC8), Color(0xFF8A3500)), // orange → amber
+    RoomTint(Color(0xFFE4DBF7), Color(0xFF4E2F9C)), // purple → violet
+    RoomTint(Color(0xFFCFE6E4), Color(0xFF1F5A57)), // teal → sea
+    RoomTint(Color(0xFFDCDDF2), Color(0xFF383C86)), // indigo → dusk
+    RoomTint(Color(0xFFF3D6E3), Color(0xFF84284F)), // pink → rose
+)
+
+internal val ROOM_TINTS_VOID = listOf(
+    RoomTint(Color(0xFF3A1E18), Color(0xFFF2A598)),
+    RoomTint(Color(0xFF172539), Color(0xFF9DBDEB)),
+    RoomTint(Color(0xFF16302A), Color(0xFF8FD1B5)),
+    RoomTint(Color(0xFF3B2214), Color(0xFFFFB27A)),
+    RoomTint(Color(0xFF26193F), Color(0xFFC4B2FF)),
+    RoomTint(Color(0xFF123230), Color(0xFF86D3CD)),
+    RoomTint(Color(0xFF1E2045), Color(0xFFAEB2F2)),
+    RoomTint(Color(0xFF3A1628), Color(0xFFF2A0C4)),
+)
+
+/** [name]'s plate for the current theme. */
+@Composable
+fun roomTint(name: String): RoomTint {
+    val onVoid = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    return (if (onVoid) ROOM_TINTS_VOID else ROOM_TINTS_PAPER)[roomLightIndex(name)]
+}
+
+/**
+ * The same light, for drawing *on* the background rather than under a monogram: the room-switch
+ * wake, the light sweep, a project's tint.
  *
- * These hues are Material 300s — pitched to be a ground with white on top, not a mark on paper.
- * Left raw they measure 1.55:1 to 3.19:1 on parchment, so a room's wake would be a smear of
- * nothing in light mode. Darkened by a fixed 40% they clear 4.07:1 at worst, comfortably past the
- * 3:1 WCAG asks of a graphical object even after the wake's own alpha.
- *
- * A fixed factor rather than a second hand-tuned palette on purpose: the hue is the identity, the
- * ground decides only how hard it is pressed.
+ * Until 3.0 this was the raw Material 300 darkened by a fixed 40% on parchment (raw, they measured
+ * 1.55:1 to 3.19:1 there; darkened, 4.07:1 at worst). Now it is [roomTint]'s ink, which was chosen
+ * for contrast on both grounds in the first place, so the wake, the sweep and the monogram are one
+ * colour per room.
  */
 @Composable
-fun roomLight(name: String): Color {
-    val raw = roomLightRaw(name)
-    val onVoid = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    return if (onVoid) raw else Color(
-        red = raw.red * 0.60f,
-        green = raw.green * 0.60f,
-        blue = raw.blue * 0.60f,
-        alpha = raw.alpha,
-    )
-}
+fun roomLight(name: String): Color =
+    // Since 3.0 the light is the plate's own monogram ink, so the wake that crosses the room is
+    // exactly the colour of the letter you tapped. The inks clear the 3:1 asked above on both
+    // grounds with room to spare (deep on paper, light on the void).
+    roomTint(name).ink
 
 /**
  * A room's light laid down as an **opaque plate** — the ground a monogram or a sigil sits on.

@@ -203,19 +203,21 @@ private fun deckAvatarBase(name: String, accent: Color, highlighted: Boolean): C
 
 @Composable
 private fun MonogramAvatar(name: String, accent: Color, highlighted: Boolean) {
-    // The plate is composited (see [roomPlate]) so the letter can be chosen against a real
-    // colour: white on a 70% Material-300 wash measured 1.53–2.45:1 on parchment.
-    val plate = roomPlate(deckAvatarBase(name, accent, highlighted), if (highlighted) 0.95f else 0.7f)
+    // The room's tinted plate (3.0), the same one its drawer row wears: soft ground, deep Cinzel
+    // monogram on paper (light on the void), every pair past 4.5:1. Highlighted leans on the accent.
+    val tint = roomTint(name)
+    val ground = if (highlighted) androidx.compose.ui.graphics.lerp(tint.ground, accent, 0.18f) else tint.ground
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .size(44.dp)
             .clip(CircleShape)
-            .background(plate),
+            .background(ground),
     ) {
         Text(
             text = monogram(name),
-            color = contrastColorFor(plate),
+            color = tint.ink,
+            fontFamily = chat.keryx.app.theme.CinzelFamily,
             fontSize = KeryxType.headline,
             fontWeight = FontWeight.Bold,
         )

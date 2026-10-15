@@ -1,5 +1,11 @@
 package chat.keryx.app.presentation.ui
 
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -447,6 +453,9 @@ fun NavigationDrawerContent(
             }
 
             var query by remember { mutableStateOf("") }
+            // A filled well rather than an outlined box (3.0): the outline drew the heaviest line
+            // in the drawer around its least important control. Focus still rings it.
+            val well = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f)
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
@@ -454,6 +463,12 @@ fun NavigationDrawerContent(
                 leadingIcon = { Icon(KeryxGlyphs.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
+                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedContainerColor = well,
+                    focusedContainerColor = well,
+                ),
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
             )
 
@@ -502,16 +517,17 @@ fun NavigationDrawerContent(
                             LENS_UNREAD -> rooms.count { it.hasUnread }
                             else -> 0
                         }
-                        FilterChip(
+                        LensChip(
+                            label = label,
+                            count = count,
                             selected = lens == id,
-                            onClick = { lens = if (lens == id) null else id },
-                            label = {
-                                Text(
-                                    if (count > 0) "$label · $count" else label,
-                                    fontSize = KeryxType.caption,
-                                )
+                            mark = when (id) {
+                                LENS_NEEDS_YOU -> LensMark.NEEDS_YOU
+                                LENS_RUNNING -> if (count > 0) LensMark.LIVE else LensMark.NONE
+                                else -> LensMark.NONE
                             },
-                            shape = RoundedCornerShape(50),
+                            live = drawerVisible,
+                            onClick = { lens = if (lens == id) null else id },
                         )
                     }
                 }
@@ -1044,17 +1060,26 @@ internal fun DrawerShelfHeader(
     ) {
         Text(
             text = title.uppercase(),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = chat.keryx.app.presentation.ui.components.keryxAccentInk(),
+            fontFamily = chat.keryx.app.theme.CinzelFamily,
             fontSize = KeryxType.caption,
             fontWeight = FontWeight.Bold,
+            letterSpacing = 1.6.sp,
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(10.dp))
+        Box(
+            Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.16f))
+        )
+        Spacer(modifier = Modifier.width(10.dp))
         Text(
             text = count.toString(),
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = KeryxType.micro,
         )
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.width(6.dp))
         // Folded with unread inside: the same pill the doors wear, so "something new here"
         // reads the same on a shelf as on a door.
         AnimatedVisibility(visible = !expanded && unread > 0, enter = keryxPop(), exit = keryxVanish()) {
@@ -1090,11 +1115,80 @@ internal fun DrawerShelfHeader(
 fun DrawerSectionHeader(title: String) {
     Text(
         text = title.uppercase(),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = chat.keryx.app.presentation.ui.components.keryxAccentInk(),
+        fontFamily = chat.keryx.app.theme.CinzelFamily,
         fontSize = KeryxType.caption,
         fontWeight = FontWeight.Bold,
+        letterSpacing = 1.6.sp,
         modifier = Modifier.padding(top = 8.dp, bottom = 8.dp, start = 8.dp)
     )
+}
+
+/** What a lens chip wears before its label. */
+private enum class LensMark { NONE, NEEDS_YOU, LIVE }
+
+/**
+ * One of the drawer's lenses (3.0): a filled chip with its count in a pill, ink-filled when it is
+ * the lens in force. Was Material's outlined FilterChip with "Label · 3" text.
+ */
+@Composable
+private fun LensChip(
+    label: String,
+    count: Int,
+    selected: Boolean,
+    mark: LensMark,
+    live: Boolean,
+    onClick: () -> Unit,
+) {
+    val ink = MaterialTheme.colorScheme.onSurface
+    val accentInk = chat.keryx.app.presentation.ui.components.keryxAccentInk()
+    val fill by animateColorAsState(
+        if (selected) ink else MaterialTheme.colorScheme.surfaceVariant, label = "lensFill",
+    )
+    val text = if (selected) MaterialTheme.colorScheme.surface else ink
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        modifier = Modifier
+            .heightIn(min = 36.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(fill)
+            .selectable(selected = selected, role = androidx.compose.ui.semantics.Role.Tab, onClick = onClick)
+            .padding(horizontal = 12.dp),
+    ) {
+        when (mark) {
+            LensMark.NEEDS_YOU -> Icon(
+                KeryxGlyphs.Warning,
+                contentDescription = null,
+                tint = if (selected) text else accentInk,
+                modifier = Modifier.size(15.dp),
+            )
+            LensMark.LIVE -> chat.keryx.app.presentation.ui.components.KeryxBreathingDot(
+                MaterialTheme.colorScheme.primary, alive = live, size = 7.dp,
+            )
+            LensMark.NONE -> {}
+        }
+        Text(label, color = text, fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        if (count > 0) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        if (selected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                    )
+                    .padding(horizontal = 6.dp, vertical = 1.dp),
+            ) {
+                Text(
+                    text = DoorBadge.label(count),
+                    color = if (selected) contrastColorFor(MaterialTheme.colorScheme.primary) else accentInk,
+                    fontSize = KeryxType.micro,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -1222,7 +1316,7 @@ fun RoomRow(
                 onLongClick = onSetAvatar,
             ) else Modifier
         ) {
-            RoomAvatar(room = room, selected = isSelected, avatarLoader = avatarLoader)
+            RoomAvatar(room = room, selected = isSelected, avatarLoader = avatarLoader, running = running, live = breathe)
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -1231,17 +1325,15 @@ fun RoomRow(
                     text = room.name,
                     color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     fontSize = KeryxType.titleLarge,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    fontWeight = when {
+                        isSelected -> FontWeight.Bold
+                        room.hasUnread -> FontWeight.SemiBold
+                        else -> FontWeight.Medium
+                    },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
-                if (running) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Box(Modifier.semantics { contentDescription = "Running" }) {
-                        chat.keryx.app.presentation.ui.components.KeryxBreathingDot(light, alive = true, size = 6.dp)
-                    }
-                }
                 if (room.forkOf != null) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Icon(
@@ -1647,6 +1739,56 @@ private fun RoomAvatar(
     room: RoomProfile,
     selected: Boolean,
     avatarLoader: suspend (String) -> ByteArray?,
+    /** A turn is running here: a ring turns around the plate (3.0; was a dot by the title). */
+    running: Boolean = false,
+    /** The drawer is on screen: only then does the ring turn (see RoomRow's breathe). */
+    live: Boolean = true,
+) {
+    val ringInk = chat.keryx.app.presentation.ui.components.roomTint(room.name).ink
+    // Reduced motion (and Battery Saver) hold the ring still: it still says "running".
+    val reducedRing by chat.keryx.app.presentation.ui.components.rememberReducedMotion()
+    val spin = if (running && live && !reducedRing) {
+        androidx.compose.animation.core.rememberInfiniteTransition(label = "roomRing").animateFloat(
+            initialValue = 0f, targetValue = 360f,
+            animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                androidx.compose.animation.core.tween(1600, easing = androidx.compose.animation.core.LinearEasing),
+            ),
+            label = "roomRingSpin",
+        )
+    } else null
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(42.dp)
+            .then(if (running) Modifier.semantics { contentDescription = "Running" } else Modifier)
+            .drawWithContent {
+                drawContent()
+                if (!running) return@drawWithContent
+                // Read in draw: the turning ring repaints, nothing recomposes.
+                val a = spin?.value ?: 0f
+                val stroke = 2.dp.toPx()
+                val inset = stroke / 2f
+                drawArc(
+                    ringInk.copy(alpha = 0.22f), 0f, 360f, useCenter = false,
+                    topLeft = Offset(inset, inset), size = Size(size.width - stroke, size.height - stroke),
+                    style = Stroke(width = stroke),
+                )
+                drawArc(
+                    ringInk, a - 90f, 110f, useCenter = false,
+                    topLeft = Offset(inset, inset), size = Size(size.width - stroke, size.height - stroke),
+                    style = Stroke(width = stroke, cap = StrokeCap.Round),
+                )
+            },
+    ) {
+        RoomAvatarPlate(room, selected, avatarLoader)
+    }
+}
+
+@Composable
+private fun RoomAvatarPlate(
+    room: RoomProfile,
+    selected: Boolean,
+    avatarLoader: suspend (String) -> ByteArray?,
 ) {
     val url = room.avatarUrl
     val cached = remember(url) { url?.let { chat.keryx.app.presentation.ui.components.KeryxBitmapCache.get(it) } }
@@ -1672,21 +1814,20 @@ private fun RoomAvatar(
         if (sigil != RoomSigil.None) {
             RoomSigilAvatar(sigil = sigil, base = base, size = 34.dp, highlighted = selected)
         } else {
-            // Same plate, same reason as the deck's monogram: a hard-white initial on an 80%
-            // wash of a Material 300 is ~1.4:1 on parchment. Composite, then ask the ground.
-            val plate = chat.keryx.app.presentation.ui.components.roomPlate(
-                base, if (selected) 0.95f else 0.8f,
-            )
+            // The room's tinted plate (3.0): its hue family, a soft ground and a deep Cinzel
+            // monogram on paper (light on the void), every pair past 4.5:1.
+            val tint = chat.keryx.app.presentation.ui.components.roomTint(room.name)
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(34.dp)
                     .clip(CircleShape)
-                    .background(plate),
+                    .background(tint.ground),
             ) {
                 Text(
                     text = room.name.trimStart('@', '#', '!').trim().firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "•",
-                    color = contrastColorFor(plate),
+                    color = tint.ink,
+                    fontFamily = chat.keryx.app.theme.CinzelFamily,
                     fontSize = KeryxType.title,
                     fontWeight = FontWeight.Bold,
                 )
