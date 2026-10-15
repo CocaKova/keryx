@@ -52,4 +52,32 @@ class WorkStateTest {
         val list = listOf(msg("u1", SenderType.ME, "go"), msg("s1", tools = listOf(running, done)), live)
         assertEquals("s1", WorkState.runningTool(list, live)?.id)
     }
+
+    @Test
+    fun a_prose_answer_settles_the_banner() {
+        val r = WorkState.read(msg("a", content = "Here is the answer."))
+        assertEquals(true, r.settled)
+        assertEquals("Working", r.label)
+    }
+
+    @Test
+    fun bare_reasoning_reads_as_reasoning_and_keeps_waiting() {
+        val m = Message(id = "t", roomId = "r", sender = SenderType.HERMES, content = "", timestamp = 1L, reasoning = "hmm")
+        val r = WorkState.read(m)
+        assertEquals(false, r.settled)
+        assertEquals("Reasoning", r.label)
+    }
+
+    @Test
+    fun a_trailing_tool_call_names_the_tool_and_keeps_waiting() {
+        val r = WorkState.read(msg("t", tools = listOf(running)))
+        assertEquals(false, r.settled)
+        assertEquals(chat.keryx.core.model.ToolGrammar.title("terminal", chat.keryx.core.model.ToolGrammar.targetOf("terminal", "docker ps"), running = true), r.label)
+    }
+
+    @Test
+    fun the_subject_of_a_prose_answer_is_itself() {
+        val latest = msg("b", content = "done")
+        assertEquals(latest, WorkState.subject(listOf(msg("a", content = "earlier"), latest), latest))
+    }
 }
