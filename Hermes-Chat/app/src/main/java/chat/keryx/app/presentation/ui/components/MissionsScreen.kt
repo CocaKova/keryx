@@ -466,7 +466,8 @@ fun MissionsScreen(
             )
             sections.isEmpty() -> MissionsEmptyState(
                 line1 = "No missions on the board",
-                line2 = "Give your agent a mission with the + button — triage parks it for spec-first, otherwise the dispatcher picks it up.",
+                line2 = "Give your agent a mission. Triage parks it for a spec first; otherwise the dispatcher picks it up.",
+                onCreate = { createOpen = true },
             )
             else -> LazyColumn(
                 state = listState,
@@ -706,28 +707,21 @@ internal fun missionAssignees(roomProfiles: Map<String, String>): List<String> =
     (roomProfiles.values.toSortedSet() + "default").toList()
 
 @Composable
-private fun MissionsEmptyState(line1: String, line2: String, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxSize().padding(horizontal = 36.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        BrailleSnakeAnimation(
-            modifier = Modifier.size(84.dp),
-            color = MaterialTheme.colorScheme.primary,
-            color2 = MaterialTheme.colorScheme.tertiary,
-            running = true,
-        )
-        Spacer(Modifier.height(18.dp))
-        Text(line1, fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(6.dp))
-        Text(
-            line2,
-            fontSize = KeryxType.caption,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        )
-    }
+private fun MissionsEmptyState(
+    line1: String,
+    line2: String,
+    modifier: Modifier = Modifier,
+    /** The board is truly empty (not unreachable, not filtered): offer the first mission. */
+    onCreate: (() -> Unit)? = null,
+) {
+    KeryxEmptyState(
+        title = line1,
+        body = line2,
+        modifier = modifier,
+        illustration = { MissionBoardIllustration() },
+        actionLabel = if (onCreate != null) "Give it a mission" else null,
+        onAction = onCreate,
+    )
 }
 
 @Composable
