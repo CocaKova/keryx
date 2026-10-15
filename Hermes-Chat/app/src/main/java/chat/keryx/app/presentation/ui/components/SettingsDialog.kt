@@ -426,28 +426,28 @@ fun SettingsScreen(
                                 checked = resume,
                                 onCheckedChange = { viewModel.setResumeLastRoom(it) },
                             )
-                            val starters by viewModel.starterSuggestions.collectAsState()
+                            val starters by viewModel.starters.starterSuggestions.collectAsState()
                             SettingsSwitchRow(
                                 anchor = SettingsRow.AGENT_STARTERS,
                                 title = "Suggestions in empty chats",
                                 subtitle = "A new chat offers reminders and things to ask instead of a blank page",
                                 checked = starters,
-                                onCheckedChange = { viewModel.setStarterSuggestions(it) },
+                                onCheckedChange = { viewModel.starters.setStarterSuggestions(it) },
                             )
                             if (starters) {
-                                val aiStarters by viewModel.starterAiPrompts.collectAsState()
+                                val aiStarters by viewModel.starters.starterAiPrompts.collectAsState()
                                 SettingsSwitchRow(
                                     title = "Written from your chats",
                                     subtitle = "The gateway's title model drafts them from your recent topics and profile notes — one small model call per agent every few hours, billed if that model is a paid cloud one. Off: a generic set, no model calls",
                                     checked = aiStarters,
-                                    onCheckedChange = { viewModel.setStarterAiPrompts(it) },
+                                    onCheckedChange = { viewModel.starters.setStarterAiPrompts(it) },
                                 )
-                                val reminders by viewModel.starterReminders.collectAsState()
+                                val reminders by viewModel.starters.starterReminders.collectAsState()
                                 SettingsSwitchRow(
                                     title = "Reminders",
                                     subtitle = "Missions waiting on you, unread replies, and a routine due soon",
                                     checked = reminders,
-                                    onCheckedChange = { viewModel.setStarterReminders(it) },
+                                    onCheckedChange = { viewModel.starters.setStarterReminders(it) },
                                 )
                             }
                             if (direct) {

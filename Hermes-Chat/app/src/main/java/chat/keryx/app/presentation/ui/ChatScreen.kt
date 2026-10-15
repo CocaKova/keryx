@@ -934,14 +934,14 @@ fun ChatScreen(
         // (2.17.3): the empty LazyColumn fills the screen and, composed on top, took every tap.
         // 2.17.3: reminders lead (things already waiting on you, no model call), then prompts the
         // gateway's title model wrote from what you talk about — each part switchable in Settings.
-        val startersOn by viewModel.starterSuggestions.collectAsState()
+        val startersOn by viewModel.starters.starterSuggestions.collectAsState()
         if (startersOn && currentRoom != null && transcriptEmpty && !awaitingReply && pendingSend == null && streamIdle) {
-            val aiOn by viewModel.starterAiPrompts.collectAsState()
-            val remindersOn by viewModel.starterReminders.collectAsState()
-            val aiStarters by viewModel.aiStarters.collectAsState()
+            val aiOn by viewModel.starters.starterAiPrompts.collectAsState()
+            val remindersOn by viewModel.starters.starterReminders.collectAsState()
+            val aiStarters by viewModel.starters.aiStarters.collectAsState()
             val roomId = currentRoom?.id
-            LaunchedEffect(roomId, aiOn) { if (aiOn) viewModel.loadStarters(roomId) }
-            val prompts = aiStarters[viewModel.starterKey(roomId)]?.takeIf { aiOn && it.isNotEmpty() } ?: STARTER_PROMPTS
+            LaunchedEffect(roomId, aiOn) { if (aiOn) viewModel.starters.loadStarters(roomId) }
+            val prompts = aiStarters[viewModel.starters.starterKey(roomId)]?.takeIf { aiOn && it.isNotEmpty() } ?: STARTER_PROMPTS
             val needsYou by viewModel.missions.needsYouCount.collectAsState()
             val jobsPanel by viewModel.hub.jobs.collectAsState()
             LaunchedEffect(remindersOn) { if (remindersOn && jobsPanel.data == null) viewModel.hub.refreshJobs() }
