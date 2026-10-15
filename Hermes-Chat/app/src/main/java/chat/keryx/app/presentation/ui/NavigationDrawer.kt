@@ -242,7 +242,7 @@ fun NavigationDrawerContent(
     val moveCtx = LocalContext.current
     val currentUserId by viewModel.currentUserId.collectAsState()
     val currentRoom by viewModel.currentRoom.collectAsState()
-    val isDarkTheme by viewModel.isDarkTheme.collectAsState()
+    val isDarkTheme by viewModel.prefs.isDarkTheme.collectAsState()
     // The door's own words for its rows — "room" on Matrix, "session" on the gateway.
     val lexicon = viewModel.lexicon
     // The doors' gates, read once: the footer draws by them and the palette (2.10) offers
@@ -403,7 +403,7 @@ fun NavigationDrawerContent(
                     null -> "Switch to dark"
                 }
                 IconButton(onClick = {
-                    viewModel.toggleTheme(
+                    viewModel.prefs.toggleTheme(
                         when (isDarkTheme) {
                             null -> true
                             true -> false

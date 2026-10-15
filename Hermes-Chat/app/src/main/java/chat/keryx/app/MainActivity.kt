@@ -183,10 +183,10 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            val isDarkOverride by viewModel.isDarkTheme.collectAsState()
+            val isDarkOverride by viewModel.prefs.isDarkTheme.collectAsState()
             val useDarkTheme = isDarkOverride ?: isSystemInDarkTheme()
-            val currentAccent by viewModel.accentColor.collectAsState()
-            val currentAccent2 by viewModel.accentColor2.collectAsState()
+            val currentAccent by viewModel.prefs.accentColor.collectAsState()
+            val currentAccent2 by viewModel.prefs.accentColor2.collectAsState()
 
             // Keep the status-bar icons legible: light glyphs on our dark (OLED-black) background,
             // dark glyphs in light mode. Without this the clock/battery vanish into the black bar.

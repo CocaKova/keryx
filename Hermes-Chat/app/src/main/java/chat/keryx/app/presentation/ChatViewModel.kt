@@ -245,27 +245,6 @@ class ChatViewModel(
     private val _replyTarget = MutableStateFlow<Message?>(null)
     val replyTarget: StateFlow<Message?> = _replyTarget.asStateFlow()
 
-    private val _isDarkTheme = MutableStateFlow<Boolean?>(null) // null = system default
-    val isDarkTheme: StateFlow<Boolean?> = _isDarkTheme.asStateFlow()
-
-    private val _accentColor = MutableStateFlow<Color>(
-        try {
-            Color(android.graphics.Color.parseColor(settingsRepository.accentColorHex))
-        } catch (e: Exception) {
-            Color(0xFFE55A00)
-        }
-    )
-    val accentColor: StateFlow<Color> = _accentColor.asStateFlow()
-
-    private val _accentColor2 = MutableStateFlow<Color>(
-        try {
-            Color(android.graphics.Color.parseColor(settingsRepository.accentColor2Hex))
-        } catch (e: Exception) {
-            Color(0xFF8B5CF6)
-        }
-    )
-    val accentColor2: StateFlow<Color> = _accentColor2.asStateFlow()
-
     // Command menu state
     private val _commandMenuVisible = MutableStateFlow(false)
     val commandMenuVisible: StateFlow<Boolean> = _commandMenuVisible.asStateFlow()
@@ -275,20 +254,6 @@ class ChatViewModel(
 
     private val _recentCommands = MutableStateFlow(settingsRepository.recentCommands)
     val recentCommands: StateFlow<List<String>> = _recentCommands.asStateFlow()
-
-    private val _matrixUrl = MutableStateFlow(settingsRepository.homeserverUrl)
-    val matrixUrl: StateFlow<String> = _matrixUrl.asStateFlow()
-
-    private val _agentMatrixId = MutableStateFlow(settingsRepository.agentMatrixId)
-    val agentMatrixId: StateFlow<String> = _agentMatrixId.asStateFlow()
-
-    /** Per-herald accent overrides (localpart -> "#RRGGBB"). Empty entries fall back to the
-     *  derived council palette (2.3 §1). */
-    private val _heraldAccents = MutableStateFlow(settingsRepository.heraldAccents)
-    val heraldAccents: StateFlow<Map<String, String>> = _heraldAccents.asStateFlow()
-
-    private val _matrixToken = MutableStateFlow(settingsRepository.matrixToken)
-    val matrixToken: StateFlow<String> = _matrixToken.asStateFlow()
 
     private val _allowInsecure = MutableStateFlow(settingsRepository.allowInsecure)
     val allowInsecure: StateFlow<Boolean> = _allowInsecure.asStateFlow()
@@ -311,24 +276,6 @@ class ChatViewModel(
         d.networkMayHaveChanged()
         viewModelScope.launch { runCatching { d.refreshSessionList() } }
     }
-
-    private val _biometricLock = MutableStateFlow(settingsRepository.biometricLockEnabled)
-    val biometricLock: StateFlow<Boolean> = _biometricLock.asStateFlow()
-
-    private val _e2eeEnabled = MutableStateFlow(settingsRepository.e2eeEnabled)
-    val e2eeEnabled: StateFlow<Boolean> = _e2eeEnabled.asStateFlow()
-
-    private val _hapticsEnabled = MutableStateFlow(settingsRepository.hapticsEnabled)
-    val hapticsEnabled: StateFlow<Boolean> = _hapticsEnabled.asStateFlow()
-
-    private val _animationStyle = MutableStateFlow(settingsRepository.animationStyle)
-    val animationStyle: StateFlow<String> = _animationStyle.asStateFlow()
-
-    private val _bubbleStyle = MutableStateFlow(settingsRepository.bubbleStyle)
-    val bubbleStyle: StateFlow<String> = _bubbleStyle.asStateFlow()
-
-    private val _messageTextScale = MutableStateFlow(settingsRepository.messageTextScale)
-    val messageTextScale: StateFlow<Float> = _messageTextScale.asStateFlow()
 
     // --- Hermes side-channel (tier-1 streaming) ---
     private val _gatewayUrl = MutableStateFlow(settingsRepository.gatewayUrl)
@@ -411,9 +358,6 @@ class ChatViewModel(
             model.takeIf { it.isNotBlank() }
                 ?.let { chat.keryx.core.model.CompactionTimings.typical(settingsRepository.compactionSeconds(it)) }
         }.stateIn(viewModelScope, SharingStarted.Lazily, null)
-
-    private val _showTelemetry = MutableStateFlow(settingsRepository.showTelemetry)
-    val showTelemetry: StateFlow<Boolean> = _showTelemetry.asStateFlow()
 
     /** The drawer's folded shelves (RosterGroup names) — see [chat.keryx.core.model.RosterGroups]. */
     private val _collapsedRosterGroups = MutableStateFlow(settingsRepository.collapsedRosterGroups)
@@ -588,6 +532,8 @@ class ChatViewModel(
         }
     }
 
+    /** Theme, accents, bubbles, motion, lock, E2EE, telemetry, Matrix fields (3.0 split). */
+    val prefs = PreferencesDelegate(settingsRepository)
     val hub = HubDelegate(deps)
     /** Create and edit scheduled jobs (2.16) — the Runs page and the Hub's Jobs spoke share it. */
     val runsEditor = RunsEditorDelegate(deps, hub) { direct?.restClient }
@@ -1773,83 +1719,6 @@ class ChatViewModel(
         super.onCleared()
     }
 
-    fun toggleTheme(isDark: Boolean?) {
-        _isDarkTheme.value = isDark
-    }
-
-    fun setAccentColor(color: Color) {
-        _accentColor.value = color
-        settingsRepository.accentColorHex = String.format("#%06X", (0xFFFFFF and color.toArgb()))
-    }
-
-    fun setAccentColor2(color: Color) {
-        _accentColor2.value = color
-        settingsRepository.accentColor2Hex = String.format("#%06X", (0xFFFFFF and color.toArgb()))
-    }
-
-    fun setMatrixUrl(url: String) {
-        _matrixUrl.value = url
-        settingsRepository.homeserverUrl = url
-    }
-
-    fun setAgentMatrixId(id: String) {
-        _agentMatrixId.value = id
-        settingsRepository.agentMatrixId = id
-    }
-
-    /** Set (or, with a null [hex], clear) one herald's accent override. */
-    fun setHeraldAccent(localpart: String, hex: String?) {
-        val key = localpart.trim().lowercase()
-        if (key.isEmpty()) return
-        val next = _heraldAccents.value.toMutableMap()
-        if (hex.isNullOrBlank()) next.remove(key) else next[key] = hex
-        _heraldAccents.value = next
-        settingsRepository.heraldAccents = next
-    }
-
-    fun setMatrixToken(token: String) {
-        _matrixToken.value = token
-        settingsRepository.matrixToken = token
-    }
-
-    fun setBiometricLock(enabled: Boolean) {
-        _biometricLock.value = enabled
-        settingsRepository.biometricLockEnabled = enabled
-    }
-
-    fun setE2eeEnabled(enabled: Boolean) {
-        _e2eeEnabled.value = enabled
-        settingsRepository.e2eeEnabled = enabled
-    }
-
-    fun setHapticsEnabled(enabled: Boolean) {
-        _hapticsEnabled.value = enabled
-        settingsRepository.hapticsEnabled = enabled
-    }
-
-    fun setAnimationStyle(style: String) {
-        _animationStyle.value = style
-        settingsRepository.animationStyle = style
-    }
-
-    fun setBubbleStyle(style: String) {
-        _bubbleStyle.value = style
-        settingsRepository.bubbleStyle = style
-    }
-
-    fun setMessageTextScale(scale: Float) {
-        _messageTextScale.value = scale
-        settingsRepository.messageTextScale = scale
-    }
-
-    /** Restore default message appearance: gradient bubbles, default accent, default text size. */
-    fun resetMessageAppearance() {
-        setBubbleStyle("Gradient")
-        setMessageTextScale(1.0f)
-        setAccentColor(Color(0xFFE55A00))
-        setAccentColor2(Color(0xFF8B5CF6))
-    }
-
     fun onComposerTextChanged(text: String) {
         // Show the palette only while typing the command token itself (before the first space),
         // so it auto-dismisses once a command is chosen and the user moves on to its arguments.
@@ -2299,9 +2168,5 @@ class ChatViewModel(
         }
     }
 
-    fun setShowTelemetry(enabled: Boolean) {
-        _showTelemetry.value = enabled
-        settingsRepository.showTelemetry = enabled
-    }
 
 }

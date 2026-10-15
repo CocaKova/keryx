@@ -75,9 +75,9 @@ fun HermesApp(viewModel: ChatViewModel) {
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     val currentRoom by viewModel.currentRoom.collectAsState()
     val linkHealth by viewModel.linkHealth.collectAsState()
-    val heraldIds by viewModel.agentMatrixId.collectAsState()
-    val heraldAccents by viewModel.heraldAccents.collectAsState()
-    val hapticsEnabled by viewModel.hapticsEnabled.collectAsState()
+    val heraldIds by viewModel.prefs.agentMatrixId.collectAsState()
+    val heraldAccents by viewModel.prefs.heraldAccents.collectAsState()
+    val hapticsEnabled by viewModel.prefs.hapticsEnabled.collectAsState()
     val awaitingReply by viewModel.awaitingReply.collectAsState()
 
     // The navigation spine (2.0): full-screen places live on this stack above the chat floor.

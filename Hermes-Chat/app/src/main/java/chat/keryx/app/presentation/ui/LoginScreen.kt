@@ -57,8 +57,8 @@ import chat.keryx.app.presentation.ui.components.KeryxType
  */
 @Composable
 fun LoginScreen(viewModel: ChatViewModel) {
-    val initialUrl by viewModel.matrixUrl.collectAsState()
-    val initialAgent by viewModel.agentMatrixId.collectAsState()
+    val initialUrl by viewModel.prefs.matrixUrl.collectAsState()
+    val initialAgent by viewModel.prefs.agentMatrixId.collectAsState()
     val initialInsecure by viewModel.allowInsecure.collectAsState()
 
     var homeserver by remember { mutableStateOf(initialUrl) }
@@ -365,8 +365,8 @@ fun LoginScreen(viewModel: ChatViewModel) {
             onClick = {
                 error = null
                 connecting = true
-                viewModel.setMatrixUrl(homeserver.trim())
-                viewModel.setAgentMatrixId(agentId.trim())
+                viewModel.prefs.setMatrixUrl(homeserver.trim())
+                viewModel.prefs.setAgentMatrixId(agentId.trim())
                 viewModel.setAllowInsecure(allowInsecure)
                 viewModel.doors.loginToMatrix(username.trim(), password) { success, message ->
                     connecting = false

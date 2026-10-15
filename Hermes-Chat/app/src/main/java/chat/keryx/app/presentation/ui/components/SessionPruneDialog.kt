@@ -80,7 +80,7 @@ fun SessionPruneDialog(
     // confirm stays as the gate, matching how the app lock itself degrades.
     fun withLockGate(onPassed: () -> Unit) {
         val activity = context as? androidx.fragment.app.FragmentActivity
-        val lockOn = viewModel.biometricLock.value
+        val lockOn = viewModel.prefs.biometricLock.value
         val canAuth = activity != null &&
             androidx.biometric.BiometricManager.from(activity).canAuthenticate(
                 androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK or

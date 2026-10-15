@@ -70,7 +70,7 @@ fun GroupChatSpace(dest: KeryxDest.Group, viewModel: ChatViewModel, onClose: () 
         onDispose { groups.close() }
     }
     val view by groups.view.collectAsState()
-    val animationStyle by viewModel.animationStyle.collectAsState()
+    val animationStyle by viewModel.prefs.animationStyle.collectAsState()
     val v = view?.takeIf { it.roomId == dest.roomId }
     val room = v?.room
     var menu by remember { mutableStateOf(false) }

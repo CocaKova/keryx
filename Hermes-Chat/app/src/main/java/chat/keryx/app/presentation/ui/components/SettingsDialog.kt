@@ -558,8 +558,8 @@ fun SettingsScreen(
                         SettingsAnchor(SettingsRow.CONNECTION_HERALDS) {
                         HeraldsList(
                             agentMatrixId = agentMatrixId,
-                            overrides = viewModel.heraldAccents.collectAsState().value,
-                            onSetAccent = { key, hex -> viewModel.setHeraldAccent(key, hex) },
+                            overrides = viewModel.prefs.heraldAccents.collectAsState().value,
+                            onSetAccent = { key, hex -> viewModel.prefs.setHeraldAccent(key, hex) },
                         )
                         }
                         Spacer(Modifier.height(8.dp))
@@ -812,13 +812,13 @@ fun SettingsScreen(
 
                     // --- Message Appearance ---
                     if (section == "Appearance") SettingsCard("Look") {
-                        val isDark by viewModel.isDarkTheme.collectAsState()
+                        val isDark by viewModel.prefs.isDarkTheme.collectAsState()
                         SettingsAnchor(SettingsRow.APPEARANCE_THEME) {
                             SettingsChoiceLabel("Theme")
                             KeryxSegmented(
                                 options = listOf("system" to "System", "light" to "Light", "dark" to "Dark"),
                                 selected = when (isDark) { null -> "system"; true -> "dark"; false -> "light" },
-                                onSelect = { viewModel.toggleTheme(when (it) { "dark" -> true; "light" -> false; else -> null }) },
+                                onSelect = { viewModel.prefs.toggleTheme(when (it) { "dark" -> true; "light" -> false; else -> null }) },
                             )
                         }
                         Spacer(Modifier.height(18.dp))
@@ -1067,17 +1067,17 @@ fun SettingsScreen(
 fun SettingsPlace(viewModel: ChatViewModel, onClose: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val currentUserId by viewModel.currentUserId.collectAsState()
-    val currentAccent by viewModel.accentColor.collectAsState()
-    val currentAccent2 by viewModel.accentColor2.collectAsState()
-    val matrixUrl by viewModel.matrixUrl.collectAsState()
-    val agentMatrixId by viewModel.agentMatrixId.collectAsState()
-    val matrixToken by viewModel.matrixToken.collectAsState()
-    val biometricLockEnabled by viewModel.biometricLock.collectAsState()
-    val e2eeEnabled by viewModel.e2eeEnabled.collectAsState()
-    val hapticsEnabled by viewModel.hapticsEnabled.collectAsState()
-    val animationStyle by viewModel.animationStyle.collectAsState()
-    val bubbleStyle by viewModel.bubbleStyle.collectAsState()
-    val messageTextScale by viewModel.messageTextScale.collectAsState()
+    val currentAccent by viewModel.prefs.accentColor.collectAsState()
+    val currentAccent2 by viewModel.prefs.accentColor2.collectAsState()
+    val matrixUrl by viewModel.prefs.matrixUrl.collectAsState()
+    val agentMatrixId by viewModel.prefs.agentMatrixId.collectAsState()
+    val matrixToken by viewModel.prefs.matrixToken.collectAsState()
+    val biometricLockEnabled by viewModel.prefs.biometricLock.collectAsState()
+    val e2eeEnabled by viewModel.prefs.e2eeEnabled.collectAsState()
+    val hapticsEnabled by viewModel.prefs.hapticsEnabled.collectAsState()
+    val animationStyle by viewModel.prefs.animationStyle.collectAsState()
+    val bubbleStyle by viewModel.prefs.bubbleStyle.collectAsState()
+    val messageTextScale by viewModel.prefs.messageTextScale.collectAsState()
     val allowInsecure by viewModel.allowInsecure.collectAsState()
     val gatewayUrl by viewModel.gatewayUrl.collectAsState()
     val gatewayApiKey by viewModel.gatewayApiKey.collectAsState()
@@ -1090,7 +1090,7 @@ fun SettingsPlace(viewModel: ChatViewModel, onClose: () -> Unit) {
     val ttsApiKey by viewModel.voice.ttsApiKey.collectAsState()
     val ttsVoice by viewModel.voice.ttsVoice.collectAsState()
     val ttsModel by viewModel.voice.ttsModel.collectAsState()
-    val showTelemetry by viewModel.showTelemetry.collectAsState()
+    val showTelemetry by viewModel.prefs.showTelemetry.collectAsState()
     val missionAlertsEnabled by viewModel.missions.alertsEnabled.collectAsState()
     val pushEnabled by viewModel.pushEnabled.collectAsState()
     val pushGatewayUrl by viewModel.pushGatewayUrl.collectAsState()
@@ -1098,16 +1098,16 @@ fun SettingsPlace(viewModel: ChatViewModel, onClose: () -> Unit) {
     SettingsScreen(
         viewModel = viewModel,
         currentAccentColor = currentAccent,
-        onAccentColorChanged = { viewModel.setAccentColor(it) },
+        onAccentColorChanged = { viewModel.prefs.setAccentColor(it) },
         currentAccentColor2 = currentAccent2,
-        onAccentColor2Changed = { viewModel.setAccentColor2(it) },
+        onAccentColor2Changed = { viewModel.prefs.setAccentColor2(it) },
         currentUserId = currentUserId,
         matrixUrl = matrixUrl,
-        onMatrixUrlChanged = { viewModel.setMatrixUrl(it) },
+        onMatrixUrlChanged = { viewModel.prefs.setMatrixUrl(it) },
         agentMatrixId = agentMatrixId,
-        onAgentMatrixIdChanged = { viewModel.setAgentMatrixId(it) },
+        onAgentMatrixIdChanged = { viewModel.prefs.setAgentMatrixId(it) },
         matrixToken = matrixToken,
-        onMatrixTokenChanged = { viewModel.setMatrixToken(it) },
+        onMatrixTokenChanged = { viewModel.prefs.setMatrixToken(it) },
         allowInsecure = allowInsecure,
         onAllowInsecureChanged = { viewModel.setAllowInsecure(it) },
         gatewayUrl = gatewayUrl,
@@ -1134,7 +1134,7 @@ fun SettingsPlace(viewModel: ChatViewModel, onClose: () -> Unit) {
         onTtsModelChanged = { viewModel.voice.setTtsModel(it) },
         onTestLink = { viewModel.testGatewayLink() },
         showTelemetry = showTelemetry,
-        onShowTelemetryChanged = { viewModel.setShowTelemetry(it) },
+        onShowTelemetryChanged = { viewModel.prefs.setShowTelemetry(it) },
         missionAlertsEnabled = missionAlertsEnabled,
         onMissionAlertsChanged = {
             viewModel.missions.setAlertsEnabled(it)
@@ -1164,18 +1164,18 @@ fun SettingsPlace(viewModel: ChatViewModel, onClose: () -> Unit) {
         pushGatewayUrl = pushGatewayUrl,
         onPushGatewayUrlChanged = { viewModel.setPushGatewayUrl(it) },
         biometricLockEnabled = biometricLockEnabled,
-        onBiometricLockChanged = { viewModel.setBiometricLock(it) },
+        onBiometricLockChanged = { viewModel.prefs.setBiometricLock(it) },
         e2eeEnabled = e2eeEnabled,
-        onE2eeChanged = { viewModel.setE2eeEnabled(it) },
+        onE2eeChanged = { viewModel.prefs.setE2eeEnabled(it) },
         hapticsEnabled = hapticsEnabled,
-        onHapticsChanged = { viewModel.setHapticsEnabled(it) },
+        onHapticsChanged = { viewModel.prefs.setHapticsEnabled(it) },
         animationStyle = animationStyle,
-        onAnimationStyleChanged = { viewModel.setAnimationStyle(it) },
+        onAnimationStyleChanged = { viewModel.prefs.setAnimationStyle(it) },
         bubbleStyle = bubbleStyle,
-        onBubbleStyleChanged = { viewModel.setBubbleStyle(it) },
+        onBubbleStyleChanged = { viewModel.prefs.setBubbleStyle(it) },
         messageTextScale = messageTextScale,
-        onMessageTextScaleChanged = { viewModel.setMessageTextScale(it) },
-        onResetAppearance = { viewModel.resetMessageAppearance() },
+        onMessageTextScaleChanged = { viewModel.prefs.setMessageTextScale(it) },
+        onResetAppearance = { viewModel.prefs.resetMessageAppearance() },
         onLoginRequested = { user, pass, callback ->
             viewModel.doors.loginToMatrix(user, pass, callback)
         },
