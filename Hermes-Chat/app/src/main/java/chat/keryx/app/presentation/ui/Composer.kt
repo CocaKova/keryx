@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui
 
+import chat.keryx.app.presentation.tour.tourTarget
+import chat.keryx.app.presentation.tour.KeryxTour
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -187,6 +189,7 @@ internal fun Composer(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .tourTarget(KeryxTour.COMPOSER)
             .clip(composerShape)
             // Floats over the transcript, so it stands on its own floor first and takes its tint
             // second: the tint alone let whatever scrolled underneath read through the draft.
@@ -500,6 +503,7 @@ internal fun ComposerFooter(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .heightIn(min = 36.dp)
+                    .tourTarget(KeryxTour.MODEL)
                     .clip(pillShape)
                     .clickable(onClickLabel = "Choose a model") { modelMenu = true; onRefreshCaps(); onRefreshCatalog() }
                     // Read as the model, not the menu's triangle.

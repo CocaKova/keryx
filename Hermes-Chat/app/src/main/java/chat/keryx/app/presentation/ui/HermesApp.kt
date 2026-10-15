@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui
 
+import chat.keryx.app.presentation.tour.tourTarget
+import chat.keryx.app.presentation.tour.KeryxTour
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -16,6 +18,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
@@ -263,7 +266,57 @@ fun HermesApp(viewModel: ChatViewModel) {
             openSpace(KeryxDest.Artifact(path = ref.path, name = ref.name, roomId = ref.roomId, eventId = ref.eventId))
         }
     }
+    // The guided tour (3.0): where each pointable control is, one controller for every way in,
+    // and the moves that take the app to the place a stop lives in (the chat, the drawer).
+    val tourRegistry = remember { chat.keryx.app.presentation.tour.TourRegistry() }
+    val tour = remember(viewModel) {
+        fun context() = KeryxTour.Context(
+            direct = viewModel.transportIsDirect,
+            link = viewModel.hub.reasoningCaps.value != null,
+        )
+        chat.keryx.app.presentation.tour.TourController(
+            // The chat and the drawer are always composed, so what they wear is the truth;
+            // a space's targets only exist once it is open, and go by the door rules.
+            catalog = {
+                KeryxTour.catalog(context()).filter {
+                    (it.place != chat.keryx.core.tour.TourPlace.CHAT && it.place != chat.keryx.core.tour.TourPlace.DRAWER) ||
+                        tourRegistry.isWorn(it.id)
+                }
+            },
+            builtIn = { preset, ids -> KeryxTour.builtIn(preset, ids, context()) },
+        )
+    }
+    val tourStop = tour.run?.let { it.index to it.step.place }
+    LaunchedEffect(tourStop) {
+        val place = tourStop?.second ?: return@LaunchedEffect
+        focusManager.clearFocus()
+        keyboard?.hide()
+        when (place) {
+            chat.keryx.core.tour.TourPlace.CHAT -> { nav.home(); drawerState.close() }
+            chat.keryx.core.tour.TourPlace.DRAWER -> { nav.home(); drawerState.open() }
+            else -> KeryxDest.fromRoute(place)?.let { drawerState.close(); nav.open(it) }
+        }
+    }
+    // However it ends (Done, the ✕, BACK), a tour that opened the drawer closes it again.
+    val touring = tour.run != null
+    var wasTouring by remember { mutableStateOf(false) }
+    LaunchedEffect(touring) {
+        if (wasTouring && !touring) drawerState.close()
+        wasTouring = touring
+    }
+    // Settings' "Take the tour": the chat floor first, then the first stop.
+    LaunchedEffect(Unit) {
+        viewModel.tourRequested.collect { preset ->
+            if (preset == null) return@collect
+            viewModel.consumeTour()
+            nav.home()
+            val result = tour.start(preset)
+            if (!result.success) result.error?.let { viewModel.toast(it) }
+        }
+    }
+
     CompositionLocalProvider(
+        chat.keryx.app.presentation.tour.LocalTourRegistry provides tourRegistry,
         chat.keryx.app.presentation.ui.components.LocalKeryxHaptics provides keryxHaptics,
         chat.keryx.app.presentation.artifact.LocalArtifactOpener provides artifactOpener,
         chat.keryx.app.presentation.ui.components.LocalKeryxSnack provides snack,
@@ -272,6 +325,10 @@ fun HermesApp(viewModel: ChatViewModel) {
             overrides = heraldAccents,
         )
     ) {
+    Box(Modifier.fillMaxSize()) {
+    // While the tour talks, the app under it is not there for TalkBack either: the card is
+    // the only thing to read, as it is the only thing to touch.
+    Box(Modifier.fillMaxSize().then(if (touring) Modifier.clearAndSetSemantics { } else Modifier)) {
     // The activity window's notice layer: above the composer at the floor; on the bottom edge
     // when the drawer or a place covers the composer (the notice must never sit on its text).
     chat.keryx.app.presentation.ui.components.KeryxSnackLayer(
@@ -451,7 +508,10 @@ fun HermesApp(viewModel: ChatViewModel) {
                         // Read inside the badge's own scope below: read here, the pulse recomposed the
                         // whole app root every frame while something waited on you (3.0 perf).
                         val orb = chat.keryx.app.presentation.ui.components.breathingAlphaState(active = urgent > 0, low = 0.45f, periodMillis = 2200)
-                        IconButton(onClick = { focusManager.clearFocus(); scope.launch { drawerState.open() } }) {
+                        IconButton(
+                            onClick = { focusManager.clearFocus(); scope.launch { drawerState.open() } },
+                            modifier = Modifier.tourTarget(KeryxTour.DRAWER_BUTTON),
+                        ) {
                             BadgedBox(badge = {
                                 androidx.compose.animation.AnimatedVisibility(
                                     visible = urgent > 0,
@@ -513,6 +573,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                             Box(
                                 modifier = Modifier
                                     .size(48.dp)
+                                    .tourTarget(KeryxTour.NEW_SESSION)
                                     .clip(androidx.compose.foundation.shape.CircleShape)
                                     .combinedClickable(
                                         enabled = !creating,
@@ -746,6 +807,21 @@ fun HermesApp(viewModel: ChatViewModel) {
                     viewModel = viewModel,
                     onClose = nav::back,
                 )
+            }
+        },
+    )
+    }
+    }
+    chat.keryx.app.presentation.tour.TourOverlay(
+        controller = tour,
+        registry = tourRegistry,
+        onCta = { id ->
+            when (id) {
+                // The full tour ends on the gateway: one more Hermes, added where gateways live.
+                KeryxTour.CTA_ADD_GATEWAY -> {
+                    viewModel.jumpToSetting(chat.keryx.app.presentation.ui.components.SettingsRow.CONNECTION_GATEWAY.id)
+                    openSpace(KeryxDest.Settings)
+                }
             }
         },
     )

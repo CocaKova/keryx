@@ -52,6 +52,7 @@ enum class SettingsRow(
     PRIVACY_SENSES("Senses", listOf("battery", "time", "place", "location", "context"), "Privacy & Security", "Privacy & Security"),
     SESSIONS_ARCHIVED("Archived sessions", listOf("archive", "hidden", "restore"), "Sessions", null),
     SESSIONS_PRUNE("Prune sessions", listOf("delete old", "clean up", "sweep"), "Sessions", null),
+    ABOUT_TOUR("Take the tour", listOf("tutorial", "help", "guide", "walkthrough", "how", "getting started"), "About", "About"),
     ABOUT_CRASH("Crash log", listOf("diagnostics", "bug", "report", "share"), "About", "About"),
     ABOUT_VERSION("Version", listOf("about", "build", "keryx", "hermes"), "About", "About"),
     ;

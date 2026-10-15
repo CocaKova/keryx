@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui
 
+import chat.keryx.app.presentation.tour.tourTarget
+import chat.keryx.app.presentation.tour.KeryxTour
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.selection.selectable
@@ -502,6 +504,7 @@ fun NavigationDrawerContent(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .tourTarget(KeryxTour.LENSES)
                         .horizontalScroll(rememberScrollState())
                         .padding(bottom = 8.dp),
                 ) {
@@ -894,7 +897,7 @@ fun NavigationDrawerContent(
                     if (drawerVisible) viewModel.missions.refreshKanbanQuietly()
                 }
                 DrawerDoor(
-                    KeryxGlyphs.Board, "Missions", Modifier.weight(1f),
+                    KeryxGlyphs.Board, "Missions", Modifier.weight(1f).tourTarget(KeryxTour.MISSIONS),
                     badge = missionsNeedYou,
                     urgent = true,
                     // The drawer composes while closed: the glow only breathes while it's seen.
@@ -907,7 +910,7 @@ fun NavigationDrawerContent(
                 // ride. Badged with what has landed since you last looked — the same ledger
                 // the Runs place's arrivals rail reads, so door and rail never disagree.
                 if (caps != null) DrawerDoor(
-                    KeryxGlyphs.Watch, "Runs", Modifier.weight(1f),
+                    KeryxGlyphs.Watch, "Runs", Modifier.weight(1f).tourTarget(KeryxTour.RUNS),
                     badge = cronBoard.data?.unread?.total ?: 0,
                 ) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Runs)
@@ -916,7 +919,7 @@ fun NavigationDrawerContent(
                 // since you last looked. Direct door only — on Matrix a room already is a
                 // profile, so the door would open onto the drawer you are standing in.
                 if (direct) DrawerDoor(
-                    KeryxGlyphs.Robot, "Bots", Modifier.weight(1f),
+                    KeryxGlyphs.Robot, "Bots", Modifier.weight(1f).tourTarget(KeryxTour.BOTS),
                     badge = botsUnread,
                 ) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Bots)
@@ -929,7 +932,7 @@ fun NavigationDrawerContent(
                 if (caps?.git == true) DrawerDoor(KeryxGlyphs.GitBranch, "Shipyard", Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Shipyard)
                 }
-                DrawerDoor(KeryxGlyphs.Archive, "Archive", Modifier.weight(1f)) {
+                DrawerDoor(KeryxGlyphs.Archive, "Archive", Modifier.weight(1f).tourTarget(KeryxTour.ARCHIVE)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Archive)
                 }
             }
@@ -993,7 +996,7 @@ internal fun DrawerStatusStrip(
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 2.dp).tourTarget(KeryxTour.MACHINE),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

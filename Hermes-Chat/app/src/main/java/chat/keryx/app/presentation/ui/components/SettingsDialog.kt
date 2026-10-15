@@ -1003,6 +1003,24 @@ fun SettingsScreen(
                         if (pruneOpen) SessionPruneDialog(viewModel = viewModel, onDismiss = { pruneOpen = false })
                     }
 
+                    if (section == "About") SettingsCard("Tour", anchor = SettingsRow.ABOUT_TOUR) {
+                        Text(
+                            "A look around Keryx. Quick covers what a first chat needs; full walks the drawer too and ends on your gateway.",
+                            fontSize = KeryxType.body,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = { viewModel.requestTour(chat.keryx.core.tour.TourPreset.QUICK) },
+                                shape = RoundedCornerShape(KeryxRadius.field),
+                            ) { Text("Quick tour", fontSize = KeryxType.body) }
+                            OutlinedButton(
+                                onClick = { viewModel.requestTour(chat.keryx.core.tour.TourPreset.FULL) },
+                                shape = RoundedCornerShape(KeryxRadius.field),
+                            ) { Text("Full tour", fontSize = KeryxType.body) }
+                        }
+                    }
                     if (section == "About") SettingsCard("Diagnostics", anchor = SettingsRow.ABOUT_CRASH) {
                         val diagContext = androidx.compose.ui.platform.LocalContext.current
                         var crashText by remember { mutableStateOf(chat.keryx.app.CrashLog.read(diagContext)) }

@@ -1509,6 +1509,13 @@ class ChatViewModel(
 
     fun consumeTapIn() { _tapInRequested.value = false }
 
+    /** The guided tour asked for from a place that can't run it (3.0): Settings' "Take the
+     *  tour". A flag like Tap-In's: the app root starts the tour and clears it. */
+    private val _tourRequested = MutableStateFlow<chat.keryx.core.tour.TourPreset?>(null)
+    val tourRequested: StateFlow<chat.keryx.core.tour.TourPreset?> = _tourRequested.asStateFlow()
+    fun requestTour(preset: chat.keryx.core.tour.TourPreset) { _tourRequested.value = preset }
+    fun consumeTour() { _tourRequested.value = null }
+
     /** What Tap-In reads (2.16, now a nav layer): the chat's reconciled render items and the
      *  side-channel's record of the newest run, as the chat screen last drew them. */
     data class TapInFeed(
