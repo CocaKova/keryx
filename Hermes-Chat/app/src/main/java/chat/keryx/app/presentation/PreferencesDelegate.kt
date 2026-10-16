@@ -14,6 +14,18 @@ import kotlinx.coroutines.flow.asStateFlow
  * settings and written back on change; nothing else in the app derives from them here.
  */
 class PreferencesDelegate(private val settings: SettingsRepository) {
+    /** First-visit hints already shown (3.0, [chat.keryx.app.presentation.tour.KeryxHints]). */
+    val hintsSeen: Set<String> get() = settings.hintsSeen
+
+    fun markHintSeen(id: String) {
+        settings.hintsSeen = settings.hintsSeen + id
+    }
+
+    /** Settings › About: every space explains itself again on its next visit. */
+    fun showHintsAgain() {
+        settings.hintsSeen = emptySet()
+    }
+
     private val _isDarkTheme = MutableStateFlow<Boolean?>(null) // null = system default
     val isDarkTheme: StateFlow<Boolean?> = _isDarkTheme.asStateFlow()
 

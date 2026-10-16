@@ -1040,6 +1040,12 @@ fun SettingsScreen(
                                 shape = RoundedCornerShape(KeryxRadius.field),
                             ) { Text("Full tour", fontSize = KeryxType.body) }
                         }
+                        Spacer(Modifier.height(4.dp))
+                        // First-visit hints (3.0): Missions, Runs and the rest explain themselves once.
+                        TextButton(onClick = {
+                            viewModel.prefs.showHintsAgain()
+                            viewModel.toast("Each space will explain itself again on your next visit.")
+                        }) { Text("Show the space hints again", fontSize = KeryxType.body) }
                     }
                     if (section == "About") SettingsCard("Diagnostics", anchor = SettingsRow.ABOUT_CRASH) {
                         val diagContext = androidx.compose.ui.platform.LocalContext.current

@@ -114,6 +114,7 @@ fun TapInScreen(
 
     KeryxSpace(
         title = "Tap-In",
+        hint = chat.keryx.app.presentation.tour.KeryxHints.TAP_IN,
         onClose = onClose,
         standalone = standalone,
         liveSlot = {

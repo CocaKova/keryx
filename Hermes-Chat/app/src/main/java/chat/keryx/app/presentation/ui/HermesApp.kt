@@ -314,6 +314,23 @@ fun HermesApp(viewModel: ChatViewModel) {
         if (wasTouring && !touring) drawerState.close()
         wasTouring = touring
     }
+    // First-visit hints (3.0): a space opened for the first time says what it's for, once its
+    // header has arrived and held still. Never over a tour, and never twice.
+    val hintDest = nav.top
+    LaunchedEffect(hintDest, touring) {
+        if (touring) return@LaunchedEffect
+        val step = chat.keryx.app.presentation.tour.KeryxHints.due(hintDest, viewModel.prefs.hintsSeen)
+            ?: return@LaunchedEffect
+        val id = step.target ?: return@LaunchedEffect
+        val worn = kotlinx.coroutines.withTimeoutOrNull(HINT_ARRIVAL_WAIT_MS) {
+            while (!tourRegistry.isWorn(id)) kotlinx.coroutines.delay(50)
+            true
+        } ?: return@LaunchedEffect
+        // The space's own arrival (a rise of a few dp) finishes first.
+        kotlinx.coroutines.delay(HINT_SETTLE_MS)
+        if (worn && nav.top == hintDest && tour.hint(step)) viewModel.prefs.markHintSeen(id)
+    }
+
     // Settings' "Take the tour": the chat floor first, then the first stop.
     LaunchedEffect(Unit) {
         viewModel.tourRequested.collect { preset ->
@@ -1042,6 +1059,10 @@ internal fun ReasoningMenu(
 /** How long a tour asked for on arrival waits for the chat to be drawn, and settles after. */
 private const val TOUR_ARRIVAL_WAIT_MS = 3_000L
 private const val TOUR_ARRIVAL_SETTLE_MS = 700L
+
+/** How long a first-visit hint waits for its space's header, and the pause after it arrives. */
+private const val HINT_ARRIVAL_WAIT_MS = 2_000L
+private const val HINT_SETTLE_MS = 450L
 
 /**
  * The demo's one line of chrome (3.0 first run): it says this is a demo and is the way out,

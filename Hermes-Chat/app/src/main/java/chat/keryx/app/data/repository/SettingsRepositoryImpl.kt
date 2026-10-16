@@ -321,6 +321,10 @@ class SettingsRepositoryImpl(
         get() = prefs.getString("pending_notice", "") ?: ""
         set(value) = prefs.edit().putString("pending_notice", value).apply()
 
+    override var hintsSeen: Set<String>
+        get() = prefs.getStringSet("hints_seen", emptySet())?.toSet() ?: emptySet()
+        set(value) = prefs.edit().putStringSet("hints_seen", value).apply()
+
     override var gatewayUrl: String
         get() = (prefs.getString(ledgerKey("gateway_url"), "") ?: "").ifBlank { defaultGatewayUrl() }
         set(value) = prefs.edit().putString(ledgerKey("gateway_url"), value).apply()

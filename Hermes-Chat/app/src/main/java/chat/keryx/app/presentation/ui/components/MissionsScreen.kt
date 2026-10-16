@@ -299,6 +299,7 @@ fun MissionsScreen(
 
     KeryxSpace(
         title = "Missions",
+        hint = chat.keryx.app.presentation.tour.KeryxHints.MISSIONS,
         onClose = onDismissRequest,
         standalone = false,
         liveSlot = {

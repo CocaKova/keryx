@@ -99,7 +99,8 @@ fun ArtifactSpace(
     val ready = page as? Page.Ready
 
     KeryxSpace(
-        title = "Artifact",
+        title = "Page",
+        hint = chat.keryx.app.presentation.tour.KeryxHints.ARTIFACT,
         onClose = onClose,
         standalone = false,
         liveSlot = {

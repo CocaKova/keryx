@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.presentation.tour.tourTarget
+
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.animateFloatAsState
@@ -92,6 +94,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -735,6 +738,8 @@ fun KeryxSpace(
     standalone: Boolean = true,
     /** A spoke inside a hub (2.10): the emblem's seat holds a back arrow to the hub instead. */
     onBack: (() -> Unit)? = null,
+    /** The first-visit hint the header wears (3.0, [chat.keryx.app.presentation.tour.KeryxHints]). */
+    hint: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     if (standalone) {
@@ -745,11 +750,11 @@ fun KeryxSpace(
             // Its own window, so its own notice layer: a notice raised in here (Tap-In's
             // "steered") is drawn in here, not under the dialog in the activity.
             KeryxSnackLayer(Modifier.fillMaxSize()) {
-                KeryxSpaceBody(title, onClose, modifier, liveSlot, actions, floating, onBack, content)
+                KeryxSpaceBody(title, onClose, modifier, liveSlot, actions, floating, onBack, hint, content)
             }
         }
     } else {
-        KeryxSpaceBody(title, onClose, modifier, liveSlot, actions, floating, onBack, content)
+        KeryxSpaceBody(title, onClose, modifier, liveSlot, actions, floating, onBack, hint, content)
     }
 }
 
@@ -917,6 +922,7 @@ private fun KeryxSpaceBody(
     actions: @Composable () -> Unit = {},
     floating: (@Composable () -> Unit)? = null,
     onBack: (() -> Unit)? = null,
+    hint: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     // Arrival breath (2.0): the space's contents rise the last few dp into place just behind the
@@ -961,14 +967,26 @@ private fun KeryxSpaceBody(
                         glyphSize = 8f,
                     )
                 }
-                Column(modifier = Modifier.padding(start = 14.dp).weight(1f)) {
+                Column(
+                    modifier = Modifier.padding(start = 14.dp).weight(1f)
+                        .then(if (hint != null) Modifier.tourTarget(hint) else Modifier),
+                ) {
+                    // One line, shrinking to fit: a space with a full row of actions (the artifact
+                    // viewer has five) left its title so little room it broke mid-word ("ARTIF / ACT").
                     Text(
                         title.uppercase(),
-                        fontSize = KeryxType.headline,
                         fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 5.sp,
+                        // 5 sp at the full 18 sp, shrinking with the type (a fixed 5 sp alone
+                        // still clipped "ARTIFACT" at the smallest size).
+                        letterSpacing = 0.28.em,
                         fontFamily = chat.keryx.app.theme.CinzelFamily,
                         color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(
+                            minFontSize = 11.sp, maxFontSize = KeryxType.headline, stepSize = 0.5.sp,
+                        ),
                     )
                     liveSlot()
                 }

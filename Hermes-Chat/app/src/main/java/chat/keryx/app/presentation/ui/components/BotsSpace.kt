@@ -142,6 +142,7 @@ fun BotsSpace(
 
     KeryxSpace(
         title = "Bots",
+        hint = chat.keryx.app.presentation.tour.KeryxHints.BOTS,
         onClose = onClose,
         standalone = false,
         liveSlot = {

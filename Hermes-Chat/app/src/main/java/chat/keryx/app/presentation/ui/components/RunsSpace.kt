@@ -233,6 +233,7 @@ fun RunsSpace(
 
     KeryxSpace(
         title = "Runs",
+        hint = chat.keryx.app.presentation.tour.KeryxHints.RUNS,
         onClose = onClose,
         standalone = false,
         liveSlot = {

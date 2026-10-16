@@ -212,6 +212,7 @@ fun GatewaySpace(viewModel: ChatViewModel, health: LinkHealth, onDismiss: () -> 
 
     KeryxSpace(
         title = spoke?.label ?: "Gateway",
+        hint = if (spoke == null) chat.keryx.app.presentation.tour.KeryxHints.GATEWAY else null,
         onClose = onDismiss,
         onBack = if (spoke != null) ({ spokeId = null }) else null,
         standalone = false,

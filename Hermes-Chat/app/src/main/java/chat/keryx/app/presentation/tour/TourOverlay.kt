@@ -101,6 +101,14 @@ class TourController(
     }
 
     fun start(preset: TourPreset) = act(TourAction.Start(null, preset))
+
+    /** A first-visit hint ([KeryxHints]): one "Got it" stop, the app's own, so it skips the
+     *  agent's catalog. Never over a tour already running. */
+    fun hint(step: TourStep): Boolean {
+        if (run != null) return false
+        run = TourRun(listOf(step), 0, paged = false)
+        return true
+    }
 }
 
 /** How long a step waits for its target to show (the drawer opening, a place arriving) before
