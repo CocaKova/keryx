@@ -273,6 +273,13 @@ object ToolText {
 
     fun contextPreview(name: String, args: JsonObject?): String {
         args ?: return ""
+        // The plan has no one argument to quote: Hermes says how many steps it writes
+        // (agent/display.py `_preview_todo_list`, en: "{verb} {count} task(s)").
+        if (chat.keryx.core.model.ToolWire.canonical(name) == "todo_list") {
+            val todos = args["todos"] as? kotlinx.serialization.json.JsonArray ?: return "reading task list"
+            val verb = if ((args["merge"] as? JsonPrimitive)?.content == "true") "updating" else "planning"
+            return "$verb ${todos.size} task(s)"
+        }
         val primary = primaryArgs[chat.keryx.core.model.ToolWire.canonical(name)]?.let { args[it] }
             ?: FALLBACK_KEYS.firstNotNullOfOrNull { args[it] }
             ?: args.values.firstOrNull { it is JsonPrimitive && it.isString }

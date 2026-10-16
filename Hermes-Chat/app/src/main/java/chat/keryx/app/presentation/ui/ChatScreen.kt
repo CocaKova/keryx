@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui
 
+import chat.keryx.app.presentation.tour.KeryxTour
+import chat.keryx.app.presentation.tour.tourTarget
 import chat.keryx.app.presentation.ui.components.roomCrossing
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -1119,7 +1121,7 @@ fun ChatScreen(
             // the composer where the answer happens (merge dowry, plan §5).
             androidx.compose.animation.AnimatedVisibility(visible = pendingApproval != null, enter = keryxReveal(), exit = keryxConceal()) {
                 pendingApproval?.let { approval ->
-                    Column {
+                    Column(Modifier.tourTarget(KeryxTour.APPROVAL)) {
                         chat.keryx.app.presentation.ui.components.ApprovalCard(approval) {
                             viewModel.respondApproval(it)
                         }
@@ -1340,7 +1342,7 @@ fun ChatScreen(
             // Lifted above its sibling inside the column so the banner slides out from UNDER the
             // rail rather than across it.
             flightPlan?.takeIf { it.total > 0 }?.let { plan ->
-                Box(Modifier.zIndex(1f)) {
+                Box(Modifier.zIndex(1f).tourTarget(KeryxTour.FLIGHT_PLAN)) {
                     chat.keryx.app.presentation.ui.components.FlightPlanStrip(plan)
                 }
             }

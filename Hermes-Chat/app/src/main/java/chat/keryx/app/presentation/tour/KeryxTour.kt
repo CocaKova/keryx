@@ -27,8 +27,13 @@ object KeryxTour {
     const val ARCHIVE = "door-archive"
     const val MACHINE = "drawer-status"
 
+    /** The agent's own instruments, worn only while they're up: the plan it's ticking off and
+     *  the approval it stopped on. */
+    const val FLIGHT_PLAN = "flight-plan"
+    const val APPROVAL = "approval"
+
     /** Every id above, in tour order. */
-    val ALL = listOf(COMPOSER, MODEL, NEW_SESSION, DRAWER_BUTTON, LENSES, MISSIONS, RUNS, BOTS, ARCHIVE, MACHINE)
+    val ALL = listOf(FLIGHT_PLAN, APPROVAL, COMPOSER, MODEL, NEW_SESSION, DRAWER_BUTTON, LENSES, MISSIONS, RUNS, BOTS, ARCHIVE, MACHINE)
 
     /** Ends the tour by opening Settings › Gateways. */
     const val CTA_ADD_GATEWAY = "add-gateway"
@@ -44,6 +49,8 @@ object KeryxTour {
     data class Context(val direct: Boolean, val link: Boolean, val demo: Boolean = false)
 
     fun catalog(ctx: Context): List<TourTarget> = buildList {
+        if (ctx.direct) add(TourTarget(FLIGHT_PLAN, "Flight Plan: the agent's steps for this job", TourPlace.CHAT))
+        if (ctx.direct) add(TourTarget(APPROVAL, "Approval the agent is waiting on", TourPlace.CHAT))
         add(TourTarget(COMPOSER, "Message composer", TourPlace.CHAT))
         add(TourTarget(MODEL, "Model picker", TourPlace.CHAT))
         if (ctx.direct) add(TourTarget(NEW_SESSION, "New session", TourPlace.CHAT))
@@ -66,10 +73,24 @@ object KeryxTour {
         val welcome = if (ctx.demo) listOf(
             TourStep(
                 null, "Welcome to Keryx",
-                "This is a demo: a pretend gateway on your phone with a few chats in it. Here's a quick look around before you connect your own.",
+                "This is a demo: a pretend gateway on your phone, and its agent is in the middle of a job. " +
+                    "Here's a quick look around before you connect your own.",
             ),
         ) else emptyList()
-        val quick = welcome + listOf(
+        // What an agent at work looks like, when there is one on screen: the demo opens on one.
+        val atWork = listOf(
+            TourStep(
+                FLIGHT_PLAN, "Its plan",
+                "Your agent breaks a job into steps and ticks them off as it goes. While it works, Keryx keeps a " +
+                    "live notice of the job, so you can put the phone away.",
+            ),
+            TourStep(
+                APPROVAL, "It asks first",
+                "Before anything risky, like deleting a folder, your agent stops and asks. Answer here or right " +
+                    "from the notification." + if (ctx.demo) " Try it when the tour's done, and watch it finish the job." else "",
+            ),
+        )
+        val quick = welcome + atWork + listOf(
             TourStep(COMPOSER, "Ask for anything", "Give your agent a job in plain words. It keeps working if you leave, and Keryx lets you know when it's done."),
             TourStep(MODEL, "Which brain answers", "Switch the model for this session, or for every session from here on."),
             TourStep(NEW_SESSION, "A fresh page", "Start a new session. Hold it for options, like a title or a temporary session."),

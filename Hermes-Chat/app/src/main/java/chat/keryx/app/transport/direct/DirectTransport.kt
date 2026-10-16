@@ -80,7 +80,8 @@ class DirectTransport(
      *  see waits: the follow poll pauses and roster refreshes are spaced out (2.13.10).
      *  Defaults to "always on screen" so plain-JVM tests behave as before. */
     private val foreground: StateFlow<Boolean> = MutableStateFlow(true),
-) : ChatTransport, GatewayCapabilities, chat.keryx.core.transport.SessionMetaSource {
+) : ChatTransport, GatewayCapabilities, chat.keryx.core.transport.SessionMetaSource,
+    chat.keryx.core.transport.AgentInstruments {
 
     /** No Matrix here — the UI's Matrix affordances gate themselves off on exactly this. */
     override val matrix: MatrixCapabilities? get() = null
@@ -1681,7 +1682,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     // lift it out of the text into a media bubble of its own, keyed by a synthetic id whose
     // path is remembered here so mediaBytes() can fetch it over /api/files/download.
     private val remoteMediaPaths = java.util.concurrent.ConcurrentHashMap<String, String>()
-    private val MEDIA_ID_SEP = "#media:"
+    private val MEDIA_ID_SEP = MediaTags.MEDIA_ID_SEP
 
     /** `http://` or `https://` — anything else is a path on the gateway host. */
     private fun isAbsoluteUrl(v: String): Boolean =
@@ -1700,35 +1701,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
      * the bitmap cache hits; the media rows keep the sender so a user photo stays on the
      * user's side.
      */
-    private fun expandMediaTags(list: List<Message>): List<Message> {
-        fun carries(m: Message): Boolean = !m.isStreaming && m.mediaKind == null && when (m.sender) {
-            SenderType.HERMES -> MediaTags.hasTag(m.content)
-            SenderType.ME -> MediaTags.hasImageRef(m.content)
-            else -> false
-        }
-        if (list.none(::carries)) return list
-        return buildList(list.size + 4) {
-            for (m in list) {
-                if (!carries(m)) { add(m); continue }
-                val split = if (m.sender == SenderType.ME) MediaTags.splitImageRefs(m.content) else MediaTags.split(m.content)
-                if (split.refs.isEmpty()) { add(m); continue }
-                if (split.text.isNotBlank() || m.toolCalls.isNotEmpty() || m.reasoning != null) add(m.copy(content = split.text))
-                split.refs.forEachIndexed { i, ref ->
-                    val id = "${m.id}$MEDIA_ID_SEP$i"
-                    remoteMediaPaths[id] = ref.path
-                    add(
-                        Message(
-                            id = id, roomId = m.roomId, sender = m.sender,
-                            content = "", timestamp = m.timestamp,
-                            senderId = m.senderId, senderName = m.senderName,
-                            mediaUrl = ref.path, mediaKind = ref.kind, fileName = ref.name,
-                            replyToId = m.replyToId,
-                        )
-                    )
-                }
-            }
-        }
-    }
+    private fun expandMediaTags(list: List<Message>): List<Message> =
+        MediaTags.expand(list) { id, path -> remoteMediaPaths[id] = path }
 
     /**
      * Image upload, desktop's remote-client path: `image.attach_bytes` queues the image on
@@ -1918,7 +1892,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     override fun typing(sessionId: String): Flow<TypingState> =
         store(sessionId).agentTyping.map { TypingState(agentTyping = it) }
 
-    fun todoPlan(sessionId: String): Flow<chat.keryx.core.model.TodoPlan?> =
+    override fun todoPlan(sessionId: String): Flow<chat.keryx.core.model.TodoPlan?> =
         store(sessionId).todoPlan
 
     // "Leaving" a session = archiving it: it drops out of the list but stays recoverable
@@ -2795,7 +2769,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         statusFlow(sessionId)
 
     // --- approvals and blocking questions: see [PendingAsks] -------------------------------
-    fun pendingApproval(sessionId: String): Flow<chat.keryx.core.model.ApprovalRequest?> = asks.approval(sessionId)
+    override fun pendingApproval(sessionId: String): Flow<chat.keryx.core.model.ApprovalRequest?> = asks.approval(sessionId)
 
     fun shadePending(): Flow<Map<String, chat.keryx.core.model.ShadePendingEntry>> = asks.shade()
 
@@ -2917,7 +2891,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     /** [expectedRequestId]: the request a notification was posted for. When the pending one is
      *  a different request (the first expired, the agent asked again), nothing is answered:
      *  a retried shade tap must not approve a command its notice never showed. */
-    suspend fun respondApproval(sessionId: String, choice: String, expectedRequestId: String? = null): Result<Boolean> = runCatching {
+    override suspend fun respondApproval(sessionId: String, choice: String, expectedRequestId: String?): Result<Boolean> = runCatching {
         val rpc = rpc ?: error("gateway not connected")
         val live = attach(sessionId)
         if (!expectedRequestId.isNullOrBlank() && asks.approval(sessionId).value?.requestId != expectedRequestId) {

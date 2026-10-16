@@ -267,6 +267,12 @@ object ToolGrammar {
             // which uses the category verb throughout; the category grammar exists to count a
             // crowd, and there is no crowd here.)
             val only = calls[0]
+            // Machinery has nothing to name, and its own name read twice ("Updated todos todo
+            // list"): the verb says it all.
+            if (only.target.isBlank() && ToolWire.canonical(only.name) in TARGETLESS) {
+                val v = verbOf(only.name)
+                return if (present) v.present else v.past
+            }
             val t = only.target.ifBlank { friendly(only.name) }.take(40)
             if (t.isNotBlank()) return title(only.name, t, running = present)
         }

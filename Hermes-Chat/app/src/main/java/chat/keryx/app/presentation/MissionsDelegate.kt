@@ -68,12 +68,18 @@ class MissionsDelegate(
     private val _kanbanError = MutableStateFlow<String?>(null)
     val kanbanError: StateFlow<String?> = _kanbanError.asStateFlow()
 
-    /** The demo (3.0): no board to reach, so an empty one, drawn as a fresh board is. */
+    /** The demo (3.0): no board to reach, so the demo's own, drawn by the real board. */
     private val demo get() = settings.transportMode == chat.keryx.app.transport.demo.DemoTransport.MODE
+
+    /** The Link for a board action; in the demo, a toast saying what would do [what] instead. */
+    private fun clientFor(what: String): HermesStreamClient? = client() ?: run {
+        if (demo) toast(chat.keryx.app.transport.demo.DemoTransport.DemoOnly(what).message.orEmpty())
+        null
+    }
 
     fun refreshKanban() {
         val client = client() ?: run {
-            if (demo) _kanbanBoard.value = chat.keryx.app.data.remote.HermesStreamClient.KanbanBoard("default", emptyMap())
+            if (demo) _kanbanBoard.value = chat.keryx.app.transport.demo.DemoBoard.board(System.currentTimeMillis())
             else _kanbanError.value = "Hermes Link is off — enable it in Settings"
             return
         }
@@ -94,7 +100,11 @@ class MissionsDelegate(
      * read as "nothing needs you", which is the one wrong thing it can say.
      */
     fun refreshKanbanQuietly() {
-        val client = client() ?: return
+        val client = client() ?: run {
+            // The demo's board counts too: the drawer's orb shows what waits on the visitor.
+            if (demo) _kanbanBoard.value = chat.keryx.app.transport.demo.DemoBoard.board(System.currentTimeMillis())
+            return
+        }
         scope.launch {
             client.kanbanBoard().onSuccess { _kanbanBoard.value = it; _kanbanError.value = null }
         }
@@ -186,7 +196,7 @@ class MissionsDelegate(
      * A second bulk while one runs is refused — the bar would show two jobs as one.
      */
     fun kanbanArchiveMany(taskIds: Collection<String>, onDone: () -> Unit = {}) {
-        val client = client() ?: return
+        val client = clientFor("archive missions") ?: return
         val ids = taskIds.distinct()
         if (ids.isEmpty() || _bulkProgress.value != null) return
         _bulkProgress.value = BulkProgress(0, ids.size)
@@ -280,7 +290,7 @@ class MissionsDelegate(
     /** Toggle "alert when this ends". On subscribes the current alert chat; off removes every
      *  subscription the app can see for the task — they may point at chats opened earlier. */
     fun kanbanSetAlert(taskId: String, enabled: Boolean) {
-        val client = client() ?: return
+        val client = clientFor("get mission alerts") ?: return
         scope.launch {
             if (enabled) {
                 val room = alertRoom() ?: run {
@@ -300,7 +310,8 @@ class MissionsDelegate(
 
     suspend fun kanbanTaskDetail(taskId: String): Result<chat.keryx.app.data.remote.HermesStreamClient.KanbanDetail> =
         client()?.kanbanTask(taskId)
-            ?: Result.failure(IllegalStateException("Hermes Link is off"))
+            ?: if (demo) chat.keryx.app.transport.demo.DemoBoard.detail(taskId, System.currentTimeMillis())
+            else Result.failure(IllegalStateException("Hermes Link is off"))
 
     /** Create a mission and refresh the board; toasts the outcome either way. [notify] chains a
      *  terminal-event subscription for the current alert room onto the fresh task. */
@@ -330,7 +341,7 @@ class MissionsDelegate(
     }
 
     fun kanbanComment(taskId: String, body: String, onDone: () -> Unit = {}) {
-        val client = client() ?: return
+        val client = clientFor("comment on missions") ?: return
         scope.launch {
             client.kanbanComment(taskId, body)
                 .onSuccess { onDone() }
@@ -341,7 +352,7 @@ class MissionsDelegate(
     /** Answer a card that asked for something; [unblock] sends it back to work. Toasts where
      *  the card landed so "did that do anything?" never needs a refresh to answer. */
     fun kanbanReply(taskId: String, body: String, unblock: Boolean, onDone: () -> Unit = {}) {
-        val client = client() ?: return
+        val client = clientFor("answer your agents") ?: return
         scope.launch {
             client.kanbanReply(taskId, body, unblock)
                 .onSuccess { r ->
@@ -361,7 +372,7 @@ class MissionsDelegate(
 
     /** The review verdict, yes: the card completes. [note] is optional. */
     fun kanbanApprove(taskId: String, note: String, onDone: () -> Unit = {}) {
-        val client = client() ?: return
+        val client = clientFor("approve their work") ?: return
         scope.launch {
             client.kanbanApprove(taskId, note)
                 .onSuccess { toast("Approved — mission done"); onDone(); refreshKanban() }
@@ -371,7 +382,7 @@ class MissionsDelegate(
 
     /** The review verdict, no: back to the implementer with [reason]. */
     fun kanbanRequestChanges(taskId: String, reason: String, onDone: () -> Unit = {}) {
-        val client = client() ?: return
+        val client = clientFor("send work back") ?: return
         scope.launch {
             client.kanbanRequestChanges(taskId, reason)
                 .onSuccess { status -> toast("Changes requested — back to ${status.ifBlank { "the implementer" }}"); onDone(); refreshKanban() }
@@ -387,7 +398,7 @@ class MissionsDelegate(
         assignee: String = "",
         onDone: () -> Unit = {},
     ) {
-        val client = client() ?: return
+        val client = clientFor("move missions") ?: return
         scope.launch {
             client.kanbanAction(taskId, move.verb, note, assignee)
                 .onSuccess { r ->
@@ -408,7 +419,7 @@ class MissionsDelegate(
 
     /** Pin (blank = clear) the mission's model override; takes effect on its next dispatch. */
     fun kanbanSetModel(taskId: String, model: String, onDone: () -> Unit = {}) {
-        val client = client() ?: return
+        val client = clientFor("tune missions") ?: return
         scope.launch {
             client.kanbanSetModel(taskId, model)
                 .onSuccess { onDone() }
@@ -418,7 +429,7 @@ class MissionsDelegate(
 
     /** Pin the mission's thinking depth ("" inherits; "none" pins thinking OFF). */
     fun kanbanSetReasoning(taskId: String, effort: String, onDone: () -> Unit = {}) {
-        val client = client() ?: return
+        val client = clientFor("tune missions") ?: return
         scope.launch {
             client.kanbanSetReasoning(taskId, effort)
                 .onSuccess { onDone() }

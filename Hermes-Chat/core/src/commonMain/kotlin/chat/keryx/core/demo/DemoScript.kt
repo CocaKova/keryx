@@ -1,8 +1,12 @@
 package chat.keryx.core.demo
 
+import chat.keryx.core.model.ApprovalRequest
+import chat.keryx.core.model.MediaTags
 import chat.keryx.core.model.Message
 import chat.keryx.core.model.RoomProfile
 import chat.keryx.core.model.RoomType
+import chat.keryx.core.model.TodoPlan
+import chat.keryx.core.model.TodoPlanParser
 import chat.keryx.core.protocol.MessageRow
 import chat.keryx.core.protocol.RestToolCall
 import chat.keryx.core.protocol.TranscriptBuilder
@@ -20,13 +24,29 @@ import chat.keryx.core.protocol.TranscriptBuilder
 object DemoScript {
     const val AGENT = "Hermes"
 
-    /** The session the demo opens on. */
-    const val FIRST = "demo-backup"
+    const val UNREAD = "demo-groceries"
+    const val RUNNING = "demo-importer"
 
-    /** A demo session: its drawer row and the rows its transcript is built from. */
-    class Session(val id: String, val title: String, val minutesAgo: Long, val rows: List<Row>) {
+    /** The session the demo opens on: an agent mid-job, its plan up, stopped on the visitor. */
+    const val FIRST = RUNNING
+
+    /** A demo session: its drawer row, the rows its transcript is built from, and the approval
+     *  its agent is stopped on, if any. */
+    class Session(val id: String, val title: String, val minutesAgo: Long, val rows: List<Row>, val ask: Ask? = null) {
         val unread: Boolean get() = id == UNREAD
         val running: Boolean get() = id == RUNNING
+    }
+
+    /**
+     * Where the agent stopped to ask, in the words Hermes's own approval check uses
+     * (`tools/approval_detection.py`), and what plays on each answer: the visitor's tap is what
+     * moves the job on.
+     */
+    class Ask(val command: String, val description: String, val allowed: List<Row>, val denied: List<Row>) {
+        /** The card, as a gateway would raise it (Hermes's four choices). */
+        val request: ApprovalRequest get() = ApprovalRequest(command, description, listOf("once", "session", "always", "deny"))
+
+        fun after(choice: String): List<Row> = if (choice == "deny") denied else allowed
     }
 
     /** One stored row, timed in minutes before the session's last activity. */
@@ -38,18 +58,55 @@ object DemoScript {
     /** A tool call and what it returned, in the shape Hermes stores (`output` + `exit_code`, or `error`). */
     data class Call(val tool: String, val argsJson: String, val result: String)
 
-    const val UNREAD = "demo-groceries"
-    const val RUNNING = "demo-importer"
-
     private fun terminal(command: String, output: String) = Call(
         "terminal",
         """{"command":${quote(command)}}""",
         """{"output":${quote(output)},"exit_code":0,"error":null}""",
     )
 
+    /** A `todo_list` call: the whole plan, each step with its status, as the tool returns it. */
+    private fun plan(vararg steps: Pair<String, String>): Call {
+        val todos = steps.mapIndexed { i, (content, status) ->
+            """{"content":${quote(content)},"id":"${i + 1}","status":"$status"}"""
+        }.joinToString(",", "[", "]")
+        return Call("todo_list", """{"todos":$todos}""", """{"todos":$todos}""")
+    }
+
+    // The importer's plan, step by step.
+    private const val PROFILE = "Profile the importer"
+    private const val FIX = "Fix the slow part"
+    private const val TESTS = "Run the tests"
+    private const val MEASURE = "Measure it on a real card"
+    private const val DONE = "completed"
+    private const val NOW = "in_progress"
+    private const val LATER = "pending"
+
+    /** The importer's last words: what changed, and the page that shows it. */
+    private fun importerDone(clearedCache: Boolean) = Row.Agent(
+        "Done. Importing your 2,104-photo test card went from **44 s to 7 s**, about six times faster.\n\n" +
+            "- EXIF is read for the whole card in one batch instead of once per photo.\n" +
+            "- All 38 tests pass.\n" +
+            (if (clearedCache) "- I cleared the stale thumbnail cache. It rebuilds itself on the next import.\n\n"
+            else "- Your thumbnail cache is untouched. The tests ran against a fresh one.\n\n") +
+            "Here's the before and after:\n\n" +
+            "MEDIA:${DemoPages.SPEEDUP}",
+    )
+
+    private val measured = listOf(
+        Row.Agent(
+            calls = listOf(
+                terminal(
+                    "time python importer.py --dry-run ~/cards/sample",
+                    "imported 2104 photos\n\nreal    0m6.8s",
+                ),
+                plan(PROFILE to DONE, FIX to DONE, TESTS to DONE, MEASURE to DONE),
+            ),
+        ),
+    )
+
     val sessions: List<Session> = listOf(
         Session(
-            FIRST, "Why did last night's backup fail?", minutesAgo = 12,
+            "demo-backup", "Why did last night's backup fail?", minutesAgo = 12,
             rows = listOf(
                 Row.User("The NAS backup failed again last night. Can you find out why and fix it?"),
                 Row.Agent(
@@ -96,7 +153,10 @@ object DemoScript {
             rows = listOf(
                 Row.User("The photo importer takes forever on a big card. Make it faster, and keep the tests passing."),
                 Row.Agent(
-                    thought = "Profile it first so I fix the slow part, not a guess.",
+                    thought = "Four steps. Profile first, so I fix the slow part and not a guess.",
+                    calls = listOf(plan(PROFILE to NOW, FIX to LATER, TESTS to LATER, MEASURE to LATER)),
+                ),
+                Row.Agent(
                     calls = listOf(
                         terminal(
                             "python -m cProfile -s cumtime importer.py --dry-run ~/cards/sample | head -6",
@@ -104,7 +164,43 @@ object DemoScript {
                         ),
                     ),
                 ),
-                Row.Agent("Almost all the time is reading EXIF one file at a time. I'm switching it to a batch read and running the tests now."),
+                Row.Agent(
+                    thought = "Every photo opens and parses its EXIF on its own. One batched read covers the whole card.",
+                    calls = listOf(
+                        Call(
+                            "patch", """{"path":"importer.py","mode":"replace"}""",
+                            """{"success":true,"diff":"-    for path in paths:\n-        tags[path] = read_exif(path)\n+    tags = read_exif_batch(paths)"}""",
+                        ),
+                        plan(PROFILE to DONE, FIX to DONE, TESTS to NOW, MEASURE to LATER),
+                    ),
+                ),
+                Row.Agent(
+                    "The fix is in: EXIF is read for the whole card at once now.\n\n" +
+                        "The old thumbnail cache was built by the slow reader and would hide the change from the tests, " +
+                        "so I'd like to clear it before I run them.",
+                ),
+            ),
+            ask = Ask(
+                command = "rm -rf ~/photos/.thumbcache",
+                description = "recursive delete",
+                allowed = listOf(
+                    Row.Agent(
+                        calls = listOf(
+                            terminal("rm -rf ~/photos/.thumbcache", ""),
+                            terminal("pytest -q", "......................................\n38 passed in 4.21s"),
+                            plan(PROFILE to DONE, FIX to DONE, TESTS to DONE, MEASURE to NOW),
+                        ),
+                    ),
+                ) + measured + importerDone(clearedCache = true),
+                denied = listOf(
+                    Row.Agent(
+                        "Understood, the cache stays. I'll run the tests against a fresh, temporary one instead.",
+                        calls = listOf(
+                            terminal("THUMBCACHE=\$(mktemp -d) pytest -q", "......................................\n38 passed in 4.38s"),
+                            plan(PROFILE to DONE, FIX to DONE, TESTS to DONE, MEASURE to NOW),
+                        ),
+                    ),
+                ) + measured + importerDone(clearedCache = false),
             ),
         ),
         Session(
@@ -169,18 +265,32 @@ object DemoScript {
         )
     }.sortedByDescending { it.timestamp }
 
-    /** [sessionId]'s transcript, built the way a real gateway's is. */
-    fun transcript(sessionId: String, now: Long): List<Message> {
-        val index = sessions.indexOfFirst { it.id == sessionId }
-        val s = sessions.getOrNull(index) ?: return emptyList()
+    /** One row and when it happened. */
+    data class Stamped(val row: Row, val at: Long)
+
+    /** [sessionId]'s stored rows, a minute apart and ending on its last activity before [now]. */
+    fun stamped(sessionId: String, now: Long): List<Stamped> {
+        val s = sessions.firstOrNull { it.id == sessionId } ?: return emptyList()
         val end = now - s.minutesAgo * MINUTE
-        // A minute between rows, ending on the session's last activity.
         val start = end - (s.rows.size - 1) * MINUTE
+        return s.rows.mapIndexed { i, row -> Stamped(row, start + i * MINUTE) }
+    }
+
+    /** [sessionId]'s transcript, built the way a real gateway's is. */
+    fun transcript(sessionId: String, now: Long): List<Message> = build(sessionId, stamped(sessionId, now))
+
+    /**
+     * [rows] drawn as a gateway's would be: stored rows through [TranscriptBuilder], then the
+     * `MEDIA:` lines lifted out the way the direct door lifts them. Ids depend only on the
+     * session and a row's place, so a transcript replayed one row longer keeps every id it had.
+     */
+    fun build(sessionId: String, rows: List<Stamped>): List<Message> {
+        val index = sessions.indexOfFirst { it.id == sessionId }
+        if (index < 0) return emptyList()
         // Row ids unique across the demo: the Archive keys what it remembers by them.
         var nextId = (index + 1) * 1000L
         val stored = buildList {
-            s.rows.forEachIndexed { i, row ->
-                val at = start + i * MINUTE
+            for ((row, at) in rows) {
                 when (row) {
                     is Row.User -> add(MessageRow(nextId++, "user", row.text, null, at, null))
                     is Row.Agent -> {
@@ -194,8 +304,14 @@ object DemoScript {
                 }
             }
         }
-        return TranscriptBuilder.build(sessionId, stored)
+        return MediaTags.expand(TranscriptBuilder.build(sessionId, stored))
     }
+
+    /** The plan the newest `todo_list` call in [rows] left, as the Flight Plan reads it. */
+    fun planOf(rows: List<Row>): TodoPlan? = rows.asReversed().asSequence()
+        .flatMap { (it as? Row.Agent)?.calls.orEmpty().asReversed() }
+        .firstOrNull { TodoPlanParser.isTodoTool(it.tool) }
+        ?.let { TodoPlanParser.parse(it.result) }
 
     /**
      * What the demo agent says to anything typed. It can't do the job, so it says what would:

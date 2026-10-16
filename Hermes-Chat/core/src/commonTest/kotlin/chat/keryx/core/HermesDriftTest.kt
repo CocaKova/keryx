@@ -156,6 +156,17 @@ class HermesDriftTest {
         assertEquals("Which one?", ToolText.contextPreview("clarify", obj("""{"question":"Which one?"}""")))
     }
 
+    @Test
+    fun `the plan previews as Hermes says it, by its step count`() {
+        val plan = obj("""{"todos":[{"id":"1","content":"a","status":"pending"},{"id":"2","content":"b","status":"pending"}]}""")
+        assertEquals("planning 2 task(s)", ToolText.contextPreview("todo_list", plan))
+        val merge = obj("""{"todos":[{"id":"1","status":"completed"}],"merge":true}""")
+        assertEquals("updating 1 task(s)", ToolText.contextPreview("todo_list", merge))
+        // A read (no todos) and the pre-rename name.
+        assertEquals("reading task list", ToolText.contextPreview("todo_list", obj("{}")))
+        assertEquals("planning 2 task(s)", ToolText.contextPreview("todo", plan))
+    }
+
     // --- the interrupt sentinel -------------------------------------------------------------
 
     private fun row(id: Long, role: String, content: String, kind: String? = null) = MessageRow(

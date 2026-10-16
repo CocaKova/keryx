@@ -316,3 +316,19 @@ interface MatrixCapabilities {
 interface SessionMetaSource {
     fun sessionMeta(sessionId: String): Flow<chat.keryx.core.model.SessionMeta>
 }
+
+/**
+ * A transport whose sessions carry the agent's own instruments: the Flight Plan it is ticking
+ * off and the approval it stopped on. The direct door reads them off the gateway's events, the
+ * demo plays them from its script, so the strip and the card above the composer are the same
+ * on both.
+ */
+interface AgentInstruments {
+    fun todoPlan(sessionId: String): Flow<chat.keryx.core.model.TodoPlan?>
+
+    fun pendingApproval(sessionId: String): Flow<chat.keryx.core.model.ApprovalRequest?>
+
+    /** Answers the open approval with one of its choices. False = it had already gone (expired,
+     *  answered elsewhere, or not the [expectedRequestId] any more). */
+    suspend fun respondApproval(sessionId: String, choice: String, expectedRequestId: String? = null): Result<Boolean>
+}

@@ -118,6 +118,18 @@ class ToolGrammarTest {
     }
 
     @Test
+    fun `a lone plan update says its verb, not its own name twice`() {
+        assertEquals("Updated todos", ToolGrammar.summarize(listOf(ToolGrammar.Mention("todo_list")), live = false))
+        assertEquals(
+            "Ran ls, updating todos",
+            ToolGrammar.summarize(
+                listOf(ToolGrammar.Mention("terminal", "ls"), ToolGrammar.Mention("todo_list", running = true)),
+                live = true,
+            ),
+        )
+    }
+
+    @Test
     fun `an empty run says so honestly in both tenses`() {
         assertEquals("Working…", ToolGrammar.summarize(emptyList(), live = true))
         assertEquals("Worked", ToolGrammar.summarize(emptyList(), live = false))

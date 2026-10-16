@@ -1,6 +1,8 @@
 package chat.keryx.app.transport.demo
 
+import chat.keryx.core.demo.DemoPages
 import chat.keryx.core.demo.DemoScript
+import chat.keryx.core.model.ApprovalRequest
 import chat.keryx.core.model.BotProfile
 import chat.keryx.core.model.BotRosterSnapshot
 import chat.keryx.core.model.Message
@@ -9,7 +11,9 @@ import chat.keryx.core.model.RoomProfile
 import chat.keryx.core.model.RoomType
 import chat.keryx.core.model.SenderType
 import chat.keryx.core.model.SessionMeta
+import chat.keryx.core.model.TodoPlan
 import chat.keryx.core.model.TypingState
+import chat.keryx.core.transport.AgentInstruments
 import chat.keryx.core.transport.ChatTransport
 import chat.keryx.core.transport.GatewayCapabilities
 import chat.keryx.core.transport.MatrixCapabilities
@@ -32,8 +36,12 @@ import kotlinx.coroutines.launch
  *
  * What only a real agent can do fails in words that say so, never quietly: every [DemoOnly]
  * message is a sentence a toast can show as it is.
+ *
+ * One session is live: the importer's agent is mid-job with its plan up, stopped on an approval.
+ * The visitor's answer plays the rest of the script, row by row, through the same instruments a
+ * real gateway feeds ([AgentInstruments]): the plan ticks off, and the job ends on a page.
  */
-class DemoTransport(private val scope: CoroutineScope) : ChatTransport, GatewayCapabilities, SessionMetaSource {
+class DemoTransport(private val scope: CoroutineScope) : ChatTransport, GatewayCapabilities, SessionMetaSource, AgentInstruments {
 
     /** What the demo can't do, in a sentence that says what would. */
     class DemoOnly(what: String) : Exception("Connect your gateway to $what.")
@@ -46,8 +54,44 @@ class DemoTransport(private val scope: CoroutineScope) : ChatTransport, GatewayC
     private val busy = MutableStateFlow(setOf(DemoScript.RUNNING))
     private var serial = 0L
 
+    /** Each session's script so far: its stored rows, then whatever the visitor's answers played. */
+    private val scripted = HashMap<String, List<DemoScript.Stamped>>()
+
+    /** The ids the script drew last time, so a redraw keeps what the visitor typed in between. */
+    private val drawnIds = HashMap<String, Set<String>>()
+
+    private val plans = HashMap<String, MutableStateFlow<TodoPlan?>>()
+    private val approvals = HashMap<String, MutableStateFlow<ApprovalRequest?>>()
+
+    private fun scriptOf(id: String): List<DemoScript.Stamped> = synchronized(scripted) {
+        scripted.getOrPut(id) { DemoScript.stamped(id, bootedAt) }
+    }
+
     private fun transcript(id: String) = synchronized(transcripts) {
-        transcripts.getOrPut(id) { MutableStateFlow(DemoScript.transcript(id, bootedAt)) }
+        transcripts.getOrPut(id) {
+            val built = DemoScript.build(id, scriptOf(id))
+            synchronized(drawnIds) { drawnIds[id] = built.mapTo(HashSet()) { it.id } }
+            MutableStateFlow(built)
+        }
+    }
+
+    private fun planOf(id: String) = synchronized(plans) {
+        plans.getOrPut(id) { MutableStateFlow(DemoScript.planOf(scriptOf(id).map { it.row })) }
+    }
+
+    private fun approvalOf(id: String) = synchronized(approvals) {
+        approvals.getOrPut(id) { MutableStateFlow(DemoScript.sessions.firstOrNull { it.id == id }?.ask?.request) }
+    }
+
+    /** Draws [rows] as the session's script, keeping the visitor's own lines where they fell. */
+    private fun redraw(id: String, rows: List<DemoScript.Stamped>, streaming: Boolean = false) {
+        val built = DemoScript.build(id, rows).let { msgs ->
+            if (!streaming || msgs.isEmpty()) msgs else msgs.dropLast(1) + msgs.last().copy(isStreaming = true)
+        }
+        val flow = transcript(id)
+        val old = synchronized(drawnIds) { drawnIds.put(id, built.mapTo(HashSet()) { it.id }).orEmpty() }
+        flow.value = (built + flow.value.filter { it.id !in old && built.none { b -> b.id == it.id } })
+            .sortedBy { it.timestamp }
     }
 
     private fun typingOf(id: String) = synchronized(agentTyping) {
@@ -88,6 +132,8 @@ class DemoTransport(private val scope: CoroutineScope) : ChatTransport, GatewayC
     private suspend fun answer(roomId: String, prompt: String) {
         val flow = transcript(roomId)
         val typing = typingOf(roomId)
+        // A job already running there keeps running after the aside.
+        val wasBusy = roomId in busy.value
         busy.value = busy.value + roomId
         typing.value = true
         delay(THINK_MS)
@@ -103,8 +149,53 @@ class DemoTransport(private val scope: CoroutineScope) : ChatTransport, GatewayC
             delay(WORD_MS)
         }
         typing.value = false
-        busy.value = busy.value - roomId
+        if (!wasBusy) busy.value = busy.value - roomId
         touch(roomId, System.currentTimeMillis())
+    }
+
+    // ---- the agent's instruments: the live job's plan and the approval it stopped on --------
+
+    override fun todoPlan(sessionId: String): Flow<TodoPlan?> = planOf(sessionId)
+
+    override fun pendingApproval(sessionId: String): Flow<ApprovalRequest?> = approvalOf(sessionId)
+
+    /** The visitor's answer: the card goes, and the job carries on the way that answer leads. */
+    override suspend fun respondApproval(sessionId: String, choice: String, expectedRequestId: String?): Result<Boolean> {
+        val ask = DemoScript.sessions.firstOrNull { it.id == sessionId }?.ask ?: return Result.success(false)
+        val card = approvalOf(sessionId)
+        val open = card.value ?: return Result.success(false)
+        if (!card.compareAndSet(open, null)) return Result.success(false)
+        scope.launch { play(sessionId, ask.after(choice)) }
+        return Result.success(true)
+    }
+
+    /** Plays [rows] into [id] as an agent would: a beat of work, then the row; prose streams. */
+    private suspend fun play(id: String, rows: List<DemoScript.Row>) {
+        val typing = typingOf(id)
+        busy.value = busy.value + id
+        for (row in rows) {
+            typing.value = true
+            delay(STEP_MS)
+            val at = System.currentTimeMillis()
+            val done = scriptOf(id)
+            val prose = (row as? DemoScript.Row.Agent)?.text.orEmpty()
+                .lines().filterNot { chat.keryx.core.model.MediaTags.hasTag(it) }.joinToString("\n").trim()
+            if (row is DemoScript.Row.Agent && prose.isNotEmpty()) {
+                val words = prose.split(' ')
+                for (n in STREAM_CHUNK until words.size step STREAM_CHUNK) {
+                    redraw(id, done + DemoScript.Stamped(row.copy(text = words.take(n).joinToString(" "), calls = emptyList()), at), streaming = true)
+                    delay(WORD_MS * STREAM_CHUNK)
+                }
+            }
+            val next = done + DemoScript.Stamped(row, at)
+            synchronized(scripted) { scripted[id] = next }
+            redraw(id, next)
+            DemoScript.planOf(next.map { it.row })?.let { planOf(id).value = it }
+        }
+        typing.value = false
+        busy.value = busy.value - id
+        rooms.value = rooms.value.map { if (it.id == id) it.copy(isActive = false) else it }
+        touch(id, System.currentTimeMillis())
     }
 
     private fun touch(roomId: String, at: Long) {
@@ -112,7 +203,10 @@ class DemoTransport(private val scope: CoroutineScope) : ChatTransport, GatewayC
             .sortedByDescending { it.timestamp }
     }
 
-    override suspend fun mediaBytes(roomId: String, eventId: String): ByteArray? = null
+    /** The pages the demo's agent wrote; nothing else here has bytes. */
+    override suspend fun mediaBytes(roomId: String, eventId: String): ByteArray? =
+        transcript(roomId).value.firstOrNull { it.id == eventId }?.mediaUrl
+            ?.let(DemoPages::page)?.encodeToByteArray()
 
     override suspend fun sendAttachment(roomId: String, bytes: ByteArray, fileName: String, contentType: String, caption: String?) {
         throw DemoOnly("send files")
@@ -288,6 +382,12 @@ class DemoTransport(private val scope: CoroutineScope) : ChatTransport, GatewayC
 
         private const val THINK_MS = 900L
         private const val WORD_MS = 45L
+
+        /** A beat of work before each played row: long enough to see the plan tick. */
+        private const val STEP_MS = 1_600L
+
+        /** Words per streamed frame of a played row. */
+        private const val STREAM_CHUNK = 3
 
         private val BOTS = listOf(
             BotProfile("default", title = DemoScript.AGENT, description = "Your main agent. Runs the jobs, keeps the memory.", model = MODEL, isDefault = true, managed = true),

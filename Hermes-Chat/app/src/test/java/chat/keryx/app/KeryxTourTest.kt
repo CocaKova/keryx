@@ -27,11 +27,14 @@ class KeryxTourTest {
     @Test
     fun `the direct door with Link offers every stop, ending on the gateway with Add a gateway`() {
         val full = KeryxTour.builtIn(TourPreset.FULL, ids(direct), direct)
-        assertEquals(10, full.size)
+        assertEquals(12, full.size)
         assertEquals(KeryxTour.MACHINE, full.last().target)
         assertEquals(KeryxTour.CTA_ADD_GATEWAY, full.last().cta?.id)
         assertEquals(
-            listOf(KeryxTour.COMPOSER, KeryxTour.MODEL, KeryxTour.NEW_SESSION, KeryxTour.DRAWER_BUTTON),
+            listOf(
+                KeryxTour.FLIGHT_PLAN, KeryxTour.APPROVAL,
+                KeryxTour.COMPOSER, KeryxTour.MODEL, KeryxTour.NEW_SESSION, KeryxTour.DRAWER_BUTTON,
+            ),
             KeryxTour.builtIn(TourPreset.QUICK, ids(direct), direct).map { it.target },
         )
     }
@@ -41,7 +44,7 @@ class KeryxTourTest {
         val offered = ids(matrix)
         // The model pill is left to the screen (the host keeps only what is worn): its footer
         // shows with Link's caps OR a context reading, which no door rule can know.
-        for (gone in listOf(KeryxTour.NEW_SESSION, KeryxTour.LENSES, KeryxTour.RUNS, KeryxTour.BOTS)) {
+        for (gone in listOf(KeryxTour.NEW_SESSION, KeryxTour.LENSES, KeryxTour.RUNS, KeryxTour.BOTS, KeryxTour.FLIGHT_PLAN, KeryxTour.APPROVAL)) {
             assertFalse(gone, gone in offered)
         }
         val full = KeryxTour.builtIn(TourPreset.FULL, offered, matrix)
@@ -58,6 +61,15 @@ class KeryxTourTest {
         assertEquals(KeryxTour.MACHINE, full.last().target)
         assertEquals(KeryxTour.CTA_CONNECT, full.last().cta?.id)
         assertFalse(KeryxTour.RUNS in full.map { it.target })
+        // Straight after the welcome: the agent at work, which is what the demo opens on.
+        assertEquals(listOf(KeryxTour.FLIGHT_PLAN, KeryxTour.APPROVAL), full.drop(1).take(2).map { it.target })
+        assertTrue(full[2].text.orEmpty().contains("Try it"))
+    }
+
+    @Test
+    fun `a real gateway's tour never tells you to try the demo's approval`() {
+        val stop = KeryxTour.builtIn(TourPreset.QUICK, ids(direct), direct).first { it.target == KeryxTour.APPROVAL }
+        assertFalse(stop.text.orEmpty().contains("Try it"))
     }
 
     @Test

@@ -411,10 +411,13 @@ class ChatViewModel(
     // --- Direct-transport instruments (the harvest, plan §5). Null/quiet on Matrix. ---
     private val direct get() = transport as? chat.keryx.app.transport.direct.DirectTransport
 
-    /** The agent is stopped on a tool approval in the open room (direct path only). */
+    /** The agent's own instruments: the gateway door's events, or the demo's script (3.0). */
+    private val instruments get() = transport as? chat.keryx.core.transport.AgentInstruments
+
+    /** The agent is stopped on a tool approval in the open room (direct path and the demo). */
     val pendingApproval: StateFlow<chat.keryx.core.model.ApprovalRequest?> =
         _currentRoom.flatMapLatest { r ->
-            val d = direct
+            val d = instruments
             if (r == null || d == null) flowOf(null) else d.pendingApproval(r.id)
         }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
@@ -507,14 +510,14 @@ class ChatViewModel(
     /** The agent's own todo plan for the open room — the Flight Plan strip's fuel. */
     val flightPlan: StateFlow<chat.keryx.core.model.TodoPlan?> =
         _currentRoom.flatMapLatest { r ->
-            val d = direct
+            val d = instruments
             if (r == null || d == null) flowOf(null) else d.todoPlan(r.id)
         }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     fun respondApproval(choice: String) {
         val room = _currentRoom.value ?: return
         viewModelScope.launch {
-            direct?.respondApproval(room.id, choice)
+            instruments?.respondApproval(room.id, choice)
                 ?.onSuccess { resolved -> if (!resolved) _toasts.tryEmit("Approval had already expired") }
                 ?.onFailure { _toasts.tryEmit("Approval failed: ${it.message?.take(80)}") }
         }

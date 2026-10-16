@@ -89,6 +89,46 @@ object MediaTags {
         return Split(out.trim(), refs)
     }
 
+    /** How a lifted media row's id names the row it came out of: `<row id>#media:<n>`. */
+    const val MEDIA_ID_SEP = "#media:"
+
+    /**
+     * Every finished agent row's `MEDIA:` lines (and every user row's `@image:` lines) lifted
+     * out into media rows of their own, right after the prose that named them, ids
+     * `<row>`[MEDIA_ID_SEP]`<n>`. The prose row stays when anything is left of it. [onRef] hears
+     * each lifted id and the path it names, so a transport can fetch the bytes later.
+     * The media rows keep the sender, so a user photo stays on the user's side.
+     */
+    fun expand(list: List<Message>, onRef: (id: String, path: String) -> Unit = { _, _ -> }): List<Message> {
+        fun carries(m: Message): Boolean = !m.isStreaming && m.mediaKind == null && when (m.sender) {
+            SenderType.HERMES -> hasTag(m.content)
+            SenderType.ME -> hasImageRef(m.content)
+            else -> false
+        }
+        if (list.none(::carries)) return list
+        return buildList(list.size + 4) {
+            for (m in list) {
+                if (!carries(m)) { add(m); continue }
+                val split = if (m.sender == SenderType.ME) splitImageRefs(m.content) else split(m.content)
+                if (split.refs.isEmpty()) { add(m); continue }
+                if (split.text.isNotBlank() || m.toolCalls.isNotEmpty() || m.reasoning != null) add(m.copy(content = split.text))
+                split.refs.forEachIndexed { i, ref ->
+                    val id = "${m.id}$MEDIA_ID_SEP$i"
+                    onRef(id, ref.path)
+                    add(
+                        Message(
+                            id = id, roomId = m.roomId, sender = m.sender,
+                            content = "", timestamp = m.timestamp,
+                            senderId = m.senderId, senderName = m.senderName,
+                            mediaUrl = ref.path, mediaKind = ref.kind, fileName = ref.name,
+                            replyToId = m.replyToId,
+                        )
+                    )
+                }
+            }
+        }
+    }
+
     fun kindOf(path: String): MediaKind {
         val ext = path.substringBefore('?').substringBefore('#').substringAfterLast('.', "").lowercase()
         return when (ext) {
