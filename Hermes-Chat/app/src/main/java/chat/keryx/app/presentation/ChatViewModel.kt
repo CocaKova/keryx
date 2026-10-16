@@ -210,11 +210,29 @@ class ChatViewModel(
     // How many timeline events to load for the open room; grows as the user scrolls into history.
     private val _timelineLimit = MutableStateFlow(INITIAL_LIMIT)
 
+    /** A room's transcript, named by the room it was read for. */
+    data class RoomTimeline(val roomId: String?, val messages: List<Message>) {
+        /** The list, if it is [room]'s; null while [room]'s first page is still on its way. */
+        fun of(room: String?): List<Message>? = messages.takeIf { roomId == room }
+    }
+
+    /**
+     * The open room's transcript, with the room it belongs to (3.0). The list follows the room
+     * a beat late (a dispatch, or a first page still on the wire), and in that beat it is the
+     * room being left: the chat draws a list only under its own room's title. Read bare, it
+     * mixed two chats on every switch over a slow link (Jonny, 10-16, "ghost chats").
+     */
     @OptIn(ExperimentalCoroutinesApi::class)
-    val messages: StateFlow<List<Message>> =
+    val timeline: StateFlow<RoomTimeline> =
         combine(_currentRoom.filterNotNull(), _timelineLimit) { room, limit -> room.id to limit }
-            .flatMapLatest { (sessionId, limit) -> transport.getMessages(sessionId, limit) }
-            .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+            .flatMapLatest { (sessionId, limit) ->
+                transport.getMessages(sessionId, limit).map { RoomTimeline(sessionId, it) }
+            }
+            .stateIn(viewModelScope, SharingStarted.Lazily, RoomTimeline(null, emptyList()))
+
+    /** The transcript alone, as it stands — a beat behind a room switch (see [timeline]). */
+    val messages: StateFlow<List<Message>> =
+        timeline.map { it.messages }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     /** Latest runtime-footer telemetry in the open room (`model · 42% · 22s · ~/dir`) — the data
      *  behind the Hub's context meter. Newest-first scan, bounded so a footer-less room stays cheap;

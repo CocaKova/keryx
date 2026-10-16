@@ -37,7 +37,8 @@ class ThinkingCanaryTest(private val style: String) {
         @Parameterized.Parameters(name = "{0}")
         fun styles(): List<String> = THINKING_STYLES
 
-        private val FRAMES_MS = listOf(0L, 400L, 800L, 1200L, 1600L, 2000L, 2400L)
+        /** The longest cycle (Constellation, 4.5 s) end to end. */
+        private val FRAMES_MS = (0L..4200L step 600L).toList()
     }
 
     @get:Rule val compose = createComposeRule()

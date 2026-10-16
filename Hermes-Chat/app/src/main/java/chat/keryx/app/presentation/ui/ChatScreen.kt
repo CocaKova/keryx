@@ -22,7 +22,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -88,6 +88,7 @@ import chat.keryx.app.presentation.ui.components.replyPreviewText
 import chat.keryx.app.presentation.ui.components.shortSender
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import chat.keryx.app.presentation.ui.components.KeryxType
 import chat.keryx.app.presentation.ui.components.KeryxRadius
@@ -184,7 +185,19 @@ fun ChatScreen(
     // 3.0 perf step 3: the transcript is held as State and read only where it is drawn (the
     // list's builder, derived state, effects' snapshotFlows). Read in this body, it re-ran the
     // whole screen (~50 state reads, ~40 effects) on every streamed publish, ~10 a second.
-    val messagesState = viewModel.messages.collectAsState()
+    //
+    // Only the open room's own list (3.0): the timeline follows a switch a beat late, and drawn
+    // in that beat it put the room being left under the new one's title (Jonny, 10-16).
+    val currentRoomState = viewModel.currentRoom.collectAsState()
+    val timelineState = viewModel.timeline.collectAsState()
+    val messagesState = remember {
+        derivedStateOf { timelineState.value.of(currentRoomState.value?.id) ?: emptyList() }
+    }
+    // The open room's first page is still on its way: not an empty room, so no fresh-session
+    // starters over it.
+    val transcriptLoading by remember {
+        derivedStateOf { timelineState.value.of(currentRoomState.value?.id) == null }
+    }
     // The newest reply — the one exchange the gateway can take back (2.10).
     val lastAgentId by remember { derivedStateOf { messagesState.value.lastOrNull { it.sender == SenderType.HERMES }?.id } }
     // The ring, itemised (2.10): a sheet over the chat, opened from the composer's ring.
@@ -193,7 +206,7 @@ fun ChatScreen(
         viewModel = viewModel, onDismiss = { showContext = false },
     )
     val rooms by viewModel.rooms.collectAsState()
-    val currentRoom by viewModel.currentRoom.collectAsState()
+    val currentRoom by currentRoomState
     val bubbleStyle by viewModel.prefs.bubbleStyle.collectAsState()
     val animationStyle by viewModel.prefs.animationStyle.collectAsState()
     val messageTextScale by viewModel.prefs.messageTextScale.collectAsState()
@@ -242,7 +255,10 @@ fun ChatScreen(
     val compactionTypical by viewModel.compactionTypicalSeconds.collectAsState()
     val replyTarget by viewModel.replyTarget.collectAsState()
     val savedIds by viewModel.archive.savedIds.collectAsState()
-    val listState = rememberLazyListState()
+    // One per room (3.0): the list's item animations live in its state, and a shared one faded
+    // the room being left out over the room arriving, two chats' rows at once. A room also
+    // opens at its own newest message, not wherever the last room was scrolled.
+    val listState = androidx.compose.runtime.saveable.rememberSaveable(currentRoom?.id, saver = LazyListState.Saver) { LazyListState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -467,7 +483,7 @@ fun ChatScreen(
     val crossing = chat.keryx.app.presentation.ui.components.rememberRoomCrossing()
     chat.keryx.app.presentation.ui.components.RoomCrossingEffect(
         crossing, currentRoom?.id, roomTransition, reduced = dissolveReduced,
-        arrived = { key -> messagesState.value.firstOrNull()?.roomId == key },
+        arrived = { key -> timelineState.value.of(key) != null },
     )
     LaunchedEffect(currentRoom?.id) {
         val id = currentRoom?.id
@@ -479,8 +495,16 @@ fun ChatScreen(
         if (lastRoomForDissolve != null && id != null && id != lastRoomForDissolve) {
             dissolve.snapTo(0f)
             // Hold while the drawer clears the stage — the old 560ms version played almost
-            // entirely BEHIND the closing drawer, which is why it read as "a slight blur".
-            kotlinx.coroutines.delay(230)
+            // entirely BEHIND the closing drawer, which is why it read as "a slight blur". And
+            // wait for the room's first page (3.0), as the other crossings do: started without
+            // it, the room re-formed out of a blank and then popped in (or, before the room
+            // guard, out of the room being left).
+            val waited = System.currentTimeMillis()
+            kotlinx.coroutines.withTimeoutOrNull(900) {
+                snapshotFlow { timelineState.value.of(id) != null }.first { it }
+            }
+            val left = 230 - (System.currentTimeMillis() - waited)
+            if (left > 0) kotlinx.coroutines.delay(left)
             dissolve.animateTo(1f, tween(1050, easing = LinearOutSlowInEasing))
         }
         lastRoomForDissolve = id
@@ -614,7 +638,7 @@ fun ChatScreen(
     // streams the newest COMMITTED message is your own command — every 100ms token dispatch
     // yanked the list back down. Own sends get their own effect below instead.
     val bottomThresholdPx = with(density) { 56.dp.toPx() }
-    val atBottom by remember {
+    val atBottom by remember(listState) {
         derivedStateOf {
             listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset <= bottomThresholdPx
         }
@@ -624,7 +648,7 @@ fun ChatScreen(
     // snapshotFlow, NOT composition-scope reads: per-token signature changes (and atBottom
     // flips) must nudge this effect without recomposing the whole screen — the old plain-val
     // form re-ran ChatScreen top to bottom on every streamed token.
-    LaunchedEffect(Unit) {
+    LaunchedEffect(listState) {
         snapshotFlow {
             val sig = (messagesState.value.lastOrNull()?.let { "${it.id}:${it.content.length}:${it.toolCalls.size}" } ?: "") +
                 ":${liveStream?.text?.length ?: 0}"
@@ -644,7 +668,7 @@ fun ChatScreen(
     // a deep-scrolled history window can shrink back after a dwell instead of pinning hundreds of
     // resolved events for the rest of the session. (snapshotFlow: an atBottom flip as an effect
     // KEY is still a composition-scope read — it restarted the whole screen twice per swipe.)
-    LaunchedEffect(Unit) { snapshotFlow { atBottom }.collect { viewModel.onViewportAtBottom(it) } }
+    LaunchedEffect(listState) { snapshotFlow { atBottom }.collect { viewModel.onViewportAtBottom(it) } }
 
     // Pagination: when the oldest loaded item scrolls into view, request more history.
     LaunchedEffect(listState) {
@@ -957,7 +981,7 @@ fun ChatScreen(
         // 2.17.3: reminders lead (things already waiting on you, no model call), then prompts the
         // gateway's title model wrote from what you talk about — each part switchable in Settings.
         val startersOn by viewModel.starters.starterSuggestions.collectAsState()
-        if (startersOn && currentRoom != null && transcriptEmpty && !awaitingReply && pendingSend == null && streamIdle) {
+        if (startersOn && currentRoom != null && transcriptEmpty && !transcriptLoading && !awaitingReply && pendingSend == null && streamIdle) {
             val aiOn by viewModel.starters.starterAiPrompts.collectAsState()
             val remindersOn by viewModel.starters.starterReminders.collectAsState()
             val aiStarters by viewModel.starters.aiStarters.collectAsState()
@@ -1001,8 +1025,8 @@ fun ChatScreen(
             val last = messagesState.value.lastOrNull() ?: return@LaunchedEffect
             if (!atBottom && last.sender != SenderType.ME) missedWhileAway++
         }
-        LaunchedEffect(Unit) { snapshotFlow { atBottom }.collect { if (it) missedWhileAway = 0 } }
-        val showJump by remember { derivedStateOf { listState.firstVisibleItemIndex > 4 } }
+        LaunchedEffect(listState) { snapshotFlow { atBottom }.collect { if (it) missedWhileAway = 0 } }
+        val showJump by remember(listState) { derivedStateOf { listState.firstVisibleItemIndex > 4 } }
         AnimatedVisibility(
             visible = showJump,
             enter = fadeIn(tween(160)) + scaleIn(initialScale = 0.85f),

@@ -124,8 +124,9 @@ private const val PEN_ANGLE = 125f
 /** How much of the stroke's own slope the pen follows. */
 private const val PEN_SWAY = 0.25f
 
-/** One line every [CYCLE_S]: written by [WRITE_END] of it, lifted away from [LIFT_START]. */
-private const val CYCLE_S = 3.0f
+/** One line every [CYCLE_S]: written by [WRITE_END] of it, lifted away from [LIFT_START].
+ *  An unhurried hand: 3 s read as a tad quick on the phone (Jonny, 10-16). */
+private const val CYCLE_S = 3.8f
 private const val WRITE_END = 0.75f
 private const val LIFT_START = 0.8f
 

@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -78,11 +79,26 @@ internal class SessionStore(
     val agentTyping = MutableStateFlow(false)
     val history = MutableStateFlow(chat.keryx.core.model.HistoryState())
     var hydrated = false
+        set(v) { field = v; if (v) known.value = true }
     /** Open timelines on this store; the foreign-turn follower runs while it is > 0. */
     var followers = 0
     var followJob: Job? = null
     /** The cached page is on screen (a paint, not a hydration — the wire still owes the truth). */
     var painted = false
+        set(v) { field = v; if (v) known.value = true }
+
+    /**
+     * Whether this session's transcript is known yet (3.0): a page painted from cache, the
+     * wire's page, or the wire's refusal. Before it, an empty list means "not here yet", not
+     * "an empty session": opened as empty, a session on a slow link flashed a fresh session's
+     * starters over the room being left (Jonny, 10-16, "ghost chats").
+     */
+    val known = MutableStateFlow(false)
+
+    /** The transcript as a timeline should read it: nothing at all until it is [known], so an
+     *  open room keeps its place instead of reading as an empty session. */
+    fun transcript(): Flow<List<Message>> =
+        combine(messages, known) { m, isKnown -> m.takeIf { isKnown || it.isNotEmpty() } }.filterNotNull()
 
     /** Honest tok/s (2.16): this turn's streamed characters, timed, and the gateway's
      *  cumulative output/call counters as they stood at `message.start`. */

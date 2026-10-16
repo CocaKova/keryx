@@ -1206,6 +1206,11 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     private suspend fun hydrate(storedId: String) {
         val st = store(storedId)
         if (st.hydrated) return
+        // Whatever the wire says, or doesn't, the open is over: offline opens on what there is.
+        try { hydrateFromWire(storedId, st) } finally { st.known.value = true }
+    }
+
+    private suspend fun hydrateFromWire(storedId: String, st: SessionStore) {
         val rest = rest ?: return
         // The open's clock (2.10): `adb logcat -s KeryxPerf` reads it on a release build —
         // Log.w survives R8 where Log.i does not. "Chat load time" is these two lines.
@@ -1360,20 +1365,22 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         // the last-open id. It is not a session; hand back a finite empty flow, never resume it.
         if (sessionId == GATEWAY_ROOM_ID) return flowOf(emptyList())
         val st = store(sessionId)
-        return st.messages.onStart {
-            startFollowing(sessionId, st)
-            scope.launch {
-                hydrate(sessionId)
-                // Attach eagerly so live events for a turn started elsewhere still render.
-                runCatching { attach(sessionId) }
-                // Keryx's timeline pages by growing `limit`; each growth past what's loaded
-                // pulls ONE more page — the ViewModel's own grew/timeout logic does the rest.
-                val h = st.history.value
-                if (limit > st.historyOffset() && h.hasMore && !h.loading) {
-                    loadEarlier(sessionId)
+        return st.transcript()
+            .onStart {
+                startFollowing(sessionId, st)
+                scope.launch {
+                    hydrate(sessionId)
+                    // Attach eagerly so live events for a turn started elsewhere still render.
+                    runCatching { attach(sessionId) }
+                    // Keryx's timeline pages by growing `limit`; each growth past what's loaded
+                    // pulls ONE more page — the ViewModel's own grew/timeout logic does the rest.
+                    val h = st.history.value
+                    if (limit > st.historyOffset() && h.hasMore && !h.loading) {
+                        loadEarlier(sessionId)
+                    }
                 }
             }
-        }.onCompletion { stopFollowing(st) }
+            .onCompletion { stopFollowing(st) }
     }
 
     /**

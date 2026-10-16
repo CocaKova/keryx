@@ -92,7 +92,7 @@ fun ConstellationSpinner(
                         // A star brightens as the figure reaches it, and twinkles all the while.
                         for (i in 0 until STARS) {
                             val lit = p >= i * JOIN
-                            val twinkle = 0.15f * sin(t * 4f + i * 1.7f)
+                            val twinkle = 0.15f * sin(t * TWINKLE + i * 1.7f)
                             val r = (0.9f + (if (lit) 0.6f else 0f) + twinkle) * u
                             if (lit) drawCircle(starColors[i], radius = r * 2.4f, center = points[i], alpha = glowAlpha * lineAlpha / 0.9f)
                             drawCircle(starColors[i], radius = r, center = points[i], alpha = if (lit) 1f else 0.55f)
@@ -109,7 +109,11 @@ private const val STARS = 5
 /** The figure, x/y pairs on the grid: a low climb, a dip, a peak, and a step down. */
 private val FIGURE = floatArrayOf(4f, 18f, 10f, 8f, 17f, 14f, 24f, 5f, 29f, 15f)
 
-/** One figure every [CYCLE_S]: each join takes [JOIN] of it, all let go from [LET_GO]. */
-private const val CYCLE_S = 3.6f
+/** One figure every [CYCLE_S]: each join takes [JOIN] of it, all let go from [LET_GO].
+ *  Slower stars: 3.6 s read as a tad quick on the phone (Jonny, 10-16). */
+private const val CYCLE_S = 4.5f
 private const val JOIN = 0.15f
 private const val LET_GO = 0.8f
+
+/** The stars' shimmer, in radians a second. */
+private const val TWINKLE = 3f
