@@ -70,7 +70,11 @@ class PreferencesDelegate(private val settings: SettingsRepository) {
     private val _hapticsEnabled = MutableStateFlow(settings.hapticsEnabled)
     val hapticsEnabled: StateFlow<Boolean> = _hapticsEnabled.asStateFlow()
 
-    private val _animationStyle = MutableStateFlow(settings.animationStyle)
+    // A style retired in 3.0 (Dots, the ASCII wave) reads as the Caduceus, so Settings still
+    // shows one option picked.
+    private val _animationStyle = MutableStateFlow(
+        chat.keryx.app.presentation.ui.components.thinkingStyleOf(settings.animationStyle),
+    )
     val animationStyle: StateFlow<String> = _animationStyle.asStateFlow()
 
     private val _bubbleStyle = MutableStateFlow(settings.bubbleStyle)

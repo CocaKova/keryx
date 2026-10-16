@@ -947,9 +947,9 @@ fun SettingsScreen(
                             KeryxSegmented(
                                 options = listOf(
                                     "Caduceus" to "☤ Caduceus",
+                                    "Quill" to "✎ Quill",
+                                    "Constellation" to "✧ Constellation",
                                     "Braille" to "⠋ Braille",
-                                    "Dots" to "○ Dots",
-                                    "ASCII Wave" to "▅ Wave",
                                     "Ember Drift" to "✦ Ember",
                                 ),
                                 selected = animationStyle,

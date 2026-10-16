@@ -5,7 +5,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -13,6 +12,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,14 +23,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+
+/**
+ * The loading animations Settings offers (3.0: Quill and Constellation joined, Dots and the ASCII
+ * wave retired), by their stored names. A retired or unknown name reads as the Caduceus.
+ */
+val THINKING_STYLES = listOf("Caduceus", "Quill", "Constellation", "Braille", "Ember Drift")
+
+fun thinkingStyleOf(saved: String?): String = saved?.takeIf { it in THINKING_STYLES } ?: "Caduceus"
+
+/**
+ * What the open turn is doing, in the gateway's own words: the label the working cloud wears
+ * ("Thinking", "Reading importer.py"). The chat provides it so a waiting bubble says the same
+ * thing instead of a made-up quip (3.0). Null = the bubble says nothing (a group room, a preview).
+ */
+val LocalWorkLabel = staticCompositionLocalOf<StateFlow<String>?> { null }
 
 @Composable
 fun HermesThinkingAnimation(
@@ -39,9 +53,12 @@ fun HermesThinkingAnimation(
      *  in a council room passes its own, so you can tell who is working by the colour (2.3 §1). */
     accent: Color? = null,
     accent2: Color? = null,
+    /** What to say beside the spinner; null = the turn's own label ([LocalWorkLabel]), if any. */
+    label: String? = null,
 ) {
-    // Subtle pulsing alpha on the whole component — decoration wrapped around a spinner, so
-    // Battery Saver stills it and holds full opacity instead of the dim end of the breath.
+    // Subtle pulsing alpha on the spinner — decoration wrapped around it, so Battery Saver stills
+    // it and holds full opacity instead of the dim end of the breath. The words beside it stay
+    // at full strength: a label that breathes down to 60% fails contrast half the time.
     //
     // The spinners themselves do NOT still (Jonny, on device: "make spinners the exception"). The
     // distinction the app draws: motion that carries information keeps moving, motion that
@@ -60,65 +77,36 @@ fun HermesThinkingAnimation(
         ).value
     } else 1.0f
 
-    val phrases = listOf(
-        "SYNTHESIZING",
-        "ALIGNING TENSORS",
-        "CRUNCHING DATA",
-        "CONSULTING ORACLE",
-        "MODELING CONTEXT",
-        "COMPILING REALITY",
-        "DEFRAGGING THOUGHTS",
-        "INJECTING LOGIC",
-        "BENDING TIME",
-        "FETCHING ANSWERS",
-        "CALIBRATING NEURONS",
-        "PARSING REQUEST",
-        "OPTIMIZING ALGORITHMS",
-        "QUERYING THE VOID",
-        "ASSEMBLING RESPONSE",
-        "GATHERING INSIGHTS",
-        "RUNNING DIAGNOSTICS",
-        "SPINNING WEB OF DATA",
-        "DECODING INTENT",
-        "MAPPING THE MULTIVERSE",
-        "QUANTUM ROUTING",
-        "LOADING BRILLIANCE",
-        "REBOOTING MATRIX",
-        "GENERATING MAGIC"
-    )
-    val quip = remember { phrases.random() }
+    // The turn's own words. Before 3.0 this was a random quip ("ALIGNING TENSORS") that could
+    // contradict the cloud right above it.
+    val workFlow = LocalWorkLabel.current
+    val said = label ?: workFlow?.collectAsState()?.value
     val primaryColor = accent ?: MaterialTheme.colorScheme.primary
     val secondColor = accent2 ?: MaterialTheme.colorScheme.tertiary
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .padding(horizontal = 8.dp, vertical = 8.dp)
-            .alpha(alpha)
+        modifier = modifier.padding(horizontal = 8.dp, vertical = 8.dp)
     ) {
-        when (style) {
-            "Braille" -> BrailleSpinner(primaryColor, secondColor)
-            "Dots" -> DotsSpinner(primaryColor, secondColor)
-            "ASCII Wave" -> AsciiWaveSpinner()
-            "Ember Drift" -> EmberDriftSpinner(primaryColor, secondColor)
-            else -> CaduceusSpinner(primaryColor, secondColor)
+        Box(Modifier.alpha(alpha)) {
+            when (thinkingStyleOf(style)) {
+                "Braille" -> BrailleSpinner(primaryColor, secondColor)
+                "Quill" -> QuillSpinner(primaryColor, secondColor)
+                "Constellation" -> ConstellationSpinner(primaryColor, secondColor)
+                "Ember Drift" -> EmberDriftSpinner(primaryColor, secondColor)
+                else -> CaduceusSpinner(primaryColor, secondColor)
+            }
         }
-        
-        Spacer(modifier = Modifier.width(12.dp))
-        
-        Text(
-            text = quip,
-            style = androidx.compose.ui.text.TextStyle(
-                // Accent 1 → accent 2 sweep across the quip, matching the spinner's gradient.
-                brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                    listOf(primaryColor, secondColor),
-                ),
-                fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.Bold,
-                fontSize = KeryxType.caption,
-                letterSpacing = 1.2.sp,
-            ),
-        )
+        if (!said.isNullOrBlank()) {
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = said,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = KeryxType.body,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -168,80 +156,6 @@ fun BrailleSpinner(primaryColor: Color, accent2: Color = primaryColor) {
                     color = androidx.compose.ui.graphics.lerp(primaryColor, accent2, order / 2f),
                     radius = dotRadius,
                     center = positions[dot]
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun AsciiWaveSpinner() {
-    val frames = listOf(" ", "▂", "▃", "▄", "▅", "▆", "▇", "█", "▇", "▆", "▅", "▄", "▃", "▂")
-    var frameIndex by remember { mutableStateOf(0) }
-
-    // battery-saver-exempt: a spinner's motion is its message.
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(100)
-            frameIndex = (frameIndex + 1) % frames.size
-        }
-    }
-
-    Box(
-        modifier = Modifier.defaultMinSize(minWidth = 24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = frames[frameIndex],
-            color = MaterialTheme.colorScheme.primary,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            fontSize = KeryxType.bodyLarge
-        )
-    }
-}
-
-@Composable
-fun DotsSpinner(primaryColor: Color, accent2: Color = primaryColor) {
-    // Owns its transition rather than borrowing the caller's, so that stilling it under Battery
-    // Saver disposes the frame-clock client instead of leaving one alive upstream.
-    // battery-saver-exempt: a spinner's motion is its message.
-    val rotation = rememberInfiniteTransition(label = "dots_spin").animateFloat(
-            initialValue = 0f,
-            targetValue = (2 * PI).toFloat(),
-            animationSpec = infiniteRepeatable(
-                animation = tween(1200, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            ),
-        label = "rotation"
-    ).value
-
-    Box(
-        modifier = Modifier.size(24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Canvas(modifier = Modifier.size(16.dp)) {
-            val radius = size.minDimension / 2
-            val center = Offset(size.width / 2, size.height / 2)
-            
-            // Draw a snake of 6 dots fading in opacity
-            val numDots = 6
-            for (i in 0 until numDots) {
-                // Offset each dot backward in the circle
-                val dotAngle = rotation - (i * (PI / 5).toFloat())
-                
-                val x = center.x + radius * cos(dotAngle)
-                val y = center.y + radius * sin(dotAngle)
-                
-                // The head of the snake is brightest and largest
-                val dotAlpha = 1f - (i * 0.15f)
-                val dotRadius = 3.dp.toPx() - (i * 0.3f.dp.toPx())
-                
-                drawCircle(
-                    color = androidx.compose.ui.graphics.lerp(primaryColor, accent2, i / (numDots - 1f))
-                        .copy(alpha = dotAlpha.coerceIn(0f, 1f)),
-                    radius = dotRadius,
-                    center = Offset(x, y)
                 )
             }
         }

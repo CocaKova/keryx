@@ -783,6 +783,8 @@ fun ChatScreen(
         androidx.compose.runtime.CompositionLocalProvider(
             chat.keryx.app.presentation.ui.components.LocalTurnRates provides turnRates,
             chat.keryx.app.presentation.ui.components.LocalSandPour provides sandPour,
+            // A waiting bubble says what the cloud says (3.0), read only where it's drawn.
+            chat.keryx.app.presentation.ui.components.LocalWorkLabel provides viewModel.workLabel,
         ) {
         LazyColumn(
             state = listState,

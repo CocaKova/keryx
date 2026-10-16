@@ -136,10 +136,13 @@ class DemoTransport(private val scope: CoroutineScope) : ChatTransport, GatewayC
         val wasBusy = roomId in busy.value
         busy.value = busy.value + roomId
         typing.value = true
-        delay(THINK_MS)
-        val words = DemoScript.replyTo(prompt).split(' ')
+        // An empty streaming row first, as a gateway opens a reply: the bubble that waits with
+        // the thinking animation until the first word lands.
         val id = nextId("reply")
         val at = System.currentTimeMillis()
+        flow.value = flow.value + Message(id, roomId, SenderType.HERMES, "", at, senderName = DemoScript.AGENT, isStreaming = true)
+        delay(THINK_MS)
+        val words = DemoScript.replyTo(prompt).split(' ')
         val said = StringBuilder()
         for ((i, word) in words.withIndex()) {
             if (i > 0) said.append(' ')
@@ -380,7 +383,7 @@ class DemoTransport(private val scope: CoroutineScope) : ChatTransport, GatewayC
         /** What the demo's model pill says: a stand-in for whichever model the visitor runs. */
         const val MODEL = "your-model"
 
-        private const val THINK_MS = 900L
+        private const val THINK_MS = 1_800L
         private const val WORD_MS = 45L
 
         /** A beat of work before each played row: long enough to see the plan tick. */
