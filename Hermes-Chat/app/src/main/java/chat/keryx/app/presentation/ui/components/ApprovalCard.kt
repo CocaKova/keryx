@@ -63,6 +63,7 @@ fun ApprovalCard(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(KeryxRadius.chip))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = AskCardFloor.ALPHA))
             .background(warn.copy(alpha = 0.07f))
             .border(1.dp, warn.copy(alpha = 0.45f), RoundedCornerShape(KeryxRadius.chip))
             .padding(12.dp),
@@ -140,6 +141,7 @@ fun BlockingRequestCard(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(KeryxRadius.chip))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = AskCardFloor.ALPHA))
             .background(accent.copy(alpha = 0.06f))
             .border(1.dp, accent.copy(alpha = 0.40f), RoundedCornerShape(KeryxRadius.chip))
             .padding(12.dp),
@@ -278,4 +280,14 @@ private fun ApprovalButton(
     ) {
         Text(label, fontSize = KeryxType.body, fontWeight = weight, color = ink)
     }
+}
+
+/**
+ * The floor under the approval and question cards (3.0). They stand over the foot of the
+ * transcript, above the composer, and were a bare 6-7% tint: the newest bubble's words read
+ * straight through "Approval needed" (10-16, caught taking screenshots). Solid, like the
+ * composer's floor, so nothing passing under them shows.
+ */
+object AskCardFloor {
+    const val ALPHA = 1f
 }

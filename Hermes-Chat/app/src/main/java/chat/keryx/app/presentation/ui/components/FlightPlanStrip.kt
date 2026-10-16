@@ -177,8 +177,9 @@ fun FlightPlanStrip(plan: TodoPlan) {
  * strip (a full-accent bubble, an image) contributes too little to move the text off AA.
  */
 object FlightPlanFloor {
-    /** Surface opacity of the strip's floor. */
-    const val ALPHA = 0.94f
+    /** Surface opacity of the strip's floor. Solid since 3.0, as the composer's: at 0.94 the
+     *  bubble scrolled under the strip still read as faint type behind the plan (10-16). */
+    const val ALPHA = 1f
     /** The bottom hairline's opacity (on the text colour). */
     const val EDGE_ALPHA = 0.10f
     /** The collapsed line's text alpha (the faintest text the strip prints while a plan runs). */

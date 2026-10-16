@@ -119,6 +119,20 @@ class PaperContrastTest {
     }
 
     /**
+     * The surfaces over the transcript are solid (3.0): at 0.94 the Flight Plan let the bubble
+     * under it read as faint type, and the approval card, a bare tint, let the newest reply
+     * read straight through its header. Nothing that scrolls under them may show.
+     */
+    @Test
+    fun `nothing shows through the flight plan or the ask cards`() {
+        for (a in listOf(FlightPlanFloor.ALPHA, chat.keryx.app.presentation.ui.components.AskCardFloor.ALPHA)) {
+            for ((surface, under) in listOf(paperSurface to void, voidSurface to 0xFFFFFFFFL)) {
+                assertTrue(contrast(over(surface, a.toDouble(), under), over(surface, a.toDouble(), surface)) < 1.005)
+            }
+        }
+    }
+
+    /**
      * The composer is pinned over the transcript too, at the other edge. The list reserves room
      * for it only at rest: scrolled up, bubbles pass underneath, and at the tint's 72% alone a
      * white reply was legible through the placeholder (device-caught 2026-09-21). Its faintest
