@@ -84,7 +84,9 @@ if [[ -f "$KEYSTORE" ]]; then
   rsync -a "$KEYSTORE" "$HOST:.android/debug.keystore" || amber "could not hand the signing key to $HOST"
 fi
 
-"${SSH[@]}" "cd ~/$REMOTE_ROOT && tools/ship.sh --local ${args[*]}"
+# KERYX_DRIFT_SENT: the drift answer above is from the Hermes tree the app is checked against;
+# a Hermes the build host happens to have (a stock test install) must not replace it.
+"${SSH[@]}" "cd ~/$REMOTE_ROOT && KERYX_DRIFT_SENT=$([ -f "$REPO_ROOT/.ship-drift" ] && echo 1 || echo 0) tools/ship.sh --local ${args[*]}"
 RC=$?
 
 echo "── fetch results ← $HOST"

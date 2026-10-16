@@ -118,11 +118,14 @@ cd "$PROJECT" || exit 2
 # ── hermes drift ───────────────────────────────────────────────────────────────
 # Every Hermes name Keryx matches on (core/.../KnownWire.kt) against a live Hermes tree. The
 # check needs that tree, so it runs where Hermes lives: here if this machine has one, else
-# remote-ship.sh ran it before the hand-off and sent the answer along as .ship-drift.
+# remote-ship.sh ran it before the hand-off and sent the answer along as .ship-drift. A sent
+# answer wins (KERYX_DRIFT_SENT=1): the build host may have a Hermes of its own, a stock test
+# install (10-16), and checking against that flagged the optional plugins' tools as drift.
 DRIFTED=(); DRIFT_NOTE=""
 step "hermes drift"
 DRIFT_FILE="$REPO_ROOT/.ship-drift"
-if [ -f "${HERMES_AGENT_DIR:-$HOME/.hermes/hermes-agent}/apps/shared/src/gateway-contract.openrpc.json" ]; then
+if [ "${KERYX_DRIFT_SENT:-0}" != 1 ] && \
+   [ -f "${HERMES_AGENT_DIR:-$HOME/.hermes/hermes-agent}/apps/shared/src/gateway-contract.openrpc.json" ]; then
   python3 "$REPO_ROOT/tools/hermes_drift.py" --quiet > "$DRIFT_FILE.out" 2>&1
   DRIFT_RC=$?
   { echo "$DRIFT_RC"; cat "$DRIFT_FILE.out"; } > "$DRIFT_FILE"; rm -f "$DRIFT_FILE.out"
