@@ -173,6 +173,26 @@ sealed interface TourAction {
     }
 }
 
+/**
+ * One `keryx_tour` call the agent made (keryx-stream 0.6, tour.py), as the gateway's own
+ * `tool.start` carried it: the session, the call id the answer goes back under, and the same
+ * arguments `gui_tour` takes ([TourAction.parse] reads them).
+ */
+data class AgentTourCall(val sessionId: String, val callId: String, val args: JsonObject) {
+    companion object {
+        const val TOOL = "keryx_tour"
+
+        /** The tour call a `tool.start` describes, if it is one. A deferred tool rides the
+         *  `tool_call` bridge, so that is peeled first. */
+        fun of(sessionId: String, toolId: String?, name: String?, args: JsonObject?): AgentTourCall? {
+            if (toolId.isNullOrBlank()) return null
+            val wire = chat.keryx.core.model.ToolWire.unwrap(name.orEmpty(), args)
+            if (wire.name != TOOL) return null
+            return AgentTourCall(sessionId, toolId, wire.args ?: return null)
+        }
+    }
+}
+
 /** A tour on screen: its steps, the one showing, and whether the user pages it ([paged], from
  *  `start`) or the agent narrates one highlight per call (`show`). */
 data class TourRun(

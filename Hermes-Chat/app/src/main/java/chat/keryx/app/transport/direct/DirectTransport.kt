@@ -587,8 +587,17 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 val call = chat.keryx.core.protocol.ToolFrames.started(p, "tool-${System.nanoTime()}")
                 noteRun(storedId, ev.type, pStr("tool_id").orEmpty(), call.name, call.context)
                 store.toolStart(call)
+                // The agent pointing at the phone (keryx_tour): the call id and the full
+                // arguments ride this event, and the app answers over Hermes Link.
+                chat.keryx.core.tour.AgentTourCall.of(
+                    storedId, pStr("tool_id"), pStr("name"), p?.get("args") as? kotlinx.serialization.json.JsonObject,
+                )?.let { tourCall ->
+                    openTourCalls += tourCall.callId
+                    _tourCalls.tryEmit(tourCall)
+                }
             }
             "tool.complete" -> {
+                pStr("tool_id")?.let(openTourCalls::remove)
                 // The blocking bridges live INSIDE a tool call (clarify, terminal sudo, a
                 // skill's secret capture): that tool returning means the question resolved,
                 // here or on another client. Interactive tools are dispatch barriers on the
@@ -2770,6 +2779,18 @@ private const val INTERRUPT_SEAL_MS = 4_000L
 
     // --- approvals and blocking questions: see [PendingAsks] -------------------------------
     override fun pendingApproval(sessionId: String): Flow<chat.keryx.core.model.ApprovalRequest?> = asks.approval(sessionId)
+
+    // ---- the agent's tour (keryx_tour, keryx-stream 0.6) ------------------------------------
+    private val _tourCalls = kotlinx.coroutines.flow.MutableSharedFlow<chat.keryx.core.tour.AgentTourCall>(extraBufferCapacity = 8)
+
+    /** Each `keryx_tour` call as its tool.start arrives; the app runs it and answers over Link. */
+    val tourCalls: kotlinx.coroutines.flow.SharedFlow<chat.keryx.core.tour.AgentTourCall> = _tourCalls
+
+    /** Calls started and not yet complete. A call replayed after it finished (a reconnect's
+     *  catch-up delivers its start and its end together) is closed by the time it is acted on. */
+    private val openTourCalls: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet()
+
+    fun tourCallOpen(callId: String): Boolean = callId in openTourCalls
 
     fun shadePending(): Flow<Map<String, chat.keryx.core.model.ShadePendingEntry>> = asks.shade()
 

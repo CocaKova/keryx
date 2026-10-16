@@ -314,6 +314,28 @@ fun HermesApp(viewModel: ChatViewModel) {
         if (wasTouring && !touring) drawerState.close()
         wasTouring = touring
     }
+    // The agent pointing (3.0, keryx_tour): each call runs on the tour on screen, the same
+    // engine and the same answers Desktop's renderer gives gui_tour, and what it did goes back
+    // to the tool waiting on Hermes Link. Off screen, nothing is drawn and the agent is told.
+    val tourLifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(viewModel) {
+        viewModel.agentTourCalls.collect { call ->
+            if (!viewModel.agentTourCallOpen(call)) return@collect
+            val result = if (!tourLifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+                chat.keryx.core.tour.TourResult(
+                    success = false,
+                    error = "Keryx isn't on screen on the phone right now, so nothing was shown.",
+                )
+            } else {
+                val (action, problem) = chat.keryx.core.tour.TourAction.parse(call.args)
+                if (action == null) chat.keryx.core.tour.TourResult(success = false, error = problem)
+                else tour.act(action)
+            }
+            chat.keryx.app.util.KLog.i("KeryxTour") { "agent ${call.callId}: ${result.toJson()}" }
+            viewModel.answerAgentTour(call, result.toJson())
+        }
+    }
+
     // First-visit hints (3.0): a space opened for the first time says what it's for, once its
     // header has arrived and held still. Never over a tour, and never twice.
     val hintDest = nav.top

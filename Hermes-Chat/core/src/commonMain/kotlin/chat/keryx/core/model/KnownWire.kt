@@ -49,6 +49,10 @@ object KnownWire {
     /** Tools Hermes adds around the registry (the deferred-tool bridge and its lookups). */
     val META_TOOLS: Set<String> = setOf("tool_call", "tool_search", "tool_describe")
 
+    /** Tools keryx-stream registers itself (3.0: the agent's tour), not Hermes: drawn by name,
+     *  never looked for in a Hermes tree. */
+    val PLUGIN_TOOLS: Set<String> = setOf("keryx_tour")
+
     /**
      * Names kept for old transcripts and older gateways — expected to be absent from a
      * current Hermes. The renamed five come from [ToolWire.LEGACY_ALIASES]; the rest predate it.

@@ -12,6 +12,7 @@ class KnownWireTest {
 
     private fun covered(name: String) =
         name in KnownWire.TOOLS || name in KnownWire.LEGACY_TOOLS || name in KnownWire.META_TOOLS ||
+            name in KnownWire.PLUGIN_TOOLS ||
             KnownWire.TOOL_PREFIXES.any { name.startsWith(it) }
 
     @Test

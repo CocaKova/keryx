@@ -834,6 +834,24 @@ class HermesStreamClient(
         Unit
     }
 
+    /**
+     * The phone's answer to the agent's `keryx_tour` call (keryx-stream 0.6, tour.py): what the
+     * tour engine did with [callId]'s action, the `{success, …}` object the tool hands the model.
+     */
+    suspend fun tourRespond(
+        sessionId: String,
+        callId: String,
+        result: kotlinx.serialization.json.JsonObject,
+    ): Result<Unit> = runCatching {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("session_id", kotlinx.serialization.json.JsonPrimitive(sessionId))
+            put("call_id", kotlinx.serialization.json.JsonPrimitive(callId))
+            put("result", result)
+        }
+        apiCall("/keryx/tour/respond", method = "POST", body = payload, snapshot = false)
+        Unit
+    }
+
     suspend fun kanbanComment(taskId: String, body: String): Result<Unit> = runCatching {
         val payload = kotlinx.serialization.json.buildJsonObject {
             put("body", kotlinx.serialization.json.JsonPrimitive(body))

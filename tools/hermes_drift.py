@@ -194,7 +194,8 @@ def run(root: Path) -> tuple[list[dict], dict]:
         add("NOTE", f"tool {t}", "listed as legacy in KnownWire, but Hermes registers it again")
 
     def drawn(t: str) -> bool:
-        return t in known["TOOLS"] or any(t.startswith(p) for p in known["TOOL_PREFIXES"])
+        return (t in known["TOOLS"] or t in known.get("PLUGIN_TOOLS", set())
+                or any(t.startswith(p) for p in known["TOOL_PREFIXES"]))
 
     generic = sorted(t for t in tools if not drawn(t))
     summary["generic_tools"] = generic

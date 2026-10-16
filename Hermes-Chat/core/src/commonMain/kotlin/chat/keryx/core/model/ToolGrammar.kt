@@ -51,6 +51,8 @@ object ToolGrammar {
         "video_analyze" to Verb("Watched video", "Watching video", "◉"),
         "x_search" to Verb("Searched X", "Searching X", "⌕"),
         "gui_tour" to Verb("Showed the way", "Showing the way", "✦"),
+        // The same tour on the phone (keryx-stream's keryx_tour, 3.0).
+        "keryx_tour" to Verb("Showed the way", "Showing the way", "✦"),
         "show_tip" to Verb("Showed a tip", "Showing a tip", "✦"),
         "react_to_message" to Verb("Reacted", "Reacting", "✦"),
         "tool_search" to Verb("Searched tools", "Searching tools", "⌕"),

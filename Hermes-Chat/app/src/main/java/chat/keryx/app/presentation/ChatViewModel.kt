@@ -1531,6 +1531,25 @@ class ChatViewModel(
     fun requestTour(preset: chat.keryx.core.tour.TourPreset) { _tourRequested.value = preset }
     fun consumeTour() { _tourRequested.value = null }
 
+    /** The agent pointing at the phone (`keryx_tour`, keryx-stream 0.6): each call as it starts.
+     *  The app root runs it on the tour on screen and answers with [answerAgentTour]. The direct
+     *  door only: Matrix never sees the call, and the demo has no agent. */
+    val agentTourCalls: kotlinx.coroutines.flow.Flow<chat.keryx.core.tour.AgentTourCall>
+        get() = direct?.tourCalls ?: kotlinx.coroutines.flow.emptyFlow()
+
+    /** Still waiting on the phone: a call replayed after it finished is not shown again. */
+    fun agentTourCallOpen(call: chat.keryx.core.tour.AgentTourCall): Boolean = direct?.tourCallOpen(call.callId) == true
+
+    /** What the tour did with [call], back to the tool waiting on Hermes Link. No Link, no
+     *  answer: the tool's own deadline tells the agent the phone didn't respond. */
+    fun answerAgentTour(call: chat.keryx.core.tour.AgentTourCall, result: kotlinx.serialization.json.JsonObject) {
+        viewModelScope.launch {
+            val client = deps.client() ?: return@launch
+            client.tourRespond(call.sessionId, call.callId, result)
+                .onFailure { e -> android.util.Log.w("KeryxTour", "answer for ${call.callId} failed: ${e.message}") }
+        }
+    }
+
     /** What Tap-In reads (2.16, now a nav layer): the chat's reconciled render items and the
      *  side-channel's record of the newest run, as the chat screen last drew them. */
     data class TapInFeed(

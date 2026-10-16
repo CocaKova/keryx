@@ -1,5 +1,6 @@
 package chat.keryx.core
 
+import chat.keryx.core.tour.AgentTourCall
 import chat.keryx.core.tour.TourAction
 import chat.keryx.core.tour.TourEngine
 import chat.keryx.core.tour.TourPlace
@@ -140,5 +141,31 @@ class TourTest {
     fun `answers carry only the fields they have`() {
         val json: JsonObject = apply(null, TourAction.Stop).second.toJson()
         assertEquals(setOf("success", "action"), json.keys)
+    }
+
+    // ---- the agent's call, as tool.start carries it (keryx_tour, keryx-stream 0.6) -------------
+
+    @Test
+    fun `a keryx_tour start is a call the phone runs, under its tool id`() {
+        val call = assertNotNull(AgentTourCall.of("s1", "call-1", "keryx_tour", args("""{"action":"start","preset":"quick"}""")))
+        assertEquals("s1", call.sessionId)
+        assertEquals("call-1", call.callId)
+        val action = assertIs<TourAction.Start>(TourAction.parse(call.args).first)
+        assertEquals(TourPreset.QUICK, action.preset)
+    }
+
+    @Test
+    fun `a deferred call is peeled off the tool_call bridge`() {
+        val bridged = args("""{"name":"keryx_tour","arguments":"{\"action\":\"targets\"}"}""")
+        val call = assertNotNull(AgentTourCall.of("s1", "call-2", "tool_call", bridged))
+        assertEquals(TourAction.Targets, TourAction.parse(call.args).first)
+    }
+
+    @Test
+    fun `other tools, Desktop's own tour, and calls without an id are not the phone's`() {
+        assertNull(AgentTourCall.of("s1", "c", "terminal", args("""{"command":"ls"}""")))
+        assertNull(AgentTourCall.of("s1", "c", "gui_tour", args("""{"action":"start"}""")))
+        assertNull(AgentTourCall.of("s1", "", "keryx_tour", args("""{"action":"start"}""")))
+        assertNull(AgentTourCall.of("s1", "c", "keryx_tour", null))
     }
 }
