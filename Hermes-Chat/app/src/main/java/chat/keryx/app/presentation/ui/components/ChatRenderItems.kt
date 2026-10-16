@@ -350,6 +350,12 @@ private fun walkRange(
             val n = chrono[i + it]
             proseLength(MessageParser.parse(n.content, cacheable = !n.isStreaming))
         }
+        // The direct door carries its calls structurally, so prose in its block is the agent
+        // speaking between tools: Hermes' interim message, which its own TUI prints in line.
+        // Folded into the run like Matrix-era narration, it vanished into the collapsed thought
+        // live, and on reload was dropped for the row's own reasoning (Jonny, 10-16, REA run:
+        // 12 of 14 lines gone). It stays a visible bubble, its thought above it.
+        val spoken = (i until blockEnd).any { chrono[it].toolCalls.isNotEmpty() }
         if (isToolAt.none { it }) {
             // A plain agent reply (no tools anywhere): normal bubbles.
             for (p in i until blockEnd) {
@@ -468,8 +474,10 @@ private fun walkRange(
                     closeRun()
                     out += agentSingle(m)
                 }
-                (runStartId != null || toolAhead) && proseAt[p - i] >= ANSWER_PROSE_MIN -> {
-                    // A substantial INTERIM answer mid-run (steer continued the turn): visible
+                (runStartId != null || toolAhead) &&
+                    (proseAt[p - i] >= ANSWER_PROSE_MIN || (spoken && proseAt[p - i] > 0)) -> {
+                    // A substantial INTERIM answer mid-run (steer continued the turn), or any
+                    // words the agent says between its tools on the direct door: visible
                     // bubble, and whatever tools follow start a fresh run.
                     closeRun()
                     out += agentSingle(m)
@@ -482,7 +490,15 @@ private fun walkRange(
                         entries += ToolRunEntry.Note(m.content.trim())
                     } else {
                         // "working…" status / mid-run course-correction → the reasoning block.
-                        addReasoning(parts.reasoning ?: m.content)
+                        // Its words AND its thought: a message carrying both kept only the
+                        // thought, and the words were gone.
+                        if (parts.reasoning == null) addReasoning(m.content)
+                        else {
+                            addReasoning(parts.reasoning)
+                            addReasoning(
+                                segs.filterIsInstance<MessageParser.Segment.Text>().joinToString("\n\n") { it.text.trim() },
+                            )
+                        }
                     }
                 }
                 toolAhead -> {
