@@ -67,6 +67,12 @@ class ChatViewModel(
     private val gateway get() = transport.gateway
 
     companion object {
+        /** Test link, when the Link answers but the API server behind it doesn't. */
+        const val LINK_UP_API_DOWN =
+            "Hermes Link is up, but Hermes's API server behind it isn't running, so Missions and Runs " +
+                "won't load. Set API_SERVER_ENABLED=true and an API_SERVER_KEY in ~/.hermes/.env, " +
+                "then restart the gateway."
+
         private const val INITIAL_LIMIT = 50
         private const val PAGE = 50
         // Soft ceiling + decay for the loaded window (see loadOlderMessages/onViewportAtBottom):
@@ -564,7 +570,7 @@ class ChatViewModel(
         openSessionById = { id, title -> openSessionById(id, title) },
     )
     /** The fleet and both sign-in doors (3.0 split). */
-    val doors = FleetDelegate(deps, transport, purgeGatewayFiles)
+    val doors = FleetDelegate(deps, transport, purgeGatewayFiles, onLinkCommitted = { reloadLink() })
     val models = ModelDelegate(
         deps, transport, { _currentRoom.value?.id },
         sendRoomCommand = { sendMessage(it) },
@@ -2019,6 +2025,15 @@ class ChatViewModel(
         _linkHealth.value = if (url.isBlank()) LinkHealth.OFF else LinkHealth.UNKNOWN
     }
 
+    /** The Link's keys changed under this process (a pairing that claimed without a relaunch,
+     *  3.0): read them back, or every Link client went on with the pair this started with. */
+    private fun reloadLink() {
+        _gatewayUrl.value = settingsRepository.gatewayUrl
+        _gatewayApiKey.value = settingsRepository.gatewayApiKey
+        _sideChannelEnabled.value = settingsRepository.sideChannelEnabled
+        _linkHealth.value = if (_gatewayUrl.value.isBlank()) LinkHealth.OFF else LinkHealth.UNKNOWN
+    }
+
     fun setGatewayApiKey(key: String) {
         _gatewayApiKey.value = key
         settingsRepository.gatewayApiKey = key
@@ -2044,15 +2059,22 @@ class ChatViewModel(
             return
         }
         viewModelScope.launch {
-            chat.keryx.app.data.remote.HermesStreamClient(url, _gatewayApiKey.value, settingsRepository.allowInsecure)
-                .health()
+            val client = chat.keryx.app.data.remote.HermesStreamClient(url, _gatewayApiKey.value, settingsRepository.allowInsecure)
+            client.health()
                 .onSuccess {
                     _linkHealth.value = LinkHealth.OK
                     _toasts.tryEmit("Hermes Link OK — $it")
                 }
-                .onFailure {
+                .onFailure { failed ->
                     _linkHealth.value = LinkHealth.UNREACHABLE
-                    _toasts.tryEmit("Hermes Link failed: ${(it.message ?: "connection error").take(80)}")
+                    // A relay error with the Link itself up is the API server behind it: off on a
+                    // fresh Hermes, where this said a bare "HTTP 502" (stock-Hermes pair, 10-16).
+                    val relay = failed.message?.let { Regex("HTTP 50[234]").matches(it) } == true
+                    val link = if (relay) client.linkHealth().getOrNull() else null
+                    _toasts.tryEmit(
+                        if (link != null) LINK_UP_API_DOWN
+                        else "Hermes Link failed: ${(failed.message ?: "connection error").take(80)}",
+                    )
                 }
         }
     }

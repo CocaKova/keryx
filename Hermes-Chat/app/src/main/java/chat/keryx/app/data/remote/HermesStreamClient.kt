@@ -570,6 +570,19 @@ class HermesStreamClient(
      * returns a short human line ("ok · hermes-agent 0.18.0"); every failure mode comes back as a
      * plain Result failure so the caller can toast the reason.
      */
+    /** The Link's own health (`GET /keryx/health`, open): its version, whatever is behind it. */
+    suspend fun linkHealth(): Result<String> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            val request = Request.Builder().url(baseUrl.trimEnd('/') + "/keryx/health").build()
+            val probe = client.newBuilder().readTimeout(5, TimeUnit.SECONDS).build()
+            probe.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) error("HTTP ${resp.code}")
+                val obj = json.parseToJsonElement(resp.body?.string().orEmpty()).jsonObject
+                "keryx-stream " + ((obj["version"] as? JsonPrimitive)?.content ?: "?")
+            }
+        }
+    }
+
     suspend fun health(): Result<String> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         runCatching {
             val request = Request.Builder()

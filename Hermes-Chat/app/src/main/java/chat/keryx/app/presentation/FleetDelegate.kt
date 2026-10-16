@@ -17,6 +17,9 @@ class FleetDelegate(
     private val transport: ChatTransport,
     /** What to do with a removed gateway's files on disk (KeryxApp owns the layout). */
     private val purgeGatewayFiles: (String) -> Unit,
+    /** A paired Link was saved and this process carries on (no relaunch): the ViewModel reads
+     *  it back. Its Link clients are built from what it read at start-up. */
+    private val onLinkCommitted: () -> Unit = {},
 ) {
     private val scope = deps.scope
     private val settings: SettingsRepository = deps.settings
@@ -226,6 +229,10 @@ class FleetDelegate(
         link?.let { (linkUrl, token) -> settings.commitLink(linkUrl, token) }
         val direct = transport as? chat.keryx.app.transport.direct.DirectTransport
         if (direct != null && !switched) {
+            // No relaunch to pick the Link up (3.0): without this the pairing took, the device
+            // showed in `hermes keryx devices`, and the app went on with the empty Link it
+            // started with until its next launch (stock-Hermes pair test, VIRDARA, 10-16).
+            if (link != null) onLinkCommitted()
             direct.login()
             notice?.let(toast)
             onResult(true, false, null)
