@@ -331,4 +331,8 @@ interface AgentInstruments {
     /** Answers the open approval with one of its choices. False = it had already gone (expired,
      *  answered elsewhere, or not the [expectedRequestId] any more). */
     suspend fun respondApproval(sessionId: String, choice: String, expectedRequestId: String? = null): Result<Boolean>
+
+    /** Each session whose turn just ended, as it ends: the authoritative "done", ahead of any
+     *  quiet window (the gateway's `message.complete`; the demo's last word). */
+    fun turnEnds(): Flow<String> = kotlinx.coroutines.flow.emptyFlow()
 }

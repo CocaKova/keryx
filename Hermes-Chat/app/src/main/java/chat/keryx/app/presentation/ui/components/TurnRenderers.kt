@@ -322,90 +322,12 @@ internal fun TelemetryMessageRow(message: Message, textScale: Float) {
 }
 
 @Composable
-internal fun WaitingIndicator() {
-    val quips = remember {
-        listOf(
-            "Dispatching the herald…",
-            "Winging your reply…",
-            "Crossing the aether…",
-            "Consulting the oracle…",
-            "Tracing the threads…",
-            "Summoning a thought…",
-            "Lacing the sandals…",
-            "Reading the entrails…",
-            "Bribing the muses…",
-            "Negotiating with the tokens…",
-            "Untangling the timeline…",
-            "Polishing the prophecy…",
-            "Chasing a stray idea…",
-            "Asking the rubber duck…",
-            "Aligning the constellations…",
-            "Warming up the wings…",
-            "Sifting the context…",
-            "Whispering to the weights…",
-            // — expanded —
-            "Folding the probability space…",
-            "Tuning the inner monologue…",
-            "Wandering the latent space…",
-            "Courting a better metaphor…",
-            "Auditing the assumptions…",
-            "Stitching the argument together…",
-            "Letting the idea steep…",
-            "Listening for the signal…",
-            "Sketching it in the margins…",
-            "Counting the right syllables…",
-            "Threading the needle…",
-            "Coaxing the tokens out…",
-            "Reconciling the contradictions…",
-            "Pacing the reasoning floor…",
-            "Decanting the nuance…",
-            "Cross-checking the lore…",
-            "Drafting, then redrafting…",
-            "Easing past the tangents…",
-            "Composing in the quiet…",
-            "Catching the dropped thread…",
-            "Sanding down the rough edges…",
-            "Reaching for the precise word…",
-        )
-    }
-    var idx by remember { mutableStateOf(kotlin.random.Random.nextInt(quips.size)) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            // Slow, contemplative rotation — long enough to actually read each one.
-            kotlinx.coroutines.delay(6800)
-            idx = (idx + 1) % quips.size
-        }
-    }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-    ) {
-        Box(modifier = Modifier.size(40.dp)) {
-            chat.keryx.app.presentation.ui.components.BrailleSnakeAnimation(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.primary,
-                color2 = MaterialTheme.colorScheme.tertiary,
-                snakeLength = 10,
-                periodMillis = 1500,
-                glyphSize = 7f,
-                progress = true,
-            )
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-        val quipAccent = MaterialTheme.colorScheme.primary
-        val quipAccent2 = MaterialTheme.colorScheme.tertiary
-        androidx.compose.animation.AnimatedContent(targetState = idx, label = "quip") { i ->
-            Text(
-                text = quips[i],
-                style = androidx.compose.ui.text.TextStyle(
-                    // Same accent-1 → accent-2 sweep as the braille snake beside it.
-                    brush = Brush.linearGradient(
-                        listOf(quipAccent.copy(alpha = 0.9f), quipAccent2.copy(alpha = 0.9f)),
-                    ),
-                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                    fontSize = KeryxType.body,
-                ),
-            )
-        }
+internal fun WaitingIndicator(style: String) {
+    // Before the turn's first sign of life: the user's own thinking style and the turn's own
+    // words, as the waiting bubble shows them (3.0). Its rotating quips ("Catching the dropped
+    // thread…") went with the bubble's on 10-16 (Jonny's pick: say what is happening); this
+    // row kept them until it was seen in the demo.
+    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        HermesThinkingAnimation(style = style)
     }
 }

@@ -924,18 +924,17 @@ class ChatViewModel(
             viewModelScope.launch {
                 d.reasoningRejections().collect { models.walkBackReasoning() }
             }
-            // The gateway's `message.complete` is the turn's end, whatever the last row looks
-            // like. A stopped turn folds as a thought with no answer under it, and the message
-            // walk reads that shape as mid-run — more is coming — so the banner and the
-            // thinking disclosure hung for the whole long quiet window after every Stop
-            // (device, 2026-09-23; "a long-running bug"). The End event is authoritative on
-            // this door: settle on it, for the room on screen.
+        }
+        // The gateway's `message.complete` is the turn's end, whatever the last row looks
+        // like. A stopped turn folds as a thought with no answer under it, and the message
+        // walk reads that shape as mid-run — more is coming — so the banner and the
+        // thinking disclosure hung for the whole long quiet window after every Stop
+        // (device, 2026-09-23; "a long-running bug"). The end is authoritative: settle on it,
+        // for the room on screen. Any door with instruments says it (3.0): the demo's last
+        // word does too, or its answers sat under a "Working" row through the quiet window.
+        instruments?.let { ins ->
             viewModelScope.launch {
-                d.turnEvents().collect { ev ->
-                    if (ev is chat.keryx.core.model.TurnEvent.End && ev.sessionId == _currentRoom.value?.id) {
-                        settleTurnNow()
-                    }
-                }
+                ins.turnEnds().collect { id -> if (id == _currentRoom.value?.id) settleTurnNow() }
             }
         }
         viewModelScope.launch {

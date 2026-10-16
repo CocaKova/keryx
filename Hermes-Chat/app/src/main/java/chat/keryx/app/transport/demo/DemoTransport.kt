@@ -22,6 +22,7 @@ import chat.keryx.core.transport.SessionSearchHit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
@@ -154,9 +155,16 @@ class DemoTransport(private val scope: CoroutineScope) : ChatTransport, GatewayC
         typing.value = false
         if (!wasBusy) busy.value = busy.value - roomId
         touch(roomId, System.currentTimeMillis())
+        ends.tryEmit(roomId)
     }
 
     // ---- the agent's instruments: the live job's plan and the approval it stopped on --------
+
+    /** A reply's last word is its turn's end, as the gateway's `message.complete` is: without
+     *  it the chat waited out the quiet window, and a stranger's first answer sat under a
+     *  "Working" row for seconds after it was done (10-16). */
+    private val ends = MutableSharedFlow<String>(extraBufferCapacity = 8)
+    override fun turnEnds(): Flow<String> = ends
 
     override fun todoPlan(sessionId: String): Flow<TodoPlan?> = planOf(sessionId)
 
@@ -199,6 +207,7 @@ class DemoTransport(private val scope: CoroutineScope) : ChatTransport, GatewayC
         busy.value = busy.value - id
         rooms.value = rooms.value.map { if (it.id == id) it.copy(isActive = false) else it }
         touch(id, System.currentTimeMillis())
+        ends.tryEmit(id)
     }
 
     private fun touch(roomId: String, at: Long) {

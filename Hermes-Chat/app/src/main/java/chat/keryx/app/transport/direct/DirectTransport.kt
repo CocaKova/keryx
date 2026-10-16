@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -2454,6 +2455,9 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     private val _turnEvents = TurnEventSink(capacity = 256)
 
     fun turnEvents(): Flow<chat.keryx.core.model.TurnEvent> = _turnEvents.events
+
+    override fun turnEnds(): Flow<String> =
+        turnEvents().filterIsInstance<chat.keryx.core.model.TurnEvent.End>().map { it.sessionId }
 
     // ---- Standing orders, asides, branches (2.16) -------------------------------------------
 
