@@ -207,11 +207,23 @@ object TapIn {
         }
     }
 
-    /** The last [n] non-blank lines, joined — the mind region's window. */
+    /** The last [n] non-blank lines, joined — the mind region's window. Read from the end
+     *  (3.0 perf): it runs on every publish of a live thought, and splitting the whole thought
+     *  into lines to keep six was the size of the thought each time. */
     fun tailLines(text: String, n: Int): String {
-        if (text.isBlank()) return ""
-        val lines = text.lineSequence().map { it.trimEnd() }.filter { it.isNotBlank() }.toList()
-        return lines.takeLast(n).joinToString("\n")
+        if (n <= 0 || text.isBlank()) return ""
+        val lines = ArrayDeque<String>()
+        var end = text.length
+        while (end >= 0 && lines.size < n) {
+            // Same breaks as lineSequence (\n, \r, \r\n): the empty line a \r\n pair leaves
+            // between them is blank, and blank lines never count.
+            var start = end
+            while (start > 0 && text[start - 1] != '\n' && text[start - 1] != '\r') start--
+            val line = text.substring(start, end).trimEnd()
+            if (line.isNotBlank()) lines.addFirst(line)
+            end = start - 1
+        }
+        return lines.joinToString("\n")
     }
 
     /** m:ss, or h:mm:ss past the hour. */

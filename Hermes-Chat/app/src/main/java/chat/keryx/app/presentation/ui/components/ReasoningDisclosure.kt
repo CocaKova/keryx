@@ -22,10 +22,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -151,7 +151,15 @@ fun ReasoningDisclosure(
             enter = keryxReveal(),
             exit = keryxConceal(),
         ) {
-            val scroll = rememberScrollState()
+            // The live thought, in pieces that stop changing once cut (3.0 perf): one Text over
+            // the whole thought re-laid out every line of it on each publish, and a long run's
+            // thought is hundreds of kilobytes (ThoughtPieces). Remembered with the pane, so a
+            // growing thought keeps its earlier pieces.
+            val thought = remember { ThoughtPieces() }
+            val pieces = if (streaming) remember(reasoning) { thought.of(reasoning) } else emptyList()
+            // A lazy list draws only the pieces in view. It opens on the newest piece, where the
+            // preview has always opened.
+            val list = rememberLazyListState(initialFirstVisibleItemIndex = (pieces.size - 1).coerceAtLeast(0))
             // The streaming preview follows the newest thought — but only from the newest.
             // Pinning to the tail on every token made a long think unreadable: you could not
             // scroll back a paragraph without the next word hauling you to the bottom, so the
@@ -159,26 +167,38 @@ fun ReasoningDisclosure(
             // transcript has obeyed this law for versions (ChatScreen: follow only at the
             // bottom, never under a finger); this pane now obeys the same one.
             // Height-capped so a long think never shoves the transcript around.
-            val following = rememberTailFollow(scroll, reasoning.length, enabled = streaming)
+            val following = rememberLazyTailFollow(list, reasoning.length, enabled = streaming, startFollowing = true)
             val scope = rememberCoroutineScope()
             Box {
-                // Settled thoughts read as light markdown (bold, code, links, bullets, inline
-                // TeX) instead of raw asterisks; a live one stays plain text, re-formatting
-                // a growing think on every token is not worth its cost.
-                val linkColor = chatLinkColor(quiet)
-                val shown = remember(reasoning, streaming, linkColor) {
-                    if (streaming) androidx.compose.ui.text.AnnotatedString(reasoning.trim())
-                    else quietMarkdownAnnotated(reasoning.trim(), linkColor)
+                val color = quiet.copy(alpha = 0.62f)
+                if (streaming) {
+                    // A live one stays plain text: re-formatting a growing think on every token
+                    // is not worth its cost. Full width: a lazy list is as wide as the pieces in
+                    // view, and the cue at its corner must not wander as they scroll past.
+                    LazyColumn(
+                        state = list,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
+                            .heightIn(max = 150.dp),
+                    ) {
+                        items(pieces.size) { i ->
+                            Text(pieces[i], fontSize = KeryxType.caption, lineHeight = 17.sp, color = color)
+                        }
+                    }
+                } else {
+                    // Settled thoughts read as light markdown (bold, code, links, bullets, inline
+                    // TeX) instead of raw asterisks, in full.
+                    val linkColor = chatLinkColor(quiet)
+                    val shown = remember(reasoning, linkColor) { quietMarkdownAnnotated(reasoning.trim(), linkColor) }
+                    Text(
+                        shown,
+                        fontSize = KeryxType.caption,
+                        lineHeight = 17.sp,
+                        color = color,
+                        modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp),
+                    )
                 }
-                Text(
-                    shown,
-                    fontSize = KeryxType.caption,
-                    lineHeight = 17.sp,
-                    color = quiet.copy(alpha = 0.62f),
-                    modifier = Modifier
-                        .padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
-                        .then(if (streaming) Modifier.heightIn(max = 150.dp).verticalScroll(scroll) else Modifier),
-                )
                 // You held your place and the thought went on without you. Say so, and offer the
                 // way back — a pane that has quietly stopped moving is otherwise indistinguishable
                 // from a model that has quietly stopped thinking.
@@ -198,7 +218,7 @@ fun ReasoningDisclosure(
                             .padding(end = 2.dp, bottom = 6.dp)
                             .clip(RoundedCornerShape(KeryxRadius.chip))
                             .background(accent.copy(alpha = 0.16f))
-                            .clickable { scope.launch { scroll.animateScrollTo(scroll.maxValue) } }
+                            .clickable { scope.launch { list.animateScrollToTail() } }
                             .padding(horizontal = 9.dp, vertical = 5.dp),
                     ) {
                         Text("\u25be", fontSize = KeryxType.micro, color = accent.copy(alpha = 0.9f))

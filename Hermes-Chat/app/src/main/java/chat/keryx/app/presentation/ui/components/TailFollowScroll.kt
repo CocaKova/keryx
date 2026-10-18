@@ -1,6 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
@@ -66,18 +67,28 @@ fun rememberTailFollow(scroll: ScrollState, tail: Any?, enabled: Boolean = true)
  * One difference, on purpose: a lazy list opens at its top, so it starts following only if its
  * first layout already shows the end. Opening Tap-In onto a long turn lands on the headline,
  * not thrown past it to the bottom; reaching the bottom is what hands the list the wheel.
+ *
+ * @param startFollowing ride the tail from the start, as [rememberTailFollow] does: for a pane
+ *   that is the newest of something (the live thought, 3.0), not a page to open at its top.
  */
 @Composable
-fun rememberLazyTailFollow(list: LazyListState, tail: Any?, enabled: Boolean = true): Boolean {
+fun rememberLazyTailFollow(
+    list: LazyListState,
+    tail: Any?,
+    enabled: Boolean = true,
+    startFollowing: Boolean = false,
+): Boolean {
     val slopPx = with(LocalDensity.current) { TailFollow.SLOP_DP.dp.roundToPx() }
-    var following by remember(list) { mutableStateOf(false) }
+    var following by remember(list) { mutableStateOf(startFollowing) }
 
     LaunchedEffect(list, slopPx, enabled) {
         if (!enabled) return@LaunchedEffect
         // The first answer waits for a real layout, for the same reason the scroll version
         // drops its first emission: an unmeasured list has no end to be at.
-        snapshotFlow { list.layoutInfo.totalItemsCount }.first { it > 0 }
-        following = list.atTail(slopPx)
+        if (!startFollowing) {
+            snapshotFlow { list.layoutInfo.totalItemsCount }.first { it > 0 }
+            following = list.atTail(slopPx)
+        }
         snapshotFlow { list.isScrollInProgress }
             .drop(1)
             .collect { moving -> if (!moving) following = list.atTail(slopPx) }
@@ -101,6 +112,18 @@ private fun LazyListState.atTail(slopPx: Int): Boolean {
         viewportEnd = info.viewportEndOffset,
         slopPx = slopPx,
     )
+}
+
+/** [scrollToTail], animated: the reader asked for the newest ("newest" cue). */
+internal suspend fun LazyListState.animateScrollToTail() {
+    val total = layoutInfo.totalItemsCount
+    if (total == 0) return
+    animateScrollToItem(total - 1)
+    val info = layoutInfo
+    val last = info.visibleItemsInfo.lastOrNull() ?: return
+    val over = TailFollow.lazyOvershoot(last.index, info.totalItemsCount, last.offset + last.size,
+        info.afterContentPadding, info.viewportEndOffset) ?: return
+    if (over > 0) animateScrollBy(over.toFloat())
 }
 
 /** Bring the very end into view: the last item, then the rest of it if it is taller than the

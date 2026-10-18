@@ -299,7 +299,21 @@ fun groupChatItems(orderedNewestFirst: List<Message>): List<ChatRenderItem> {
  *  range can be resumed mid-timeline: [lastMineIdInit] is the id of the user's most recent
  *  message BEFORE this range (quote suppression must see across the split). Returns the items in
  *  chronological order plus the carried state at the range's end. */
-private class RangeWalk(val items: MutableList<ChatRenderItem>, val lastMineId: String?)
+private class RangeWalk(
+    val items: MutableList<ChatRenderItem>,
+    val lastMineId: String?,
+    /** Each run's gathered thought, by run id, for the next walk to reuse. */
+    val thoughts: Map<String, RunThought> = emptyMap(),
+)
+
+/**
+ * A run's gathered thought and the strings it was gathered from (3.0 perf). The trailing block is
+ * walked again on every publish of the live row, up to ten a second, and a run opened mid-flight
+ * (or re-read after a compaction) carries every stored row's thought: a long segment's runs held
+ * a quarter of a megabyte of it, joined again on each tick. The next walk of the same run from
+ * the same strings hands back this text instead; anything else joins afresh.
+ */
+internal class RunThought(val parts: List<String>, val text: String?)
 
 private fun walkRange(
     chronoRange: List<Message>,
@@ -307,12 +321,15 @@ private fun walkRange(
     /** The message immediately before this range, when the timeline was split — [isArrival] needs
      *  it or the first turn of every resumed suffix would lose its banner. */
     prevBeforeRange: Message? = null,
+    /** The last walk's run thoughts, reused where a run's strings are unchanged. */
+    thoughtsBefore: Map<String, RunThought>? = null,
 ): RangeWalk {
     // A bot that chose to stay silent (`[SILENT]`, `NO_REPLY`, 2.17.3) on a turn a machine
     // started keeps its turn in the transcript but shows nothing. A turn you started keeps it.
     val silent = chat.keryx.core.model.SilenceTokens.vanishingIds(chronoRange, prevBeforeRange)
     val chrono = mergeRuntimeFooters(chronoRange.filterNot { it.id in silent })
     val out = mutableListOf<ChatRenderItem>()
+    val thoughts = HashMap<String, RunThought>()
     // The user's most recent message so far in the walk. An agent quote pointing at it is the
     // gateway's per-chunk reply-threading, not a meaningful reference — those quotes are hidden.
     var lastMineId: String? = lastMineIdInit
@@ -369,7 +386,7 @@ private fun walkRange(
         // Sequential walk: build runs, splitting at answer-prose boundaries.
         var runInsertAt = -1 // where in [out] the open run's card belongs (its chronological spot)
         val entries = mutableListOf<ToolRunEntry>()
-        val reasoning = StringBuilder()
+        val reasoning = ArrayList<String>()
         val seenCalls = mutableSetOf<Pair<String, String>>()
         var runStartId: String? = null
         var runStartTs = 0L
@@ -381,7 +398,7 @@ private fun walkRange(
         var toolSeen = false
         fun fenceOnly(m: Message) = m.content.trimStart().startsWith("```")
         fun addReasoning(t: String) {
-            if (t.isNotBlank()) { if (reasoning.isNotEmpty()) reasoning.append("\n\n"); reasoning.append(t.trim()) }
+            if (t.isNotBlank()) reasoning += t
         }
         fun openRun(at: Message) {
             if (runStartId == null) { runStartId = at.id; runStartTs = at.timestamp; runInsertAt = out.size }
@@ -397,13 +414,16 @@ private fun walkRange(
             // as its own message at the moment the child finishes, minutes after the turn that
             // sent it — a block with nothing else in it. Dropping it lost every late landing.
             if (entries.any { it is ToolRunEntry.Call || it is ToolRunEntry.Note || it is ToolRunEntry.Delegated }) {
-                out.add(
-                    runInsertAt,
-                    ChatRenderItem.ToolRun(id, entries.toList(), reasoning.toString().ifBlank { null }, runStartTs),
-                )
+                val thought = thoughtsBefore?.get(id)?.takeIf { it.parts == reasoning }
+                    ?: RunThought(
+                        reasoning.toList(),
+                        if (reasoning.isEmpty()) null else reasoning.joinToString("\n\n") { it.trim() },
+                    )
+                thoughts[id] = thought
+                out.add(runInsertAt, ChatRenderItem.ToolRun(id, entries.toList(), thought.text, runStartTs))
             }
             runStartId = null; runInsertAt = -1
-            entries.clear(); reasoning.setLength(0); seenCalls.clear()
+            entries.clear(); reasoning.clear(); seenCalls.clear()
         }
         for (p in i until blockEnd) {
             val m = chrono[p]
@@ -516,7 +536,7 @@ private fun walkRange(
         i = blockEnd
     }
     insertArrivals(out, chrono, prevBeforeRange)
-    return RangeWalk(out, lastMineId)
+    return RangeWalk(out, lastMineId, thoughts)
 }
 
 /**
@@ -593,6 +613,8 @@ class GroupedTimeline internal constructor(
     internal val prefixItems: List<ChatRenderItem>,
     internal val prefixLastMineId: String?,
     internal val prefixLastDay: String?,
+    /** The trailing region's run thoughts, for the next emission's walk to reuse. */
+    internal val suffixThoughts: Map<String, RunThought> = emptyMap(),
 )
 
 /** A message no run, footer-merge, or agent block can span: the safe splice point. Mirrors the
@@ -647,6 +669,7 @@ fun groupChatItemsIncremental(
         chrono.subList(suffixStart, n),
         lastMineIdInit = prefixLastMineId,
         prevBeforeRange = chrono.getOrNull(suffixStart - 1),
+        thoughtsBefore = previous?.suffixThoughts,
     )
     insertDayHeaders(suffix.items, lastDayInit = prefixLastDay)
     val combined = ArrayList<ChatRenderItem>(prefixItems.size + suffix.items.size)
@@ -660,6 +683,7 @@ fun groupChatItemsIncremental(
         prefixItems = prefixItems,
         prefixLastMineId = prefixLastMineId,
         prefixLastDay = prefixLastDay,
+        suffixThoughts = suffix.thoughts,
     )
 }
 

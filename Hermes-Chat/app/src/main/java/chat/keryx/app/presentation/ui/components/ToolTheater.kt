@@ -351,8 +351,35 @@ private fun ToolOutputToggle(
 }
 
 /** The profile an inter-agent delivery is addressed to, or null for an ordinary tool call. */
-internal fun deliveryTargetOf(call: ToolCall): String? =
-    chat.keryx.core.model.AgentDeliveryCommand.targetOfCall(call.name, call.argsJson.ifBlank { call.context })
+internal fun deliveryTargetOf(call: ToolCall): String? {
+    val args = call.argsJson.ifBlank { call.context }
+    // Only these two can be deliveries (AgentDeliveryCommand.targetOfCall); the rest is a no.
+    val answers = deliveryAnswers[call.name]
+        ?: return chat.keryx.core.model.AgentDeliveryCommand.targetOfCall(call.name, args)
+    synchronized(answers) { answers[args] }?.let { return it.takeUnless { it == NOT_A_DELIVERY } }
+    val target = chat.keryx.core.model.AgentDeliveryCommand.targetOfCall(call.name, args)
+    synchronized(answers) { answers[args] = target ?: NOT_A_DELIVERY }
+    return target
+}
+
+/**
+ * [deliveryTargetOf]'s answers, per tool, by the call's arguments (3.0 perf). The chat regroups
+ * the turn on every publish of the live row, up to ten a second, and dedupCalls asks this of
+ * every call in it: each ask parsed the call's arguments as JSON and ran a regex over the
+ * command. A long run's terminal calls carry tens of kilobytes of arguments (h2h, 10-18:
+ * 17–49 KB per compaction segment), all of it parsed again on each tick. A row hands back the
+ * same Strings, so a hit is a cached hash and an identity compare.
+ *
+ * Weak on the arguments, not capped: an answer lives as long as some row still holds its call.
+ * A capped LRU asked about a turn's calls in order missed on every one of them once the turn
+ * outgrew it (measured: 265 calls against 256 entries, no faster than parsing).
+ */
+private val deliveryAnswers: Map<String, java.util.WeakHashMap<String, String>> = mapOf(
+    "terminal" to java.util.WeakHashMap(),
+    chat.keryx.core.model.AgentDeliveryCommand.MESSAGE_AGENT to java.util.WeakHashMap(),
+)
+/** A kept "no": the map holds no nulls, so a miss and a no stay apart. */
+private const val NOT_A_DELIVERY = "\u0000"
 
 /**
  * A run of consecutive tool-only Hermes messages, collapsed into one compact bubble. While the
@@ -423,7 +450,9 @@ fun ToolTheaterRun(
     // A continuation run (header-less fence output only — no headered Call survived Hermes'
     // progress grouping) counts its output steps instead of reading "Ran 0 tools".
     val steps = run.entries.count { it is ToolRunEntry.Note }
-    val label = buildString {
+    // Remembered on the steps (3.0 perf): the newest run is rebuilt on every publish of the live
+    // row, and the sentence walked every call of the turn through the grammar each time.
+    val label = remember(run.entries, active) { buildString {
         if (calls.isNotEmpty()) {
             append(
                 ToolGrammar.summarize(
@@ -455,7 +484,7 @@ fun ToolTheaterRun(
             append(if (active) "Working…" else "$steps output ${if (steps == 1) "step" else "steps"}")
         }
         if (failed > 0) append(" · $failed failed")
-    }
+    } }
     val enriched = remember(calls, structured) { Theater.align(calls.map { it.name }, structured) }
     // A run of exactly one call: its header already reads as that call's title.
     val singleCall = run.entries.size == 1 && calls.size == 1
