@@ -16,8 +16,8 @@ class ModelPickerTest {
     // A local brain (user endpoint on the LAN), one single-lab cloud login with a long tail, one
     // aggregator across three labs with a featured shortlist and free-tier gating, and MoA.
     private val payload = """
-    {"model":"qwen3.8-27b","provider":"silas-brain","providers":[
-      {"slug":"silas-brain","name":"qwen3.8-27b","is_current":true,"authenticated":true,
+    {"model":"qwen3.8-27b","provider":"home-brain","providers":[
+      {"slug":"home-brain","name":"qwen3.8-27b","is_current":true,"authenticated":true,
        "source":"user-config","is_user_defined":true,"api_url":"http://my-box.tail1234.ts.net:8000/v1",
        "models":["qwen3.8-27b"],"capabilities":{"qwen3.8-27b":{"fast":false,"reasoning":true}}},
       {"slug":"anthropic","name":"Anthropic","is_current":false,"authenticated":true,"source":"canonical",
@@ -52,7 +52,7 @@ class ModelPickerTest {
         assertTrue(kimi.pricing!!.free); assertNull(kimi.pricing.cache)
         val gpt = nous.models.first { it.name == "openai/gpt-5.6" }
         assertEquals(30, gpt.pricing?.discountPercent); assertEquals("$1.75", gpt.pricing?.wasInput)
-        val brain = catalog.usable.first { it.slug == "silas-brain" }
+        val brain = catalog.usable.first { it.slug == "home-brain" }
         assertTrue(brain.isUserDefined); assertEquals("http://my-box.tail1234.ts.net:8000/v1", brain.apiUrl)
         assertEquals("anthropic", opus.lab); assertEquals("claude-opus-5", opus.shortName)
         assertEquals("", brain.models.single().lab); assertEquals("qwen3.8-27b", brain.models.single().shortName)
@@ -61,7 +61,7 @@ class ModelPickerTest {
     @Test
     fun `where it runs is the first axis local then cloud then aggregator then virtual`() {
         val plan = ModelPicker.plan(catalog)
-        assertEquals(listOf("silas-brain", "anthropic", "nous", "moa"), plan.sections.map { it.key })
+        assertEquals(listOf("home-brain", "anthropic", "nous", "moa"), plan.sections.map { it.key })
         assertEquals(
             listOf(ModelPicker.Kind.LOCAL, ModelPicker.Kind.CLOUD, ModelPicker.Kind.AGGREGATOR, ModelPicker.Kind.VIRTUAL),
             plan.sections.map { it.kind },
@@ -82,7 +82,7 @@ class ModelPickerTest {
             "https://api.openai.com/v1", "https://openrouter.ai/api/v1", "http://172.32.0.1", "http://100.200.1.1",
             "https://inference-api.nousresearch.com/v1", "",
         )) assertFalse(ModelPicker.isPrivateEndpoint(u), u)
-        assertEquals(ModelPicker.Kind.LOCAL, ModelPicker.kindOf(catalog.usable.first { it.slug == "silas-brain" }))
+        assertEquals(ModelPicker.Kind.LOCAL, ModelPicker.kindOf(catalog.usable.first { it.slug == "home-brain" }))
     }
 
     @Test
@@ -111,7 +111,7 @@ class ModelPickerTest {
         val g = ModelPicker.plan(seven).sections.first { it.key == "anthropic" }.groups.single()
         assertEquals(7, g.shown.size); assertEquals(0, g.folded)
         // Local rows never fold: they are the machines you own.
-        assertTrue(ModelPicker.plan(catalog).sections.first { it.key == "silas-brain" }.groups.single().expanded)
+        assertTrue(ModelPicker.plan(catalog).sections.first { it.key == "home-brain" }.groups.single().expanded)
     }
 
     @Test
@@ -130,7 +130,7 @@ class ModelPickerTest {
 
     @Test
     fun `recents resolve against the live catalog and skip the current model`() {
-        val recents = listOf("silas-brain|qwen3.8-27b", "nous|openai/gpt-5.6", "anthropic|claude-sonnet-5", "openrouter|x/y", "nous|gone/model")
+        val recents = listOf("home-brain|qwen3.8-27b", "nous|openai/gpt-5.6", "anthropic|claude-sonnet-5", "openrouter|x/y", "nous|gone/model")
         val plan = ModelPicker.plan(catalog, recents = recents)
         val recent = plan.sections.first().also { assertEquals("recent", it.key) }.groups.single()
         // current skipped, logged-out provider skipped, unknown model skipped
@@ -165,7 +165,7 @@ class ModelPickerTest {
     fun stickySkipsARecentTheCatalogNoLongerLists() {
         // The head of the ledger is a model the local endpoint stopped serving (a brain swap);
         // the next one down is live. Pin that, not the ghost.
-        val recents = listOf("silas-brain|qwen3.8-flash-next", "anthropic|claude-sonnet-5")
+        val recents = listOf("home-brain|qwen3.8-flash-next", "anthropic|claude-sonnet-5")
         val pick = ModelPicker.stickyChoice(recents, catalog)
         assertEquals("claude-sonnet-5", pick?.name)
         assertEquals("anthropic", pick?.provider)
@@ -173,7 +173,7 @@ class ModelPickerTest {
 
     @Test
     fun stickyIsNullWhenNothingRemembered_Resolves() {
-        assertNull(ModelPicker.stickyChoice(listOf("silas-brain|qwen3.8-flash-next"), catalog))
+        assertNull(ModelPicker.stickyChoice(listOf("home-brain|qwen3.8-flash-next"), catalog))
         assertNull(ModelPicker.stickyChoice(emptyList(), catalog))
         // An unauthenticated provider is not a route a phone can take, even if the name matches.
         assertNull(ModelPicker.stickyChoice(listOf("openrouter|x/y"), catalog))
@@ -181,7 +181,7 @@ class ModelPickerTest {
 
     @Test
     fun stickyKeepsTheCurrentRouteWhenItIsTheNewestRecent() {
-        val pick = ModelPicker.stickyChoice(listOf("silas-brain|qwen3.8-27b", "anthropic|claude-sonnet-5"), catalog)
+        val pick = ModelPicker.stickyChoice(listOf("home-brain|qwen3.8-27b", "anthropic|claude-sonnet-5"), catalog)
         assertEquals("qwen3.8-27b", pick?.name)
         assertTrue(catalog.isCurrent(pick!!))
     }

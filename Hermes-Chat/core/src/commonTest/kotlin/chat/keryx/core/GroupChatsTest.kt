@@ -17,8 +17,8 @@ class GroupChatsTest {
     private val room = GroupChats.room(obj("""
         {"room_id":"room-1","name":"Team","authority_gateway_id":"install:x","authority_epoch":1,
          "revision":1,"created_at":1790000000.5,"updated_at":1790000100.25,"latest_seq":7,
-         "members":[{"member_id":"juno","profile":"juno","handle":"juno","display_name":"Juno"},
-                    {"member_id":"milo","profile":"milo","handle":"milo"}]}
+         "members":[{"member_id":"vega","profile":"vega","handle":"vega","display_name":"Vega"},
+                    {"member_id":"scout","profile":"scout","handle":"scout"}]}
     """))!!
 
     private fun ev(seq: Int, kind: String, payload: String, actor: String = "gateway") = GroupChats.event(obj(
@@ -27,7 +27,7 @@ class GroupChatsTest {
     ))!!
 
     @Test fun roomParsesMembersAndSecondsBecomeMillis() {
-        assertEquals(listOf("Juno", "Milo"), room.members.map { it.label })
+        assertEquals(listOf("Vega", "Scout"), room.members.map { it.label })
         assertEquals(1790000100250L, room.updatedAt)
         assertEquals(7L, room.latestSeq)
     }
@@ -36,31 +36,31 @@ class GroupChatsTest {
         val events = listOf(
             ev(1, "room.created", "{}", "system"),
             ev(2, "message.user", """{"text":"hi all","thread_id":"t1"}""", "user"),
-            ev(3, "turn.started", """{"member_id":"juno","task_id":"k1","thread_id":"t1"}"""),
-            ev(4, "message.member", """{"member_id":"juno","task_id":"k1","thread_id":"t1","text":"Hello!"}""", "member"),
-            ev(5, "message.member", """{"member_id":"milo","task_id":"k2","thread_id":"t1","text":"[SILENT]"}""", "member"),
-            ev(6, "turn.failed", """{"member_id":"milo","task_id":"k2","thread_id":"t1","error":"bad key\nTraceback"}"""),
+            ev(3, "turn.started", """{"member_id":"vega","task_id":"k1","thread_id":"t1"}"""),
+            ev(4, "message.member", """{"member_id":"vega","task_id":"k1","thread_id":"t1","text":"Hello!"}""", "member"),
+            ev(5, "message.member", """{"member_id":"scout","task_id":"k2","thread_id":"t1","text":"[SILENT]"}""", "member"),
+            ev(6, "turn.failed", """{"member_id":"scout","task_id":"k2","thread_id":"t1","error":"bad key\nTraceback"}"""),
             ev(7, "room.activity", """{"status":"idle"}"""),
         )
         val lines = GroupChats.lines(events, room)
         assertEquals(4, lines.size)
         assertTrue(lines[1] is GroupLine.Mine)
-        assertEquals("Juno", (lines[2] as GroupLine.Member).name)
-        assertEquals("Milo hit an error — bad key", (lines[3] as GroupLine.Note).text)
-        assertEquals("Juno: Hello!", GroupChats.preview(lines))
+        assertEquals("Vega", (lines[2] as GroupLine.Member).name)
+        assertEquals("Scout hit an error — bad key", (lines[3] as GroupLine.Note).text)
+        assertEquals("Vega: Hello!", GroupChats.preview(lines))
     }
 
     @Test fun aMemberIsWorkingUntilItsTurnEnds() {
         val started = listOf(
-            ev(1, "turn.started", """{"member_id":"juno","task_id":"k1"}"""),
-            ev(2, "turn.started", """{"member_id":"milo","task_id":"k2"}"""),
+            ev(1, "turn.started", """{"member_id":"vega","task_id":"k1"}"""),
+            ev(2, "turn.started", """{"member_id":"scout","task_id":"k2"}"""),
         )
-        assertEquals(setOf("juno", "milo"), GroupChats.working(started))
-        val settled = started + ev(3, "turn.settled", """{"member_id":"juno","task_id":"k1","passed":true}""")
-        assertEquals(setOf("milo"), GroupChats.working(settled))
+        assertEquals(setOf("vega", "scout"), GroupChats.working(started))
+        val settled = started + ev(3, "turn.settled", """{"member_id":"vega","task_id":"k1","passed":true}""")
+        assertEquals(setOf("scout"), GroupChats.working(settled))
     }
 
-    // The real 10-06 juno+milo room, trimmed: the gateway never logs turn.started, so a room is
+    // The real 10-06 vega+scout room, trimmed: the gateway never logs turn.started, so a room is
     // "thinking" from the user's message until the room.activity that names it.
     private fun real(seq: Int, id: String, kind: String, payload: String) = GroupChats.event(obj(
         """{"room_id":"room-pmtxstukmrtlaf5cqdob","seq":$seq,"event_id":"$id","kind":"$kind",
@@ -70,13 +70,13 @@ class GroupChatsTest {
 
     @Test fun aRoomIsThinkingUntilTheGatewayClosesTheDiscussion() {
         val asked = listOf(
-            real(1, ask, "message.user", """{"text":"@juno can you send a test ping to milo?","thread_id":"t"}"""),
+            real(1, ask, "message.user", """{"text":"@vega can you send a test ping to scout?","thread_id":"t"}"""),
         )
         val mid = asked + listOf(
             real(2, "dmessage:ae5e", "message.member",
-                """{"discussion_event_id":"$ask","member_id":"juno","round_index":0,"task_id":"dtask:ae5e","text":"Hey @milo","thread_id":"t"}"""),
+                """{"discussion_event_id":"$ask","member_id":"vega","round_index":0,"task_id":"dtask:ae5e","text":"Hey @scout","thread_id":"t"}"""),
             real(3, "dterminal:ae5e", "turn.settled",
-                """{"discussion_event_id":"$ask","member_id":"juno","passed":false,"round_index":0,"task_id":"dtask:ae5e","thread_id":"t"}"""),
+                """{"discussion_event_id":"$ask","member_id":"vega","passed":false,"round_index":0,"task_id":"dtask:ae5e","thread_id":"t"}"""),
         )
         val done = mid + real(10, "dactivity:$ask:max_rounds", "room.activity",
             """{"discussion_event_id":"$ask","reason_code":"max_rounds","status":"bounded","thread_id":"t"}""")
@@ -92,7 +92,7 @@ class GroupChatsTest {
         val d = GroupChats.driver(obj("""
             {"room":{},"driver_status":{"running":true,"working":true,"blocked":false,"counts":{},
              "pending_actions":[{"kind":"retry","task_id":"k9"},
-               {"kind":"approval","member_id":"juno","task_id":"k1","execution_generation":2,
+               {"kind":"approval","member_id":"vega","task_id":"k1","execution_generation":2,
                 "request_id":"r1","approval":{"command":"rm -rf build","choices":["once","deny"]}}],
              "peer_routes":[]}}
         """))
@@ -102,7 +102,7 @@ class GroupChatsTest {
     }
 
     @Test fun membersCarryTheBotHandleAndIdsAreGatewaySafe() {
-        val m = GroupChats.membersFor(listOf(BotProfile(name = "default", isDefault = true), BotProfile(name = "juno", title = "Inbox Bot")))
+        val m = GroupChats.membersFor(listOf(BotProfile(name = "default", isDefault = true), BotProfile(name = "vega", title = "Inbox Bot")))
         assertEquals("hermes", m[0]["handle"]!!.jsonPrimitive.content)
         assertEquals("Inbox Bot", m[1]["display_name"]!!.jsonPrimitive.content)
         assertTrue(Regex("^[A-Za-z0-9][A-Za-z0-9._:-]*$").matches(GroupChats.newId("room")))

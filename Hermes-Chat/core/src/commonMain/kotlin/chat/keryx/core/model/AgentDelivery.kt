@@ -17,7 +17,7 @@ import kotlinx.serialization.json.JsonPrimitive
  * Pure Kotlin: no android.*, so the rules are unit-testable.
  */
 data class AgentDelivery(
-    /** Display name of the sending agent ("Sterling", "Eats Tests"). */
+    /** Display name of the sending agent ("Ledger", "Eats Tests"). */
     val sender: String,
     /** Machine handle when present ("mr-tester"); falls back to [sender]. */
     val handle: String,
@@ -90,7 +90,7 @@ object AgentDeliveryCommand {
 
     /**
      * The arguments as the call carries them: JSON from the model, or — on a transcript that
-     * compaction summarised — the gateway's one-line `target=juno message=…` digest.
+     * compaction summarised — the gateway's one-line `target=vega message=…` digest.
      */
     private fun messageAgentField(args: String, field: String): String? {
         jsonStringField(args, field)?.let { return it }
@@ -98,7 +98,7 @@ object AgentDeliveryCommand {
         return digest.find(args)?.groupValues?.get(1)?.trim()?.ifBlank { null }
     }
 
-    /** `@Juno` / `juno` / `spark/researcher` → the name to show; the `@` is addressing. */
+    /** `@Vega` / `vega` / `spark/researcher` → the name to show; the `@` is addressing. */
     private fun cleanTarget(raw: String): String? = raw.trim().removePrefix("@").trim().ifBlank { null }
 
     /**
@@ -106,7 +106,7 @@ object AgentDeliveryCommand {
      * the delivery runs as a background process, and its completion notification carries the
      * reply as the process output —
      * `[IMPORTANT: Background process … completed normally (exit code 0).\nCommand: …bot_mode_dm.py
-     * … hermes -p milo chat … -c 'Bot Chat' …\nOutput:\n<reply>]`. Read back into what it is: a
+     * … hermes -p scout chat … -c 'Bot Chat' …\nOutput:\n<reply>]`. Read back into what it is: a
      * message from that bot. Only a clean, single completion of a delivery counts; a failed one
      * (non-zero exit, a typed `[reason: …]`) stays the gateway's own notice, because when the
      * mechanism breaks the mechanism is what you need to see.
@@ -154,7 +154,7 @@ object AgentDeliveryCommand {
      * own bookkeeping.
      *
      * ⚠️ Desktop merely deletes `session_id:` lines and keeps the rest, which is why a notice
-     * reading "Message from theo" opened onto startup warnings, a deprecation block and the CLI's
+     * reading "Message from atlas" opened onto startup warnings, a deprecation block and the CLI's
      * ASCII reasoning box before reaching the word the agent actually said. Deliberate divergence:
      * cut at the documented boundary instead. Output with no such line keeps its whole text —
      * better whole noise than a wrong cut.
@@ -172,7 +172,7 @@ object AgentDeliveryCommand {
         val boundary = lines.indexOfLast { SESSION_ID_LINE.matches(it.trim()) }
         val after = if (boundary >= 0) lines.drop(boundary + 1).joinToString("\n").trim() else ""
         // The CLI prints its session line on EITHER side of the answer: before it under the shell
-        // convention, after it as the delivery process's last line (seen live: Milo's whole reply
+        // convention, after it as the delivery process's last line (seen live: Scout's whole reply
         // above `session_id:` and nothing below — cutting after it kept nothing). Nothing after
         // the boundary means the answer is above it, minus the run's own bookkeeping.
         val body = when {

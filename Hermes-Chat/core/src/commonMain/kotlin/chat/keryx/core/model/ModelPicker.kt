@@ -62,7 +62,7 @@ object ModelPicker {
 
     // ---- classification --------------------------------------------------------------------
 
-    private val LOCAL_RUNTIMES = setOf("lmstudio", "ollama", "vllm", "llamacpp", "llama.cpp", "silas-brain", "local")
+    private val LOCAL_RUNTIMES = setOf("lmstudio", "ollama", "vllm", "llamacpp", "llama.cpp", "local")
 
     /** Where a provider's models run — the first axis of the picker. */
     fun kindOf(p: ModelProvider): Kind = when {

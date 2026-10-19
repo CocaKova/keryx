@@ -141,7 +141,7 @@ class TranscriptBuilderTest {
     @Test
     fun `an assistant-role carry-over is the system voice too`() {
         // Measured 2026-09-25: a cron session compacted mid-turn stored its handoff as
-        // role:"assistant". As an agent bubble it was several thousand words in Sy's voice.
+        // role:"assistant". As an agent bubble it was several thousand words in the agent's voice.
         val summary = "[CONTEXT COMPACTION — REFERENCE ONLY] Earlier turns were compacted into the " +
             "summary below. Historical only.\n\n## Goal\nRestore TweetLoop."
         val msgs = TranscriptBuilder.build("s1", listOf(
@@ -220,14 +220,14 @@ class TranscriptBuilderTest {
     @Test
     fun `inter-agent delivery on the user role renders as an agent notice, never the user`() {
         val rows = listOf(
-            row(1, "user", "Message from 🤖 Sterling: invoice sent"),
+            row(1, "user", "Message from 🤖 Ledger: invoice sent"),
             row(2, "assistant", "Noted."),
         )
         val msgs = TranscriptBuilder.build("s1", rows)
         assertEquals(SenderType.SYSTEM, msgs[0].sender)
-        assertEquals("Sterling", msgs[0].agentDelivery?.sender)
+        assertEquals("Ledger", msgs[0].agentDelivery?.sender)
         assertEquals("invoice sent", msgs[0].agentDelivery?.body)
-        // The words are the bubble's (2.18): blank content drew "relayed · Sterling" over nothing.
+        // The words are the bubble's (2.18): blank content drew "relayed · Ledger" over nothing.
         assertEquals("invoice sent", msgs[0].content)
     }
 
@@ -235,18 +235,18 @@ class TranscriptBuilderTest {
     fun `a teammate's reply to message_agent reads as a message from that bot`() {
         val completion = "[IMPORTANT: Background process proc_1f1d completed normally (exit code 0).\n" +
             "Command: /x/venv/bin/python /x/tools/bot_mode_dm.py --run-delivery query-file /tmp/dm.txt " +
-            "hermes -p milo chat --in '~' -c 'Bot Chat' --create-if-missing -Q\n" +
+            "hermes -p scout chat --in '~' -c 'Bot Chat' --create-if-missing -Q\n" +
             "Output:\nsession_id: 20260903_224452_11a96c\nSpire is healthy.]"
         val msgs = TranscriptBuilder.build("s1", listOf(row(1, "user", completion, displayKind = "process_complete")))
         assertEquals(SenderType.SYSTEM, msgs[0].sender)
-        assertEquals("milo", msgs[0].agentDelivery?.handle)
+        assertEquals("scout", msgs[0].agentDelivery?.handle)
         assertEquals("Spire is healthy.", msgs[0].content)
     }
 
     @Test
     fun `a failed delivery keeps the gateway's own notice`() {
         val failed = "[IMPORTANT: Background process proc_1 exited (exit code 1).\n" +
-            "Command: python bot_mode_dm.py --run-delivery q hermes -p milo chat -c 'Bot Chat' -Q\n" +
+            "Command: python bot_mode_dm.py --run-delivery q hermes -p scout chat -c 'Bot Chat' -Q\n" +
             "Output:\n[reason: runtime_offline] target offline]"
         val msgs = TranscriptBuilder.build("s1", listOf(row(1, "user", failed, displayKind = "process_complete")))
         assertEquals(null, msgs[0].agentDelivery)
@@ -357,10 +357,10 @@ class TranscriptBuilderTest {
     fun `an inter-agent delivery has no display_kind and must still be caught`() {
         // Verified against the live 0.20.2 gateway on 2026-08-17: the delivery row stores
         // display_kind NULL. The regex gate stays load-bearing — this pins that.
-        val rows = listOf(row(1, "user", "Message from 🤖 Sterling (@sterling): ping", displayKind = null))
+        val rows = listOf(row(1, "user", "Message from 🤖 Ledger (@ledger): ping", displayKind = null))
         val msgs = TranscriptBuilder.build("s1", rows)
         assertEquals(SenderType.SYSTEM, msgs[0].sender)
-        assertEquals("Sterling", msgs[0].agentDelivery?.sender)
+        assertEquals("Ledger", msgs[0].agentDelivery?.sender)
     }
 
     // ── system rows as dividers (2.16) ──────────────────────────────────────────────────

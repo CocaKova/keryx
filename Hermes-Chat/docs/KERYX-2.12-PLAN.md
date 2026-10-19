@@ -2,7 +2,7 @@
 
 *Tap the running agent and step inside the turn.*
 
-Jonny's idea (2026-09-22, while watching a `/review` run from the phone): the transcript
+The owner's idea (2026-09-22, while watching a `/review` run from the phone): the transcript
 tells you the agent is working, but it tells you quietly — one theater row per call, a
 status banner, a breathing dot. Sometimes you want the opposite: a full-screen, beautifully
 drawn view of the agent *going*. Tap in, watch, step back out; the transcript is untouched.
@@ -97,7 +97,7 @@ and the rail stops ticking. The screen does not close itself — the user steps 
 
 ## Part B — "The Crew": every helper, presented
 
-Jonny (2026-09-22): the review run is subagent-based; present the subagent — whatever aux it
+The owner (2026-09-22): the review run is subagent-based; present the subagent — whatever aux it
 may be — cleanly and beautifully, not as a footnote on the rail.
 
 ### What the phone already held (verified before building)

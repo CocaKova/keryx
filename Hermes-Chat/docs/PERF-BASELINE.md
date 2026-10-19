@@ -15,7 +15,7 @@ measurements and reports against this page.
 - **Which composables a turn costs:** build the benchmark type (`./gradlew :app:assembleBenchmark`:
   release, profileable, composition tracing), `adb install -r` it over the release build (same
   key, so the login stays), then `tools/perf_trace.sh out.pftrace` and
-  `tools/perf_composables.py out.pftrace`. Use the VIRDARA emulator for this: its frame times
+  `tools/perf_composables.py out.pftrace`. Use the build-VM emulator for this: its frame times
   are meaningless (92% of each frame waits on the software GPU), but the main thread's
   composition work is real CPU. Compare builds per streaming tick (divide by ChatScreen's count).
 - **Compose stability:** `./gradlew :app:compileReleaseKotlin -Pkeryx.composeReports` writes the
@@ -23,7 +23,7 @@ measurements and reports against this page.
 
 ## Device numbers
 
-Measured on 2.19.1 (versionCode 139, the release APK), Galaxy SM-S948U, Android 17,
+Measured on 2.19.1 (versionCode 139, the release APK), a Galaxy flagship, Android 17,
 2026-10-09. The phone was off the LAN for 2.19.0, and 2.19.1's speed fixes were to live turns,
 not startup.
 
@@ -53,7 +53,7 @@ not startup.
 
 ## Where a streaming tick goes (emulator trace, 2026-10-10)
 
-From `tools/perf_trace.sh` on the benchmark build, VIRDARA emulator. A tick is one transcript
+From `tools/perf_trace.sh` on the benchmark build, build-VM emulator. A tick is one transcript
 publish: about 10 a second on the direct door. ChatScreen recomposes once per tick.
 
 | Composable (2.19.1, a 51 s turn with reasoning) | Runs | Total incl. children |
@@ -100,7 +100,7 @@ bubble sits behind it. 2.19.1 does the same. It goes to the redesign section.
 
 ## Cold start (perf step 4, emulator traces, 2026-10-12)
 
-Wall-clock cold start on the VIRDARA emulator is about 1.5 s, against 165 ms on the phone. Most of
+Wall-clock cold start on the build-VM emulator is about 1.5 s, against 165 ms on the phone. Most of
 it is the emulator's software GPU, not Keryx. The main thread sleeps about 380 ms while the render
 thread creates its EGL context (`eglGetDisplay` alone is 446 ms). The first frame then waits
 another ~400 ms, 115 ms of it on the GPU (`postAndWait`). Compiling the app
@@ -142,7 +142,7 @@ step 6 splits. Making their start lazy belongs with that split, not before it.
 ## Phone pass after steps 1–6 (2026-10-14)
 
 The release build of `15b769a`, with its Baseline Profile compiled (`speed-profile`), on the same
-SM-S948U (Android 17, build date 2026-09-28). The brain was GLM on TensorFold this time, not
+a Galaxy flagship (Android 17, build date 2026-09-28). The brain was GLM on TensorFold this time, not
 Flash-Next, so turns are shorter and tokens arrive faster than on 10-10.
 `tools/perf_stream.sh` now reads TensorFold's `requests_running` metric as well as vLLM's.
 

@@ -198,7 +198,7 @@ class PcmPlayer(val sampleRate: Int, attributes: AudioAttributes) {
             val lead = haveMs + queuedMs
             if (lead < base) return true
             // Adaptive part: the server runs at about real time, but when the GPU is shared (the
-            // brain decoding while Sy speaks) it falls behind — one sentence rendered at 2.3x
+            // brain decoding while the agent speaks) it falls behind — one sentence rendered at 2.3x
             // slower than real time on 09-05 and the track ran dry. Arrival rate so far = audio
             // ms per wall ms across the sentence; under 1, hold enough lead to cover the
             // projected remainder ([SentenceLead]).

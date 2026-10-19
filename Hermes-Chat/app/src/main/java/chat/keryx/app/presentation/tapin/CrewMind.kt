@@ -9,7 +9,7 @@ import chat.keryx.core.model.ToolCall
  * the child's own session, not off the parent's wire.
  *
  * Why this exists: the parent wire drops a child's text on purpose (`docs/features/streaming.md`
- * rule 4), so a crew card could only ever show tool names — Jonny's "I wouldn't know what to
+ * rule 4), so a crew card could only ever show tool names — the owner's "I wouldn't know what to
  * steer". Resuming the child's session id opens the gateway's watch window, which mirrors the
  * child's frames as native deltas on that sid; those land in an ordinary store, and this is the
  * projection of that store. Pure, so it can be pinned in a JVM test.

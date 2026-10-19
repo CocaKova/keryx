@@ -1,6 +1,6 @@
 # Keryx 2.8.0 — Bot Mode, the long-message lag, and agent-shaped notifications (2026-09-03)
 
-Jonny: "bot mode for Hermes in Keryx? the way that the desktop app did it? in my head this
+The owner: "bot mode for Hermes in Keryx? the way that the desktop app did it? in my head this
 would be a button to navigate into that persistent session … Please build V1 or more … super
 flush experience. And also … whenever I swipe to go up in a conversation, if there's a super
 long message, there's a little bit of lag … I also believe that the notifications can be
@@ -10,7 +10,7 @@ Branch `keryx-2.8-bots` off `main` (`c628e4a`, the 2.6.2 tree). versionCode 76 /
 (2.7.0 = vc75 lives on `keryx-2.7-wake-word`; whichever merges second rebases its version).
 642 tests green (210 `:core:allTests` + 432 `:app:testDebugUnitTest`; +17 `BotsTest`,
 +4 `AgentNoticeTest`, +5 `MarkdownCacheTest`, +4 `MentionTokenTest`). Repo-root
-`keryx-2.8.0-{debug,release}.apk`. ⚠️ NOT walked on device — Jonny's phone.
+`keryx-2.8.0-{debug,release}.apk`. ⚠️ NOT walked on device — the owner's phone.
 
 ## 0. What changed upstream since August (why this translates now)
 
@@ -33,9 +33,9 @@ the **gateway grew the primitives** on 0.20.6 (the install serving Keryx today, 
 
 **Live probe passed 09-03** (`scratchpad/probe.py`, self-minted basic-auth bearer → ws-ticket):
 `profiles.list` returned the 7 profiles with `default` already holding a canonical chat (the
-08-17 hand test, 6 messages); `session.list {profile:"theo", title:"Bot Chat"}` → `[]`;
+08-17 hand test, 6 messages); `session.list {profile:"atlas", title:"Bot Chat"}` → `[]`;
 `session.create {profile:"trial", title:"Bot Chat", hidden, follow_profile_config}` →
-`info.profile_name = "trial"`; `session.close` clean. REST `/api/sessions?profile=theo` → theo's
+`info.profile_name = "trial"`; `session.close` clean. REST `/api/sessions?profile=atlas` → atlas's
 rows. So a non-desktop client CAN open a bot's forever-chat over the dashboard socket.
 
 ⚠️ `dashboard.basic_auth.password` (plaintext) in config.yaml is STALE against `password_hash`
@@ -125,8 +125,8 @@ lag remains after this, the next lever is slicing a long message into several la
 ## 3. Notifications, agent-shaped
 
 `AgentNotices.compose` (core, tested) decides conversation / speaker / key / line / relayed:
-- a Bot Chat speaks AS the bot (`☤ Theo`), a plain session as its agent under the session's
-  name, a `Message from 🤖 Juno` delivery makes Juno the speaker, relayed (`Juno → Theo`).
+- a Bot Chat speaks AS the bot (`☤ Atlas`), a plain session as its agent under the session's
+  name, a `Message from 🤖 Vega` delivery makes Vega the speaker, relayed (`Vega → Atlas`).
 - `KeryxNotifications.notifyMessage(notice)` is a **MessagingStyle conversation**: the speaker
   is a `Person` (bot flag, sigil icon in its palette colour), lines STACK per room (6), the
   conversation title is whose chat it is, everything grouped under one Keryx summary, `Reply to
@@ -148,7 +148,7 @@ lag remains after this, the next lever is slicing a long message into several la
 - ⚠️ The PATCH names its profile in the BODY; GET/DELETE in the query. Mirrored in `GatewayRest`.
 - ⚠️ `message_agent` exists ONLY in canonical Bot Chats on installs with ≥1 managed profile —
   the mention note and chips are gated on `messagingArmed`, else the agent is told nothing.
-- ⚠️ Jonny's install had ZERO managed profiles on 09-03 (no `hermes-bots` anywhere): bots
+- ⚠️ the owner's install had ZERO managed profiles on 09-03 (no `hermes-bots` anywhere): bots
   can chat but not message each other until the card's button (or the desktop) arms them.
 - ⚠️ A newborn's `openBotChat` sets the store `hydrated = true` (nothing to fetch); the intro
   turn streams in over the attached socket.
@@ -157,19 +157,19 @@ lag remains after this, the next lever is slicing a long message into several la
 - ⚠️ MessagingStyle `Person.key` for bots = `bot:<name>`; the icon hashes the BARE name so shade
   and roster agree.
 
-## 5. Walk (Jonny, on device)
+## 5. Walk (on device)
 
 1. Drawer → **Bots** door (badge); roster lists the 7 profiles; `default` wears `main`.
-2. Tap Theo → floor opens "Theo · Bot Chat" (sigil + chip); first tap on a never-opened bot
+2. Tap Atlas → floor opens "Atlas · Bot Chat" (sigil + chip); first tap on a never-opened bot
    creates it — on `default` it adopts the 08-17 chat (6 messages) instead of minting.
 3. Type `/new` there → toast "This chat never resets — compacting instead"; a regular session
    still resets.
-4. Roster card: "Turn on bot messaging" → arms 7 profiles → card turns green; then in Theo's
-   chat type `@` → chips; send `@juno ping` → Theo hands off with `message_agent`; Juno's
+4. Roster card: "Turn on bot messaging" → arms 7 profiles → card turns green; then in Atlas's
+   chat type `@` → chips; send `@vega ping` → Atlas hands off with `message_agent`; Vega's
    reply lands attributed ("Message from 🤖 …" notice) and, if you are elsewhere, as a
-   `Juno → Theo` notification with Juno's sigil.
+   `Vega → Atlas` notification with Vega's sigil.
 5. Long-press a bot → Pin to top of sessions → tile in the drawer deck; tap opens its chat.
 6. `+` → New agent (name `scout`, title "Scout", role) → it introduces itself.
-7. Notifications: leave a bot chat, have it answer → conversation-style card, `☤ Theo`, lines
+7. Notifications: leave a bot chat, have it answer → conversation-style card, `☤ Atlas`, lines
    stack, Reply / Mark read; the shade groups under Keryx.
 8. Scroll up through a long answer — smoother than 2.6.2? (the only measurement there is).

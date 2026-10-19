@@ -14,7 +14,7 @@ class ReplayIncidentTest {
 
     private fun msg(id: String, sender: SenderType, body: String, ts: Long) = Message(
         id = id, roomId = "!room", sender = sender, content = body,
-        timestamp = ts, senderId = if (sender == SenderType.ME) "@jonny:x" else "@silas:x",
+        timestamp = ts, senderId = if (sender == SenderType.ME) "@sam:x" else "@hermes:x",
         senderName = "x",
     )
 

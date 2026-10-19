@@ -3,7 +3,7 @@
 **Status: built 2026-08-26; gateway half verified against the agent's real emitters; app half
 built + unit-tested, NOT yet walked on device (phone off the LAN at build time).**
 
-Three things Jonny asked for in one breath, which turned out to be two diseases and a config line.
+Three things the owner asked for in one breath, which turned out to be two diseases and a config line.
 
 ## 1. "I never know when compression is happening"
 

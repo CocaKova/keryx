@@ -12,7 +12,7 @@ import org.junit.Test
  * The Gradient bubble's fill spans the whole message, so on a tall one (a long cron prompt, a
  * pasted log) whole paragraphs land on the far stop. The text colour used to be picked against
  * the first stop only; with the default amber → dusk neither ink nor white cleared AA on every
- * stop, and a long bubble in dark mode put lines on the losing end (Jonny, 2026-09-05).
+ * stop, and a long bubble in dark mode put lines on the losing end (2026-09-05).
  *
  * The law: one ink, readable on EVERY stop, whatever the bubble's height.
  */

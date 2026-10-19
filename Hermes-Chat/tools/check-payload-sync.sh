@@ -4,8 +4,9 @@
 #
 #   repo      hermes-plugin/keryx-stream/keryx_stream.py   ← the source of truth, what you edit
 #   installed $HERMES_ROOT/gateway/keryx_stream.py         ← what install.py wrote, what runs
-#   payload   $SILAS_EXT/payloads/keryx_stream.py          ← what a reapply puts back after an
+#   payload   $PAYLOAD_DIR/keryx_stream.py                 ← what a reapply puts back after an
 #                                                            upgrade overwrites the installed copy
+#                                                            (only if your setup keeps one)
 #
 # The failure this exists to stop is not "someone forgot to copy a file". It is that the
 # installed copy is *editable*, so a fix made against a running gateway lands in exactly one of
@@ -20,9 +21,9 @@
 #   tools/check-payload-sync.sh            # check, exit non-zero on drift
 #   tools/check-payload-sync.sh --sync     # copy the repo version over every drifted copy
 #
-# Overrides (both default to the layout SILAS uses):
-#   HERMES_ROOT=~/.hermes/hermes-agent
-#   SILAS_EXT=~/.hermes/silas_ext
+# Overrides:
+#   HERMES_ROOT=~/.hermes/hermes-agent   (the stock install's layout)
+#   PAYLOAD_DIR=<dir>                    (no default: set it if your setup keeps a payload copy)
 
 set -uo pipefail
 
@@ -30,7 +31,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo="$here/../hermes-plugin/keryx-stream/keryx_stream.py"
 
 HERMES_ROOT="${HERMES_ROOT:-$HOME/.hermes/hermes-agent}"
-SILAS_EXT="${SILAS_EXT:-$HOME/.hermes/silas_ext}"
+PAYLOAD_DIR="${PAYLOAD_DIR:-}"
 
 sync=0
 [[ "${1:-}" == "--sync" ]] && sync=1
@@ -43,8 +44,8 @@ fi
 # name → path, in the order a human thinks about them
 copies=(
   "installed:$HERMES_ROOT/gateway/keryx_stream.py"
-  "payload:$SILAS_EXT/payloads/keryx_stream.py"
 )
+[[ -n "$PAYLOAD_DIR" ]] && copies+=("payload:$PAYLOAD_DIR/keryx_stream.py")
 
 repo_sum="$(md5sum "$repo" | cut -d' ' -f1)"
 repo_lines="$(wc -l < "$repo")"

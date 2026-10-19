@@ -26,22 +26,22 @@ class MissionBoardTest {
     private fun obj(s: String) = Json.parseToJsonElement(s).jsonObject
 
     private fun task(id: String, status: String, needsYou: Boolean = false) = HermesStreamClient.KanbanTask(
-        id = id, title = id, assignee = "theo", status = status, priority = 0, createdBy = "user",
+        id = id, title = id, assignee = "atlas", status = status, priority = 0, createdBy = "user",
         createdAt = 0L, startedAt = null, completedAt = null, consecutiveFailures = 0, bodyExcerpt = "",
         needsYou = needsYou,
     )
 
     private val detailJson = """
-        {"task":{"id":"t_7fdf593c","title":"Post 1 · draft","assignee":"theo","status":"blocked",
+        {"task":{"id":"t_7fdf593c","title":"Post 1 · draft","assignee":"atlas","status":"blocked",
           "priority":0,"created_at":1790270264,"block_kind":"needs_input","block_recurrences":1,
           "ask":"needs your yes: publish Post 1 draft","block_reason":"needs your yes: publish Post 1 draft",
           "latest_summary":"needs your yes: publish Post 1 draft","needs_you":true,"body":"tier: needs-your-yes"},
          "comments":[{"id":1,"author":"default","body":"UNBLOCK: skill linked","created_at":1790293060}],
          "events":[{"id":9,"kind":"heartbeat","payload":null,"created_at":1790294900,"run_id":30},
                    {"id":10,"kind":"blocked","payload":{"reason":"needs your yes","kind":"needs_input"},"created_at":1790294978,"run_id":30}],
-         "runs":[{"id":28,"profile":"theo","status":"crashed","outcome":"crashed","summary":null,
+         "runs":[{"id":28,"profile":"atlas","status":"crashed","outcome":"crashed","summary":null,
                   "error":"Unknown skill(s): lane-autonomy","started_at":1790292921,"ended_at":1790292981,"duration_seconds":60},
-                 {"id":30,"profile":"theo","status":"blocked","outcome":"blocked","summary":"Draft complete",
+                 {"id":30,"profile":"atlas","status":"blocked","outcome":"blocked","summary":"Draft complete",
                   "error":null,"started_at":1790293101,"ended_at":1790294978,"duration_seconds":1877}],
          "diagnostics":[{"kind":"repeated_crashes","severity":"error","title":"Agent crashed 2x","detail":"…",
                          "actions":[{"kind":"reassign","label":"Reassign","suggested":false},

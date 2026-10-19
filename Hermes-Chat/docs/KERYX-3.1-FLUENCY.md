@@ -3,7 +3,7 @@
 **Written 2026-08-23, against `keryx-3.0-absorption` @ `b3d8e8c` (511 tests green, build clean).**
 
 3.0 answered *"can one app speak both wires?"* — yes, and it does. This plan answers the question
-that came right after it, which is Jonny's, verbatim:
+that came right after it, which is the owner's, verbatim:
 
 > systems overlap like the tool calling … it's no longer fluent in the matrix side and has two
 > things showing now for tool calls … basically fluency of chat and how we present it to the user.
@@ -68,10 +68,10 @@ attention budget governs whether they *move*; nothing governs whether they *all 
 ## 2. Where the two things come from
 
 Ranked by how strongly the code implicates them. **Confirm on device before cutting** (§7) — the
-first walk decides which of these Jonny is looking at, and #1 and #2 have different fixes.
+first walk decides which of these the owner is looking at, and #1 and #2 have different fixes.
 
 **#1 — the Matrix live turn shows every call twice.** With `tool_progress: all` (the gateway
-default, and what Jonny runs) Hermes narrates each call as a **real Matrix message**. Those sync in
+default, and what the owner runs) Hermes narrates each call as a **real Matrix message**. Those sync in
 during the turn, group into a `ToolRun`, and render as theater rows *in the transcript*. Meanwhile
 the same calls arrive over the side-channel as `event: tool` frames and render again as
 `TheaterStage` rows *inside the streaming bubble*, a few dp below. Two renderers, two vocabularies,
@@ -347,7 +347,7 @@ about to be deleted is churn.
 
 Unchanged from the absorption plan's Phase 5, restated so this page is a complete work list:
 Projects surface, model-catalog picker (`model.options`), wake word, REST-hydration
-`ArchiveIndexer`. Plus the Phase 0 items that need Jonny: git history rewrite, release keystore,
+`ArchiveIndexer`. Plus the Phase 0 items that need the owner: git history rewrite, release keystore,
 cut Talaria 0.7.10 and freeze.
 
 **These are not in scope for 3.1.** 3.1 ends when the app says one thing once.
@@ -410,7 +410,7 @@ are green **and** the ones that pinned deleted behaviour have been rewritten rat
 three APKs got into history.
 
 ⚠️ **Device-walk each phase.** Matrix and direct, on a turn that actually runs tools. Three of the
-findings on this page are structural certainties; **which pair Jonny is seeing is not**, and the
+findings on this page are structural certainties; **which pair the owner is seeing is not**, and the
 walk is what settles it. Traps from the 08-21 walk still apply: `adb` BACK finishes the login
 activity (use ENTER), launch with explicit `am start -n`, and `run-as chat.keryx.app` reads
 shared_prefs directly on the debug build (force-stop first).

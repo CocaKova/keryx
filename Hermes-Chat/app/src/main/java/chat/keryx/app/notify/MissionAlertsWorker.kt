@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 /**
  * The mission watcher (1.6 Phase E): an opt-in periodic poll of the gateway's kanban event feed
  * (`GET /keryx/kanban/events?since=<cursor>`) that notifies when a mission completes, blocks, or
- * gives up — "hand SILAS a mission from the couch" only pays off if the couch hears back.
+ * gives up — "hand the agent a mission from the couch" only pays off if the couch hears back.
  *
  * Since 1.7 this is the COARSE FALLBACK, not the primary path: per-mission notify subscriptions
  * (the detail sheet's "Alert when this ends" toggle) make the gateway push a real Matrix message
@@ -209,7 +209,7 @@ class MissionAlertsWorker(
         /**
          * The shade's one line, in the worker's own words where it left any: a block says WHY
          * ("needs your yes: publish …") instead of "it needs something from you", which sent
-         * Jonny to a terminal to find out. The event's own payload first (it is what fired),
+         * the owner to a terminal to find out. The event's own payload first (it is what fired),
          * then the card's current ask, then the fixed fallback. A block that clears itself
          * (waiting on a run, a parent) says so, so it never reads as a summons.
          */

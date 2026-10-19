@@ -36,13 +36,13 @@ presence.
 
 `versionName` is **2.1.1** and `versionCode` **55**. 2.2, 2.3 and 2.4 are committed and walked;
 the gilded void, the Council and the tool theater are in nobody's hands, including the phone in
-Jonny's pocket running a DEBUG build.
+the owner's pocket running a DEBUG build.
 
 Cut **2.4.0** (one release, three minors of notes) before starting anything below. Per
 [[feedback_slow_version_cadence]] minors are for milestones and these are three of them; the
 release notes write themselves out of the three plan docs.
 
-⚠️ The gateway half of 2.4 (`gateway/keryx_stream.py`) is a SILAS_EXT payload. A release APK in
+⚠️ The gateway half of 2.4 (`gateway/keryx_stream.py`) is a LOCAL_EXT payload. A release APK in
 the wild that expects `tool` frames from a gateway that has been reinstalled without the payload
 degrades to 2.3 behaviour silently — which is correct, but say so in the notes.
 
@@ -121,7 +121,7 @@ name) in 2.6.0, read + stage + commit + push; revert and create-PR deliberately 
 
 This is the flagship. "My agent wrote it, I read the diff on the couch, hit ship, and it's a PR"
 is a sentence no other Matrix client and — as far as anything in this stack has seen — no other
-phone agent client can say. It is also exactly how this project already works: SILAS commits on
+phone agent client can say. It is also exactly how this project already works: the agent commits on
 the Spark, and the review currently requires a desk.
 
 ### The seam that already exists
@@ -154,7 +154,7 @@ pre-filled from `review_commit_context`, then push, then `create_pr`. `review_sh
   `review_revert` on an uncommitted file destroys work no git object holds. Consider shipping
   read + stage + commit first and revert never, or last.
 - ⚠️ The gateway runs as the agent's own user with the agent's `gh` credentials. A phone that can
-  open a PR is a phone that can open a PR **as Jonny**. The API key is the only gate; `keryx.git`
+  open a PR is a phone that can open a PR **as the owner**. The API key is the only gate; `keryx.git`
   should be independently switchable off in gateway config, defaulting off.
 - ⚠️ Diffs are unbounded. A 4-line file was the 2.4 test; a 3000-line generated file over a phone
   socket needs a server-side clip with an honest "clipped at N lines" (no silent truncation).

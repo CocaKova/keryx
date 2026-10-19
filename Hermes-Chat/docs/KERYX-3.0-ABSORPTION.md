@@ -175,7 +175,7 @@ Each phase ends somewhere shippable. Nothing here is a big-bang rewrite.
 this phase did not anticipate: the gradle wrapper jar was gitignored, so a fresh clone of the
 public repo could not build at all; and the version catalog declared coroutines 1.10.2 while the
 app hardcoded 1.8.0, so the runtime and the tests ran different builds of the same library. Both
-fixed. **Still open, and both need Jonny:** the history rewrite (force-push, moves six release
+fixed. **Still open, and both need the owner:** the history rewrite (force-push, moves six release
 tags) and the release keystore (one-way door).
 
 Before a long stretch of large refactors, not after.
@@ -307,7 +307,7 @@ under Phase 5)*.
 - On the direct path, gateway sessions and projects present as the room list.
 
 **Checkpoint:** Keryx runs with no homeserver. This is the version that has a reason to exist for
-someone who isn't Jonny — the current install path reads *stand up a Matrix homeserver, run a
+someone who isn't the owner — the current install path reads *stand up a Matrix homeserver, run a
 hermes-agent gateway, then patch a 3,385-line payload into it*, and the public repo has 0 stars.
 
 ### Phase 5 — the harvest
@@ -394,7 +394,7 @@ rewrite in Phase 0 lands first.
 ⚠️ **The Council is dead** (abandoned 2026-08-19). Heraldry survives it and is worth every line;
 the council mechanism is not to be rebuilt.
 
-⚠️ **Approvals are still not a feature Jonny wants.** `ApprovalCard` arrives as merge dowry at 99
+⚠️ **Approvals are still not a feature the owner wants.** `ApprovalCard` arrives as merge dowry at 99
 lines because it already exists — not because The Gate came back. Don't build a movement around it.
 
 ⚠️ **`atBottom`-style composition-scope reads are the transcript's jank tax** (found 2026-08-21,

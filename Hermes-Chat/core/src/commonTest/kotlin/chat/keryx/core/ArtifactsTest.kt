@@ -11,7 +11,7 @@ class ArtifactsTest {
 
     @Test
     fun html_and_htm_are_artifacts_case_insensitively() {
-        assertTrue(Artifacts.isArtifactPath("/home/sy/out/mock-v1.html"))
+        assertTrue(Artifacts.isArtifactPath("/home/me/out/mock-v1.html"))
         assertTrue(Artifacts.isArtifactPath("/tmp/index.HTM"))
         assertTrue(Artifacts.isArtifactPath("/tmp/page.html?v=2#top"))
         assertFalse(Artifacts.isArtifactPath("/tmp/report.pdf"))
@@ -28,8 +28,8 @@ class ArtifactsTest {
     @Test
     fun bare_path_in_prose_is_found() {
         assertEquals(
-            listOf("/home/sy/out/salt-creek-mock-v1.html"),
-            Artifacts.findArtifactPaths("Saved the mock to /home/sy/out/salt-creek-mock-v1.html for you."),
+            listOf("/home/me/out/salt-creek-mock-v1.html"),
+            Artifacts.findArtifactPaths("Saved the mock to /home/me/out/salt-creek-mock-v1.html for you."),
         )
     }
 
@@ -52,7 +52,7 @@ class ArtifactsTest {
     fun urls_are_not_artifact_paths() {
         assertEquals(emptyList(), Artifacts.findArtifactPaths("see https://example.com/page.html"))
         assertEquals(emptyList(), Artifacts.findArtifactPaths("see http://host:8080/x/page.htm now"))
-        assertEquals(emptyList(), Artifacts.findArtifactPaths("file:///home/sy/page.html"))
+        assertEquals(emptyList(), Artifacts.findArtifactPaths("file:///home/me/page.html"))
     }
 
     @Test
@@ -79,6 +79,6 @@ class ArtifactsTest {
 
     @Test
     fun name_is_the_last_segment() {
-        assertEquals("mock-v1.html", Artifacts.nameOf("/home/sy/out/mock-v1.html"))
+        assertEquals("mock-v1.html", Artifacts.nameOf("/home/me/out/mock-v1.html"))
     }
 }

@@ -28,7 +28,7 @@ class AgentMemoryTest {
         "edges": [],
         "memory": [
           {"source": "memory", "timestamp": 1727000000, "title": "Spark 1 runs the brain", "body": "Spark 1 runs the brain\nvLLM on :8000", "fingerprint": "aaaaaaaaaaaa"},
-          {"source": "memory", "timestamp": 1727000001, "title": "Never gradle on Spark 1", "body": "Never gradle on Spark 1\nbuild on VIRDARA", "fingerprint": "bbbbbbbbbbbb"},
+          {"source": "memory", "timestamp": 1727000001, "title": "Never gradle on Spark 1", "body": "Never gradle on Spark 1\nbuild on the ci-runner", "fingerprint": "bbbbbbbbbbbb"},
           {"source": "profile", "timestamp": 1727000500, "title": "Ada, Europe/London", "body": "Ada, Europe/London\nprefers short answers", "fingerprint": "cccccccccccc"}
         ],
         "stats": {"memory_nodes": 3}}
@@ -102,7 +102,7 @@ class AgentMemoryTest {
     fun search_needsEveryTermInAnyCase() {
         val e = MemoryParser.entries(j(graph))!!
         assertEquals(3, MemorySearch.filter(e, "  ").size)
-        assertEquals(listOf("Never gradle on Spark 1"), MemorySearch.filter(e, "spark VIRDARA").map { it.title })
+        assertEquals(listOf("Never gradle on Spark 1"), MemorySearch.filter(e, "spark runner").map { it.title })
         assertEquals(2, MemorySearch.filter(e, "spark").size)
         assertTrue(MemorySearch.filter(e, "spark chicago").isEmpty())
         // The body counts, not only the title.

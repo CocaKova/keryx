@@ -38,18 +38,18 @@ def board(tmp_path, monkeypatch):
 
 def test_create_requires_title_and_assignee(board):
     with pytest.raises(ValueError):
-        ks.kanban_create(kb, board, {"assignee": "milo"})
+        ks.kanban_create(kb, board, {"assignee": "scout"})
     with pytest.raises(ValueError):
         ks.kanban_create(kb, board, {"title": "orphan mission"})
 
 
 def test_create_then_board_snapshot_groups_by_status(board):
-    created = ks.kanban_create(kb, board, {"title": "ship 1.6", "assignee": "milo"})
+    created = ks.kanban_create(kb, board, {"title": "ship 1.6", "assignee": "scout"})
     assert created["task_id"]
     # No parents -> dispatchable immediately.
     assert created["status"] == "ready"
     parked = ks.kanban_create(
-        kb, board, {"title": "spec first", "assignee": "theo", "triage": True}
+        kb, board, {"title": "spec first", "assignee": "atlas", "triage": True}
     )
     assert parked["status"] == "triage"
 
@@ -64,7 +64,7 @@ def test_create_then_board_snapshot_groups_by_status(board):
 
 
 def test_detail_carries_comments_and_unknown_task_is_none(board):
-    tid = ks.kanban_create(kb, board, {"title": "t", "assignee": "milo"})["task_id"]
+    tid = ks.kanban_create(kb, board, {"title": "t", "assignee": "scout"})["task_id"]
     ks.kanban_comment(kb, board, tid, "from the phone")
     detail = ks.kanban_task_detail(kb, board, tid)
     assert detail["task"]["id"] == tid
@@ -76,7 +76,7 @@ def test_detail_carries_comments_and_unknown_task_is_none(board):
 
 
 def test_subscribe_list_unsubscribe_roundtrip(board):
-    tid = ks.kanban_create(kb, board, {"title": "alertable", "assignee": "milo"})["task_id"]
+    tid = ks.kanban_create(kb, board, {"title": "alertable", "assignee": "scout"})["task_id"]
     out = ks.kanban_subscribe(kb, board, tid, {"platform": "matrix", "chat_id": "!room:x"})
     assert out == {"task_id": tid, "subscribed": True}
     # Idempotent: upstream is INSERT OR IGNORE on (task, platform, chat, thread).
@@ -96,7 +96,7 @@ def test_subscribe_list_unsubscribe_roundtrip(board):
 
 def test_subscribe_validates_task_and_chat(board):
     assert ks.kanban_subscribe(kb, board, "no-such-task", {"chat_id": "!r:x"}) is None
-    tid = ks.kanban_create(kb, board, {"title": "t", "assignee": "milo"})["task_id"]
+    tid = ks.kanban_create(kb, board, {"title": "t", "assignee": "scout"})["task_id"]
     with pytest.raises(ValueError):
         ks.kanban_subscribe(kb, board, tid, {})
     with pytest.raises(ValueError):
@@ -104,7 +104,7 @@ def test_subscribe_validates_task_and_chat(board):
 
 
 def test_events_cursor_is_incremental(board):
-    tid = ks.kanban_create(kb, board, {"title": "watched", "assignee": "milo"})["task_id"]
+    tid = ks.kanban_create(kb, board, {"title": "watched", "assignee": "scout"})["task_id"]
     first = ks.kanban_events_since(board, 0)
     assert first["events"] and first["cursor"] > 0
     # Nothing new -> empty page, cursor unchanged.
@@ -125,7 +125,7 @@ def _block(board, tid, reason, kind):
 
 
 def test_blocked_card_carries_reason_kind_and_needs_you(board):
-    tid = ks.kanban_create(kb, board, {"title": "draft post", "assignee": "theo"})["task_id"]
+    tid = ks.kanban_create(kb, board, {"title": "draft post", "assignee": "atlas"})["task_id"]
     _block(board, tid, "needs your yes: publish the draft", "needs_input")
     snap = ks.kanban_board_snapshot(kb, board)
     card = snap["tasks"]["blocked"][0]
@@ -153,7 +153,7 @@ def test_transient_block_is_not_the_owners_job(board):
 
 def test_detail_links_carry_titles_and_status(board):
     parent = ks.kanban_create(kb, board, {"title": "run trials", "assignee": "default"})["task_id"]
-    child = ks.kanban_create(kb, board, {"title": "write post", "assignee": "theo"})["task_id"]
+    child = ks.kanban_create(kb, board, {"title": "write post", "assignee": "atlas"})["task_id"]
     kb.link_tasks(board, parent, child)
     d = ks.kanban_task_detail(kb, board, child)
     assert [(p["id"], p["title"]) for p in d["parents"]] == [(parent, "run trials")]
@@ -161,7 +161,7 @@ def test_detail_links_carry_titles_and_status(board):
 
 
 def test_reply_comments_as_owner_and_unblocks(board):
-    tid = ks.kanban_create(kb, board, {"title": "needs a yes", "assignee": "theo"})["task_id"]
+    tid = ks.kanban_create(kb, board, {"title": "needs a yes", "assignee": "atlas"})["task_id"]
     _block(board, tid, "needs your yes", "needs_input")
     out = ks.kanban_reply(kb, board, tid, {"body": "yes, ship it", "unblock": True})
     assert out["unblocked"] is True and out["status"] != "blocked"
@@ -171,14 +171,14 @@ def test_reply_comments_as_owner_and_unblocks(board):
 
 
 def test_reply_without_unblock_leaves_it_blocked(board):
-    tid = ks.kanban_create(kb, board, {"title": "q", "assignee": "theo"})["task_id"]
+    tid = ks.kanban_create(kb, board, {"title": "q", "assignee": "atlas"})["task_id"]
     _block(board, tid, "which port?", "needs_input")
     out = ks.kanban_reply(kb, board, tid, {"body": "thinking about it"})
     assert out["unblocked"] is False and out["status"] == "blocked"
 
 
 def test_reply_validates(board):
-    tid = ks.kanban_create(kb, board, {"title": "q", "assignee": "theo"})["task_id"]
+    tid = ks.kanban_create(kb, board, {"title": "q", "assignee": "atlas"})["task_id"]
     with pytest.raises(ValueError):
         ks.kanban_reply(kb, board, tid, {"body": "  "})
     assert ks.kanban_reply(kb, board, "no-such-task", {"body": "hi"}) is None
@@ -225,7 +225,7 @@ def test_approve_completes_a_review_card(board):
 
 
 def test_approve_refuses_a_card_not_in_review(board):
-    tid = ks.kanban_create(kb, board, {"title": "q", "assignee": "theo"})["task_id"]
+    tid = ks.kanban_create(kb, board, {"title": "q", "assignee": "atlas"})["task_id"]
     with pytest.raises(ValueError):
         ks.kanban_approve(kb, board, tid, {})
     assert ks.kanban_approve(kb, board, "no-such-task", {}) is None
@@ -243,6 +243,6 @@ def test_request_changes_needs_a_reason_and_a_review(board):
     tid = _to_review(board)
     with pytest.raises(ValueError):
         ks.kanban_request_changes(kb, board, tid, {"reason": " "})
-    other = ks.kanban_create(kb, board, {"title": "q", "assignee": "theo"})["task_id"]
+    other = ks.kanban_create(kb, board, {"title": "q", "assignee": "atlas"})["task_id"]
     with pytest.raises(ValueError):
         ks.kanban_request_changes(kb, board, other, {"reason": "nope"})

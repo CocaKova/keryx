@@ -42,7 +42,7 @@ data class BotSessions(
 )
 
 data class BotProfile(
-    /** The profile name — the one stable key (`default`, `theo`, `research-buddy`). */
+    /** The profile name — the one stable key (`default`, `atlas`, `research-buddy`). */
     val name: String,
     /** `hermes profile rename`'s friendly name, when set. */
     val displayName: String = "",
@@ -135,7 +135,7 @@ object BotRoster {
             .replace(Regex("[^a-z0-9]+"), "-")
             .trim('-')
 
-    /** "mc-builder" → "Mc Builder"; "theo" → "Theo". A profile name shown before it has a title. */
+    /** "mc-builder" → "Mc Builder"; "atlas" → "Atlas". A profile name shown before it has a title. */
     /**
      * The agent behind a session, from the install's own roster: [profile] is the profile whose
      * store holds the session, null for the launch profile's own. This is what a notice calls

@@ -25,8 +25,8 @@ class HeraldryTest {
     @Test
     fun `commas newlines and spaces all separate`() {
         assertEquals(
-            listOf("@milo:x.com", "@theo:x.com", "@juno:x.com"),
-            Heralds.parseIds("@milo:x.com, @theo:x.com\n@juno:x.com"),
+            listOf("@scout:x.com", "@atlas:x.com", "@vega:x.com"),
+            Heralds.parseIds("@scout:x.com, @atlas:x.com\n@vega:x.com"),
         )
     }
 
@@ -37,7 +37,7 @@ class HeraldryTest {
 
     @Test
     fun `duplicates collapse`() {
-        assertEquals(listOf("@milo:x.com"), Heralds.parseIds("@milo:x.com,@milo:x.com"))
+        assertEquals(listOf("@scout:x.com"), Heralds.parseIds("@scout:x.com,@scout:x.com"))
     }
 
     // --- isHerald ------------------------------------------------------------------------------
@@ -50,24 +50,24 @@ class HeraldryTest {
 
     @Test
     fun `matches on bare localpart so a homeserver rename does not orphan the agent`() {
-        assertTrue(Heralds.isHerald("@milo:other.server", listOf("@milo:silas.local")))
+        assertTrue(Heralds.isHerald("@scout:other.server", listOf("@scout:example.org")))
     }
 
     @Test
     fun `a human in the room is not a herald`() {
-        assertFalse(Heralds.isHerald("@jonny:silas.local", listOf("@milo:silas.local")))
+        assertFalse(Heralds.isHerald("@sam:example.org", listOf("@scout:example.org")))
     }
 
     @Test
     fun `no configured ids means nobody is a herald`() {
-        assertFalse(Heralds.isHerald("@milo:silas.local", emptyList()))
+        assertFalse(Heralds.isHerald("@scout:example.org", emptyList()))
     }
 
     // --- slots ---------------------------------------------------------------------------------
 
     @Test
     fun `a council of six never shares a hue`() {
-        val ids = listOf("@milo:x", "@theo:x", "@sterling:x", "@juno:x", "@silas:x", "@iris:x")
+        val ids = listOf("@scout:x", "@atlas:x", "@ledger:x", "@vega:x", "@hermes:x", "@nova:x")
         val slots = Heralds.assignSlots(ids)
         assertEquals(6, slots.size)
         assertEquals(6, slots.values.toSet().size)
@@ -75,16 +75,16 @@ class HeraldryTest {
 
     @Test
     fun `adding a herald does not repaint the ones already seated`() {
-        val before = Heralds.assignSlots(listOf("@milo:x", "@theo:x"))
-        val after = Heralds.assignSlots(listOf("@milo:x", "@theo:x", "@juno:x"))
-        assertEquals(before["milo"], after["milo"])
-        assertEquals(before["theo"], after["theo"])
+        val before = Heralds.assignSlots(listOf("@scout:x", "@atlas:x"))
+        val after = Heralds.assignSlots(listOf("@scout:x", "@atlas:x", "@vega:x"))
+        assertEquals(before["scout"], after["scout"])
+        assertEquals(before["atlas"], after["atlas"])
     }
 
     @Test
     fun `the hash is stable — a hue must not move between launches`() {
-        assertEquals(Heralds.stableHash("milo"), Heralds.stableHash("milo"))
-        assertNotEquals(Heralds.stableHash("milo"), Heralds.stableHash("theo"))
+        assertEquals(Heralds.stableHash("scout"), Heralds.stableHash("scout"))
+        assertNotEquals(Heralds.stableHash("scout"), Heralds.stableHash("atlas"))
     }
 
     // --- resolve -------------------------------------------------------------------------------
@@ -96,7 +96,7 @@ class HeraldryTest {
     fun `the primary herald wears the user's own accents`() {
         val h = Heralds.resolve(
             senderId = "@hermes:x", senderName = "Hermes",
-            ids = listOf("@hermes:x", "@milo:x"), overrides = emptyMap(),
+            ids = listOf("@hermes:x", "@scout:x"), overrides = emptyMap(),
             themeAccent = gold, themeAccent2 = ember,
         )
         assertTrue(h.primary)
@@ -107,8 +107,8 @@ class HeraldryTest {
     @Test
     fun `a second herald takes a palette hue, not the theme's`() {
         val h = Heralds.resolve(
-            senderId = "@milo:x", senderName = "Milo",
-            ids = listOf("@hermes:x", "@milo:x"), overrides = emptyMap(),
+            senderId = "@scout:x", senderName = "Scout",
+            ids = listOf("@hermes:x", "@scout:x"), overrides = emptyMap(),
             themeAccent = gold, themeAccent2 = ember,
         )
         assertFalse(h.primary)
@@ -131,8 +131,8 @@ class HeraldryTest {
     fun `a user override beats both the palette and the theme`() {
         val mine = 0xFF00FF00L
         val h = Heralds.resolve(
-            senderId = "@milo:x", senderName = "Milo",
-            ids = listOf("@hermes:x", "@milo:x"), overrides = mapOf("milo" to mine),
+            senderId = "@scout:x", senderName = "Scout",
+            ids = listOf("@hermes:x", "@scout:x"), overrides = mapOf("scout" to mine),
             themeAccent = gold, themeAccent2 = ember,
         )
         assertEquals(mine, h.accentArgb)
@@ -155,21 +155,21 @@ class HeraldryTest {
     @Test
     fun `the display name falls back to the localpart when there is none`() {
         val h = Heralds.resolve(
-            senderId = "@milo:x", senderName = "",
-            ids = listOf("@milo:x"), overrides = emptyMap(),
+            senderId = "@scout:x", senderName = "",
+            ids = listOf("@scout:x"), overrides = emptyMap(),
             themeAccent = gold, themeAccent2 = ember,
         )
-        assertEquals("milo", h.name)
+        assertEquals("scout", h.name)
     }
 
     @Test
     fun `a raw mxid as a display name is not shown as the name`() {
         val h = Heralds.resolve(
-            senderId = "@milo:x", senderName = "@milo:x",
-            ids = listOf("@milo:x"), overrides = emptyMap(),
+            senderId = "@scout:x", senderName = "@scout:x",
+            ids = listOf("@scout:x"), overrides = emptyMap(),
             themeAccent = gold, themeAccent2 = ember,
         )
-        assertEquals("milo", h.name)
+        assertEquals("scout", h.name)
     }
 
     @Test
@@ -184,8 +184,8 @@ class HeraldryTest {
     @Test
     fun `with nobody configured, the one other member of a room is its herald`() {
         assertEquals(
-            listOf("@silas:silas.local"),
-            RoomSigils.soloHerald(listOf("@jonny:silas.local", "@silas:silas.local"), "@jonny:silas.local"),
+            listOf("@hermes:example.org"),
+            RoomSigils.soloHerald(listOf("@sam:example.org", "@hermes:example.org"), "@sam:example.org"),
         )
     }
 
@@ -194,28 +194,28 @@ class HeraldryTest {
         assertEquals(
             emptyList<String>(),
             RoomSigils.soloHerald(
-                listOf("@jonny:silas.local", "@silas:silas.local", "@milo:silas.local"),
-                "@jonny:silas.local",
+                listOf("@sam:example.org", "@hermes:example.org", "@scout:example.org"),
+                "@sam:example.org",
             ),
         )
     }
 
     @Test
     fun `a room of one is a room of no heralds`() {
-        assertEquals(emptyList<String>(), RoomSigils.soloHerald(listOf("@jonny:silas.local"), "@jonny:silas.local"))
+        assertEquals(emptyList<String>(), RoomSigils.soloHerald(listOf("@sam:example.org"), "@sam:example.org"))
     }
 
     @Test
     fun `my own id is matched case-insensitively, so I am never my own herald`() {
         assertEquals(
-            listOf("@silas:silas.local"),
-            RoomSigils.soloHerald(listOf("@Jonny:silas.local", "@silas:silas.local"), "@jonny:silas.local"),
+            listOf("@hermes:example.org"),
+            RoomSigils.soloHerald(listOf("@Sam:example.org", "@hermes:example.org"), "@sam:example.org"),
         )
     }
 
     @Test
     fun `the solo herald still resolves to a single sigil`() {
-        val heralds = RoomSigils.soloHerald(listOf("@jonny:silas.local", "@silas:silas.local"), "@jonny:silas.local")
-        assertEquals(RoomSigil.Single("silas"), RoomSigils.of(heralds))
+        val heralds = RoomSigils.soloHerald(listOf("@sam:example.org", "@hermes:example.org"), "@sam:example.org")
+        assertEquals(RoomSigil.Single("hermes"), RoomSigils.of(heralds))
     }
 }

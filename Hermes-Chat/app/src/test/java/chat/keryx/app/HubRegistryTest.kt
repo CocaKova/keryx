@@ -20,7 +20,7 @@ class HubRegistryTest {
     private val panels = GATEWAY_SPOKES
 
     @Test
-    fun `the spokes are the ones Jonny chose, in reading order`() {
+    fun `the spokes are the ones the owner chose, in reading order`() {
         // Runs left the hub 2026-09-01 ("the crons are hard to get to") — it is the Runs DOOR
         // now (RunsSpace); Jobs stays because managing schedules is server administration.
         // 2.10 folded the Workshop back in as spokes: changing the machine first, then reading it.
@@ -79,7 +79,7 @@ class HubRegistryTest {
     fun `an artifact route carries its arguments through a save and restore`() {
         // The viewer (2.13) is the one place with arguments; a restored stack must rebuild the
         // same viewer, spaces and ampersands in the path included.
-        val byPath = KeryxDest.Artifact(path = "/home/sy/out/mock v1 & co.html", name = "mock v1 & co.html")
+        val byPath = KeryxDest.Artifact(path = "/home/me/out/mock v1 & co.html", name = "mock v1 & co.html")
         assertEquals(byPath, KeryxDest.fromRoute(byPath.route))
         val byBytes = KeryxDest.Artifact(path = null, name = "page.html", roomId = "!room:x", eventId = "\$ev#media:0")
         assertEquals(byBytes, KeryxDest.fromRoute(byBytes.route))

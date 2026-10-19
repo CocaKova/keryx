@@ -20,7 +20,7 @@ makes the magic (and everything after it) possible.
    streams of magic sand while tokens arrive, the send button exhaling a puff, a space
    settling into place with an arrival breath. Every enchantment respects reduced motion
    and battery saver (`rememberReducedMotion` is already the app-wide gate).
-4. **The attention budget** (added after Jonny's overwhelm report, 07-31). Magic competes
+4. **The attention budget** (added after the owner's overwhelm report, 07-31). Magic competes
    with itself: at any moment a view gets ONE focal live enchantment; everything else is
    either transient (finishes in under a second), ambient at whisper level (≤4% alpha,
    felt-not-watched), or still. When adding an effect, ask what it displaces — if two

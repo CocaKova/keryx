@@ -16,7 +16,7 @@ class ModelCatalogTest {
     {"model":"qwen3.8-27b","provider":"custom","providers":[
       {"slug":"custom","name":"custom","is_current":true,"authenticated":false,
        "source":"configured-current","models":["qwen3.8-27b"],"warning":"not authenticated"},
-      {"slug":"silas-brain","name":"qwen3.8-27b","is_current":true,"authenticated":true,
+      {"slug":"home-brain","name":"qwen3.8-27b","is_current":true,"authenticated":true,
        "source":"user-config","models":["qwen3.8-27b"],
        "capabilities":{"qwen3.8-27b":{"fast":false,"reasoning":true}},"warning":""},
       {"slug":"anthropic","name":"Anthropic","is_current":false,"authenticated":true,
@@ -36,13 +36,13 @@ class ModelCatalogTest {
         val c = parse(payload)
         assertEquals("qwen3.8-27b", c.model)
         assertEquals(5, c.providers.size) // the slug-less row is dropped
-        assertEquals(listOf("silas-brain", "anthropic"), c.usable.map { it.slug })
+        assertEquals(listOf("home-brain", "anthropic"), c.usable.map { it.slug })
     }
 
     @Test
     fun `current is judged by model name not the flag`() {
         val c = parse(payload)
-        val brain = c.usable.first { it.slug == "silas-brain" }.models.single()
+        val brain = c.usable.first { it.slug == "home-brain" }.models.single()
         val opus = c.usable.first { it.slug == "anthropic" }.models.first()
         assertTrue(c.isCurrent(brain))
         assertFalse(c.isCurrent(opus))

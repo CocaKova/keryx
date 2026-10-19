@@ -14,7 +14,7 @@ import org.junit.Test
  */
 class RoomSigilTest {
 
-    private val configured = listOf("@silas:silas.local", "@milo:silas.local", "@theo:silas.local")
+    private val configured = listOf("@hermes:example.org", "@scout:example.org", "@atlas:example.org")
 
     // --- heraldsAmong --------------------------------------------------------------------------
 
@@ -22,7 +22,7 @@ class RoomSigilTest {
     fun `a room with no configured agent yields nothing`() {
         assertEquals(
             emptyList<String>(),
-            RoomSigils.heraldsAmong(listOf("@jonny:silas.local", "@guest:silas.local"), configured),
+            RoomSigils.heraldsAmong(listOf("@sam:example.org", "@guest:example.org"), configured),
         )
     }
 
@@ -30,23 +30,23 @@ class RoomSigilTest {
     fun `no configured heralds means no sigils anywhere — the unconfigured install is untouched`() {
         assertEquals(
             emptyList<String>(),
-            RoomSigils.heraldsAmong(listOf("@silas:silas.local"), emptyList()),
+            RoomSigils.heraldsAmong(listOf("@hermes:example.org"), emptyList()),
         )
     }
 
     @Test
     fun `the agent is picked out of the member list`() {
         assertEquals(
-            listOf("@silas:silas.local"),
-            RoomSigils.heraldsAmong(listOf("@jonny:silas.local", "@silas:silas.local"), configured),
+            listOf("@hermes:example.org"),
+            RoomSigils.heraldsAmong(listOf("@sam:example.org", "@hermes:example.org"), configured),
         )
     }
 
     @Test
     fun `a herald is matched by bare localpart across homeservers`() {
         assertEquals(
-            listOf("@milo:other.example"),
-            RoomSigils.heraldsAmong(listOf("@milo:other.example", "@jonny:silas.local"), configured),
+            listOf("@scout:other.example"),
+            RoomSigils.heraldsAmong(listOf("@scout:other.example", "@sam:example.org"), configured),
         )
     }
 
@@ -64,22 +64,22 @@ class RoomSigilTest {
 
     @Test
     fun `one herald is a Single, keyed by localpart`() {
-        assertEquals(RoomSigil.Single("silas"), RoomSigils.of(listOf("@silas:silas.local")))
+        assertEquals(RoomSigil.Single("hermes"), RoomSigils.of(listOf("@hermes:example.org")))
     }
 
     @Test
     fun `two heralds stack, in member order`() {
         assertEquals(
-            RoomSigil.Stack(listOf("milo", "theo")),
-            RoomSigils.of(listOf("@milo:silas.local", "@theo:silas.local")),
+            RoomSigil.Stack(listOf("scout", "atlas")),
+            RoomSigils.of(listOf("@scout:example.org", "@atlas:example.org")),
         )
     }
 
     @Test
     fun `the same herald twice is still one life, not a council`() {
         assertEquals(
-            RoomSigil.Single("milo"),
-            RoomSigils.of(listOf("@milo:silas.local", "@milo:silas.local")),
+            RoomSigil.Single("scout"),
+            RoomSigils.of(listOf("@scout:example.org", "@scout:example.org")),
         )
     }
 

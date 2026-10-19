@@ -300,7 +300,7 @@ private fun handWhere(kind: chat.keryx.core.model.PhoneAction.Kind) = when (kind
 }
 
 /**
- * "Skill Distilled" pill shown when SILAS closes its learning loop and saves a new procedural skill.
+ * "Skill Distilled" pill shown when the agent closes its learning loop and saves a new procedural skill.
  * Tap to peek at what it learned; "Open in Skill Forge" (1.8) jumps to the full viewer/editor via
  * [LocalSkillForgeOpener] — the render chain doesn't carry the ViewModel, the CompositionLocal does.
  */

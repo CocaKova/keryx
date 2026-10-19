@@ -14,7 +14,7 @@ import org.junit.Test
 
 /**
  * What the agent says between its tools on the direct door (Hermes' interim messages) stays
- * on screen (3.0). Jonny, 10-16, on a Sy run setting up REA: those lines were "caught into the
+ * on screen (3.0). The owner, 10-16, on an agent run setting up REA: those lines were "caught into the
  * reasoning and or disappear". Live they folded into the run's collapsed thought; reloaded, a
  * line that carried its own reasoning kept only the reasoning and lost the words.
  *

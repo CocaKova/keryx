@@ -24,7 +24,7 @@ class RunsEditorTest {
             {"jobs":[
               {"id":"b1","name":"Daily Brief","prompt":"Brief me.","enabled":true,"state":"scheduled",
                "schedule":{"kind":"cron","expr":"0 7 * * *","display":"0 7 * * *"},"schedule_display":"0 7 * * *",
-               "deliver":"matrix:!dAfUtHvghPuyaprEuB:silas.local","model":"qwen3.8-flash-next","provider":"custom"},
+               "deliver":"matrix:!dAfUtHvghPuyaprEuB:example.org","model":"qwen3.8-flash-next","provider":"custom"},
               {"id":"o1","name":"Reminder","prompt":"Ping.","enabled":true,"state":"scheduled",
                "schedule":{"kind":"once","run_at":"2026-10-03T08:00:00-05:00","display":"once at 2026-10-03 08:00"},
                "schedule_display":"once at 2026-10-03 08:00","deliver":null,"model":null,"provider":null},
@@ -40,7 +40,7 @@ class RunsEditorTest {
         val d = RunsEditorDelegate.draftOf(jobs[0])
         assertEquals("qwen3.8-flash-next", d.model)
         assertEquals("custom", d.provider)
-        assertEquals("matrix:!dAfUtHvghPuyaprEuB:silas.local", d.deliver)
+        assertEquals("matrix:!dAfUtHvghPuyaprEuB:example.org", d.deliver)
     }
 
     @Test

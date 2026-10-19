@@ -10,7 +10,7 @@
 # 1. builds the profileGen app (release without R8, so rules carry source names) and the test
 #    APK, on the build host when ~/.config/keryx/build-host names one (as ship.sh does)
 # 2. installs both: the app goes over chat.keryx.app with the same key, so the login stays
-# 3. runs BaselineProfileGenerator (~8 min on the VIRDARA emulator) and pulls the profile
+# 3. runs BaselineProfileGenerator (~8 min on the build-VM emulator) and pulls the profile
 #
 # Use the emulator, not your phone: the device is left on the profileGen build (no R8, bigger,
 # slower), to be replaced by the next normal install. The journey types and sends nothing.

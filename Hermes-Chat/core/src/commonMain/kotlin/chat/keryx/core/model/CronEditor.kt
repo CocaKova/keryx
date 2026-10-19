@@ -3,7 +3,7 @@ package chat.keryx.core.model
 /**
  * The Runs editor's pure half (2.16). Until now a job could only be READ on the Runs page; the
  * one editor lived three taps deep in the Hub and took a raw cron line and a raw delivery string
- * (`matrix:!dAfUtHvg…:silas.local`), so creating a job from the phone meant knowing both
+ * (`matrix:!dAfUtHvg…:example.org`), so creating a job from the phone meant knowing both
  * grammars by heart. These are the translations the form stands on — schedule shapes ↔ the
  * gateway's schedule text, delivery values ↔ words, and what a save actually sends — kept here,
  * free of Compose, so every rule is a unit test rather than a device walk.
@@ -248,7 +248,7 @@ object CronDelivery {
         s.replace('_', ' ').replace('-', ' ').split(' ').filter { it.isNotEmpty() }
             .joinToString(" ") { w -> w.replaceFirstChar { it.uppercaseChar() } }
 
-    /** `!dAfUtHvghPuyaprEuB:silas.local` → `!dAfUtHvg…` — enough to tell two rooms apart. */
+    /** `!dAfUtHvghPuyaprEuB:example.org` → `!dAfUtHvg…` — enough to tell two rooms apart. */
     private fun shortChat(chat: String): String {
         val head = chat.substringBefore(':')
         return if (head.length > 10) head.take(9) + "…" else head

@@ -22,7 +22,7 @@ class StarterRemindersTest {
             needsYou = 2,
             rooms = listOf(room("a", true, 1), room("b", true, 5)),
             currentRoomId = null,
-            routines = listOf(StarterReminders.Routine("[bot:juno] Inbox", iso(now + 3_600_000), true)),
+            routines = listOf(StarterReminders.Routine("[bot:vega] Inbox", iso(now + 3_600_000), true)),
             nowMs = now,
         )
         assertEquals(listOf("2 missions need you", "2 chats with unread replies"), r.map { it.label })
@@ -38,7 +38,7 @@ class StarterRemindersTest {
         val routines = listOf(
             StarterReminders.Routine("Far", iso(now + 30 * 3_600_000L), true),
             StarterReminders.Routine("Paused", iso(now + 600_000), false),
-            StarterReminders.Routine("[bot:juno] Inbox summary", iso(now + 2 * 3_600_000L), true),
+            StarterReminders.Routine("[bot:vega] Inbox summary", iso(now + 2 * 3_600_000L), true),
         )
         val r = StarterReminders.pick(0, emptyList(), null, routines, now)
         assertEquals(listOf("Inbox summary · next in 2h"), r.map { it.label })

@@ -176,7 +176,7 @@ object MessageParser {
      * A note the GATEWAY wrote into the transcript under the user's role (2.11): a truncation
      * continuation, a background process ending, a resumed-after-interrupt preamble. Hermes
      * files these as `role: user` because the model must read them as instructions, but they
-     * are not the user's words — rendering them in the user's bubble had Jonny asking why he
+     * are not the user's words — rendering them in the user's bubble had people asking why they
      * "sent" a message about a dead SSH tunnel (device-caught 2026-09-06). Prefix-matched on
      * the wire's own bracketed forms; nothing a person types starts this way.
      */

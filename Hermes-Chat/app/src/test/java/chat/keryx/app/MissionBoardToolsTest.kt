@@ -18,8 +18,8 @@ class MissionBoardToolsTest {
         )
 
     private val board = mapOf(
-        "todo" to listOf(task("t1", "Fix the parser", "theo"), task("t2", "Write docs", "")),
-        "running" to listOf(task("t3", "Parser benchmarks", "sy", body = "compare against main")),
+        "todo" to listOf(task("t1", "Fix the parser", "atlas"), task("t2", "Write docs", "")),
+        "running" to listOf(task("t3", "Parser benchmarks", "rook", body = "compare against main")),
     )
 
     @Test
@@ -31,7 +31,7 @@ class MissionBoardToolsTest {
 
     @Test
     fun theOwnerFilterNarrowsAndEmptyLanesGo() {
-        val sy = MissionFilter.apply(board, "", "sy")
+        val sy = MissionFilter.apply(board, "", "rook")
         assertEquals(setOf("running"), sy.keys)
         val nobody = MissionFilter.apply(board, "", MissionFilter.UNASSIGNED)
         assertEquals(listOf("t2"), nobody.values.flatten().map { it.id })
@@ -42,7 +42,7 @@ class MissionBoardToolsTest {
 
     @Test
     fun anEditSendsOnlyWhatChanged() {
-        val t = task("t1", "Fix the parser", "theo", priority = 1)
+        val t = task("t1", "Fix the parser", "atlas", priority = 1)
         assertTrue(MissionEditForm.changes(t, "Fix the parser", "", 1).isEmpty())
         assertEquals(mapOf("title" to "Fix the lexer"), MissionEditForm.changes(t, " Fix the lexer ", "", 1))
         assertEquals(mapOf("priority" to 3), MissionEditForm.changes(t, "Fix the parser", "", 3))
@@ -50,7 +50,7 @@ class MissionBoardToolsTest {
         assertTrue(MissionEditForm.changes(t, "  ", "", 1).isEmpty())
         assertEquals("A mission needs a title", MissionEditForm.problem(" "))
         assertNull(MissionEditForm.problem("ok"))
-        assertEquals(listOf("default", "sy"), MissionEditForm.parseAssignees("""{"assignees":[{"name":"default"},{"name":"sy"}]}"""))
+        assertEquals(listOf("default", "rook"), MissionEditForm.parseAssignees("""{"assignees":[{"name":"default"},{"name":"rook"}]}"""))
         assertNull(MissionEditForm.parseAssignees("""{"detail":"Not Found"}"""))
     }
 
@@ -58,7 +58,7 @@ class MissionBoardToolsTest {
     fun sinceYouLookedIsWhatChangedOnTheCardsFace() {
         val before = chat.keryx.app.presentation.MissionSeen.prints(board)
         assertTrue(chat.keryx.app.presentation.MissionSeen.changed(before, board).isEmpty())
-        val moved = board + ("done" to listOf(task("t4", "New card", "sy")))
+        val moved = board + ("done" to listOf(task("t4", "New card", "rook")))
         val now = moved.mapValues { (lane, cards) ->
             if (lane == "todo") cards.map { if (it.id == "t1") it.copy(status = "running") else it } else cards
         }

@@ -3,7 +3,7 @@
 Built 2026-09-03 on branch `keryx-2.8-bots` (vc78 / 2.8.2, on top of 2.8.1). 667 unit
 tests green. Repo-root `keryx-2.8.2-{debug,release}.apk`. ⚠️ Not walked on a phone.
 
-Jonny's ask (09-03, late): *"In the flight plan of Keryx the text is almost unreadable because
+The owner's ask (09-03, late): *"In the flight plan of Keryx the text is almost unreadable because
 it's transparent and the text is white — may be only light mode, make sure it's not that way
 for dark mode. Newer sessions or more recent active sessions aren't put at the top, leading to
 digging. The context window amount/indicator is no longer in Keryx."*
@@ -86,7 +86,7 @@ prompt tokens would leave the ring dark on purpose — that is "unknown", not a 
 - `app/.../presentation/ChatViewModel.kt` — `contextUsage` drinks from both doors
 - `app/build.gradle.kts` — vc78 / 2.8.2
 
-## Walk (Jonny)
+## Walk (the owner)
 
 1. Ask for a numbered plan; the strip under the top bar reads in both themes while the
    transcript scrolls under it. Toggle theme mid-plan.

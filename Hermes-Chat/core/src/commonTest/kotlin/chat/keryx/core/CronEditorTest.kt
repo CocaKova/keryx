@@ -16,9 +16,9 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * The Runs editor's pure half, against the schedules and delivery values on Jonny's live
+ * The Runs editor's pure half, against the schedules and delivery values on the owner's live
  * gateway (10-02: 24 jobs — `0 7 * * *`, `every 30m`, `every 20160m`, `0 9 3 * *`, `7 8-21 * * *`,
- * `matrix:!dAfUtHvghPuyaprEuB:silas.local`, bare `matrix`, `origin`, `local`).
+ * `matrix:!dAfUtHvghPuyaprEuB:example.org`, bare `matrix`, `origin`, `local`).
  */
 class CronEditorTest {
 
@@ -103,9 +103,9 @@ class CronEditorTest {
         DeliveryTarget("local", "Local (save only)", true),
         DeliveryTarget("matrix", "Matrix", true),
         DeliveryTarget("telegram", "Telegram", false),
-        DeliveryTarget("bot-chat:sy", "Bot Chat (sy)", true),
+        DeliveryTarget("bot-chat:rook", "Bot Chat (rook)", true),
     )
-    private val rooms = mapOf("!dAfUtHvghPuyaprEuB:silas.local" to "Ops")
+    private val rooms = mapOf("!dAfUtHvghPuyaprEuB:example.org" to "Ops")
 
     @Test
     fun `delivery values read as words`() {
@@ -113,10 +113,10 @@ class CronEditorTest {
         assertEquals("Save only", CronDelivery.label(""))
         assertEquals("Where it was set up", CronDelivery.label("origin"))
         assertEquals("Matrix home channel", CronDelivery.label("matrix", targets))
-        assertEquals("Bot Chat (sy)", CronDelivery.label("bot-chat:sy", targets))
-        assertEquals("Matrix · Ops", CronDelivery.label("matrix:!dAfUtHvghPuyaprEuB:silas.local", targets) { rooms[it] })
+        assertEquals("Bot Chat (rook)", CronDelivery.label("bot-chat:rook", targets))
+        assertEquals("Matrix · Ops", CronDelivery.label("matrix:!dAfUtHvghPuyaprEuB:example.org", targets) { rooms[it] })
         // An unknown room is shortened, never dropped; a platform the list lacks is title-cased.
-        assertEquals("Matrix · !YuIrzmUh…", CronDelivery.label("matrix:!YuIrzmUhspTUENmXZq:silas.local", targets))
+        assertEquals("Matrix · !YuIrzmUh…", CronDelivery.label("matrix:!YuIrzmUhspTUENmXZq:example.org", targets))
         assertEquals("Discord home channel", CronDelivery.label("discord"))
         assertEquals("Save only + Matrix home channel", CronDelivery.label("local, matrix", targets))
     }
@@ -124,9 +124,9 @@ class CronEditorTest {
     @Test
     fun `the picker lists save-only first, the gateway's targets, the room, then the job's own value`() {
         val room = DeliveryOption("matrix:!abc:server", "This chat", "Each run posts here")
-        val opts = CronDelivery.options(targets, "matrix:!dAfUtHvghPuyaprEuB:silas.local", room) { rooms[it] }
+        val opts = CronDelivery.options(targets, "matrix:!dAfUtHvghPuyaprEuB:example.org", room) { rooms[it] }
         assertEquals(
-            listOf("local", "matrix", "telegram", "bot-chat:sy", "matrix:!abc:server", "matrix:!dAfUtHvghPuyaprEuB:silas.local"),
+            listOf("local", "matrix", "telegram", "bot-chat:rook", "matrix:!abc:server", "matrix:!dAfUtHvghPuyaprEuB:example.org"),
             opts.map { it.value },
         )
         assertEquals("Save only", opts.first().label)
@@ -148,7 +148,7 @@ class CronEditorTest {
 
     private val job = CronJobDraft(
         name = "Daily Brief", prompt = "Brief me.", schedule = "0 7 * * *",
-        deliver = "matrix:!dAfUtHvghPuyaprEuB:silas.local", model = "qwen3.8-flash-next", provider = "custom",
+        deliver = "matrix:!dAfUtHvghPuyaprEuB:example.org", model = "qwen3.8-flash-next", provider = "custom",
     )
 
     @Test

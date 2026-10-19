@@ -32,7 +32,7 @@ A drawer destination showing the agent's task board as swimlane columns
 - Task cards: title, assignee (profile chip, same component as the 1.3.1 top-bar chip), priority,
   age, failure badge when `consecutive_failures > 0`.
 - Task detail sheet: body, live status, comments thread (post a comment), result text, run history.
-- Create task: title + body + assignee composer ("hand SILAS a mission from the couch").
+- Create task: title + body + assignee composer ("hand the agent a mission from the couch").
 - Watch: completed/blocked transitions surface as app notifications (poll `task_events` since-id;
   reuse the existing notification channel).
 
@@ -40,7 +40,7 @@ A drawer destination showing the agent's task board as swimlane columns
 - `GET /keryx/kanban/board` — columns with task summaries (read-only SQLite; WAL-safe read).
 - `GET /keryx/kanban/task/{id}` — full task + comments + recent events.
 - `POST /keryx/kanban/task` — create (INSERT mirroring `kanban_create` tool semantics).
-- `POST /keryx/kanban/task/{id}/comment` — comment as `jonny@keryx`.
+- `POST /keryx/kanban/task/{id}/comment` — comment as `sam@keryx`.
 - `GET /keryx/kanban/events?since=<rowid>` — incremental poll for the watcher.
 State *transitions* (complete/block/claim) stay agent-side on purpose — the dispatcher owns those.
 
@@ -54,7 +54,7 @@ Grow the 1.3.0 sheet into a tabbed hub (still reachable from the link-health dot
 - **Sessions**: `/api/sessions` — per-room cards: model, message/tool-call counts, token usage.
   Tap → session detail (`…/messages` transcript preview). This is the "what has it been doing all
   day" view.
-- **Skills & Toolsets**: read-only browsers of `/v1/skills` and `/v1/toolsets` — what SILAS can do
+- **Skills & Toolsets**: read-only browsers of `/v1/skills` and `/v1/toolsets` — what the agent can do
   and which tool groups are live per platform.
 
 ### 3. Glue
@@ -84,4 +84,4 @@ Grow the 1.3.0 sheet into a tabbed hub (still reachable from the link-health dot
 - **Schema drift**: kanban.db is hermes-agent internal; pin reads to the columns above and fail
   soft on missing ones (SELECT by name, tolerate NULL).
 - **Empty board**: kanban currently has 0 tasks — Missions must look intentional when empty
-  (call-to-action: "Give SILAS a mission").
+  (call-to-action: "Give the agent a mission").

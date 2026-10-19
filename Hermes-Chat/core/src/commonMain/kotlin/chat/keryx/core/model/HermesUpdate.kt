@@ -238,7 +238,7 @@ object HermesUpdateParser {
     /**
      * Only this run's lines. Hermes appends every update to one `update.log`, and the status
      * route serves its tail — so a short run arrived under the end of an older one (device,
-     * 10-09: a 09-24 shim refusal mentioning silas-update sat above the run you started).
+     * 10-09: a 09-24 shim refusal mentioning my-update sat above the run you started).
      * Cut at the newest start marker; with none in the window, drop anything up to the last
      * end marker, which belongs to a run already over.
      */
@@ -270,7 +270,7 @@ enum class UpdateRoute { DASHBOARD, PLUGIN }
 /** What the Update button would do — said in full in the confirm before it does it. */
 data class UpdatePlan(
     val route: UpdateRoute,
-    /** The command's name as the gateway tells it ("hermes update", "silas-update"). */
+    /** The command's name as the gateway tells it ("hermes update", "my-update"). */
     val command: String,
     /** The operator's own wrapper from config.yaml rather than stock `hermes update`. */
     val operatorWrapper: Boolean,
@@ -292,7 +292,7 @@ object UpdatePlanner {
      * else the plugin's stock default command. Null = no way to update from here.
      */
     fun plan(plugin: PluginUpdateStatus?, check: UpdateCheck?): UpdatePlan? = when {
-        // Vanilla only (Jonny, 2026-10-09): the button runs Hermes' own `hermes update`, never
+        // Vanilla only (2026-10-09): the button runs Hermes' own `hermes update`, never
         // an operator's wrapper from config.yaml (`keryx.update.command`). People who install
         // Keryx don't have anyone's private tooling, and the button must mean the same thing for them.
         check != null && check.canApply -> UpdatePlan(UpdateRoute.DASHBOARD, "hermes update", false)

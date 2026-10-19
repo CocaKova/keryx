@@ -4,7 +4,7 @@ package chat.keryx.app.audio
  * How long the voice takes per character, learned from the sentences it has already spoken.
  *
  * The lead a sentence is held for ([SentenceLead]) is sized from its projected length, and a
- * fixed 52 ms/char undershot Sy by a third on 2026-09-05 (measured 50–82 ms/char across one
+ * fixed 52 ms/char undershot the agent by a third on 2026-09-05 (measured 50–82 ms/char across one
  * call, the long tail being pauses and vocal events) — every hold was too short and every
  * long sentence stuttered. So the pace is measured: each finished sentence's audio ÷ chars
  * feeds an average, and projections carry [HEADROOM] on top, because holding a little too
@@ -34,7 +34,7 @@ class SpeechPace(initialMsPerChar: Double = DEFAULT_MS_PER_CHAR) {
     }
 
     companion object {
-        /** Middle of Sy's measured range on 09-05 — the starting guess before any sentence lands. */
+        /** Middle of the agent's measured range on 09-05 — the starting guess before any sentence lands. */
         const val DEFAULT_MS_PER_CHAR = 65.0
         const val HEADROOM = 1.15
         const val WEIGHT = 0.4

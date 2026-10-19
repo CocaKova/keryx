@@ -3,7 +3,7 @@
 **Written 2026-09-06 against `main` = `67850f5` + the uncommitted 2.10.0 call-pace tree (vc88).
 Built the same day: 2.11.0, vc89.**
 
-Jonny: *"this is actually a good time to implement the feature into Keryx for multiple gateways.
+The owner: *"this is actually a good time to implement the feature into Keryx for multiple gateways.
 Did you know that Hermes can connect multiple gateways now in the desktop app?"*
 
 It does. `website/docs/user-guide/multi-connection-desktop.md` (installed 0.21.0 tree) describes
@@ -130,7 +130,7 @@ under `ArchiveDelegate`. The union bot roster falls out of the same work.
   flattened the node to raw text and claimed it, so the renderer never visited the child link.
   `**https://…**` is the form agents write most. Now a bold or struck span with inline structure
   (link, code span, emphasis, autolink) is handed back to the library (`InlineStructure.kt`,
-  `InlineStructureTest`). Walk: tap the bold URL in Sy's "Link test for 2.11.4" message; the
+  `InlineStructureTest`). Walk: tap the bold URL in the agent's "Link test for 2.11.4" message; the
   bold code span and struck link in the same message must render, not print their markers.
 - **2.11.5 (vc96), 2026-09-15:** two instruments that went quiet once the footer toggle went off.
   (1) The self-improvement review showed only with "Show telemetry" on: on the direct door it is

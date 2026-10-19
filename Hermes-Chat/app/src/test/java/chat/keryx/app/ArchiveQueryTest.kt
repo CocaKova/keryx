@@ -114,7 +114,7 @@ class ArchiveQueryTest {
             else chat.keryx.core.model.SenderType.HERMES,
             content = content,
             timestamp = ts,
-            senderId = if (me) "@jonny:x" else "@silas:x",
+            senderId = if (me) "@sam:x" else "@hermes:x",
         )
 
     @Test

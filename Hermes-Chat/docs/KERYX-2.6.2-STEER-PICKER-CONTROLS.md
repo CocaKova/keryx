@@ -1,6 +1,6 @@
 # Keryx 2.6.2 — the send button steers, the picker tells the truth, the knobs get shelves (2026-09-01)
 
-Three asks from Jonny's first walk of 2.6.1, all polish on surfaces that already existed:
+Three asks from the owner's first walk of 2.6.1, all polish on surfaces that already existed:
 
 1. "I would like the Talaria movement of steering. So instead of reasoning-and-steer — you type
    the message and the send button changes to steer, and also long press for queue."
@@ -43,7 +43,7 @@ from `TalariaGlyphs`). `ReasoningMenu` lost its Steer row and `onSteer` plumbing
 and no room verb interrupts — so on Matrix the empty-composer state stays a plain (dimmed) send.
 `ChatViewModel.canInterruptTurn` = `direct != null` is the gate. `/steer` and `/queue` are
 gateway `CommandDef`s with `busy_policy="dispatch"`, so they land on every platform regardless
-of the operator's `busy_input_mode` (which is `queue` on SILAS — a plain message would have
+of the operator's `busy_input_mode` (which is `queue` on the agent — a plain message would have
 queued anyway; on an `interrupt` gateway it would have killed the turn).
 
 ## 2. The picker shows what you signed into
@@ -69,8 +69,8 @@ stay by design; MoA stays only with a user-written preset.
   gate — the unauthenticated `configured-current` skeleton for `custom` never shows.
 
 Verified live after the gateway restart (09-01 ~15:10 CT): `/keryx/model/options` →
-anthropic · openai-api · **xai-oauth (Grok, 13 models)** · gemini · opencode-free · silas-brain.
-Copilot and MoA gone. Jonny's test case (Grok added recently) is in; the one he never logged
+anthropic · openai-api · **xai-oauth (Grok, 13 models)** · gemini · opencode-free · home-brain.
+Copilot and MoA gone. The owner's test case (Grok added recently) is in; the one he never logged
 into is out.
 
 ## 3. Gateway settings, shelved
@@ -101,7 +101,7 @@ became rows of the same plan.
   keeps the composer in steer mode until it clears. Same as Talaria; not chased.
 - **The chip rail's jump scrolls by index into the plan** — every row type must stay in the
   plan (`ControlRow`) or the index drifts; that is why the error line and footer are rows.
-- **`/keryx/model/options` needs a gateway restart** — done on SILAS 09-01. Elsewhere the 404
+- **`/keryx/model/options` needs a gateway restart** — done on the agent 09-01. Elsewhere the 404
   fallback keeps the picker working (with the wider list) until the plugin is updated.
 
 ## Status
@@ -117,7 +117,7 @@ became rows of the same plan.
 
 ## 5. 09-01 evening — the dial belongs to the session (`1501958` → this commit)
 
-Jonny, on a Grok session: "the cloud shows reasoning set to globally forever … I always have
+The owner, on a Grok session: "the cloud shows reasoning set to globally forever … I always have
 to click the model and reasoning again to refresh them … does grok really have low medium
 and xhigh only?" Three faults, one root: **the reasoning pill described the profile
 default, not the room's brain.**

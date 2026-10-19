@@ -117,7 +117,7 @@ class MatrixTransport(
      */
     private fun heraldsByRoom(client: MatrixClient, roomIds: Collection<RoomId>): Flow<Map<String, List<String>>> {
         val configured = Heralds.parseIds(settingsRepository.agentMatrixId)
-        // Nobody named a herald — the setting ships empty and Jonny's install never filled it in,
+        // Nobody named a herald — the setting ships empty and the owner's install never filled it in,
         // so every room in the drawer wore the lettered monogram while the bubbles inside them
         // rendered as the agent. Fall back to the rule the transcript already uses for exactly
         // this case (`legacyAgentRoomOf`): on a gateway install, a room with one other member is
@@ -749,8 +749,8 @@ class MatrixTransport(
      * everything downstream that filtered on HERMES went blind. But the 07-02 fix overcorrected:
      * "blank agent id → any non-me sender is the agent" restyled real humans as agent output
      * (tool cards, telemetry demotion, the working banner on their typing). Now:
-     *  - a configured id matches case-insensitively, and by bare localpart too, so "silas",
-     *    "@silas" and "@SILAS:silas.local" all hit "@silas:silas.local";
+     *  - a configured id matches case-insensitively, and by bare localpart too, so "hermes",
+     *    "@hermes" and "@Hermes:example.org" all hit "@hermes:example.org";
      *  - blank agent id falls back to HERMES only in [legacyAgentRoom]s — a Hermes gateway is
      *    wired up AND the room has at most one other member (the existing single-agent-DM
      *    install base keeps agent rendering with zero config);

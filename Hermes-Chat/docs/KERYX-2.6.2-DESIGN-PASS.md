@@ -1,6 +1,6 @@
 # Keryx 2.6.2 — the design pass: one icon family, coloured tool log, a renderer that keeps up (2026-09-01)
 
-Jonny: "the next pass will be strictly design of icons, placement, and gesture navigation. Tool
+The owner: "the next pass will be strictly design of icons, placement, and gesture navigation. Tool
 call log visuals and color coding. Lastly, check to make sure the renderer can do everything the
 Frontier AI web chats can when rendering content."
 
@@ -128,12 +128,12 @@ Kotlin 2.1 line), `io.coil-kt.coil3:coil-compose` + `coil-network-okhttp` 3.1.0.
 ## Status
 - 579 tests green (+5 `MathUnicodeTest` in core, +1 tool-tint contrast test in app); commit
   `5db07c4` = origin/main; debug build vc74 INSTALLED on the phone 17:28 CT.
-- ⚠️ NOT walked: the phone was in Jonny's hands after the install (the recents card showed the
+- ⚠️ NOT walked: the phone was in the owner's hands after the install (the recents card showed the
   new sidebar glyph and arrow-up send; nothing else was driven). Walk list: door tiles + header theme toggle,
   top bar glyphs, composer row, bubble action bar, a tool run (tinted glyphs, green ✓), a code
   fence with a language, an inline image, `~~x~~`, `$E=mc^2$`.
 
-## 09-02 — CRASH: every fence with a known language killed the app (Jonny: "when I went into my proactive calendar cron it crashed Keryx?")
+## 09-02 — CRASH: every fence with a known language killed the app (feedback: "when I went into my proactive calendar cron it crashed Keryx?")
 
 - **Symptom:** `IllegalStateException: Horizontally scrollable component was measured with an
   infinity maximum width constraints` at measure time, every time a message with a ```python /

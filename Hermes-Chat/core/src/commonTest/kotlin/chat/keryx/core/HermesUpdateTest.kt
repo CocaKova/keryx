@@ -31,7 +31,7 @@ class HermesUpdateTest {
 
     private val pluginJson = """
         {"supported": true, "reason": "", "behind": 12, "ahead": 0, "branch": "origin/main", "head": "26472756",
-         "head_branch": "main", "version": "0.21.5", "command_configured": true, "label": "silas-update",
+         "head_branch": "main", "version": "0.21.5", "command_configured": true, "label": "my-update",
          "command_source": "configured", "checked_at": "2026-10-02T15:00:00+00:00", "checking": false,
          "check_error": "", "running": false, "probe_configured": true, "probe_label": "anchor gate",
          "probe_running": false, "probe_exit": null, "probe_output": "", "probe_at": ""}
@@ -62,7 +62,7 @@ class HermesUpdateTest {
         assertEquals(12, plugin.behind)
         assertEquals("26472756", plugin.head)
         assertTrue(plugin.operatorCommand)
-        assertEquals("silas-update", plugin.label)
+        assertEquals("my-update", plugin.label)
         assertNull(plugin.probeExit) // "not run yet" is not "passed"
         // A garbled count is unknown, never zero.
         val garbled = HermesUpdateParser.plugin(j("""{"supported": true, "behind": "lots"}"""))!!
@@ -142,7 +142,7 @@ class HermesUpdateTest {
 
     private val oldReceipt = "2026-09-27T23:07:50+00:00"
     private val dashRun = UpdateRun(UpdatePlan(UpdateRoute.DASHBOARD, "hermes update", false), 0L, oldReceipt, "26472756")
-    private val wrapperRun = UpdateRun(UpdatePlan(UpdateRoute.PLUGIN, "silas-update", true), 0L, oldReceipt, "26472756")
+    private val wrapperRun = UpdateRun(UpdatePlan(UpdateRoute.PLUGIN, "my-update", true), 0L, oldReceipt, "26472756")
 
     private fun receipt(outcome: String, started: String = "2026-10-02T15:10:00+00:00", post: String = "99887766aabbccdd") =
         UpdateReceipt(outcome, started, "2026-10-02T15:12:00+00:00", "26472756ffff", post, "0.21.5", "0.21.6")
@@ -227,7 +227,7 @@ class HermesUpdateTest {
     fun `an unknown dashboard count borrows the plugin's, but a stale local zero never wins`() {
         val plugin = PluginUpdateStatus(
             supported = true, reason = "", behind = 977, ahead = 0, branch = "origin/main", head = "13dc3a7389",
-            headBranch = "main", version = "0.21.5", commandConfigured = true, label = "silas-update",
+            headBranch = "main", version = "0.21.5", commandConfigured = true, label = "my-update",
             commandSource = "configured", checkedAt = "2026-10-09T11:30:03+00:00", checking = false, checkError = "",
             probeConfigured = false, probeLabel = "", probeRunning = false, probeExit = null,
             probeOutput = "", probeAt = "",

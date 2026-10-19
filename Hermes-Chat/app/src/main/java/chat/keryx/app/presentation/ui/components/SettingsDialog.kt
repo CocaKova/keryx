@@ -565,7 +565,7 @@ fun SettingsScreen(
                             value = agentMatrixId,
                             onValueChange = onAgentMatrixIdChanged,
                             label = { Text("Hermes Agent Matrix IDs") },
-                            placeholder = { Text("@hermes:example.com, @milo:example.com") },
+                            placeholder = { Text("@hermes:example.com, @scout:example.com") },
                             supportingText = {
                                 Text(
                                     "Which senders get agent rendering. Separate several with commas " +

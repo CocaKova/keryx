@@ -3,7 +3,7 @@
 **Written 2026-09-05 against `main` = `8ecce6a` (2.9.4, vc84). A plan for review, not a commitment.
 Nothing below is built.**
 
-Jonny's brief: *"another overall pass on Keryx, but specifically the way Nous Research would do
+The owner's brief: *"another overall pass on Keryx, but specifically the way Nous Research would do
 it. Look at what the official Nous people committed, take those ideas and put them into Keryx.
 An overall glow-up for quality of life and use — the settings at the bottom of the collapsible
 sidebar, and how everything is formatted and presented. Also features for performance, QoL."*
@@ -145,7 +145,7 @@ dusk sky, section pages are seven dense cards, and there is no search.
    drawer and settings work for free; it does not get the gateway features.
 3. **Installed gateway is the floor.** Everything gateway-side below exists in `v2026.8.31`
    (checked: `error_surface`, `session.context_breakdown`, `session.usage`, `session.set_hidden`,
-   `session.undo`). No new SILAS_EXT payloads, no reapply entries.
+   `session.undo`). No new LOCAL_EXT payloads, no reapply entries.
 4. **Every phase ships on its own** through `tools/ship.sh` (GREEN or it doesn't go), each on
    `main`, per [[feedback_slow_version_cadence]]: the whole pass is one minor, **2.10.0**; phases
    are commits, not releases.
@@ -156,7 +156,7 @@ dusk sky, section pages are seven dense cards, and there is no search.
 `NavigationDrawer.kt`, `ChatViewModel.kt`). Phase A and C touch the same files. It has to land
 (it is on the phone already per memory) or be stashed first — never interleaved.
 
-### Phase A — the drawer (the thing Jonny pointed at)
+### Phase A — the drawer (the thing the owner pointed at)
 
 **Today.** A 300 dp drawer: header (emblem, wordmark, pet, user id, theme, +), the "Jump to…"
 field (title filter + gateway deep search), the room list (Invites / Pinned deck / list / "In
@@ -177,7 +177,7 @@ dashboard `SidebarFooter` + `SidebarStatusStrip` collapsed into one:
 │ PINNED                           │
 │  ▸ Point video       2m          │
 │ TODAY                        ▾   │
-│  ▸ Sy voice call     14m  ●3     │
+│  ▸ the agent voice call     14m  ●3     │
 │ YESTERDAY                    ▸   │  collapsed, count on the chevron
 │ LAST WEEK                    ▾   │
 │  ▸ …                             │
@@ -350,9 +350,9 @@ remaining two by concern, tests unchanged, ship-gate GREEN, **no feature in the 
 | E simplify | 2 commits | A, B done | M |
 
 Tag **v2.10.0** after A + B + C1/C2 walk on the phone; the rest ride as patches or fold in before
-the tag, Jonny's call.
+the tag, the owner's call.
 
-## Decisions Jonny owns
+## Decisions the owner owns
 
 1. **Footer direction** — A1 (status strip + places row) vs. keeping the nine-door grid and only
    re-ordering it.
@@ -379,7 +379,7 @@ the tag, Jonny's call.
 
 ## Status — 2026-09-05, late
 
-Jonny's decisions: status strip (1); Gateway and Workshop merged, done properly (2 → hub-and-spoke);
+The owner's decisions: status strip (1); Gateway and Workshop merged, done properly (2 → hub-and-spoke);
 2.10.0 (3); commit the call polish first (4, `4f8f6b2`); C1 + C2 + C6 (5); Matrix door gets A + B
 only where it makes sense (6). Plus the long-cron-bubble readability bug he hit — fixed first
 (`7667c39`, `readableGradient`: one ink for every stop).
@@ -394,7 +394,7 @@ only where it makes sense (6). Plus the long-cron-bubble readability bug he hit 
 | D | D1 transcript-tail cache (`666450d`), D2 covered sky rests (`ab0ad69`), D3 catalog TTL 20 min (`579bb88`); D5 verified by reading: both indexers run on `Dispatchers.IO` | **Measurements not taken** — no phone on the wire for gfxinfo / cold-start; D4 recomposition scoping needs Layout Inspector on device |
 | E | `ChatScreen.kt` 1,922 → 1,184 (`Composer.kt`, `CommandPalette.kt` split out); `SettingsDialog.kt` 1,463 → 1,151 (`SettingsColor.kt`, `SettingsPrimitives.kt`); pure moves, `private` → `internal` on what crossed a file | `ChatViewModel.kt` (2,4xx) and `MessageParser.kt` (1,136) untouched — the ViewModel already delegates by concern and the parser has 700 tests over it; both are a decision, not an afternoon |
 
-**Walk list for Jonny (what to look at on the phone):** drawer shelves fold/unfold and persist ·
+**Walk list for the owner (what to look at on the phone):** drawer shelves fold/unfold and persist ·
 status strip words + tap → Gateway landing → each spoke and back · lenses, Archive then Archived
 → Restore · type "runs", "/comp", "haptic", a session id into Jump to… · Settings search "vibrate"
 lands lit · Appearance segmented rows · a forced failure (bad model) renders the card with Retry ·
@@ -410,7 +410,7 @@ column's root Y captured with `scrollState.value` — if the page ever gains a s
 re-measure. **Chat load time** is `adb logcat -s KeryxPerf:W` on any release build (vc86+): two
 lines per open, cache paint and wire page, in ms.
 
-### Phase D — the numbers (2026-09-05, Jonny's phone, 1440×3120 @600dpi, wireless adb :33273)
+### Phase D — the numbers (2026-09-05, the owner's phone, 1440×3120 @600dpi, wireless adb :33273)
 
 Same phone, same session, back to back; 2.9.4 (vc84) first, then 2.10.0 (vc85) installed over it.
 
@@ -421,13 +421,13 @@ Same phone, same session, back to back; 2.9.4 (vc84) first, then 2.10.0 (vc85) i
 | Idle on the chat floor, frames in 5 s | — | 124 (≈25 fps) | the sky shader, by design, on the floor |
 | Idle CPU on the floor (`top`, one sample) | 21% | 31% | single samples of a 25-fps shader; noise |
 | Scroll, 12 swipes: frames · janky · p50 · p90 | 1013 · 4.6% · 13 ms · 17 ms | 1030 · 5.2% · 15 ms · 17 ms | same within noise (different content under the finger) |
-| Idle with a place covering the floor | — | **not measured** | the dump showed Jonny's terminal in the foreground; input injection stopped there — walk it: open Settings, the floor's sky should hold still (`dumpsys gfxinfo` frames ≈ 0 in 5 s) |
+| Idle with a place covering the floor | — | **not measured** | the dump showed the owner's terminal in the foreground; input injection stopped there — walk it: open Settings, the floor's sky should hold still (`dumpsys gfxinfo` frames ≈ 0 in 5 s) |
 
 What this says: 2.10 did not regress start, scroll or memory; the two wins it claims — the covered
 sky resting (D2) and the transcript painting from disk (D1) — are the two this run could not
 observe without the screen, so they stay "changed, not live-verified" until the walk.
 
-### First walk — 2026-09-05, late (Jonny, vc86)
+### First walk — 2026-09-05, late (vc86)
 
 Three things noticed, all three fixed in vc87 (`b764ae4`, and the commit after it):
 

@@ -19,25 +19,25 @@ class ProfileSessionsTest {
 
     @Test fun launchProfileRowsStayInTheLaunchList() {
         val launch = listOf(row("a", "default"))
-        val all = listOf(row("a", "default"), row("b", "default"), row("j1", "juno"))
+        val all = listOf(row("a", "default"), row("b", "default"), row("j1", "vega"))
         assertEquals(listOf("j1"), DirectTransport.foreignRows(all, launch).map { it.id })
     }
 
     @Test fun aGatewayLaunchedAsAnotherProfileTreatsDefaultAsForeign() {
-        val launch = listOf(row("t1", "theo"))
-        val all = listOf(row("t1", "theo"), row("t2", "theo"), row("d1", "default"))
+        val launch = listOf(row("t1", "atlas"))
+        val all = listOf(row("t1", "atlas"), row("t2", "atlas"), row("d1", "default"))
         assertEquals(listOf("d1"), DirectTransport.foreignRows(all, launch).map { it.id })
     }
 
     @Test fun emptyLaunchListFallsBackToDefaultAndDropsArchivedAndUntagged() {
-        val all = listOf(row("d1", "default"), row("j1", "juno"), row("j2", "juno", archived = true), row("x", ""))
+        val all = listOf(row("d1", "default"), row("j1", "vega"), row("j2", "vega", archived = true), row("x", ""))
         assertEquals(listOf("j1"), DirectTransport.foreignRows(all, emptyList()).map { it.id })
     }
 
     @Test fun anIdAlreadyListedNeverDuplicates() {
         // A row the launch list carries is never added twice, whatever it is tagged.
         val launch = listOf(row("same", "default"))
-        val all = listOf(row("same", "juno"))
+        val all = listOf(row("same", "vega"))
         assertEquals(emptyList<String>(), DirectTransport.foreignRows(all, launch).map { it.id })
     }
 }

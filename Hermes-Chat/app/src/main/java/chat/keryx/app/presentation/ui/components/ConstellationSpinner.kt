@@ -110,7 +110,7 @@ private const val STARS = 5
 private val FIGURE = floatArrayOf(4f, 18f, 10f, 8f, 17f, 14f, 24f, 5f, 29f, 15f)
 
 /** One figure every [CYCLE_S]: each join takes [JOIN] of it, all let go from [LET_GO].
- *  Slower stars: 3.6 s read as a tad quick on the phone (Jonny, 10-16). */
+ *  Slower stars: 3.6 s read as a tad quick on the phone (10-16). */
 private const val CYCLE_S = 4.5f
 private const val JOIN = 0.15f
 private const val LET_GO = 0.8f

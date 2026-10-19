@@ -197,7 +197,7 @@ class SettingsRepositoryImpl(
         get() = prefs.getBoolean("allow_insecure", false)
         set(value) = prefs.edit().putBoolean("allow_insecure", value).apply()
 
-    /** Stored as one string: "milo=#5FD3BC;theo=#B08CFF" — a map in prefs would need a
+    /** Stored as one string: "scout=#5FD3BC;atlas=#B08CFF" — a map in prefs would need a
      *  StringSet dance and this is read on every bubble, so keep it cheap and ordered. */
     override var heraldAccents: Map<String, String>
         get() = (prefs.getString("herald_accents", "") ?: "")

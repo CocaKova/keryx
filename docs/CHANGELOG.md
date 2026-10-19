@@ -148,7 +148,7 @@ never released on its own.
   keeps going with the app closed.
 - A room is one conversation. Your words sit on the right; each member's sit on the left in its
   own light, as markdown. Long-press a message to reply in its thread.
-- "@juno ..." sends to just the members you name; chips fill in the handles, and @all reaches
+- "@vega ..." sends to just the members you name; chips fill in the handles, and @all reaches
   everyone.
 - "... is thinking" shows from your message until the room settles, with the chat's thinking
   animation. Stop cancels the room's work. A member's command approval is answered in the room
@@ -159,7 +159,7 @@ never released on its own.
   the background. No notifications for rooms yet.
 
 **Bot Chats**
-- When one bot messages another, the chat shows "Messaged @milo" and the words sent, on the page
+- When one bot messages another, the chat shows "Messaged @scout" and the words sent, on the page
   instead of folded into the tool run. The reply comes back as a message from that bot, not as a
   background-process notice. A message still waiting for an answer keeps the gateway's own notice
   instead of posing as a reply.
@@ -209,7 +209,7 @@ Fixes from the first day on 2.17.0.
 
 - Much less data while Keryx is open. Every "the session store moved" signal re-read fifty
   conversations and a hundred scheduled runs (about a quarter of a megabyte), and a turn running
-  anywhere sends one every couple of seconds, so a phone watching Sy work pulled megabytes a
+  anywhere sends one every couple of seconds, so a phone watching the agent work pulled megabytes a
   minute (10–20 MB per two hours on screen, measured on the device). Now a signal reads the top
   eight of each and merges them into the list already held, at most every four seconds; the full
   read runs at most every ninety seconds, which is what still catches deletions and archives.
@@ -460,7 +460,7 @@ Missions becomes a place you can act from, and Runs a place you can fix from. Ca
     open chat kept the old session. It now moves to the continuation in place, turn and all.
 - The context ring measures the way to compaction. It was drawn against the model's whole
   window, so it read about 60% the moment a session compacted. With a gateway that reports its
-  trigger (`usage.compact_at`, a SILAS gateway patch), a full ring means the next call compacts,
+  trigger (`usage.compact_at`, a local gateway patch), a full ring means the next call compacts,
   and the figure reads "31k to compaction". A stock gateway gets the ring it always had.
 - The ring moves during a turn. Its reading arrived only when a turn ended, so a long agent run
   showed its starting number the whole way through. The open chat re-reads it the moment the
@@ -469,7 +469,7 @@ Missions becomes a place you can act from, and Runs a place you can fix from. Ca
 - After a compaction the ring drops at once. The gateway stops reporting a reading until the next
   model call answers, so the ring held the full reading that triggered the compaction for that
   whole call. The gateway now reports its own estimate of the compacted size in that gap
-  (`SILAS_POST_COMPACTION_ESTIMATE`).
+  (`a patched gateway's post-compaction estimate`).
 - The compaction banner says how big the job is and how long it usually takes: "Compressing
   context (~141k tokens) · usually ~41 s". A compaction is one summarizing call with no progress
   of its own, so the phone keeps the last five durations it watched per model and shows the
@@ -498,7 +498,7 @@ Missions becomes a place you can act from, and Runs a place you can fix from. Ca
 ## 2.13.9 · versionCode 111
 
 - A mission alert reports into a conversation, never into machinery. 2.13.8 subscribed
-  whatever row was last open; the first alert Jonny set bound to the mission's own worker
+  whatever row was last open; the first alert the owner set bound to the mission's own worker
   transcript, which he had just been reading — a report that would land where nobody looks.
   The gateway door now skips worker, cron, subagent, bot and one-shot rows for the newest
   conversation.
@@ -534,7 +534,7 @@ Missions becomes a place you can act from, and Runs a place you can fix from. Ca
   string id (`srq-…`) that wants a response frame back — and the gateway only sends one to a
   client that has said `client.capabilities {server_requests: true}`. Keryx parsed only integer
   ids, so the frame fell on the floor, and it never advertised, so the gateway did not even wait:
-  every clarify came back empty in 20 ms, and the agent read that as "you skipped it" (Sy's 09-24
+  every clarify came back empty in 20 ms, and the agent read that as "you skipped it" (the agent's 09-24
   session, three times over). The socket now tells the gateway on every `gateway.ready` that it
   answers, routes string-id frames to the cards, answers with response frames, takes a batch of
   questions one card at a time (`clarify.lock` per question, "2 of 4" in the header), honours
@@ -571,7 +571,7 @@ Missions becomes a place you can act from, and Runs a place you can fix from. Ca
 - The Quick Settings note survives its own unlock on Android 8–10. There a PIN or pattern unlock
   is the system's confirm-credential screen, a separate activity; the note was `noHistory`, so
   being covered by it finished the note. It now finishes itself on leaving, except to unlock.
-- A `MEDIA:` path may hold an apostrophe (`/home/sy/o'brien.png`); only a trailing one is the
+- A `MEDIA:` path may hold an apostrophe (`/home/me/o'brien.png`); only a trailing one is the
   tag's closing quote. 2.13.1's quote fix had cut such paths at the apostrophe.
 
 ## 2.13.2 · versionCode 104

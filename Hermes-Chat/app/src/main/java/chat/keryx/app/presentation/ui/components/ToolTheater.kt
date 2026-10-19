@@ -107,7 +107,7 @@ fun ToolTheaterRow(
         )
         return
     }
-    // `skill_manage` is SILAS saving/editing a reusable skill (its closed learning loop) — surface
+    // `skill_manage` is the agent saving/editing a reusable skill (its closed learning loop) — surface
     // it distinctly so "it just learned something" stands out from ordinary tool noise. This rides
     // genuine, universal Hermes output (the tool call itself) — no config or plugin to set up.
     val isSkill = call.name == "skill_manage"
@@ -212,7 +212,7 @@ fun ToolTheaterRow(
         // did (`tool.complete.result`), the side-channel since every `end` frame started carrying
         // its result — and neither was drawn: a failure showed a ✕ and kept its reason to itself,
         // and a `write_file` result with the syntax oracle's verdict appended had no window at all
-        // (Jonny: "I don't see the tool payloads or failures"). A failure's reason is always on
+        // (feedback: "I don't see the tool payloads or failures"). A failure's reason is always on
         // show; the full payload is a fold, because a run of twelve calls is a wall otherwise.
         // Hermes flagged what came back (2.19): said once, in the warning colour, so it is
         // not lost in a long run. The model was warned too; this is the human's copy.
@@ -440,7 +440,7 @@ fun ToolTheaterRun(
     val wings = run.entries.filterIsInstance<ToolRunEntry.Delegated>().map { it.run }
     // The theater's glyphs, not the emoji the gateway happened to print into the message text:
     // the live view and this record are the same run at two ages and must not look like two
-    // different features (Jonny, on device: "the tool call log and the new tool call kind of
+    // different features (on device: "the tool call log and the new tool call kind of
     // fight"). Same source of truth for the summary sentence, too.
     // One tool per distinct glyph, so the strip's tints follow its shapes (2.6.2).
     val distinctGlyphTools = calls.map { it.name }.distinctBy { ToolGrammar.glyphOf(it) }.take(3)

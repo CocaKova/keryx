@@ -187,7 +187,7 @@ fun ChatScreen(
     // whole screen (~50 state reads, ~40 effects) on every streamed publish, ~10 a second.
     //
     // Only the open room's own list (3.0): the timeline follows a switch a beat late, and drawn
-    // in that beat it put the room being left under the new one's title (Jonny, 10-16).
+    // in that beat it put the room being left under the new one's title (10-16).
     val currentRoomState = viewModel.currentRoom.collectAsState()
     val timelineState = viewModel.timeline.collectAsState()
     val messagesState = remember {

@@ -2,9 +2,9 @@
 
 Built 2026-09-03 on branch `keryx-2.8-bots` (vc77 / 2.8.1, on top of 2.8.0 Bot Mode which is
 NOT yet walked). 657 unit tests green (642 + 15). Repo-root `keryx-2.8.1-{debug,release}.apk`.
-⚠️ Not walked on a phone — Jonny's phone was not reachable this session.
+⚠️ Not walked on a phone — the owner's phone was not reachable this session.
 
-Jonny's ask (09-03 evening): *"Categorization — model picker. Beautiful animations and designs
+The owner's ask (09-03 evening): *"Categorization — model picker. Beautiful animations and designs
 at every turn — the side navigation pane, model picker etc. the details. Something that makes
 Keryx stand apart on the mobile phone — the ability to control the phone like Google. Bug:
 clicking a cron sends a notification about that message when I'm already in it. New session
@@ -152,8 +152,8 @@ trailing word for where it lands: OPENS / APP / CLIPBOARD / PHONE / SHARE). Noti
 no ⟦keryx:ask⟧ is pending, up to 2 hands buttons ride the card. Manifest: `SET_ALARM` +
 `<queries>` for the launcher and every intent the hands send (package visibility on 30+).
 
-**Agent side:** `~/.hermes/silas_ext/wiki_context.py` `build_hands_protocol()` (re-exec'd every
-turn — LIVE, no restart; backup in the session scratchpad). SILAS is told the kinds, the
+**Agent side:** `~/.hermes/local_ext/wiki_context.py` `build_hands_protocol()` (re-exec'd every
+turn — LIVE, no restart; backup in the session scratchpad). The agent is told the kinds, the
 exact-token rule, "real values never placeholders", and that nothing happens without the tap.
 
 **V2 (the roadmap's real tool host, not built):** the agent CALLS a `phone` tool over the
@@ -178,17 +178,17 @@ vocabulary + sheet), `KeryxMarkers.kt` (HandsTiles), `MessageContent.kt`, `ChatR
 `SettingsRepository(.Impl).kt` (`recentModels`), `KeryxNotifications.kt`, the six reveal sites,
 `AndroidManifest.xml`, `build.gradle.kts` (vc77 / 2.8.1).
 
-## 6. Walk (Jonny)
+## 6. Walk (the owner)
 
 1. Runs door → tap a run that landed after the app opened → NO notification for it.
 2. Drawer plus → New session → the drawer slides away and the new session is on screen.
-3. Model pill → sheet: Recent shelf (after one switch), silas-brain under a green LOCAL
+3. Model pill → sheet: Recent shelf (after one switch), home-brain under a green LOCAL
    dot, Anthropic flat, Nous split by lab with "N more"; search "sonnet"; pick → pill rises,
    toast, reasoning ladder re-probes. Machines at the foot still swap the brain.
 4. Drawer: press a row/door (sinks), toggle theme (glyph turns), unread pill pops, badge
    count rolls. Any sheet: contents rise into place.
-5. Ask SILAS "navigate me to the H-E-B on Mueller" / "set an alarm for 6:45 called flight"
-   / "open Spotify" → tiles → tap → maps / clock / Spotify. Lock the phone, have SILAS send
+5. Ask the agent "navigate me to the H-E-B on Mueller" / "set an alarm for 6:45 called flight"
+   / "open Spotify" → tiles → tap → maps / clock / Spotify. Lock the phone, have the agent send
    one → the notification carries the button.
 6. A reply that took a few seconds → two soft beats when it lands (haptics on).
 

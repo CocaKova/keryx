@@ -30,7 +30,7 @@ class MissionsPulseTest {
     private fun obj(s: String) = Json.parseToJsonElement(s).jsonObject
 
     private fun task(id: String, status: String, needsYou: Boolean = false) = HermesStreamClient.KanbanTask(
-        id = id, title = id, assignee = "theo", status = status, priority = 0, createdBy = "user",
+        id = id, title = id, assignee = "atlas", status = status, priority = 0, createdBy = "user",
         createdAt = 0L, startedAt = null, completedAt = null, consecutiveFailures = 0, bodyExcerpt = "",
         needsYou = needsYou,
     )
@@ -148,7 +148,7 @@ class MissionsPulseTest {
     @Test
     fun `a run carries its worker session id when the gateway names one`() {
         val d = detailWithRuns(
-            """{"id":31,"profile":"theo","status":"running","outcome":"","started_at":100,"ended_at":null,
+            """{"id":31,"profile":"atlas","status":"running","outcome":"","started_at":100,"ended_at":null,
                 "session_id":"20260927_101500_ab12cd"}""",
         )
         assertEquals("20260927_101500_ab12cd", d.runs.single().sessionId)
@@ -157,9 +157,9 @@ class MissionsPulseTest {
     @Test
     fun `null, blank or missing session ids all read as none — the old deck, unchanged`() {
         val d = detailWithRuns(
-            """{"id":1,"profile":"theo","status":"crashed","session_id":null,"started_at":1},
-               {"id":2,"profile":"theo","status":"done","session_id":"  ","started_at":2},
-               {"id":3,"profile":"theo","status":"done","started_at":3}""",
+            """{"id":1,"profile":"atlas","status":"crashed","session_id":null,"started_at":1},
+               {"id":2,"profile":"atlas","status":"done","session_id":"  ","started_at":2},
+               {"id":3,"profile":"atlas","status":"done","started_at":3}""",
         )
         assertEquals(listOf(null, null, null), d.runs.map { it.sessionId })
     }
@@ -167,10 +167,10 @@ class MissionsPulseTest {
     @Test
     fun `the transcript sheet's meta says who, how it ended, and how long`() {
         val live = HermesStreamClient.KanbanRun(
-            id = 31, profile = "theo", status = "running", outcome = "", summary = "", error = "",
+            id = 31, profile = "atlas", status = "running", outcome = "", summary = "", error = "",
             startedAt = 1_000L, endedAt = null, durationSeconds = null, sessionId = "s",
         )
-        assertEquals("theo · running · 2m", runSessionMeta(live, nowSeconds = 1_130L))
+        assertEquals("atlas · running · 2m", runSessionMeta(live, nowSeconds = 1_130L))
         val landed = live.copy(outcome = "timed_out", endedAt = 5_000L, durationSeconds = 45L, profile = "")
         assertEquals("timed out · 45s", runSessionMeta(landed, nowSeconds = 9_999L))
     }

@@ -3,7 +3,7 @@
 Keryx 2.5 — launcher icon generator.
 
 2.5.2: the mark is now THE ECLIPSE — a void sigil knocked out of a bone field — replacing the
-kerykeion. Jonny's call. The adaptive layers map onto it exactly: the background IS the bone
+kerykeion. The owner's call. The adaptive layers map onto it exactly: the background IS the bone
 field (flat, full-bleed, so the launcher's mask decides the silhouette), and the foreground is
 the void sigil alone. Masked to a circle or a squircle, that composes back into the mark as
 drawn. Geometry comes from tools/icon_source/eclipse-sigil.svg, the same vector master as the
@@ -16,7 +16,7 @@ WHY THIS REPLACED THE BEZIER GENERATOR
 --------------------------------------
 Until 2.5 the launcher art came from tools/kerykeion_icon.py, which plotted the
 kerykeion as constant-width, round-capped monoline strokes.  That geometry was
-exact and symmetrical and it looked like clip art — Jonny, on device: "those
+exact and symmetrical and it looked like clip art — on device: "those
 look drawn by little kids".  The failure was structural, not a matter of
 tuning: a real mark needs tapered bodies, a shaped serpent head and wings with
 internal structure, which is filled-form work rather than traced lines.

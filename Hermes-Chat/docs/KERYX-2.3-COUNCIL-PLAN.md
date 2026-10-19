@@ -90,7 +90,7 @@ as a marker, so it is E2EE-wrapped like everything else and needs **no gateway c
   permission), **coarse place** (`ACCESS_COARSE_LOCATION`, `LocationManager` network provider,
   rounded to ~1 km, `Geocoder` locality when available). Calendar next-event is v1.1.
 - Settings → new "Senses" card: three switches + "last sent" line + a "send now" row.
-- Agent side needs nothing; the marker reads as plain text. SILAS's prompt can be told what the
+- Agent side needs nothing; the marker reads as plain text. The agent's prompt can be told what the
   marker means (one line in the personality block) — out of this repo.
 
 ## 5. Kerykeion icon
@@ -106,13 +106,13 @@ staff silhouette.
 
 > ## ⚰️ ABANDONED 2026-08-19 — do not rebuild
 >
-> Built, walked, and then **reverted in full to baseline** on Jonny's call: *"I can't think of
-> a use case where just Silas and you wouldn't be enough."* The Council room was deleted and
+> Built, walked, and then **reverted in full to baseline** on the owner's call: *"I can't think of
+> a use case where just the agent and you wouldn't be enough."* The Council room was deleted and
 > purged from Synapse the same day.
 >
 > **Why it could not work as designed.** The gateway builds its system prompt **once per
 > process** and reuses it across every multiplexed secondary profile, so all four heralds wore
-> whichever identity happened to take the first council turn after startup — proof: once Theo
+> whichever identity happened to take the first council turn after startup — proof: once Atlas
 > answered first, every other herald deflected its *own* name. The prompt is then frozen into
 > `sessions.system_prompt_hash` and survives restarts. `_agent_home()` is never reached on that
 > path. Fixing it means a real change to the gateway's prompt lifecycle, not configuration.
@@ -122,27 +122,27 @@ staff silhouette.
 > `HERMES_MULTIPLEX_ROUTING_ONLY=true`, `matrix.require_mention: false`, and the temporary
 > `system_prompt.py` instrumentation. Persona rooms verified working afterwards.
 >
-> **Left inert** (costs nothing, unused under routing-only): the `@milo @theo @sterling @juno`
-> Synapse accounts, the Matrix identity block + `MATRIX_ALLOWED_USERS=@jonny` in
+> **Left inert** (costs nothing, unused under routing-only): the `@scout @atlas @ledger @vega`
+> Synapse accounts, the Matrix identity block + `MATRIX_ALLOWED_USERS=@sam` in
 > `profiles/*/.env`, and `~/.hermes/council/heralds.env`.
 >
 > ⚠️ **The app-side work is unaffected.** §§1–5 and 7 never depended on this; Heraldry degrades
 > to exactly 2.2's look when only one herald is configured. The plan below is kept as a record
 > of what was tried.
 
-Facts (verified 08-19): all five profiles shared `@silas:silas.local`; routing-only multiplex
+Facts (verified 08-19): all five profiles shared `@hermes:example.org`; routing-only multiplex
 stamps `source.profile` per *room*; upstream Matrix adapter already anticipates multi-bot rooms
 (`thread_require_mention` "prevents infinite reply loops in multi-agent shared rooms"); replies
 are `m.text`; unauthorized senders in group rooms are *silently ignored*; pairing codes only in
 DMs.
 
 Built 08-19:
-- Synapse accounts `@milo @theo @sterling @juno` (display names set), creds in
+- Synapse accounts `@scout @atlas @ledger @vega` (display names set), creds in
   `~/.hermes/council/heralds.env` (0600).
-- Room **The Council** `!roomid:example.org` — @silas + the four heralds joined,
-  @jonny invited (accept in Keryx). Topic: "Address one by name; they answer only when called."
+- Room **The Council** `!roomid:example.org` — @hermes + the four heralds joined,
+  @sam invited (accept in Keryx). Topic: "Address one by name; they answer only when called."
 - `profiles/<herald>/.env` rewritten (backups in `~/.hermes/council/backup-env-*`): own
-  `MATRIX_USER_ID/ACCESS_TOKEN`, `MATRIX_ALLOWED_USERS` = jonny + silas + all heralds,
+  `MATRIX_USER_ID/ACCESS_TOKEN`, `MATRIX_ALLOWED_USERS` = sam + hermes + all heralds,
   `MATRIX_ALLOWED_ROOMS` = the council, `MATRIX_REQUIRE_MENTION=true`,
   `MATRIX_THREAD_REQUIRE_MENTION=true`, Discord/Telegram/api_server removed (those were
   byte-copies of the default's and would double-poll).
@@ -150,49 +150,49 @@ Built 08-19:
   `hermes-herald@.service`).~~ **WRONG — corrected 08-19.** The default gateway runs as a
   **profile multiplexer** (`gateway.multiplex_profiles: true`) and already serves every profile
   under `profiles/`, heralds included. A second gateway per herald refuses to start: *"The default
-  gateway is running as a profile multiplexer and already serves profile 'milo' … would
+  gateway is running as a profile multiplexer and already serves profile 'scout' … would
   double-bind its platforms."* The `hermes-herald@.service` unit was written, proved to crash-loop
   against that guard, and **removed**. Do not re-add it.
 
   ⚠️ **But a restart alone is NOT enough** (proved on device 08-19). `~/.hermes/.env:64` sets
-  `HERMES_MULTIPLEX_ROUTING_ONLY=true`, a SILAS_EXT patch. The gateway then logs:
+  `HERMES_MULTIPLEX_ROUTING_ONLY=true`, a LOCAL_EXT patch. The gateway then logs:
 
       Multiplex: routing-only mode — 6 profile(s) registered on the shared adapters
       (api_server, homeassistant, matrix, webhook); no secondary connections started.
 
-  **One** Matrix connection exists (`@silas`, device HERMES_GATEWAY, 9 rooms) and profiles are
-  routed by room. The herald accounts `@milo/@theo/@juno/@sterling` are NEVER logged in, so a
-  message addressed to Milo in the council gets silence — verified by posting one and waiting.
-  (`@milo`'s device `last_seen` updating is NOT evidence of life; that is just our own API calls
+  **One** Matrix connection exists (`@hermes`, device HERMES_GATEWAY, 9 rooms) and profiles are
+  routed by room. The herald accounts `@scout/@atlas/@vega/@ledger` are NEVER logged in, so a
+  message addressed to Scout in the council gets silence — verified by posting one and waiting.
+  (`@scout`'s device `last_seen` updating is NOT evidence of life; that is just our own API calls
   with its token.)
 
   Without the env var, the upstream branch creates and connects a real adapter per profile under
-  that profile's HERMES_HOME + credentials. Resolved platform sets: `milo` = {matrix,
+  that profile's HERMES_HOME + credentials. Resolved platform sets: `scout` = {matrix,
   homeassistant} — neither binds a port, so no `SecondaryPortBindingConfigError`. ⚠️ But
-  `mc-builder` uses `MATRIX_USER_ID=@silas` and `trial` has no Matrix creds at all, so both would
+  `mc-builder` uses `MATRIX_USER_ID=@hermes` and `trial` has no Matrix creds at all, so both would
   hit the "two profiles polling the same bot token" collision check and be refused — which is
   precisely what routing-only was patched in to avoid. Flipping the flag globally therefore fixes
-  the council and risks the existing shared-`@silas` room routing.
+  the council and risks the existing shared-`@hermes` room routing.
 
-  **The clean fix is a per-profile split** in `SILAS_EXT_ROUTING_ONLY_REGISTER`: profiles that own
+  **The clean fix is a per-profile split** in `LOCAL_EXT_ROUTING_ONLY_REGISTER`: profiles that own
   distinct Matrix credentials get real secondary connections; shared-credential profiles keep
-  routing-only registration. Not yet written — Jonny's call.
+  routing-only registration. Not yet written — the owner's call.
 
   ⚠️ Two mechanisms now coexist. `platforms.matrix.room_profile_map` is the OLD routing-only
-  scheme — one `@silas` connection where the *room* picks the profile (The Forge → milo, The Study
-  → theo, The Ledger → sterling, True North → juno). The council instead uses per-herald
+  scheme — one `@hermes` connection where the *room* picks the profile (The Forge → scout, The Study
+  → atlas, The Ledger → ledger, True North → vega). The council instead uses per-herald
   *accounts*. They don't collide: each herald's `MATRIX_ALLOWED_ROOMS` is the council alone, so a
   herald adapter ignores the room its room_profile_map entry already covers.
-- Sy's gating — **staged 08-19, needs the restart.** `matrix.require_mention: true` is now in
+- The agent's gating — **staged 08-19, needs the restart.** `matrix.require_mention: true` is now in
   `~/.hermes/config.yaml`. `free_response_rooms` is deliberately left **empty**: the adapter skips
   the mention gate entirely for DMs (`if not is_dm:`) and `_resolve_room_identity` treats
-  *member_count <= 2* as the primary DM signal regardless of `m.direct` (404 for Sy anyway). Sy is
+  *member_count <= 2* as the primary DM signal regardless of `m.direct` (404 for the agent anyway). The agent is
   in 9 rooms and The Council is the only one with >2 members, so this changes his behaviour in
-  exactly one room and Jonny never has to @ him anywhere else.
+  exactly one room and the owner never has to @ it anywhere else.
   ⚠️ If a 1:1 room ever gains a third member it becomes gated too — add it to `free_response_rooms`.
 
 Loop safety: mention-gating on every herald; each herald's SOUL gets a council clause ("answer
-the one who called you; never @-call another herald unless Jonny asked for a relay").
+the one who called you; never @-call another herald unless the owner asked for a relay").
 **Done 08-19** — a `## The Council` section was appended to all four SOULs (backups at
 `SOUL.md.bak-council-*`): answer only when called, never @-mention another herald, stay in your
 seat, be brief, you are still yourself here.
@@ -214,7 +214,7 @@ Council* (several agents, one room, each its own light). Framing only; the code 
 | 3 | Arrival | **built** — `ChatRenderItem.Arrival`, hairline mark in the herald's hue, one light sweep on the bubble, `☤ <name>` notification title. 13 tests. |
 | 4 | Senses | **built** — card in Settings → Privacy & Security, marker appended on the send path, stripped from my own bubble in the repository, plus the plan's "send now" row (implemented as *drop the throttle*, since Senses never sends on its own). 24 tests. |
 | 5 | Kerykeion icon | **built** — and the generator now lives at `Hermes-Chat/tools/kerykeion_icon.py`; re-running it reproduces every committed PNG and vector byte-for-byte. |
-| 6 | The Council (infra) | ⚰️ **abandoned** 08-19 — built, then reverted to baseline in full on Jonny's call; the room is deleted and purged. Root cause and the revert list are in §6. **Do not rebuild.** The app-side additions do not depend on it. |
+| 6 | The Council (infra) | ⚰️ **abandoned** 08-19 — built, then reverted to baseline in full on the owner's call; the room is deleted and purged. Root cause and the revert list are in §6. **Do not rebuild.** The app-side additions do not depend on it. |
 | 7 | Continuity copy | **built** — README gains "The room is the truth" and "The Council". |
 
 298 unit tests pass; `assembleDebug` is clean. **Not yet walked on device** — the phone was off
@@ -231,8 +231,8 @@ and keeps its monogram; opening it once already calls `ensureMembersLoaded`, and
 so the sigil is there from then on.
 
 **One deliberate divergence from §1.** The plan only changed rooms with **≥2** heralds. That rule
-would have been invisible in practice: every one of Jonny's rooms is a two-member room with the
-same single agent (the personas are routed *inside* `@silas` by `room_profile_map`, not by separate
+would have been invisible in practice: every one of the owner's rooms is a two-member room with the
+same single agent (the personas are routed *inside* `@hermes` by `room_profile_map`, not by separate
 accounts), so nothing would ever have stacked. So `RoomSigil` answers per shape instead:
 
 - **Stack** (≥2 heralds) — one staff per herald in its own hue on the void plate, exactly as §1 asked.
@@ -248,5 +248,5 @@ room's timestamp) does not tear down and rebuild the member subscriptions.
 ## Sequence & shipping
 
 Patch cadence rule: 2.2 (gilded void + composer) is already on the phone uncommitted; 2.3 is a
-milestone minor (Jonny: council = milestone). Order: 1 → 2 → 5 → 3 → 4 → 6 → 7; each step
+milestone minor (feedback: council = milestone). Order: 1 → 2 → 5 → 3 → 4 → 6 → 7; each step
 compile-clean; device walk after 1+2+5, again after 3+4.

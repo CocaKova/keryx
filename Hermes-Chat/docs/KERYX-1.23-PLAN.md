@@ -14,7 +14,7 @@ Two threads, one release:
    small design system and applies it **everywhere**, so the app reads as one dream instead
    of a dream with a settings app stapled to it.
 
-Decisions locked with Jonny (2026-07-17): themed **vertical** Missions flow (no lane pager);
+Decisions locked with the owner (2026-07-17): themed **vertical** Missions flow (no lane pager);
 knob scope = Missions engine + Display extras + Compression dials + Integration toggles
 (Agent-behavior knobs deliberately skipped); coherency sweep = **whole app**.
 
@@ -72,7 +72,7 @@ NOT cache-seeded, never seed `mission_events_cursor` with 0.
 
 ## Phase C — gateway customization (plugin + Controls)
 
-Server side: `~/.hermes/silas_ext/payloads/keryx_stream.py` `_CONFIG_KNOBS` grows, each knob
+Server side: `~/.hermes/local_ext/payloads/keryx_stream.py` `_CONFIG_KNOBS` grows, each knob
 whitelisted/validated/clamped exactly like the existing 5, `KERYX_CONFIG_LOCKED` honored
 per-key. **New `float` knob kind** (compression threshold) lands in plugin + app + tests.
 
@@ -110,9 +110,9 @@ sheet chrome, transitions → the one motion spec. **No behavior changes in this
 - Tests: knob fixture parsing incl. float kind; integrations JSON parsing; lane-jump
   section-index logic as pure functions.
 - Version 1.23.0 (vc43), tag, GitHub release APK.
-- Plugin payload: edit in `silas_ext/payloads/`, then **manual `cp` to
+- Plugin payload: edit in `local_ext/payloads/`, then **manual `cp` to
   `~/.hermes/hermes-agent/gateway/keryx_stream.py`** (reapply only WARNS on drift) +
-  gateway restart **when idle** (SILAS room gets the shutdown notice).
+  gateway restart **when idle** (the agent room gets the shutdown notice).
 - Public keryx-stream mirror stays behind until upstream #65077 resolves — unchanged.
 
 ## Standing gotchas (carry-over)

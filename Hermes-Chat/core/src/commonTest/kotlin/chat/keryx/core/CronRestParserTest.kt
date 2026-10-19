@@ -24,13 +24,13 @@ class CronRestParserTest {
             {"id":"local","name":"Local (save only)","home_target_set":true,"home_env_var":null},
             {"id":"matrix","name":"Matrix","home_target_set":true,"home_env_var":"MATRIX_HOME_ROOM"},
             {"id":"telegram","name":"Telegram","home_target_set":false,"home_env_var":"TELEGRAM_HOME_CHANNEL"},
-            {"id":"bot-chat:sy","name":"Bot Chat (sy)","home_target_set":true,"home_env_var":null},
+            {"id":"bot-chat:rook","name":"Bot Chat (rook)","home_target_set":true,"home_env_var":null},
             {"name":"no id, dropped"}
         ]}"""
         val t = CronRestParser.deliveryTargets(body)!!
-        assertEquals(listOf("local", "matrix", "telegram", "bot-chat:sy"), t.map { it.id })
+        assertEquals(listOf("local", "matrix", "telegram", "bot-chat:rook"), t.map { it.id })
         assertFalse(t[2].homeSet)
-        assertEquals("Bot Chat (sy)", t[3].name)
+        assertEquals("Bot Chat (rook)", t[3].name)
     }
 
     @Test

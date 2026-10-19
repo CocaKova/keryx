@@ -45,7 +45,7 @@ class SilenceTokensTest {
         val chrono = listOf(
             m("1", SenderType.ME, "Anything to add?"),
             m("2", SenderType.HERMES, "No reply."),
-            m("3", SenderType.SYSTEM, "Message from Milo: status?"),
+            m("3", SenderType.SYSTEM, "Message from Scout: status?"),
             m("4", SenderType.HERMES, "[SILENT]"),
             m("5", SenderType.ME, "And now?"),
             m("6", SenderType.HERMES, "Checking."),

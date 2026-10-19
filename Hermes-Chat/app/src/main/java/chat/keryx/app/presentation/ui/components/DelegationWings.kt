@@ -56,7 +56,7 @@ import androidx.compose.ui.draw.drawBehind
  * This is what survived the tool theater's live stage (3.1 §A3). The stage itself is gone — the
  * transcript renders a turn's tool calls now, live and settled alike, so a second live vocabulary
  * inside the reply bubble had nothing left to say that the run above it wasn't already saying
- * better. (Jonny, on device, 2.4: "the tool call log and the new tool call kind of fight." They
+ * better. (on device, 2.4: "the tool call log and the new tool call kind of fight." They
  * were two ages of one run; there is one now.)
  *
  * A delegation is the exception, and always was. A delegated child is not a session you can open

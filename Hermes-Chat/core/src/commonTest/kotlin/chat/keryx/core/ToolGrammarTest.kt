@@ -12,7 +12,7 @@ import kotlin.test.Test
 /**
  * The shared tool vocabulary (2.4). Worth pinning because it is the thing that stops the live
  * view and the committed transcript reading as two different features — if these drift, the
- * "fight" Jonny saw on device comes back.
+ * "fight" the owner saw on device comes back.
  */
 class ToolGrammarTest {
 

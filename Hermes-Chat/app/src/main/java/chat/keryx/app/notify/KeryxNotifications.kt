@@ -89,7 +89,7 @@ object KeryxNotifications {
     /** Several agents at once, or none in particular: Keryx's own verdigris. */
     const val COLOR_KERYX = 0xFF1E6F8C.toInt()
 
-    /** The palette slot the transcript gives this speaker ("bot:theo" hashes as "theo"). */
+    /** The palette slot the transcript gives this speaker ("bot:atlas" hashes as "atlas"). */
     private fun paletteFor(key: String, name: String = ""): Pair<Long, Long> {
         val bare = key.substringAfter(':', key).ifBlank { name }
         return Heralds.PALETTE[Math.floorMod(Heralds.stableHash(bare), Heralds.PALETTE.size)]
@@ -328,7 +328,7 @@ object KeryxNotifications {
         iconCache.getOrPut(key) {
             val density = context.resources.displayMetrics.density
             val px = (48 * density).toInt().coerceAtLeast(48)
-            // "bot:theo" / "agent:juno" hash as "theo" / "juno" — the roster's own key — so a
+            // "bot:atlas" / "agent:vega" hash as "atlas" / "vega" — the roster's own key — so a
             // bot wears one colour in the shade and in the app.
             val (accent, accent2) = paletteFor(key, name)
             val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)

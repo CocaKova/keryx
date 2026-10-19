@@ -224,7 +224,7 @@ class CallController(
         }
         try {
             log("send: link=${viewModel.linkState()} room=${viewModel.currentRoomId()}")
-            // The marker tells the agent this was SAID and will be read aloud (SILAS is taught
+            // The marker tells the agent this was SAID and will be read aloud (the agent is taught
             // it in wiki_context.py: answer first, talk plain, tools after a sentence). The
             // phone strips it from bubbles like every other ⟦keryx:…⟧ marker.
             viewModel.sendMessage("$userText $VOICE_MARKER")

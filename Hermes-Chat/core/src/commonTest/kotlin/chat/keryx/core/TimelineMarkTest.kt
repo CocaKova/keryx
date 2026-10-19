@@ -96,7 +96,7 @@ class TimelineMarkTest {
     @Test
     fun `a note reads as its first sentence`() {
         val note = "[IMPORTANT: Background process proc_6b5fbe8b0721 completed normally (exit code 0).\n" +
-            "Command: systemctl --user start silas-brain-sync.service\nOutput:\n]"
+            "Command: systemctl --user start home-brain-sync.service\nOutput:\n]"
         val mark = TimelineMarks.of(null, note)
         assertEquals("Background process proc_6b5fbe8b0721 completed normally (exit code 0)", mark.label)
         assertEquals(TimelineMarks.NOTE, mark.kind)

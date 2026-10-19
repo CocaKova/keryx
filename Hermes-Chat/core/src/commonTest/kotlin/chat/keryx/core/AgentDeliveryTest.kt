@@ -27,8 +27,8 @@ class AgentDeliveryTest {
 
     @Test
     fun `emoji-less form`() {
-        val d = AgentDelivery.parse("Message from Sterling: ledger is reconciled")!!
-        assertEquals("Sterling", d.sender)
+        val d = AgentDelivery.parse("Message from Ledger: ledger is reconciled")!!
+        assertEquals("Ledger", d.sender)
         assertEquals("ledger is reconciled", d.body)
     }
 
@@ -54,7 +54,7 @@ class AgentDeliveryTest {
 
     @Test
     fun `multiline body survives`() {
-        val d = AgentDelivery.parse("Message from 🤖 Sy: line one\nline two")!!
+        val d = AgentDelivery.parse("Message from 🤖 the agent: line one\nline two")!!
         assertEquals("line one\nline two", d.body)
     }
 
@@ -85,26 +85,26 @@ class AgentDeliveryCommandTest {
 
     @Test
     fun `the shape a live 0-20-2 gateway actually stored`() {
-        val cmd = "hermes -p theo chat -c \"Inbox\" --create-if-missing --max-turns 1 -Q " +
-            "-q \"Message from 🤖 SILAS (@default): ping from the sender-side test, reply with just pong\""
-        assertEquals("theo", AgentDeliveryCommand.targetOf(cmd))
+        val cmd = "hermes -p atlas chat -c \"Inbox\" --create-if-missing --max-turns 1 -Q " +
+            "-q \"Message from 🤖 the agent (@default): ping from the sender-side test, reply with just pong\""
+        assertEquals("atlas", AgentDeliveryCommand.targetOf(cmd))
         assertEquals(
-            "theo",
+            "atlas",
             AgentDeliveryCommand.targetOfCall("terminal", """{"command": ${quoted(cmd)}, "timeout": 120}"""),
         )
     }
 
     @Test
     fun `an ordinary command is not a delivery`() {
-        assertNull(AgentDeliveryCommand.targetOf("hermes -p sterling chat -q \"summarise the ledger\""))
+        assertNull(AgentDeliveryCommand.targetOf("hermes -p ledger chat -q \"summarise the ledger\""))
         assertNull(AgentDeliveryCommand.targetOf("ls -p /tmp"))
         assertNull(AgentDeliveryCommand.targetOf("grep -p 'Message from' notes.md"))
     }
 
     @Test
     fun `only a terminal call can be a delivery`() {
-        val args = """{"command":"hermes -p theo chat -Q -q \"Message from 🤖 X: hi\""}"""
-        assertEquals("theo", AgentDeliveryCommand.targetOfCall("terminal", args))
+        val args = """{"command":"hermes -p atlas chat -Q -q \"Message from 🤖 X: hi\""}"""
+        assertEquals("atlas", AgentDeliveryCommand.targetOfCall("terminal", args))
         assertNull(AgentDeliveryCommand.targetOfCall("write_file", args))
     }
 
@@ -121,14 +121,14 @@ class AgentDeliveryCommandTest {
     fun `Keryx reads the command straight out of a fenced call's args`() {
         // Keryx parses tool calls out of rendered text, so `args` is the command itself — no JSON
         // envelope to unwrap. Talaria's path only ever sees the JSON form.
-        val cmd = "hermes -p juno chat -Q -q \"Message from 🤖 SILAS: status?\""
-        assertEquals("juno", AgentDeliveryCommand.targetOfCall("terminal", cmd))
+        val cmd = "hermes -p vega chat -Q -q \"Message from 🤖 the agent: status?\""
+        assertEquals("vega", AgentDeliveryCommand.targetOfCall("terminal", cmd))
     }
 
     @Test
     fun `a multi-line fenced command still resolves`() {
-        val cmd = "cd ~/workspace &&\n  hermes -p milo chat -Q \\\n    -q \"Message from 🤖 SILAS: ping\""
-        assertEquals("milo", AgentDeliveryCommand.targetOfCall("terminal", cmd))
+        val cmd = "cd ~/workspace &&\n  hermes -p scout chat -Q \\\n    -q \"Message from 🤖 the agent: ping\""
+        assertEquals("scout", AgentDeliveryCommand.targetOfCall("terminal", cmd))
     }
 
     @Test
@@ -160,7 +160,7 @@ class AgentDeliveryCommandTest {
               ⚠ TERMINAL_CWD=/home/user found in .env — this is deprecated.
 
             ┌─ Reasoning ──────────────────────────────────┐
-            The user is sending a test message from the SILAS profile.
+            The user is sending a test message from the default profile.
             No tool needed. Just reply "pong."
 
             session_id: 20260817_174136_c401e5
@@ -192,7 +192,7 @@ class AgentDeliveryCommandTest {
     fun `an echoed prefix in the reply is addressing, not content`() {
         assertEquals(
             "ledger reconciled",
-            AgentDeliveryCommand.replyText("Message from 🤖 Sterling (@sterling): ledger reconciled"),
+            AgentDeliveryCommand.replyText("Message from 🤖 Ledger (@ledger): ledger reconciled"),
         )
     }
 
@@ -204,25 +204,25 @@ class AgentDeliveryCommandTest {
     // ---- message_agent (2.18) ----------------------------------------------------------------
 
     @Test fun messageAgentCallsNameTheirTargetAndMessage() {
-        val args = """{"target": "@Milo", "message": "Check Spire for me"}"""
-        kotlin.test.assertEquals("Milo", AgentDeliveryCommand.targetOfCall("message_agent", args))
+        val args = """{"target": "@Scout", "message": "Check Spire for me"}"""
+        kotlin.test.assertEquals("Scout", AgentDeliveryCommand.targetOfCall("message_agent", args))
         kotlin.test.assertEquals("Check Spire for me", AgentDeliveryCommand.messageOfCall("message_agent", args))
         // A compaction digest instead of JSON still reads.
-        val digest = "target=sterling message=Bot-chat test + real ask. Jonny wants to (324 chars result)"
-        kotlin.test.assertEquals("sterling", AgentDeliveryCommand.targetOfCall("message_agent", digest))
-        kotlin.test.assertEquals("Bot-chat test + real ask. Jonny wants to", AgentDeliveryCommand.messageOfCall("message_agent", digest))
+        val digest = "target=ledger message=Bot-chat test + real ask. The owner wants to (324 chars result)"
+        kotlin.test.assertEquals("ledger", AgentDeliveryCommand.targetOfCall("message_agent", digest))
+        kotlin.test.assertEquals("Bot-chat test + real ask. The owner wants to", AgentDeliveryCommand.messageOfCall("message_agent", digest))
         kotlin.test.assertEquals(null, AgentDeliveryCommand.messageOfCall("terminal", args))
     }
 
     @Test fun onlyACleanSingleDeliveryCompletionIsAReply() {
-        val ok = "[IMPORTANT: Background process p completed normally (exit code 0).\nCommand: python bot_mode_dm.py --run-delivery q hermes -p theo chat -c 'Bot Chat' -Q\nOutput:\nOn it.]"
+        val ok = "[IMPORTANT: Background process p completed normally (exit code 0).\nCommand: python bot_mode_dm.py --run-delivery q hermes -p atlas chat -c 'Bot Chat' -Q\nOutput:\nOn it.]"
         kotlin.test.assertEquals("On it.", AgentDeliveryCommand.completionReply(ok)?.body)
         kotlin.test.assertEquals(null, AgentDeliveryCommand.completionReply(ok.replace("bot_mode_dm.py", "build.sh")))
         kotlin.test.assertEquals(null, AgentDeliveryCommand.completionReply(ok + "\n" + ok))
     }
 
     @Test fun aReplyAboveTheSessionLineIsKept() {
-        // The live layout of a delivery's output (Sy's history, 09-03): answer first, then the
+        // The live layout of a delivery's output (the agent's history, 09-03): answer first, then the
         // CLI's own bookkeeping, then `session_id:` as the last line.
         val out = "Reported to @hermes.\nSPIRE HEALTH\n- Running clean.\n" +
             "Session 20260903_224452_11a96c found but has no messages. Starting fresh.\n\n" +
@@ -235,7 +235,7 @@ class AgentDeliveryCommandTest {
     @Test fun aLiveChatDeliveryIsAReplyOnlyOnceSettled() {
         // The recipient's Bot Chat was open: bot_mode_dm.py `_wait_live_dm` prints one JSON line.
         fun done(json: String) = "[IMPORTANT: Background process p completed normally (exit code 0).\n" +
-            "Command: python bot_mode_dm.py --run-delivery q hermes -p milo chat -c 'Bot Chat' -Q\nOutput:\n$json]"
+            "Command: python bot_mode_dm.py --run-delivery q hermes -p scout chat -c 'Bot Chat' -Q\nOutput:\n$json]"
         val settled = done("""{"reply": "Spire is healthy.", "status": "settled", "delivery_id": "d1"}""")
         assertEquals("Spire is healthy.", AgentDeliveryCommand.completionReply(settled)?.body)
         val queued = done("""{"status": "queued", "delivery_id": "d1", "detail": "Delivery remains pending or its outcome is unknown."}""")

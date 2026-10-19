@@ -231,7 +231,7 @@ class FleetDelegate(
         if (direct != null && !switched) {
             // No relaunch to pick the Link up (3.0): without this the pairing took, the device
             // showed in `hermes keryx devices`, and the app went on with the empty Link it
-            // started with until its next launch (stock-Hermes pair test, VIRDARA, 10-16).
+            // started with until its next launch (stock-Hermes pair test, the build VM, 10-16).
             if (link != null) onLinkCommitted()
             direct.login()
             notice?.let(toast)

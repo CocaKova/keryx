@@ -123,11 +123,11 @@ class MessageParserTest {
 
     @Test
     fun thinkingLines_groupedIntoOnePane() {
-        val content = "🧠 memory: \"User: Jonny\"\n🧠 reasoning about the plan"
+        val content = "🧠 memory: \"User: the owner\"\n🧠 reasoning about the plan"
         val thinking = MessageParser.parse(content)
             .filterIsInstance<MessageParser.Segment.Thinking>()
             .single()
-        assertTrue(thinking.text.contains("memory: \"User: Jonny\""))
+        assertTrue(thinking.text.contains("memory: \"User: the owner\""))
         assertTrue(thinking.text.contains("reasoning about the plan"))
     }
 
@@ -209,7 +209,7 @@ class MessageParserTest {
 
     @Test
     fun jsonFence_withToolKeys_becomesActionCard() {
-        val content = "```json\n{\"tool\": \"graphiti_search\", \"args\": {\"q\": \"jonny\"}, \"result\": \"3 hits\"}\n```"
+        val content = "```json\n{\"tool\": \"graphiti_search\", \"args\": {\"q\": \"sam\"}, \"result\": \"3 hits\"}\n```"
         val segments = MessageParser.parse(content)
         val action = segments.filterIsInstance<MessageParser.Segment.ActionOutput>().single()
         assertEquals("graphiti_search", action.tool)
@@ -391,7 +391,7 @@ class MessageParserTest {
         // Shaped like the real 2026-07-09 message: a deleted memory entry's preview quotes a
         // literal <thought>/<reasoning> mention; the tail (more memory items + a skill pill)
         // must stay in the review, not fold into a Thinking canvas.
-        val content = "💾 Self-improvement review: Memory ➕ Himalaya: two Gmail accounts configured… · " +
+        val content = "💾 Self-improvement review: Memory ➕ Himalaya: two mail accounts configured… · " +
             "Memory ➖ Matrix gateway adapter now wraps <thought> and <reasoning> b… · " +
             "Memory ➖ Trixnity SDK version 4.16.8 resolves from Maven Central; avo… · " +
             "📝 Skill 'delegation-patterns' created: How to use delegate_task effectively"
@@ -580,7 +580,7 @@ class MessageParserTest {
     fun selfImprovementReview_verboseSkillAndMemoryActions() {
         val msg = "💾 Self-improvement review: " +
             "📝 Skill 'android-builds' patched: \"old step\" → \"new step\" · " +
-            "Memory ➕ Jonny prefers verbose review summaries"
+            "Memory ➕ the owner prefers verbose review summaries"
         assertTrue(MessageParser.isTelemetryMessage(msg))
         assertTrue(MessageParser.isSelfImprovementReview(msg))
 
@@ -593,7 +593,7 @@ class MessageParserTest {
         val telemetry = segs.filterIsInstance<MessageParser.Segment.Telemetry>().single()
         assertTrue(telemetry.text.startsWith("💾 Self-improvement review"))
         // One action per line, not one " · " mega-line; skill items live in the pill instead.
-        assertTrue(telemetry.text.contains("\nMemory ➕ Jonny prefers verbose review summaries"))
+        assertTrue(telemetry.text.contains("\nMemory ➕ the owner prefers verbose review summaries"))
         assertTrue(!telemetry.text.contains("android-builds"))
     }
 

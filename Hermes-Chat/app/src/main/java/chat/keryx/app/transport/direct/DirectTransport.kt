@@ -427,7 +427,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             // KawaiiSpinner status tick ("(¬_¬) pondering...") the agent emits before EVERY
             // API call (conversation_loop.py → gateway thinking_callback). Desktop ignores it
             // outright (gateway-event.ts) — folding it in here stamped a kaomoji into the
-            // reasoning disclosure once per call (Jonny's live-caught report, 08-15).
+            // reasoning disclosure once per call (the owner's live-caught report, 08-15).
             "reasoning.delta" -> {
                 val t = pStr("text") ?: ""
                 store.streamReasoning(t)
@@ -517,7 +517,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                     else chat.keryx.core.model.SessionStatus.of(kind, text)
                 // A compaction just finished: the ring still shows the reading that triggered it
                 // (a full ring) until someone asks. The gateway has its post-compaction estimate
-                // from this moment (SILAS_POST_COMPACTION_ESTIMATE); ask now.
+                // from this moment (a patched gateway's post-compaction estimate); ask now.
                 if (kind == "compacted") nudgeUsage(storedId, minGapMs = 0L)
                 // Failure-shaped status lines are the agent's OWN error report ("❌
                 // Non-retryable error (HTTP 400): …" — run_agent buffers retry chatter and
@@ -661,7 +661,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     /**
      * The change-driven roster read (2.17.1). Every `sessions.changed` used to re-read fifty
      * conversations AND a hundred scheduled runs — about a quarter of a megabyte — and a turn
-     * running anywhere fires one every couple of seconds, so a phone with Keryx open while Sy
+     * running anywhere fires one every couple of seconds, so a phone with Keryx open while the agent
      * worked pulled megabytes a minute (device, 10-03: 10–20 MB per two hours on screen).
      * Now: the top few of each, merged into what is held; the full read only every
      * [FULL_REFRESH_EVERY_MS], or when nothing is held yet. Off screen the full read waits for
@@ -836,7 +836,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
     /**
      * A foreign turn grew the session by [grownBy] rows: read just that tail plus a little
      * overlap and append it (2.17.1). Re-reading the whole page — 120 rows and every tool
-     * output in them — on each growth made watching a session Sy drove from elsewhere pull the
+     * output in them — on each growth made watching a session the agent drove from elsewhere pull the
      * same transcript every few seconds. Falls back to the full re-read when nothing is held
      * yet, the jump is large, or the tail doesn't reach back to what is held (a gap).
      */
@@ -2978,7 +2978,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 ?.toDoubleOrNull()?.toLong() ?: cur.contextUsed,
             contextMax = usage?.get("context_max")?.primitiveOrNull?.contentOrNull
                 ?.toDoubleOrNull()?.toLong() ?: cur.contextMax,
-            // The auto-compaction trigger (a SILAS gateway patch, 2026-09-25): absent on a
+            // The auto-compaction trigger (a local gateway patch, 2026-09-25): absent on a
             // stock gateway, and then the ring reads against the window as it always did.
             compactAt = usage?.get("compact_at")?.primitiveOrNull?.contentOrNull
                 ?.toDoubleOrNull()?.toLong() ?: cur.compactAt,

@@ -16,7 +16,7 @@ import org.junit.Test
  * The backend's questions to the phone (hermes `tui_gateway/server_requests.py`, ebe8cda8): a
  * JSON-RPC request FROM the gateway with a string id, answered by a response frame carrying it.
  * Frames shaped like the wire on 2026-09-24. Before 2.13.6 the string-id request fell through
- * the integer-id parse and was dropped — Sy asked three times, the phone showed nothing.
+ * the integer-id parse and was dropped — the agent asked three times, the phone showed nothing.
  */
 class ServerRequestsTest {
 

@@ -250,7 +250,7 @@ class MissionsDelegate(
         if (settings.transportMode != "direct") return last
         // The last-open row on the gateway door may be machinery, not a conversation: the
         // worker transcript of the very mission being watched, a cron report, a bot's chat.
-        // 2.13.8 subscribed whatever was last open, and Jonny's first alert bound to the card's
+        // 2.13.8 subscribed whatever was last open, and the owner's first alert bound to the card's
         // own worker session ("Post 1 · summarize … #2") because he had just read it — a report
         // that would land in a transcript nobody reopens. A machine row is skipped for the
         // newest conversation instead; an unknown row (not in the list yet) is trusted.

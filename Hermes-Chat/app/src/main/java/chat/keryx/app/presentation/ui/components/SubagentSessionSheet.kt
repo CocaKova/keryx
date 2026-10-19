@@ -55,7 +55,7 @@ import kotlinx.coroutines.isActive
  * What a subagent actually did (2.4).
  *
  * The wing shows a goal, a rollup and the summary that came back — enough to know it worked, and
- * nothing about how. That was the gap Jonny found on device: a delegation lands and there is no
+ * nothing about how. That was the gap the owner found on device: a delegation lands and there is no
  * way in. A delegated child is not a live gateway session and its event relay is never persisted,
  * so the only durable trace is the session the child wrote, and the gateway hands us its id
  * (`child_session_id`). This opens it.

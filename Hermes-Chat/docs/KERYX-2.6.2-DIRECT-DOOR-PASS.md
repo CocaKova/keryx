@@ -1,6 +1,6 @@
 # Keryx 2.6.2 — the direct-door pass: sessions stop pretending to be rooms (2026-09-01)
 
-Jonny: "please review and fix the gateway side of Keryx. I say this starting from long pressing
+The owner: "please review and fix the gateway side of Keryx. I say this starting from long pressing
 a session and it says pin to the quick rooms: clearly a matrix side feature."
 
 Grounded in a source inventory of every surface the direct door shares with the Matrix door,
@@ -104,7 +104,7 @@ gained the `unread` field; `SessionRow` gained `unread`. `keryx_stream.py` untou
 
 - Built 09-01 evening; app 396 + core 189 tests green (+6 `DoorLexiconTest`).
 - Debug APK INSTALLED on the phone 20:51 CT (vc74 rebuild, lastUpdateTime is the tell); repo-root
-  `keryx-2.6.2-debug.apk` refreshed. Not walked on device (Jonny's phone).
+  `keryx-2.6.2-debug.apk` refreshed. Not walked on device (the owner's phone).
 - Walk (direct door): drawer headers *Pinned* / *Sessions*; long-press → Pin (hint) / Mark as
   unread / Rename / Move to project / Delete; pin a session → it moves to the deck and Desktop
   shows it pinned; mark one unread → dot + halo, open it → gone; drawer previews appear with no
@@ -113,7 +113,7 @@ gained the `unread` field; `SessionRow` gained `unread`. `keryx_stream.py` untou
   gateway; Hermes Link title; no E2EE row. Matrix door: unchanged (Quick Rooms, /new glyph,
   invites, leave, avatar).
 
-## 6. 09-02 — the Runs door counts (Jonny: "the cron button doesn't have any notification label")
+## 6. 09-02 — the Runs door counts (feedback: "the cron button doesn't have any notification label")
 
 - `DrawerDoor` takes a `badge: Int`; the Runs door passes `hub.cron.data.unread.total` — the SAME
   ledger the Runs place's arrivals rail reads (install baseline + opened-run ids), so the door and

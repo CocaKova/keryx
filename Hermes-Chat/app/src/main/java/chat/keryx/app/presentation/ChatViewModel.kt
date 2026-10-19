@@ -226,7 +226,7 @@ class ChatViewModel(
      * The open room's transcript, with the room it belongs to (3.0). The list follows the room
      * a beat late (a dispatch, or a first page still on the wire), and in that beat it is the
      * room being left: the chat draws a list only under its own room's title. Read bare, it
-     * mixed two chats on every switch over a slow link (Jonny, 10-16, "ghost chats").
+     * mixed two chats on every switch over a slow link (10-16, "ghost chats").
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     val timeline: StateFlow<RoomTimeline> =

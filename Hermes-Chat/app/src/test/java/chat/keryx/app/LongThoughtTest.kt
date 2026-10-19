@@ -23,7 +23,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * A long live thought (3.0 perf). Jonny, 10-18, watching the h2h Sonic run (DeepSeek at high
+ * A long live thought (3.0 perf). The owner, 10-18, watching the h2h Sonic run (DeepSeek at high
  * effort, ~2 h, 286 model calls): "with the super long reasoning for this task Keryx is lagging
  * now". That run streamed ~1 MB of reasoning as `reasoning.delta`, and the live row carried up
  * to 210 KB of it at once: the store keeps the whole turn's thought on the live row (a
@@ -271,10 +271,10 @@ class LongThoughtTest {
 
     @Test
     fun `a kept delivery answer is the answer`() {
-        val send = """{"command":"hermes -p theo chat -Q -q \"Message from 🤖 X: hi\""}"""
+        val send = """{"command":"hermes -p atlas chat -Q -q \"Message from 🤖 X: hi\""}"""
         val plain = """{"command":"ls -la"}"""
         repeat(2) {
-            assertEquals("theo", deliveryTargetOf(ToolCall(name = "terminal", argsJson = send)))
+            assertEquals("atlas", deliveryTargetOf(ToolCall(name = "terminal", argsJson = send)))
             assertNull(deliveryTargetOf(ToolCall(name = "terminal", argsJson = plain)))
             // Same arguments, a tool that can't deliver.
             assertNull(deliveryTargetOf(ToolCall(name = "write_file", argsJson = send)))

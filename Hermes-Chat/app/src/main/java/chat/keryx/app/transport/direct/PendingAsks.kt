@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
  * `client.capabilities {server_requests:true}` — otherwise the tool fails in the same
  * millisecond it is called. Keryx 2.13.5 and earlier did neither: it parsed only integer
  * ids, so the frame was dropped, and it never advertised, so the gateway never waited.
- * Sy's 09-24 session asked three times and got three empty answers, each back in 20 ms.
+ * The agent's 09-24 session asked three times and got three empty answers, each back in 20 ms.
  */
 internal class PendingAsks(private val rpc: () -> GatewayRpc?) {
     companion object {

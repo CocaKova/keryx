@@ -59,7 +59,7 @@ class CardMovesTest {
 
     @Test
     fun `the toast says where the card landed`() {
-        assertEquals("Handed to theo — ready", CardMove.REASSIGN.landed("ready", "theo"))
+        assertEquals("Handed to atlas — ready", CardMove.REASSIGN.landed("ready", "atlas"))
         assertEquals("Unblock — now ready", CardMove.UNBLOCK.landed("ready", "default"))
     }
 }

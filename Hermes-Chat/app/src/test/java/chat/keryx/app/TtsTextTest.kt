@@ -19,7 +19,7 @@ class TtsTextTest {
 
     @Test
     fun reasoningAndToolLines_neverSpoken() {
-        val content = "🧠 memory: \"User: Jonny\"\n" +
+        val content = "🧠 memory: \"User: the owner\"\n" +
             "🧠 reasoning about the plan\n" +
             "⚙️ terminal: `ls -la /tmp`\n" +
             "All three snapshots restore without errors."

@@ -60,7 +60,7 @@ fun HermesThinkingAnimation(
     // it and holds full opacity instead of the dim end of the breath. The words beside it stay
     // at full strength: a label that breathes down to 60% fails contrast half the time.
     //
-    // The spinners themselves do NOT still (Jonny, on device: "make spinners the exception"). The
+    // The spinners themselves do NOT still (on device: "make spinners the exception"). The
     // distinction the app draws: motion that carries information keeps moving, motion that
     // decorates stops. A spinner IS the information — freeze it and the app reads as hung, and no
     // amount of saved frames is worth a user force-quitting an agent mid-turn.

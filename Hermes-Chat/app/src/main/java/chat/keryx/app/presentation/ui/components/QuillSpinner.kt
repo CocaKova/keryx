@@ -125,7 +125,7 @@ private const val PEN_ANGLE = 125f
 private const val PEN_SWAY = 0.25f
 
 /** One line every [CYCLE_S]: written by [WRITE_END] of it, lifted away from [LIFT_START].
- *  An unhurried hand: 3 s read as a tad quick on the phone (Jonny, 10-16). */
+ *  An unhurried hand: 3 s read as a tad quick on the phone (10-16). */
 private const val CYCLE_S = 3.8f
 private const val WRITE_END = 0.75f
 private const val LIFT_START = 0.8f

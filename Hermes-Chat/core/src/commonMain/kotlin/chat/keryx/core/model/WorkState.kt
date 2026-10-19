@@ -104,7 +104,7 @@ object WorkState {
             // and then the streaming placeholder, which carries the turn's WHOLE thought for
             // as long as the turn runs. So while a tool executes, `latest` is a blank
             // placeholder wearing an old thought, and the banner — and the Call's caption —
-            // said "Reasoning" through every tool of a multi-step run (Jonny, 09-05: "I can't
+            // said "Reasoning" through every tool of a multi-step run (09-05: "I can't
             // see tool calls, it just says reasoning"). A tool still running is what the agent
             // is doing NOW; the thought wins only once the newest tool has returned.
             if (latest.isStreaming && latest.content.isBlank()) {

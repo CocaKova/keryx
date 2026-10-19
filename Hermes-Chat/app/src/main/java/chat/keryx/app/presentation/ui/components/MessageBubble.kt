@@ -302,7 +302,7 @@ fun MessageBubble(
                     // While the agent's reply is still growing, magic sand rises off the bubble's
                     // edge and sifts back down — the dreaming made visible, in the user's own
                     // accents. Sits BEFORE clip() so the dust lives outside the shape; the last
-                    // grains finish falling after the words land (2.0, Jonny's call: real sand
+                    // grains finish falling after the words land (2.0, the owner's call: real sand
                     // over a border gleam).
                     .keryxMagicDust(active = isAgent && message.isStreaming, shape = shape)
                     .clip(shape)
@@ -595,7 +595,7 @@ private fun ReplyQuote(replyTo: Message, textColor: Color, onClick: (() -> Unit)
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun ReactionChips(reactions: List<MessageReaction>, isMine: Boolean, onReact: (String) -> Unit) {
-    // FlowRow, not Row: once SILAS starts reacting too, >5 distinct emoji overflow a bubble width.
+    // FlowRow, not Row: once the agent starts reacting too, >5 distinct emoji overflow a bubble width.
     androidx.compose.foundation.layout.FlowRow(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),

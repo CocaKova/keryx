@@ -2,7 +2,7 @@
 
 *The phone stops being a window onto the agent and becomes a hand on it.*
 
-Jonny (2026-09-22, after accepting 2.12.0 Tap-In): "let's do 1, 3, 4 and the artifact
+The owner (2026-09-22, after accepting 2.12.0 Tap-In): "let's do 1, 3, 4 and the artifact
 viewer." Item 1 (share sheet) turned out to already exist (`ShareActivity`, since 2.x —
 `docs/features/controls.md` § Share sheet), so the batch is three parts. One release for the
 batch, per the cadence rule: `2.13.0`, versionCode 102.
@@ -77,7 +77,7 @@ No Glance, no `TileService` anywhere in the app yet (manifest audited); both are
   (`EXTRA_TAP_IN`). Refreshed by a `WorkManager` periodic job (15 min floor) **and** on demand
   from the run notice path so it never lags a live turn. Data is read through the existing
   transport, never a second socket.
-- **Tile** (`android.service.quicksettings.TileService`): "Note to Sy" — opens a small
+- **Tile** (`android.service.quicksettings.TileService`): "Note to the agent" — opens a small
   `NoteActivity` (excludeFromRecents, dialog theme) with a one-line composer that sends to
   the pinned/last session over the same `sendMessage` path the share sheet uses. Tile state
   mirrors the gateway link. Requires `BIND_QUICK_SETTINGS_TILE`.

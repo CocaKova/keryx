@@ -90,7 +90,7 @@ class LinkifyAutolinksTest {
     }
 
     // --- Bare image URLs render as images -----------------------------------------------
-    // SILAS handed over a GIF on 2026-09-04 by typing its address in prose; 2.9.0 had taught
+    // the agent handed over a GIF on 2026-09-04 by typing its address in prose; 2.9.0 had taught
     // the app to animate `![](…gif)` and MEDIA:, neither of which is what an agent writes, so
     // the bubble showed a link and the GIF was invisible.
 

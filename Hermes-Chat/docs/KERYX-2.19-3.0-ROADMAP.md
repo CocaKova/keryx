@@ -1,19 +1,19 @@
 # Keryx roadmap: 2.19 "Current" → 3.0 "The Herald"
 
 ## Context
-Keryx is at v2.18.0 (vc128, 10-06) plus `eb15425` (the todo→todo_list Flight Plan fix, not released). Jonny wants 3.0 to be a big release to be proud of: a tutorial that feels intuitive, plus performance, polish, refined art and animation. Before that, 2.19 does the Hermes catch-up.
+Keryx is at v2.18.0 (vc128, 10-06) plus `eb15425` (the todo→todo_list Flight Plan fix, not released). The owner wants 3.0 to be a big release to be proud of: a tutorial that feels intuitive, plus performance, polish, refined art and animation. Before that, 2.19 does the Hermes catch-up.
 
 Decided 10-08:
 - **3.0 headline:** the agent drives the tour.
 - **Art:** refine the existing identity, not a new look.
-- **Audience:** a public launch. 3.0 assumes a stranger with stock Hermes and no Sy.
+- **Audience:** a public launch. 3.0 assumes a stranger with stock Hermes and no agent of ours.
 
 The scan found the `todo` rename was not a one-off. Hermes renamed five tools on 08-29 (`e16ad33a9d`). It also now hides several tools behind a `tool_call` bridge and ships a `labels[]` field so that clients stop parsing tool names. Keryx parses names. So 2.19 is mostly "stop breaking on every `hermes update`". 3.0 is the launch.
 
 Ground rules that apply to both releases:
 - One minor release per milestone, fixes as patches.
-- Build on VIRDARA via `ship.sh`. Release asset = `ship.sh --release` from a clean clone. Ship gate must be GREEN.
-- Push, tag and release only when Jonny says go.
+- Build on the build VM via `ship.sh`. Release asset = `ship.sh --release` from a clean clone. Ship gate must be GREEN.
+- Push, tag and release only when the owner says go.
 - Credit SOP. No session lines in git.
 
 ---
@@ -46,7 +46,7 @@ Ground rules that apply to both releases:
 - Fix the stale header in `proguard-rules.pro` (it says minify is off).
 
 ### D. Groundwork for 3.0
-- **Measure:** a macrobenchmark module plus a generated Baseline Profile, run on the VIRDARA emulator. Record cold start, time to first message and frame drops while streaming (known: direct door ~5%). Write the numbers down in `docs/PERF-BASELINE.md` as the targets 3.0 has to beat.
+- **Measure:** a macrobenchmark module plus a generated Baseline Profile, run on the build-VM emulator. Record cold start, time to first message and frame drops while streaming (known: direct door ~5%). Write the numbers down in `docs/PERF-BASELINE.md` as the targets 3.0 has to beat.
 - Turn on Compose compiler stability reports and commit the first report.
 - **Tour spike:** decide how the tour reaches the phone (see 3.0 §1).
 - ✅ **Decided (2026-10-09): option (a), a keryx-stream `keryx_tour` tool.** Plugins register tools with a `check_fn` (`hermes_cli/plugins.register_tool`), so the tool can be offered only while a Keryx client is attached, on stock Hermes, without an upstream change. To watch in 3.0: a tool that comes and goes changes the tool list, and that list is part of the prompt cache. Prefer "registered while keryx-stream is enabled, answers 'no phone attached'" over flapping, unless the cache cost measures as nothing.
@@ -90,7 +90,7 @@ Ground rules that apply to both releases:
       palette. Left in place on purpose: the event pump's side effects, the side-channel stream
       engine and Hermes Link settings (10+ shared fields each).
    Re-run `tools/perf_stream.sh` after each of steps 1–3. The phone pass happens once per
-   batch, so Jonny lends the phone for 2 minutes, not after every commit.
+   batch, so the owner lends the phone for 2 minutes, not after every commit.
 2. **Light redesign:** §3 below. Ends in `beta.2`. Decided 10-14/15 from the mock-up canvas: keep
    the launcher icon and the drawer mark as they are. Done: five room transitions picked in
    Appearance (Dissolve, Passage, Weave, Bloom, Rise), the drawer (tinted monogram plates,
@@ -123,22 +123,22 @@ One tour engine, three ways in:
 
 **Transport (decided in the 2.19 spike):** Hermes offers `gui_tour` only to `platform == "desktop"` sessions (`tui_gateway/server.py:1979`). Keryx sessions are `tui`. Two options:
 - **(a) Preferred, stock-reproducible.** keryx-stream registers a `keryx_tour` tool (same schema as `gui_tour`). It pushes a tour frame to the phone over `/keryx/stream` and waits for the phone's answer on a new `/keryx/tour/respond`, with the same probe-then-full-deadline ladder Hermes uses. It is offered only while a Keryx client is attached.
-- **(b)** An upstream proposal to let a client declare a surface that earns `desktop_ui`. Jonny authors that himself, only if (a) proves awkward.
+- **(b)** An upstream proposal to let a client declare a surface that earns `desktop_ui`. The owner authors that themselves, only if (a) proves awkward.
 
 **First run for a stranger:**
 - Pair by QR: `hermes keryx pair` (a keryx-stream CLI) prints a QR with the URL and a scoped token, and the login screen gets a scan button. Manual entry stays.
 - A **demo door**: a scripted, offline sample session (tool theater, Flight Plan, an artifact, an approval) so someone can feel the app before they own a gateway. The tutorial runs on it.
-- Wording assumes stock Hermes ("your agent"), never Sy.
+- Wording assumes stock Hermes ("your agent"), never a name of ours.
 
 ### 2. Speed (targets come from 2.19's PERF-BASELINE)
-**Re-weighted by the device baseline (2026-10-10, 2.19.1 on SM-S948U):**
+**Re-weighted by the device baseline (2026-10-10, 2.19.1 on a Galaxy flagship):**
 - **Streaming (6.21% janky):** the main target. All of the cost is on the main thread: 47 slow
   UI-thread frames, and none from vsync or bitmap uploads. The stability, item-hoisting and
   `collectAsState` items below aim right at it. Re-run `tools/perf_stream.sh` after each one.
 - **Drawer (0.45%):** already under target. Hold it, and drop the drawer derived-list memo
   unless a re-run regresses.
-- **Cold start (165 ms on a flagship):** fast for Jonny. It matters for strangers on mid-range
-  phones, so measure it on the VIRDARA emulator with the macrobenchmark and keep the Baseline
+- **Cold start (165 ms on a flagship):** fast for the owner. It matters for strangers on mid-range
+  phones, so measure it on the build-VM emulator with the macrobenchmark and keep the Baseline
   Profile. Lazy `onCreate` work comes after streaming.
 
 - **Cold start:** move `KeryxApp.onCreate` work (`KeryxApp.kt:131-188`: archive indexer, four observers, HandsSync, transport connect) off the main thread or make it lazy. Ship the Baseline Profile.
@@ -164,12 +164,12 @@ One tour engine, three ways in:
 - **Turn action sheet** (asked for 09-21): copy raw/plain, regenerate, fork (`session.branch`), undo last turn, details.
 - **Visible compaction** ("never know when compression is happening").
 - Accessibility pass: TalkBack labels, 200% font scale, touch targets.
-- Fix taps on details/cards/svg that work on the emulator but not on Jonny's phone. Repro on the device first.
+- Fix taps on details/cards/svg that work on the emulator but not on the owner's phone. Repro on the device first.
 - In-app "What's new in 3.0", run as a tour.
 
 ### 5. Ready for the public
-- **Release keystore.** Today the build host's debug key signs everything. Changing keys forces one uninstall/reinstall, which wipes app data. Do it once, at 3.0, behind a settings export/import so nobody loses their gateways. Jonny's call on timing.
-- **Where strangers get it** (10-15): next to an official app in the stores, a sideloaded APK loses before features come up. Jonny's call: Google Play, F-Droid, Obtainium, or more than one.
+- **Release keystore.** Today the build host's debug key signs everything. Changing keys forces one uninstall/reinstall, which wipes app data. Do it once, at 3.0, behind a settings export/import so nobody loses their gateways. The owner's call on timing.
+- **Where strangers get it** (10-15): next to an official app in the stores, a sideloaded APK loses before features come up. The owner's call: Google Play, F-Droid, Obtainium, or more than one.
 - README hero shots plus a short tutorial clip (reuse the keryx-ad pipeline), docs refresh, privacy note, credits near the top.
 - Releases: `3.0.0-beta.N` as GitHub pre-releases → 3.0.0. Then an announcement worth tagging Teknium.
 
@@ -189,7 +189,7 @@ Rewind (`rollback.list/diff/restore`), phone as a tool host, live voice (`stt.st
   - With Desktop on the same session, its tour is not killed by the phone.
 - **3.0:**
   - Fresh install with no gateway: the demo door and tutorial run end-to-end.
-  - QR pair against a stock Hermes on VIRDARA.
+  - QR pair against a stock Hermes on the build VM.
   - Asking the agent "where are my crons?" spotlights Runs on the phone.
   - Macrobenchmark beats PERF-BASELINE on cold start and frame drops. Background KB/h no worse than 2.13.10.
   - TalkBack walk through the tutorial.

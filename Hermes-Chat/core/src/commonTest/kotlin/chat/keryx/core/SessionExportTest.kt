@@ -20,7 +20,7 @@ class SessionExportTest {
     // 2026-10-02 14:00:00 UTC = 1790949600
     private val body = """
         {"id":"20261002_140000_abc123ef","source":"tui","model":"qwen3.8-flash-next","title":"Fix the Spark's memory","started_at":1790949600.25,
-         "system_prompt":"You are Sy…","message_count":9,
+         "system_prompt":"You are the agent…","message_count":9,
          "messages":[
           {"id":1,"session_id":"s","role":"user","content":"why is the brain slow?","timestamp":1790949600.5,"active":1,"compacted":0},
           {"id":2,"session_id":"s","role":"assistant","content":"","reasoning":"check memory first","timestamp":1790949610,"active":1,"compacted":0,
@@ -71,7 +71,7 @@ class SessionExportTest {
 
     @Test
     fun markdown_readsLikeTheTranscript() {
-        val md = SessionExport.markdown(SessionExport.parse(body)!!, agentName = "Sy", tz = utc)
+        val md = SessionExport.markdown(SessionExport.parse(body)!!, agentName = "the agent", tz = utc)
         assertTrue(md.startsWith("# Fix the Spark's memory\n"), md)
         assertTrue("session `20261002_140000_abc123ef` · tui · model qwen3.8-flash-next · started 2026-10-02 14:00" in md, md)
         assertTrue("**2026-10-02**" in md, md)
@@ -80,7 +80,7 @@ class SessionExportTest {
         assertTrue("- `terminal` `free -g` — ok" in md, md)
         assertTrue("Mem: 119 112 7" in md, md)
         assertTrue("> check memory first" in md, md)
-        assertTrue("### Sy · 14:00\n\nOnly **7 GB** free — ComfyUI is up." in md, md)
+        assertTrue("### the agent · 14:00\n\nOnly **7 GB** free — ComfyUI is up." in md, md)
         // Rewound and model-only rows never reach the reader.
         assertFalse("undo that" in md, md)
         assertFalse("[internal] scratch" in md, md)

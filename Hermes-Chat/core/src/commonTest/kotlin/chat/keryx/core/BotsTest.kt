@@ -42,7 +42,7 @@ class BotsTest {
 
     @Test fun labelPrefersTitleThenFriendlyNameThenPrettyName() {
         assertEquals("Research Buddy", bot("rb", title = "Research Buddy").label)
-        assertEquals("Milo", bot("milo", displayName = "Milo").label)
+        assertEquals("Scout", bot("scout", displayName = "Scout").label)
         assertEquals("Mc Builder", bot("mc-builder").label)
     }
 
@@ -56,7 +56,7 @@ class BotsTest {
     @Test fun slugAndPretty() {
         assertEquals("research-buddy", BotRoster.slug("  Research Buddy! "))
         assertEquals("", BotRoster.slug("!!!"))
-        assertEquals("Theo", BotRoster.pretty("theo"))
+        assertEquals("Atlas", BotRoster.pretty("atlas"))
         assertTrue(BotRoster.validName("mc-builder"))
         assertFalse(BotRoster.validName("Mc Builder"))
         assertFalse(BotRoster.validName("-x"))
@@ -65,11 +65,11 @@ class BotsTest {
     // ---- routines -------------------------------------------------------------------------
 
     @Test fun routinesAreTaggedJobs() {
-        val jobs = listOf("[bot:theo] Morning brief", "Daily digest", "[bot:Theo] Inbox sweep", "[bot:juno] Plan")
-        assertEquals(listOf("[bot:theo] Morning brief", "[bot:Theo] Inbox sweep"), BotRoster.routinesOf(jobs, "theo"))
-        assertEquals("Morning brief", BotRoster.routineLabel("[bot:theo] Morning brief"))
+        val jobs = listOf("[bot:atlas] Morning brief", "Daily digest", "[bot:Atlas] Inbox sweep", "[bot:vega] Plan")
+        assertEquals(listOf("[bot:atlas] Morning brief", "[bot:Atlas] Inbox sweep"), BotRoster.routinesOf(jobs, "atlas"))
+        assertEquals("Morning brief", BotRoster.routineLabel("[bot:atlas] Morning brief"))
         assertNull(BotRoster.routineOwner("Daily digest"))
-        assertEquals("[bot:theo]", BotRoster.routineTag("theo"))
+        assertEquals("[bot:atlas]", BotRoster.routineTag("atlas"))
     }
 
     // ---- canonical row ----------------------------------------------------------------
@@ -110,29 +110,29 @@ class BotsTest {
     }
 
     @Test fun unreadIsActivityAfterTheLastLook() {
-        val b = bot("theo", lastActive = now - 1_000)
+        val b = bot("atlas", lastActive = now - 1_000)
         assertTrue(BotRoster.unread(b, emptyMap()))
-        assertFalse(BotRoster.unread(b, mapOf("theo" to now)))
-        assertTrue(BotRoster.unread(b, mapOf("theo" to now - 5_000)))
+        assertFalse(BotRoster.unread(b, mapOf("atlas" to now)))
+        assertTrue(BotRoster.unread(b, mapOf("atlas" to now - 5_000)))
         assertFalse(BotRoster.unread(bot("never"), emptyMap()))
     }
 
     @Test fun searchMatchesNameHandleLabelAndRole() {
-        val b = BotProfile(name = "sterling", title = "Ledger", description = "Business operator")
-        assertTrue(BotRoster.matches(b, "ster"))
+        val b = BotProfile(name = "bookkeeper", title = "Ledger", description = "Business operator")
+        assertTrue(BotRoster.matches(b, "keep"))
         assertTrue(BotRoster.matches(b, "ledg"))
         assertTrue(BotRoster.matches(b, "OPERATOR"))
-        assertFalse(BotRoster.matches(b, "juno"))
+        assertFalse(BotRoster.matches(b, "vega"))
         assertTrue(BotRoster.matches(b, "  "))
     }
 
     // ---- mentions --------------------------------------------------------------------------
 
     @Test fun mentionsResolveAgainstRosterOnceEach() {
-        val roster = listOf(bot("theo"), bot("researcher", title = "Research Buddy"), bot("default", isDefault = true))
-        val hit = BotRoster.mentions("@theo and @research-buddy, also @theo again and @nobody @hermes", roster)
-        assertEquals(listOf("theo", "researcher", "default"), hit.map { it.name })
-        assertTrue(BotRoster.mentions("mail me at jonny@example.com", roster).isEmpty())
+        val roster = listOf(bot("atlas"), bot("researcher", title = "Research Buddy"), bot("default", isDefault = true))
+        val hit = BotRoster.mentions("@atlas and @research-buddy, also @atlas again and @nobody @hermes", roster)
+        assertEquals(listOf("atlas", "researcher", "default"), hit.map { it.name })
+        assertTrue(BotRoster.mentions("mail me at sam@example.com", roster).isEmpty())
         assertTrue(BotRoster.mentions("no tags here", roster).isEmpty())
     }
 
@@ -163,8 +163,8 @@ class BotsTest {
              "root_title":"Bot Chat","title":"Bot Chat","preview":"Command ran successfully.",
              "started_at":1787006003.84,"last_active":1787006483.36,"message_count":6},
            "model":"qwen3.8-27b","provider":"custom"},
-          {"name":"theo","display_name":"","description":"Ops","canonical_session":null,"model":"m","provider":"p",
-           "ui_meta":{"hermes-bots":{"title":"Theo the Ops Bot","shape":"cloud","color":"#8b5cf6","hidden":true,"created":1}}},
+          {"name":"atlas","display_name":"","description":"Ops","canonical_session":null,"model":"m","provider":"p",
+           "ui_meta":{"hermes-bots":{"title":"Atlas the Ops Bot","shape":"cloud","color":"#8b5cf6","hidden":true,"created":1}}},
           {"name":"","description":"ghost"}
         ],"bot_mode_protocol":true}
     """.trimIndent()
@@ -178,10 +178,10 @@ class BotsTest {
         assertNotNull(d.canonical)
         assertEquals(1787006483360L, d.canonical!!.lastActive)
         assertEquals(6L, d.canonical!!.messageCount)
-        val t = snap.byName("theo")!!
+        val t = snap.byName("atlas")!!
         assertTrue(t.managed)
         assertTrue(t.hidden)
-        assertEquals("Theo the Ops Bot", t.title)
+        assertEquals("Atlas the Ops Bot", t.title)
         assertEquals("Ops", t.description)
         assertNull(t.canonical)
         assertEquals("cloud", t.meta!!["shape"]!!.jsonPrimitive.content)

@@ -79,8 +79,8 @@ class RunNoticeTest {
     }
 
     @Test fun theProfilesAgentIsNamedAsTheWorker() {
-        val n = RunNotices.compose(listOf(subject("s", "Theo")))!!
-        assertEquals("☤ Theo is working", n.title)
+        val n = RunNotices.compose(listOf(subject("s", "Atlas")))!!
+        assertEquals("☤ Atlas is working", n.title)
         assertEquals("", n.subText) // a Bot Chat: the session is the agent, said once
         assertEquals("Thinking…", n.text)
         assertEquals("s", n.sessionId)
@@ -88,8 +88,8 @@ class RunNoticeTest {
     }
 
     @Test fun aPlainSessionNamesItsProfilesAgentAndTheRoom() {
-        val n = RunNotices.compose(listOf(subject("s", "Juno", session = "Fix the deploy")))!!
-        assertEquals("☤ Juno is working", n.title)
+        val n = RunNotices.compose(listOf(subject("s", "Vega", session = "Fix the deploy")))!!
+        assertEquals("☤ Vega is working", n.title)
         assertEquals("Fix the deploy", n.subText)
     }
 
@@ -117,7 +117,7 @@ class RunNoticeTest {
             TodoItem("2", "Patch the unit", "in_progress"),
             TodoItem("3", "Restart", "pending"),
         ))
-        val n = RunNotices.compose(listOf(subject("s", "Theo", plan = plan)))!!
+        val n = RunNotices.compose(listOf(subject("s", "Atlas", plan = plan)))!!
         assertEquals(1, n.planDone)
         assertEquals(3, n.planTotal)
         assertEquals("Step 2 of 3 · Patch the unit", n.lines.first())
@@ -125,16 +125,16 @@ class RunNoticeTest {
 
     @Test fun aFinishedPlanIsNotProgress() {
         val plan = TodoPlan(listOf(TodoItem("1", "Done thing", "completed")))
-        val n = RunNotices.compose(listOf(subject("s", "Theo", plan = plan)))!!
+        val n = RunNotices.compose(listOf(subject("s", "Atlas", plan = plan)))!!
         assertEquals(0, n.planTotal)
     }
 
     @Test fun severalRunsAreStillOneNotice() {
         val late = fresh.copy(sessionId = "b", startedAt = 500L)
-        val n = RunNotices.compose(listOf(subject("b", "Juno", late), subject("a", "Theo")))!!
+        val n = RunNotices.compose(listOf(subject("b", "Vega", late), subject("a", "Atlas")))!!
         assertEquals("☤ 2 agents working", n.title)
         assertNull(n.sessionId)
-        assertEquals(listOf("Theo — Thinking…", "Juno — Thinking…"), n.lines)
+        assertEquals(listOf("Atlas — Thinking…", "Vega — Thinking…"), n.lines)
         assertEquals(100L, n.startedAt)
     }
 

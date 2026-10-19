@@ -560,7 +560,7 @@ fun NavigationDrawerContent(
             val pinned = if (lensed) emptyList() else unscoped.filter { it.id in pinnedRoomIds }
             // Scheduled work at the top of the list, Quick-Room style: a pinned JOB is a tile
             // that follows its newest run; a run kept on the gateway is a tile that IS that
-            // run. Both sit in the deck beside the pinned conversations (Jonny: "pinning the
+            // run. Both sit in the deck beside the pinned conversations (feedback: "pinning the
             // output of a certain cron job to the top of the session list like on the Matrix
             // side"). They are rows the roster never carries, so they arrive from the hub.
             // ⚠️ Gateway rows only: a cron tile opens a gateway session and a bot tile a

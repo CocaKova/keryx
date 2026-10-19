@@ -7,7 +7,7 @@ package chat.keryx.app.presentation.ui.components
  * a second). Inside its scroll Compose measured, laid out and drew every line of it to show the
  * last eight. A turn's thought keeps growing across its model calls, and a long DeepSeek run
  * (h2h, 10-18: ~1 MB of reasoning over 286 calls, 210 KB of it on the tail between resets)
- * re-laid out hundreds of kilobytes per tick until Keryx fell behind the stream (Jonny, 10-18:
+ * re-laid out hundreds of kilobytes per tick until Keryx fell behind the stream (10-18:
  * "with the super long reasoning for this task Keryx is lagging").
  *
  * Cut at line ends, the pieces stack into the same lines the one Text drew, and only the last

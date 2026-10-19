@@ -538,7 +538,7 @@ fun Modifier.keryxShimmerBorder(
  *
  * ⚠️ Do NOT drive this straight off a transition's progress — see [rememberSweepProgress]. A fast
  * navigation (the agent Hub) finishes in a couple of frames, and the light was gone before it
- * could be seen (Jonny, second walk: "very very quick on some actions").
+ * could be seen (second walk: "very very quick on some actions").
  */
 /**
  * The gleam's core for the ground underfoot — near-white on the void, ink on parchment. A
@@ -601,7 +601,7 @@ fun Modifier.keryxLightSweep(
  * The sweep's own clock.
  *
  * A transition's progress is the wrong tempo to borrow. The page slide takes ~300ms, but opening
- * the agent Hub snaps in a couple of frames, and the light rode that to nothing (Jonny, second
+ * the agent Hub snaps in a couple of frames, and the light rode that to nothing (second
  * walk: *"it's very very quick on some actions like the agent Hub"*). Light travelling has one
  * speed of its own.
  *

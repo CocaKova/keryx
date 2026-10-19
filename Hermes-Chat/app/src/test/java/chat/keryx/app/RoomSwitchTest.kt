@@ -16,7 +16,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Crossing rooms (3.0, Jonny 10-16: "ghost chats ... it mixes into each other"). The list
+ * Crossing rooms (3.0, 10-16 feedback: "ghost chats ... it mixes into each other"). The list
  * follows a switch a beat late; in that beat it is the room being left, and a session still
  * on the wire is not an empty one.
  */

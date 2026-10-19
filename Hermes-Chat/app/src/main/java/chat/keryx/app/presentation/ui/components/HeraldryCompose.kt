@@ -103,7 +103,7 @@ fun HeraldSigil(
     )
 }
 
-/** A herald's accent by bare key ("milo"), for places that hold keys rather than MXIDs. */
+/** A herald's accent by bare key ("scout"), for places that hold keys rather than MXIDs. */
 @Composable
 fun heraldAccentFor(key: String): Color = heraldLightFor(key, key).accent
 

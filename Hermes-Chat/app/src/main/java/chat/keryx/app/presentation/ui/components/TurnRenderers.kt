@@ -146,7 +146,7 @@ internal fun StreamingBubble(
     val streaming = stream.status == chat.keryx.app.presentation.LiveStreamStatus.STREAMING
 
     // The live reply wears a quiet, steady border — the life is in the magic sand rising off
-    // its edge while tokens flow (2.0, Jonny's call: real sand over a breathing gleam). This is
+    // its edge while tokens flow (2.0, the owner's call: real sand over a breathing gleam). This is
     // THE streaming bubble users actually see (the side-channel path); MessageBubble's
     // isStreaming dust is the Matrix-sync fallback twin.
     val glow = 0.3f
@@ -325,7 +325,7 @@ internal fun TelemetryMessageRow(message: Message, textScale: Float) {
 internal fun WaitingIndicator(style: String) {
     // Before the turn's first sign of life: the user's own thinking style and the turn's own
     // words, as the waiting bubble shows them (3.0). Its rotating quips ("Catching the dropped
-    // thread…") went with the bubble's on 10-16 (Jonny's pick: say what is happening); this
+    // thread…") went with the bubble's on 10-16 (the owner's pick: say what is happening); this
     // row kept them until it was seen in the demo.
     Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         HermesThinkingAnimation(style = style)

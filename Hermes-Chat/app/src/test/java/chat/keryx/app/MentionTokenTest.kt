@@ -22,9 +22,9 @@ class MentionTokenTest {
     }
 
     @Test fun notATag() {
-        assertNull(MentionToken.at("mail jonny@example.com", 22))
+        assertNull(MentionToken.at("mail sam@example.com", 22))
         assertNull(MentionToken.at("plain words", 5))
-        assertNull(MentionToken.at("done @theo, next", 10)) // punctuation ends the tag
+        assertNull(MentionToken.at("done @atlas, next", 10)) // punctuation ends the tag
         assertNull(MentionToken.at("", 0))
     }
 }

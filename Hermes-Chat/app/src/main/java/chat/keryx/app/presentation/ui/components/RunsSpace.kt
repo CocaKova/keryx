@@ -85,7 +85,7 @@ import kotlinx.coroutines.isActive
 
 /**
  * RUNS — everything the agent does on a schedule, as a place of its own (was the hub's 4th
- * tab; three taps deep it went unread — Jonny: "the crons are hard to get to and digest").
+ * tab; three taps deep it went unread — feedback: "the crons are hard to get to and digest").
  *
  * The layout is Talaria's CronSpace, the second harvest from that donor: a shelf of the runs
  * you KEPT first (pinned on the gateway — the report worth coming back to has an address), then
@@ -95,7 +95,7 @@ import kotlinx.coroutines.isActive
  * Matrix door in the transcript reader. Jobs (hub) still manages the schedules; this reads
  * their work.
  *
- * 2.14 — the page for A LOT of jobs (Jonny's gateway: 24, seven of them failing). One card per
+ * 2.14 — the page for A LOT of jobs (the owner's gateway: 24, seven of them failing). One card per
  * job, newest first, sank the failures (a failed script dispatch writes no session, so those
  * jobs read as "no runs yet" and sorted last) and made every job cost a card's height. Now:
  *  - a control strip that stays put above the list — search (name, newest headline, schedule
@@ -1110,7 +1110,7 @@ private fun RunList(
 /**
  * The job's sheet — about the JOB, not a run (long-press any job, or "Details" on a failing one).
  * It was a two-item menu (pin, open newest) and a failing job offered nothing to DO: the red
- * line said what broke and the page stopped there (Jonny 09-27: "the need attention crons I
+ * line said what broke and the page stopped there (09-27 feedback: "the need attention crons I
  * can't really do anything with"). Now the whole error, and the verbs the gateway already had —
  * run it now, pause/resume, delete — plus the one that fixes what the phone can't: hand the
  * failure to the agent. Shared by both densities.

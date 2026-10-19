@@ -6,7 +6,7 @@ import kotlinx.datetime.Instant
  * The Runs page for someone with A LOT of jobs.
  *
  * One card per job, newest activity first, was right at nine jobs and wrong at twenty-four
- * (Jonny's gateway, 09-27: 24 jobs — 7 failing, 4 paused/done, 1 never run). Two things broke
+ * (the owner's gateway, 09-27: 24 jobs — 7 failing, 4 paused/done, 1 never run). Two things broke
  * as it grew:
  *  - **the failures sank.** The failing jobs on that gateway are the half-hourly watchdogs, and a
  *    `no_agent` script job whose dispatch fails writes NO session — so [CronGrouping] saw "no
@@ -67,7 +67,7 @@ enum class CronSection(val label: String) {
     RECENT("Recent"),
     /**
      * Script jobs — the watchdogs and bridges that fire every 10–30 minutes, run no agent and
-     * leave no transcript (Jonny's gateway: 10 of 24). Among the reports they read as "no runs
+     * leave no transcript (the owner's gateway: 10 of 24). Among the reports they read as "no runs
      * yet" and buried the jobs that write something; they get their own folded shelf. A FAILING
      * script still goes to [ATTENTION] — the shelf hides the routine, never the broken.
      */

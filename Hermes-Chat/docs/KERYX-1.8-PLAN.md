@@ -1,7 +1,7 @@
 # Keryx 1.8 — "Closing the Loop"
 
 Feature update: turn 1.6's read-mostly windows into round trips. Mission alerts stop polling and
-go real-time over Matrix push, the Skill Forge finally opens (view *and edit* SILAS's skills from
+go real-time over Matrix push, the Skill Forge finally opens (view *and edit* the agent's skills from
 the phone), and the freshly-landed `hermes sessions prune` gets a safe phone UI. Chat stays the
 center; 1.8 makes the operations layer bidirectional.
 

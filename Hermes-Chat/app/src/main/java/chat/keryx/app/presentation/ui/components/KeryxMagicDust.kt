@@ -26,7 +26,7 @@ import kotlin.math.sqrt
 import kotlin.random.Random
 
 /**
- * Magic sand streams (2.0, third iteration — Jonny: "think magic/sand STREAMS"): not scattered
+ * Magic sand streams (2.0, third iteration — feedback: "think magic/sand STREAMS"): not scattered
  * grains but coherent rivulets. A few emitters wander slowly along the shape's outline, each
  * exhaling a dense trail of *fine* motes that share one smoothly-swaying flow direction — the
  * eye reads ribbons of sand pouring off the bubble, not confetti. Motes are velocity-stretched
@@ -147,7 +147,7 @@ fun Modifier.keryxMagicDust(
                         }
                         if (!e.flowing) continue
                         // The stream's shared direction: mostly HORIZONTAL (wind-blown sand,
-                        // Jonny's call), leaning outward from whichever side of the bubble the
+                        // the owner's call), leaning outward from whichever side of the bubble the
                         // mouth sits on, with a slow pendulum sway. Coherence is the trick.
                         measure.getPosTan(e.t * geo.length, pos, tan)
                         var nx = tan[1]

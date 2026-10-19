@@ -7,13 +7,13 @@ import kotlin.math.roundToInt
  * Honest tokens per second (2.16).
  *
  * The stream carries characters, not tokens, and until 2.16 every readout divided the character
- * rate by four and called the result tokens. Jonny's rule: a token figure is a token figure only
+ * rate by four and called the result tokens. The owner's rule: a token figure is a token figure only
  * when the gateway counted the tokens. So there are three readings, and each says what it is:
  *
  *  - **live** (the working cloud, Tap-In): the measured character rate, converted with a
  *    chars-per-token ratio measured against the gateway's real output count on an earlier turn,
  *    and marked "≈". Until a turn has calibrated it, the ratio is [DEFAULT_CHARS_PER_TOKEN] —
- *    still "≈ tok/s", because Jonny reads speed in tokens, not characters (2.16.1). It falls
+ *    still "≈ tok/s", because the owner reads speed in tokens, not characters (2.16.1). It falls
  *    toward zero while the model stalls instead of freezing on its last good number.
  *  - **settled** (the finished turn's meta): the turn's real output tokens (the gateway's
  *    cumulative `usage.output`, before and after) over the time the tokens were flowing. No "≈".

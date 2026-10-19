@@ -165,7 +165,7 @@ private fun DrawScope.drawCloudFloor(orbit: Float, breath: Float, floor: Color) 
  *
  * The silhouette is two dozen overlapping circles under a pill. Painted translucent one shape
  * at a time, every overlap stacked its alpha, so each glow pass showed a ring of ghost bumps
- * past the rim and the fill showed a box behind the label: the "after effects" Jonny saw around
+ * past the rim and the fill showed a box behind the label: the "after effects" the owner saw around
  * the cloud. Painted opaque inside a layer and faded as one piece, the overlaps cannot show.
  */
 private inline fun DrawScope.inLayer(alpha: Float, block: DrawScope.() -> Unit) {

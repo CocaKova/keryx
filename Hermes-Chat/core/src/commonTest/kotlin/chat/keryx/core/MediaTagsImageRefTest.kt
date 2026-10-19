@@ -15,19 +15,19 @@ class MediaTagsImageRefTest {
 
     @Test
     fun captionThenDirective_splitsIntoCaptionAndImage() {
-        val s = MediaTags.splitImageRefs("She sent this picture after\n@image:/home/sy/.hermes/images/upload_20260924_114242_1.jpg")
+        val s = MediaTags.splitImageRefs("She sent this picture after\n@image:/home/me/.hermes/images/upload_20260924_114242_1.jpg")
         assertEquals("She sent this picture after", s.text)
         assertEquals(1, s.refs.size)
-        assertEquals("/home/sy/.hermes/images/upload_20260924_114242_1.jpg", s.refs[0].path)
+        assertEquals("/home/me/.hermes/images/upload_20260924_114242_1.jpg", s.refs[0].path)
         assertEquals("upload_20260924_114242_1.jpg", s.refs[0].name)
         assertEquals(MediaKind.IMAGE, s.refs[0].kind)
     }
 
     @Test
     fun directiveOnly_isAnImageWithNoCaption() {
-        val s = MediaTags.splitImageRefs("@image:/home/sy/.hermes/images/upload_1.png")
+        val s = MediaTags.splitImageRefs("@image:/home/me/.hermes/images/upload_1.png")
         assertEquals("", s.text)
-        assertEquals(listOf("/home/sy/.hermes/images/upload_1.png"), s.refs.map { it.path })
+        assertEquals(listOf("/home/me/.hermes/images/upload_1.png"), s.refs.map { it.path })
     }
 
     @Test
@@ -39,8 +39,8 @@ class MediaTagsImageRefTest {
 
     @Test
     fun quotedPathWithSpaces_isUnquoted() {
-        val s = MediaTags.splitImageRefs("@image:\"/home/sy/Pictures/my dog.jpg\"")
-        assertEquals("/home/sy/Pictures/my dog.jpg", s.refs.single().path)
+        val s = MediaTags.splitImageRefs("@image:\"/home/me/Pictures/my dog.jpg\"")
+        assertEquals("/home/me/Pictures/my dog.jpg", s.refs.single().path)
         assertEquals("my dog.jpg", s.refs.single().name)
     }
 

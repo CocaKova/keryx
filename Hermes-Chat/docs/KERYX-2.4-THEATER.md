@@ -75,7 +75,7 @@ one cannot blank a wing.
 ## The two halves
 
 **Gateway** — `gateway/keryx_stream.py`, `_attach_tool_callbacks`. ⚠️ REINSTALL-FRAGILE: the whole
-module is a SILAS_EXT payload (`~/.hermes/silas_ext/payloads/keryx_stream.py`, reapply.py entry
+module is a LOCAL_EXT payload (`~/.hermes/local_ext/payloads/keryx_stream.py`, reapply.py entry
 "gateway: keryx_stream.py present"). Edit the live file, then copy it to the payload.
 
 It attaches from inside `attach_reasoning_callback`, which `gateway/run.py` already calls as the
@@ -110,7 +110,7 @@ The beats clear on a mid-turn segment commit, since that commit carries its own 
 
 The first cut shipped the theater beside the existing text-parsed `ToolGroupCard`, and on device
 they read as two different features describing the same call — a boxed gradient card under a
-monospace hairline row (Jonny: *"the tool call log and the new tool call show kind of fight"*).
+monospace hairline row (feedback: *"the tool call log and the new tool call show kind of fight"*).
 
 `domain/model/ToolGrammar.kt` is the fix: one verb/glyph/target vocabulary that both surfaces
 speak. `read_file` is `▤ Read SOUL.md` wherever it is drawn, live or in the transcript, and a run
@@ -148,7 +148,7 @@ the answer to "what did that edit change" a week later is the file, not a phone'
 ## Opening a subagent
 
 A wing showed a goal, a rollup and a summary — enough to know it worked and nothing about how
-(Jonny: *"there's no way of seeing the subagent session"*). The gateway relays `child_session_id`;
+(feedback: *"there's no way of seeing the subagent session"*). The gateway relays `child_session_id`;
 the first cut dropped it. It now rides the `sub` frames, a landed wing is underlined and tappable,
 and `SubagentSessionSheet` opens the child's own transcript through the existing
 `GET /api/sessions/{id}/messages`. Read-only: the Sessions tab owns resuming, and the verb here is
@@ -168,10 +168,10 @@ correlation.
 `summary`. The parent polled with `sleep` while the child worked, so the concurrent path ran too.
 
 ⚠️ **Rooms are profiles.** `platforms.matrix.room_profile_map` routes each room to an agent
-profile, and profiles have different toolsets — The Study is **theo**, which has no delegation
+profile, and profiles have different toolsets — The Study is **atlas**, which has no delegation
 tool, so the first delegation attempts came back "I have no delegate_task" and read like a bug in
-this work. It was the wrong room. `default` (Sy) rooms are The Office, Clocktower and
-Jonny & SILAS.
+this work. It was the wrong room. `default` (the agent) rooms are The Office, Clocktower and
+the owner & the agent.
 
 **Diffs** — a real `patch` on a 4-line file: `+2 −1`, with the ANSI-coloured body, the
 `┊ review diff` banner and the `a/… → b/…` header the chrome rules have to skip. That exact

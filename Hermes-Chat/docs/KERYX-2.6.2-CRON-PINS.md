@@ -1,6 +1,6 @@
 # Keryx 2.6.2 — cron pins: the Runs door keeps what you keep (2026-09-02)
 
-Jonny: "it would be really cool if we could pin cron job outputs in the gateway side of it.
+The owner: "it would be really cool if we could pin cron job outputs in the gateway side of it.
 It needs to look beautiful and navigate beautiful."
 
 ## 1. What was missing
@@ -59,7 +59,7 @@ accent-tinted when kept.
 **Glyphs** — `KeryxGlyphs.Pin` / `PinFilled` (a pushpin: head, shoulders, needle) in the one
 icon family. The Bookmark glyph stays the Archive's (kept MESSAGES); a pin is a kept SESSION.
 
-## 4. Walk (Jonny, on device)
+## 4. Walk (on device)
 
 1. Runs door → long-press a run in a card → *Pin — keep this run* → shelf appears on top with
    the run's headline; toast "Pinned — kept on the gateway".
@@ -72,7 +72,7 @@ icon family. The Bookmark glyph stays the Archive's (kept MESSAGES); a pin is a 
 
 ## 5. The diff feed (same evening)
 
-Jonny: "let's go with the diff feed, but I also don't know what that is."
+The owner: "let's go with the diff feed, but I also don't know what that is."
 
 **What it is.** A daily job produces forty near-identical reports; the reader's question on the
 forty-first is "what does it say that yesterday's didn't". Each job card now answers that in
@@ -94,7 +94,7 @@ from it, so a card that has shown its headline has paid for half its delta alrea
 
 ## 6. The hard line in the sky (same evening)
 
-Jonny: "the colors in the background go from a darker shade to a lighter shade from the left to
+The owner: "the colors in the background go from a darker shade to a lighter shade from the left to
 the right of the screen in a really harsh way, like a hard line" — and, minutes later, "a big
 box is moving across the screen".
 
@@ -111,9 +111,9 @@ backdrop is float until the one dither. The dither is now triangular (two hashes
 of a flat 0.8 LSB, and the `fract(sin(…))` hash is replaced by a sine-free one — on mobile GPUs
 `sin()` of pixel-scale arguments degrades into structure, and structured dither is not dither.
 
-## 7. The pin Jonny actually meant: a job at the top of the session list
+## 7. The pin the owner actually meant: a job at the top of the session list
 
-Jonny: "I more so meant pinning the output of a certain cron job to the top of the session list
+The owner: "I more so meant pinning the output of a certain cron job to the top of the session list
 like in the matrix side."
 
 On the Matrix door a job's output lands in a room, and pinning that room puts it in the Quick

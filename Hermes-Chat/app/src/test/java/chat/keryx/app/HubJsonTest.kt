@@ -44,7 +44,7 @@ class HubJsonTest {
               "schedule":{"kind":"cron","expr":"0 7 * * *","display":"0 7 * * *"},"schedule_display":"0 7 * * *",
               "repeat":{"times":null,"completed":44},
               "next_run_at":"2026-07-07T07:00:00-05:00","last_run_at":"2026-07-06T07:04:30.847514-05:00",
-              "last_status":"ok","last_error":null,"deliver":"matrix:!room:silas.local"},
+              "last_status":"ok","last_error":null,"deliver":"matrix:!room:example.org"},
              {"id":"x","name":"Sparse"}]}
         """))
         assertEquals(2, jobs.size)
@@ -165,7 +165,7 @@ class HubJsonTest {
     fun `event feed maps kinds and keeps the caller cursor when absent`() {
         val page = HubJson.events(obj("""
             {"events":[
-              {"id":143,"task_id":"t_93d2b1a4","kind":"completed","payload":{"by":"milo"},"created_at":1783370393},
+              {"id":143,"task_id":"t_93d2b1a4","kind":"completed","payload":{"by":"scout"},"created_at":1783370393},
               {"id":144,"task_id":"t_2e47bdad","kind":"heartbeat","payload":{},"created_at":1783370468}],
              "cursor":144}
         """), since = 100L)
@@ -199,13 +199,13 @@ class HubJsonTest {
     fun `notify subs map pinned fields and tolerate gaps`() {
         val subs = HubJson.subs(obj("""
             {"subs":[
-              {"task_id":"t-1","platform":"matrix","chat_id":"!room:silas.local","thread_id":"","created_at":1751830000},
-              {"task_id":"t-2","chat_id":"!other:silas.local"}
+              {"task_id":"t-1","platform":"matrix","chat_id":"!room:example.org","thread_id":"","created_at":1751830000},
+              {"task_id":"t-2","chat_id":"!other:example.org"}
             ]}
         """))
         assertEquals(2, subs.size)
         assertEquals("t-1", subs[0].taskId)
-        assertEquals("!room:silas.local", subs[0].chatId)
+        assertEquals("!room:example.org", subs[0].chatId)
         assertEquals("matrix", subs[0].platform)
         // Missing platform/thread degrade to blanks, never throw.
         assertEquals("", subs[1].platform)
@@ -220,8 +220,8 @@ class HubJsonTest {
             {"ok":true,"removed":0,"matched":227,
              "oldest_started_at":1747699200.5,"newest_started_at":1749081600.0,
              "sessions":[
-               {"id":"abc123","source":"gateway","title":"morning check","model":"silas-brain","started_at":1747699200.5,"message_count":14},
-               {"id":"def456","source":"gateway","title":null,"model":"silas-brain","started_at":1747785600.0,"message_count":2}
+               {"id":"abc123","source":"gateway","title":"morning check","model":"home-brain","started_at":1747699200.5,"message_count":14},
+               {"id":"def456","source":"gateway","title":null,"model":"home-brain","started_at":1747785600.0,"message_count":2}
              ]}
         """))
         assertEquals(0, dry.removed)
@@ -401,7 +401,7 @@ class HubJsonTest {
                "value":0.7,"choices":[],"min":0.3,"max":0.9,
                "applies":"next turn","locked":false,"group":"Compression"},
               {"key":"missions_default_assignee","label":"Default assignee","description":"…","kind":"enum",
-               "value":"","choices":["","default","sy"],"min":null,"max":null,
+               "value":"","choices":["","default","rook"],"min":null,"max":null,
                "applies":"next dispatch tick","locked":false,"group":"Missions"}]}
         """))
         assertEquals("Compression", knobs[0].group)

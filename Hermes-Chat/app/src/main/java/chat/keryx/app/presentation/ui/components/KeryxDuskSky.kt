@@ -34,7 +34,7 @@ import kotlinx.coroutines.delay
  * feels alive and is never seen breathing. They used to be a separate Canvas of Compose radial
  * gradients painted over the sky — and that was the hard line. A Skia gradient is not dithered:
  * its gaussian tail steps through the last two 8-bit levels above black in ~80 px bands, and on
- * an OLED a two-level step next to black is a visible edge (Jonny, 08-19 and again 09-02: "a
+ * an OLED a two-level step next to black is a visible edge (08-19 and again 09-02: "a
  * darker shade to a lighter shade from left to right, a hard line separating them"). Drawn here,
  * the pools are float all the way down and pass through the one dither with everything else.
  *

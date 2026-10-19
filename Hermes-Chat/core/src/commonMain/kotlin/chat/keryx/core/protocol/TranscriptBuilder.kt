@@ -48,7 +48,7 @@ object TranscriptBuilder {
                     // a teammate's REPLY coming back into the sender's chat as the completion of
                     // its message_agent delivery. Both arrive on the user role because alternation
                     // requires it, and neither is the human speaking: the bubble is the other
-                    // bot's, its words the content (they were blank here — "relayed · Juno" over
+                    // bot's, its words the content (they were blank here — "relayed · Vega" over
                     // nothing — while the Matrix door always carried them).
                     val delivery = chat.keryx.core.model.AgentDelivery.parse(row.content)
                         ?: chat.keryx.core.model.AgentDeliveryCommand.completionReply(row.content)

@@ -7,7 +7,7 @@ package chat.keryx.core.model
  * Pure Kotlin (ARGB longs, no Compose) so the repository layer and tests can use it.
  */
 data class Heraldry(
-    /** Stable key — the MXID localpart, lowercased ("milo"). */
+    /** Stable key — the MXID localpart, lowercased ("scout"). */
     val key: String,
     /** Display name if known, else the localpart. */
     val name: String,

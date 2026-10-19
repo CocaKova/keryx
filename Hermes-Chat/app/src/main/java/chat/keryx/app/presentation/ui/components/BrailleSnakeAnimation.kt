@@ -48,7 +48,7 @@ fun BrailleSnakeAnimation(
      * True where this snake is the app's way of saying *something is happening right now* — the
      * drafting row, the login handshake, the agent thinking mid-call. Those keep moving under
      * Battery Saver: a frozen progress spinner reads as a hung app, which costs the user more
-     * than the frames cost the battery (Jonny, on device: "make spinners the exception").
+     * than the frames cost the battery (on device: "make spinners the exception").
      *
      * Left false for ornament — the drawer emblem, a selected room's ring, an empty state's
      * flourish, a space header. Nothing is waiting on those, so they still like everything else.

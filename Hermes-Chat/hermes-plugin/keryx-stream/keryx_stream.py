@@ -956,7 +956,7 @@ def _reasoning_capabilities(
         base = str(model_cfg.get("base_url", "") or "").strip()
         providers_cfg = cfg.get("providers") or {}
         if isinstance(providers_cfg, dict):
-            # User-configured endpoints (silas-brain → localhost:8000) are local brains too:
+            # User-configured endpoints (home-brain → localhost:8000) are local brains too:
             # a session billed to that slug must read the local ladder, not a cloud one.
             local_slugs = {
                 str(k).strip().lower()
@@ -1346,7 +1346,7 @@ KANBAN_ACTOR = "keryx"
 # Author of a /reply — the answer to a card that asked its owner for something.
 # Also fixed server-side: the app is the owner's own device, so a reply from
 # it reads to the next worker as the human's word, never as a caller's claim.
-KANBAN_OWNER = "jonny"
+KANBAN_OWNER = "owner"
 
 # Fields safe + useful for the app. Excludes claim locks, workspace paths,
 # idempotency keys — dispatcher internals the phone has no business rendering.
@@ -3578,7 +3578,7 @@ def _update_probe_entry() -> Optional[Dict[str, str]]:
 
     The shape this exists for: an install carrying a patch layer needs to know
     whether its anchors still exist in the target ref BEFORE anything mutates —
-    `silas-update --check` is one such script, a bare `hermes update --check` is
+    `my-update --check` is one such script, a bare `hermes update --check` is
     another, and a stock install has none and simply sees no button.
 
     Read-only is the CONTRACT, not something the gateway can enforce: whatever is

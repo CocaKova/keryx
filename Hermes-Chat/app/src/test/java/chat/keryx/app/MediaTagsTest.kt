@@ -60,12 +60,12 @@ class MediaTagsTest {
     @Test
     fun `an apostrophe inside a path is the path's, one at the end is the tag's quote`() {
         assertEquals(
-            listOf("/home/sy/o'brien.png"),
-            MediaTags.split("Here:\nMEDIA:/home/sy/o'brien.png\n").refs.map { it.path },
+            listOf("/home/me/o'brien.png"),
+            MediaTags.split("Here:\nMEDIA:/home/me/o'brien.png\n").refs.map { it.path },
         )
         assertEquals(
-            listOf("/home/sy/o'brien.png"),
-            MediaTags.split("the portrait is MEDIA:/home/sy/o'brien.png for you").refs.map { it.path },
+            listOf("/home/me/o'brien.png"),
+            MediaTags.split("the portrait is MEDIA:/home/me/o'brien.png for you").refs.map { it.path },
         )
         assertEquals(
             listOf("/a/b.png"),

@@ -91,7 +91,7 @@ internal class SessionStore(
      * Whether this session's transcript is known yet (3.0): a page painted from cache, the
      * wire's page, or the wire's refusal. Before it, an empty list means "not here yet", not
      * "an empty session": opened as empty, a session on a slow link flashed a fresh session's
-     * starters over the room being left (Jonny, 10-16, "ghost chats").
+     * starters over the room being left (10-16, "ghost chats").
      */
     val known = MutableStateFlow(false)
 
@@ -277,7 +277,7 @@ internal class SessionStore(
      *  call (Hermes `_relay_thinking`, tags stripped), not its thinking. It used to replace the
      *  live thought, so the disclosure showed said-words where the thinking had been. Those
      *  words reach the transcript as their own bubble (`message.interim`), so the thought keeps
-     *  only `reasoning.delta` (Jonny, 10-19). Still a sign of life for the turn. */
+     *  only `reasoning.delta` (10-19). Still a sign of life for the turn. */
     fun reasoningAvailable(@Suppress("UNUSED_PARAMETER") text: String) {
         if (!streaming) streamStart()
     }

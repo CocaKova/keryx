@@ -148,7 +148,7 @@ settings and no longer takes the transport. The ten `shipyard*` verbs left
 
 ## 6. Links become tappable (renderer 0.26.0 → 0.35.0, Kotlin 2.0.0 → 2.1.21)
 
-Jonny 08-29: the Daily AI News Briefing's `[Read](https://arxiv.org/…)` links drew as plain
+08-29 feedback: the Daily AI News Briefing's `[Read](https://arxiv.org/…)` links drew as plain
 text and did nothing on tap. Trace: Hermes' Matrix adapter sends the raw markdown as `body`
 (`_build_text_message_content`), `MatrixTransport.toMessage` keeps it, the parser leaves it
 alone — the loss was in the renderer. multiplatform-markdown-renderer **0.26.0** hit-tests
@@ -217,5 +217,5 @@ link; a plain `(url)` in prose still linkifies. 11 tests in `LinkifyAutolinksTes
     same bubble still opens the reaction picker. ⚠️ Bare-URL autolinks NOT tappable (above).
 - Matrix-door walk items (model pick via `/model` room command, compaction label on a long
   Matrix turn) remain unwalked — the 09-01 walk drove the direct door.
-- Release: `v2.6.0` CUT 09-01 with the autolink fix in (Jonny's call: "fix the autolinks
+- Release: `v2.6.0` CUT 09-01 with the autolink fix in (the owner's call: "fix the autolinks
   then cut v2.6.0"). Wake word = last Phase F item.

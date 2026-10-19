@@ -93,7 +93,7 @@ fun ArtifactCard(
 
 /**
  * The trailing chips under a reply that names a page by path ("saved it to
- * `/home/sy/out/mock-v1.html`") — one "Open <name>" per distinct path (2.13). Direct door only,
+ * `/home/me/out/mock-v1.html`") — one "Open <name>" per distinct path (2.13). Direct door only,
  * because only there can a bare path be fetched; on the Matrix door the sentence stays a
  * sentence. The scan is remembered per body and short-circuits on text with no `.htm` in it,
  * so a plain reply pays one `contains`.

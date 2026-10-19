@@ -370,7 +370,7 @@ private fun walkRange(
         // The direct door carries its calls structurally, so prose in its block is the agent
         // speaking between tools: Hermes' interim message, which its own TUI prints in line.
         // Folded into the run like Matrix-era narration, it vanished into the collapsed thought
-        // live, and on reload was dropped for the row's own reasoning (Jonny, 10-16, REA run:
+        // live, and on reload was dropped for the row's own reasoning (10-16, REA run:
         // 12 of 14 lines gone). It stays a visible bubble, its thought above it.
         val spoken = (i until blockEnd).any { chrono[it].toolCalls.isNotEmpty() }
         if (isToolAt.none { it }) {
@@ -695,7 +695,7 @@ fun groupChatItemsIncremental(
  * the side-channel reports the same calls as `event: tool` frames, which arrive first and carry
  * what the narration never could — durations, verdicts, real diffs. Until 3.1 the frames had
  * their own renderer inside the streaming bubble, so a watched turn showed every call twice, in
- * two different vocabularies, a few dp apart. (Jonny, on device, 2.4: "the tool call log and the
+ * two different vocabularies, a few dp apart. (on device, 2.4: "the tool call log and the
  * new tool call kind of fight.")
  *
  * They are one run at two ages. The transcript is where a run lives, so the frames come here:

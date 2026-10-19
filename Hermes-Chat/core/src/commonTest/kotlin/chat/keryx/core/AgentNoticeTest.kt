@@ -16,13 +16,13 @@ class AgentNoticeTest {
         Message(id = "1", roomId = "r", sender = sender, content = content, timestamp = 1L, senderName = "Hermes", agentDelivery = delivery)
 
     @Test fun botChatSpeaksAsTheBot() {
-        val n = AgentNotices.compose(msg("Done.\nMore"), conversation = "Bot Chat", botLabel = "Theo", botHandle = "theo")
-        assertEquals("Theo", n.speaker)
-        assertEquals("Theo", n.conversation)
-        assertEquals("bot:theo", n.speakerKey)
+        val n = AgentNotices.compose(msg("Done.\nMore"), conversation = "Bot Chat", botLabel = "Atlas", botHandle = "atlas")
+        assertEquals("Atlas", n.speaker)
+        assertEquals("Atlas", n.conversation)
+        assertEquals("bot:atlas", n.speakerKey)
         assertEquals("Done.", n.line)
         assertFalse(n.relayed)
-        assertEquals("${Heralds.SIGIL} Theo", n.title)
+        assertEquals("${Heralds.SIGIL} Atlas", n.title)
     }
 
     @Test fun plainSessionKeepsTheSessionName() {
@@ -33,13 +33,13 @@ class AgentNoticeTest {
     }
 
     @Test fun deliveryMakesTheOtherAgentTheSpeaker() {
-        val d = AgentDelivery.parse("Message from 🤖 Juno (@juno): Draft is ready, take a look.")!!
-        val n = AgentNotices.compose(msg("", sender = SenderType.SYSTEM, delivery = d), "Bot Chat", botLabel = "Theo", botHandle = "theo")
+        val d = AgentDelivery.parse("Message from 🤖 Vega (@vega): Draft is ready, take a look.")!!
+        val n = AgentNotices.compose(msg("", sender = SenderType.SYSTEM, delivery = d), "Bot Chat", botLabel = "Atlas", botHandle = "atlas")
         assertTrue(n.relayed)
-        assertEquals("Juno", n.speaker)
-        assertEquals("agent:juno", n.speakerKey)
+        assertEquals("Vega", n.speaker)
+        assertEquals("agent:vega", n.speakerKey)
         assertEquals("Draft is ready, take a look.", n.line)
-        assertEquals("Juno → Theo", n.title)
+        assertEquals("Vega → Atlas", n.title)
     }
 
     @Test fun lineStripsMarkersAndHandlesMedia() {
