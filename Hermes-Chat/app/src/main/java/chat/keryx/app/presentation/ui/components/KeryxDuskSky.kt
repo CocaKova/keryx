@@ -188,7 +188,7 @@ half4 main(float2 frag) {
 
     // Dither. Every colour above is computed in float and then crushed to 8 bits per channel, and
     // a wide, shallow gradient crosses a step every few hundred pixels — which the eye sharpens
-    // into a hard vertical edge that is not in the maths at all (Jonny, 08-19: "a big portion of
+    // into a hard vertical edge that is not in the maths at all (08-19, on a phone: "a big portion of
     // the left is lighter and the right is a hard cut to a darker tone" — measured at TWO of 255).
     // Triangular (two hashes summed, ±1 LSB) rather than a flat sub-quantum: a rectangular
     // dither narrower than a step leaves the step's centre line intact, the triangular one
