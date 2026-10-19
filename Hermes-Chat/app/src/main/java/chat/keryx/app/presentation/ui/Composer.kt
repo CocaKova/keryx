@@ -216,7 +216,7 @@ internal fun Composer(
                 animationSpec = spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow),
                 label = "add_rotate",
             )
-            IconButton(onClick = { attachMenu = !attachMenu }, modifier = Modifier.size(44.dp)) {
+            IconButton(onClick = { attachMenu = !attachMenu }, modifier = Modifier.size(48.dp)) {
                 Icon(
                     chat.keryx.app.presentation.ui.components.KeryxGlyphs.Plus,
                     contentDescription = "Attach",
@@ -287,7 +287,7 @@ internal fun Composer(
                     label = "mic_pulse_scale",
                 ).value
             } else 1f
-            IconButton(onClick = onMicTap, modifier = Modifier.size(44.dp)) {
+            IconButton(onClick = onMicTap, modifier = Modifier.size(48.dp)) {
                 if (dictation == DictationPhase.TRANSCRIBING) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
@@ -529,7 +529,7 @@ internal fun ComposerFooter(
                         modifier = Modifier.widthIn(max = 150.dp),
                     )
                 }
-                Text(" ▾", fontSize = KeryxType.micro, color = meta.copy(alpha = 0.7f))
+                Text(" ▾", fontSize = KeryxType.micro, color = chat.keryx.app.theme.quietInk(alpha = 0.7f))
             }
             if (modelMenu) chat.keryx.app.presentation.ui.components.ModelPickerSheet(
                 catalog = catalog,
@@ -562,7 +562,7 @@ internal fun ComposerFooter(
                     color = meta,
                     maxLines = 1,
                 )
-                Text(" ▾", fontSize = KeryxType.micro, color = meta.copy(alpha = 0.7f))
+                Text(" ▾", fontSize = KeryxType.micro, color = chat.keryx.app.theme.quietInk(alpha = 0.7f))
             }
             chat.keryx.app.presentation.ui.ReasoningMenu(
                 expanded = reasoningMenu,

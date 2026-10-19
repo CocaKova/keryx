@@ -130,7 +130,7 @@ fun FlightPlanStrip(plan: TodoPlan) {
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            Text(if (open) "▾" else "▸", color = quiet.copy(alpha = 0.5f), fontSize = KeryxType.micro)
+            Text(if (open) "▾" else "▸", color = chat.keryx.app.theme.quietInk(alpha = 0.5f), fontSize = KeryxType.micro)
         }
 
         if (open) {

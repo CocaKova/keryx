@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
@@ -87,7 +89,10 @@ fun KeryxContextRing(
         modifier = modifier
             .heightIn(min = 36.dp)
             .clip(RoundedCornerShape(KeryxRadius.chip))
-            .clickable { showFigure = !showFigure }
+            .clickable(onClickLabel = if (showFigure) "Hide the count" else "Show the count") { showFigure = !showFigure }
+            // The ring is a drawing, so it says in words what it shows: unlabelled, TalkBack
+            // announced an unnamed button here (3.0 accessibility pass).
+            .semantics { contentDescription = contextRingLabel(used, max, toCompaction?.left) }
             .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
         if (showFigure) {
@@ -131,3 +136,14 @@ fun KeryxContextRing(
 
 /** The cache-warm edge's gold (2.16). Decorative: it carries no text. */
 private val Gilt = androidx.compose.ui.graphics.Color(0xFFD4A537)
+
+/** What the context ring says aloud: how full the window is, and how far compaction is. */
+internal fun contextRingLabel(used: Long, max: Long, toCompaction: Long?): String {
+    val pct = if (max > 0) (used * 100 / max).coerceIn(0, 100) else 0
+    val base = "Context ${used / 1000}k of ${max / 1000}k tokens, $pct percent"
+    return when {
+        toCompaction == null -> base
+        toCompaction > 0L -> "$base, ${(toCompaction + 999) / 1000}k until compaction"
+        else -> "$base, compacts next turn"
+    }
+}

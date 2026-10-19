@@ -1,5 +1,6 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.theme.quietInk
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -100,8 +101,10 @@ fun ReasoningDisclosure(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp)
-            .alpha(if (streaming) 1f else 0.72f),
+            // A settled thought used to recede by fading the whole block to 72%, on top of its
+            // own quiet ink: "Thought" read 2.04:1 on parchment and the opened reasoning about
+            // the same (3.0 accessibility pass). It recedes by its ink alone now, at 4.5:1.
+            .padding(vertical = 2.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -125,7 +128,7 @@ fun ReasoningDisclosure(
                 label,
                 fontSize = KeryxType.caption,
                 fontWeight = FontWeight.Medium,
-                color = quiet.copy(alpha = if (streaming) 0.9f else 0.7f),
+                color = quietInk(alpha = if (streaming) 0.9f else 0.7f),
             )
             if (streaming && seconds != null && seconds >= 1) {
                 Spacer(Modifier.width(6.dp))
@@ -133,7 +136,7 @@ fun ReasoningDisclosure(
                     "${seconds}s",
                     fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
-                    color = quiet.copy(alpha = 0.5f),
+                    color = quietInk(alpha = 0.5f),
                     // A ticking count is for the eye; read aloud it would change every second.
                     modifier = Modifier.clearAndSetSemantics { },
                 )
@@ -142,7 +145,7 @@ fun ReasoningDisclosure(
             Text(
                 if (open) "▾" else "▸",
                 fontSize = KeryxType.micro,
-                color = quiet.copy(alpha = 0.55f),
+                color = quietInk(alpha = 0.55f),
                 modifier = Modifier.clearAndSetSemantics { },
             )
         }
@@ -170,7 +173,7 @@ fun ReasoningDisclosure(
             val following = rememberLazyTailFollow(list, reasoning.length, enabled = streaming, startFollowing = true)
             val scope = rememberCoroutineScope()
             Box {
-                val color = quiet.copy(alpha = 0.62f)
+                val color = quietInk(alpha = 0.62f)
                 if (streaming) {
                     // A live one stays plain text: re-formatting a growing think on every token
                     // is not worth its cost. Full width: a lazy list is as wide as the pieces in

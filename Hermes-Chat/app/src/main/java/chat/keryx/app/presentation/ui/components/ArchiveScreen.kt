@@ -597,7 +597,7 @@ private fun EntryHeader(e: ArchiveStore.Entry, myId: String?, roomName: String? 
         Text(
             text = archiveDate(e.timestamp),
             fontSize = KeryxType.micro,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            color = chat.keryx.app.theme.quietInk(alpha = 0.7f),
         )
     }
 }

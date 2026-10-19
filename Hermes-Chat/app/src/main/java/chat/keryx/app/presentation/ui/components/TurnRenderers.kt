@@ -313,7 +313,7 @@ internal fun TelemetryMessageRow(message: Message, textScale: Float) {
         if (message.timestamp > 0L) {
             Text(
                 text = formatClock(message.timestamp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                color = chat.keryx.app.theme.quietInk(alpha = 0.45f),
                 fontSize = KeryxType.micro,
                 modifier = Modifier.padding(start = 4.dp, top = 1.dp),
             )

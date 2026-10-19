@@ -79,7 +79,8 @@ internal fun LinkHealthDot(
     Box(
         contentAlignment = androidx.compose.ui.Alignment.Center,
         modifier = Modifier
-            .size(44.dp)
+            // 48dp: a tap target's floor; 44 measured 46 with its padding (3.0 accessibility pass).
+            .size(48.dp)
             .clip(CircleShape)
             .clickable(
                 // The dot draws no glyph and carries no text, so without this the link's whole

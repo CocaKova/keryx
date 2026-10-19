@@ -73,7 +73,7 @@ internal fun ContextBreakdownSheet(viewModel: ChatViewModel, onDismiss: () -> Un
                             )
                             if (d.model.isNotBlank()) Text(
                                 d.model, fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                color = chat.keryx.app.theme.quietInk(alpha = 0.8f),
                             )
                         }
                     }
@@ -117,7 +117,7 @@ internal fun ContextBreakdownSheet(viewModel: ChatViewModel, onDismiss: () -> Un
                             Text(
                                 "${(100f * c.tokens / d.total).let { if (it < 1f) "<1" else it.toInt().toString() }}%",
                                 fontSize = KeryxType.caption, fontFamily = FontFamily.Monospace,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                color = chat.keryx.app.theme.quietInk(alpha = 0.7f),
                                 modifier = Modifier.width(38.dp),
                             )
                         }

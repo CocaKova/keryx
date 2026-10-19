@@ -408,6 +408,30 @@ class PaperContrastTest {
         }
     }
 
+    @Test
+    fun `quiet ink reads at every fade, on both grounds of both themes`() {
+        // The 3.0 accessibility pass: ATF measured the secondary ink at 50-70% at 2.04-2.8:1 on
+        // parchment and 3.5:1 on the void. quietInk keeps the fade where it reads and stops it
+        // where it doesn't, held to the worse of the page and a sheet.
+        val themes = listOf(
+            "paper" to Triple(chat.keryx.app.theme.TextSecondaryLight, chat.keryx.app.theme.BackgroundLight, chat.keryx.app.theme.SurfaceLight),
+            "void" to Triple(chat.keryx.app.theme.TextSecondaryDark, chat.keryx.app.theme.BackgroundDark, chat.keryx.app.theme.SurfaceDark),
+        )
+        for ((name, c) in themes) {
+            val (ink, page, sheet) = c
+            for (alpha in listOf(0.35f, 0.45f, 0.5f, 0.55f, 0.6f, 0.65f, 0.7f, 0.8f, 0.9f, 1f)) {
+                val q = chat.keryx.app.theme.KeryxInk.readable(ink.copy(alpha = alpha), listOf(page, sheet))
+                for ((g, ground) in listOf("page" to page, "sheet" to sheet)) {
+                    val got = contrast(argbOf(q), argbOf(ground))
+                    assertTrue("$name ink at $alpha on the $g scores $got", got >= AA)
+                }
+            }
+            // Where the fade already reads it is left exactly as it was.
+            val full = chat.keryx.app.theme.KeryxInk.readable(ink, listOf(page, sheet))
+            assertEquals("$name full ink is untouched", argbOf(ink), argbOf(full))
+        }
+    }
+
     private fun colorOf(argb: Long) = androidx.compose.ui.graphics.Color(argb.toInt())
 
     private fun argbOf(c: androidx.compose.ui.graphics.Color): Long =

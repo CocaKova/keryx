@@ -77,7 +77,7 @@ fun GatewayRegistry(
 
     Text(
         text = "Every Hermes gateway this phone can reach. Sessions, jobs, bots and the Hub are the active gateway's; switching moves the whole workspace.",
-        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+        color = chat.keryx.app.theme.quietInk(alpha = 0.85f),
         fontSize = KeryxType.caption,
     )
     Spacer(Modifier.height(10.dp))
@@ -170,7 +170,7 @@ fun GatewayRegistry(
     }
     if (fleet.size == 1) Text(
         text = "Primary is the fallback when the gateway you were on is gone. Make primary never switches the workspace.",
-        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+        color = chat.keryx.app.theme.quietInk(alpha = 0.7f),
         fontSize = KeryxType.micro,
         modifier = Modifier.padding(top = 8.dp),
     )

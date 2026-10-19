@@ -950,14 +950,14 @@ private fun KeryxSpaceBody(
                 // The emblem's seat: the snake on a hub, the way back on a spoke. Same 44dp,
                 // so the title does not shift when you step in or out.
                 if (onBack != null) {
-                    IconButton(onClick = onBack, modifier = Modifier.size(44.dp)) {
+                    IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
                         Icon(
                             androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                } else Box(modifier = Modifier.size(44.dp)) {
+                } else Box(modifier = Modifier.size(48.dp)) {
                     BrailleSnakeAnimation(
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.primary,

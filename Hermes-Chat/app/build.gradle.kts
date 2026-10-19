@@ -199,6 +199,8 @@ dependencies {
   androidTestImplementation(libs.androidx.test.ext.junit)
   androidTestImplementation(libs.androidx.test.runner)
   androidTestImplementation(libs.androidx.test.espresso.core)
+  // The accessibility pass (3.0): ATF over Compose screens, A11yCanaryTest.
+  androidTestImplementation(libs.androidx.compose.ui.test.junit4.accessibility)
 
   // Matrix SDK (Trixnity) — client + Android Room persistence + media store
   implementation(libs.trixnity.client)

@@ -253,7 +253,7 @@ private fun ProjectCard(
                     "auto",
                     fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                    color = chat.keryx.app.theme.quietInk(alpha = 0.55f),
                 )
             }
         }
@@ -266,7 +266,7 @@ private fun ProjectCard(
         }.joinToString(" · ")
         Text(
             text = meta,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
+            color = chat.keryx.app.theme.quietInk(alpha = 0.65f),
             fontSize = KeryxType.micro,
             fontFamily = FontFamily.Monospace,
             maxLines = 1,
@@ -277,7 +277,7 @@ private fun ProjectCard(
         node.previewSessions.take(3).forEach { s ->
             Text(
                 text = s.name,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                color = chat.keryx.app.theme.quietInk(alpha = 0.8f),
                 fontSize = KeryxType.micro,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -356,7 +356,7 @@ private fun ProjectDetail(
                         it,
                         fontSize = KeryxType.micro,
                         fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                        color = chat.keryx.app.theme.quietInk(alpha = 0.55f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
@@ -429,7 +429,7 @@ private fun ProjectDetail(
                     if (meta.isNotEmpty()) {
                         Text(
                             text = meta,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
+                            color = chat.keryx.app.theme.quietInk(alpha = 0.65f),
                             fontSize = KeryxType.micro,
                             fontFamily = FontFamily.Monospace,
                             maxLines = 1,

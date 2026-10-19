@@ -104,7 +104,7 @@ fun GatewayFolderField(
                 "Known workspaces",
                 fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                color = chat.keryx.app.theme.quietInk(alpha = 0.6f),
                 modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 2.dp),
             )
             suggestions.take(5).forEach { path ->
@@ -135,7 +135,7 @@ fun GatewayFolderField(
                 else "+$hidden more — keep typing to narrow",
                 fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                color = chat.keryx.app.theme.quietInk(alpha = 0.6f),
                 modifier = Modifier.padding(start = 4.dp, top = 2.dp),
             )
         }

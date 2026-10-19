@@ -478,7 +478,7 @@ private fun SessionSection(
     Text(title, fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
     Spacer(Modifier.height(4.dp))
     if (rows.isEmpty()) {
-        Text(empty, fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
+        Text(empty, fontSize = KeryxType.caption, color = chat.keryx.app.theme.quietInk(alpha = 0.8f))
         return
     }
     rows.forEach { room ->
@@ -644,7 +644,7 @@ private fun BotRow(
                     if (bot.model.isNotBlank()) { if (isNotEmpty()) append(" · "); append(bot.model) }
                     if (!bot.managed) { if (isNotEmpty()) append(" · "); append("not armed") }
                 }
-                if (meta.isNotEmpty()) Text(meta, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), maxLines = 1)
+                if (meta.isNotEmpty()) Text(meta, fontSize = KeryxType.micro, color = chat.keryx.app.theme.quietInk(alpha = 0.7f), maxLines = 1)
             }
             if (unread) {
                 Spacer(Modifier.width(8.dp))

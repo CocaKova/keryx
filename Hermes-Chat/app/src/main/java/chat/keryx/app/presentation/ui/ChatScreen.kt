@@ -1605,7 +1605,7 @@ fun DaySeparator(epochMillis: Long) {
         Box(Modifier.weight(1f).height(1.dp).background(line))
         Text(
             text = label,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            color = chat.keryx.app.theme.quietInk(alpha = 0.7f),
             fontSize = KeryxType.micro,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(horizontal = 12.dp),

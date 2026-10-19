@@ -5,6 +5,7 @@ import chat.keryx.app.presentation.tour.KeryxTour
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.draw.drawWithContent
@@ -162,7 +163,7 @@ private fun PaletteRow(
             )
             if (subtitle != null) Text(
                 subtitle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                color = chat.keryx.app.theme.quietInk(alpha = 0.75f),
                 fontSize = KeryxType.caption,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
@@ -1064,6 +1065,8 @@ internal fun DrawerShelfHeader(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .fillMaxWidth()
+            // A tap target, so 48dp at least: the padding alone came to 46 (3.0 accessibility pass).
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onToggle)
             .padding(top = 8.dp, bottom = 8.dp, start = 8.dp, end = 4.dp),
@@ -1192,7 +1195,12 @@ private fun LensChip(
             ) {
                 Text(
                     text = DoorBadge.label(count),
-                    color = if (selected) contrastColorFor(MaterialTheme.colorScheme.primary) else accentInk,
+                    // Its pill is an accent wash on the chip's own fill, a ground deeper than the
+                    // one accentInk is tuned for: 4.15:1 before (3.0 accessibility pass).
+                    color = if (selected) contrastColorFor(MaterialTheme.colorScheme.primary)
+                    else chat.keryx.app.theme.KeryxInk.readable(
+                        accentInk, MaterialTheme.colorScheme.primary.copy(alpha = 0.14f).compositeOver(fill),
+                    ),
                     fontSize = KeryxType.micro,
                     fontWeight = FontWeight.Bold,
                 )
@@ -1274,6 +1282,12 @@ fun RoomRow(
         if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent,
         label = "roomFill",
     )
+    // On the void the raw accent read 4.41:1 on that wash over the drawer: held to it there too.
+    val selectedInk = chat.keryx.app.theme.KeryxInk.readable(
+        chat.keryx.app.presentation.ui.components.keryxAccentInk(),
+        listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.surfaceVariant)
+            .map { MaterialTheme.colorScheme.primary.copy(alpha = 0.12f).compositeOver(it) },
+    )
     val rowPress = remember { MutableInteractionSource() }
     // A fork nested under its parent (2.19): stepped in, with a quiet rail that turns into it,
     // so the family reads as one without the rows merging.
@@ -1333,7 +1347,9 @@ fun RoomRow(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = room.name,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    // The open room's name in the accent's ink: the raw accent on its own 12% wash
+                    // read 2.74:1 on parchment (3.0 accessibility pass).
+                    color = if (isSelected) selectedInk else MaterialTheme.colorScheme.onSurface,
                     fontSize = KeryxType.titleLarge,
                     fontWeight = when {
                         isSelected -> FontWeight.Bold
@@ -1377,9 +1393,9 @@ fun RoomRow(
             preview?.let {
                 Text(
                     text = it,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                        alpha = if (room.hasUnread) 0.95f else 0.65f
-                    ),
+                    // Quieter than an unread one, never below 4.5:1 on the row's own ground: a
+                    // read preview at 65% measured 2.7:1 on parchment (3.0 accessibility pass).
+                    color = chat.keryx.app.theme.quietInk(alpha = if (room.hasUnread) 0.95f else 0.65f, on = rowFill),
                     fontSize = KeryxType.caption,
                     fontWeight = if (room.hasUnread) FontWeight.Medium else FontWeight.Normal,
                     maxLines = 1,
@@ -1393,7 +1409,7 @@ fun RoomRow(
             if (room.timestamp > 0L) {
                 Text(
                     text = formatRelativeTime(room.timestamp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = chat.keryx.app.theme.quietInk(on = rowFill),
                     fontSize = KeryxType.micro,
                 )
             }

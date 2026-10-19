@@ -1459,7 +1459,7 @@ private fun FilterPill(filter: CronFilter, count: Int, selected: Boolean, onClic
         Spacer(Modifier.width(5.dp))
         Text(
             "$count", fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace, maxLines = 1,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+            color = chat.keryx.app.theme.quietInk(alpha = 0.8f),
         )
     }
 }
@@ -1747,7 +1747,7 @@ private fun OpenedHeadline(card: CronJobCard, viewModel: ChatViewModel) {
         Text(
             it,
             fontSize = KeryxType.caption, lineHeight = 15.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+            color = chat.keryx.app.theme.quietInk(alpha = 0.85f),
             maxLines = 3, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 1.dp),
         )

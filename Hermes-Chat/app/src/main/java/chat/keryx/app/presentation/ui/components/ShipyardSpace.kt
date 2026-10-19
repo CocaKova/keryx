@@ -119,7 +119,7 @@ fun ShipyardSpace(
                         Spacer(Modifier.width(8.dp))
                         androidx.compose.material3.IconButton(
                             onClick = { yard.clearError() },
-                            modifier = Modifier.size(44.dp),
+                            modifier = Modifier.size(48.dp),
                         ) {
                             androidx.compose.material3.Icon(
                                 KeryxGlyphs.Close,

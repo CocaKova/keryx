@@ -357,7 +357,7 @@ fun SettingsScreen(
                                 otherReady -> "Gateway credentials are on file — switching connects with them."
                                 else -> "No gateway credentials yet — you'll connect after the switch."
                             },
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            color = chat.keryx.app.theme.quietInk(alpha = 0.8f),
                             fontSize = KeryxType.caption,
                         )
                         Spacer(Modifier.height(10.dp))
@@ -419,7 +419,7 @@ fun SettingsScreen(
                             Spacer(Modifier.height(6.dp))
                             Text(
                                 "Live console — controls, jobs, sessions, skills and tools live in the Gateway.",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                color = chat.keryx.app.theme.quietInk(alpha = 0.7f),
                                 fontSize = KeryxType.micro,
                             )
                         }
@@ -1058,7 +1058,7 @@ fun SettingsScreen(
                         )
                         Text(
                             text = "Kept only on this device; share it when reporting a bug.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            color = chat.keryx.app.theme.quietInk(alpha = 0.6f),
                             fontSize = KeryxType.micro,
                         )
                         Spacer(Modifier.height(10.dp))

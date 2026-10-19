@@ -171,7 +171,7 @@ fun CommandPaletteMenu(
                         )
                     }
                     when {
-                        isRecent -> Text("recent", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f), fontSize = KeryxType.micro)
+                        isRecent -> Text("recent", color = chat.keryx.app.theme.quietInk(alpha = 0.6f), fontSize = KeryxType.micro)
                         sc.isSkill -> Text("skill", color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f), fontSize = KeryxType.micro)
                     }
                 }

@@ -96,7 +96,7 @@ fun SessionLiveTurn(viewModel: ChatViewModel) {
                 console.reasoningTail,
                 fontSize = KeryxType.micro,
                 fontStyle = FontStyle.Italic,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                color = chat.keryx.app.theme.quietInk(alpha = 0.8f),
                 maxLines = 3, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 4.dp),
             )

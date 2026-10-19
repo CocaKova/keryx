@@ -72,7 +72,9 @@ fun ApprovalCard(
         // the moment the card lands, not found by swiping (2.16). Assertive: it interrupts, as
         // the card's place on screen does. The buttons below stay their own stops.
         Column(Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Assertive }) {
-        KeryxSectionHeader("Approval needed", color = warn)
+        // Pressed like the accent: warn clears AA on bare paper but read 4.47:1 on this card's
+        // own warn wash (3.0 accessibility pass).
+        KeryxSectionHeader("Approval needed", color = keryxAccentInk(warn))
         if (approval.description.isNotBlank()) {
             Spacer(Modifier.height(6.dp))
             Text(
@@ -99,7 +101,10 @@ fun ApprovalCard(
             )
         }
         Spacer(Modifier.height(10.dp))
-        Row {
+        // Wrapped, like the clarify choices: in one Row, large text pushed Deny off the card's
+        // edge and broke "Always" a syllable a line (200% font, 3.0 accessibility pass). Deny is
+        // the one choice that must always be reachable.
+        FlowRow {
             approval.choices.forEach { choice ->
                 val (label, color) = when (choice) {
                     "once" -> "Allow once" to MaterialTheme.colorScheme.onSurface
@@ -108,8 +113,9 @@ fun ApprovalCard(
                     "deny" -> "Deny" to MaterialTheme.colorScheme.error
                     else -> choice to MaterialTheme.colorScheme.onSurface
                 }
-                ApprovalButton(label, color) { haptics.commit(); onChoice(choice) }
-                Spacer(Modifier.width(8.dp))
+                ApprovalButton(label, color, modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)) {
+                    haptics.commit(); onChoice(choice)
+                }
             }
         }
     }
@@ -272,7 +278,8 @@ private fun ApprovalButton(
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .defaultMinSize(minHeight = 44.dp)
+            // 48dp, a tap target's floor (3.0 accessibility pass; was 44).
+            .defaultMinSize(minHeight = 48.dp)
             .clip(shape)
             .border(1.dp, ink.copy(alpha = if (enabled) 0.35f else 0.18f), shape)
             .keryxPressable(enabled = enabled, onClick = onClick)

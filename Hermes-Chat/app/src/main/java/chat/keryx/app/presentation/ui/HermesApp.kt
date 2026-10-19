@@ -2,6 +2,9 @@ package chat.keryx.app.presentation.ui
 
 import chat.keryx.app.presentation.tour.tourTarget
 import chat.keryx.app.presentation.tour.KeryxTour
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -583,9 +586,19 @@ fun HermesApp(viewModel: ChatViewModel) {
                                     enter = chat.keryx.app.presentation.ui.components.keryxPop(),
                                     exit = chat.keryx.app.presentation.ui.components.keryxVanish(),
                                 ) {
+                                    // The badge stays solid and the breath is a halo around it: breathing the
+                                    // fill itself took the number down to 1.35:1 on parchment at the low end
+                                    // of each breath (3.0 accessibility pass).
+                                    val warn = chat.keryx.app.presentation.ui.components.KeryxStatus.warn
                                     Badge(
-                                        containerColor = chat.keryx.app.presentation.ui.components.KeryxStatus.warn.copy(alpha = orb.value),
-                                        contentColor = chat.keryx.app.presentation.ui.components.contrastColorFor(chat.keryx.app.presentation.ui.components.KeryxStatus.warn),
+                                        containerColor = warn,
+                                        contentColor = chat.keryx.app.presentation.ui.components.contrastColorFor(warn),
+                                        modifier = Modifier.drawBehind {
+                                            drawCircle(
+                                                warn.copy(alpha = 0.45f * orb.value),
+                                                radius = size.maxDimension / 2f + 3.dp.toPx(),
+                                            )
+                                        },
                                     ) { Text(if (urgent > 9) "9+" else urgent.toString()) }
                                 }
                                 androidx.compose.animation.AnimatedVisibility(
@@ -954,7 +967,7 @@ internal fun ReasoningMenu(
                     caps.scope == "session" -> "${caps.model.ifBlank { "model" }} · this session's ladder"
                     else -> "${caps.model.ifBlank { "model" }} · effort scale"
                 },
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                color = chat.keryx.app.theme.quietInk(alpha = 0.55f),
                 fontSize = KeryxType.micro,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
@@ -1093,6 +1106,15 @@ private const val HINT_SETTLE_MS = 450L
 @Composable
 private fun DemoStrip(onConnect: () -> Unit) {
     val accent = MaterialTheme.colorScheme.primary
+    // The word and the arrow are text-sized, so they take the accent's ink, not its light: the
+    // bare accent read 2.68:1 on the pill's own tint on parchment (3.0 accessibility pass).
+    // The pill sits on the sky's glow at the top of the screen, a deeper ground than its own 10%
+    // wash: held to both (a 32% wash stands in for the glow, as measured on both grounds).
+    val page = MaterialTheme.colorScheme.background
+    val ink = chat.keryx.app.theme.KeryxInk.readable(
+        chat.keryx.app.presentation.ui.components.keryxAccentInk(),
+        listOf(accent.copy(alpha = 0.10f).compositeOver(page), accent.copy(alpha = 0.32f).compositeOver(page)),
+    )
     Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp), contentAlignment = Alignment.Center) {
         androidx.compose.material3.Surface(
             onClick = onConnect,
@@ -1104,16 +1126,22 @@ private fun DemoStrip(onConnect: () -> Unit) {
                 Modifier.padding(horizontal = 14.dp, vertical = 6.dp).heightIn(min = 24.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Demo", color = accent, fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold)
+                // One paragraph, so at large text it wraps as a sentence does, not as two blocks
+                // side by side (200% font split it into three ragged lines).
                 Text(
-                    "  ·  Connect your gateway",
+                    androidx.compose.ui.text.buildAnnotatedString {
+                        withStyle(androidx.compose.ui.text.SpanStyle(color = ink, fontWeight = FontWeight.SemiBold)) { append("Demo") }
+                        append("  ·  Connect your gateway")
+                    },
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = KeryxType.caption,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
                 Icon(
                     androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
-                    tint = accent,
+                    tint = ink,
                     modifier = Modifier.size(16.dp),
                 )
             }
