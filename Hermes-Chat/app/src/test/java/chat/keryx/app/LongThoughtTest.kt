@@ -26,8 +26,8 @@ import org.junit.Test
  * A long live thought (3.0 perf). Jonny, 10-18, watching the h2h Sonic run (DeepSeek at high
  * effort, ~2 h, 286 model calls): "with the super long reasoning for this task Keryx is lagging
  * now". That run streamed ~1 MB of reasoning as `reasoning.delta`, and the live row carried up
- * to 210 KB of it at once: the store keeps the turn's thought until a `reasoning.available`
- * replaces it, and DeepSeek sent one of those for only 39 of its 286 calls.
+ * to 210 KB of it at once: the store keeps the whole turn's thought on the live row (a
+ * `reasoning.available` once replaced it, 39 times in 286 calls; since 10-19 it never does).
  *
  * The store republishes the live row at most every 100 ms, the whole thought on it each time.
  * The reasoning pane drew that string as one Text in a scroll, so each tick handed text layout
@@ -168,13 +168,27 @@ class LongThoughtTest {
     fun `a thought replaced behind a cut starts over, and the pane trims as the Text did`() {
         val pane = ThoughtPieces()
         assertTrue(pane.of(thought(10_000)).size > 2)
-        // reasoning.available hands a short replacement; a new turn starts from nothing.
+        // A thought that shrinks (a new turn starts from nothing) starts the pieces over.
         assertEquals(listOf("I'll start with a quick recon."), pane.of("I'll start with a quick recon."))
         assertEquals(emptyList<String>(), pane.of("  \n "))
         assertEquals(listOf("hello\n\nthere"), pane.of("\n\n  hello\n\nthere\n\n"))
         // Trailing line ends past a cut show nothing, as trim() showed nothing.
         val long = thought(5_000)
         assertEquals(shownLines(long.trim()), shownLines(ThoughtPieces().of(long + "\n\n\n").joinToString("\n")))
+    }
+
+    @Test
+    fun `what the agent said never replaces the live thought`() {
+        // Hermes's reasoning.available previews the agent's words, not its thinking (10-19).
+        val st = SessionStore("s") { it }
+        st.streamStart()
+        st.streamReasoning("The importer reads the header first, so check that.")
+        st.reasoningAvailable("I'll look at importer.py.")
+        st.republish()
+        assertEquals("The importer reads the header first, so check that.", st.messages.value.last().reasoning)
+        st.streamReasoning(" Then the cache.")
+        st.republish()
+        assertEquals("The importer reads the header first, so check that. Then the cache.", st.messages.value.last().reasoning)
     }
 
     @Test

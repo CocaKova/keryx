@@ -273,11 +273,13 @@ internal class SessionStore(
         publishThrottled()
     }
 
-    /** Post-hoc full reasoning (`reasoning.available`) — authoritative, replaces. */
-    fun reasoningAvailable(text: String) {
+    /** `reasoning.available`: the first 500 characters of what the agent SAID alongside a
+     *  call (Hermes `_relay_thinking`, tags stripped), not its thinking. It used to replace the
+     *  live thought, so the disclosure showed said-words where the thinking had been. Those
+     *  words reach the transcript as their own bubble (`message.interim`), so the thought keeps
+     *  only `reasoning.delta` (Jonny, 10-19). Still a sign of life for the turn. */
+    fun reasoningAvailable(@Suppress("UNUSED_PARAMETER") text: String) {
         if (!streaming) streamStart()
-        if (text.isNotBlank()) { reasonBuf = StringBuilder(text) }
-        publish()
     }
 
     /** Delta-to-delta span — the answer streaming after the thought must not inflate it. */

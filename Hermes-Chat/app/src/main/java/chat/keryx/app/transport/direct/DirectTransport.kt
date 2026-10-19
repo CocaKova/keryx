@@ -422,8 +422,8 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 _turnEvents.tryEmit(chat.keryx.core.model.TurnEvent.Delta(storedId, t))
             }
             // The model's thinking, streamed before (and between) answer tokens. `.available`
-            // is the post-hoc full text a provider hands over only at the end — authoritative,
-            // replaces. ⚠️ `thinking.delta` is NOT a second spelling of this: it carries the
+            // is NOT thinking: it previews what the agent said (see SessionStore
+            // .reasoningAvailable), so it never touches the thought. ⚠️ `thinking.delta` is NOT a second spelling of this: it carries the
             // KawaiiSpinner status tick ("(¬_¬) pondering...") the agent emits before EVERY
             // API call (conversation_loop.py → gateway thinking_callback). Desktop ignores it
             // outright (gateway-event.ts) — folding it in here stamped a kaomoji into the
