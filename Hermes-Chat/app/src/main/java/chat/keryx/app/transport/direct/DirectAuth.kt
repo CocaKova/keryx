@@ -103,7 +103,9 @@ class DirectAuth(
             val rt = settings.directRefreshToken
             if (rt.isBlank()) return@withLock null
             val body = buildJsonObject { put("refresh_token", JsonPrimitive(rt)) }.toString()
-            val resp = post(base.trimEnd('/') + "/auth/native/refresh", body) ?: return@withLock null
+            val resp = post(base.trimEnd('/') + "/auth/native/refresh", body)
+                ?: if (refreshRefused(lastPostError)) return@withLock null
+                else throw java.io.IOException("token refresh didn't go through (${lastPostError ?: "no answer"})")
             storeTokens(resp)
             settings.directAccessToken.ifBlank { null }
         }
@@ -306,6 +308,14 @@ class DirectAuth(
             android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or android.util.Base64.NO_WRAP
         /** Rotate this far before the server's exp — one slow request must not straddle it. */
         private const val EXPIRY_MARGIN_S = 60L
+
+        /** A refresh that failed ends the sign-in only when the gateway refused the refresh token
+         *  (401 expired/invalid, 400 missing, 403). A network drop, a 5xx or a garbled reply is
+         *  an attempt that failed: the caller retries. Device-caught 10-20: a refresh during a
+         *  network blip came back null, read as "sign-in expired", and signed the phone out. */
+        fun refreshRefused(lastPostError: String?): Boolean =
+            lastPostError in setOf("HTTP 400", "HTTP 401", "HTTP 403")
+
         /** The whole interactive login window (the server's pending TTL is 10 min). */
         private const val LOGIN_TIMEOUT_MS = 600_000L
         /** How long a network-failed token exchange is retried: inside Hermes' 120 s code life. */

@@ -172,6 +172,9 @@ class GatewayRpc(
         kotlinx.coroutines.channels.Channel.CONFLATED,
     )
 
+    /** Upgrade rejects (401/403) since the last socket that reached Ready. */
+    @Volatile private var authRejects = 0
+
     /**
      * Reconnect NOW instead of sleeping out the remaining backoff.
      *
@@ -274,7 +277,10 @@ class GatewayRpc(
                 // A rejected upgrade (4401/4403 close-before-accept) surfaces here with the
                 // HTTP response; map it so onboarding can give a targeted hint.
                 val code = response?.code
-                _state.value = ConnState.Failed(t.message ?: "connect failed", code)
+                val reported = upgradeRejectCode(code, authRejects)
+                if (code in UPGRADE_REJECTS) authRejects++
+                _state.value = ConnState.Failed(t.message ?: "connect failed", reported)
+                if (code in UPGRADE_REJECTS && reported == null) wake.trySend(Unit)   // redial now, fresh ticket
                 failAllPending("socket failure: ${t.message}")
                 closed.complete(Unit)
             }
@@ -287,6 +293,7 @@ class GatewayRpc(
                 val ev = inbound.event
                 if (ev.type == "gateway.ready") {
                     reachedReady = true
+                    authRejects = 0
                     readyAt = System.currentTimeMillis()
                     _state.value = ConnState.Ready(ev.payload?.get("skin") as? JsonObject)
                     // Say so on EVERY fresh socket: the backend keeps the flag per connection,
@@ -453,5 +460,16 @@ class GatewayRpc(
          *  gateway actually sends on the wire); 4401/4403 = the server accepted then
          *  closed. The reconnect loop stops on these and the transport re-onboards. */
         val TERMINAL_CREDENTIAL_CODES = setOf(401, 403, 4401, 4403)
+
+        private val UPGRADE_REJECTS = setOf(401, 403)
+
+        /** The code an upgrade failure reports. A native ticket is single-use, lives 30 s and is
+         *  minted per attempt, so ONE refused upgrade only says "this ticket" (the gateway's auth
+         *  log, 10-06 and 10-20: an expired ticket refused, then a forced sign-in; on 10-20 the
+         *  ticket reached the upgrade 56 s after its mint, the phone stalled mid-dial). The first refusal reports no code, so nothing reads
+         *  it as terminal and the loop redials with a fresh ticket; a second in a row, before
+         *  any socket reached Ready, is the credential itself. */
+        fun upgradeRejectCode(code: Int?, priorRejects: Int): Int? =
+            if (code in UPGRADE_REJECTS && priorRejects == 0) null else code
     }
 }
