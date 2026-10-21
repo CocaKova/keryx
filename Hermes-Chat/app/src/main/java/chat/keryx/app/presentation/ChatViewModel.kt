@@ -859,7 +859,7 @@ class ChatViewModel(
         viewModelScope.launch {
             _currentRoom.map { it?.id }.distinctUntilChanged().collect { id ->
                 if (id == null) return@collect
-                models.clear()
+                models.enterRoom(id)
                 models.refreshReasoningCaps()
             }
         }

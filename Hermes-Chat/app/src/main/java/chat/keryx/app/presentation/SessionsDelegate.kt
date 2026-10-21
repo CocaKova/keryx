@@ -183,7 +183,9 @@ class SessionsDelegate(
                 .onSuccess { out ->
                     if (out.confirmRequired) toast("$model needs confirming — pick it in the model picker")
                     else {
-                        models.clear() // the pill re-reads this session's route on arrival
+                        // The pill and the reasoning dial read the route it switched to now,
+                        // not the profile default a chat without a first message reports.
+                        models.adopt(sessionId, catalog, out.model.ifBlank { model }, choice.provider)
                         // Never silent: a chat that opens on a model other than the gateway's
                         // says so, and says why, so a surprise on the first turn is impossible.
                         toast(

@@ -53,12 +53,41 @@ class ModelDelegate(
     private var awaitingConfirm: ModelChoice? = null
 
     /** Forget the catalog: it described another room's session. The pill falls back to the
-     *  caps probe's model until the picker is opened and re-fetches for this room. */
-    fun clear() { _catalog.value = null; catalogRoomId = null; fetchedAt = 0L }
+     *  caps probe's model until the picker is opened and re-fetches for this room. A read still
+     *  in flight is dropped with it: it was asked for the room being left. */
+    fun clear() { _catalog.value = null; catalogRoomId = null; fetchedAt = 0L; generation++ }
+
+    /** [clear] on entering [roomId] — unless the catalog held is already that room's: a new
+     *  chat's sticky switch can be [adopt]ed before the room change that opens the chat lands. */
+    fun enterRoom(roomId: String) { if (catalogRoomId != roomId) clear() }
+
+    /**
+     * A switch made outside the picker landed — the sticky model on a new chat. Hold [catalog]
+     * (read for [roomId] just before the switch) as that room's catalog, on the route it
+     * switched to, and re-probe the reasoning dial for that brain.
+     *
+     * Clearing instead left the pill on the profile default: with no catalog the pill falls
+     * back to the caps probe, and the probe reads a session's route from state.db, which holds
+     * no row for a chat until its first message (device, 10-20: a new chat already on grok-4.5
+     * read DeepSeek in the composer, and the dial offered DeepSeek's ladder).
+     */
+    fun adopt(roomId: String, catalog: ModelCatalog, model: String, provider: String) {
+        // Another room is open now: its pill must not read this chat's route.
+        if (currentRoomId() != roomId) return
+        generation++
+        _catalog.value = catalog.copy(model = model, provider = provider)
+        catalogRoomId = roomId
+        fetchedAt = System.currentTimeMillis()
+        refreshReasoningCaps()
+    }
 
     /** Which room the catalog describes, and when it was read — the picker's TTL (2.10). */
     private var catalogRoomId: String? = null
     private var fetchedAt = 0L
+
+    /** Bumped by [clear] and [adopt]: a catalog read that started before either is stale on
+     *  arrival (it describes the room left, or the route before the switch) and is dropped. */
+    private var generation = 0L
 
     /**
      * Read the catalog — unless the one held is this room's and younger than [CATALOG_TTL_MS],
@@ -72,14 +101,17 @@ class ModelDelegate(
         val now = System.currentTimeMillis()
         if (!force && _catalog.value != null && roomId == catalogRoomId && now - fetchedAt < CATALOG_TTL_MS) return
         _loading.value = true
+        val gen = generation
         scope.launch {
             val result = transport.gateway?.let { gw ->
                 if (roomId != null) gw.modelOptions(roomId)
                 else Result.failure(IllegalStateException("no session open"))
             } ?: hubClient()?.modelOptions()
                 ?: Result.failure(IllegalStateException("Hermes Link is off"))
-            result.onSuccess { _catalog.value = it; catalogRoomId = roomId; fetchedAt = System.currentTimeMillis() }
-                .onFailure { android.util.Log.w("KeryxModel", "catalog: ${it.message}") }
+            result.onSuccess {
+                if (gen != generation) return@onSuccess
+                _catalog.value = it; catalogRoomId = roomId; fetchedAt = System.currentTimeMillis()
+            }.onFailure { android.util.Log.w("KeryxModel", "catalog: ${it.message}") }
             _loading.value = false
         }
     }
