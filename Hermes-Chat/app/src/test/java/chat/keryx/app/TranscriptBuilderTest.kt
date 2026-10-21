@@ -190,6 +190,23 @@ class TranscriptBuilderTest {
     }
 
     @Test
+    fun `a body that is all thought lifts it onto reasoning when the column is empty`() {
+        // A `hermes send` row (device, 10-21: the brain watcher's crash alert). The renderers
+        // draw a body's thought only from Message.reasoning, so without the lift this row was an
+        // empty bubble; the Matrix door has always lifted it.
+        val alert = "🧠 DeepSeek watcher: unhealthy (rank 0 false (fail-fast exit 70)); restarting both ranks"
+        val msgs = TranscriptBuilder.build("s1", listOf(row(2, "assistant", alert)))
+        assertEquals(alert.removePrefix("🧠").trim(), msgs[0].reasoning)
+        assertEquals(alert, msgs[0].content) // the body keeps every line; the parse owns the thought
+    }
+
+    @Test
+    fun `the stored reasoning column wins over a thought in the body`() {
+        val rows = listOf(row(2, "assistant", "🧠 body thought\nThe answer.", reasoning = "Column thought."))
+        assertEquals("Column thought.", TranscriptBuilder.build("s1", rows)[0].reasoning)
+    }
+
+    @Test
     fun `tool-only assistant row surfaces its thought as a standalone message before the tools`() {
         val rows = listOf(
             row(

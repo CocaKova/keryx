@@ -707,6 +707,9 @@ class ChatViewModel(
     private var lastSeenId: String? = null
     private var lastSeenLen: Int = -1
     private var lastSeenRoomId: String? = null
+    // Whether that message was the direct door's live placeholder: a turn really in flight, which
+    // the quiet timeout may stop animating but must never stop counting as live (see the job).
+    private var lastSeenStreaming = false
 
     // True while Hermes' typing indicator is up. Authoritative: a pending quiet-timeout will NOT
     // clear the banner while this is set, so a long silent tool call (curl) can't make it vanish.
@@ -805,6 +808,11 @@ class ChatViewModel(
             _workStartedAt.value = null
             // This message's working stretch is over; don't let a room re-entry resurrect it.
             workStateId?.let { settledWorkIds.add(it) }
+            // Nor the composer: a mid-run reading nothing renewed is no longer a live turn, but
+            // only the next emission re-read it, so "steer this turn" and its Stop button
+            // outlived the cloud in a quiet room. The direct door's live placeholder is a turn
+            // really running (a long silent tool call): that one stays live.
+            if (!lastSeenStreaming) _liveTurnSigns.value = false
         }
     }
 
@@ -965,6 +973,7 @@ class ChatViewModel(
                 lastSeenRoomId = last.roomId
                 lastSeenId = last.id
                 lastSeenLen = last.content.length
+                lastSeenStreaming = last.isStreaming
 
                 // Side-channel handoff: the moment the committed Matrix event for the streamed
                 // response is present in the timeline, drop the overlay — same frame, no pop. Look
@@ -1015,8 +1024,16 @@ class ChatViewModel(
                 // relaunch. Same recency rule the banner's openedMidRun uses; a run that really is
                 // in flight from elsewhere still shows through the typing signal and the overlay.
                 val recentWork = System.currentTimeMillis() - stateMessage.timestamp < WORKING_RECENT_MS
+                // The same rule for a row that is new to US but old in time: the follow loop
+                // sleeps while the app is backgrounded and catches up on return, so an
+                // unprompted row from hours ago arrives as a "new message". Read as live, a
+                // 🧠-prefixed alert posted at 05:04 lit "Reasoning · 139:40" (the clock starts at
+                // the row's own time) and put the composer on "steer this turn", still up at
+                // 07:24 (device, 10-21). Nor is a row whose quiet window already
+                // ran out live again: the banner settled it.
                 val midRun = window == QUIET_LONG_MS && stateMessage.id !in endedTurnWorkIds &&
-                    (!firstEval || recentWork)
+                    stateMessage.id !in settledWorkIds &&
+                    ((!firstEval && !isNewMsg) || recentWork)
                 answerLanded = !midRun
                 _liveTurnSigns.value = midRun || last.isStreaming
 

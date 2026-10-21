@@ -137,7 +137,18 @@ object TranscriptBuilder {
                                         InterruptSentinel.KIND, InterruptSentinel.LABEL, row.content.trim(),
                                     ),
                                 )
-                            else -> text(roomId, row, SenderType.HERMES).copy(reasoning = thought)
+                            // No column, but the body carries the thought itself (`🧠 …` lines,
+                            // <think>): lift it off the parse, as the Matrix door does (3.1 §B1).
+                            // The renderers draw a body's thought only from this field, so an
+                            // unprompted `hermes send` row that was all 🧠 drew an EMPTY bubble
+                            // (device, 10-21: the brain watcher's crash alert, unreadable).
+                            // Parsed only when the body could hold a thought marker at all (the
+                            // row renderer's guard): every append rebuilds the whole transcript.
+                            else -> text(roomId, row, SenderType.HERMES).copy(
+                                reasoning = thought ?: row.content.takeIf {
+                                    it.contains('<') || it.contains('◁') || it.contains("💭") || it.contains("🧠")
+                                }?.let(MessageParser::reasoningOf),
+                            )
                         }
                         shown?.let { out += it }
                         // Hermes keeps a stopped reply's words and marks the row; without a
