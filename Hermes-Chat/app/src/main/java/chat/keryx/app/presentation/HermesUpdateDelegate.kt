@@ -10,6 +10,7 @@ import chat.keryx.core.model.HermesUpdateParser
 import chat.keryx.core.model.PluginUpdateStatus
 import chat.keryx.core.model.Routed
 import chat.keryx.core.model.UpdateActionStatus
+import chat.keryx.core.model.UpdateChannel
 import chat.keryx.core.model.UpdateCheck
 import chat.keryx.core.model.UpdateObservation
 import chat.keryx.core.model.UpdateOutcome
@@ -65,6 +66,12 @@ class HermesUpdateDelegate(
         val probing: Boolean = false,
         /** When a "Check for updates" last finished (phone clock) — the card says so (2.19). */
         val checkedAtMs: Long = 0L,
+        /** Which updates the install follows (3.0, keryx-stream's `/keryx/update/channel`).
+         *  Null with [channelMissing] = an older plugin: the Stable / Edge switch hides. */
+        val channel: UpdateChannel? = null,
+        val channelMissing: Boolean = false,
+        /** A channel change the panel sent is in flight. */
+        val channelBusy: Boolean = false,
     ) {
         val anySource: Boolean get() = !(pluginMissing && checkMissing)
     }
@@ -107,9 +114,13 @@ class HermesUpdateDelegate(
         inFlight = scope.launch { readAll(forceCheck = false) }
     }
 
+    private suspend fun readChannel(): Routed<UpdateChannel> =
+        linkRead("/keryx/update/channel").map { HermesUpdateParser.channel(it) }
+
     private suspend fun readAll(forceCheck: Boolean) {
         val r = rest()
         val plugin = readPlugin()
+        val channel = readChannel()
         val check = r?.updateCheck(forceCheck) ?: Routed.Missing
         val receipt = r?.updateReceipt() ?: Routed.Missing
         val last = _board.value
@@ -125,6 +136,10 @@ class HermesUpdateDelegate(
             checking = last?.checking == true && plugin.valueOrNull?.checking == true,
             probing = last?.probing == true && plugin.valueOrNull?.probeRunning != false,
             checkedAtMs = last?.checkedAtMs ?: 0L,
+            // A failed read keeps what the switch last showed; it is never the board's error.
+            channel = channel.valueOrNull ?: last?.channel.takeIf { channel is Routed.Failed },
+            channelMissing = channel is Routed.Missing,
+            channelBusy = last?.channelBusy == true,
         )
         _board.value = next
         // Once either server has answered, the spoke stays: a dashboard mid-restart reads as
@@ -163,6 +178,38 @@ class HermesUpdateDelegate(
                 is Routed.Failed -> toast("Check refused: ${res.message.take(80)}")
                 Routed.Missing -> toast("This gateway can't check for updates from the phone.")
             }
+        }
+    }
+
+    /**
+     * Follow [channel] ("stable" or "main"). [stay] (Edge → Stable on a build newer than the
+     * release) keeps this build until the next release instead of moving back to the last one.
+     * The switch shows the server's answer, never the tap's guess; the board is re-read after.
+     */
+    fun setChannel(channel: String, stay: Boolean) {
+        val b = _board.value ?: return
+        if (b.channelBusy) return
+        _board.value = b.copy(channelBusy = true)
+        scope.launch {
+            val body = buildJsonObject {
+                put("channel", kotlinx.serialization.json.JsonPrimitive(channel))
+                put("stay", kotlinx.serialization.json.JsonPrimitive(stay))
+            }
+            when (val res = linkRead("/keryx/update/channel", "PUT", body).map { HermesUpdateParser.channel(it) }) {
+                is Routed.Ok -> {
+                    _board.value = _board.value?.copy(channel = res.value, channelBusy = false)
+                    toast(if (res.value.isEdge) "Following every change (Edge)" else "Following stable releases")
+                }
+                is Routed.Failed -> {
+                    _board.value = _board.value?.copy(channelBusy = false)
+                    toast("Couldn't switch: ${res.message.take(80)}")
+                }
+                Routed.Missing -> {
+                    _board.value = _board.value?.copy(channelBusy = false, channelMissing = true)
+                    toast("This gateway's keryx-stream can't switch update channels.")
+                }
+            }
+            readAll(forceCheck = false)
         }
     }
 

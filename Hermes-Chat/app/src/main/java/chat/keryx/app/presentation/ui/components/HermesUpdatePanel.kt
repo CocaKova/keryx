@@ -1,6 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
@@ -42,7 +43,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.HermesUpdateDelegate
+import chat.keryx.core.model.ChannelText
 import chat.keryx.core.model.PluginUpdateStatus
+import chat.keryx.core.model.UpdateChannel
 import chat.keryx.core.model.UpdateOutcome
 import chat.keryx.core.model.UpdatePhase
 import chat.keryx.core.model.UpdatePlan
@@ -66,6 +69,8 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
     val board by viewModel.hermesUpdate.board.collectAsState()
     val runView by viewModel.hermesUpdate.run.collectAsState()
     var confirm by remember { mutableStateOf<UpdatePlan?>(null) }
+    /** Edge → Stable on a build newer than the release: the stay-or-go-back choice is open. */
+    var channelChoice by remember { mutableStateOf(false) }
 
     // The panel's own loop, on screen only: it reads only while something it started is in
     // flight (an update, a fetch, a preflight), and stops the moment you leave or background.
@@ -95,6 +100,21 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            // Stable / Edge (3.0): only where keryx-stream can switch it; an older plugin hides it.
+            b.channel?.let { ch ->
+                item(key = "channel") {
+                    ChannelCard(ch, busy = b.channelBusy) { to ->
+                        when {
+                            to == ch.channel -> Unit
+                            ChannelText.needsChoice(ch, to) -> channelChoice = true
+                            // Stable without the choice: forward-only, so nothing ever moves back.
+                            to == "stable" -> viewModel.hermesUpdate.setChannel("stable", stay = true)
+                            else -> viewModel.hermesUpdate.setChannel(to, stay = false)
+                        }
+                    }
+                }
+            }
+
             item(key = "here") {
                 KeryxCard {
                     Text(
@@ -247,7 +267,7 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
         AlertDialog(
             shape = RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirm = null },
-            title = { Text("Update Hermes now?", fontSize = KeryxType.titleLarge) },
+            title = { Text(ChannelText.confirmTitle(board?.check), fontSize = KeryxType.titleLarge) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -270,6 +290,100 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
             },
             dismissButton = { TextButton(onClick = { confirm = null }) { Text("Not now") } },
         )
+    }
+
+    if (channelChoice) board?.channel?.let { ch ->
+        ChannelChoiceSheet(
+            stableVersion = ch.stableVersion,
+            onStay = { channelChoice = false; viewModel.hermesUpdate.setChannel("stable", stay = true) },
+            onGoBack = { channelChoice = false; viewModel.hermesUpdate.setChannel("stable", stay = false) },
+            onDismiss = { channelChoice = false },
+        )
+    }
+}
+
+/**
+ * Stable or Edge (3.0): which updates this install follows. Two plain choices, the meaning of
+ * the one picked, and where the install stands on it. Where updates are managed elsewhere the
+ * server's own reason shows instead of a switch.
+ */
+@Composable
+private fun ChannelCard(ch: UpdateChannel, busy: Boolean, onPick: (String) -> Unit) {
+    KeryxCard {
+        Text(
+            "Updates",
+            fontSize = KeryxType.micro,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(6.dp))
+        if (!ch.canSet) {
+            Text(ch.message ?: "This install's updates are managed outside Hermes.", fontSize = KeryxType.caption)
+            return@KeryxCard
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            ChannelChoice("Stable", selected = !ch.isEdge, enabled = !busy) { onPick("stable") }
+            ChannelChoice("Edge", selected = ch.isEdge, enabled = !busy) { onPick("main") }
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            if (ch.isEdge) ChannelText.EDGE_BLURB else ChannelText.STABLE_BLURB,
+            fontSize = KeryxType.caption,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            if (busy) "Switching…" else ChannelText.status(ch),
+            fontSize = KeryxType.micro,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun ChannelChoice(label: String, selected: Boolean, enabled: Boolean, onClick: () -> Unit) {
+    val accent = MaterialTheme.colorScheme.primary
+    Text(
+        label,
+        fontSize = KeryxType.body,
+        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+        color = if (selected) contrastColorFor(accent) else keryxAccentInk(),
+        modifier = Modifier
+            .clip(RoundedCornerShape(KeryxRadius.chip))
+            .background(if (selected) accent else accent.copy(alpha = 0.12f))
+            .clickable(enabled = enabled && !selected, onClickLabel = "Follow $label updates", onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    )
+}
+
+/** The one switch with a real choice in it: this build is newer than the stable release. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun ChannelChoiceSheet(
+    stableVersion: String?,
+    onStay: () -> Unit,
+    onGoBack: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val release = stableVersion?.takeIf { it.isNotBlank() }?.let { "v$it" } ?: "the last release"
+    KeryxSheet(onDismiss = onDismiss, title = "Switch to stable releases") {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text("This build is newer than stable $release.", fontSize = KeryxType.body)
+            KeryxCard(onClick = onStay, tint = MaterialTheme.colorScheme.primary) {
+                Text("Stay on this build until the next stable release", fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
+                Text("Recommended. Nothing changes now; the next release updates you.", fontSize = KeryxType.micro,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            KeryxCard(onClick = onGoBack) {
+                Text("Go back to $release now", fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
+                Text("The Update button then moves Hermes back to that release and restarts it.",
+                    fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+            Spacer(Modifier.height(8.dp))
+        }
     }
 }
 

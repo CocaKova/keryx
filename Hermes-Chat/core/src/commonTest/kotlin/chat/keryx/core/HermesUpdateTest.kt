@@ -1,5 +1,6 @@
 package chat.keryx.core
 
+import chat.keryx.core.model.ChannelText
 import chat.keryx.core.model.PluginUpdateStatus
 import chat.keryx.core.model.UpdateCheck
 import chat.keryx.core.model.HermesUpdateParser
@@ -258,5 +259,48 @@ class HermesUpdateTest {
         val older = listOf("old line", "=== hermes-update completed abc ===", "new line")
         assertEquals(listOf("new line"), HermesUpdateParser.currentRun(older))
         assertEquals(listOf("a", "b"), HermesUpdateParser.currentRun(listOf("a", "b")))
+    }
+
+    // 3.0 — Stable / Edge.
+
+    @Test
+    fun `the channel route reads, and an unknown channel is no answer`() {
+        val ch = HermesUpdateParser.channel(j("""{"channel":"main","default":"stable","forward_only":false,"can_set":true,
+            "stable_version":"0.22.4","behind":2,"ahead_of_stable":true,"message":null}"""))!!
+        assertTrue(ch.isEdge)
+        assertEquals("0.22.4", ch.stableVersion)
+        assertEquals(2, ch.behind)
+        assertNull(HermesUpdateParser.channel(j("""{"channel":"nightly"}""")))
+        assertNull(HermesUpdateParser.channel(j("""[]""")))
+    }
+
+    @Test
+    fun `the check carries the channel and a move back`() {
+        val c = HermesUpdateParser.check(j("""{"install_method":"git","current_version":"0.22.4","behind":3,
+            "update_available":true,"can_apply":true,"update_command":"hermes update","message":"x",
+            "channel":"stable","source_version":"0.22.4","rollback_to":"0.22.4","commits":[]}"""))!!
+        assertEquals("stable", c.channel)
+        assertEquals("0.22.4", c.rollbackTo)
+        assertEquals("Move back to v0.22.4?", ChannelText.confirmTitle(c))
+        assertEquals("Update Hermes now?", ChannelText.confirmTitle(c.copy(rollbackTo = "")))
+        assertEquals("Update Hermes now?", ChannelText.confirmTitle(null))
+    }
+
+    @Test
+    fun `the switch says where the install stands`() {
+        val stable = HermesUpdateParser.channel(j("""{"channel":"stable","default":"stable","forward_only":true,
+            "can_set":true,"stable_version":"0.22.4","behind":0,"ahead_of_stable":false}"""))!!
+        assertEquals("Stable v0.22.4 · up to date", ChannelText.status(stable))
+        assertEquals("This build is newer than stable v0.22.4 · you'll get the next release",
+            ChannelText.status(stable.copy(aheadOfStable = true)))
+        assertEquals("Stable v0.22.5 is out", ChannelText.status(stable.copy(stableVersion = "0.22.5", behind = 4)))
+        val edge = stable.copy(channel = "main", behind = 2)
+        assertEquals("Edge · 2 new changes", ChannelText.status(edge))
+        assertEquals("Edge · 1 new change", ChannelText.status(edge.copy(behind = 1)))
+        assertEquals("Edge · up to date", ChannelText.status(edge.copy(behind = 0)))
+        // Only Edge → Stable on a newer build asks to stay or go back.
+        assertTrue(ChannelText.needsChoice(edge.copy(aheadOfStable = true), "stable"))
+        assertFalse(ChannelText.needsChoice(edge, "stable"))
+        assertFalse(ChannelText.needsChoice(stable.copy(aheadOfStable = true), "main"))
     }
 }

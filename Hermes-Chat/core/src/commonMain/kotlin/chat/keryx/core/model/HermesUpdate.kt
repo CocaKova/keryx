@@ -72,7 +72,34 @@ data class UpdateCheck(
     val updateCommand: String,
     val message: String?,
     val commits: List<UpdateCommit>,
+    /** The channel the check counted against ("stable", "main"), when the dashboard says (behind > 0 only). */
+    val channel: String = "",
+    /** The release the channel points at ("0.22.4"), when the dashboard names one. */
+    val sourceVersion: String = "",
+    /** Set when applying would move BACK to this release (an explicit stable on a newer build). */
+    val rollbackTo: String = "",
 )
+
+/**
+ * Which updates this install follows (3.0), as keryx-stream's `/keryx/update/channel` reports it.
+ * Stock Hermes keeps the choice per install in config.yaml (`update.installs.<id>.channel`) and
+ * offers no HTTP route to change it, so the plugin does. [channel] is what applies now;
+ * [forwardOnly] = no saved choice, so a build newer than the latest release waits for the next
+ * one instead of moving back. [canSet] is false where updates are managed elsewhere ([message]).
+ */
+data class UpdateChannel(
+    val channel: String,
+    val default: String,
+    val forwardOnly: Boolean,
+    val canSet: Boolean,
+    val stableVersion: String?,
+    /** Changes waiting on this channel; null = not counted. */
+    val behind: Int?,
+    val aheadOfStable: Boolean,
+    val message: String?,
+) {
+    val isEdge: Boolean get() = channel == "main"
+}
 
 /** One update run's receipt — the full one, or the summary the action status carries. */
 data class UpdateReceipt(
@@ -158,6 +185,9 @@ object HermesUpdateParser {
             canApply = o.bool("can_apply"),
             updateCommand = o.str("update_command"),
             message = o.str("message").takeIf { it.isNotBlank() },
+            channel = o.str("channel"),
+            sourceVersion = o.str("source_version"),
+            rollbackTo = o.str("rollback_to"),
             commits = (o["commits"] as? JsonArray).orEmpty().mapNotNull { c ->
                 val co = c as? JsonObject ?: return@mapNotNull null
                 UpdateCommit(
@@ -256,6 +286,22 @@ object HermesUpdateParser {
             ok = ok,
             alreadyRunning = o.bool("already_running"),
             message = o.str("message").ifBlank { o.str("error") },
+        )
+    }
+
+    /** `/keryx/update/channel`'s answer, or null when it isn't one. */
+    fun channel(el: JsonElement?): UpdateChannel? {
+        val o = el as? JsonObject ?: return null
+        val ch = o.str("channel").takeIf { it == "stable" || it == "main" || it == "canary" } ?: return null
+        return UpdateChannel(
+            channel = ch,
+            default = o.str("default").ifBlank { "stable" },
+            forwardOnly = o.bool("forward_only"),
+            canSet = o.bool("can_set"),
+            stableVersion = o.str("stable_version").takeIf { it.isNotBlank() },
+            behind = o.int("behind"),
+            aheadOfStable = o.bool("ahead_of_stable"),
+            message = o.str("message").takeIf { it.isNotBlank() },
         )
     }
 
@@ -492,4 +538,35 @@ object UpdateText {
         "refused" -> UpdateOutcome.REFUSED
         else -> null
     }
+}
+
+/** The words around the Stable / Edge switch (3.0). Pure, so each state is tested. */
+object ChannelText {
+    const val STABLE_BLURB = "Tested releases. You update when a new release is published."
+    const val EDGE_BLURB = "Every change as soon as it lands. Newest fixes, more chance something breaks."
+
+    private fun v(version: String?): String = version?.takeIf { it.isNotBlank() }?.let { " v$it" }.orEmpty()
+
+    /** The line under the switch: where this install stands on the channel it follows. */
+    fun status(ch: UpdateChannel): String = when {
+        ch.isEdge -> when (val n = ch.behind) {
+            null, -1 -> "Edge"
+            0 -> "Edge · up to date"
+            1 -> "Edge · 1 new change"
+            else -> "Edge · $n new changes"
+        }
+        ch.aheadOfStable -> "This build is newer than stable${v(ch.stableVersion)} · you'll get the next release"
+        (ch.behind ?: 0) > 0 -> "Stable${v(ch.stableVersion)} is out"
+        else -> "Stable${v(ch.stableVersion)} · up to date"
+    }
+
+    /**
+     * Going from Edge to Stable on a build newer than the latest release is the one switch with
+     * a real choice in it: stay on this build until the next release, or go back to the release.
+     */
+    fun needsChoice(ch: UpdateChannel, to: String): Boolean = to == "stable" && ch.isEdge && ch.aheadOfStable
+
+    /** The confirm's title: an update that moves back says so. */
+    fun confirmTitle(check: UpdateCheck?): String =
+        check?.rollbackTo?.takeIf { it.isNotBlank() }?.let { "Move back to v$it?" } ?: "Update Hermes now?"
 }

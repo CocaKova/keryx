@@ -5,6 +5,39 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 3.0 in progress (not released; test build 3.0.0-beta.2-storycard)
+
+The rest of 3.0 is tracked in `Hermes-Chat/docs/KERYX-2.19-3.0-ROADMAP.md` until the release.
+
+**A mission card tells you what is going on**
+- Tapping a card on the Missions board opens on one plain sentence ("Quill finished and wants
+  your OK · 35 min ago", "Scout hit a problem and will try again"), the thing to act on (the
+  draft, the question, the error or the task) and one button that fits (Approve, Reply & unblock,
+  Watch it work, Start it). It used to open on a status code, a handle and a card id, with
+  Approve a screen and a half above the draft it approved.
+- "What happened" tells the card's history in words; heartbeats and worker bookkeeping stay in
+  the log. Runs, the card id, steering, comments and the event log are all still there, folded
+  under Details. Hand over, pause, stop, mark done and archive live in the ⋯ menu.
+- A run no longer shows "working…" on a card that is waiting on your review or done.
+- The alert switch says where the message goes ("You get a message in “…” when it finishes or
+  needs you.") instead of "Lands in … as a real message — no polling".
+
+**Chat memory instead of a context ring**
+- The ring stays out of the way until the chat is half way to the point where the agent
+  summarizes older messages; from 60% it says about how many replies are left ("~12 left").
+- One tap opens "Chat memory": a bar with the summary point marked, a sentence ("Room for about
+  40 more replies. Then … summarizes the older messages so the chat can keep going.") and the
+  exact figures in small print. "What's using it" opens the old breakdown. The ring had two tap
+  targets on one 15 dp mark; now it has one.
+- While it happens the banner says "Summarizing older messages so the chat can keep going",
+  not "Compressing context (~92k tokens)".
+
+**Stable or Edge updates**
+- Hub → Update has a Stable / Edge switch where the gateway's keryx-stream offers it: tested
+  releases, or every change as it lands. Switching to Stable on a build newer than the release
+  asks whether to stay on this build until the next release or go back to it now. An update
+  that would move back says so in its confirm ("Move back to v0.22.4?").
+
 ## 2.19.1 · versionCode 139
 
 A polish pass: a code audit (transport, speed, release safety) and a walk through every
