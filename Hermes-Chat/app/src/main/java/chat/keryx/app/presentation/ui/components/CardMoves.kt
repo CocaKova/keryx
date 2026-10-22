@@ -24,14 +24,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 
 // The owner's hands on a card (2.14): the `hermes kanban` moves that are not an answer to an ask.
-// A card that asked for something still answers from the AskPanel; these are for everything else —
+// A card that asked for something answers from the mission sheet's main button; these are for everything else —
 // a stuck run, a parked brief, the wrong profile, a card that is simply finished.
 
 /** One owner move. [verb] is the gateway's action name; [confirm] = asks before it happens. */
@@ -87,30 +86,49 @@ internal fun movesFor(status: String): List<CardMove> = when (status) {
     else -> emptyList()
 }
 
-/** A row of move chips; tapping one either acts at once or opens [MoveDialog]. */
+/** What a move is called in the ⋯ menu (3.0): the action, in a person's words. */
+internal fun menuLabel(move: CardMove): String = when (move) {
+    CardMove.REASSIGN -> "Hand to someone else…"
+    CardMove.RECLAIM -> "Stop this run…"
+    CardMove.PAUSE -> "Pause…"
+    CardMove.DONE -> "Mark done…"
+    CardMove.ARCHIVE -> "Archive…"
+    else -> move.label
+}
+
+/**
+ * The card's other moves behind ⋯ (3.0): the sheet's one filled button makes the move that fits,
+ * and these — hand over, pause, stop a run, mark done, archive — wait here instead of sitting in
+ * a row of equal chips at the top of the sheet. Tapping one either acts at once or opens
+ * [MoveDialog] (anything that ends a run, closes the card, needs a reason or needs a profile).
+ * [hide] = moves the sheet's main button already offers.
+ */
 @Composable
-internal fun CardMovesPanel(
+internal fun CardMovesMenu(
     status: String,
     currentAssignee: String,
     profiles: List<String>,
+    hide: Set<CardMove> = emptySet(),
     onMove: (move: CardMove, note: String, assignee: String) -> Unit,
 ) {
-    val moves = movesFor(status)
+    val moves = movesFor(status).filter { it !in hide }
     if (moves.isEmpty()) return
+    var open by remember(status) { mutableStateOf(false) }
     var pending by remember(status) { mutableStateOf<CardMove?>(null) }
-    Column {
-        KeryxSectionHeader(label = "Your moves", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(6.dp))
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            moves.forEachIndexed { i, move ->
-                MoveChip(move.label, primary = i == 0, destructive = move == CardMove.ARCHIVE || move == CardMove.RECLAIM) {
-                    // One tap for the obvious, reversible moves; a dialog for anything that ends a
-                    // run, closes the card, needs a reason, or needs a profile picked.
-                    if (move.confirm || move == CardMove.REASSIGN) pending = move else onMove(move, "", "")
-                }
+    androidx.compose.foundation.layout.Box {
+        androidx.compose.material3.IconButton(onClick = { open = true }) {
+            Text("⋯", fontSize = KeryxType.title, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            moves.forEach { move ->
+                val destructive = move == CardMove.ARCHIVE || move == CardMove.RECLAIM
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(menuLabel(move), color = if (destructive) KeryxStatus.bad else MaterialTheme.colorScheme.onSurface) },
+                    onClick = {
+                        open = false
+                        if (move.confirm || move == CardMove.REASSIGN) pending = move else onMove(move, "", "")
+                    },
+                )
             }
         }
     }
@@ -122,29 +140,6 @@ internal fun CardMovesPanel(
             onDismiss = { pending = null },
         )
     }
-}
-
-@Composable
-private fun MoveChip(label: String, primary: Boolean, destructive: Boolean, onClick: () -> Unit) {
-    val hue = when {
-        destructive -> KeryxStatus.bad
-        else -> MaterialTheme.colorScheme.primary
-    }
-    val ground = if (primary && !destructive) hue else hue.copy(alpha = 0.12f)
-    val ink: Color = if (primary && !destructive) contrastColorFor(hue) else keryxAccentInk(hue)
-    Text(
-        label,
-        fontSize = KeryxType.caption,
-        fontWeight = if (primary) FontWeight.SemiBold else FontWeight.Normal,
-        maxLines = 1,
-        softWrap = false,
-        color = ink,
-        modifier = Modifier
-            .clip(RoundedCornerShape(KeryxRadius.chip))
-            .background(ground)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 7.dp),
-    )
 }
 
 @Composable

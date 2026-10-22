@@ -9,8 +9,8 @@ import chat.keryx.app.data.remote.HermesStreamClient.KanbanTask
 
 /**
  * The demo's Missions board (3.0 herald): a few jobs handed to the agents as cards, in the states
- * a working board has. One is running, two wait on you (a review and a question), one is queued
- * and one is done. It's drawn by the real board, so what a stranger sees is what Hermes's kanban
+ * a working board has. One is running, two wait on you (a review and a question), one hit a
+ * problem and will try again, one is queued and one is done. It's drawn by the real board, so what a stranger sees is what Hermes's kanban
  * looks like on the phone.
  *
  * The assignees are the demo's bots ([DemoTransport]'s roster). Like [chat.keryx.core.demo.DemoScript],
@@ -35,20 +35,29 @@ internal object DemoBoard {
         val full = task.copy(body = BODIES[taskId] ?: task.bodyExcerpt, result = task.latestSummary)
         val started = task.startedAt
         // A run's status is its outcome once it ends, as Hermes's `_end_run` records it.
-        val outcome = when (task.status) {
-            "done" -> "completed"
-            "review" -> "review_requested"
-            "blocked" -> "blocked"
+        val outcome = when {
+            task.status == "done" -> "completed"
+            task.status == "review" -> "review_requested"
+            task.status == "blocked" -> "blocked"
+            task.lastFailureError.isNotBlank() -> "crashed"
             else -> ""
+        }
+        // A run ends when the worker hands the card back (a review, a question, a crash), the
+        // way Hermes's `_end_or_synthesize_run` stamps it; only the running card's run is open.
+        val endedAt = task.completedAt ?: when {
+            task.status == "review" -> now - 35 * MINUTE
+            task.status == "blocked" -> now - 20 * MINUTE
+            task.lastFailureError.isNotBlank() -> now - 50 * MINUTE
+            else -> null
         }
         val runs = if (started == null) emptyList() else listOf(
             KanbanRun(
                 id = 1, profile = task.assignee,
                 status = outcome.ifEmpty { "running" },
                 outcome = outcome,
-                summary = task.latestSummary, error = "",
-                startedAt = started, endedAt = task.completedAt,
-                durationSeconds = task.completedAt?.let { it - started },
+                summary = task.latestSummary, error = task.lastFailureError,
+                startedAt = started, endedAt = endedAt,
+                durationSeconds = endedAt?.let { it - started },
             ),
         )
         val events = buildList {
@@ -56,6 +65,8 @@ internal object DemoBoard {
             started?.let { add(KanbanEvent(2, taskId, "claimed", it, detail = "by ${task.assignee}")) }
             if (task.status == "blocked") add(KanbanEvent(3, taskId, "blocked", now - 20 * MINUTE, detail = task.ask))
             if (task.status == "review") add(KanbanEvent(3, taskId, "review_requested", now - 35 * MINUTE, detail = task.ask))
+            if (task.lastFailureError.isNotBlank()) add(KanbanEvent(3, taskId, "crashed", now - 50 * MINUTE, detail = task.lastFailureError))
+            if (task.status == "running") add(KanbanEvent(5, taskId, "heartbeat", now - 1 * MINUTE))
             task.completedAt?.let { add(KanbanEvent(4, taskId, "completed", it, detail = task.latestSummary)) }
         }
         val comments = COMMENTS[taskId].orEmpty().map { (author, body) -> KanbanComment(author, body, now - 40 * MINUTE) }
@@ -84,6 +95,12 @@ internal object DemoBoard {
             blockKind = "needs_input", needsYou = true,
         ),
         task(
+            "t_demo_disks", "Check the NAS disks for early signs of failure", "scout", "ready", now,
+            created = 2 * HOUR, started = 70 * MINUTE,
+            excerpt = "Read each disk's health report and flag any that are wearing out.",
+            failure = "Couldn't reach the NAS: the connection timed out after 30 seconds.",
+        ),
+        task(
             "t_demo_fans", "Find quieter fans for the server closet", "scout", "todo", now,
             created = 26 * HOUR,
             excerpt = "Same size as the ones in there now. Compare noise, airflow and reviews, with sources.",
@@ -100,11 +117,13 @@ internal object DemoBoard {
         id: String, title: String, assignee: String, status: String, now: Long,
         created: Long, started: Long? = null, completed: Long? = null,
         excerpt: String, ask: String = "", summary: String = "", blockKind: String = "", needsYou: Boolean = false,
+        failure: String = "",
     ) = KanbanTask(
         id = id, title = title, assignee = assignee, status = status, priority = 0,
         createdBy = "you", createdAt = now - created,
         startedAt = started?.let { now - it }, completedAt = completed?.let { now - it },
-        consecutiveFailures = 0, bodyExcerpt = excerpt,
+        consecutiveFailures = if (failure.isBlank()) 0 else 1, bodyExcerpt = excerpt,
+        lastFailureError = failure,
         blockKind = blockKind, ask = ask, latestSummary = summary, needsYou = needsYou,
     )
 

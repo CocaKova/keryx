@@ -1,6 +1,7 @@
 package chat.keryx.app
 
 import chat.keryx.app.presentation.ui.components.CardMove
+import chat.keryx.app.presentation.ui.components.menuLabel
 import chat.keryx.app.presentation.ui.components.movesFor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -61,5 +62,12 @@ class CardMovesTest {
     fun `the toast says where the card landed`() {
         assertEquals("Handed to atlas — ready", CardMove.REASSIGN.landed("ready", "atlas"))
         assertEquals("Unblock — now ready", CardMove.UNBLOCK.landed("ready", "default"))
+    }
+
+    @Test
+    fun `the menu names each move in plain words`() {
+        assertEquals("Hand to someone else…", menuLabel(CardMove.REASSIGN))
+        assertEquals("Archive…", menuLabel(CardMove.ARCHIVE))
+        assertEquals("Start it", menuLabel(CardMove.START))
     }
 }

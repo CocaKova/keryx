@@ -44,4 +44,12 @@ class DemoBoardTest {
         }
         assertTrue(DemoBoard.detail("t_nope", nowMs).isFailure)
     }
+
+    @Test
+    fun `a card that hit a problem is on the board, and its run has ended`() {
+        val cards = DemoBoard.board(nowMs).tasks.values.flatten()
+        val failed = cards.single { it.lastFailureError.isNotBlank() }
+        val d = DemoBoard.detail(failed.id, nowMs).getOrThrow()
+        assertTrue(d.runs.all { it.endedAt != null && it.outcome == "crashed" })
+    }
 }

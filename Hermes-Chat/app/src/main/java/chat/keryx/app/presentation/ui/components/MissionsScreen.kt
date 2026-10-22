@@ -66,6 +66,7 @@ import chat.keryx.app.data.remote.HermesStreamClient.KanbanDetail
 import chat.keryx.app.data.remote.HermesStreamClient.KanbanRun
 import chat.keryx.app.data.remote.HermesStreamClient.KanbanTask
 import chat.keryx.app.presentation.ChatViewModel
+import chat.keryx.app.presentation.MissionStory.Primary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -175,9 +176,11 @@ internal fun liveSelection(selected: Set<String>, sections: List<MissionSection>
 internal fun showAlertsHint(direct: Boolean, alertsOn: Boolean, dismissed: Boolean): Boolean =
     direct && !alertsOn && !dismissed
 
-/** The transcript sheet's meta line for a run: who, how it ended (or that it is live), how long. */
-internal fun runSessionMeta(run: KanbanRun, nowSeconds: Long): String {
-    val live = run.endedAt == null
+/** The transcript sheet's meta line for a run: who, how it ended (or that it is live), how long.
+ *  [cardRunning] = the card itself runs (3.0): a run with no end stamp on a card that already
+ *  waits on review or is done is not "running". */
+internal fun runSessionMeta(run: KanbanRun, nowSeconds: Long, cardRunning: Boolean = true): String {
+    val live = run.endedAt == null && cardRunning
     return listOfNotNull(
         run.profile.ifBlank { null },
         if (live) "running" else run.outcome.ifBlank { run.status }.replace('_', ' ').ifBlank { null },
@@ -974,13 +977,16 @@ private fun MissionDetailSheet(
             .onSuccess { detail = it; loadError = null }
             .onFailure { loadError = it.message }
     }
+    // Who works the card, by the name the install gives it (3.0): never a handle, never "default".
+    val roster by viewModel.bots.roster.collectAsState()
+    LaunchedEffect(Unit) { if (viewModel.transportIsDirect && !viewModel.isDemo) viewModel.bots.refresh() }
 
     KeryxSheet(onDismiss = onDismiss) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 4.dp)) {
             val d = detail
             when {
                 loadError != null -> Text(
-                    "Couldn't load task: $loadError",
+                    "Couldn't load this mission: $loadError",
                     color = MaterialTheme.colorScheme.error,
                     fontSize = KeryxType.caption,
                     modifier = Modifier.padding(vertical = 20.dp),
@@ -991,211 +997,29 @@ private fun MissionDetailSheet(
                     fontSize = KeryxType.caption,
                     modifier = Modifier.padding(vertical = 20.dp),
                 )
-                else -> {
-                    val t = d.task
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        KeryxSectionHeader(
-                            label = t.status,
-                            dotColor = statusColor(t.status),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        if (t.assignee.isNotBlank()) {
-                            Spacer(Modifier.width(10.dp))
-                            Text(
-                                "@${t.assignee}",
-                                fontSize = KeryxType.micro,
-                                color = keryxAccentInk(),
-                                fontWeight = FontWeight.SemiBold,
-                            )
+                else -> StoryCard(
+                    d = d,
+                    agent = chat.keryx.app.presentation.MissionStory.agentName(d.task.assignee, roster.data?.bots.orEmpty()),
+                    viewModel = viewModel,
+                    profiles = profiles,
+                    canEdit = canEdit == true,
+                    onEdit = { editing = true },
+                    onWatch = { watchRun = it },
+                    onOpenTask = onOpenTask,
+                    onChanged = { reload++ },
+                )
+            }
+            detail?.task?.let { t ->
+                if (editing) MissionEditDialog(
+                    task = t,
+                    owners = editOwners.ifEmpty { profiles },
+                    onSave = { title, body, priority, assignee ->
+                        viewModel.missionEdit.save(t, null, title, body, priority, assignee) { ok ->
+                            if (ok) { editing = false; reload++ }
                         }
-                        Spacer(Modifier.weight(1f))
-                        DiagBadge(t)
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            t.id,
-                            fontSize = KeryxType.micro,
-                            fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(t.title, fontSize = KeryxType.headline, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                        if (canEdit == true) TextButton(onClick = { editing = true }) {
-                            Text("Edit", fontSize = KeryxType.caption)
-                        }
-                    }
-                    if (editing) MissionEditDialog(
-                        task = t,
-                        owners = editOwners.ifEmpty { profiles },
-                        onSave = { title, body, priority, assignee ->
-                            viewModel.missionEdit.save(t, null, title, body, priority, assignee) { ok ->
-                                if (ok) { editing = false; reload++ }
-                            }
-                        },
-                        onDismiss = { editing = false },
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        // The hero: what the card is waiting on, in the worker's words, and the
-                        // answer box right under it — the whole reason to open a blocked card.
-                        if (t.ask.isNotBlank() || t.needsYou) item(key = "ask") {
-                            AskPanel(
-                                task = t,
-                                onReply = { text, unblock ->
-                                    viewModel.missions.kanbanReply(taskId, text, unblock) { reload++ }
-                                },
-                                onApprove = { note -> viewModel.missions.kanbanApprove(taskId, note) { reload++ } },
-                                onRequestChanges = { reason ->
-                                    viewModel.missions.kanbanRequestChanges(taskId, reason) { reload++ }
-                                },
-                            )
-                        }
-                        // Every other move the CLI has — start, unblock, stop a stuck run, hand to
-                        // another profile, pause, mark done, archive — sits right under the ask.
-                        if (movesFor(t.status).isNotEmpty()) item(key = "moves") {
-                            CardMovesPanel(
-                                status = t.status,
-                                currentAssignee = t.assignee,
-                                profiles = profiles,
-                                onMove = { move, note, assignee ->
-                                    viewModel.missions.kanbanAction(taskId, move, note, assignee) { reload++ }
-                                },
-                            )
-                        }
-                        item(key = "alert") { AlertToggle(taskId, viewModel) }
-                        if (d.parents.isNotEmpty() || d.children.isNotEmpty()) item(key = "links") {
-                            Column {
-                                if (d.parents.isNotEmpty()) LinkRow("Waits on", d.parents, onOpenTask)
-                                if (d.parents.isNotEmpty() && d.children.isNotEmpty()) Spacer(Modifier.height(6.dp))
-                                if (d.children.isNotEmpty()) LinkRow("Unlocks", d.children, onOpenTask)
-                            }
-                        }
-                        if (d.diagnostics.isNotEmpty()) {
-                            item(key = "diag-hdr") {
-                                KeryxSectionHeader(
-                                    label = "Diagnostics",
-                                    count = d.diagnostics.size,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            items(d.diagnostics.size, key = { "diag-$it" }) { i -> DiagnosticRow(d.diagnostics[i]) }
-                        }
-                        if (d.runs.isNotEmpty()) item(key = "runs") { RunDeck(d.runs) { watchRun = it } }
-                        if (t.latestSummary.isNotBlank() && !sameWords(t.latestSummary, t.ask)) item(key = "summary") {
-                            Column {
-                                KeryxSectionHeader(label = "Latest handoff", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Spacer(Modifier.height(6.dp))
-                                MissionProse(t.latestSummary)
-                            }
-                        }
-                        if (t.result.isNotBlank()) item(key = "result") {
-                            Column(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(KeryxRadius.field))
-                                    .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.08f))
-                                    .padding(10.dp),
-                            ) {
-                                Text(
-                                    "Result",
-                                    fontSize = KeryxType.micro,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = keryxAccentInk(MaterialTheme.colorScheme.tertiary),
-                                )
-                                Spacer(Modifier.height(2.dp))
-                                MissionProse(t.result)
-                            }
-                        }
-                        if (t.lastFailureError.isNotBlank()) item(key = "fail") {
-                            Text(
-                                "⚠ ${t.lastFailureError}",
-                                fontSize = KeryxType.micro,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        }
-                        if (t.body.isNotBlank()) item(key = "brief") { BriefSection(t.body) }
-                        if (d.attachments.isNotEmpty()) item(key = "files") {
-                            Column {
-                                KeryxSectionHeader(
-                                    label = "Attachments",
-                                    count = d.attachments.size,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                Spacer(Modifier.height(4.dp))
-                                d.attachments.forEach { a ->
-                                    Text(
-                                        "📎 ${a.filename}" + (if (a.size > 0) "  ·  ${a.size / 1024} KB" else ""),
-                                        fontSize = KeryxType.caption,
-                                        fontFamily = FontFamily.Monospace,
-                                    )
-                                }
-                            }
-                        }
-                        item(key = "steer") { SteeringSection(taskId, t, viewModel) { reload++ } }
-                        if (d.comments.isNotEmpty()) {
-                            item(key = "c-hdr") {
-                                KeryxSectionHeader(
-                                    label = "Comments",
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    count = d.comments.size,
-                                )
-                            }
-                            items(d.comments.size, key = { "c-$it" }) { i ->
-                                val c = d.comments[i]
-                                // Comments wear the chat voice: author chip over a soft bubble.
-                                Column {
-                                    Text(
-                                        c.author,
-                                        fontSize = KeryxType.micro,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = keryxAccentInk(),
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(KeryxRadius.chip))
-                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
-                                            .padding(horizontal = 6.dp, vertical = 1.dp),
-                                    )
-                                    Spacer(Modifier.height(3.dp))
-                                    Box(
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(KeryxRadius.field))
-                                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-                                            .padding(horizontal = 10.dp, vertical = 7.dp),
-                                    ) { MissionProse(c.body) }
-                                }
-                            }
-                        }
-                        if (d.events.isNotEmpty()) item(key = "events") { EventsSection(d.events) }
-                    }
-                    // A card that waits on its owner answers from the hero; everywhere else the
-                    // plain comment box stays at the foot, as it always was.
-                    if (!t.needsYou) {
-                        Spacer(Modifier.height(10.dp))
-                        var comment by remember { mutableStateOf("") }
-                        OutlinedTextField(
-                            value = comment,
-                            onValueChange = { comment = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Comment — lands in the next worker's context", fontSize = KeryxType.caption) },
-                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = KeryxType.body),
-                            shape = RoundedCornerShape(KeryxRadius.field),
-                            trailingIcon = {
-                                TextButton(
-                                    enabled = comment.isNotBlank(),
-                                    onClick = {
-                                        viewModel.missions.kanbanComment(taskId, comment.trim()) { reload++ }
-                                        comment = ""
-                                    },
-                                ) { Text("Send") }
-                            },
-                        )
-                    }
-                    Spacer(Modifier.height(20.dp))
-                }
+                    },
+                    onDismiss = { editing = false },
+                )
             }
         }
     }
@@ -1206,11 +1030,12 @@ private fun MissionDetailSheet(
         val sid = run.sessionId ?: return@let
         val cardTitle = detail?.task?.title?.ifBlank { null } ?: taskId
         val sessionTitle = "$cardTitle · run #${run.id}"
+        val live = detail?.task?.let { chat.keryx.app.presentation.MissionStory.isLive(run, it) } ?: (run.endedAt == null)
         SessionTranscriptSheet(
             sessionId = sid,
             title = sessionTitle,
-            meta = runSessionMeta(run, System.currentTimeMillis() / 1000L),
-            live = run.endedAt == null,
+            meta = runSessionMeta(run, System.currentTimeMillis() / 1000L, cardRunning = live),
+            live = live,
             fetch = { id -> viewModel.hub.sessionMessages(id) },
             onDismiss = { watchRun = null },
             onOpenInChat = {
@@ -1218,6 +1043,367 @@ private fun MissionDetailSheet(
                 onOpenSession(sid, sessionTitle)
             },
         )
+    }
+}
+
+/**
+ * The mission as a story (3.0): the title, one sentence on what is happening, the one thing to
+ * act on and the move that fits, what has happened in words, the alert, and everything technical
+ * folded under Details. The other moves (hand over, pause, stop, done, archive) sit in the ⋯ menu.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun androidx.compose.foundation.layout.ColumnScope.StoryCard(
+    d: KanbanDetail,
+    agent: String?,
+    viewModel: ChatViewModel,
+    profiles: List<String>,
+    canEdit: Boolean,
+    onEdit: () -> Unit,
+    onWatch: (KanbanRun) -> Unit,
+    onOpenTask: (String) -> Unit,
+    onChanged: () -> Unit,
+) {
+    val story = chat.keryx.app.presentation.MissionStory
+    val t = d.task
+    val taskId = t.id
+    val nowS = System.currentTimeMillis() / 1000L
+    val headline = story.headline(t, d, agent, nowS)
+    val focus = story.focus(t, d)
+    val quote = story.askQuote(t, focus)
+    val liveRun = story.liveRun(d, t)
+    val primary = story.primary(t, liveRun)
+    val tone = when (headline.mood) {
+        chat.keryx.app.presentation.MissionStory.Mood.NEEDS_YOU -> KeryxStatus.warn
+        chat.keryx.app.presentation.MissionStory.Mood.STUCK -> KeryxStatus.bad
+        chat.keryx.app.presentation.MissionStory.Mood.DONE -> KeryxStatus.good
+        chat.keryx.app.presentation.MissionStory.Mood.WORKING -> MaterialTheme.colorScheme.primary
+        chat.keryx.app.presentation.MissionStory.Mood.WAITING -> KeryxStatus.idle
+    }
+
+    // The title, with Edit and the ⋯ moves beside it.
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(t.title, fontSize = KeryxType.headline, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+        if (canEdit) TextButton(onClick = onEdit) { Text("Edit", fontSize = KeryxType.caption) }
+        CardMovesMenu(
+            status = t.status,
+            currentAssignee = t.assignee,
+            profiles = profiles,
+            // The move the big button already makes isn't repeated in the menu.
+            hide = when (primary) {
+                chat.keryx.app.presentation.MissionStory.Primary.START -> setOf(CardMove.START)
+                chat.keryx.app.presentation.MissionStory.Primary.UNBLOCK -> setOf(CardMove.UNBLOCK)
+                else -> emptySet()
+            },
+            onMove = { move, note, assignee -> viewModel.missions.kanbanAction(taskId, move, note, assignee) { onChanged() } },
+        )
+    }
+    // One sentence on what is happening, with a status dot that breathes while it works.
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+        KeryxBreathingDot(color = tone, alive = headline.mood == chat.keryx.app.presentation.MissionStory.Mood.WORKING)
+        Spacer(Modifier.width(8.dp))
+        Text(headline.text, fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurface)
+    }
+    quote?.let {
+        Text(
+            "“$it”",
+            fontSize = KeryxType.body,
+            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 6.dp, start = 14.dp),
+        )
+    }
+    Spacer(Modifier.height(10.dp))
+
+    LazyColumn(
+        modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        focus?.let { f -> item(key = "focus") { FocusBox(f) } }
+        item(key = "act") {
+            ActionArea(
+                task = t,
+                agent = agent,
+                primary = primary,
+                onApprove = { note -> viewModel.missions.kanbanApprove(taskId, note) { onChanged() } },
+                onRequestChanges = { reason -> viewModel.missions.kanbanRequestChanges(taskId, reason) { onChanged() } },
+                onReply = { text, unblock -> viewModel.missions.kanbanReply(taskId, text, unblock) { onChanged() } },
+                onWatch = { liveRun?.let(onWatch) },
+                onMove = { move -> viewModel.missions.kanbanAction(taskId, move, "", "") { onChanged() } },
+                onNote = { text -> viewModel.missions.kanbanComment(taskId, text) { onChanged() } },
+            )
+        }
+        val moments = story.timeline(d, agent)
+        if (moments.isNotEmpty()) item(key = "story") { WhatHappened(moments, nowS) }
+        item(key = "alert") { AlertToggle(taskId, viewModel) }
+        item(key = "details") {
+            DetailsSection(d, focus, nowS, viewModel, onWatch, onOpenTask, onChanged)
+        }
+        item(key = "foot") { Spacer(Modifier.height(20.dp)) }
+    }
+}
+
+/** The thing to act on, boxed: the draft, the question, the error or the task itself. */
+@Composable
+private fun FocusBox(f: chat.keryx.app.presentation.MissionStory.Focus) {
+    var open by remember(f.text) { mutableStateOf(false) }
+    val long = f.text.length > 420
+    KeryxCard(tint = if (f.error) KeryxStatus.bad else MaterialTheme.colorScheme.tertiary) {
+        Text(
+            f.label,
+            fontSize = KeryxType.micro,
+            fontWeight = FontWeight.SemiBold,
+            color = if (f.error) KeryxStatus.bad else keryxAccentInk(MaterialTheme.colorScheme.tertiary),
+        )
+        Spacer(Modifier.height(4.dp))
+        if (f.error) {
+            Text(f.text, fontSize = KeryxType.body, color = KeryxStatus.bad, maxLines = if (open || !long) Int.MAX_VALUE else 8,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        } else if (long && !open) {
+            Text(
+                chat.keryx.core.protocol.MessageParser.extractKeryx(f.text).text.trim(),
+                fontSize = KeryxType.body,
+                maxLines = 8,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+        } else MissionProse(f.text)
+        if (long) Text(
+            if (open) "Less" else "More ›",
+            fontSize = KeryxType.caption,
+            fontWeight = FontWeight.Medium,
+            color = keryxAccentInk(),
+            modifier = Modifier
+                .padding(top = 4.dp)
+                .clip(RoundedCornerShape(KeryxRadius.chip))
+                .clickable { open = !open }
+                .padding(horizontal = 4.dp, vertical = 4.dp),
+        )
+    }
+}
+
+/**
+ * The one move that fits the card, filled, with its quieter partner beside it. A card that waits
+ * on you answers here (the note box above the buttons); any other card can take a note for the
+ * agent's next run.
+ */
+@Composable
+private fun ActionArea(
+    task: KanbanTask,
+    agent: String?,
+    primary: chat.keryx.app.presentation.MissionStory.Primary,
+    onApprove: (String) -> Unit,
+    onRequestChanges: (String) -> Unit,
+    onReply: (String, Boolean) -> Unit,
+    onWatch: () -> Unit,
+    onMove: (CardMove) -> Unit,
+    onNote: (String) -> Unit,
+) {
+    val who = agent ?: "your agent"
+    var text by remember(task.id, task.status) { mutableStateOf("") }
+    var noteOpen by remember(task.id) { mutableStateOf(false) }
+    val answering = primary == Primary.APPROVE || primary == Primary.REPLY || primary == Primary.REPLY_UNBLOCK
+    Column {
+        if (answering || noteOpen) {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = {
+                    Text(
+                        when {
+                            primary == Primary.APPROVE -> "A note for $who (optional to approve, needed to ask for changes)"
+                            answering -> "Your answer. $who reads it next"
+                            else -> "A note $who reads on its next run"
+                        },
+                        fontSize = KeryxType.caption,
+                    )
+                },
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = KeryxType.body),
+                shape = RoundedCornerShape(KeryxRadius.field),
+                minLines = 2,
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            when (primary) {
+                Primary.APPROVE -> TextButton(enabled = text.isNotBlank(), onClick = { onRequestChanges(text.trim()); text = "" }) {
+                    Text("Ask for changes", fontSize = KeryxType.caption, color = KeryxStatus.bad)
+                }
+                Primary.REPLY_UNBLOCK -> TextButton(enabled = text.isNotBlank(), onClick = { onReply(text.trim(), false); text = "" }) {
+                    Text("Reply only", fontSize = KeryxType.caption)
+                }
+                Primary.REPLY -> Unit
+                else -> if (noteOpen) TextButton(
+                    enabled = text.isNotBlank(),
+                    onClick = { onNote(text.trim()); text = ""; noteOpen = false },
+                ) { Text("Send note", fontSize = KeryxType.caption) }
+                else TextButton(onClick = { noteOpen = true }) { Text("Add a note", fontSize = KeryxType.caption) }
+            }
+            Spacer(Modifier.weight(1f))
+            when (primary) {
+                Primary.APPROVE -> VerdictButton("Approve", enabled = true) { onApprove(text.trim()); text = "" }
+                Primary.REPLY_UNBLOCK -> VerdictButton("Reply & unblock", enabled = text.isNotBlank()) { onReply(text.trim(), true); text = "" }
+                Primary.REPLY -> VerdictButton("Reply", enabled = text.isNotBlank()) { onReply(text.trim(), false); text = "" }
+                Primary.WATCH -> VerdictButton("Watch it work", enabled = true, onClick = onWatch)
+                Primary.START -> VerdictButton("Start it", enabled = true) { onMove(CardMove.START) }
+                Primary.UNBLOCK -> VerdictButton(if (task.status == "scheduled") "Start now" else "Unblock", enabled = true) { onMove(CardMove.UNBLOCK) }
+                Primary.NONE -> Unit
+            }
+        }
+    }
+}
+
+/** What happened, in words: the last few steps, newest at the bottom. */
+@Composable
+private fun WhatHappened(moments: List<chat.keryx.app.presentation.MissionStory.Moment>, nowS: Long) {
+    val shown = moments.takeLast(6)
+    Column {
+        KeryxSectionHeader(label = "What happened", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(6.dp))
+        if (moments.size > shown.size) Text(
+            "${moments.size - shown.size} earlier step${if (moments.size - shown.size == 1) "" else "s"} under Details",
+            fontSize = KeryxType.micro,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
+        shown.forEach { m ->
+            Row(Modifier.padding(vertical = 2.dp)) {
+                Text(
+                    chat.keryx.app.presentation.MissionStory.ago(m.atS, nowS).orEmpty(),
+                    fontSize = KeryxType.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.width(92.dp),
+                )
+                Text(m.text, fontSize = KeryxType.caption, modifier = Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+/**
+ * Everything technical, folded until asked: the card's status and id, its links, diagnostics,
+ * runs, the handoff and result where the box above didn't already show them, the brief,
+ * attachments, comments, steering and the raw event log.
+ */
+@Composable
+private fun DetailsSection(
+    d: KanbanDetail,
+    focus: chat.keryx.app.presentation.MissionStory.Focus?,
+    nowS: Long,
+    viewModel: ChatViewModel,
+    onWatch: (KanbanRun) -> Unit,
+    onOpenTask: (String) -> Unit,
+    onChanged: () -> Unit,
+) {
+    val t = d.task
+    var open by remember(t.id) { mutableStateOf(false) }
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(KeryxRadius.chip)).clickable { open = !open }.padding(vertical = 6.dp),
+        ) {
+            Text("Details", fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.width(6.dp))
+            Text(if (open) "▾" else "›", fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.weight(1f))
+            if (!open) Text(
+                listOfNotNull(
+                    "task",
+                    d.runs.takeIf { it.isNotEmpty() }?.let { "runs" },
+                    "settings",
+                    d.events.takeIf { it.isNotEmpty() }?.let { "log" },
+                ).joinToString(" · "),
+                fontSize = KeryxType.micro,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            DiagBadge(t)
+        }
+        if (!open) return@Column
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                KeryxSectionHeader(label = t.status, dotColor = statusColor(t.status), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (t.assignee.isNotBlank()) {
+                    Spacer(Modifier.width(10.dp))
+                    Text("@${t.assignee}", fontSize = KeryxType.micro, color = keryxAccentInk(), fontWeight = FontWeight.SemiBold)
+                }
+                Spacer(Modifier.weight(1f))
+                Text(t.id, fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (t.blockKind.isNotBlank() || t.blockRecurrences > 0) Text(
+                listOfNotNull(
+                    t.blockKind.takeIf { it.isNotBlank() }?.let { blockKindLabel(it, t.status) },
+                    t.blockRecurrences.takeIf { it > 0 }?.let { "blocked ${it + 1}×" },
+                ).joinToString(" · "),
+                fontSize = KeryxType.micro,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (d.parents.isNotEmpty() || d.children.isNotEmpty()) Column {
+                if (d.parents.isNotEmpty()) LinkRow("Waits on", d.parents, onOpenTask)
+                if (d.parents.isNotEmpty() && d.children.isNotEmpty()) Spacer(Modifier.height(6.dp))
+                if (d.children.isNotEmpty()) LinkRow("Unlocks", d.children, onOpenTask)
+            }
+            if (d.diagnostics.isNotEmpty()) {
+                KeryxSectionHeader(label = "Diagnostics", count = d.diagnostics.size, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                d.diagnostics.forEach { DiagnosticRow(it) }
+            }
+            if (d.runs.isNotEmpty()) RunDeck(d.runs, cardRunning = t.status == "running", onOpenRun = onWatch)
+            val shownText = focus?.text.orEmpty()
+            if (t.latestSummary.isNotBlank() && !sameWords(t.latestSummary, t.ask) && !sameWords(t.latestSummary, shownText)) Column {
+                KeryxSectionHeader(label = "Latest handoff", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(6.dp))
+                MissionProse(t.latestSummary)
+            }
+            if (t.result.isNotBlank() && !sameWords(t.result, shownText) && !sameWords(t.result, t.latestSummary)) Column {
+                KeryxSectionHeader(label = "Result", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(6.dp))
+                MissionProse(t.result)
+            }
+            if (t.lastFailureError.isNotBlank() && !sameWords(t.lastFailureError, shownText)) Text(
+                "Last error: ${t.lastFailureError}",
+                fontSize = KeryxType.micro,
+                color = MaterialTheme.colorScheme.error,
+            )
+            if (t.body.isNotBlank() && !sameWords(t.body, shownText)) BriefSection(t.body)
+            if (d.attachments.isNotEmpty()) Column {
+                KeryxSectionHeader(label = "Attachments", count = d.attachments.size, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(4.dp))
+                d.attachments.forEach { a ->
+                    Text(
+                        "📎 ${a.filename}" + (if (a.size > 0) "  ·  ${a.size / 1024} KB" else ""),
+                        fontSize = KeryxType.caption,
+                        fontFamily = FontFamily.Monospace,
+                    )
+                }
+            }
+            if (d.comments.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                KeryxSectionHeader(label = "Comments", color = MaterialTheme.colorScheme.onSurfaceVariant, count = d.comments.size)
+                d.comments.forEach { c ->
+                    // Comments wear the chat voice: author chip over a soft bubble.
+                    Column {
+                        Text(
+                            c.author,
+                            fontSize = KeryxType.micro,
+                            fontWeight = FontWeight.SemiBold,
+                            color = keryxAccentInk(),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(KeryxRadius.chip))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
+                                .padding(horizontal = 6.dp, vertical = 1.dp),
+                        )
+                        Spacer(Modifier.height(3.dp))
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(KeryxRadius.field))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                                .padding(horizontal = 10.dp, vertical = 7.dp),
+                        ) { MissionProse(c.body) }
+                    }
+                }
+            }
+            SteeringSection(t.id, t, viewModel) { onChanged() }
+            if (d.events.isNotEmpty()) EventsSection(d.events)
+        }
     }
 }
 
@@ -1246,97 +1432,6 @@ private fun MissionProse(text: String, color: Color = MaterialTheme.colorScheme.
         typography = chatMarkdownTypography(color),
         extendedSpans = chatExtendedSpans(),
     )
-}
-
-/**
- * The hero panel: whose move it is (the kind pill), how often it has bounced, the ask in full,
- * and the answer box. On a blocked card the answer can send it back to work in one tap. On a
- * review card the box holds the verdict's words: Approve completes it (the words, if any,
- * become the closing note); Request changes sends it back and needs the words as its reason.
- */
-@Composable
-private fun AskPanel(
-    task: KanbanTask,
-    onReply: (String, Boolean) -> Unit,
-    onApprove: (String) -> Unit,
-    onRequestChanges: (String) -> Unit,
-) {
-    val hue = if (task.needsYou) KeryxStatus.warn else statusColor(task.status)
-    val canUnblock = task.status == "blocked" || task.status == "scheduled"
-    var reply by remember(task.id) { mutableStateOf("") }
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(KeryxRadius.card))
-            .background(hue.copy(alpha = 0.09f))
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            KeryxSectionHeader(
-                label = when {
-                    task.status == "review" -> "Waiting on your review"
-                    task.needsYou -> "What it needs from you"
-                    else -> "Why it's paused"
-                },
-                dotColor = hue,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Spacer(Modifier.weight(1f))
-            if (task.blockRecurrences > 0) {
-                Text(
-                    "blocked ${task.blockRecurrences + 1}×",
-                    fontSize = KeryxType.micro,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        Spacer(Modifier.height(6.dp))
-        StatusPill(blockKindLabel(task.blockKind, task.status), hue)
-        if (task.ask.isNotBlank()) {
-            Spacer(Modifier.height(8.dp))
-            MissionProse(task.ask)
-        }
-        val review = task.status == "review"
-        if (task.needsYou) {
-            Spacer(Modifier.height(10.dp))
-            OutlinedTextField(
-                value = reply,
-                onValueChange = { reply = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(
-                        if (review) "A note to approve with, or what has to change"
-                        else "Your answer — the next run reads it",
-                        fontSize = KeryxType.caption,
-                    )
-                },
-                textStyle = androidx.compose.ui.text.TextStyle(fontSize = KeryxType.body),
-                shape = RoundedCornerShape(KeryxRadius.field),
-                minLines = 2,
-            )
-            Spacer(Modifier.height(8.dp))
-            if (review) Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(
-                    enabled = reply.isNotBlank(),
-                    onClick = { onRequestChanges(reply.trim()); reply = "" },
-                ) { Text("Request changes", fontSize = KeryxType.caption, color = KeryxStatus.bad) }
-                Spacer(Modifier.weight(1f))
-                VerdictButton("Approve", enabled = true) { onApprove(reply.trim()); reply = "" }
-            } else Row(verticalAlignment = Alignment.CenterVertically) {
-                if (canUnblock) {
-                    TextButton(
-                        enabled = reply.isNotBlank(),
-                        onClick = { onReply(reply.trim(), false); reply = "" },
-                    ) { Text("Reply only", fontSize = KeryxType.caption) }
-                }
-                Spacer(Modifier.weight(1f))
-                VerdictButton(if (canUnblock) "Reply & unblock" else "Reply", enabled = reply.isNotBlank()) {
-                    onReply(reply.trim(), canUnblock); reply = ""
-                }
-            }
-        }
-    }
 }
 
 /** The panel's one filled action: accent ground, ink chosen for contrast against it. */
@@ -1373,11 +1468,13 @@ private fun AlertToggle(taskId: String, viewModel: ChatViewModel) {
         )
         Spacer(Modifier.width(8.dp))
         Column(Modifier.weight(1f)) {
-            Text("Alert when this ends", fontSize = KeryxType.body)
+            Text("Tell me when it's done", fontSize = KeryxType.body)
             Text(
+                // 3.0: the old line ("Lands in <chat> as a real message — no polling") named the
+                // chat you last had open, which read like a bug on a card about something else.
                 when {
-                    subscribed -> "The agent pushes a message the moment it completes or blocks"
-                    roomName != null -> "Lands in $roomName as a real message — no polling"
+                    subscribed -> "On. You get a message when it finishes or needs you."
+                    roomName != null -> "You get a message in “$roomName” when it finishes or needs you."
                     else -> viewModel.missions.alertUnavailableReason
                 },
                 fontSize = KeryxType.micro,
@@ -1490,9 +1587,10 @@ private fun DiagnosticRow(diag: chat.keryx.app.data.remote.HermesStreamClient.Ka
 }
 
 /** The run history as a crew deck, newest first — the same card Tap-In draws a helper with.
- *  A run whose worker session the gateway named (2.14.1) opens it: [onOpenRun]. */
+ *  A run whose worker session the gateway named (2.14.1) opens it: [onOpenRun]. A run reads
+ *  live only on a card that runs ([cardRunning], 3.0). */
 @Composable
-private fun RunDeck(runs: List<KanbanRun>, onOpenRun: (KanbanRun) -> Unit) {
+private fun RunDeck(runs: List<KanbanRun>, cardRunning: Boolean, onOpenRun: (KanbanRun) -> Unit) {
     val ink = MaterialTheme.colorScheme.onSurface
     val newestFirst = runs.sortedByDescending { it.id }
     Column {
@@ -1500,7 +1598,7 @@ private fun RunDeck(runs: List<KanbanRun>, onOpenRun: (KanbanRun) -> Unit) {
         Spacer(Modifier.height(8.dp))
         androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             items(newestFirst, key = { it.id }) { run ->
-                val live = run.endedAt == null
+                val live = run.endedAt == null && cardRunning
                 val outcome = run.outcome.ifBlank { run.status }
                 val failed = outcome in setOf("crashed", "timed_out", "spawn_failed", "gave_up")
                 val tint = when {
