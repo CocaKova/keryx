@@ -5,7 +5,7 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
-## 3.0 in progress (not released; test build 3.0.0-beta.2-storycard)
+## 3.0 in progress (not released; test build 3.0.0-beta.2-tokrate)
 
 The rest of 3.0 is tracked in `Hermes-Chat/docs/KERYX-2.19-3.0-ROADMAP.md` until the release.
 
@@ -37,6 +37,14 @@ The rest of 3.0 is tracked in `Hermes-Chat/docs/KERYX-2.19-3.0-ROADMAP.md` until
   releases, or every change as it lands. Switching to Stable on a build newer than the release
   asks whether to stay on this build until the next release or go back to it now. An update
   that would move back says so in its confirm ("Move back to v0.22.4?").
+
+**Honest speed readouts**
+- The live "≈ tok/s" while a reply streams is now characters over time across the last three
+  seconds. It used to average the speed of each burst the network delivered, which read about
+  three times too high (≈140 for a brain measured at ~48 tok/s).
+- The speed under a finished reply only shows for a reply that was one model call. A reply that
+  used tools counted the tool inputs as tokens but not the time spent writing them, so it read
+  high; those replies now show no figure.
 
 ## 2.19.1 · versionCode 139
 

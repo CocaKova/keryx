@@ -578,6 +578,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 )
             }
             "tool.generating" -> {
+                store.turnUsedTools = true
                 store.toolGenerating(pStr("name") ?: "tool")
                 noteRun(storedId, ev.type, toolName = pStr("name") ?: "tool")
             }
@@ -585,6 +586,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 // A tool only starts after the model response that called it has landed, and
                 // that response is what moves the gateway's context reading.
                 nudgeUsage(storedId)
+                store.turnUsedTools = true
                 val call = chat.keryx.core.protocol.ToolFrames.started(p, "tool-${System.nanoTime()}")
                 noteRun(storedId, ev.type, pStr("tool_id").orEmpty(), call.name, call.context)
                 store.toolStart(call)
@@ -2591,6 +2593,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         val m = meta(store.storedId).value
         store.baseOutput = m.outputTokens
         store.baseCalls = m.apiCalls
+        store.turnUsedTools = false
         store.lastRatePublishAt = 0L
         liveRateFlow(store.storedId).value = null
     }
@@ -2613,13 +2616,15 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         val out = m.outputTokens
         val tokens = if (base != null && out != null && out >= base) out - base else null
         val calls = store.baseCalls?.let { b -> m.apiCalls?.let { it - b } }
-        // Calibrate only on a turn that was one model call: a tool loop's output count includes
-        // tool-call arguments the stream never carried as text, which would skew the ratio.
-        if (tokens != null && (calls == null || calls == 1)) {
+        // Calibrate and rate only a turn that was one model call: a tool loop's output count
+        // includes tool-call arguments the stream never carried as text, which skews the ratio
+        // and inflates the rate (3.0: ~140 tok/s shown for a ~48 tok/s brain).
+        val single = chat.keryx.core.model.TokenRate.singleCall(calls, store.turnUsedTools)
+        if (tokens != null && single) {
             val next = chat.keryx.core.model.TokenRate.calibrate(charsPerToken, store.meter.chars, tokens)
             if (next != charsPerToken) { charsPerToken = next; settings.charsPerToken = next }
         }
-        chat.keryx.core.model.TokenRate.settled(tokens, store.meter.activeMs)?.let { tps ->
+        (if (single) chat.keryx.core.model.TokenRate.settled(tokens, store.meter.activeMs) else null)?.let { tps ->
             val add = buildMap {
                 messageId?.let { put(it, tps) }
                 answer.takeIf { it.isNotBlank() }?.let {
@@ -2630,7 +2635,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
                 if (all.size <= TURN_RATES_KEPT) all else all.entries.drop(all.size - TURN_RATES_KEPT).associate { it.toPair() }
             }
         }
-        store.meter.reset(); store.baseOutput = null; store.baseCalls = null
+        store.meter.reset(); store.baseOutput = null; store.baseCalls = null; store.turnUsedTools = false
     }
 
         /** (oldStoredId, newStoredId) each time compaction re-anchors a live session. */

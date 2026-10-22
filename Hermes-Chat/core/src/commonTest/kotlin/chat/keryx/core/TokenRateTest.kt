@@ -60,19 +60,52 @@ class TokenRateTest {
     }
 
     @Test
-    fun meterCountsFlowingTimeAndSkipsGaps() {
+    fun meterReadsCharactersOverTimeForASteadyStream() {
+        val m = StreamRateMeter()
+        for (i in 0..40) m.onChars(10, 1_000L + 100L * i) // 10 chars every 100 ms for 4 s
+        assertEquals(100f, m.cps)
+        assertEquals(410L, m.chars)
+        assertEquals(4_000L, m.activeMs)
+    }
+
+    @Test
+    fun burstsWithTheSameMeanReadTheSameRate() {
+        // 30 characters every 300 ms, delivered as three frames 20 ms apart: 100 chars/s, the
+        // same as the steady stream. The old EMA of per-frame rates read this as ~415.
+        val m = StreamRateMeter()
+        for (k in 0 until 14) for (j in 0 until 3) m.onChars(10, 1_000L + 300L * k + 20L * j)
+        assertEquals(100f, m.cps)
+    }
+
+    @Test
+    fun aToolGapStartsANewWindowAndIsNotFlowingTime() {
+        val m = StreamRateMeter()
+        for (i in 0..10) m.onChars(10, 1_000L + 100L * i) // 100 chars/s for a second
+        for (i in 0..10) m.onChars(10, 9_000L + 200L * i) // after a 7 s tool run: 50 chars/s
+        assertEquals(50f, m.cps) // the pause neither dilutes the rate nor carries the old one
+        assertEquals(3_000L, m.activeMs) // 1 s before + 2 s after; the 7 s gap is not counted
+        assertEquals(220L, m.chars)
+    }
+
+    @Test
+    fun tooShortASpanSaysNothingYet() {
         val m = StreamRateMeter()
         m.onChars(10, 1_000)
-        m.onChars(10, 1_100)
-        m.onChars(10, 1_200)
-        m.onChars(10, 9_200) // a tool ran for eight seconds: not generation time
-        m.onChars(10, 9_300)
-        assertEquals(50L, m.chars)
-        assertEquals(300L, m.activeMs)
-        assertEquals(100f, m.cps) // 10 chars per 100 ms, the gap never sampled
+        m.onChars(10, 1_100) // 100 ms is noise, not a rate
+        assertEquals(0f, m.cps)
         m.reset()
         assertEquals(0L, m.chars)
         assertEquals(0f, m.cps)
+    }
+
+    @Test
+    fun onlyAOneCallTurnCarriesAPerReplyRate() {
+        assertTrue(TokenRate.singleCall(calls = 1, usedTools = false))
+        assertTrue(TokenRate.singleCall(calls = 1, usedTools = true)) // the call count decides
+        assertTrue(!TokenRate.singleCall(calls = 3, usedTools = true)) // a tool loop
+        assertTrue(!TokenRate.singleCall(calls = 2, usedTools = false))
+        assertTrue(TokenRate.singleCall(calls = null, usedTools = false)) // no count: no tool ran
+        assertTrue(!TokenRate.singleCall(calls = null, usedTools = true))
     }
 
     @Test

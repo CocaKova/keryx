@@ -1203,7 +1203,7 @@ class ChatViewModel(
             val reasoningBuf = StreamTailTracker(STREAM_REASONING_WINDOW_CHARS, sanitize = false)
             var lastDispatch = 0L
             var charsSinceDispatch = 0
-            // The character rate (EMA of the per-frame rate; core StreamRateMeter). Answer and
+            // The character rate (characters over time in a sliding window; core StreamRateMeter). Answer and
             // reasoning both count: the model generated both.
             val meter = chat.keryx.core.transport.StreamRateMeter()
             var theater = chat.keryx.core.model.TheaterState()

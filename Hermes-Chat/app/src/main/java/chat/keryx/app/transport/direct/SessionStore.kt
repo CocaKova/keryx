@@ -105,6 +105,8 @@ internal class SessionStore(
     val meter = chat.keryx.core.transport.StreamRateMeter()
     var baseOutput: Long? = null
     var baseCalls: Int? = null
+    /** A tool was generated or started this turn (3.0): with no call count, no per-reply rate. */
+    var turnUsedTools = false
     var lastRatePublishAt = 0L
 
     /** The agent's own `todo` plan — newest tool result wins, live or hydrated

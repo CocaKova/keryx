@@ -17,6 +17,8 @@ import kotlin.math.roundToInt
  *    toward zero while the model stalls instead of freezing on its last good number.
  *  - **settled** (the finished turn's meta): the turn's real output tokens (the gateway's
  *    cumulative `usage.output`, before and after) over the time the tokens were flowing. No "≈".
+ *    Only for a turn that was one model call ([singleCall]): in a tool loop the count includes
+ *    tool-call arguments the stream never carried, so the division read high (3.0).
  *  - **average** (the context sheet): the gateway's own `avg_tps`, untouched ([SessionUsage]).
  */
 object TokenRate {
@@ -76,6 +78,15 @@ object TokenRate {
         val tps = cps / (if (charsPerToken > 0f) charsPerToken else DEFAULT_CHARS_PER_TOKEN)
         return if (tps < 1f) null else "≈${tps.roundToInt()} tok/s"
     }
+
+    /**
+     * Whether a finished turn can carry a per-reply rate: it was one model call. A tool loop's
+     * output count includes tool-call arguments (and the earlier calls' words) the stream never
+     * carried as text, while [chat.keryx.core.transport.StreamRateMeter.activeMs] times only the
+     * text, so tool turns read high (3.0: ~140 against a measured ~48 tok/s). With no call count
+     * from the gateway, a turn that ran no tool counts as one call.
+     */
+    fun singleCall(calls: Int?, usedTools: Boolean): Boolean = if (calls != null) calls == 1 else !usedTools
 
     /** Real tokens per second for a finished turn, or null when the numbers can't support one. */
     fun settled(tokens: Long?, activeMs: Long): Double? {
