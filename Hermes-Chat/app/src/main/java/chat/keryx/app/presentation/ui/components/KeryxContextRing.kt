@@ -35,12 +35,17 @@ import androidx.compose.ui.unit.sp
  * The context window as a ring: an arc that travels the circumference as the model's window
  * fills, and *bolds* as it goes — a whisper-thin thread at an empty window, a solid band as
  * compaction nears. Accent while comfortable, amber past three quarters, red past nine tenths.
- * Tap toggles the exact figure ("84k / 128k") beside the ring.
  *
  * With [compactAt] (the gateway's auto-compaction trigger, 2.13.11) the ring measures the way
  * to THAT, not to the model's window: full means "the next call compacts". Against the window
  * the ring stood at ~60% the moment a session compacted, and the compaction looked like it came
- * from nowhere. The figure then reads "31k to compaction".
+ * from nowhere.
+ *
+ * 3.0 (chat memory): quiet until it matters. Below half way to the summary point it is not drawn
+ * at all — at a low fill the hairline arc read as a loading spinner. From [ContextOutlook.SHOW_LEFT]
+ * it carries a short label ("~12 left", from [repliesLeft]), and one tap ([onTap]) opens the
+ * chat-memory sheet that explains it in a sentence. The old tap that toggled "84k · 216k to
+ * compaction" and the second tap target laid over it are gone.
  */
 @Composable
 fun KeryxContextRing(
@@ -55,10 +60,15 @@ fun KeryxContextRing(
      *  reading with one tick when it lands. Null = not compacting. */
     drainSince: Long? = null,
     drainSeconds: Int? = null,
+    /** About how many replies fit before the summary point ([ContextOutlook.repliesLeft]). */
+    repliesLeft: Int? = null,
+    /** Opens the chat-memory sheet. */
+    onTap: (() -> Unit)? = null,
 ) {
     if (used <= 0L || max <= 0L) return
     val toCompaction = chat.keryx.core.model.CompactionGauge.of(used, compactAt.takeIf { it in 1..max })
     val reading = toCompaction?.fraction ?: (used.toFloat() / max.toFloat()).coerceIn(0f, 1f)
+    if (!chat.keryx.core.model.ContextOutlook.showRing(reading, compacting = drainSince != null)) return
     var now by remember { mutableStateOf(System.currentTimeMillis()) }
     androidx.compose.runtime.LaunchedEffect(drainSince) {
         // On screen only, and only while a compaction runs: four reads a second is plenty.
@@ -79,31 +89,27 @@ fun KeryxContextRing(
     }
     val track = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
     val meta = MaterialTheme.colorScheme.onSurfaceVariant
-    var showFigure by remember { mutableStateOf(false) }
+    val left = toCompaction?.left ?: (max - used).coerceAtLeast(0L)
+    val label = if (drainSince != null) null
+        else chat.keryx.core.model.ContextOutlook.shortLabel(reading, repliesLeft, left)
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        // The ring is 15dp of drawing; the TAP that reveals "84k / 128k" was 15dp too, wedged in
-        // 3dp of padding at the very corner of the screen — the hardest place on a phone to hit
-        // accurately. The mark stays the size it was; the target rides the composer footer's
-        // own 36dp band.
+        // The ring is 15dp of drawing; the target rides the composer footer's own 36dp band
+        // (a 15dp target in the corner of the screen is the hardest place on a phone to hit).
         modifier = modifier
             .heightIn(min = 36.dp)
             .clip(RoundedCornerShape(KeryxRadius.chip))
-            .clickable(onClickLabel = if (showFigure) "Hide the count" else "Show the count") { showFigure = !showFigure }
-            // The ring is a drawing, so it says in words what it shows: unlabelled, TalkBack
-            // announced an unnamed button here (3.0 accessibility pass).
-            .semantics { contentDescription = contextRingLabel(used, max, toCompaction?.left) }
+            .let { m -> if (onTap != null) m.clickable(onClickLabel = "Chat memory", onClick = onTap) else m }
+            // The ring is a drawing, so it says in words what it shows (3.0 accessibility pass).
+            .semantics { contentDescription = contextRingLabel(used, max, toCompaction?.left, repliesLeft) }
             .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
-        if (showFigure) {
+        if (label != null) {
             Text(
-                toCompaction?.let { g ->
-                    if (g.left > 0L) "${used / 1000}k · ${(g.left + 999) / 1000}k to compaction"
-                    else "${used / 1000}k · compacts next"
-                } ?: "${used / 1000}k / ${max / 1000}k",
+                label,
                 fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
-                color = meta,
+                color = if (frac > 0.75f) color else meta,
                 // One line: wrapped, it made the composer grow a row (QA 2.19.1).
                 maxLines = 1,
                 softWrap = false,
@@ -137,13 +143,14 @@ fun KeryxContextRing(
 /** The cache-warm edge's gold (2.16). Decorative: it carries no text. */
 private val Gilt = androidx.compose.ui.graphics.Color(0xFFD4A537)
 
-/** What the context ring says aloud: how full the window is, and how far compaction is. */
-internal fun contextRingLabel(used: Long, max: Long, toCompaction: Long?): String {
+/** What the context ring says aloud: how full the chat is, and how far the summary is. */
+internal fun contextRingLabel(used: Long, max: Long, toCompaction: Long?, repliesLeft: Int? = null): String {
     val pct = if (max > 0) (used * 100 / max).coerceIn(0, 100) else 0
-    val base = "Context ${used / 1000}k of ${max / 1000}k tokens, $pct percent"
+    val base = "Chat memory ${used / 1000}k of ${max / 1000}k tokens, $pct percent"
     return when {
         toCompaction == null -> base
-        toCompaction > 0L -> "$base, ${(toCompaction + 999) / 1000}k until compaction"
-        else -> "$base, compacts next turn"
+        toCompaction > 0L && repliesLeft != null -> "$base, about $repliesLeft replies before the summary"
+        toCompaction > 0L -> "$base, ${(toCompaction + 999) / 1000}k until the summary"
+        else -> "$base, the next reply starts a summary"
     }
 }

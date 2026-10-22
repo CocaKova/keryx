@@ -1227,7 +1227,17 @@ fun ChatScreen(
             val cacheHit by viewModel.cacheHitPct.collectAsState()
             var drainSince by remember { mutableStateOf<Long?>(null) }
             LaunchedEffect(compactingNow) { drainSince = if (compactingNow) System.currentTimeMillis() else null }
+            // Who summarizes this chat, for the chat-memory sheet (3.0): the room's own bot when it
+            // runs as one, else the install's friendly name for its agent; null says "the agent".
+            val botRoster by viewModel.bots.roster.collectAsState()
+            val chatAgentName = remember(currentRoom?.id, botRoster) {
+                val bots = botRoster.data?.bots.orEmpty()
+                viewModel.bots.agentOf(currentRoom?.id)
+                    ?.let { chat.keryx.app.presentation.MissionStory.agentName(it.name, bots) }
+                    ?: bots.firstOrNull { it.isDefault }?.let { chat.keryx.app.presentation.MissionStory.friendlyName(it) }
+            }
             Composer(
+                agentName = chatAgentName,
                 ringCacheWarm = (cacheHit ?: 0) >= 80,
                 ringDrainSince = drainSince,
                 ringDrainSeconds = compactionTypical,

@@ -51,7 +51,7 @@ class TapInTest {
     @Test
     fun `a compaction is the headline while it runs`() {
         val s = project(status = SessionStatus("compressing", "Compressing context ~92,000 tokens"), calls = listOf(call("read_file", ToolStatus.EXECUTING)))
-        assertEquals("Compressing context (~92k tokens)", s.headline)
+        assertEquals(chat.keryx.core.model.SessionStatus.COMPACTING_LINE, s.headline)
     }
 
     @Test

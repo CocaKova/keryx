@@ -25,17 +25,18 @@ data class SessionStatus(val kind: String, val text: String) {
     val headline: String get() = headline()
 
     /**
-     * The banner line with what the app knows beside the gateway's words (2.13.11). The
-     * gateway's own compaction line names no size ("🗜️ Compacting context — summarizing
-     * earlier conversation…"), so [fallbackTokens] — the ring's last reading, which is what is
-     * being summarized — stands in when the line has none. [typicalSeconds] is how long this
-     * brain's compactions have taken before: a compaction is ONE summarizing call with no
-     * progress of its own to report, so "usually ~40 s" is the honest version of a progress bar.
+     * The banner line while the agent compacts. [typicalSeconds] is how long this brain's
+     * compactions have taken before: a compaction is ONE summarizing call with no progress of
+     * its own to report, so "usually ~40 s" is the honest version of a progress bar.
+     *
+     * 3.0: it says what is happening in plain words. "Compressing context (~92k tokens)" was the
+     * one line a person waits on, and it spoke in tokens; the size is the chat-memory sheet's
+     * small print now. [fallbackTokens] is kept for callers and no longer printed.
      */
+    @Suppress("UNUSED_PARAMETER")
     fun headline(fallbackTokens: Long? = null, typicalSeconds: Int? = null): String = when {
         isCompacting -> {
-            val size = tokens ?: fallbackTokens?.takeIf { it > 0L }
-            val base = size?.let { "Compressing context (~${compact(it)} tokens)" } ?: "Compressing context"
+            val base = COMPACTING_LINE
             typicalSeconds?.takeIf { it > 0 }?.let { "$base · usually ~${duration(it)}" } ?: base
         }
         else -> text
@@ -81,12 +82,16 @@ data class SessionStatus(val kind: String, val text: String) {
             else -> "${(seconds + 30) / 60} min"
         }
 
-        private fun compact(n: Long): String = when {
+        /** "92k", "2.5k", "1.2M": a token count at a glance. */
+        fun tokenCount(n: Long): String = when {
             n >= 1_000_000 -> "${tenths(n, 1_000_000)}M"
             n >= 10_000 -> "${(n + 500) / 1000}k"
             n >= 1_000 -> "${tenths(n, 1000)}k"
             else -> n.toString()
         }
+
+        /** What the banner says while the agent compacts (3.0). */
+        const val COMPACTING_LINE = "Summarizing older messages so the chat can keep going"
     }
 }
 
@@ -350,6 +355,94 @@ data class CompactionGauge(val used: Long, val trigger: Long) {
         }
 
         const val FALLBACK_SECONDS = 60
+    }
+}
+
+/**
+ * The chat-memory readout (3.0) — how far the chat is from the point where the agent summarizes
+ * older messages, said in replies, not tokens. The ring before this sat in the pill row from the
+ * first message as a hairline arc that read like a loading spinner, and its tap said
+ * "84k · 216k to compaction". Now it stays out of the way until the chat is half way to that
+ * point, says "~12 left" from [SHOW_LEFT], and one tap explains it in a sentence.
+ *
+ * "Replies left" is an estimate from this chat's own growth per turn, and every line that uses
+ * it says "about". Pure: no clock, no Compose.
+ */
+object ContextOutlook {
+    /** Below this share of the way to the summary point the ring stays hidden. */
+    const val SHOW_RING = 0.50f
+
+    /** From this share on, the ring carries its short label. */
+    const val SHOW_LEFT = 0.60f
+
+    /** Readings kept to estimate growth per turn. */
+    const val KEEP = 8
+
+    /**
+     * [readings] plus [used]: the same value again changes nothing, a lower one is a compaction
+     * (or a new branch) and starts the history over, and only the last [KEEP] are kept.
+     */
+    fun record(readings: List<Long>, used: Long): List<Long> {
+        if (used <= 0L) return readings
+        val last = readings.lastOrNull()
+        return when {
+            last == used -> readings
+            last != null && used < last -> listOf(used)
+            else -> (readings + used).takeLast(KEEP)
+        }
+    }
+
+    /**
+     * About how many more replies fit before [left] tokens are used: [left] over the median
+     * growth of the turns in [readings] (oldest first). Null with no growth to go on yet.
+     */
+    fun repliesLeft(left: Long, readings: List<Long>): Int? {
+        val steps = readings.zipWithNext { a, b -> b - a }.filter { it > 0L }.sorted()
+        if (steps.isEmpty()) return null
+        val median = if (steps.size % 2 == 1) steps[steps.size / 2]
+        else (steps[steps.size / 2 - 1] + steps[steps.size / 2]) / 2
+        if (median <= 0L) return null
+        return (left.coerceAtLeast(0L) / median).toInt().coerceAtMost(999)
+    }
+
+    /** Whether the ring shows at all, given how far along the way to the summary point it is. */
+    fun showRing(fraction: Float, compacting: Boolean): Boolean = compacting || fraction >= SHOW_RING
+
+    /** The ring's short label: null below [SHOW_LEFT], else "~12 left", "summary next" or "filling up". */
+    fun shortLabel(fraction: Float, replies: Int?, left: Long): String? = when {
+        fraction < SHOW_LEFT -> null
+        left <= 0L || replies == 0 -> "summary next"
+        replies == null -> "filling up"
+        else -> "~$replies left"
+    }
+
+    /**
+     * The sheet's sentence. [agent] names who summarizes ("the agent" when unknown); [hasTrigger]
+     * = the gateway named its summary point (without it the only line is the model's window).
+     */
+    fun sentence(replies: Int?, left: Long, agent: String?, hasTrigger: Boolean): String {
+        val who = agent?.takeIf { it.isNotBlank() } ?: "the agent"
+        val then = "Then $who summarizes the older messages so the chat can keep going."
+        if (!hasTrigger) return when {
+            replies != null && replies > 0 -> "Room for about ${replyCount(replies)} before the chat is full."
+            else -> "The chat fills up as you talk. This shows how much the model can still hold."
+        }
+        return when {
+            left <= 0L || replies == 0 -> "The next reply starts a summary of the older messages, so the chat can keep going."
+            replies == null -> "The chat fills up as you talk. $then"
+            else -> "Room for about ${replyCount(replies)}. $then"
+        }
+    }
+
+    private fun replyCount(n: Int): String = if (n == 1) "1 more reply" else "$n more replies"
+
+    /** The small print: "84k of 300k before the summary · window 524k". */
+    fun smallPrint(used: Long, trigger: Long, max: Long): String {
+        val t = SessionStatus.tokenCount(used)
+        return if (trigger > 0L) {
+            "$t of ${SessionStatus.tokenCount(trigger)} before the summary" +
+                (if (max > trigger) " · window ${SessionStatus.tokenCount(max)}" else "")
+        } else "$t of ${SessionStatus.tokenCount(max)} the model can hold"
     }
 }
 

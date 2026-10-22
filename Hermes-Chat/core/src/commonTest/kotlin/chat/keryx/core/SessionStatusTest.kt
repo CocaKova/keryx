@@ -50,19 +50,19 @@ class SessionStatusTest {
     }
 
     @Test
-    fun `the headline carries the size of the job`() {
-        assertEquals(
-            "Compressing context (~123k tokens)",
-            SessionStatus.of("lifecycle", "📦 Pre-API compression: ~123,456 tokens near the limit").headline,
-        )
-        assertEquals(
-            "Compressing context (~92k tokens)",
-            SessionStatus.of("compacting", "⠋ compressing 42 messages (~92,000 tok)…").headline,
-        )
-        assertEquals("Compressing context (~1.2M tokens)", SessionStatus.of("compacting", "~1,234,567 tokens").headline)
-        assertEquals("Compressing context (~2.5k tokens)", SessionStatus.of("compacting", "~2,480 tokens").headline)
-        assertEquals("Compressing context", SessionStatus.of("compacting", "compacting…").headline)
+    fun `the compaction headline says what is happening, in plain words`() {
+        // 3.0: no token count in the line a person waits on; the size is the sheet's small print.
+        val line = SessionStatus.COMPACTING_LINE
+        assertEquals(line, SessionStatus.of("lifecycle", "📦 Pre-API compression: ~123,456 tokens near the limit").headline)
+        assertEquals(line, SessionStatus.of("compacting", "⠋ compressing 42 messages (~92,000 tok)…").headline)
+        assertEquals(line, SessionStatus.of("compacting", "compacting…").headline)
+        // The size is still read off the line, for whatever wants it.
+        assertEquals(123_456L, SessionStatus.of("lifecycle", "📦 Pre-API compression: ~123,456 tokens near the limit").tokens)
+        assertEquals(1_234_567L, SessionStatus.of("compacting", "~1,234,567 tokens").tokens)
         assertNull(SessionStatus.of("compacting", "compacting…").tokens)
+        assertEquals("92k", SessionStatus.tokenCount(92_000))
+        assertEquals("2.5k", SessionStatus.tokenCount(2_480))
+        assertEquals("1.2M", SessionStatus.tokenCount(1_234_567))
     }
 
     @Test
@@ -70,18 +70,16 @@ class SessionStatusTest {
         assertEquals("⚠ disk full", SessionStatus.of("warning", "⚠ disk full").headline)
     }
 
-    // 2.13.11 — the gateway's compaction line names no size; the banner borrows the ring's.
+    // 2.13.11 — a compaction is one call with no progress of its own: "usually ~N s" stands in.
 
     @Test
-    fun `the banner borrows the ring's reading when the line names no size`() {
+    fun `the banner says how long a compaction usually takes`() {
         val live = SessionStatus.of("compacting", "🗜️ Compacting context — summarizing earlier conversation so I can continue...")
-        assertEquals("Compressing context", live.headline)
-        assertEquals("Compressing context (~141k tokens)", live.headline(fallbackTokens = 141_413))
-        assertEquals("Compressing context (~141k tokens) · usually ~41 s", live.headline(141_413, typicalSeconds = 41))
-        assertEquals("Compressing context · usually ~3 min", live.headline(null, typicalSeconds = 170))
-        // The line's own count wins over the ring's.
-        val sized = SessionStatus.of("compacting", "⠋ compressing 42 messages (~92,000 tok)…")
-        assertEquals("Compressing context (~92k tokens)", sized.headline(fallbackTokens = 141_413))
+        val line = SessionStatus.COMPACTING_LINE
+        assertEquals(line, live.headline)
+        assertEquals(line, live.headline(fallbackTokens = 141_413))
+        assertEquals("$line · usually ~41 s", live.headline(141_413, typicalSeconds = 41))
+        assertEquals("$line · usually ~3 min", live.headline(null, typicalSeconds = 170))
         // Not a compaction: the text, untouched.
         assertEquals("⏳ Working…", SessionStatus.of("lifecycle", "⏳ Working…").headline(141_413, 41))
     }

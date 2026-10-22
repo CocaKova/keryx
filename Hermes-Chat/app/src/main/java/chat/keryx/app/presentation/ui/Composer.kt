@@ -148,6 +148,8 @@ internal fun Composer(
     // The busy tree: null = normal send; "steer" | "queue" | "stop" while a turn runs.
     busyAction: String? = null,
     onContextTap: (() -> Unit)? = null,
+    /** Who summarizes this chat, for the chat-memory sheet's sentence; null = "the agent". */
+    agentName: String? = null,
     onSteer: () -> Unit = {},
     onQueue: () -> Unit = {},
     onStop: () -> Unit = {},
@@ -442,6 +444,7 @@ internal fun Composer(
         onRefreshCatalogHard = onRefreshCatalogHard,
         busyAction = busyAction,
         onContextTap = onContextTap,
+        agentName = agentName,
     )
     } // end composer surface Column
     } // end Column (attach bloom + composer row)
@@ -472,10 +475,18 @@ internal fun ComposerFooter(
     onRefreshCatalog: () -> Unit,
     onRefreshCatalogHard: () -> Unit = onRefreshCatalog,
     busyAction: String?,
-    /** Tap the ring to see what fills it (2.10). Null where the door cannot itemise. */
+    /** "What's using it" in the chat-memory sheet (2.10's breakdown). Null where the door cannot itemise. */
     onContextTap: (() -> Unit)? = null,
+    agentName: String? = null,
 ) {
     val usage = contextUsage?.takeIf { roomId != null && it.roomId == roomId }
+    // This room's recent readings (3.0), for "about N replies left": the ring's estimate is the
+    // chat's own growth per turn. A compaction (a lower reading) starts the count over.
+    var readings by remember(roomId) { mutableStateOf(emptyList<Long>()) }
+    LaunchedEffect(roomId, usage?.used) {
+        usage?.used?.let { readings = chat.keryx.core.model.ContextOutlook.record(readings, it) }
+    }
+    var memorySheet by remember(roomId) { mutableStateOf(false) }
     // The pill reads this room's route on arrival (2.10) — within the catalog's TTL this is
     // free, and a new session's sticky model shows without a tap on the pill.
     LaunchedEffect(roomId) { if (roomId != null) onRefreshCatalog() }
@@ -576,15 +587,24 @@ internal fun ComposerFooter(
         // (device, 10-03: "deathly close to the stop run button").
         if (usage != null) Spacer(Modifier.width(6.dp))
         usage?.let {
+            val trigger = it.compactAt.takeIf { t -> t in 1..it.max } ?: it.max
+            val replies = chat.keryx.core.model.ContextOutlook.repliesLeft((trigger - it.used).coerceAtLeast(0L), readings)
+            // One tap target (3.0): the ring opens the chat-memory sheet, and the breakdown is a
+            // button in it. Two handlers on one 15dp mark used to race for the same tap.
             chat.keryx.app.presentation.ui.components.KeryxContextRing(
                 it.used, it.max, compactAt = it.compactAt,
                 cacheWarm = ringCacheWarm,
                 drainSince = ringDrainSince,
                 drainSeconds = ringDrainSeconds,
-                modifier = if (onContextTap != null) Modifier
-                    .clip(androidx.compose.foundation.shape.CircleShape)
-                    .clickable(onClickLabel = "What is in the context window", onClick = onContextTap)
-                else Modifier,
+                repliesLeft = replies,
+                onTap = { memorySheet = true },
+            )
+            if (memorySheet) chat.keryx.app.presentation.ui.components.ChatMemorySheet(
+                used = it.used, max = it.max, compactAt = it.compactAt,
+                repliesLeft = replies,
+                agent = agentName,
+                onWhatsUsing = onContextTap?.let { open -> { memorySheet = false; open() } },
+                onDismiss = { memorySheet = false },
             )
         }
         if (busyAction == "steer") {
