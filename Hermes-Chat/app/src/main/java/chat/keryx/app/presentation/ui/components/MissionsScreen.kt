@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -1113,9 +1114,17 @@ private fun androidx.compose.foundation.layout.ColumnScope.StoryCard(
             modifier = Modifier.padding(top = 6.dp, start = 14.dp),
         )
     }
-    Spacer(Modifier.height(10.dp))
+    val storyList = rememberLazyListState()
+    // The headline stays put while the rest scrolls under it: a hairline marks the edge once
+    // anything has scrolled, so a half-hidden row doesn't read as a stray line of text.
+    if (storyList.canScrollBackward) {
+        HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f), modifier = Modifier.padding(top = 10.dp))
+    } else {
+        Spacer(Modifier.height(10.dp))
+    }
 
     LazyColumn(
+        state = storyList,
         modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
