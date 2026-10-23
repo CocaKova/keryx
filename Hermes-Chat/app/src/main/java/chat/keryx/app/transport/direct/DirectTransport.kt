@@ -2608,7 +2608,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         val gatewayUnread = _sessionRows.value.firstOrNull { it.id == sessionId }?.unread == true
         if (readStamps[sessionId] == eventId && !gatewayUnread) return
         readStamps[sessionId] = eventId
-        markSessionRead(sessionId, read = true)
+        // A refused stamp is not a stamp: forget it, so the next ask writes again instead of
+        // the screen believing a mark the gateway never took (10-23: 0.22.4's fence refused
+        // every unfenced edit, and the stamp kept the phone from ever asking twice).
+        markSessionRead(sessionId, read = true).onFailure { readStamps.remove(sessionId, eventId) }
     }
 
     private val readStamps = java.util.concurrent.ConcurrentHashMap<String, String>()

@@ -332,24 +332,27 @@ class GatewayRest(
         unread: Boolean? = null,
         profile: String? = null,
         hidden: Boolean? = null,
-    ): Result<Unit> =
-        send("PATCH", "/api/sessions/$sessionId", buildString {
-            append("{")
-            val parts = mutableListOf<String>()
-            title?.let { parts += "\"title\":${kotlinx.serialization.json.JsonPrimitive(it)}" }
-            archived?.let { parts += "\"archived\":$it" }
-            pinned?.let { parts += "\"pinned\":$it" }
-            unread?.let { parts += "\"unread\":$it" }
-            hidden?.let { parts += "\"hidden\":$it" }
+    ): Result<Unit> {
+        val edit = buildJsonObject {
+            title?.let { put("title", it) }
+            archived?.let { put("archived", it) }
+            pinned?.let { put("pinned", it) }
+            unread?.let { put("unread", it) }
+            hidden?.let { put("hidden", it) }
             // The PATCH names its profile in the BODY (the router's SessionRename model),
             // where GET/DELETE take it as a query — the gateway's own asymmetry, mirrored.
-            profile?.takeIf { it.isNotBlank() }?.let { parts += "\"profile\":${kotlinx.serialization.json.JsonPrimitive(it)}" }
-            append(parts.joinToString(","))
-            append("}")
-        }).map { }
+            profile?.takeIf { it.isNotBlank() }?.let { put("profile", it) }
+        }
+        val path = "/api/sessions/$sessionId"
+        return SessionFence.mutate({ m, p, b -> exchange(m, p, b) }, "PATCH", path, profileQuery(profile, first = true),
+            build = { id -> path to SessionFence.withIdentity(edit, id).toString() }).map { }
+    }
 
-    suspend fun deleteSession(sessionId: String, profile: String? = null): Result<Unit> =
-        send("DELETE", "/api/sessions/$sessionId" + profileQuery(profile, first = true), null).map { }
+    suspend fun deleteSession(sessionId: String, profile: String? = null): Result<Unit> {
+        val path = "/api/sessions/$sessionId"
+        return SessionFence.mutate({ m, p, b -> exchange(m, p, b) }, "DELETE", path, profileQuery(profile, first = true),
+            build = { id -> (path + SessionFence.deleteQuery(profile, id)) to null }).map { }
+    }
 
     /**
      * Bot Mode (2.8): a Bot Chat lives in ITS profile's state.db, and the dashboard serves
