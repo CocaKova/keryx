@@ -49,6 +49,11 @@ private val DiamondShape = GenericShape { size, _ ->
     close()
 }
 
+/** A `<br>` in the source is a real newline in the label ([MermaidParser]); cells grow to fit up to this many lines. */
+private const val MAX_LABEL_LINES = 3
+/** Height each label line past the first adds to a cell — matches the node text's lineHeight. */
+private const val LABEL_LINE_DP = 16f
+
 private data class Placed(val node: MermaidParser.Node, val x: Float, val y: Float)
 private data class Layout(
     val placed: Map<String, Placed>,
@@ -56,6 +61,7 @@ private data class Layout(
     val height: Float,
     val cellW: Float,
     val cellH: Float,
+    val labelLines: Int,
 )
 
 /**
@@ -127,13 +133,16 @@ fun MermaidDiagram(code: String, baseColor: Color) {
                         .background(accent.copy(alpha = 0.16f))
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                 ) {
+                    // lineHeight is explicit: fontSize alone keeps the theme's body line height, and
+                    // two lines of that don't fit a cell, so a <br> label ellipsized to one line.
                     Text(
                         text = p.node.label,
                         color = baseColor,
                         fontSize = KeryxType.caption,
+                        lineHeight = LABEL_LINE_DP.sp,
                         fontWeight = FontWeight.Medium,
                         textAlign = TextAlign.Center,
-                        maxLines = 2,
+                        maxLines = layout.labelLines,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
@@ -147,7 +156,7 @@ fun MermaidDiagram(code: String, baseColor: Color) {
                 val midY = (a.y + b.y) / 2f + layout.cellH / 2f
                 Box(
                     modifier = Modifier
-                        .offset((midX - label.length * 3.2f).dp, (midY - 8).dp)
+                        .offset((midX - label.lines().maxOf { it.length } * 3.2f).dp, (midY - 8).dp)
                         .clip(RoundedCornerShape(5.dp))
                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f))
                         .padding(horizontal = 5.dp, vertical = 1.dp),
@@ -162,9 +171,11 @@ fun MermaidDiagram(code: String, baseColor: Color) {
 /** Grid layout: ranks become rows (vertical) or columns (horizontal); nodes uniform-sized cells. */
 private fun layout(graph: MermaidParser.Graph): Layout {
     val ranks = MermaidParser.rank(graph)
-    val longest = graph.nodes.maxOfOrNull { it.label.length } ?: 4
+    // Size by the longest line and the tallest label: a two-line label is two short lines, not one long one.
+    val labelLines = (graph.nodes.maxOfOrNull { it.label.lines().size } ?: 1).coerceIn(1, MAX_LABEL_LINES)
+    val longest = graph.nodes.maxOfOrNull { n -> n.label.lines().maxOf { it.length } } ?: 4
     val cellW = (longest.coerceAtMost(20) * 7f + 28f).coerceIn(72f, 184f)
-    val cellH = 44f
+    val cellH = 44f + (labelLines - 1) * LABEL_LINE_DP
     val laneGap = 18f
     val rankGap = 58f
     val placed = LinkedHashMap<String, Placed>()
@@ -196,7 +207,7 @@ private fun layout(graph: MermaidParser.Graph): Layout {
     // Bound the canvas to the actual node extents so nothing is clipped or unreachable when panning.
     val width = (placed.values.maxOfOrNull { it.x + cellW } ?: cellW).coerceAtLeast(cellW)
     val height = (placed.values.maxOfOrNull { it.y + cellH } ?: cellH).coerceAtLeast(cellH)
-    return Layout(placed, width, height, cellW, cellH)
+    return Layout(placed, width, height, cellW, cellH, labelLines)
 }
 
 /** Point on the border of a node box (centered at [center], half-extents [hw]/[hh]) along the ray

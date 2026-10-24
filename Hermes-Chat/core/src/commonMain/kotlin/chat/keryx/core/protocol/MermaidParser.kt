@@ -23,6 +23,13 @@ object MermaidParser {
     private val NODE = Regex("""^([A-Za-z0-9_]+)\s*(\(\(.*\)\)|\(\[.*\]\)|\[\[.*\]\]|\[.*\]|\(.*\)|\{.*\})?$""")
     private val IGNORE = listOf("subgraph", "end", "style", "classdef", "class ", "click", "linkstyle", "direction")
 
+    // Mermaid uses <br>, <br/> or <br /> for a hard line break inside a node or edge label. The
+    // native renderer (MermaidDiagram) draws label text verbatim, so convert those tags to real
+    // newlines here — otherwise the tag shows up literally (e.g. "range-red · .20<br/>attacker").
+    // Case-insensitive, any surrounding spacing. Trims so a stray leading/trailing <br> is dropped.
+    private val BR = Regex("""<\s*br\s*/?\s*>""", RegexOption.IGNORE_CASE)
+    private fun normalizeLabel(s: String): String = BR.replace(s, "\n").trim()
+
     fun parse(code: String): Graph? {
         val raw = code.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("%%") }
         if (raw.isEmpty()) return null
@@ -41,7 +48,7 @@ object MermaidParser {
             val bracket = m.groupValues[2]
             if (bracket.isNotEmpty()) {
                 val (shape, label) = shapeOf(bracket)
-                nodes[id] = Node(id, label.ifBlank { id }, shape) // labeled form wins
+                nodes[id] = Node(id, normalizeLabel(label).ifBlank { id }, shape) // labeled form wins
             } else {
                 nodes.getOrPut(id) { Node(id, id, NodeShape.RECT) }
             }
@@ -55,7 +62,7 @@ object MermaidParser {
             if (em != null) {
                 val from = register(em.groupValues[1])
                 val to = register(em.groupValues[3])
-                val label = em.groupValues[2].trim().ifBlank { null }
+                val label = normalizeLabel(em.groupValues[2]).ifBlank { null }
                 if (from != null && to != null) edges += Edge(from, to, label)
             } else {
                 register(line)
