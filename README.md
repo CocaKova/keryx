@@ -36,12 +36,12 @@ reasoning-effort scale and tool verbs match Hermes Desktop, by Nous Research (MI
 
 Keryx is a personal project. It is not affiliated with or endorsed by Nous Research.
 
-<!-- TODO(3.0): hero shot or short demo clip of the 3.0 demo (agent mid-job, Flight Plan, approval) goes here. The three shots below predate the 3.0 redesign (the drawer looks different now). -->
 <p align="center">
-  <img src="docs/img/turn-anatomy.jpg" align="top" alt="A finished turn: prompt, reasoning, a tool card with its output, the reply" width="260">
-  <img src="docs/img/drawer.jpg" align="top" alt="The drawer: sessions, filters, and the spaces" width="260">
-  <img src="docs/img/gateway-panel.jpg" align="top" alt="The Gateway panel: brain, state, and the rooms of the machine" width="260">
-  <br><sub>A turn with its reasoning and tool output open · the drawer · the Gateway panel</sub>
+  <img src="docs/img/demo-at-work.jpg" align="top" alt="An agent mid-job: its Flight Plan at 2 of 4, a tool card, and an approval for a recursive delete with Allow once, Session, Always and Deny" width="200">
+  <img src="docs/img/drawer.jpg" align="top" alt="The drawer: chats with tinted monograms, a ring on the one at work, and the Needs you and Running filters" width="200">
+  <img src="docs/img/mission-story.jpg" align="top" alt="A mission card opened: what is going on in one line, the task, and what happened" width="200">
+  <img src="docs/img/space-hint.jpg" align="top" alt="The first visit to Missions: a spotlight on the header says what the space is for" width="200">
+  <br><sub>The demo, no gateway needed: an agent asking before a risky step · the drawer · a mission card · a space explaining itself on the first visit</sub>
 </p>
 
 ## Try it without a gateway
