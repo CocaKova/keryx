@@ -64,8 +64,9 @@ fun FlightPlanStrip(plan: TodoPlan) {
 
     val reduced by rememberReducedMotion()
     // Read while drawing each dot (3.0 perf): read here, the whole strip recomposed every frame
-    // a step was in flight.
-    val pulseState = if (reduced) null else rememberInfiniteTransition(label = "plan_pulse").animateFloat(
+    // a step was in flight. And only made while a step IS in flight: a plan left with steps to
+    // go and none started (the turn over) holds still instead of repainting every frame.
+    val pulseState = if (reduced || plan.active == null) null else rememberInfiniteTransition(label = "plan_pulse").animateFloat(
         initialValue = 0.45f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),

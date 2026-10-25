@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.runtime.snapshotFlow
@@ -80,7 +81,16 @@ object RoomCrossingCue {
     @Volatile var tapAt: Long = 0L
         private set
 
-    fun drawerOpening() { snapshots.value = snapshots.value + 1 }
+    fun drawerOpening() { drawerOpen = true; snapshots.value = snapshots.value + 1 }
+
+    /** Bumped each time the drawer starts closing: a photo nobody crossed from is let go. */
+    val closings = MutableStateFlow(0)
+
+    /** Whether the drawer was last seen opening rather than closing. */
+    @Volatile var drawerOpen: Boolean = false
+        private set
+
+    fun drawerClosing() { drawerOpen = false; closings.value = closings.value + 1 }
 
     fun noteTap(rootPosition: Offset) {
         tap = rootPosition
@@ -169,6 +179,21 @@ fun RoomCrossingEffect(
         if (!active) return@LaunchedEffect
         RoomCrossingCue.snapshots.collect { n -> if (n > 0) crossing.snapshot(crossing.composedKey) }
     }
+    // A drawer opened and closed on the same room leaves its photo unused: a full-screen bitmap
+    // held for nothing, in the background too. Once the drawer is out of the way, a photo of the
+    // room still on screen with no crossing in flight is let go. A switch is never cut short: by
+    // then the composed room is the new one, and the crossing releases its own photo.
+    LaunchedEffect(crossing) {
+        RoomCrossingCue.closings.collectLatest { n ->
+            if (n == 0) return@collectLatest
+            delay(UNUSED_PHOTO_GRACE_MS)
+            val unused = !RoomCrossingCue.drawerOpen && !crossing.pending && crossing.progress.value == 1f &&
+                crossing.oldFrameKey == crossing.composedKey
+            if (unused) {
+                crossing.release()
+            }
+        }
+    }
     var lastKey by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(roomKey) {
         val leaving = lastKey
@@ -234,6 +259,10 @@ fun Modifier.roomCrossing(
 
 private const val HOLD_MS = 120L
 private const val ARRIVAL_WAIT_MS = 900L
+
+/** How long after the drawer starts closing an unused photo is kept: past the close and past a
+ *  photo still being taken, so a switch made from the drawer always finds it. */
+private const val UNUSED_PHOTO_GRACE_MS = 1_200L
 private val ARCANE: Easing = CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
 private val GLIDE_IN: Easing = CubicBezierEasing(0.2f, 0.9f, 0.25f, 1f)
 private val RISE_IN: Easing = CubicBezierEasing(0.2f, 0.9f, 0.3f, 1.12f)

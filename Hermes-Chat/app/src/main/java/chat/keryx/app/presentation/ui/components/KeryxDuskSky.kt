@@ -10,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -85,6 +86,10 @@ fun Modifier.keryxDuskSky(
                 val t = ((now - born) % periodMs.toLong()) / periodMs
                 phase = if (t < 0.5f) t * 2f else 2f - t * 2f
                 delay(40)
+                // …and a frame: Compose pauses its frame clock when the app leaves the screen, so
+                // a backgrounded app parks here instead of waking 25 times a second for a sky
+                // nobody sees (a plain delay kept ticking for as long as the process lived).
+                withFrameMillis { }
             }
         }
     }

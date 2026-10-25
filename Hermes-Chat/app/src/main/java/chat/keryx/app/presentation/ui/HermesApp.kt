@@ -158,6 +158,9 @@ fun HermesApp(viewModel: ChatViewModel) {
             keyboard?.hide()
             // The drawer is about to cover the room: photograph it for the crossing (3.0).
             chat.keryx.app.presentation.ui.components.RoomCrossingCue.drawerOpening()
+        } else if (chat.keryx.app.presentation.ui.components.RoomCrossingCue.drawerOpen) {
+            // …and if no room is picked, that photo is let go once the drawer is shut.
+            chat.keryx.app.presentation.ui.components.RoomCrossingCue.drawerClosing()
         }
     }
 

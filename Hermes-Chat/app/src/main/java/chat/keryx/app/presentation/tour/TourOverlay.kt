@@ -78,6 +78,7 @@ import chat.keryx.core.tour.TourSide
 import chat.keryx.core.tour.TourStep
 import chat.keryx.core.tour.TourTarget
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 
 /**
  * The tour on screen (3.0): the run the engine hands back, held as state. Every way in goes
@@ -123,6 +124,9 @@ class TourController(
 /** How long a step waits for its target to show (the drawer opening, a place arriving) before
  *  it says its piece mid-screen instead. A tour must never stall on a control that isn't there. */
 private const val TARGET_WAIT_MS = 1_800L
+
+/** How often a settled stop re-reads where its target is. */
+private const val SETTLED_TRACK_MS = 250L
 
 /** A target counts as arrived once it has held still this long: the drawer has finished sliding. */
 private const val SETTLE_MS = 120L
@@ -172,8 +176,11 @@ fun TourOverlay(
         val since = System.nanoTime()
         var last: Rect? = null
         var stillSince = 0L
-        // Read once a frame: a target can move on a layer (the drawer) without saying so.
+        // Read once a frame: a target can move on a layer (the drawer) without saying so. Once the
+        // card is up and the cut has settled, a few looks a second still follow a move, without a
+        // frame every vsync for as long as a hint waits on "Got it".
         while (true) {
+            if (ready) delay(SETTLED_TRACK_MS)
             val now = withFrameNanos { it }
             val b = registry.boundsOf(id)?.translate(-origin)
             if (b != last) { last = b; stillSince = now }

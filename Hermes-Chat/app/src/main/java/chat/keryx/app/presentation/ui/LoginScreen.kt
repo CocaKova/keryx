@@ -163,7 +163,8 @@ fun LoginScreen(viewModel: ChatViewModel) {
             BrailleSnakeAnimation(
                 modifier = Modifier.fillMaxSize(),
                 color = accent,
-                running = !reduced,
+                // Moving under Battery Saver too (the spinner rule): it is the "Connecting…" sign.
+                running = true,
                 progress = true,
             )
         }
