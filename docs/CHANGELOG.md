@@ -5,7 +5,7 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
-## 3.0.0 · versionCode 142 (beta)
+## 3.0.0 · beta 3, versionCode 142 (pre-release)
 
 The herald release. A stranger can try Keryx before owning a gateway, pair one with a QR code,
 and ask their agent where things are. Under that, a speed pass, a light redesign and an
