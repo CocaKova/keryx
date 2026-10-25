@@ -33,6 +33,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,6 +96,24 @@ fun LoginScreen(viewModel: ChatViewModel) {
     // The first run (3.0): a phone that has never had a door opens on the welcome, not a form.
     var welcome by remember { mutableStateOf(viewModel.doors.firstRun) }
 
+    // The herald arrives (3.0): the welcome comes in once, in stages: the mark, the name, then
+    // what it's for. Read in the draw phase only, so it costs no recomposition. Reduced motion
+    // (battery saver included) and every screen but the welcome start it finished.
+    val reduced by chat.keryx.app.presentation.ui.components.rememberReducedMotion()
+    val arrival = remember { androidx.compose.animation.core.Animatable(if (welcome) 0f else 1f) }
+    androidx.compose.runtime.LaunchedEffect(reduced) {
+        if (reduced) arrival.snapTo(1f)
+        else arrival.animateTo(1f, androidx.compose.animation.core.tween(HERALD_ARRIVAL_MS, easing = androidx.compose.animation.core.LinearEasing))
+    }
+    fun Modifier.heraldStage(from: Float, to: Float, riseDp: Float = 0f, grow: Boolean = false) =
+        this.then(Modifier.graphicsLayer {
+            val e = chat.keryx.app.presentation.ui.components.KeryxMotion.arcane
+                .transform(((arrival.value - from) / (to - from)).coerceIn(0f, 1f))
+            alpha = e
+            translationY = (1f - e) * riseDp * density
+            if (grow) { val k = 0.86f + 0.14f * e; scaleX = k; scaleY = k }
+        })
+
     if (scanning) {
         chat.keryx.app.presentation.pair.PairScanDialog(
             onDismiss = { scanning = false },
@@ -137,19 +156,20 @@ fun LoginScreen(viewModel: ChatViewModel) {
         Box(
             modifier = Modifier
                 .padding(top = 48.dp)
-                .size(180.dp),
+                .size(180.dp)
+                .heraldStage(0f, 0.45f, grow = true),
             contentAlignment = Alignment.Center,
         ) {
             BrailleSnakeAnimation(
                 modifier = Modifier.fillMaxSize(),
                 color = accent,
-                running = true,
+                running = !reduced,
                 progress = true,
             )
         }
 
         chat.keryx.app.presentation.ui.components.KeryxWordmark(
-            modifier = Modifier.padding(top = 8.dp),
+            modifier = Modifier.padding(top = 8.dp).heraldStage(0.25f, 0.7f, riseDp = 14f),
             fontSize = KeryxType.splash,
         )
         Text(
@@ -161,13 +181,13 @@ fun LoginScreen(viewModel: ChatViewModel) {
             },
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = KeryxType.bodyLarge,
-            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
+            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp).heraldStage(0.45f, 0.8f, riseDp = 8f),
         )
 
         if (welcome) {
             // What Keryx is for, in three lines: an agent at work, not a chat window.
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp).heraldStage(0.6f, 0.9f, riseDp = 8f),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 for (line in listOf(
@@ -192,13 +212,13 @@ fun LoginScreen(viewModel: ChatViewModel) {
                     welcome = false
                     directDoor = true
                 },
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(52.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(52.dp).heraldStage(0.7f, 1f),
             ) {
                 Text("Connect your gateway", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
             }
             androidx.compose.material3.OutlinedButton(
                 onClick = ::lookAround,
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp).height(52.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp).height(52.dp).heraldStage(0.7f, 1f),
             ) {
                 Text("Look around first", fontSize = KeryxType.titleLarge)
             }
@@ -207,7 +227,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = KeryxType.caption,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 32.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 32.dp).heraldStage(0.7f, 1f),
             )
             return@Column
         }
@@ -495,3 +515,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
         LookAroundLink()
     }
 }
+
+/** The welcome's first arrival, end to end: long enough to read as an entrance, short enough
+ *  that nobody waits on it (the buttons are live from the first frame). */
+private const val HERALD_ARRIVAL_MS = 1_100
