@@ -5,9 +5,91 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
-## 3.0 in progress (not released; test build 3.0.0-beta.2-tokrate)
+## 3.0.0 · versionCode 142 (beta)
 
-The rest of 3.0 is tracked in `Hermes-Chat/docs/KERYX-2.19-3.0-ROADMAP.md` until the release.
+The herald release. A stranger can try Keryx before owning a gateway, pair one with a QR code,
+and ask their agent where things are. Under that, a speed pass, a light redesign and an
+accessibility pass.
+
+**What the gateway needs.** Chat works against a stock Hermes gateway. Pairing by QR and the
+agent pointing at things need [keryx-stream](https://github.com/CocaKova/keryx-stream) 0.6 or
+newer on the gateway; the Stable / Edge update switch needs 0.7 or newer. Missions, Runs and the
+Hub reach Hermes' own API server through keryx-stream, so that needs `API_SERVER_ENABLED` too.
+
+**First run and the tour**
+- A phone that has never connected opens on a welcome: what Keryx is for in three lines,
+  "Connect your gateway" and "Look around first". It arrives once, in stages (the mark, the name,
+  then the rest), and comes in at once with reduced motion or Battery Saver on.
+- Look around first opens a demo gateway that runs on the phone, with no network. Its agent is in
+  the middle of a job: a Flight Plan at 2 of 4 and an approval for a recursive delete. Answer it
+  and the rest plays out, ending on a page the agent wrote. The demo also has a Missions board, bots
+  and an Archive that searches offline. A Demo pill is always one tap from connecting.
+- A tour dims the screen, cuts a window around one control and says what it is for. The demo
+  arrives with it running; Settings › About › Tour offers a quick tour (what a first chat needs)
+  and a full one (the drawer too, ending on your gateway). TalkBack reads only the tour's card.
+- The first time Missions, Runs, Bots, the Gateway, Tap-In or a page opens, one spotlight on its
+  header says what the space is for, then never again. Settings › About shows them again.
+- Connected straight to your gateway, ask your agent "where are my scheduled jobs?" and it can
+  point at the place on the phone. Keryx
+  answers keryx-stream's `keryx_tour` tool on the same tour engine, speaking Hermes' own
+  `gui_tour` protocol, so a tour the agent writes for the desktop app and one it writes for the
+  phone are the same call. Off screen, nothing is shown and the agent is told.
+- "What's new in 3.0": someone updating from 2.x gets a short look at the new things on the real
+  controls, once. It never shows on a fresh install or in the demo, and waits if the app opened
+  on an approval. Settings › About replays it.
+
+**Pair by QR**
+- Run `hermes keryx pair` on the gateway and tap "Scan a pairing code" on the sign-in screen or in
+  Settings › Add gateway. The code holds the gateway's address, its Link's address and a one-time
+  code: no key, no password. "Use a screenshot" works for a code printed over SSH on the phone
+  itself.
+- The code is read on the phone (ZXing, no Google Play services). The camera is asked for only on
+  Scan, and nothing is kept. Before anything connects, a banner shows the host, and warns about
+  plain http to an internet address. A code whose Link is on a different host than the gateway is
+  refused.
+- The phone gets a Link token of its own once the gateway sign-in succeeds, and the pairing takes
+  without restarting the app.
+- Test link says what to turn on when the gateway runs no API server, instead of "HTTP 502".
+
+**Faster**
+- Stable message models, the message row split into its own skippable piece, and the chat screen
+  reading the transcript only where it draws it. On an emulator trace of a streamed turn, the chat
+  screen re-ran 1.35 times a second on 2.19.1 and 0.39 now; the drawer's rows behind the closed
+  drawer 6.94 and 0.30; the working cloud 5.67 and 0.18.
+- Looping animations (the breathing dot, the working cloud, the running row, the tool run's
+  border) repaint instead of recomposing their whole screen every frame.
+- Settled markdown in a streaming reply is no longer parsed again on every tick.
+- A very long live thought (hundreds of KB of reasoning on one turn) made the chat lag; it now
+  lays out only the newest piece as it grows.
+- A Baseline Profile ships with the app. On the build emulator the main thread's start-up work
+  fell from 353–438 ms to 241–303 ms, about a quarter.
+- On the phone, slow UI-thread frames while streaming fell from 10 to 5–6 on comparable turns.
+- Off screen, a working agent no longer keeps the full session list re-reading every 90 s (that
+  cost 240 KB to 1.8 MB an hour in the background). Idle background traffic measured 70 KB an hour.
+
+**Battery**
+- The dark theme's moving sky stops when Keryx leaves the screen. In the background it used to
+  wake the app 25 times a second whenever the phone was awake.
+- Switching chats with a transition other than Dissolve photographs the chat when the drawer
+  opens. A drawer opened and closed without switching now lets that full-screen picture go.
+- The Flight Plan's dot pulses only while a step is in progress, not on a plan left half done.
+- A tour card or a space hint waiting on "Got it" checks where its control is a few times a
+  second instead of on every frame.
+
+**A light redesign**
+- The drawer: each chat gets a tinted plate with a Cinzel monogram (the same eight colour families,
+  so no chat changes colour), a turning ring on the chats at work, filled filter chips with counts,
+  and a filled search well.
+- Five room transitions to pick in Settings › Appearance: Dissolve, Passage, Weave, Bloom and Rise.
+  Reduced motion skips them.
+- Illustrated empty states for Missions, Runs, Bots, Projects and the three Archive tabs, each with
+  its one action (Schedule a job, Make the first bot, New project).
+- Thinking styles: Quill (a pen writing a line of ink) and Constellation (five stars joined one by
+  one) join Caduceus, Braille and Ember, in your accent colours. Dots and the ASCII wave are
+  retired. The empty reply bubble says what the turn is doing instead of a random quip.
+- Rows of five or more choices wrap into a grid instead of scrolling the last one off screen.
+- The composer, the Flight Plan and the approval and question cards stand on solid floors: the
+  transcript no longer shows through them.
 
 **A mission card tells you what is going on**
 - Tapping a card on the Missions board opens on one plain sentence ("Quill finished and wants
@@ -20,7 +102,7 @@ The rest of 3.0 is tracked in `Hermes-Chat/docs/KERYX-2.19-3.0-ROADMAP.md` until
   under Details. Hand over, pause, stop, mark done and archive live in the ⋯ menu.
 - A run no longer shows "working…" on a card that is waiting on your review or done.
 - The alert switch says where the message goes ("You get a message in “…” when it finishes or
-  needs you.") instead of "Lands in … as a real message — no polling".
+  needs you.") instead of "Lands in … as a real message, no polling".
 
 **Chat memory instead of a context ring**
 - The ring stays out of the way until the chat is half way to the point where the agent
@@ -32,6 +114,16 @@ The rest of 3.0 is tracked in `Hermes-Chat/docs/KERYX-2.19-3.0-ROADMAP.md` until
 - While it happens the banner says "Summarizing older messages so the chat can keep going",
   not "Compressing context (~92k tokens)".
 
+**Accessibility**
+- Android's accessibility checker now runs over the screens a stranger meets first, light and
+  dark, at normal and 200% text.
+- Faded secondary text, the demo pill, the open chat's name in the drawer and a few counts fell
+  below 4.5:1 contrast; they are held to it now on both themes.
+- The menu badge keeps its number solid and breathes a halo instead of fading its fill.
+- The context ring has a spoken name ("Context 84k of 128k tokens, 65 percent…").
+- The link dot, attach, mic, back, the shelf rows and the approval buttons are 48 dp tap targets.
+  At 200% text the approval buttons wrap instead of pushing Deny off the card.
+
 **Stable or Edge updates**
 - Hub → Update has a Stable / Edge switch where the gateway's keryx-stream offers it: tested
   releases, or every change as it lands. Switching to Stable on a build newer than the release
@@ -41,10 +133,45 @@ The rest of 3.0 is tracked in `Hermes-Chat/docs/KERYX-2.19-3.0-ROADMAP.md` until
 **Honest speed readouts**
 - The live "≈ tok/s" while a reply streams is now characters over time across the last three
   seconds. It used to average the speed of each burst the network delivered, which read about
-  three times too high (≈140 for a brain measured at ~48 tok/s).
+  three times too high (≈140 for a model measured at ~48 tok/s).
 - The speed under a finished reply only shows for a reply that was one model call. A reply that
   used tools counted the tool inputs as tokens but not the time spent writing them, so it read
   high; those replies now show no figure.
+
+**Models**
+- The model sheet can switch this session only (the default) or every session, which writes the
+  gateway's config.
+- When the sticky model can't switch a new chat (the catalog unreadable, the last pick no longer
+  served, the switch refused), a message says why instead of failing silently.
+- A new chat's model pill shows the model the sticky pick switched to, not the profile default,
+  and the reasoning dial offers that model's levels.
+
+**Fixes**
+- **Hermes 0.22.4 and newer:** read marks, pin, archive, rename, hide and delete from a direct
+  connection were refused by the gateway, so a chat kept its unread dot however often it was
+  opened. Keryx now sends the edit fence those versions ask for, the way the official web client
+  does. 2.19.1 has this problem on those gateways.
+- A stale sign-in ticket or a network blip no longer signs the phone out. Only the gateway
+  refusing the sign-in ends it.
+- A turn that ends with only a ❌ status line (no error, no reply), as when a local model rejects
+  the reasoning level, no longer stays "running" with its notice and busy dot up. After four
+  minutes with nothing from the gateway, Keryx asks the gateway whether the session is still
+  working, and closes the turn only if it isn't. A turn waiting its turn on a busy model, a tool
+  still running or a question waiting on you is never closed.
+- Switching chats no longer draws ghost rows from the chat you left or a new session, a chat
+  opens at its newest message, and a chat on a slow link no longer looks empty until its first
+  page lands.
+- What the agent says between its tools stays on screen as its own bubble instead of folding into
+  the thought or disappearing on reload.
+- The live thought shows only the thinking, not the first lines of what the agent said.
+- An old message that was all thought no longer reads as a turn still running, with an empty
+  bubble and a "Reasoning" timer, when the app comes back from the background.
+- The waiting row before a turn starts uses your thinking style and says what is happening.
+- Mermaid labels with `<br>` break the line instead of printing the tag, and the box grows to fit.
+
+**Privacy**
+- No personal or install-specific names ship in the app, its tests or its docs. The release APK was
+  checked with a strings scan before going public.
 
 ## 2.19.1 · versionCode 139
 

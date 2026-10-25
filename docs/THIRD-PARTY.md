@@ -42,7 +42,11 @@ it isn't there yet.
 - **Taken:** small behaviours kept identical so Keryx and Hermes Desktop agree: the `MEDIA:` line and
   tag regexes (desktop `chat-messages.ts`), the reasoning-effort scale, labels and option list
   (desktop and web `reasoning-effort.ts`), and the per-tool verbs and glyphs behind the tool rows
-  (desktop `TOOL_META`, by way of Talaria's `ToolTheater`).
-- **Now at:** `core/.../model/MediaTags.kt`, `ReasoningEffort.kt`, `ToolGrammar.kt` (each names its
-  upstream source in its header)
-- **Changed:** rewritten in Kotlin; the media regex stops a bare path at a closing quote.
+  (desktop `TOOL_META`, by way of Talaria's `ToolTheater`). Since 3.0, the guided tour's wire: the
+  `gui_tour` actions, step shape, built-in presets and the error and hint strings it answers with
+  (`tools/tour_tool.py` and desktop `src/lib/tour/engine.ts`), so a tour the agent writes for the
+  desktop app runs the same on the phone.
+- **Now at:** `core/.../model/MediaTags.kt`, `ReasoningEffort.kt`, `ToolGrammar.kt`,
+  `core/.../tour/Tour.kt` (each names its upstream source in its header)
+- **Changed:** rewritten in Kotlin; the media regex stops a bare path at a closing quote; tour
+  selectors name a tour target by id, since a phone has no DOM to query.
