@@ -103,9 +103,14 @@ class A11yCanaryTest {
         // A phone with no door yet opens on Connect, the first screen a stranger meets.
         val connect = runCatching { compose.onNode(hasText("Look around first", substring = true)).assertExists() }.isSuccess
         if (connect) {
+            // The door is chosen once per process, when the app starts: before @BeforeClass set the
+            // demo. "Look around first" relaunches the app (System.exit), which ends the whole
+            // instrumentation run, so check this screen and stop. A fresh install lands here (AGP
+            // uninstalls after each run); the next run with the app kept starts in the demo.
             check("connect")
-            tryClick({ compose.onNode(hasText("Look around first", substring = true)) }, "the demo")
-            Thread.sleep(3000)  // the demo opens its first room and plays its first reply
+            report.append("(stopped at connect: this process started before the demo was set; rerun with the app kept installed to walk the demo)\n")
+            write()
+            return
         }
         for (ground in listOf("light", "dark")) {
             check("chat $ground")
