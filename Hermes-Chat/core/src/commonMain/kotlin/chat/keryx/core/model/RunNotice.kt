@@ -86,6 +86,15 @@ object RunActivities {
         awaitingUser: Boolean,
     ): Boolean = a.running.isEmpty() && !awaitingUser && now - lastFrameAt > windowMs
 
+    /**
+     * The gateway's own word on a run gone quiet, from its `session.active_list` status: true =
+     * it is still at work there, so leave the run be. Quiet is not dead: a turn queued behind
+     * another on a one-request local engine, or deep in a long prefill, sends nothing for
+     * minutes. `waiting` is an approval or question, `starting` the agent still being built.
+     * Idle, or not live there any more ("" / unknown), is a turn that ended without telling us.
+     */
+    fun gatewayStillWorking(status: String): Boolean = status == "working" || status == "waiting" || status == "starting"
+
     /** One line: what the agent is doing, in the transcript's own tool vocabulary. */
     fun line(a: RunActivity): String {
         val call = a.tool

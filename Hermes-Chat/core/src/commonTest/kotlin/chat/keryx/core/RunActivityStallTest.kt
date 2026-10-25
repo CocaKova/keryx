@@ -51,4 +51,11 @@ class RunActivityStallTest {
         // Strictly greater-than, so the boundary tick does not seal.
         assertFalse(RunActivities.isStalled(run(), now, now - WINDOW, WINDOW, awaitingUser = false))
     }
+
+    @Test
+    fun quietButWorkingOnTheGateway_isLeftBe() {
+        // A turn queued behind another on a one-request local engine is silent, not dead.
+        for (alive in listOf("working", "waiting", "starting")) assertTrue(RunActivities.gatewayStillWorking(alive), alive)
+        for (gone in listOf("idle", "", "something-new")) assertFalse(RunActivities.gatewayStillWorking(gone), gone)
+    }
 }

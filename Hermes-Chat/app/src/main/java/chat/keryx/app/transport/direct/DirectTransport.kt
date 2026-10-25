@@ -2889,10 +2889,35 @@ private const val RUN_IDLE_SWEEP_MS = 20_000L
                             )
                         }
                         .map { it.sessionId }
-                    for (storedId in stale) sealStalledRun(storedId)
+                    for (storedId in stale) {
+                        // Ask before sealing. Still at work on the gateway: look again a window
+                        // from now. Couldn't ask (an older gateway, the link mid-drop): silence decides.
+                        val status = gatewayLiveStatus(storedId)
+                        if (status != null && chat.keryx.core.model.RunActivities.gatewayStillWorking(status)) {
+                            lastFrameAt[storedId] = System.currentTimeMillis()
+                        } else {
+                            sealStalledRun(storedId)
+                        }
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * The gateway's live status for [storedId]'s session (`session.active_list`: working, waiting,
+     * starting, idle), "" when it isn't live there any more, null when it couldn't be asked.
+     * One small call, made only for a run already quiet past the window.
+     */
+    private suspend fun gatewayLiveStatus(storedId: String): String? {
+        val live = storedToLive[storedId] ?: return ""
+        val r = rpc ?: return null
+        val res = runCatching { r.request("session.active_list", timeoutMs = 10_000) }.getOrNull() ?: return null
+        val rows = res["sessions"] as? kotlinx.serialization.json.JsonArray ?: return null
+        val row = rows.firstOrNull {
+            (it as? kotlinx.serialization.json.JsonObject)?.get("id")?.primitiveOrNull?.contentOrNull == live
+        } as? kotlinx.serialization.json.JsonObject ?: return ""
+        return row["status"]?.primitiveOrNull?.contentOrNull.orEmpty()
     }
 
     /** Seal a run that stopped producing frames — the same close [interruptTurn] does after a Stop. */
@@ -2906,7 +2931,7 @@ private const val RUN_IDLE_SWEEP_MS = 20_000L
                     RUN_IDLE_SEAL_MS, awaitingUser(storedId),
                 )
             ) return
-            android.util.Log.w("KeryxGw", "run ${storedId.take(8)}: no frame for $RUN_IDLE_SEAL_MS ms, sealing locally")
+            android.util.Log.w("KeryxGw", "run ${storedId.take(8)}: no frame for $RUN_IDLE_SEAL_MS ms and not working on the gateway, sealing locally")
             stores[storedId]?.let { st ->
                 if (st.isStreaming) { st.streamComplete(finalText = "", error = false); settleRate(st, null, "") }
             }
