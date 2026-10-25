@@ -65,6 +65,8 @@ interface SettingsRepository {
     /** The spaces whose first-visit hint (3.0) has shown, by hint id. Device-wide: a space
      *  explained once, in the demo or on a gateway, stays explained. Empty = show them again. */
     var hintsSeen: Set<String>
+    /** The release whose "What's new" tour (3.0) has shown, or blank. Device-wide. */
+    var whatsNewSeen: String
 
     // --- Hermes side-channel streaming (tier-1) ---
     /** Base URL of the Hermes gateway API server (e.g. http://your-gateway-host:8642). Blank = disabled. */

@@ -1040,6 +1040,9 @@ fun SettingsScreen(
                                 shape = RoundedCornerShape(KeryxRadius.field),
                             ) { Text("Full tour", fontSize = KeryxType.body) }
                         }
+                        TextButton(onClick = { viewModel.requestWhatsNew() }) {
+                            Text("What's new in 3.0", fontSize = KeryxType.body)
+                        }
                         Spacer(Modifier.height(4.dp))
                         // First-visit hints (3.0): Missions, Runs and the rest explain themselves once.
                         TextButton(onClick = {

@@ -102,6 +102,15 @@ class TourController(
 
     fun start(preset: TourPreset) = act(TourAction.Start(null, preset))
 
+    /** The app's own stops beyond the presets ("What's new"), through the same engine, chosen
+     *  from what the screen can point at now. Never over a tour already running. */
+    fun startSteps(steps: (Set<String>) -> List<TourStep>): Boolean {
+        if (run != null) return false
+        val ids = catalog().mapTo(HashSet()) { it.id }
+        val chosen = steps(ids).ifEmpty { return false }
+        return act(TourAction.Start(chosen, TourPreset.FULL)).success
+    }
+
     /** A first-visit hint ([KeryxHints]): one "Got it" stop, the app's own, so it skips the
      *  agent's catalog. Never over a tour already running. */
     fun hint(step: TourStep): Boolean {

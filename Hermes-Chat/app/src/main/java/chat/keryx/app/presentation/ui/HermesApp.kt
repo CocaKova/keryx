@@ -281,22 +281,22 @@ fun HermesApp(viewModel: ChatViewModel) {
     // The guided tour (3.0): where each pointable control is, one controller for every way in,
     // and the moves that take the app to the place a stop lives in (the chat, the drawer).
     val tourRegistry = remember { chat.keryx.app.presentation.tour.TourRegistry() }
+    fun tourContext() = KeryxTour.Context(
+        direct = viewModel.transportIsDirect,
+        link = viewModel.hub.reasoningCaps.value != null,
+        demo = viewModel.isDemo,
+    )
     val tour = remember(viewModel) {
-        fun context() = KeryxTour.Context(
-            direct = viewModel.transportIsDirect,
-            link = viewModel.hub.reasoningCaps.value != null,
-            demo = viewModel.isDemo,
-        )
         chat.keryx.app.presentation.tour.TourController(
             // The chat and the drawer are always composed, so what they wear is the truth;
             // a space's targets only exist once it is open, and go by the door rules.
             catalog = {
-                KeryxTour.catalog(context()).filter {
+                KeryxTour.catalog(tourContext()).filter {
                     (it.place != chat.keryx.core.tour.TourPlace.CHAT && it.place != chat.keryx.core.tour.TourPlace.DRAWER) ||
                         tourRegistry.isWorn(it.id)
                 }
             },
-            builtIn = { preset, ids -> KeryxTour.builtIn(preset, ids, context()) },
+            builtIn = { preset, ids -> KeryxTour.builtIn(preset, ids, tourContext()) },
         )
     }
     val tourStop = tour.run?.let { it.index to it.step.place }
@@ -356,29 +356,54 @@ fun HermesApp(viewModel: ChatViewModel) {
         if (worn && nav.top == hintDest && tour.hint(step)) viewModel.prefs.markHintSeen(id)
     }
 
+    // A tour asked for on arrival (the demo) starts before the chat has drawn: the stops are
+    // chosen from what is worn when it starts, so the model pill, a beat behind the composer,
+    // was left out. Wait until what the screen wears has held still a moment (at once from
+    // Settings, where it already has).
+    suspend fun awaitTourFloor() {
+        kotlinx.coroutines.withTimeoutOrNull(TOUR_ARRIVAL_WAIT_MS) {
+            var worn = emptyList<String>()
+            var stillSince = System.currentTimeMillis()
+            while (true) {
+                val now = KeryxTour.ALL.filter(tourRegistry::isWorn)
+                if (now != worn) { worn = now; stillSince = System.currentTimeMillis() }
+                if (KeryxTour.COMPOSER in worn && System.currentTimeMillis() - stillSince >= TOUR_ARRIVAL_SETTLE_MS) break
+                kotlinx.coroutines.delay(50)
+            }
+        }
+    }
+
     // Settings' "Take the tour": the chat floor first, then the first stop.
     LaunchedEffect(Unit) {
         viewModel.tourRequested.collect { preset ->
             if (preset == null) return@collect
             viewModel.consumeTour()
             nav.home()
-            // A tour asked for on arrival (the demo) starts before the chat has drawn: the stops
-            // are chosen from what is worn when it starts, so the model pill, a beat behind the
-            // composer, was left out. Wait until what the screen wears has held still a moment
-            // (at once from Settings, where it already has).
-            kotlinx.coroutines.withTimeoutOrNull(TOUR_ARRIVAL_WAIT_MS) {
-                var worn = emptyList<String>()
-                var stillSince = System.currentTimeMillis()
-                while (true) {
-                    val now = KeryxTour.ALL.filter(tourRegistry::isWorn)
-                    if (now != worn) { worn = now; stillSince = System.currentTimeMillis() }
-                    if (KeryxTour.COMPOSER in worn && System.currentTimeMillis() - stillSince >= TOUR_ARRIVAL_SETTLE_MS) break
-                    kotlinx.coroutines.delay(50)
-                }
-            }
+            awaitTourFloor()
             chat.keryx.app.util.KLog.i("KeryxTour") { "start $preset worn=${KeryxTour.ALL.filter(tourRegistry::isWorn)}" }
             val result = tour.start(preset)
             if (!result.success) result.error?.let { viewModel.toast(it) }
+        }
+    }
+
+    // "What's new" (3.0): once, on the first launch of the release for someone who used Keryx
+    // before it (the welcome marks a fresh install seen), and from Settings › About. Never in the
+    // demo, never over a tour or a hint, and not on a launch that opened on an approval: that
+    // launch is for answering it, so the look waits for the next one.
+    LaunchedEffect(Unit) {
+        if (viewModel.isDemo || !viewModel.prefs.whatsNewDue) return@LaunchedEffect
+        awaitTourFloor()
+        val atRest = tour.run == null && nav.top == null &&
+            tourRegistry.isWorn(KeryxTour.COMPOSER) && !tourRegistry.isWorn(KeryxTour.APPROVAL)
+        if (atRest) viewModel.requestWhatsNew()
+    }
+    LaunchedEffect(Unit) {
+        viewModel.whatsNewRequested.collect { asked ->
+            if (!asked) return@collect
+            viewModel.consumeWhatsNew()
+            nav.home()
+            awaitTourFloor()
+            if (tour.startSteps { ids -> KeryxTour.whatsNew(ids, tourContext()) }) viewModel.prefs.markWhatsNewSeen()
         }
     }
 

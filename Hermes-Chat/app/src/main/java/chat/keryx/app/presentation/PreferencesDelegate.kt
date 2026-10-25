@@ -26,6 +26,14 @@ class PreferencesDelegate(private val settings: SettingsRepository) {
         settings.hintsSeen = emptySet()
     }
 
+    /** "What's new" hasn't shown for this release yet. */
+    val whatsNewDue: Boolean
+        get() = settings.whatsNewSeen != chat.keryx.app.presentation.tour.KeryxTour.WHATS_NEW_RELEASE
+
+    fun markWhatsNewSeen() {
+        settings.whatsNewSeen = chat.keryx.app.presentation.tour.KeryxTour.WHATS_NEW_RELEASE
+    }
+
     private val _isDarkTheme = MutableStateFlow<Boolean?>(null) // null = system default
     val isDarkTheme: StateFlow<Boolean?> = _isDarkTheme.asStateFlow()
 

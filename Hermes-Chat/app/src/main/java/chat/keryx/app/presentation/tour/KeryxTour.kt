@@ -116,4 +116,50 @@ object KeryxTour {
         )
         return (if (preset == TourPreset.QUICK) quick else full).filter { it.target == null || it.target in available }
     }
+
+    /** Which release [whatsNew] describes. Stored once it has shown, so it shows once per release. */
+    const val WHATS_NEW_RELEASE = "3.0"
+
+    /**
+     * "What's new in 3.0", for someone who used Keryx before it: a handful of stops on the real
+     * controls, narrowed to what [available] holds like the built-in tour. A fresh install never
+     * sees it (the welcome marks it seen); Settings › About replays it.
+     */
+    fun whatsNew(available: Set<String>, ctx: Context): List<TourStep> = listOfNotNull(
+        TourStep(
+            null, "What's new in Keryx 3.0",
+            "A quick look at what changed. Skip it if you like: it stays in Settings › About.",
+        ),
+        // The agent pointing comes through Hermes Link on the direct door; Matrix never sees it.
+        if (ctx.direct) TourStep(
+            COMPOSER, "Ask where something is",
+            "Ask your agent \"where are my scheduled jobs?\" and it can point at the place, right here on " +
+                "the phone. Your gateway needs keryx-stream 0.6 or newer.",
+        ) else null,
+        TourStep(
+            MODEL, "Chat memory",
+            "The ring beside the model now says how many replies this chat has room for, and only once it " +
+                "matters. Tap it to see what's using the room.",
+        ),
+        if (ctx.direct) TourStep(
+            LENSES, "A redrawn drawer",
+            "Each chat has its own colour and mark, a ring shows the ones at work, and these filters narrow " +
+                "the list to what needs you.",
+        ) else TourStep(
+            DRAWER_BUTTON, "A redrawn drawer",
+            "Each chat has its own colour and mark, and a ring shows the ones at work.",
+        ),
+        TourStep(
+            MISSIONS, "Cards in plain words",
+            "A mission card now opens on what's going on and the one thing to do next. The technical " +
+                "details are still there, under Details.",
+        ),
+        TourStep(
+            MACHINE, "Look and updates",
+            "Settings › Appearance has new thinking styles and five ways to move between chats. " +
+                if (ctx.direct) "With a recent keryx-stream, the Gateway's Update panel lets you pick Stable releases " +
+                    "or Edge. To add another Hermes, run hermes keryx pair on it and scan the code." else
+                    "The tour and the space hints live in Settings › About.",
+        ),
+    ).filter { it.target == null || it.target in available }
 }

@@ -325,6 +325,10 @@ class SettingsRepositoryImpl(
         get() = prefs.getStringSet("hints_seen", emptySet())?.toSet() ?: emptySet()
         set(value) = prefs.edit().putStringSet("hints_seen", value).apply()
 
+    override var whatsNewSeen: String
+        get() = prefs.getString("whats_new_seen", "") ?: ""
+        set(value) = prefs.edit().putString("whats_new_seen", value).apply()
+
     override var gatewayUrl: String
         get() = (prefs.getString(ledgerKey("gateway_url"), "") ?: "").ifBlank { defaultGatewayUrl() }
         set(value) = prefs.edit().putString(ledgerKey("gateway_url"), value).apply()

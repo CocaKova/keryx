@@ -1571,6 +1571,12 @@ class ChatViewModel(
     fun requestTour(preset: chat.keryx.core.tour.TourPreset) { _tourRequested.value = preset }
     fun consumeTour() { _tourRequested.value = null }
 
+    /** "What's new" asked for: once on the first launch of a release, or from Settings › About. */
+    private val _whatsNewRequested = MutableStateFlow(false)
+    val whatsNewRequested: StateFlow<Boolean> = _whatsNewRequested.asStateFlow()
+    fun requestWhatsNew() { _whatsNewRequested.value = true }
+    fun consumeWhatsNew() { _whatsNewRequested.value = false }
+
     /** The agent pointing at the phone (`keryx_tour`, keryx-stream 0.6): each call as it starts.
      *  The app root runs it on the tour on screen and answers with [answerAgentTour]. The direct
      *  door only: Matrix never sees the call, and the demo has no agent. */

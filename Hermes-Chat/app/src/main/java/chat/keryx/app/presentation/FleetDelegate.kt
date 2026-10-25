@@ -281,6 +281,8 @@ class FleetDelegate(
 
     fun answerWelcome() {
         settings.welcomeSeen = true
+        // A first install has nothing "new" to be shown: everything is.
+        settings.whatsNewSeen = chat.keryx.app.presentation.tour.KeryxTour.WHATS_NEW_RELEASE
     }
 
     /** Leave the demo for the sign-in, on the gateway door. The caller relaunches. */

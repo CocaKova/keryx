@@ -111,4 +111,18 @@ class KeryxTourTest {
         // off the right edge.
         assertEquals(IntOffset(1080 - 16 - 600, 1300 + 14), place(door, TourSide.RIGHT))
     }
+
+    @Test
+    fun `What's new opens with narration and only points at what the door draws`() {
+        for (ctx in listOf(direct, matrix)) {
+            val offered = ids(ctx)
+            val steps = KeryxTour.whatsNew(offered, ctx)
+            assertNull("the opener is narration, mid-screen", steps.first().target)
+            assertTrue(steps.drop(1).all { it.target in offered })
+            assertTrue("a look, not a tour: a handful of stops", steps.size in 3..6)
+        }
+        // Matrix never sees the agent's pointing, so What's new doesn't promise it there.
+        assertFalse(KeryxTour.whatsNew(ids(matrix), matrix).any { "point at" in (it.text ?: "") })
+        assertTrue(KeryxTour.whatsNew(ids(direct), direct).any { it.target == KeryxTour.COMPOSER })
+    }
 }
