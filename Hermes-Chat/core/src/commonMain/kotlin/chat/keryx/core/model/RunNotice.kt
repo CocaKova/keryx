@@ -66,6 +66,26 @@ object RunActivities {
     private fun RunActivity.inPhase(next: RunActivity.Phase): RunActivity =
         if (phase == next || running.isNotEmpty()) this else copy(phase = next)
 
+    /**
+     * A run the client should seal on its own, because the gateway never will. A turn can die
+     * with no completing frame — a local model's rejected `reasoning_effort` aborts with only a
+     * `❌` status line, no `error` and no `message.complete` — and the run would otherwise keep
+     * its notice, its busy mark and the keep-alive service up until the next turn on that session.
+     *
+     * Three exemptions keep this off a turn that is merely quiet, not dead:
+     * - a tool still out ([RunActivity.running] non-empty): a long tool call is legitimately silent;
+     * - [awaitingUser]: a turn paused on an approval or question is waiting on a person, not stalled;
+     * - any gateway frame within [windowMs] of [now] ([lastFrameAt]): a long think still streams
+     *   reasoning deltas, which count as frames, so it is never mistaken for dead.
+     */
+    fun isStalled(
+        a: RunActivity,
+        now: Long,
+        lastFrameAt: Long,
+        windowMs: Long,
+        awaitingUser: Boolean,
+    ): Boolean = a.running.isEmpty() && !awaitingUser && now - lastFrameAt > windowMs
+
     /** One line: what the agent is doing, in the transcript's own tool vocabulary. */
     fun line(a: RunActivity): String {
         val call = a.tool

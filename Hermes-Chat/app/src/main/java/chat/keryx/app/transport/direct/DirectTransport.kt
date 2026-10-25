@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
@@ -107,6 +108,18 @@ class DirectTransport(
         private const val TURN_RATES_KEPT = 240
 /** How long a Stop waits for the gateway's own `message.complete` before sealing the stream itself. */
 private const val INTERRUPT_SEAL_MS = 4_000L
+/**
+ * A turn can die with no sealing frame: a local model's rejected `reasoning_effort` aborts with
+ * only a `❌` status.update — no `error`, no `message.complete` (see the status.update handler).
+ * Nothing then clears the run, so its notice, the drawer's busy dot and the keep-alive service
+ * stay up until the next turn on that session. If a run sees no gateway frame AND has no tool
+ * still out for this long, seal it ourselves, the way an un-acked Stop is sealed. Matched to the
+ * in-chat trust window (ChatViewModel.QUIET_LONG_MS = 240 s) so a long silent think is never cut
+ * short — and a tool that is still out is exempt regardless, since a long tool call is silent.
+ */
+private const val RUN_IDLE_SEAL_MS = 240_000L
+/** How often the janitor looks for a stalled run, and only while one is live. */
+private const val RUN_IDLE_SWEEP_MS = 20_000L
 
         /**
          * Transcript rows per history page. Well under the server's 500 cap on purpose:
@@ -264,6 +277,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
             r.connect(scope)
             pumpJob = scope.launch { r.events.collect(::onEvent) }
             requestJob = scope.launch { r.serverRequests.collect(::onServerRequest) }
+            ensureRunJanitor()
             stateJob = scope.launch {
                 r.state.collect { st ->
                     _linkState.value = when (st) {
@@ -376,6 +390,10 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         }
         val storedId = liveToStored[ev.sessionId] ?: return
         val store = stores[storedId] ?: return
+        // Every handled frame is proof the turn is still alive. The janitor seals a run that
+        // stops producing frames with no tool out (RUN_IDLE_SEAL_MS) — reasoning deltas count,
+        // so a long silent think keeps refreshing this and is never mistaken for a dead turn.
+        lastFrameAt[storedId] = System.currentTimeMillis()
         val p = ev.payload
         fun pStr(key: String) = p?.get(key)?.primitiveOrNull?.contentOrNull
         // A failed turn's descriptor (2.10): `error_surface` {layer, code, retryable} beside the
@@ -740,6 +758,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         // its own honest timeout.
         _runs.value = emptyMap()
         _busyStored.value = emptySet()
+        lastFrameAt.clear()
         scope.launch { refreshSessions() }
         scope.launch {
             // Re-open what the user actually has open. Sessions are only in `stores` once
@@ -2836,6 +2855,66 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         _runs.value = if (busy) _runs.value + (storedId to chat.keryx.core.model.RunActivity(storedId, System.currentTimeMillis()))
             else _runs.value - storedId
         _busyStored.value = if (busy) cur + storedId else cur - storedId
+        if (!busy) lastFrameAt.remove(storedId)
+    }
+
+    // --- stalled-run janitor ----------------------------------------------------------
+    // The last gateway frame seen per run, stamped in handleEvent; the seal is measured from it.
+    private val lastFrameAt = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    private var runJanitorJob: Job? = null
+
+    /** A turn legitimately paused on the user (a bare approval gate with no tool out); never seal it. */
+    private fun awaitingUser(storedId: String): Boolean =
+        asks.approval(storedId).value != null || asks.blocking(storedId).value != null
+
+    /**
+     * Start the one sweep loop, if it isn't already running. Tied to the connection lifecycle.
+     * It only ticks while a turn is live: with no run in flight it sits parked on [_runs] and
+     * never wakes, so an idle phone pays nothing for it.
+     */
+    private fun ensureRunJanitor() {
+        if (runJanitorJob?.isActive == true) return
+        runJanitorJob = scope.launch {
+            _runs.map { it.isNotEmpty() }.distinctUntilChanged().collectLatest { live ->
+                while (live) {
+                    delay(RUN_IDLE_SWEEP_MS)
+                    val now = System.currentTimeMillis()
+                    // A tool still out, or a turn waiting on the user, is legitimately silent — never
+                    // cut it. Everything else past the window is a turn that died without a seal.
+                    val stale = _runs.value.values
+                        .filter {
+                            chat.keryx.core.model.RunActivities.isStalled(
+                                it, now, lastFrameAt[it.sessionId] ?: it.startedAt,
+                                RUN_IDLE_SEAL_MS, awaitingUser(it.sessionId),
+                            )
+                        }
+                        .map { it.sessionId }
+                    for (storedId in stale) sealStalledRun(storedId)
+                }
+            }
+        }
+    }
+
+    /** Seal a run that stopped producing frames — the same close [interruptTurn] does after a Stop. */
+    private fun sealStalledRun(storedId: String) {
+        synchronized(pumpLock) {
+            // A frame may have landed, a tool gone out, or an ask been raised between the sweep's
+            // snapshot and here.
+            val run = _runs.value[storedId] ?: return
+            if (!chat.keryx.core.model.RunActivities.isStalled(
+                    run, System.currentTimeMillis(), lastFrameAt[storedId] ?: run.startedAt,
+                    RUN_IDLE_SEAL_MS, awaitingUser(storedId),
+                )
+            ) return
+            android.util.Log.w("KeryxGw", "run ${storedId.take(8)}: no frame for $RUN_IDLE_SEAL_MS ms, sealing locally")
+            stores[storedId]?.let { st ->
+                if (st.isStreaming) { st.streamComplete(finalText = "", error = false); settleRate(st, null, "") }
+            }
+        }
+        markBusy(storedId, false)
+        asks.setBlocking(storedId, null)
+        statusFlow(storedId).value = null
+        _turnEvents.tryEmit(chat.keryx.core.model.TurnEvent.End(storedId, "", error = false))
     }
 
     // --- what each running turn is doing (drives the shade's run notice) ---------------
@@ -3046,6 +3125,7 @@ private const val INTERRUPT_SEAL_MS = 4_000L
         stores.values.forEach { st -> st.followJob?.cancel(); st.followJob = null; st.agentTyping.value = false }
         _runs.value = emptyMap()
         _busyStored.value = emptySet()
+        lastFrameAt.clear()
         asks.clear()
         statusFlows.values.forEach { it.value = null }
     }
