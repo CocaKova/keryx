@@ -5,6 +5,15 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 2.19.2 · versionCode 140
+
+One fix, for gateways on Hermes 0.22.4 or newer.
+
+- Read marks, pin, archive, rename, hide and delete from a direct connection were refused by the
+  gateway, so a chat kept its unread dot however often it was opened. Keryx now sends the edit
+  fence those Hermes versions ask for, the way the official web client does. Older gateways get
+  the same request as before.
+
 ## 2.19.1 · versionCode 139
 
 A polish pass: a code audit (transport, speed, release safety) and a walk through every
