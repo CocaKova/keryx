@@ -19,6 +19,18 @@ internal fun MacrobenchmarkScope.keryxJourney() {
     device.wait(Until.hasObject(By.pkg(PACKAGE).depth(0)), 5_000)
     device.waitForIdle()
 
+    // A fresh install opens on the welcome: walk the demo instead, so the profile holds the chat
+    // and the drawer and not only the sign-in form. The demo relaunches the app (this journey runs
+    // in its own process, so that's fine), arrives with its tour up, and BACK ends the tour. The
+    // demo is remembered, so later passes start in it.
+    device.findObject(By.pkg(PACKAGE).text("Look around first"))?.let { demo ->
+        demo.click()
+        device.wait(Until.hasObject(By.pkg(PACKAGE).descStartsWith("Menu")), 15_000)
+        device.waitForIdle()
+        device.pressBack()
+        device.waitForIdle()
+    }
+
     // The transcript is the screen's first scrollable list.
     device.findObject(By.pkg(PACKAGE).scrollable(true))?.let { list ->
         list.setGestureMargin(device.displayWidth / 5)
