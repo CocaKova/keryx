@@ -1,5 +1,7 @@
 package chat.keryx.app.transport.direct
 
+import chat.keryx.core.model.RoomProfile
+
 /**
  * Fold a short "most recently active" page into the roster already held (2.17.1).
  *
@@ -25,3 +27,17 @@ internal fun mergeRecent(
 /** [rows] without any a newer row's compaction lineage has replaced. */
 internal fun dropSuperseded(rows: List<GatewayRest.SessionRow>): List<GatewayRest.SessionRow> =
     chat.keryx.core.model.SessionTree.dropSuperseded(rows, { it.id }, { it.lineage })
+
+/**
+ * The chats this phone minted that the gateway's list does not carry yet, and no others (3.0).
+ *
+ * A placeholder only bridges the gap until its chat is first listed. Once the list names it, under
+ * its own id or under the id compaction moved it to, the listed row IS that conversation. Kept past
+ * that point, it came back as a second "New session" row the moment a compaction gave the chat a
+ * new id and the old one left the list.
+ */
+internal fun unlistedPending(
+    pending: List<RoomProfile>,
+    listed: Set<String>,
+    forwarded: (String) -> String,
+): List<RoomProfile> = pending.filterNot { it.id in listed || forwarded(it.id) in listed }

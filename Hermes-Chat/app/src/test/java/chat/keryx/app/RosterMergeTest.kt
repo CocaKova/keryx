@@ -2,6 +2,9 @@ package chat.keryx.app
 
 import chat.keryx.app.transport.direct.GatewayRest
 import chat.keryx.app.transport.direct.mergeRecent
+import chat.keryx.app.transport.direct.unlistedPending
+import chat.keryx.core.model.RoomProfile
+import chat.keryx.core.model.RoomType
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -40,5 +43,22 @@ class RosterMergeTest {
         val held = listOf(row("a", 30), row("root", 20))
         val out = mergeRecent(held, listOf(row("tip", 40, lineage = listOf("root", "tip"))))
         assertEquals(listOf("tip", "a"), out.map { it.id })
+    }
+
+    private fun placeholder(id: String) = RoomProfile(id = id, name = "New session", type = RoomType.DIRECT_MESSAGE)
+
+    @Test
+    fun `a placeholder stays until its chat is listed`() {
+        val pending = listOf(placeholder("p"))
+        assertEquals(listOf("p"), unlistedPending(pending, setOf("a"), { it }).map { it.id })
+        assertEquals(emptyList<String>(), unlistedPending(pending, setOf("p"), { it }).map { it.id })
+    }
+
+    @Test
+    fun `a placeholder whose chat compacted to a new id does not come back as a second row`() {
+        // The phone minted "p"; compaction moved it to "tip", and the list now names only the tip.
+        val forward = mapOf("p" to "tip")
+        val out = unlistedPending(listOf(placeholder("p"), placeholder("q")), setOf("tip")) { forward[it] ?: it }
+        assertEquals(listOf("q"), out.map { it.id })
     }
 }

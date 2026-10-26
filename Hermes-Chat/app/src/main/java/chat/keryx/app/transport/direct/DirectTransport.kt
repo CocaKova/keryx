@@ -1050,6 +1050,11 @@ private const val RUN_IDLE_SWEEP_MS = 20_000L
             learnLineage(live)
             _sessionRows.value = dropSuperseded(live + tail)
             if (tail.isEmpty()) _hasMoreSessions.value = rows.size >= SESSION_PAGE
+            // A chat the list now carries needs its placeholder no longer (3.0, [unlistedPending]).
+            val listed = live.flatMapTo(HashSet()) { it.lineage + it.id }
+            val pending = _pendingNew.value
+            val unlisted = unlistedPending(pending, listed, ::forwarded)
+            if (unlisted.size != pending.size) _pendingNew.value = unlisted
         }
         // Sessions started from an app on ANOTHER profile (2.17.3): the launch list cannot
         // carry them, so they come from the cross-profile page — `tui` only, which is what
@@ -1352,7 +1357,7 @@ private const val RUN_IDLE_SWEEP_MS = 20_000L
             // Bots keep the roster's head (the Bots door orders them itself); everything else
             // is one list, newest activity first — a chat minted here and not yet listed, a
             // row just spoken into, and the gateway's page, in the one order that matters.
-            val conversations = pending.filterNot { it.id in known } + server.filterNot { it.id in botIds }
+            val conversations = unlistedPending(pending, known, ::forwarded) + server.filterNot { it.id in botIds }
             bots + RosterOrder.byActivity(RosterOrder.withLocalStamps(conversations, stamps))
         }
 
