@@ -267,6 +267,10 @@ class SettingsRepositoryImpl(
         get() = prefs.getString("room_transition", "dissolve") ?: "dissolve"
         set(value) = prefs.edit().putString("room_transition", value).apply()
 
+    override var roomTransitionSpeed: String
+        get() = prefs.getString("room_transition_speed", "normal") ?: "normal"
+        set(value) = prefs.edit().putString("room_transition_speed", value).apply()
+
     override var messageTextScale: Float
         get() = prefs.getFloat("message_text_scale", 1.0f)
         set(value) = prefs.edit().putFloat("message_text_scale", value).apply()

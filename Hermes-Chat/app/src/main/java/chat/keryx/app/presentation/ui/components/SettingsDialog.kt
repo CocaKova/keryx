@@ -971,6 +971,14 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = KeryxType.caption,
                             )
+                            Spacer(Modifier.height(12.dp))
+                            val speed by viewModel.prefs.roomTransitionSpeed.collectAsState()
+                            SettingsChoiceLabel("Transition speed")
+                            KeryxSegmented(
+                                options = RoomTransitionSpeed.entries.map { it.key to it.label },
+                                selected = speed.key,
+                                onSelect = { viewModel.prefs.setRoomTransitionSpeed(RoomTransitionSpeed.of(it)) },
+                            )
                         }
                     }
 

@@ -67,6 +67,24 @@ enum class RoomTransition(val key: String, val label: String, val blurb: String)
 }
 
 /**
+ * How fast a crossing plays (3.0, Settings › Appearance). It stretches the crossing's clock only:
+ * every style is drawn on its own timeline (`p * durationOf`), so its choreography stays whole.
+ * The wait for the drawer to clear and the room to arrive is not the crossing and stays as is.
+ */
+enum class RoomTransitionSpeed(val key: String, val label: String, val factor: Float) {
+    SLOW("slow", "Slow", 1.5f),
+    NORMAL("normal", "Normal", 1f),
+    FAST("fast", "Fast", 0.6f);
+
+    /** [ms] of a crossing at this speed. */
+    fun scaled(ms: Int): Int = (ms * factor).toInt()
+
+    companion object {
+        fun of(key: String?): RoomTransitionSpeed = entries.firstOrNull { it.key == key } ?: NORMAL
+    }
+}
+
+/**
  * The drawer's half of a crossing. The drawer covers the transcript while it is open, so that is
  * when the room you are leaving is photographed ([snapshots] ticks); and the last press inside the
  * drawer is where [RoomTransition.BLOOM] opens from. UI-only, process-wide, never persisted.
@@ -166,6 +184,7 @@ fun RoomCrossingEffect(
     style: RoomTransition,
     reduced: Boolean,
     arrived: (String) -> Boolean,
+    speed: RoomTransitionSpeed = RoomTransitionSpeed.NORMAL,
 ) {
     val active = style != RoomTransition.DISSOLVE && !reduced
     SideEffect {
@@ -216,7 +235,7 @@ fun RoomCrossingEffect(
         withTimeoutOrNull(ARRIVAL_WAIT_MS) { snapshotFlow { arrived(roomKey) }.first { it } }
         val left = HOLD_MS - (System.currentTimeMillis() - waited)
         if (left > 0) delay(left)
-        crossing.progress.animateTo(1f, tween(durationOf(style), easing = LinearEasing))
+        crossing.progress.animateTo(1f, tween(speed.scaled(durationOf(style)), easing = LinearEasing))
         crossing.release()
     }
 }

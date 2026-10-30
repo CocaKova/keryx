@@ -480,10 +480,12 @@ fun ChatScreen(
     // drawn by roomCrossing on the transcript, from a photo of the room taken while the drawer
     // covered it.
     val roomTransition by viewModel.prefs.roomTransition.collectAsState()
+    val roomTransitionSpeed by viewModel.prefs.roomTransitionSpeed.collectAsState()
     val crossing = chat.keryx.app.presentation.ui.components.rememberRoomCrossing()
     chat.keryx.app.presentation.ui.components.RoomCrossingEffect(
         crossing, currentRoom?.id, roomTransition, reduced = dissolveReduced,
         arrived = { key -> timelineState.value.of(key) != null },
+        speed = roomTransitionSpeed,
     )
     LaunchedEffect(currentRoom?.id) {
         val id = currentRoom?.id
@@ -505,7 +507,7 @@ fun ChatScreen(
             }
             val left = 230 - (System.currentTimeMillis() - waited)
             if (left > 0) kotlinx.coroutines.delay(left)
-            dissolve.animateTo(1f, tween(1050, easing = LinearOutSlowInEasing))
+            dissolve.animateTo(1f, tween(roomTransitionSpeed.scaled(1050), easing = LinearOutSlowInEasing))
         }
         lastRoomForDissolve = id
     }

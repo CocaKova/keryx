@@ -23,6 +23,8 @@ interface SettingsRepository {
     var bubbleStyle: String
     /** How the transcript crosses rooms (3.0): a [chat.keryx.app.presentation.ui.components.RoomTransition] key. */
     var roomTransition: String
+    /** How fast it plays (3.0): a [chat.keryx.app.presentation.ui.components.RoomTransitionSpeed] key. */
+    var roomTransitionSpeed: String
     /** Message text size multiplier (1.0 = default). */
     var messageTextScale: Float
     /** Characters per token, measured against the gateway's real output counts (2.16 honest

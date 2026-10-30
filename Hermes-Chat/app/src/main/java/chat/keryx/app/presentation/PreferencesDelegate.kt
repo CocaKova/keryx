@@ -97,6 +97,12 @@ class PreferencesDelegate(private val settings: SettingsRepository) {
     /** How the transcript crosses rooms (3.0, Appearance). */
     val roomTransition: StateFlow<chat.keryx.app.presentation.ui.components.RoomTransition> = _roomTransition.asStateFlow()
 
+    private val _roomTransitionSpeed = MutableStateFlow(
+        chat.keryx.app.presentation.ui.components.RoomTransitionSpeed.of(settings.roomTransitionSpeed)
+    )
+    /** How fast that crossing plays (3.0, Appearance). */
+    val roomTransitionSpeed: StateFlow<chat.keryx.app.presentation.ui.components.RoomTransitionSpeed> = _roomTransitionSpeed.asStateFlow()
+
     private val _showTelemetry = MutableStateFlow(settings.showTelemetry)
     val showTelemetry: StateFlow<Boolean> = _showTelemetry.asStateFlow()
 
@@ -167,6 +173,11 @@ class PreferencesDelegate(private val settings: SettingsRepository) {
     fun setRoomTransition(style: chat.keryx.app.presentation.ui.components.RoomTransition) {
         _roomTransition.value = style
         settings.roomTransition = style.key
+    }
+
+    fun setRoomTransitionSpeed(speed: chat.keryx.app.presentation.ui.components.RoomTransitionSpeed) {
+        _roomTransitionSpeed.value = speed
+        settings.roomTransitionSpeed = speed.key
     }
 
     fun setMessageTextScale(scale: Float) {
