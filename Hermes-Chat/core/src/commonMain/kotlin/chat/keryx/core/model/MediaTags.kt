@@ -89,11 +89,81 @@ object MediaTags {
         return Split(out.trim(), refs)
     }
 
+    // ---- `[Image attached at: <path>]` — the same photos on a native-vision turn ---------
+    // When the model takes the pixels itself, Hermes builds the turn as one text part (the
+    // caption, then an `[Image attached at: <path>]` line per photo; `[Image attached: <url>]`
+    // for a linked one — `agent/image_routing.py`, `build_native_content_parts`) followed by the
+    // image parts, and the turn's injected context — recalled memory, plugin context — rides
+    // after them as one more text part (`agent/turn_context.py`, `_append_multimodal_context`).
+    // The transcript keeps that list flattened: the text, one `[screenshot]` per image, then
+    // the context. A reloaded chat showed all of it in the user's own bubble, the memory block
+    // reading like a system prompt (device, 2026-10-25).
+    private val ATTACHED_LINE = Regex("""^[\t ]*\[Image attached(?: at)?: ([^\n\]]+)\][\t ]*$""")
+
+    // One stand-in per image part: the store's `[screenshot]` (with the detail a caller chose),
+    // the `inline_images=false` read's `[image]`, and the line the transport shows that as.
+    // A context part can follow the last one on the same line (the parts are joined bare).
+    private val STAND_IN = Regex("""^[\t ]*(?:\[screenshot(?: detail=\w+)?\]|\[image\]|🖼 image)""")
+
+    // Recalled memory's fence (`agent/memory_context.py`) — never the user's words, wherever it sits.
+    private val MEMORY_FENCE = Regex("""<memory-context>[\s\S]*?(?:</memory-context>|$)""")
+
+    // A tagged block on lines of its own, the way context is fenced for the model.
+    private val FENCED_BLOCK = Regex("""^<([A-Za-z][\w-]*)>\n[\s\S]*?\n</\1>[\t ]*$""", RegexOption.MULTILINE)
+
+    private fun hasUserRewrite(text: String): Boolean =
+        hasImageRef(text) || text.contains("[Image attached") || text.contains("<memory-context>")
+
+    private fun userImageRef(line: String): Ref? {
+        val v = (IMAGE_REF_LINE.find(line) ?: ATTACHED_LINE.find(line))?.groupValues?.get(1)?.let(::unquote)
+        return v?.takeIf(::looksLikeAddress)?.let(::ref)
+    }
+
+    /**
+     * A user row as the transcript stores it, back to what the user sent: the caption, one ref
+     * per photo in either stored form, the image stand-ins dropped, and what the turn appended
+     * after them — fenced context the model reads — left out. Anything else found there stays
+     * visible. A row without a photo keeps its stand-ins (nothing to say they were images).
+     */
+    fun splitUserRow(text: String): Split {
+        if (!hasUserRewrite(text)) return Split(text, emptyList())
+        val lines = text.split('\n')
+        val refs = ArrayList<Ref>()
+        val prose = ArrayList<String>()
+        var tail = ""
+        var i = 0
+        while (i < lines.size) {
+            val line = lines[i++]
+            val ref = userImageRef(line)
+            val stand = if (refs.isEmpty()) null else STAND_IN.find(line)
+            if (ref != null) {
+                refs += ref
+            } else if (stand != null) {
+                // The stand-ins close the user's part; the rest of the row was appended to it.
+                var rest = line.substring(stand.range.last + 1)
+                while (rest.isEmpty() && i < lines.size) {
+                    val next = STAND_IN.find(lines[i]) ?: break
+                    rest = lines[i++].substring(next.range.last + 1)
+                }
+                tail = (listOf(rest) + lines.subList(i, lines.size)).joinToString("\n")
+                break
+            } else {
+                prose += line
+            }
+        }
+        if (refs.isEmpty()) {
+            return Split(if (MEMORY_FENCE.containsMatchIn(text)) MEMORY_FENCE.replace(text, "").trim() else text, emptyList())
+        }
+        val said = MEMORY_FENCE.replace(prose.joinToString("\n"), "").trim()
+        val appended = FENCED_BLOCK.replace(MEMORY_FENCE.replace(tail, ""), "").trim()
+        return Split(listOf(said, appended).filter { it.isNotEmpty() }.joinToString("\n\n"), refs)
+    }
+
     /** How a lifted media row's id names the row it came out of: `<row id>#media:<n>`. */
     const val MEDIA_ID_SEP = "#media:"
 
     /**
-     * Every finished agent row's `MEDIA:` lines (and every user row's `@image:` lines) lifted
+     * Every finished agent row's `MEDIA:` lines (and every user row's photos, [splitUserRow]) lifted
      * out into media rows of their own, right after the prose that named them, ids
      * `<row>`[MEDIA_ID_SEP]`<n>`. The prose row stays when anything is left of it. [onRef] hears
      * each lifted id and the path it names, so a transport can fetch the bytes later.
@@ -102,15 +172,19 @@ object MediaTags {
     fun expand(list: List<Message>, onRef: (id: String, path: String) -> Unit = { _, _ -> }): List<Message> {
         fun carries(m: Message): Boolean = !m.isStreaming && m.mediaKind == null && when (m.sender) {
             SenderType.HERMES -> hasTag(m.content)
-            SenderType.ME -> hasImageRef(m.content)
+            SenderType.ME -> hasUserRewrite(m.content)
             else -> false
         }
         if (list.none(::carries)) return list
         return buildList(list.size + 4) {
             for (m in list) {
                 if (!carries(m)) { add(m); continue }
-                val split = if (m.sender == SenderType.ME) splitImageRefs(m.content) else split(m.content)
-                if (split.refs.isEmpty()) { add(m); continue }
+                val split = if (m.sender == SenderType.ME) splitUserRow(m.content) else split(m.content)
+                if (split.refs.isEmpty()) {
+                    // A user row can lose a memory block without carrying a photo.
+                    add(if (m.sender == SenderType.ME && split.text != m.content) m.copy(content = split.text) else m)
+                    continue
+                }
                 if (split.text.isNotBlank() || m.toolCalls.isNotEmpty() || m.reasoning != null) add(m.copy(content = split.text))
                 split.refs.forEachIndexed { i, ref ->
                     val id = "${m.id}$MEDIA_ID_SEP$i"
