@@ -16,7 +16,7 @@ object KnownWire {
 
     /** Tools the app draws by name: verbs, families, targets, gerund lines. */
     val TOOLS: Set<String> = setOf(
-        "browser_click", "browser_navigate", "browser_type", "clarify", "computer_use",
+        "clarify", "computer_use",
         "cronjob_manage", "delegate_task", "execute_code", "gui_tour", "ha_call_service",
         "ha_get_state", "ha_list_entities", "ha_list_services", "image_generate",
         "manage_connections", "memory", "patch", "process_manage", "react_to_message",
@@ -55,11 +55,13 @@ object KnownWire {
 
     /**
      * Names kept for old transcripts and older gateways — expected to be absent from a
-     * current Hermes. The renamed five come from [ToolWire.LEGACY_ALIASES]; the rest predate it.
+     * current Hermes. The renamed five come from [ToolWire.LEGACY_ALIASES]; the browser three went
+     * with Hermes's built-in browser tools (10-26, now `browser_exec`); the rest predate it.
      */
     val LEGACY_TOOLS: Set<String> = setOf(
         "todo", "cronjob", "process", "tour", "tip",
         "list_files", "edit_file", "session_search_recall",
+        "browser_click", "browser_navigate", "browser_type",
     )
 
     /** Gateway JSON-RPC methods the app calls. */
