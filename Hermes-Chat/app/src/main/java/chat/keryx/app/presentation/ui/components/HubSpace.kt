@@ -85,7 +85,14 @@ data class HubPanel(
      *  one this gateway (or this door) doesn't have — an older Hermes hides the door, it
      *  doesn't show one that only ever errors. */
     val shown: @Composable (ChatViewModel) -> Boolean = { true },
+    /** The labelled card the landing files it under (makeover) — [AGENT_GROUPS] orders them. */
+    val group: String = "Machine",
+    /** A short count or value at the row's end ("12", "9 of 12"); null for none. */
+    val trailing: @Composable (ChatViewModel) -> String? = { null },
 )
+
+/** The landing's cards, in order: what the agent thinks with, reaches, does, and is. */
+val AGENT_GROUPS = listOf("Mind", "Reach", "Work", "Self", "Machine")
 
 private const val HUB_POLL_MS = 10_000L
 private const val LANDING = "status"
@@ -102,6 +109,7 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
             caps?.model?.takeIf { it.isNotBlank() }?.let { "Brain · $it" } ?: "Brain, knobs, config"
         },
         content = { ControlsTab(it.viewModel) },
+        group = "Mind",
     ),
     HubPanel(
         id = "update",
@@ -110,6 +118,7 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
         refresh = { vm -> vm.hermesUpdate.refresh() },
         subtitle = { vm -> updateSubtitle(vm) },
         content = { UpdateTab(it.viewModel) },
+        group = "Machine",
         shown = { vm ->
             val available by vm.hermesUpdate.available.collectAsState()
             available != false
@@ -121,11 +130,13 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
         icon = KeryxGlyphs.Calendar,
         live = true,
         refresh = { vm -> vm.hub.refreshJobs() },
-        subtitle = { vm ->
-            val jobs by vm.hub.jobs.collectAsState()
-            jobs.data?.let { "${it.size} scheduled" } ?: "Schedules the agent keeps"
-        },
+        subtitle = { "Schedules the agent keeps" },
         content = { JobsTab(it.viewModel) },
+        group = "Work",
+        trailing = { vm ->
+            val jobs by vm.hub.jobs.collectAsState()
+            jobs.data?.size?.toString()
+        },
     ),
     HubPanel(
         id = "sessions",
@@ -133,22 +144,26 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
         icon = KeryxGlyphs.Stack,
         live = true,
         refresh = { vm -> vm.hub.refreshSessions() },
-        subtitle = { vm ->
-            val sessions by vm.hub.sessions.collectAsState()
-            sessions.data?.let { "${it.size} recent" } ?: "Every transcript, resume or prune"
-        },
+        subtitle = { "Every transcript, resume or prune" },
         content = { SessionsTab(it.viewModel, it.closeSpace) },
+        group = "Work",
+        trailing = { vm ->
+            val sessions by vm.hub.sessions.collectAsState()
+            sessions.data?.size?.toString()
+        },
     ),
     HubPanel(
         id = "skills",
         label = "Skills",
         icon = KeryxGlyphs.Star,
         refresh = { vm -> vm.hub.refreshSkills() },
-        subtitle = { vm ->
-            val skills by vm.hub.skills.collectAsState()
-            skills.data?.let { "${it.size} learned" } ?: "What the agent knows how to do"
-        },
+        subtitle = { "What the agent knows how to do" },
         content = { SkillsTab(it.viewModel) },
+        group = "Mind",
+        trailing = { vm ->
+            val skills by vm.hub.skills.collectAsState()
+            skills.data?.size?.toString()
+        },
     ),
     HubPanel(
         id = "memory",
@@ -157,6 +172,7 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
         refresh = { vm -> vm.memory.refresh() },
         subtitle = { vm -> memorySubtitle(vm) },
         content = { MemoryTab(it.viewModel) },
+        group = "Mind",
         shown = { vm ->
             val available by vm.memory.available.collectAsState()
             vm.transportIsDirect && available != false
@@ -167,11 +183,64 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
         label = "Tools",
         icon = KeryxGlyphs.Plug,
         refresh = { vm -> vm.hub.refreshToolsets() },
-        subtitle = { vm ->
-            val toolsets by vm.hub.toolsets.collectAsState()
-            toolsets.data?.let { t -> "${t.toolsets.size} toolsets" } ?: "What the agent can reach"
-        },
+        subtitle = { "Toolsets the agent can call" },
         content = { ToolsTab(it.viewModel) },
+        group = "Reach",
+        trailing = { vm ->
+            val toolsets by vm.hub.toolsets.collectAsState()
+            toolsets.data?.toolsets?.size?.toString()
+        },
+    ),
+    // The makeover's two new rooms: stock dashboard routes, the ones Hermes Mobile reads.
+    HubPanel(
+        id = "mcp",
+        label = "MCP servers",
+        icon = KeryxGlyphs.Routes,
+        refresh = { vm -> vm.agent.refreshMcp() },
+        subtitle = { vm ->
+            val mcp by vm.agent.mcp.collectAsState()
+            mcp.data?.filter { it.enabled }?.take(3)?.joinToString(", ") { it.name }?.ifBlank { null }
+                ?: "Outside services, switched on or off"
+        },
+        content = { McpTab(it.viewModel) },
+        shown = { vm ->
+            // Only once the gateway has answered: no door (Matrix, the demo) means no row at all.
+            val available by vm.agent.mcpAvailable.collectAsState()
+            vm.transportIsDirect && available == true
+        },
+        group = "Reach",
+        trailing = { vm ->
+            val mcp by vm.agent.mcp.collectAsState()
+            mcp.data?.let { l -> "${l.count { it.enabled }} of ${l.size}" }
+        },
+    ),
+    HubPanel(
+        id = "soul",
+        label = "Soul",
+        icon = KeryxGlyphs.Star,
+        refresh = { vm -> vm.agent.refreshSoul() },
+        subtitle = { vm ->
+            val soul by vm.agent.soul.collectAsState()
+            soul.data?.let { s -> if (s.exists) soulGist(s.content) else "Not written — the stock persona" }
+                ?: "Who the agent is, in its own file"
+        },
+        content = { SoulTab(it.viewModel) },
+        shown = { vm ->
+            // Only once the gateway has answered: no door (Matrix, the demo) means no row at all.
+            val available by vm.agent.soulAvailable.collectAsState()
+            vm.transportIsDirect && available == true
+        },
+        group = "Self",
+    ),
+    HubPanel(
+        id = "health",
+        label = "Status",
+        icon = KeryxGlyphs.Pulse,
+        live = true,
+        refresh = { vm -> vm.hub.refreshHealth(); vm.hub.refreshModels() },
+        subtitle = { "Health, platforms, models, last turn" },
+        content = { StatusTab(it.viewModel, it.health, it.closeSpace) },
+        group = "Machine",
     ),
 )
 
@@ -247,33 +316,70 @@ fun GatewaySpace(viewModel: ChatViewModel, health: LinkHealth, onDismiss: () -> 
         // pair every other place uses.
         AnimatedContent(
             targetState = spoke,
-            transitionSpec = { keryxPop().togetherWith(keryxVanish()) },
+            // Deeper slides in from the right, home slides back — the Settings move (makeover).
+            transitionSpec = {
+                val deeper = targetState != null
+                val sign = if (deeper) 1 else -1
+                (androidx.compose.animation.slideInHorizontally(KeryxMotion.settleInt) { w -> sign * w / 5 } +
+                    androidx.compose.animation.fadeIn(KeryxMotion.settle))
+                    .togetherWith(
+                        androidx.compose.animation.slideOutHorizontally(KeryxMotion.leaveInt) { w -> -sign * w / 8 } +
+                            androidx.compose.animation.fadeOut(KeryxMotion.leave),
+                    )
+            },
             label = "gatewaySpoke",
             modifier = Modifier.fillMaxSize(),
         ) { page ->
             Box(modifier = Modifier.fillMaxSize()) {
                 if (page == null) {
-                    StatusTab(viewModel, health, onDismiss, spokes = {
-                        gatewaySpokeRows(viewModel) { spokeId = it }
-                    })
+                    AgentLanding(viewModel, health, onDismiss) { spokeId = it }
                 } else page.content(scope)
             }
         }
     }
 }
 
-/** The spoke rows on the landing — one [KeryxHubRow] each, subtitled from live state. */
-private fun LazyListScope.gatewaySpokeRows(viewModel: ChatViewModel, open: (String) -> Unit) {
-    item(key = "spokes-label") {
-        Spacer(Modifier.height(6.dp))
-        SectionLabel("Rooms of the machine")
+/**
+ * The landing (makeover): the agent itself up top, three live numbers, then every spoke filed
+ * into its labelled card with a count at the end — the Hermes Mobile bot page. The old landing's
+ * brain rows, platforms and models live one tap down in Status.
+ */
+@Composable
+private fun AgentLanding(
+    viewModel: ChatViewModel,
+    health: LinkHealth,
+    onDismiss: () -> Unit,
+    open: (String) -> Unit,
+) {
+    val panel by viewModel.hub.health.collectAsState()
+    val console by viewModel.console.ui.collectAsState()
+    androidx.compose.foundation.lazy.LazyColumn(
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, bottom = 28.dp),
+    ) {
+        item(key = "hero") { AgentHero(viewModel, health) }
+        item(key = "stats") { AgentStatStrip(viewModel, open) }
+        item(key = "error") { PanelErrorLine(panel.error) }
+        if (console.live) item(key = "live") {
+            KeryxHubGroup {
+                KeryxHubRow(KeryxGlyphs.Play, "Turn live", console.prompt.take(80)) { open("sessions") }
+            }
+        }
+        AGENT_GROUPS.forEach { group ->
+            item(key = "group-$group") {
+                val rows = GATEWAY_SPOKES.filter { it.group == group && it.shown(viewModel) }
+                if (rows.isNotEmpty()) KeryxHubGroup(group) {
+                    rows.forEachIndexed { i, p ->
+                        if (i > 0) KeryxHubDivider()
+                        KeryxHubRow(
+                            icon = p.icon, title = p.label, subtitle = p.subtitle(viewModel),
+                            trailing = p.trailing(viewModel), onClick = { open(p.id) },
+                        )
+                    }
+                }
+            }
+        }
+        item(key = "actions") { AgentQuickActions(viewModel, onDismiss) }
     }
-    items(GATEWAY_SPOKES.size, key = { "spoke-" + GATEWAY_SPOKES[it].id }) { i ->
-        val p = GATEWAY_SPOKES[i]
-        if (!p.shown(viewModel)) return@items
-        KeryxHubRow(icon = p.icon, title = p.label, subtitle = p.subtitle(viewModel), onClick = { open(p.id) })
-    }
-    item(key = "spokes-gap") { Spacer(Modifier.height(8.dp)) }
 }
 
 /** Link-health → status color, in the shared semantic palette. */

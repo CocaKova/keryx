@@ -619,6 +619,8 @@ class ChatViewModel(
     val groups = GroupsDelegate(deps, transport, isForeground = { isAppForeground?.invoke() != false })
     /** The Hub's Memory spoke (2.16) — dashboard routes, so the direct door's REST client. */
     val memory = MemoryDelegate(deps) { direct?.restClient }
+    /** The agent page's MCP and Soul spokes (makeover) — dashboard routes, direct door only. */
+    val agent = AgentDelegate(deps) { direct?.restClient }
     /** Export and share out (2.16): one session as a file, from the drawer's long-press menu. */
     val exports = SessionExportDelegate({ direct?.restClient }, { direct?.profileForSession(it) })
     /** Hermes update from the phone (2.16): the plugin's /keryx/update and the dashboard's routes. */

@@ -27,9 +27,18 @@ class HubRegistryTest {
         // 2.16: Memory sits with Skills — what the agent learned, beside what it remembers —
         // and Update with Controls, the other door that changes the machine.
         assertEquals(
-            listOf("Controls", "Update", "Jobs", "Sessions", "Skills", "Memory", "Tools"),
+            // Makeover (11-01): the agent page adds MCP and Soul (stock dashboard routes) and
+            // moves the old landing's health rows into a Status spoke. The landing now reads
+            // them by group, so this order is the order inside each card.
+            listOf("Controls", "Update", "Jobs", "Sessions", "Skills", "Memory", "Tools", "MCP servers", "Soul", "Status"),
             GATEWAY_SPOKES.map { it.label },
         )
+    }
+
+    @Test
+    fun `every spoke files under a card the landing draws`() {
+        val groups = chat.keryx.app.presentation.ui.components.AGENT_GROUPS
+        for (panel in panels) assertTrue("${panel.id} is in '${panel.group}', not a landing card", panel.group in groups)
     }
 
     @Test
@@ -60,7 +69,8 @@ class HubRegistryTest {
         assertEquals(
             // Runs polls too — inside its own door now (RunsSpace runs the 10s loop itself);
             // the landing's health polls on its own, outside this registry.
-            setOf("jobs", "sessions"),
+            // Status (makeover) is the old landing's health, which always polled.
+            setOf("jobs", "sessions", "health"),
             panels.filter { it.live }.map { it.id }.toSet(),
         )
     }
