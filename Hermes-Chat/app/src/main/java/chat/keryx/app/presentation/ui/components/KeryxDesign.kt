@@ -65,6 +65,8 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -851,6 +853,10 @@ private fun KeryxChoiceGrid(
  * A hub's row (2.10): glyph, title, one line of what is behind it, a chevron. Settings' section
  * list and the Gateway's spokes are the same row — one primitive, so "a place with rooms in it"
  * reads the same wherever the app has one. [badge] pins a count to the glyph's corner.
+ *
+ * Inside a [KeryxHubGroup] (makeover) the row drops its own tile and lies flat in the group's
+ * card; the group draws the ground and the hairlines. [trailing] is a short value or count
+ * that sits before the chevron ("12", "Off"). The row sinks under the finger either way.
  */
 @Composable
 fun KeryxHubRow(
@@ -858,17 +864,21 @@ fun KeryxHubRow(
     title: String,
     subtitle: String,
     badge: Int = 0,
+    trailing: String? = null,
     onClick: () -> Unit,
 ) {
+    val grouped = LocalHubGroup.current
+    val source = remember { MutableInteractionSource() }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clip(RoundedCornerShape(KeryxRadius.card))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 14.dp),
+            .let { if (grouped) it else it.padding(vertical = 4.dp) }
+            .keryxPressScale(source, scale = if (grouped) GROUPED_PRESS_SCALE else KeryxMotion.PRESS_SCALE)
+            .clip(RoundedCornerShape(if (grouped) KeryxRadius.field else KeryxRadius.card))
+            .let { if (grouped) it else it.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)) }
+            .clickable(interactionSource = source, indication = androidx.compose.material3.ripple(), onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = if (grouped) 12.dp else 14.dp),
     ) {
         Box(modifier = Modifier.size(22.dp)) {
             Icon(
@@ -899,18 +909,70 @@ fun KeryxHubRow(
         Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.SemiBold, fontSize = KeryxType.title, color = MaterialTheme.colorScheme.onSurface)
-            Text(
+            if (subtitle.isNotBlank()) Text(
                 subtitle, fontSize = KeryxType.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
         }
+        if (!trailing.isNullOrBlank()) {
+            Spacer(Modifier.width(10.dp))
+            Text(
+                trailing, fontSize = KeryxType.body,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+        Spacer(Modifier.width(6.dp))
         Icon(
             KeryxGlyphs.ChevronRight, contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             modifier = Modifier.size(20.dp),
         )
     }
+}
+
+/** A row inside a group is part of a larger surface, so it sinks less than a lone tile. */
+private const val GROUPED_PRESS_SCALE = 0.985f
+
+/** True inside a [KeryxHubGroup]: rows lie flat in the group's card instead of wearing their own. */
+internal val LocalHubGroup = staticCompositionLocalOf { false }
+
+/**
+ * Rows that belong together, in one card under one small heading (makeover). Nine identical
+ * tiles read as nine equal things; three or four labelled cards read as a map. The rows inside
+ * are plain [KeryxHubRow]s, separated with [KeryxHubDivider].
+ */
+@Composable
+fun KeryxHubGroup(
+    label: String? = null,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(modifier = modifier.fillMaxWidth().padding(top = if (label != null) 16.dp else 12.dp)) {
+        if (label != null) KeryxSectionHeader(label, modifier = Modifier.padding(start = 6.dp, bottom = 8.dp))
+        val shape = RoundedCornerShape(KeryxRadius.sheet)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                .border(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f), shape)
+                .padding(4.dp),
+        ) {
+            CompositionLocalProvider(LocalHubGroup provides true) { content() }
+        }
+    }
+}
+
+/** The hairline between two rows of a [KeryxHubGroup], inset to start under the titles. */
+@Composable
+fun KeryxHubDivider() {
+    androidx.compose.material3.HorizontalDivider(
+        thickness = 0.5.dp,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+        modifier = Modifier.padding(start = 50.dp, end = 14.dp),
+    )
 }
 
 @Composable

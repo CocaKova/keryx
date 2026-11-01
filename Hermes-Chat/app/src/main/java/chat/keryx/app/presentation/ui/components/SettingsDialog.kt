@@ -140,11 +140,6 @@ fun SettingsScreen(
                 if (target != null) { section = target; focusId = entry.id }
                 viewModel.consumeSettingsJump()
             }
-            val scrollState = rememberScrollState()
-            var contentTop by remember { mutableStateOf(0f) }
-            val settingsFocus = remember(focusId, scrollState) {
-                SettingsFocus(target = focusId, scroll = scrollState, contentTop = { contentTop }) { focusId = null }
-            }
             var query by remember { mutableStateOf("") }
 
             Column(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)) {
@@ -173,6 +168,20 @@ fun SettingsScreen(
                     )
                 )
 
+                // Makeover: the hub and its pages slide like places, not swap like tabs — in
+                // from the right going deeper, back out to the right coming home, on the app's
+                // own springs. Each page keeps its own scroll, so coming back lands where you left.
+                val reduced by rememberReducedMotion()
+                androidx.compose.animation.AnimatedContent(
+                    targetState = section,
+                    transitionSpec = { settingsPageTransition(deeper = targetState != null, reduced = reduced) },
+                    label = "settingsPage",
+                ) { shown ->
+                val scrollState = rememberScrollState()
+                var contentTop by remember { mutableStateOf(0f) }
+                val settingsFocus = remember(focusId, scrollState) {
+                    SettingsFocus(target = focusId, scroll = scrollState, contentTop = { contentTop }) { focusId = null }
+                }
                 CompositionLocalProvider(LocalSettingsFocus provides settingsFocus) {
                 Column(
                     modifier = Modifier
@@ -188,7 +197,7 @@ fun SettingsScreen(
                     val hubHealth by viewModel.hub.health.collectAsState()
                     val petInfo by viewModel.pet.petInfo.collectAsState()
 
-                    if (section == null) {
+                    if (shown == null) {
                         Spacer(Modifier.height(4.dp))
                         // Search (2.10): every row in the app, by name or by the words you'd
                         // use for it; a hit opens its section scrolled to the row, lit for a
@@ -234,56 +243,76 @@ fun SettingsScreen(
                                 }
                             }
                         } else {
-                        KeryxHubRow(Icons.Default.Person, "Account",
-                            currentUserId ?: "Not signed in") { section = "Account" }
-                        KeryxHubRow(Icons.Default.Memory, "Agent",
-                            caps?.model?.takeIf { it.isNotBlank() } ?: "Brain, telemetry & alerts") { section = "Agent" }
-                        KeryxHubRow(Icons.Default.Pets, "Companion",
-                            petInfo?.displayName?.takeIf { it.isNotBlank() } ?: "The drawer mascot") { section = "Companion" }
-                        // One wire, one row (2.10): on the direct door the gateway IS the
-                        // connection and Hermes Link is its API server, so they share a page.
-                        // Matrix keeps two — the homeserver is one thing, the link another.
-                        if (direct) {
-                            val fleet by viewModel.doors.fleet.collectAsState()
-                            val where = fleet.active?.let { a ->
-                                if (fleet.hasChoice) "${a.name} · ${fleet.size} gateways" else "${a.name} · ${a.hostLabel}"
-                            } ?: viewModel.directGatewayUrl.ifBlank { "Address, certificates & Hermes Link" }
-                                .removePrefix("https://").removePrefix("http://")
-                            KeryxHubRow(Icons.Default.Dns, "Gateways",
-                                where + (if (sideChannelEnabled) " · linked" else "")) { section = "Gateway" }
+                        // Makeover: the rows sit in labelled groups, the Hermes Mobile way — a
+                        // map of the app, not nine equal tiles. Each subtitle says what is SET
+                        // ("Gilded bubbles · Constellation"), not what the page is about.
+                        KeryxHubGroup("Connection") {
+                            KeryxHubRow(Icons.Default.Person, "Account",
+                                currentUserId ?: "Not signed in") { section = "Account" }
+                            KeryxHubDivider()
+                            // One wire, one row (2.10): on the direct door the gateway IS the
+                            // connection and Hermes Link is its API server, so they share a page.
+                            // Matrix keeps two — the homeserver is one thing, the link another.
+                            if (direct) {
+                                val fleet by viewModel.doors.fleet.collectAsState()
+                                val active = fleet.active
+                                val where = active?.name
+                                    ?: viewModel.directGatewayUrl.ifBlank { "Address, certificates & Hermes Link" }
+                                        .removePrefix("https://").removePrefix("http://")
+                                KeryxHubRow(Icons.Default.Dns, "Gateways",
+                                    where + (if (sideChannelEnabled) " · linked" else ""),
+                                    trailing = if (fleet.hasChoice) fleet.size.toString() else null) { section = "Gateway" }
+                            }
+                            else {
+                                KeryxHubRow(Icons.Default.Dns, "Connection",
+                                    matrixUrl.ifBlank { "Homeserver & agent" }) { section = "Connection" }
+                                KeryxHubDivider()
+                                KeryxHubRow(Icons.Default.Bolt, "Hermes Link",
+                                    if (sideChannelEnabled) "Live token streaming" else "Off",
+                                    trailing = if (sideChannelEnabled) "On" else null) { section = "Hermes Link" }
+                            }
                         }
-                        else {
-                            KeryxHubRow(Icons.Default.Dns, "Connection",
-                                matrixUrl.ifBlank { "Homeserver & agent" }) { section = "Connection" }
-                            KeryxHubRow(Icons.Default.Bolt, "Hermes Link",
-                                if (sideChannelEnabled) "Live token streaming on" else "Live token streaming off") { section = "Hermes Link" }
+                        KeryxHubGroup("Agent") {
+                            KeryxHubRow(Icons.Default.Memory, "Agent",
+                                caps?.model?.takeIf { it.isNotBlank() } ?: "Brain, telemetry & alerts") { section = "Agent" }
+                            KeryxHubDivider()
+                            KeryxHubRow(Icons.Default.Pets, "Companion",
+                                petInfo?.displayName?.takeIf { it.isNotBlank() } ?: "The drawer mascot") { section = "Companion" }
+                            KeryxHubDivider()
+                            KeryxHubRow(Icons.Default.Mic, "Voice",
+                                listOfNotNull(
+                                    if (sttUrl.isNotBlank()) "Dictation" else null,
+                                    if (ttsAutoSpeak) "Auto-speak" else null,
+                                ).ifEmpty { listOf("Off") }.joinToString(" · ")) { section = "Voice" }
                         }
-                        KeryxHubRow(Icons.Default.Mic, "Voice",
-                            listOfNotNull(
-                                if (sttUrl.isNotBlank()) "Dictation" else null,
-                                if (ttsAutoSpeak) "Auto-speak" else null,
-                            ).ifEmpty { listOf("Dictation & spoken replies") }.joinToString(" · ")) { section = "Voice" }
-                        KeryxHubRow(Icons.Default.Palette, "Appearance",
-                            "Theme, bubbles, text, accents, motion") { section = "Appearance" }
-                        KeryxHubRow(Icons.Default.Lock, "Privacy & Security",
-                            listOfNotNull(
-                                if (biometricLockEnabled) "App lock" else null,
-                                if (e2eeEnabled && !direct) "E2EE" else null,
-                            ).ifEmpty { listOf(if (direct) "App lock & senses" else "App lock & encryption") }.joinToString(" · ")) { section = "Privacy & Security" }
-                        if (direct) {
-                            val archived by viewModel.sessions.archivedRooms.collectAsState()
-                            KeryxHubRow(KeryxGlyphs.Stack, "Sessions",
-                                if (archived.isEmpty()) "Archived & pruning" else "${archived.size} archived") { section = "Sessions" }
+                        KeryxHubGroup("App") {
+                            KeryxHubRow(Icons.Default.Palette, "Appearance",
+                                "$bubbleStyle bubbles · ${animationStyle.removeSuffix(" Drift")}") { section = "Appearance" }
+                            KeryxHubDivider()
+                            KeryxHubRow(Icons.Default.Lock, "Privacy & Security",
+                                listOfNotNull(
+                                    if (biometricLockEnabled) "App lock on" else "App lock off",
+                                    if (e2eeEnabled && !direct) "E2EE" else null,
+                                ).joinToString(" · ")) { section = "Privacy & Security" }
+                            if (direct) {
+                                val archived by viewModel.sessions.archivedRooms.collectAsState()
+                                KeryxHubDivider()
+                                KeryxHubRow(KeryxGlyphs.Stack, "Sessions",
+                                    "Archived & pruning",
+                                    trailing = archived.size.takeIf { it > 0 }?.let { "$it archived" }) { section = "Sessions" }
+                            }
                         }
-                        KeryxHubRow(Icons.Default.BugReport, "About",
-                            "Keryx v${chat.keryx.app.BuildConfig.VERSION_NAME}" +
-                                (hubHealth.data?.version?.takeIf { it.isNotBlank() }?.let { " · hermes $it" } ?: "")) { section = "About" }
+                        KeryxHubGroup {
+                            KeryxHubRow(Icons.Default.BugReport, "About",
+                                "Keryx v${chat.keryx.app.BuildConfig.VERSION_NAME}" +
+                                    (hubHealth.data?.version?.takeIf { it.isNotBlank() }?.let { " · hermes $it" } ?: "")) { section = "About" }
+                        }
                         }
                     }
 
                     // --- Account ---
                     // The demo (3.0 first run) has no account and no door to switch: just the way out.
-                    if (section == "Account" && viewModel.isDemo) SettingsCard("Account", anchor = SettingsRow.ACCOUNT_IDENTITY) {
+                    if (shown == "Account" && viewModel.isDemo) SettingsCard("Account", anchor = SettingsRow.ACCOUNT_IDENTITY) {
                         val demoContext = androidx.compose.ui.platform.LocalContext.current
                         Text(
                             text = "Demo",
@@ -302,7 +331,7 @@ fun SettingsScreen(
                             relaunchApp(demoContext)
                         }) { Text("Connect your gateway") }
                     }
-                    if (section == "Account" && !viewModel.isDemo) SettingsCard("Account", anchor = SettingsRow.ACCOUNT_IDENTITY) {
+                    if (shown == "Account" && !viewModel.isDemo) SettingsCard("Account", anchor = SettingsRow.ACCOUNT_IDENTITY) {
                         Text(
                             text = currentUserId ?: "Not signed in",
                             color = MaterialTheme.colorScheme.onSurface,
@@ -330,7 +359,7 @@ fun SettingsScreen(
                     // (Phase 4's second door, made a switch: the Matrix session stays in
                     // Trixnity's store, the sealed direct token stays in prefs — flipping the
                     // door just decides which spine the next process life boots.)
-                    if (section == "Account" && !viewModel.isDemo) SettingsCard("Transport", anchor = SettingsRow.ACCOUNT_TRANSPORT) {
+                    if (shown == "Account" && !viewModel.isDemo) SettingsCard("Transport", anchor = SettingsRow.ACCOUNT_TRANSPORT) {
                         val direct = viewModel.transportIsDirect
                         val otherReady =
                             if (direct) viewModel.doors.matrixSessionOnFile else viewModel.doors.directCredentialsOnFile
@@ -388,7 +417,7 @@ fun SettingsScreen(
                     }
 
                     // --- Agent (gateway-backed: what's running, and how it speaks up) ---
-                    if (section == "Agent") {
+                    if (shown == "Agent") {
                         LaunchedEffect(Unit) {
                             viewModel.hub.refreshReasoningCaps()
                             viewModel.hub.refreshHealth()
@@ -484,7 +513,7 @@ fun SettingsScreen(
                     }
 
                     // --- Companion (the petdex mascot) ---
-                    if (section == "Companion") SettingsCard("Companion", anchor = SettingsRow.COMPANION_PICK) {
+                    if (shown == "Companion") SettingsCard("Companion", anchor = SettingsRow.COMPANION_PICK) {
                         LaunchedEffect(Unit) { viewModel.pet.refreshPet() }
                         var showPetPicker by remember { mutableStateOf(false) }
                         if (showPetPicker) {
@@ -528,7 +557,7 @@ fun SettingsScreen(
                     // The fleet (2.11): the Desktop's Settings → Gateways registry. One card holds
                     // every gateway the phone can reach; the row that used to say "sign out and
                     // connect again" is now "Add gateway".
-                    if (section == "Gateway") SettingsCard("Gateways", anchor = SettingsRow.CONNECTION_GATEWAY) {
+                    if (shown == "Gateway") SettingsCard("Gateways", anchor = SettingsRow.CONNECTION_GATEWAY) {
                         val settingsContext = androidx.compose.ui.platform.LocalContext.current
                         GatewayRegistry(viewModel, onRelaunch = { relaunchApp(settingsContext) })
                         val fleet by viewModel.doors.fleet.collectAsState()
@@ -552,7 +581,7 @@ fun SettingsScreen(
                             onCheckedChange = onAllowInsecureChanged,
                         )
                     }
-                    if (section == "Connection") SettingsCard("Connection", anchor = SettingsRow.CONNECTION_HOMESERVER) {
+                    if (shown == "Connection") SettingsCard("Connection", anchor = SettingsRow.CONNECTION_HOMESERVER) {
                         OutlinedTextField(
                             value = matrixUrl,
                             onValueChange = onMatrixUrlChanged,
@@ -672,7 +701,7 @@ fun SettingsScreen(
                     }
 
                     // --- Hermes Link (side-channel streaming) ---
-                    if (section == "Hermes Link" || section == "Gateway") SettingsCard("Hermes Link", anchor = SettingsRow.LINK_URL) {
+                    if (shown == "Hermes Link" || shown == "Gateway") SettingsCard("Hermes Link", anchor = SettingsRow.LINK_URL) {
                         // The same link serves two jobs by door. On Matrix it is the SSE
                         // side-channel that streams tokens ahead of sync. On the direct door the
                         // websocket already streams; the link is the API server the spaces ride
@@ -725,7 +754,7 @@ fun SettingsScreen(
                     }
 
                     // --- Voice dictation ---
-                    if (section == "Voice") SettingsCard("Voice Dictation", anchor = SettingsRow.VOICE_STT) {
+                    if (shown == "Voice") SettingsCard("Voice Dictation", anchor = SettingsRow.VOICE_STT) {
                         Text(
                             "Adds a mic to the composer: record, transcribe, and the text lands in the " +
                                 "input field. Works with any OpenAI-compatible transcription endpoint — " +
@@ -769,7 +798,7 @@ fun SettingsScreen(
                         )
                     }
 
-                    if (section == "Voice") SettingsCard("Voice Replies", anchor = SettingsRow.VOICE_TTS) {
+                    if (shown == "Voice") SettingsCard("Voice Replies", anchor = SettingsRow.VOICE_TTS) {
                         Text(
                             "Reads agent replies aloud — long-press a message and tap the speaker. " +
                                 "Works out of the box with this device's voice; point it at any " +
@@ -831,7 +860,7 @@ fun SettingsScreen(
                     }
 
                     // --- Message Appearance ---
-                    if (section == "Appearance") SettingsCard("Look") {
+                    if (shown == "Appearance") SettingsCard("Look") {
                         val isDark by viewModel.prefs.isDarkTheme.collectAsState()
                         SettingsAnchor(SettingsRow.APPEARANCE_THEME) {
                             SettingsChoiceLabel("Theme")
@@ -907,7 +936,7 @@ fun SettingsScreen(
                     }
 
                     // --- Privacy & Security ---
-                    if (section == "Privacy & Security") SettingsCard("Privacy & Security", anchor = SettingsRow.PRIVACY_LOCK) {
+                    if (shown == "Privacy & Security") SettingsCard("Privacy & Security", anchor = SettingsRow.PRIVACY_LOCK) {
                         SettingsSwitchRow(
                             anchor = SettingsRow.PRIVACY_LOCK,
                             title = "Biometric App Lock",
@@ -930,10 +959,10 @@ fun SettingsScreen(
 
                     // Senses owns its own preferences file and needs nothing from this screen, so
                     // it sits next to Privacy rather than taking thirty parameters of plumbing.
-                    if (section == "Privacy & Security") SettingsAnchor(SettingsRow.PRIVACY_SENSES) { chat.keryx.app.senses.SensesSettingsCard() }
+                    if (shown == "Privacy & Security") SettingsAnchor(SettingsRow.PRIVACY_SENSES) { chat.keryx.app.senses.SensesSettingsCard() }
 
                     // --- Interface ---
-                    if (section == "Appearance") SettingsCard("Feel") {
+                    if (shown == "Appearance") SettingsCard("Feel") {
                         SettingsSwitchRow(
                             anchor = SettingsRow.APPEARANCE_HAPTICS,
                             title = "Haptic Feedback",
@@ -983,7 +1012,7 @@ fun SettingsScreen(
                     }
 
                     // --- Sessions (direct door): what left the list, and the sweep ---
-                    if (section == "Sessions") SettingsCard("Archived", anchor = SettingsRow.SESSIONS_ARCHIVED) {
+                    if (shown == "Sessions") SettingsCard("Archived", anchor = SettingsRow.SESSIONS_ARCHIVED) {
                         val archived by viewModel.sessions.archivedRooms.collectAsState()
                         LaunchedEffect(Unit) { viewModel.sessions.loadArchivedSessions() }
                         if (archived.isEmpty()) Text(
@@ -1017,7 +1046,7 @@ fun SettingsScreen(
                             }
                         }
                     }
-                    if (section == "Sessions") SettingsCard("Pruning", anchor = SettingsRow.SESSIONS_PRUNE) {
+                    if (shown == "Sessions") SettingsCard("Pruning", anchor = SettingsRow.SESSIONS_PRUNE) {
                         var pruneOpen by remember { mutableStateOf(false) }
                         Text(
                             "Delete old, idle sessions from the gateway in one sweep — previewed before anything goes.",
@@ -1031,7 +1060,7 @@ fun SettingsScreen(
                         if (pruneOpen) SessionPruneDialog(viewModel = viewModel, onDismiss = { pruneOpen = false })
                     }
 
-                    if (section == "About") SettingsCard("Tour", anchor = SettingsRow.ABOUT_TOUR) {
+                    if (shown == "About") SettingsCard("Tour", anchor = SettingsRow.ABOUT_TOUR) {
                         Text(
                             "A look around Keryx. Quick covers what a first chat needs; full walks the drawer too and ends on your gateway.",
                             fontSize = KeryxType.body,
@@ -1058,7 +1087,7 @@ fun SettingsScreen(
                             viewModel.toast("Each space will explain itself again on your next visit.")
                         }) { Text("Show the space hints again", fontSize = KeryxType.body) }
                     }
-                    if (section == "About") SettingsCard("Diagnostics", anchor = SettingsRow.ABOUT_CRASH) {
+                    if (shown == "About") SettingsCard("Diagnostics", anchor = SettingsRow.ABOUT_CRASH) {
                         val diagContext = androidx.compose.ui.platform.LocalContext.current
                         var crashText by remember { mutableStateOf(chat.keryx.app.CrashLog.read(diagContext)) }
                         Text(
@@ -1090,7 +1119,7 @@ fun SettingsScreen(
                             ) { Text("Clear", fontSize = KeryxType.body) }
                         }
                     }
-                    if (section == "About") SettingsCard("Keryx", anchor = SettingsRow.ABOUT_VERSION) {
+                    if (shown == "About") SettingsCard("Keryx", anchor = SettingsRow.ABOUT_VERSION) {
                         val aboutContext = androidx.compose.ui.platform.LocalContext.current
                         val lines = listOfNotNull(
                             "App" to "Keryx v${chat.keryx.app.BuildConfig.VERSION_NAME} (${chat.keryx.app.BuildConfig.VERSION_CODE})",
@@ -1124,9 +1153,28 @@ fun SettingsScreen(
                     Spacer(Modifier.height(40.dp))
                 }
                 }
+                }
             }
           }
         }
+}
+
+/**
+ * The hub ⇄ page move (makeover): going deeper, the page arrives from the right a short way
+ * while the hub drifts left and fades; coming home is the mirror. Short distances on the app's
+ * springs — the Hermes Mobile feel is speed with a soft landing, not a long swipe.
+ */
+private fun settingsPageTransition(deeper: Boolean, reduced: Boolean): androidx.compose.animation.ContentTransform {
+    if (reduced) return androidx.compose.animation.ContentTransform(
+        androidx.compose.animation.fadeIn(KeryxMotion.leave),
+        androidx.compose.animation.fadeOut(KeryxMotion.leave),
+    )
+    val sign = if (deeper) 1 else -1
+    val enter = androidx.compose.animation.slideInHorizontally(KeryxMotion.settleInt) { w -> sign * w / 5 } +
+        androidx.compose.animation.fadeIn(KeryxMotion.settle)
+    val exit = androidx.compose.animation.slideOutHorizontally(KeryxMotion.leaveInt) { w -> -sign * w / 8 } +
+        androidx.compose.animation.fadeOut(KeryxMotion.leave)
+    return androidx.compose.animation.ContentTransform(enter, exit)
 }
 
 /**
