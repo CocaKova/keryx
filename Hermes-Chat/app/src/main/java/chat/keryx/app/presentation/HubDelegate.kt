@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.transport.direct.dashboardSkills
+import chat.keryx.app.transport.direct.skillToggle
+
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,7 +15,11 @@ import kotlinx.serialization.json.jsonObject
  * skills (Forge and trash), toolsets, models, brains, the curated config knobs and the raw
  * config editor, plus the reasoning dial and the slash-command registry.
  */
-class HubDelegate(deps: GatewayDeps) {
+class HubDelegate(
+    deps: GatewayDeps,
+    /** The direct door's dashboard client (makeover): skills read there first. Null on Matrix. */
+    private val rest: () -> chat.keryx.app.transport.direct.GatewayRest? = { null },
+) {
     private val scope = deps.scope
     private val settings = deps.settings
     private val client = deps.client
@@ -404,7 +411,43 @@ class HubDelegate(deps: GatewayDeps) {
     }
     fun refreshJobs() = _hubJobs.refreshFrom { jobs() }
     fun refreshSessions() = _hubSessions.refreshFrom { sessions() }
-    fun refreshSkills() = _hubSkills.refreshFrom { skills() }
+    /**
+     * Skills (makeover): the dashboard's `/api/skills` first — it knows which are on — and the
+     * Link's `/v1/skills` when there is no dashboard or it can't answer. One source failing
+     * never blanks the list while the other can fill it.
+     */
+    fun refreshSkills() {
+        val r = rest() ?: return _hubSkills.refreshFrom { skills() }
+        _hubSkills.value = _hubSkills.value.copy(refreshing = true)
+        scope.launch {
+            when (val got = r.dashboardSkills()) {
+                is chat.keryx.core.model.Routed.Ok -> _hubSkills.value = PanelState(data = got.value)
+                else -> {
+                    val c = client()
+                    if (c == null) {
+                        val why = (got as? chat.keryx.core.model.Routed.Failed)?.message ?: "This gateway lists no skills"
+                        _hubSkills.value = _hubSkills.value.copy(error = why.take(120), refreshing = false)
+                    } else c.skills()
+                        .onSuccess { _hubSkills.value = PanelState(data = it) }
+                        .onFailure { _hubSkills.value = _hubSkills.value.copy(error = it.message?.take(120) ?: "unavailable", refreshing = false) }
+                }
+            }
+        }
+    }
+
+    /** Flip one skill: the row moves now and settles back on a refusal. Applies to new sessions. */
+    fun setSkillEnabled(name: String, enabled: Boolean) {
+        val r = rest() ?: return
+        val before = _hubSkills.value.data ?: return
+        _hubSkills.value = _hubSkills.value.copy(data = before.map { if (it.name == name) it.copy(enabled = enabled) else it })
+        scope.launch {
+            when (val res = r.skillToggle(name, enabled)) {
+                is chat.keryx.core.model.Routed.Ok -> toast(if (enabled) "$name on — new sessions load it" else "$name off — new sessions skip it")
+                is chat.keryx.core.model.Routed.Failed -> { toast("Couldn't change $name: ${res.message.take(80)}"); refreshSkills() }
+                chat.keryx.core.model.Routed.Missing -> { toast("This gateway can't switch skills from here."); refreshSkills() }
+            }
+        }
+    }
     fun refreshToolsets() = _hubToolsets.refreshFrom { toolsets() }
 
     // --- Session pruner --------------------------------------------------------------------------

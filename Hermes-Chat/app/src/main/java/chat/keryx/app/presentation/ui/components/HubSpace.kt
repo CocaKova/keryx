@@ -162,7 +162,9 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
         group = "Mind",
         trailing = { vm ->
             val skills by vm.hub.skills.collectAsState()
-            skills.data?.size?.toString()
+            skills.data?.let { l ->
+                if (l.any { it.enabled != null }) "${l.count { it.enabled != false }} of ${l.size}" else l.size.toString()
+            }
         },
     ),
     HubPanel(

@@ -68,7 +68,10 @@ fun KeryxContextRing(
     if (used <= 0L || max <= 0L) return
     val toCompaction = chat.keryx.core.model.CompactionGauge.of(used, compactAt.takeIf { it in 1..max })
     val reading = toCompaction?.fraction ?: (used.toFloat() / max.toFloat()).coerceIn(0f, 1f)
-    if (!chat.keryx.core.model.ContextOutlook.showRing(reading, compacting = drainSince != null)) return
+    // Makeover: never hidden. Below the old show line the ring is a quiet filled wedge — a pie,
+    // not a thin arc, so a low reading can't read as a loading spinner (why 3.0 hid it) — and
+    // it becomes the gilded band once it matters.
+    val quiet = !chat.keryx.core.model.ContextOutlook.showRing(reading, compacting = drainSince != null)
     var now by remember { mutableStateOf(System.currentTimeMillis()) }
     androidx.compose.runtime.LaunchedEffect(drainSince) {
         // On screen only, and only while a compaction runs: four reads a second is plenty.
@@ -121,6 +124,18 @@ fun KeryxContextRing(
             val trackStroke = 1.2.dp.toPx()
             val fillStroke = (1.2f + 1.9f * frac).dp.toPx()
             drawCircle(track, radius = (size.minDimension - trackStroke) / 2f, style = Stroke(trackStroke))
+            if (quiet) {
+                val pad = trackStroke * 2.2f
+                drawArc(
+                    color = color.copy(alpha = 0.55f),
+                    startAngle = -90f,
+                    sweepAngle = sweep.coerceAtLeast(14f),
+                    useCenter = true,
+                    topLeft = Offset(pad, pad),
+                    size = Size(size.width - 2 * pad, size.height - 2 * pad),
+                )
+                return@Canvas
+            }
             if (cacheWarm) {
                 // Gilt on the inside of the band: what the window holds is mostly already paid for.
                 val gild = 0.9.dp.toPx()

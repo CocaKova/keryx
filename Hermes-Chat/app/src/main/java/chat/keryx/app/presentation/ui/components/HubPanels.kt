@@ -54,6 +54,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -873,14 +874,36 @@ internal fun SkillsTab(viewModel: ChatViewModel) {
                             start = 20.dp, end = 20.dp, top = 8.dp, bottom = 20.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
+                        // Makeover: how many are on, when the source knows (the dashboard does).
+                        if (skills.any { it.enabled != null }) item(key = "skills-on") {
+                            Text(
+                                "${skills.count { it.enabled != false }} of ${skills.size} on · a switch applies to new sessions",
+                                fontSize = KeryxType.micro,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                         items(shown, key = { it.name }) { s ->
-                            // Tap opens the Skill Forge (1.8): full SKILL.md, edit, save, delete.
-                            Column(Modifier.fillMaxWidth().clickable { viewModel.hub.openSkillForge(s.name) }) {
-                                Text(s.name, fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
-                                if (s.description.isNotBlank()) {
-                                    Text(s.description, fontSize = KeryxType.micro,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 3, overflow = TextOverflow.Ellipsis)
+                            val dim by androidx.compose.animation.core.animateFloatAsState(
+                                if (s.enabled == false) 0.55f else 1f, KeryxMotion.glide, label = "skillDim",
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                // Tap opens the Skill Forge (1.8): full SKILL.md, edit, save, delete.
+                                Column(
+                                    Modifier
+                                        .weight(1f)
+                                        .graphicsLayer { alpha = dim }
+                                        .clickable { viewModel.hub.openSkillForge(s.name) },
+                                ) {
+                                    Text(s.name, fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
+                                    if (s.description.isNotBlank()) {
+                                        Text(s.description, fontSize = KeryxType.micro,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                    }
+                                }
+                                s.enabled?.let { on ->
+                                    Spacer(Modifier.width(10.dp))
+                                    Switch(checked = on, onCheckedChange = { viewModel.hub.setSkillEnabled(s.name, it) })
                                 }
                             }
                         }

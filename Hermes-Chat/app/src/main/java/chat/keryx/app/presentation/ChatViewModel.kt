@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -347,7 +348,9 @@ class ChatViewModel(
         val compactAt: Long = 0L,
     )
     private val _contextUsage = MutableStateFlow<ContextUsage?>(null)
-    val contextUsage: StateFlow<ContextUsage?> =
+    private val gaugeMemory = GaugeMemory(settingsRepository)
+    /** The live reading (side channel or the transport's meta), remembered as it changes. */
+    private val liveContextUsage: kotlinx.coroutines.flow.Flow<ContextUsage?> =
         combine(
             _contextUsage,
             _currentRoom.flatMapLatest { r ->
@@ -360,7 +363,16 @@ class ChatViewModel(
                 }
             },
         ) { sideChannel, direct -> direct ?: sideChannel }
-            .stateIn(viewModelScope, SharingStarted.Lazily, null)
+            .onEach { u -> u?.let(gaugeMemory::put) }
+
+    /** What the ring reads: the open chat's live reading, else the one it last had (makeover) —
+     *  so a reopened chat shows its ring at once and the live answer just corrects it. */
+    val contextUsage: StateFlow<ContextUsage?> =
+        combine(liveContextUsage, _currentRoom) { live, room ->
+            live?.takeIf { room != null && it.roomId == room.id }
+                ?: room?.let { gaugeMemory.get(it.id) }
+                ?: live
+        }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     /** The open session's prefix-cache hit rate (2.16, `usage.cache_hit_pct`); null = unknown. */
     val cacheHitPct: StateFlow<Int?> =
@@ -557,7 +569,7 @@ class ChatViewModel(
 
     /** Theme, accents, bubbles, motion, lock, E2EE, telemetry, Matrix fields (3.0 split). */
     val prefs = PreferencesDelegate(settingsRepository)
-    val hub = HubDelegate(deps)
+    val hub = HubDelegate(deps) { direct?.restClient }
     /** Create and edit scheduled jobs (2.16) — the Runs page and the Hub's Jobs spoke share it. */
     val runsEditor = RunsEditorDelegate(deps, hub) { direct?.restClient }
     /** The "/" palette, recent commands, drafts, the typing notice (3.0 split). */

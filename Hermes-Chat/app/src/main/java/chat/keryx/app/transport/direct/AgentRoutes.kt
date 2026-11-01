@@ -98,3 +98,35 @@ internal suspend fun GatewayRest.saveSoul(profile: String, content: String): Rou
         "PUT", "/api/profiles/" + enc(profile) + "/soul",
         buildJsonObject { put("content", JsonPrimitive(content)) }.toString(),
     ).map { }
+
+// --- Skills ---------------------------------------------------------------------------------
+
+/**
+ * `GET /api/skills` — the dashboard's list: name, description, and whether it is on. The Link's
+ * `/v1/skills` is the other source; this one is read first on the direct door because it knows
+ * enabled state (and because stock `/v1/skills` raised on every call after a Hermes refactor
+ * dropped the `include_editorial` argument it still passes — 11-01).
+ */
+internal suspend fun GatewayRest.dashboardSkills(): Routed<List<chat.keryx.app.data.remote.HermesStreamClient.HubSkill>> =
+    routed("GET", "/api/skills").map { body ->
+        (parse(body) as? JsonArray)?.mapNotNull { el ->
+            val o = el as? JsonObject ?: return@mapNotNull null
+            val name = (o["name"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            chat.keryx.app.data.remote.HermesStreamClient.HubSkill(
+                name = name,
+                description = (o["description"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+                enabled = (o["enabled"] as? JsonPrimitive)?.booleanOrNull ?: true,
+                usage = (o["usage"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull() ?: 0,
+            )
+        }
+    }
+
+/** `PUT /api/skills/toggle` — a disabled skill stays installed; new sessions stop loading it. */
+internal suspend fun GatewayRest.skillToggle(name: String, enabled: Boolean): Routed<Unit> =
+    routed(
+        "PUT", "/api/skills/toggle",
+        buildJsonObject {
+            put("name", JsonPrimitive(name))
+            put("enabled", JsonPrimitive(enabled))
+        }.toString(),
+    ).map { }

@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -1068,7 +1069,9 @@ class HermesStreamClient(
         val toolCallCount: Int,
     )
 
-    data class HubSkill(val name: String, val description: String)
+    /** [enabled] is null when the source can't say (the Link's /v1/skills); the dashboard's
+     *  `/api/skills` knows, and the Skills spoke then draws a switch. */
+    data class HubSkill(val name: String, val description: String, val enabled: Boolean? = null, val usage: Int = 0)
 
     data class HubToolset(
         val name: String,
@@ -1806,7 +1809,10 @@ internal object HubJson {
 
     fun skills(obj: kotlinx.serialization.json.JsonObject): List<HermesStreamClient.HubSkill> =
         obj.objs("data").map { s ->
-            HermesStreamClient.HubSkill(name = s.str("name"), description = s.str("description"))
+            HermesStreamClient.HubSkill(
+                name = s.str("name"), description = s.str("description"),
+                enabled = (s["enabled"] as? kotlinx.serialization.json.JsonPrimitive)?.booleanOrNull,
+            )
         }
 
     /** The mission watcher's feed page. [since] is the caller's cursor, kept when the gateway's

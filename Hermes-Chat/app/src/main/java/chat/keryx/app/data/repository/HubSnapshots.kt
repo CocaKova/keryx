@@ -6,10 +6,13 @@ package chat.keryx.app.data.repository
  * never read, and grew the cache file without bound.
  */
 object HubSnapshots {
+    /** Each recent chat's last context reading (makeover, [chat.keryx.app.presentation.GaugeMemory]). */
+    const val GAUGES = "keryx://gauges"
+
     val KEPT: Set<String> = setOf(
         "/health/detailed", "/api/jobs", "/api/sessions", "/v1/skills",
         "/keryx/toolsets", "/v1/models", "/keryx/config", "/keryx/brains",
-        "keryx://console/runs",
+        "keryx://console/runs", GAUGES,
     )
 
     /** [key] as stored: the path, plus ".<gateway>" when scoped to one. */

@@ -1174,10 +1174,10 @@ private const val RUN_IDLE_SWEEP_MS = 20_000L
             // untouched session had a blank model — which is why the composer's model pill
             // never appeared on a freshly opened chat.
             val current = liveToStored[live] ?: storedId
-            scope.launch {
-                seedModelFromActiveList(live, current)
-                seedGaugeFromBreakdown(live, current)
-            }
+            // Side by side (makeover): the breakdown is the slow one — it rebuilds the prompt and
+            // counts the transcript — so the ring must not also wait out the model lookup first.
+            scope.launch { seedModelFromActiveList(live, current) }
+            scope.launch { seedGaugeFromBreakdown(live, current) }
             live
         }
     }
