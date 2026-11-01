@@ -97,12 +97,8 @@ internal fun PanelErrorLine(error: String?) {
 
 @Composable
 internal fun PanelLoading() {
-    Text(
-        "Asking the gateway…",
-        fontSize = KeryxType.caption,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-    )
+    // Makeover: the list's shape while the gateway answers, not a sentence about it.
+    KeryxSkeleton(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
 }
 
 @Composable

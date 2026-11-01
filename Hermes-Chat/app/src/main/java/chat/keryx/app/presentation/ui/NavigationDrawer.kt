@@ -455,6 +455,13 @@ fun NavigationDrawerContent(
                 }
             }
 
+            // The agent's own card (makeover): the visible door to its page. Direct door only —
+            // Matrix has no dashboard behind it, and the demo keeps its strip's "connect" offer.
+            if (direct && !viewModel.isDemo) chat.keryx.app.presentation.ui.components.AgentDoorCard(viewModel) {
+                viewModel.hub.refreshReasoningCaps()
+                onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway)
+            }
+
             var query by remember { mutableStateOf("") }
             // A filled well rather than an outlined box (3.0): the outline drew the heaviest line
             // in the drawer around its least important control. Focus still rings it.

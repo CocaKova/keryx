@@ -283,7 +283,9 @@ fun SettingsScreen(
                                 listOfNotNull(
                                     if (sttUrl.isNotBlank()) "Dictation" else null,
                                     if (ttsAutoSpeak) "Auto-speak" else null,
-                                ).ifEmpty { listOf("Off") }.joinToString(" · ")) { section = "Voice" }
+                                // No STT server = no mic, but spoken replies still work on this
+                                // phone's own voice — so never just "Off".
+                                ).ifEmpty { listOf("Spoken replies on tap") }.joinToString(" · ")) { section = "Voice" }
                         }
                         KeryxHubGroup("App") {
                             KeryxHubRow(Icons.Default.Palette, "Appearance",
@@ -873,11 +875,9 @@ fun SettingsScreen(
                         Spacer(Modifier.height(18.dp))
                         SettingsAnchor(SettingsRow.APPEARANCE_BUBBLES) {
                             SettingsChoiceLabel("Bubbles")
-                            KeryxSegmented(
-                                options = BubbleStyles.ALL.map { it to it },
-                                selected = bubbleStyle,
-                                onSelect = onBubbleStyleChanged,
-                            )
+                            // Makeover: pick by looking — four little conversations, drawn with
+                            // the real bubble look and your accents.
+                            BubbleStylePicker(selected = bubbleStyle, onSelect = onBubbleStyleChanged)
                         }
                         Spacer(Modifier.height(18.dp))
                         SettingsAnchor(SettingsRow.APPEARANCE_TEXT) {
@@ -890,29 +890,24 @@ fun SettingsScreen(
                             )
                         }
                         Spacer(Modifier.height(18.dp))
+                        // Makeover: palettes first — pairs that already go together, one tap for
+                        // both — then each accent's presets, and the full wheel only behind the
+                        // rainbow circle. Two 180dp wheels used to open the page.
                         SettingsAnchor(SettingsRow.APPEARANCE_ACCENT) {
-                        Text("Accent Color", fontWeight = FontWeight.SemiBold, fontSize = KeryxType.bodyLarge)
+                            SettingsChoiceLabel("Palette")
+                            AccentPalettes(currentAccentColor, currentAccentColor2) { a, b ->
+                                onAccentColorChanged(a); onAccentColor2Changed(b)
+                            }
                         }
-                        Spacer(Modifier.height(12.dp))
-                        ColorPickerPanel(
-                            current = currentAccentColor,
-                            onColorSelected = onAccentColorChanged,
-                            modifier = Modifier.fillMaxWidth(),
-                            discSize = 180.dp,
-                        )
                         Spacer(Modifier.height(18.dp))
-                        Text("Accent 2", fontWeight = FontWeight.SemiBold, fontSize = KeryxType.bodyLarge)
+                        AccentRow("Accent", currentAccentColor, onAccentColorChanged, discSize = 180.dp)
+                        Spacer(Modifier.height(16.dp))
+                        AccentRow("Accent 2", currentAccentColor2, onAccentColor2Changed, discSize = 150.dp)
                         Text(
                             "The gradient partner: bubbles, the working cloud, and borders blend Accent → Accent 2.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = KeryxType.micro,
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        ColorPickerPanel(
-                            current = currentAccentColor2,
-                            onColorSelected = onAccentColor2Changed,
-                            modifier = Modifier.fillMaxWidth(),
-                            discSize = 140.dp,
+                            modifier = Modifier.padding(top = 6.dp),
                         )
                         Spacer(Modifier.height(12.dp))
                         // Live gradient preview: how Accent → Accent 2 will actually blend.
@@ -966,20 +961,22 @@ fun SettingsScreen(
                         SettingsSwitchRow(
                             anchor = SettingsRow.APPEARANCE_HAPTICS,
                             title = "Haptic Feedback",
-                            subtitle = "Vibrate on interactions",
+                            subtitle = "A small tick when you press, send or switch. Off keeps Keryx still in the hand",
                             checked = hapticsEnabled,
                             onCheckedChange = onHapticsChanged
                         )
                         Spacer(Modifier.height(16.dp))
                         SettingsAnchor(SettingsRow.APPEARANCE_LOADING) {
                             SettingsChoiceLabel("Loading animation")
-                            KeryxSegmented(
+                            // Makeover: each one runs in its own card, so you pick the motion,
+                            // not its name.
+                            LoadingStylePicker(
                                 options = listOf(
-                                    "Caduceus" to "☤ Caduceus",
-                                    "Quill" to "✎ Quill",
-                                    "Constellation" to "✧ Constellation",
-                                    "Braille" to "⠋ Braille",
-                                    "Ember Drift" to "✦ Ember",
+                                    "Caduceus" to "Caduceus",
+                                    "Quill" to "Quill",
+                                    "Constellation" to "Constellation",
+                                    "Braille" to "Braille",
+                                    "Ember Drift" to "Ember",
                                 ),
                                 selected = animationStyle,
                                 onSelect = onAnimationStyleChanged,

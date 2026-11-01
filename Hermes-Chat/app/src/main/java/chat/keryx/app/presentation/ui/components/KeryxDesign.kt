@@ -41,6 +41,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.foundation.layout.requiredHeight
@@ -705,14 +708,21 @@ fun KeryxCard(
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
     ) ?: MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
     val borderBase = tint ?: MaterialTheme.colorScheme.outline
+    // Makeover: a card you can tap gives under the finger, like every other tile in the app.
+    val source = remember { MutableInteractionSource() }
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .let { if (onClick != null) it.keryxPressScale(source) else it }
             .clip(shape)
             .background(fill)
             // Running things used to pulse; now the shimmer gleam travels their border (2.0).
             .keryxShimmerBorder(active = breathing, baseColor = borderBase.copy(alpha = 0.25f), shape = shape)
-            .let { if (onClick != null) it.clickable(onClick = onClick) else it }
+            .let {
+                if (onClick != null) it.clickable(
+                    interactionSource = source, indication = androidx.compose.material3.ripple(), onClick = onClick,
+                ) else it
+            }
             .padding(horizontal = 12.dp, vertical = 10.dp),
         content = content,
     )
@@ -1154,3 +1164,40 @@ fun KeryxSheet(
         }
     }
 }
+
+
+/**
+ * Rows of soft bars standing in for a list that is on its way (makeover) — the page has its
+ * shape before it has its words, instead of a line of "Loading…" that then jumps. The bars
+ * breathe on the app's one rhythm (still under Battery Saver), and say "Loading" to TalkBack.
+ */
+@Composable
+fun KeryxSkeleton(rows: Int = 4, modifier: Modifier = Modifier) {
+    val breath = breathingAlphaState(active = true, low = 0.45f, periodMillis = 1100)
+    val ink = MaterialTheme.colorScheme.onSurface
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .keryxLoadingSemantics(),
+    ) {
+        repeat(rows) { i ->
+            // Ragged widths so it reads as text, not a progress bar.
+            val first = listOf(0.42f, 0.55f, 0.36f, 0.48f)[i % 4]
+            val second = listOf(0.86f, 0.72f, 0.80f, 0.66f)[i % 4]
+            Column(Modifier.fillMaxWidth().padding(vertical = 9.dp)) {
+                Box(
+                    Modifier.fillMaxWidth(first).height(12.dp).clip(RoundedCornerShape(6.dp))
+                        .drawBehind { drawRect(ink.copy(alpha = 0.10f * breath.value)) },
+                )
+                Spacer(Modifier.height(7.dp))
+                Box(
+                    Modifier.fillMaxWidth(second).height(8.dp).clip(RoundedCornerShape(4.dp))
+                        .drawBehind { drawRect(ink.copy(alpha = 0.07f * breath.value)) },
+                )
+            }
+        }
+    }
+}
+
+private fun Modifier.keryxLoadingSemantics(): Modifier =
+    semantics { contentDescription = "Loading" }

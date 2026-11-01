@@ -177,9 +177,15 @@ internal fun AgentHero(viewModel: ChatViewModel, health: LinkHealth) {
 @Composable
 internal fun AgentStatStrip(viewModel: ChatViewModel, open: (String) -> Unit) {
     val footer by viewModel.runtimeFooter.collectAsState()
+    val ring by viewModel.contextUsage.collectAsState()
     val panel by viewModel.hub.health.collectAsState()
     val jobs by viewModel.hub.jobs.collectAsState()
-    val pct = footer?.contextPct
+    // The last reply's footer when there is one, else the open chat's ring reading — measured
+    // the way the ring measures it, toward the summary point when the gateway names one.
+    val pct = footer?.contextPct ?: ring?.let { u ->
+        val to = u.compactAt.takeIf { it in 1..u.max } ?: u.max
+        if (to > 0L) (u.used * 100 / to).toInt().coerceIn(0, 100) else null
+    }
     val turns = panel.data?.activeAgents ?: 0
     Row(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -489,5 +495,89 @@ internal fun SoulTab(viewModel: ChatViewModel) {
                 Spacer(Modifier.height(24.dp))
             }
         }
+    }
+}
+
+// --- The drawer's door -------------------------------------------------------------------------
+
+/**
+ * The way in (makeover): the drawer's first card is the agent itself — its tile, its name, what
+ * it is running and whether the line is up — and a tap opens its page. Until now the page sat
+ * behind the model strip at the drawer's foot, a door nobody knew was one.
+ */
+@Composable
+internal fun AgentDoorCard(viewModel: ChatViewModel, onOpen: () -> Unit) {
+    val health by viewModel.linkHealth.collectAsState()
+    val caps by viewModel.hub.reasoningCaps.collectAsState()
+    val soul by viewModel.agent.soul.collectAsState()
+    // The name lives in the SOUL; one read the first time the drawer shows this card.
+    LaunchedEffect(Unit) { if (soul.data == null) viewModel.agent.refreshSoul() }
+    val name = agentDisplayName(viewModel)
+    val accent = MaterialTheme.colorScheme.primary
+    val accent2 = MaterialTheme.colorScheme.tertiary
+    val source = remember { MutableInteractionSource() }
+    val shape = RoundedCornerShape(KeryxRadius.sheet)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp)
+            .keryxPressScale(source)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+            .border(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f), shape)
+            .clickable(interactionSource = source, indication = androidx.compose.material3.ripple(), onClick = onOpen)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        Box {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(13.dp))
+                    .background(Brush.linearGradient(listOf(accent.copy(alpha = 0.9f), accent2.copy(alpha = 0.75f)))),
+            ) {
+                Text(
+                    name.take(1).uppercase(),
+                    fontFamily = chat.keryx.app.theme.CinzelFamily,
+                    fontSize = KeryxType.display,
+                    color = contrastColorFor(accent),
+                )
+            }
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(13.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface),
+            ) {
+                KeryxBreathingDot(
+                    color = linkHealthColor(health),
+                    alive = health == LinkHealth.LIVE || health == LinkHealth.OK,
+                    size = 8.dp,
+                )
+            }
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                name, fontSize = KeryxType.title, fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                listOfNotNull(caps?.model?.takeIf { it.isNotBlank() }, linkHealthLabel(health)).joinToString(" · "),
+                fontSize = KeryxType.caption,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(Modifier.width(8.dp))
+        androidx.compose.material3.Icon(
+            KeryxGlyphs.ChevronRight, contentDescription = "Open the agent's page",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            modifier = Modifier.size(20.dp),
+        )
     }
 }

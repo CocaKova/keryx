@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -56,7 +57,7 @@ import kotlin.math.atan2
 
 /** A quick-tap starting set; the disc/slider/hex refine from there. */
 internal val SWATCHES = listOf(
-    0xFFE0A458, 0xFF8B5CF6, 0xFFE53935, 0xFFEC4899,
+    0xFFE55A00, 0xFFE0A458, 0xFF8B5CF6, 0xFFE53935, 0xFFEC4899,
     0xFF3B82F6, 0xFF10B981, 0xFFF59E0B, 0xFF94A3B8,
 ).map { Color(it) }
 
@@ -262,6 +263,103 @@ fun ColorPickerPanel(
                         .pointerInput(swatch) { detectTapGestures { apply(swatch, rederive = true) } },
                 )
             }
+        }
+    }
+}
+
+/** Accent pairs that already go together (makeover): one tap sets both halves of the gradient. */
+internal val ACCENT_PALETTES: List<Triple<String, Color, Color>> = listOf(
+    Triple("Ember", Color(0xFFE55A00), Color(0xFF8B5CF6)),
+    Triple("Gilded", Color(0xFFE0A458), Color(0xFFB45309)),
+    Triple("Nightshade", Color(0xFF8205E5), Color(0xFF00FFFA)),
+    Triple("Tidewater", Color(0xFF0EA5E9), Color(0xFF10B981)),
+    Triple("Rose", Color(0xFFEC4899), Color(0xFFF59E0B)),
+    Triple("Moss", Color(0xFF65A30D), Color(0xFF0D9488)),
+    Triple("Frost", Color(0xFF94A3B8), Color(0xFF60A5FA)),
+    Triple("Crimson", Color(0xFFDC2626), Color(0xFF7C3AED)),
+)
+
+private fun Color.same(other: Color) = (toArgb() and 0xFFFFFF) == (other.toArgb() and 0xFFFFFF)
+
+/** The palettes as split circles, the picked one ringed and named. */
+@Composable
+internal fun AccentPalettes(accent: Color, accent2: Color, onPick: (Color, Color) -> Unit) {
+    val picked = ACCENT_PALETTES.firstOrNull { (_, a, b) -> a.same(accent) && b.same(accent2) }
+    Column(Modifier.fillMaxWidth()) {
+        androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(ACCENT_PALETTES.size) { i ->
+                val (name, a, b) = ACCENT_PALETTES[i]
+                val on = picked?.first == name
+                val ring by androidx.compose.animation.core.animateDpAsState(if (on) 3.dp else 0.dp, label = "paletteRing")
+                val source = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .keryxPressScale(source, scale = 0.9f)
+                        .clip(CircleShape)
+                        .border(ring, MaterialTheme.colorScheme.onSurface, CircleShape)
+                        .padding(ring + 2.dp)
+                        .clip(CircleShape)
+                        .background(Brush.linearGradient(0.5f to a, 0.5f to b))
+                        .clickable(interactionSource = source, indication = androidx.compose.material3.ripple()) { onPick(a, b) },
+                ) {}
+            }
+        }
+        Text(
+            picked?.first ?: "Your own pair",
+            fontSize = KeryxType.caption,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+    }
+}
+
+/**
+ * One accent (makeover): preset circles, then a rainbow circle that opens the full picker. The
+ * wheel is for the one colour you can't find, not the first thing on the page.
+ */
+@Composable
+internal fun AccentRow(label: String, current: Color, onSelected: (Color) -> Unit, discSize: androidx.compose.ui.unit.Dp) {
+    var custom by remember { mutableStateOf(false) }
+    val presets = SWATCHES
+    val isPreset = presets.any { it.same(current) }
+    Column(Modifier.fillMaxWidth()) {
+        Text(label, fontWeight = FontWeight.SemiBold, fontSize = KeryxType.bodyLarge)
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            presets.forEach { c ->
+                val on = c.same(current)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clip(CircleShape)
+                        .background(c)
+                        .clickable { onSelected(c); custom = false },
+                ) {
+                    androidx.compose.animation.AnimatedVisibility(on, enter = keryxPop(), exit = keryxVanish()) {
+                        Box(Modifier.size(10.dp).clip(CircleShape).background(contrastColorFor(c)))
+                    }
+                }
+            }
+            // The custom circle: rainbow, ringed when the current colour is no preset.
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .border(if (!isPreset) 2.dp else 0.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+                    .background(Brush.sweepGradient(listOf(Color.Red, Color.Yellow, Color.Green, Color.Cyan, Color.Blue, Color.Magenta, Color.Red)))
+                    .clickable { custom = !custom },
+            )
+        }
+        androidx.compose.animation.AnimatedVisibility(custom, enter = keryxReveal(), exit = keryxConceal()) {
+            ColorPickerPanel(
+                current = current,
+                onColorSelected = onSelected,
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                discSize = discSize,
+            )
         }
     }
 }

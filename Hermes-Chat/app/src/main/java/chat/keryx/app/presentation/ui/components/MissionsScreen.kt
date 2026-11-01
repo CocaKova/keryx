@@ -992,12 +992,7 @@ private fun MissionDetailSheet(
                     fontSize = KeryxType.caption,
                     modifier = Modifier.padding(vertical = 20.dp),
                 )
-                d == null -> Text(
-                    "Loading…",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = KeryxType.caption,
-                    modifier = Modifier.padding(vertical = 20.dp),
-                )
+                d == null -> KeryxSkeleton(rows = 3, modifier = Modifier.padding(vertical = 12.dp))
                 else -> StoryCard(
                     d = d,
                     agent = chat.keryx.app.presentation.MissionStory.agentName(d.task.assignee, roster.data?.bots.orEmpty()),
