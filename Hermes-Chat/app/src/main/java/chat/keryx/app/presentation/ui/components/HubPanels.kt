@@ -865,10 +865,11 @@ internal fun SkillsTab(viewModel: ChatViewModel) {
                 if (showTrash) {
                     SkillTrashList(trash, viewModel)
                 } else {
+                    // A to Z (makeover): the gateway's own order is its scan order, which reads as none.
                     val shown = skills.filter {
                         filter.isBlank() || it.name.contains(filter, ignoreCase = true) ||
                             it.description.contains(filter, ignoreCase = true)
-                    }
+                    }.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
                     LazyColumn(
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(
                             start = 20.dp, end = 20.dp, top = 8.dp, bottom = 20.dp),
