@@ -109,7 +109,7 @@ class ModelDelegate(
                 if (roomId != null) gw.modelOptions(roomId)
                 else Result.failure(IllegalStateException("no session open"))
             } ?: hubClient()?.modelOptions()
-                ?: Result.failure(IllegalStateException("Hermes Link is off"))
+                ?: Result.failure(IllegalStateException(chat.keryx.app.KeryxText.getOr(chat.keryx.app.R.string.app_link_off, "Hermes Link is off")))
             result.onSuccess {
                 if (gen != generation) return@onSuccess
                 _catalog.value = it; catalogRoomId = roomId; fetchedAt = System.currentTimeMillis()

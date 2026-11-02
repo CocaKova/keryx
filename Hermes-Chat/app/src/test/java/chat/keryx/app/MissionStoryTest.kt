@@ -22,6 +22,7 @@ import org.junit.Test
  */
 class MissionStoryTest {
     private val now = 1_800_000_000L
+    private val en = MissionStory.Words(EnglishStrings::get, EnglishStrings::plural)
 
     private fun task(
         status: String, assignee: String = "atlas", needsYou: Boolean = false, blockKind: String = "",
@@ -59,13 +60,13 @@ class MissionStoryTest {
         assertEquals("Atlas the Archivist", MissionStory.agentName("atlas", roster))
         assertEquals("Scout", MissionStory.agentName("scout", roster))
         assertEquals("Research buddy", MissionStory.agentName("research-buddy", roster))
-        assertEquals("Your agent", MissionStory.subject(null))
+        assertEquals("Your agent", MissionStory.subject(null, words = en))
         assertEquals("Muse", MissionStory.agentName("default", listOf(BotProfile(name = "default", title = "Muse", isDefault = true))))
     }
 
     @Test
     fun `each state reads as one plain sentence`() {
-        fun h(t: KanbanTask, d: KanbanDetail? = null) = MissionStory.headline(t, d, "Atlas", now)
+        fun h(t: KanbanTask, d: KanbanDetail? = null) = MissionStory.headline(t, d, "Atlas", now, words = en)
         val review = task("review", needsYou = true, ask = "Read it over.")
         assertEquals(MissionStory.Headline("Atlas finished and wants your OK · 35 min ago", Mood.NEEDS_YOU),
             h(review, detail(review, listOf(ev(3, "review_requested", now - 35 * 60)))))
@@ -81,24 +82,24 @@ class MissionStoryTest {
         assertEquals("Waiting for another mission to finish first", h(task("blocked", blockKind = "dependency")).text)
         assertEquals("Waiting for a plan before anyone starts", h(task("triage", started = null)).text)
         // No name: the sentence still reads.
-        assertEquals("Your agent is working on this · started 25 min ago", MissionStory.headline(task("running"), null, null, now).text)
+        assertEquals("Your agent is working on this · started 25 min ago", MissionStory.headline(task("running"), null, null, now, words = en).text)
     }
 
     @Test
     fun `the box shows the thing to act on, and the ask is not said twice`() {
         val review = task("review", needsYou = true, ask = "Read it over before I post it.", result = "Drafted the notes.")
-        val f = MissionStory.focus(review, detail(review))!!
+        val f = MissionStory.focus(review, detail(review), words = en)!!
         assertEquals("For your OK", f.label)
         assertEquals("Drafted the notes.", f.text)
         assertEquals("Read it over before I post it.", MissionStory.askQuote(review, f))
         // The ask that only repeats the draft is not quoted.
         val same = review.copy(ask = "Drafted the notes.")
-        assertNull(MissionStory.askQuote(same, MissionStory.focus(same, detail(same))))
-        assertEquals("The question", MissionStory.focus(task("blocked", needsYou = true, blockKind = "needs_input", ask = "Which evening?"), null)!!.label)
-        val err = MissionStory.focus(task("ready", error = "Timed out."), null)!!
+        assertNull(MissionStory.askQuote(same, MissionStory.focus(same, detail(same), words = en)))
+        assertEquals("The question", MissionStory.focus(task("blocked", needsYou = true, blockKind = "needs_input", ask = "Which evening?"), null, words = en)!!.label)
+        val err = MissionStory.focus(task("ready", error = "Timed out."), null, words = en)!!
         assertTrue(err.error)
-        assertEquals("The task", MissionStory.focus(task("running", body = "Prune the backups."), null)!!.label)
-        assertNull(MissionStory.focus(task("running"), null))
+        assertEquals("The task", MissionStory.focus(task("running", body = "Prune the backups."), null, words = en)!!.label)
+        assertNull(MissionStory.focus(task("running"), null, words = en))
     }
 
     @Test
@@ -133,11 +134,11 @@ class MissionStoryTest {
         ))
         assertEquals(
             listOf("Created", "Atlas started on it", "Note added", "Finished and asked for your OK"),
-            MissionStory.timeline(d, "Atlas").map { it.text },
+            MissionStory.timeline(d, "Atlas", words = en).map { it.text },
         )
-        assertEquals("3 days ago", MissionStory.ago(now - 3 * 86_400, now))
-        assertEquals("just now", MissionStory.ago(now - 5, now))
-        assertNull(MissionStory.ago(null, now))
+        assertEquals("3 days ago", MissionStory.ago(now - 3 * 86_400, now, words = en))
+        assertEquals("just now", MissionStory.ago(now - 5, now, words = en))
+        assertNull(MissionStory.ago(null, now, words = en))
     }
 
     @Test
@@ -145,7 +146,7 @@ class MissionStoryTest {
         val nowMs = now * 1000
         for (c in DemoBoard.board(nowMs).tasks.values.flatten()) {
             val d = DemoBoard.detail(c.id, nowMs).getOrThrow()
-            val h = MissionStory.headline(d.task, d, null, now)
+            val h = MissionStory.headline(d.task, d, null, now, words = en)
             assertTrue(c.id, h.text.isNotBlank() && !h.text.contains("_"))
             for (r in d.runs) assertEquals(c.id, d.task.status == "running", MissionStory.isLive(r, d.task))
             assertEquals(c.id, d.task.status == "running", r(d))

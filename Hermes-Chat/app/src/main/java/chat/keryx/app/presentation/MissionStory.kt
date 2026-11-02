@@ -4,6 +4,8 @@ import chat.keryx.app.data.remote.HermesStreamClient.KanbanDetail
 import chat.keryx.app.data.remote.HermesStreamClient.KanbanEvent
 import chat.keryx.app.data.remote.HermesStreamClient.KanbanRun
 import chat.keryx.app.data.remote.HermesStreamClient.KanbanTask
+import chat.keryx.app.KeryxText
+import chat.keryx.app.R
 import chat.keryx.core.model.BotProfile
 
 /**
@@ -14,6 +16,20 @@ import chat.keryx.core.model.BotProfile
  * record is still there, one tap down under Details. Pure, so every state is unit-tested.
  */
 internal object MissionStory {
+
+    /**
+     * Where the story's words come from (res/values/strings_pass2.xml and friends): the app's
+     * language at run time, the English file in the plain-JVM tests. [get] gives a string's
+     * template, [plural] a plural's template for a count; the story fills the blanks.
+     */
+    class Words(val get: (Int) -> String, val plural: (Int, Int) -> String) {
+        fun s(id: Int, vararg args: Any): String = if (args.isEmpty()) get(id) else get(id).format(*args)
+        fun count(id: Int, n: Int): String = plural(id, n).format(n)
+
+        companion object {
+            val App = Words({ KeryxText.get(it) }, { id, n -> KeryxText.pluralTemplate(id, n) })
+        }
+    }
 
     /**
      * The name the install gives the profile that works the card: its friendly title or display
@@ -35,23 +51,24 @@ internal object MissionStory {
     fun friendlyName(p: BotProfile): String? = p.title.ifBlank { p.displayName }.trim().takeIf { it.isNotBlank() }
 
     /** The agent as a sentence's subject: its name, or "Your agent". */
-    fun subject(agent: String?): String = agent ?: "Your agent"
+    fun subject(agent: String?, words: Words = Words.App): String = agent ?: words.s(R.string.agent_your_agent)
 
     /** "just now", "4 min ago", "2h ago", "3 days ago". Null for no time at all. */
-    fun ago(epochS: Long?, nowS: Long): String? {
+    fun ago(epochS: Long?, nowS: Long, words: Words = Words.App): String? {
         if (epochS == null || epochS <= 0L) return null
         val s = (nowS - epochS).coerceAtLeast(0L)
         return when {
-            s < 60 -> "just now"
-            s < 3600 -> "${s / 60} min ago"
-            s < 86_400 -> "${s / 3600}h ago"
-            s < 2 * 86_400 -> "yesterday"
-            else -> "${s / 86_400} days ago"
+            s < 60 -> words.s(R.string.work_age_just_now)
+            s < 3600 -> words.count(R.plurals.p2_story_min_ago, (s / 60).toInt())
+            s < 86_400 -> words.s(R.string.work_ago_h, (s / 3600).toInt())
+            s < 2 * 86_400 -> words.s(R.string.p2_story_yesterday)
+            else -> words.count(R.plurals.p2_story_days_ago, (s / 86_400).toInt())
         }
     }
 
     /** How long ago something started: "started 25 min ago", "started just now". */
-    private fun started(epochS: Long?, nowS: Long): String? = ago(epochS, nowS)?.let { "started $it" }
+    private fun started(epochS: Long?, nowS: Long, words: Words): String? =
+        ago(epochS, nowS, words)?.let { words.s(R.string.p2_story_started, it) }
 
     /** What the sheet's headline says about the card, and how it should feel. */
     enum class Mood { WORKING, NEEDS_YOU, STUCK, WAITING, DONE }
@@ -69,53 +86,58 @@ internal object MissionStory {
         detail?.events?.filter { it.kind in kind }?.maxByOrNull { it.createdAt }
 
     /** The sentence under the title. One line of plain words, the time it refers to at the end. */
-    fun headline(task: KanbanTask, detail: KanbanDetail?, agent: String?, nowS: Long): Headline {
-        val who = subject(agent)
-        fun withAgo(text: String, at: Long?): String = ago(at, nowS)?.let { "$text · $it" } ?: text
+    fun headline(task: KanbanTask, detail: KanbanDetail?, agent: String?, nowS: Long, words: Words = Words.App): Headline {
+        val who = subject(agent, words)
+        fun w(id: Int, vararg args: Any) = words.s(id, *args)
+        fun withAgo(text: String, at: Long?): String = ago(at, nowS, words)?.let { "$text · $it" } ?: text
         val newestRun = detail?.runs?.maxByOrNull { it.id }
         return when {
             task.status == "review" -> Headline(
-                withAgo("$who finished and wants your OK",
+                withAgo(w(R.string.p2_story_review, who),
                     lastEvent(detail, "review_requested")?.createdAt ?: newestRun?.endedAt ?: task.startedAt),
                 Mood.NEEDS_YOU,
             )
             task.needsYou -> {
                 val at = lastEvent(detail, "blocked")?.createdAt ?: newestRun?.endedAt ?: task.startedAt
                 when (task.blockKind) {
-                    "capability" -> Headline(withAgo("$who is stuck: it needs something it can't do", at), Mood.NEEDS_YOU)
-                    "needs_input" -> Headline(withAgo("$who has a question for you", at), Mood.NEEDS_YOU)
-                    else -> Headline(withAgo("$who needs you before it can go on", at), Mood.NEEDS_YOU)
+                    "capability" -> Headline(withAgo(w(R.string.p2_story_stuck_capability, who), at), Mood.NEEDS_YOU)
+                    "needs_input" -> Headline(withAgo(w(R.string.p2_story_question, who), at), Mood.NEEDS_YOU)
+                    else -> Headline(withAgo(w(R.string.p2_story_needs_you, who), at), Mood.NEEDS_YOU)
                 }
             }
             failed(task) -> {
                 val at = lastEvent(detail, *FAILED_OUTCOMES.toTypedArray())?.createdAt
                     ?: newestRun?.endedAt ?: task.startedAt
                 val retrying = task.status == "ready" || task.status == "todo"
-                Headline(withAgo(if (retrying) "$who hit a problem and will try again" else "$who hit a problem and stopped", at), Mood.STUCK)
+                Headline(withAgo(w(if (retrying) R.string.p2_story_retrying else R.string.p2_story_stopped, who), at), Mood.STUCK)
             }
             task.status == "running" -> {
                 val sign = lastEvent(detail, "heartbeat")?.createdAt
                 val parts = listOfNotNull(
-                    "$who is working on this",
-                    started(task.startedAt, nowS),
-                    ago(sign, nowS)?.takeIf { sign != null && sign != task.startedAt }?.let { "last sign of life $it" },
+                    w(R.string.p2_story_working, who),
+                    started(task.startedAt, nowS, words),
+                    ago(sign, nowS, words)?.takeIf { sign != null && sign != task.startedAt }?.let { w(R.string.p2_story_last_sign, it) },
                 )
                 Headline(parts.joinToString(" · "), Mood.WORKING)
             }
             task.status == "blocked" -> when (task.blockKind) {
-                "dependency" -> Headline("Waiting for another mission to finish first", Mood.WAITING)
-                "transient" -> Headline("Paused for a moment. It carries on by itself", Mood.WAITING)
-                else -> Headline(withAgo("Paused", lastEvent(detail, "blocked")?.createdAt), Mood.WAITING)
+                "dependency" -> Headline(w(R.string.p2_story_waiting_dependency), Mood.WAITING)
+                "transient" -> Headline(w(R.string.p2_story_paused_moment), Mood.WAITING)
+                else -> Headline(withAgo(w(R.string.p2_story_paused), lastEvent(detail, "blocked")?.createdAt), Mood.WAITING)
             }
-            task.status == "ready" -> Headline("Ready. ${who} picks it up next", Mood.WAITING)
+            task.status == "ready" -> Headline(w(R.string.p2_story_ready, who), Mood.WAITING)
             task.status == "todo" -> Headline(
-                if (agent != null || task.assignee.isNotBlank()) "Waiting its turn · for ${agent ?: "your agent"}" else "Waiting its turn",
+                when {
+                    agent != null -> w(R.string.p2_story_waiting_turn_for, agent)
+                    task.assignee.isNotBlank() -> w(R.string.p2_story_waiting_turn_for_yours)
+                    else -> w(R.string.p2_story_waiting_turn)
+                },
                 Mood.WAITING,
             )
-            task.status == "triage" -> Headline("Waiting for a plan before anyone starts", Mood.WAITING)
-            task.status == "scheduled" -> Headline("Scheduled to start later", Mood.WAITING)
-            task.status == "done" -> Headline(withAgo("Done", task.completedAt), Mood.DONE)
-            task.status == "archived" -> Headline("Archived", Mood.DONE)
+            task.status == "triage" -> Headline(w(R.string.p2_story_triage), Mood.WAITING)
+            task.status == "scheduled" -> Headline(w(R.string.p2_story_scheduled), Mood.WAITING)
+            task.status == "done" -> Headline(withAgo(w(R.string.work_lane_done), task.completedAt), Mood.DONE)
+            task.status == "archived" -> Headline(w(R.string.app_archived), Mood.DONE)
             else -> Headline(task.status.replace('_', ' ').replaceFirstChar { it.uppercase() }, Mood.WAITING)
         }
     }
@@ -123,18 +145,19 @@ internal object MissionStory {
     /** The one thing the card puts in front of you, boxed: [label] over [text]. */
     data class Focus(val label: String, val text: String, val error: Boolean = false)
 
-    fun focus(task: KanbanTask, detail: KanbanDetail?): Focus? {
+    fun focus(task: KanbanTask, detail: KanbanDetail?, words: Words = Words.App): Focus? {
+        fun w(id: Int) = words.s(id)
         val newestRun = detail?.runs?.maxByOrNull { it.id }
         val made = task.result.ifBlank { task.latestSummary }.ifBlank { newestRun?.summary.orEmpty() }
         return when {
-            task.status == "review" -> made.takeIf { it.isNotBlank() }?.let { Focus("For your OK", it) }
-                ?: task.ask.takeIf { it.isNotBlank() }?.let { Focus("What it asks", it) }
+            task.status == "review" -> made.takeIf { it.isNotBlank() }?.let { Focus(w(R.string.p2_story_focus_ok), it) }
+                ?: task.ask.takeIf { it.isNotBlank() }?.let { Focus(w(R.string.p2_story_focus_asks), it) }
             task.needsYou -> task.ask.takeIf { it.isNotBlank() }?.let {
-                Focus(if (task.blockKind == "needs_input") "The question" else "What it needs", it)
+                Focus(w(if (task.blockKind == "needs_input") R.string.p2_story_focus_question else R.string.p2_story_focus_needs), it)
             }
-            failed(task) -> Focus("What went wrong", task.lastFailureError, error = true)
-            task.status == "done" -> made.takeIf { it.isNotBlank() }?.let { Focus("Result", it) }
-            else -> task.body.ifBlank { task.bodyExcerpt }.takeIf { it.isNotBlank() }?.let { Focus("The task", it) }
+            failed(task) -> Focus(w(R.string.p2_story_focus_wrong), task.lastFailureError, error = true)
+            task.status == "done" -> made.takeIf { it.isNotBlank() }?.let { Focus(w(R.string.work_details_result), it) }
+            else -> task.body.ifBlank { task.bodyExcerpt }.takeIf { it.isNotBlank() }?.let { Focus(w(R.string.p2_story_focus_task), it) }
         }
     }
 
@@ -184,33 +207,34 @@ internal object MissionStory {
      * bookkeeping, links) is left to the Events list under Details; a run of the same words
      * in a row reads once.
      */
-    fun timeline(detail: KanbanDetail, agent: String?): List<Moment> {
-        val who = subject(agent)
+    fun timeline(detail: KanbanDetail, agent: String?, words: Words = Words.App): List<Moment> {
+        val who = subject(agent, words)
+        fun w(id: Int, vararg args: Any) = words.s(id, *args)
         val needsYouNow = detail.task.needsYou
         val lastBlock = detail.events.filter { it.kind == "blocked" }.maxByOrNull { it.createdAt }
         val out = mutableListOf<Moment>()
         detail.events.sortedWith(compareBy({ it.createdAt }, { it.id })).forEach { e ->
             val text = when (e.kind) {
-                "created" -> "Created"
-                "specified" -> "Got its plan"
-                "promoted", "promoted_manual" -> "Queued to start"
-                "claimed" -> "$who started on it"
+                "created" -> w(R.string.p2_story_ev_created)
+                "specified" -> w(R.string.p2_story_ev_specified)
+                "promoted", "promoted_manual" -> w(R.string.p2_story_ev_queued)
+                "claimed" -> w(R.string.p2_story_ev_claimed, who)
                 "blocked" -> if (needsYouNow && e == lastBlock && detail.task.blockKind == "needs_input")
-                    "Stopped to ask you something" else "Paused"
-                "unblocked" -> "Back to work"
-                "review_requested" -> "Finished and asked for your OK"
-                "changes_requested" -> "Sent back with changes to make"
-                "completed" -> "Finished"
-                "crashed" -> "Stopped unexpectedly"
-                "timed_out" -> "Ran out of time"
-                "gave_up" -> "Gave up after several tries"
-                "reclaimed" -> "Stopped and put back in line"
-                "dependency_wait" -> "Waiting on another mission"
-                "assigned" -> "Handed over"
-                "scheduled" -> "Scheduled"
-                "commented" -> "Note added"
-                "edited" -> "Edited"
-                "archived" -> "Archived"
+                    w(R.string.p2_story_ev_asked) else w(R.string.p2_story_paused)
+                "unblocked" -> w(R.string.p2_story_ev_unblocked)
+                "review_requested" -> w(R.string.p2_story_ev_review)
+                "changes_requested" -> w(R.string.p2_story_ev_changes)
+                "completed" -> w(R.string.p2_story_ev_completed)
+                "crashed" -> w(R.string.p2_story_ev_crashed)
+                "timed_out" -> w(R.string.p2_story_ev_timed_out)
+                "gave_up" -> w(R.string.p2_story_ev_gave_up)
+                "reclaimed" -> w(R.string.p2_story_ev_reclaimed)
+                "dependency_wait" -> w(R.string.p2_story_ev_dependency)
+                "assigned" -> w(R.string.p2_story_ev_assigned)
+                "scheduled" -> w(R.string.work_lane_scheduled)
+                "commented" -> w(R.string.p2_story_ev_commented)
+                "edited" -> w(R.string.p2_story_ev_edited)
+                "archived" -> w(R.string.app_archived)
                 else -> null
             } ?: return@forEach
             if (out.lastOrNull()?.text != text) out += Moment(e.createdAt, text)

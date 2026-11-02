@@ -313,7 +313,7 @@ class MissionsDelegate(
     suspend fun kanbanTaskDetail(taskId: String): Result<chat.keryx.app.data.remote.HermesStreamClient.KanbanDetail> =
         client()?.kanbanTask(taskId)
             ?: if (demo) chat.keryx.app.transport.demo.DemoBoard.detail(taskId, System.currentTimeMillis())
-            else Result.failure(IllegalStateException("Hermes Link is off"))
+            else Result.failure(IllegalStateException(chat.keryx.app.KeryxText.getOr(chat.keryx.app.R.string.app_link_off, "Hermes Link is off")))
 
     /** Create a mission and refresh the board; toasts the outcome either way. [notify] chains a
      *  terminal-event subscription for the current alert room onto the fresh task. */

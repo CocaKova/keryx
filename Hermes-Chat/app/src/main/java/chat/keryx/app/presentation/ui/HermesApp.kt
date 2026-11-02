@@ -521,7 +521,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                                         Spacer(Modifier.width(4.dp))
                                     }
                                     Text(
-                                        text = if (botHere != null) botHere.label else room.name,
+                                        text = if (botHere != null) botHere.label else shownRoomName(room.name),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = KeryxType.body,
                                         maxLines = 1,

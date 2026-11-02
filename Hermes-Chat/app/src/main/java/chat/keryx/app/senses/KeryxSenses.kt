@@ -233,14 +233,18 @@ object KeryxSenses {
     }
 
     /** The settings card's one-line summary. */
-    fun lastSentLabel(nowMs: Long, lastSentMs: Long): String {
-        if (lastSentMs <= 0L) return "Never"
+    fun lastSentLabel(
+        nowMs: Long,
+        lastSentMs: Long,
+        words: (Int) -> String = { chat.keryx.app.KeryxText.get(it) },
+    ): String {
+        if (lastSentMs <= 0L) return words(chat.keryx.app.R.string.p2_senses_never)
         val mins = (nowMs - lastSentMs).coerceAtLeast(0L) / 60_000L
         return when {
-            mins < 1 -> "just now"
-            mins < 60 -> "${mins}m ago"
-            mins < 60 * 24 -> "${mins / 60}h ago"
-            else -> "${mins / (60 * 24)}d ago"
+            mins < 1 -> words(chat.keryx.app.R.string.work_age_just_now)
+            mins < 60 -> words(chat.keryx.app.R.string.work_ago_m).format(mins.toInt())
+            mins < 60 * 24 -> words(chat.keryx.app.R.string.work_ago_h).format((mins / 60).toInt())
+            else -> words(chat.keryx.app.R.string.work_ago_d).format((mins / (60 * 24)).toInt())
         }
     }
 

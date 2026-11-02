@@ -64,13 +64,26 @@ enum class CardMove(
     ),
     ARCHIVE("archive", "Archive", "Takes it off the board. A running worker is stopped.", confirm = true, noteRequired = null);
 
-    /** The toast after the gateway said yes. */
-    fun landed(status: String, assignee: String): String = when (this) {
-        REASSIGN -> "Handed to ${assignee.ifBlank { "nobody" }}" + (if (status.isNotBlank()) " — $status" else "")
-        DONE -> "Marked done"
-        ARCHIVE -> "Archived"
-        PAUSE -> "Paused — it waits on you"
-        else -> "$label — now ${status.ifBlank { "moving" }}"
+    /**
+     * The toast after the gateway said yes. [words] reads the strings: the app's language at
+     * run time, the English file in the plain-JVM tests. [status] is the gateway's own word.
+     */
+    fun landed(
+        status: String,
+        assignee: String,
+        words: (Int) -> String = { chat.keryx.app.KeryxText.get(it) },
+    ): String {
+        fun w(id: Int, vararg args: Any) = if (args.isEmpty()) words(id) else words(id).format(*args)
+        return when (this) {
+            REASSIGN -> {
+                val who = assignee.ifBlank { w(R.string.p2_move_nobody) }
+                if (status.isNotBlank()) w(R.string.p2_move_handed_status, who, status) else w(R.string.p2_move_handed, who)
+            }
+            DONE -> w(R.string.p2_move_marked_done)
+            ARCHIVE -> w(R.string.app_archived)
+            PAUSE -> w(R.string.p2_move_paused)
+            else -> w(R.string.p2_move_now, w(titleRes(this)), status.ifBlank { w(R.string.p2_move_moving) })
+        }
     }
 }
 

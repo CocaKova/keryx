@@ -727,11 +727,16 @@ fun NavigationDrawerContent(
                         }
                     }
                     // Settings rows by name (2.10): the hit opens Settings on that row, lit.
-                    val settingHits = chat.keryx.app.presentation.ui.components.SettingsCatalog.search(q, direct).take(5)
+                    val settingHits = chat.keryx.app.presentation.ui.components.SettingsCatalog.search(q, direct) { chat.keryx.app.KeryxText.get(it.label) }.take(5)
                     if (settingHits.isNotEmpty()) {
                         item(key = "palette-settings") { DrawerSectionHeader(stringResource(R.string.chat_place_settings)) }
                         items(settingHits, key = { "setting-" + it.id }) { e ->
-                            PaletteRow(icon = KeryxGlyphs.Sliders, title = e.title, subtitle = e.section(direct)) {
+                            val sectionKey = e.section(direct)
+                            PaletteRow(
+                                icon = KeryxGlyphs.Sliders,
+                                title = stringResource(e.label),
+                                subtitle = chat.keryx.app.presentation.ui.components.settingsSectionLabel(sectionKey)?.let { stringResource(it) } ?: sectionKey,
+                            ) {
                                 viewModel.jumpToSetting(e.id)
                                 onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Settings)
                             }
@@ -1365,7 +1370,7 @@ fun RoomRow(
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = room.name,
+                    text = shownRoomName(room.name),
                     // The open room's name in the accent's ink: the raw accent on its own 12% wash
                     // read 2.74:1 on parchment (3.0 accessibility pass).
                     color = if (isSelected) selectedInk else MaterialTheme.colorScheme.onSurface,
@@ -1617,7 +1622,7 @@ fun RoomRow(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmLeave = false },
-            title = { Text(stringResource(R.string.chat_leave_title, room.name), fontSize = KeryxType.titleLarge) },
+            title = { Text(stringResource(R.string.chat_leave_title, shownRoomName(room.name)), fontSize = KeryxType.titleLarge) },
             text = { Text(stringResource(R.string.chat_leave_body), fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = { confirmLeave = false; onLeave?.invoke() }) {
@@ -1658,7 +1663,7 @@ fun RoomRow(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmDelete = false },
-            title = { Text(stringResource(R.string.chat_delete_title, room.name), fontSize = KeryxType.titleLarge) },
+            title = { Text(stringResource(R.string.chat_delete_title, shownRoomName(room.name)), fontSize = KeryxType.titleLarge) },
             text = { Text(stringResource(R.string.chat_delete_session_body), fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = { confirmDelete = false; onDelete?.invoke() }) {

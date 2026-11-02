@@ -25,7 +25,7 @@ internal suspend fun GatewayRest.routed(method: String, path: String, jsonBody: 
     exchange(method, path, jsonBody).fold(
         onSuccess = { (code, body) -> RouteProbe.classify(code, body) },
         // No answer at all: the network, or a gateway mid-restart. Status 0 says so.
-        onFailure = { Routed.Failed(it.message?.take(160) ?: "The gateway didn't answer.") },
+        onFailure = { Routed.Failed(it.message?.take(160) ?: chat.keryx.app.KeryxText.getOr(chat.keryx.app.R.string.p2_gateway_no_answer, "The gateway didn't answer.")) },
     )
 
 private val lenient = Json { ignoreUnknownKeys = true }
@@ -94,7 +94,7 @@ internal suspend fun GatewayRest.updateReceipt(): Routed<UpdateReceipt?> =
         is Routed.Failed -> if (r.status == 404) Routed.Ok(null) else r
         Routed.Missing -> Routed.Missing
         is Routed.Ok -> parse(r.value)?.let { Routed.Ok(HermesUpdateParser.receipt(it)) }
-            ?: Routed.Failed("The receipt came back unreadable.", 200)
+            ?: Routed.Failed(chat.keryx.app.KeryxText.getOr(chat.keryx.app.R.string.p2_update_receipt_unreadable, "The receipt came back unreadable."), 200)
     }
 
 /** `GET /api/actions/hermes-update/status` — running, exit code, the log's tail. */

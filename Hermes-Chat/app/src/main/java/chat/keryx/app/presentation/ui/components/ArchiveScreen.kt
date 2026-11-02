@@ -125,7 +125,7 @@ fun ArchiveScreen(
                     p.error != null -> {
                         KeryxBreathingDot(KeryxStatus.warn, alive = false)
                         Spacer(Modifier.width(6.dp))
-                        StatusLine(pluralStringResource(R.plurals.chat_archive_error, p.indexed, "%,d".format(p.indexed), p.error.orEmpty()))
+                        StatusLine(pluralStringResource(R.plurals.chat_archive_error, p.indexed, "%,d".format(p.indexed), archiveErrorShown(p.error.orEmpty())))
                     }
                     else -> {
                         KeryxBreathingDot(KeryxStatus.good, alive = false)
@@ -852,4 +852,17 @@ private fun ContextRow(m: Message, anchor: Boolean, viewModel: ChatViewModel) {
             }
         }
     }
+}
+
+/**
+ * The indexers' own status words are English and fixed (they also land in logs); say the known
+ * ones in the app's language. Anything else is the transport's error text, passed through.
+ */
+@Composable
+private fun archiveErrorShown(error: String): String = when (error) {
+    "sweep failed" -> stringResource(R.string.p2_archive_sweep_failed)
+    "no timeline yet" -> stringResource(R.string.p2_archive_no_timeline)
+    "backfill resume failed — will restart" -> stringResource(R.string.p2_archive_resume_failed)
+    "gateway not connected" -> stringResource(R.string.p2_archive_not_connected)
+    else -> error
 }

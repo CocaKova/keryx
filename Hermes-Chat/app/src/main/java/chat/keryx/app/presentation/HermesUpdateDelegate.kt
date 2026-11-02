@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.KeryxText
+import chat.keryx.app.R
 import chat.keryx.app.data.remote.HermesStreamClient
 import chat.keryx.app.transport.direct.GatewayRest
 import chat.keryx.app.transport.direct.updateAction
@@ -102,7 +104,7 @@ class HermesUpdateDelegate(
             if (e.httpStatus == 404 || e.httpStatus == 405) Routed.Missing
             else Routed.Failed(e.message ?: "HTTP ${e.httpStatus}", e.httpStatus)
         } catch (e: Exception) {
-            Routed.Failed(e.message?.take(160) ?: "The Hermes Link didn't answer.")
+            Routed.Failed(e.message?.take(160) ?: KeryxText.get(R.string.p2_update_link_no_answer))
         }
     }
 
@@ -175,8 +177,8 @@ class HermesUpdateDelegate(
             // The /keryx handler 400s a POST without a JSON body — an empty object is the body.
             when (val res = linkRead("/keryx/update/check", "POST", buildJsonObject { })) {
                 is Routed.Ok -> _board.value = (_board.value ?: Board()).copy(checking = true)
-                is Routed.Failed -> toast("Check refused: ${res.message.take(80)}")
-                Routed.Missing -> toast("This gateway can't check for updates from the phone.")
+                is Routed.Failed -> toast(KeryxText.get(R.string.p2_update_check_refused, res.message.take(80)))
+                Routed.Missing -> toast(KeryxText.get(R.string.p2_update_check_missing))
             }
         }
     }
@@ -198,15 +200,15 @@ class HermesUpdateDelegate(
             when (val res = linkRead("/keryx/update/channel", "PUT", body).map { HermesUpdateParser.channel(it) }) {
                 is Routed.Ok -> {
                     _board.value = _board.value?.copy(channel = res.value, channelBusy = false)
-                    toast(if (res.value.isEdge) "Following every change (Edge)" else "Following stable releases")
+                    toast(KeryxText.get(if (res.value.isEdge) R.string.p2_update_following_edge else R.string.p2_update_following_stable))
                 }
                 is Routed.Failed -> {
                     _board.value = _board.value?.copy(channelBusy = false)
-                    toast("Couldn't switch: ${res.message.take(80)}")
+                    toast(KeryxText.get(R.string.p2_update_switch_failed, res.message.take(80)))
                 }
                 Routed.Missing -> {
                     _board.value = _board.value?.copy(channelBusy = false, channelMissing = true)
-                    toast("This gateway's keryx-stream can't switch update channels.")
+                    toast(KeryxText.get(R.string.p2_update_switch_missing))
                 }
             }
             readAll(forceCheck = false)
@@ -219,7 +221,7 @@ class HermesUpdateDelegate(
         val b = _board.value ?: return
         // On the card itself: a toast raised from the Hub never showed (device, 10-09).
         _board.value = b.copy(checkedAtMs = System.currentTimeMillis())
-        toast("Checked: " + UpdatePlanner.behindLine(UpdatePlanner.behind(b.plugin, b.check)).replaceFirstChar { it.lowercase() })
+        toast(KeryxText.get(R.string.p2_update_checked, UpdatePlanner.behindLine(UpdatePlanner.behind(b.plugin, b.check)).replaceFirstChar { it.lowercase() }))
     }
 
     // --- the update -----------------------------------------------------------------------
@@ -247,15 +249,15 @@ class HermesUpdateDelegate(
             _run.value = _run.value?.copy(run = baselined)
             val refusal: String? = when (plan.route) {
                 UpdateRoute.DASHBOARD -> when (val res = rest()?.updateStart() ?: Routed.Missing) {
-                    is Routed.Ok -> if (res.value.ok) null else res.value.message.ifBlank { "Hermes refused to update." }
+                    is Routed.Ok -> if (res.value.ok) null else res.value.message.ifBlank { KeryxText.get(R.string.p2_update_refused) }
                     is Routed.Failed -> res.message
-                    Routed.Missing -> "This gateway can't update from the phone."
+                    Routed.Missing -> KeryxText.get(R.string.p2_update_missing_dashboard)
                 }
                 UpdateRoute.PLUGIN -> when (val res = linkRead("/keryx/update", "POST", buildJsonObject { })) {
                     is Routed.Ok -> null
                     // 409 = one was started under ten minutes ago; 501 = no command configured.
                     is Routed.Failed -> res.message
-                    Routed.Missing -> "This gateway's plugin can't run an update."
+                    Routed.Missing -> KeryxText.get(R.string.p2_update_missing_plugin)
                 }
             }
             if (refusal != null) {
@@ -296,7 +298,7 @@ class HermesUpdateDelegate(
         }
         if (b?.checking == true && plugin.valueOrNull?.checking == false) {
             val err = plugin.valueOrNull?.checkError
-            if (!err.isNullOrBlank()) toast("Check failed: ${err.take(80)}") else announceCheck()
+            if (!err.isNullOrBlank()) toast(KeryxText.get(R.string.p2_update_check_failed, err.take(80))) else announceCheck()
         }
         if (!inRun || view == null) return
 

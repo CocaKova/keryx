@@ -222,10 +222,10 @@ class KeryxSensesTest {
     @Test
     fun lastSentLabel_readsAsASentence() {
         val now = 1_800_000_000_000L
-        assertEquals("Never", KeryxSenses.lastSentLabel(now, 0L))
-        assertEquals("just now", KeryxSenses.lastSentLabel(now, now - 30_000L))
-        assertEquals("12m ago", KeryxSenses.lastSentLabel(now, now - 12 * 60_000L))
-        assertEquals("3h ago", KeryxSenses.lastSentLabel(now, now - 3 * 3_600_000L))
-        assertEquals("2d ago", KeryxSenses.lastSentLabel(now, now - 2 * 86_400_000L))
+        assertEquals("Never", KeryxSenses.lastSentLabel(now, 0L, EnglishStrings::get))
+        assertEquals("just now", KeryxSenses.lastSentLabel(now, now - 30_000L, EnglishStrings::get))
+        assertEquals("12m ago", KeryxSenses.lastSentLabel(now, now - 12 * 60_000L, EnglishStrings::get))
+        assertEquals("3h ago", KeryxSenses.lastSentLabel(now, now - 3 * 3_600_000L, EnglishStrings::get))
+        assertEquals("2d ago", KeryxSenses.lastSentLabel(now, now - 2 * 86_400_000L, EnglishStrings::get))
     }
 }

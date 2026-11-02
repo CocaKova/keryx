@@ -13,6 +13,64 @@
     <!-- Quiet note under the list when the language in use was machine-translated. "GitHub" stays as is. -->
     <string name="p2_language_ai_note">Translated by AI and not yet checked by a native speaker. Spot a clumsy line? Tell us on GitHub.</string>
 
+    <!-- Mission sheet: the card told as a story. A "mission" is a task card on the agent's board. %1$s = the agent's name, or "Your agent". -->
+    <plurals name="p2_story_min_ago">
+        <item quantity="one">%d min ago</item>
+        <item quantity="other">%d min ago</item>
+    </plurals>
+    <plurals name="p2_story_days_ago">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
+    <string name="p2_story_yesterday">yesterday</string>
+    <!-- %1$s = how long ago, e.g. "25 min ago". -->
+    <string name="p2_story_started">started %1$s</string>
+    <string name="p2_story_review">%1$s finished and wants your OK</string>
+    <string name="p2_story_stuck_capability">%1$s is stuck: it needs something it can\'t do</string>
+    <string name="p2_story_question">%1$s has a question for you</string>
+    <string name="p2_story_needs_you">%1$s needs you before it can go on</string>
+    <string name="p2_story_retrying">%1$s hit a problem and will try again</string>
+    <string name="p2_story_stopped">%1$s hit a problem and stopped</string>
+    <string name="p2_story_working">%1$s is working on this</string>
+    <!-- %1$s = how long ago the agent last reported in, e.g. "1 min ago". -->
+    <string name="p2_story_last_sign">last sign of life %1$s</string>
+    <string name="p2_story_waiting_dependency">Waiting for another mission to finish first</string>
+    <string name="p2_story_paused_moment">Paused for a moment. It carries on by itself</string>
+    <!-- A mission that is on hold. -->
+    <string name="p2_story_paused">Paused</string>
+    <string name="p2_story_ready">Ready. %1$s picks it up next</string>
+    <!-- %1$s = the agent's name. -->
+    <string name="p2_story_waiting_turn_for">Waiting its turn · for %1$s</string>
+    <string name="p2_story_waiting_turn_for_yours">Waiting its turn · for your agent</string>
+    <string name="p2_story_waiting_turn">Waiting its turn</string>
+    <string name="p2_story_triage">Waiting for a plan before anyone starts</string>
+    <string name="p2_story_scheduled">Scheduled to start later</string>
+    <!-- Labels over the boxed thing to act on in a mission sheet. -->
+    <string name="p2_story_focus_ok">For your OK</string>
+    <string name="p2_story_focus_asks">What it asks</string>
+    <string name="p2_story_focus_question">The question</string>
+    <string name="p2_story_focus_needs">What it needs</string>
+    <string name="p2_story_focus_wrong">What went wrong</string>
+    <string name="p2_story_focus_task">The task</string>
+    <!-- "What happened": one line per event in a mission's history. -->
+    <string name="p2_story_ev_created">Created</string>
+    <string name="p2_story_ev_specified">Got its plan</string>
+    <string name="p2_story_ev_queued">Queued to start</string>
+    <string name="p2_story_ev_claimed">%1$s started on it</string>
+    <string name="p2_story_ev_asked">Stopped to ask you something</string>
+    <string name="p2_story_ev_unblocked">Back to work</string>
+    <string name="p2_story_ev_review">Finished and asked for your OK</string>
+    <string name="p2_story_ev_changes">Sent back with changes to make</string>
+    <string name="p2_story_ev_completed">Finished</string>
+    <string name="p2_story_ev_crashed">Stopped unexpectedly</string>
+    <string name="p2_story_ev_timed_out">Ran out of time</string>
+    <string name="p2_story_ev_gave_up">Gave up after several tries</string>
+    <string name="p2_story_ev_reclaimed">Stopped and put back in line</string>
+    <string name="p2_story_ev_dependency">Waiting on another mission</string>
+    <string name="p2_story_ev_assigned">Handed over</string>
+    <string name="p2_story_ev_commented">Note added</string>
+    <string name="p2_story_ev_edited">Edited</string>
+
     <!-- ===== Words built in the core module (CoreWords.kt). Keys are p2_core_<phrase>. ===== -->
     <!-- Notifications: a new message from the agent. Keep the emoji. -->
     <string name="p2_core_notice_photo">🖼 Photo</string>
@@ -158,4 +216,56 @@
         <item quantity="one">Room for about %1$d more reply. %2$s</item>
         <item quantity="other">Room for about %1$d more replies. %2$s</item>
     </plurals>
+
+    <!-- ===== Display-time fixes ===== -->
+    <!-- A chat the gateway gave no title. -->
+    <string name="p2_room_untitled_session">Session</string>
+    <!-- A chat branched off another, with no title yet. Noun. -->
+    <string name="p2_room_untitled_branch">Branch</string>
+    <!-- Shown when a command on the user's server is waiting for its administrator (sudo) password. -->
+    <string name="p2_sudo_prompt">A command on the host needs your sudo password.</string>
+    <!-- Chat archive (search index) status errors. -->
+    <string name="p2_archive_sweep_failed">sweep failed</string>
+    <string name="p2_archive_no_timeline">no timeline yet</string>
+    <string name="p2_archive_resume_failed">backfill resume failed — will restart</string>
+    <string name="p2_archive_not_connected">gateway not connected</string>
+    <!-- Errors from the gateway's dashboard routes and from pairing with Hermes Link (the app's link to the gateway). Keep "Hermes Link", "keryx-stream", "HTTP". -->
+    <string name="p2_gateway_no_answer">The gateway didn\'t answer.</string>
+    <string name="p2_update_receipt_unreadable">The receipt came back unreadable.</string>
+    <string name="p2_pair_no_token">Hermes Link\'s answer had no token.</string>
+    <string name="p2_pair_plugin_old">The gateway\'s keryx-stream can\'t pair yet. Update it to 0.6 and restart the gateway.</string>
+    <!-- %1$d = an HTTP status code. -->
+    <string name="p2_pair_http">Hermes Link answered HTTP %1$d.</string>
+    <!-- %1$s = a web address. -->
+    <string name="p2_pair_no_answer">Hermes Link didn\'t answer at %1$s.</string>
+    <!-- Updating Hermes from the phone: toasts and refusals. "Edge" = the channel that follows every change; "stable" = releases only. -->
+    <string name="p2_update_link_no_answer">The Hermes Link didn\'t answer.</string>
+    <!-- %1$s = the gateway's reason. -->
+    <string name="p2_update_check_refused">Check refused: %1$s</string>
+    <string name="p2_update_check_missing">This gateway can\'t check for updates from the phone.</string>
+    <string name="p2_update_following_edge">Following every change (Edge)</string>
+    <string name="p2_update_following_stable">Following stable releases</string>
+    <!-- %1$s = the gateway's reason. -->
+    <string name="p2_update_switch_failed">Couldn\'t switch: %1$s</string>
+    <string name="p2_update_switch_missing">This gateway\'s keryx-stream can\'t switch update channels.</string>
+    <!-- %1$s = what the check found, e.g. "up to date" or "3 commits behind". -->
+    <string name="p2_update_checked">Checked: %1$s</string>
+    <string name="p2_update_refused">Hermes refused to update.</string>
+    <string name="p2_update_missing_dashboard">This gateway can\'t update from the phone.</string>
+    <string name="p2_update_missing_plugin">This gateway\'s plugin can\'t run an update.</string>
+    <!-- %1$s = the error. -->
+    <string name="p2_update_check_failed">Check failed: %1$s</string>
+    <!-- Toast after moving a mission card. %1$s = who it was handed to; %2$s = the card's new status as the gateway names it. -->
+    <string name="p2_move_handed">Handed to %1$s</string>
+    <string name="p2_move_handed_status">Handed to %1$s — %2$s</string>
+    <!-- Handed to no one. -->
+    <string name="p2_move_nobody">nobody</string>
+    <string name="p2_move_marked_done">Marked done</string>
+    <string name="p2_move_paused">Paused — it waits on you</string>
+    <!-- %1$s = the move (e.g. "Unblock"); %2$s = the card's new status. -->
+    <string name="p2_move_now">%1$s — now %2$s</string>
+    <!-- Stands in for the new status when the gateway did not name one. -->
+    <string name="p2_move_moving">moving</string>
+    <!-- Settings › Senses: when the phone last sent its context to the agent. -->
+    <string name="p2_senses_never">Never</string>
 </resources>

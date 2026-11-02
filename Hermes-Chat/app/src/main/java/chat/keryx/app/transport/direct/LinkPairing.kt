@@ -1,5 +1,6 @@
 package chat.keryx.app.transport.direct
 
+import chat.keryx.app.R
 import chat.keryx.core.pair.PairingLink
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -45,20 +46,22 @@ object LinkPairing {
                     val said = parsed?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
                     when (resp.code) {
                         200 -> parsed?.get("token")?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
-                            ?: error("Hermes Link's answer had no token.")
+                            ?: error(words(R.string.p2_pair_no_token, "Hermes Link's answer had no token."))
                         // An older keryx-stream has no claim route: its relay asks for a bearer (401)
                         // or the API server behind it has no such path (404/405).
                         401, 404, 405 -> error(
-                            "The gateway's keryx-stream can't pair yet. Update it to 0.6 and restart the gateway.",
+                            words(R.string.p2_pair_plugin_old, "The gateway's keryx-stream can't pair yet. Update it to 0.6 and restart the gateway."),
                         )
-                        else -> error(said ?: "Hermes Link answered HTTP ${resp.code}.")
+                        else -> error(said ?: String.format(words(R.string.p2_pair_http, "Hermes Link answered HTTP %1\$d."), resp.code))
                     }
                 }
             }.recoverCatching { e ->
                 if (e is IllegalStateException) throw e
-                error("Hermes Link didn't answer at ${pairing.link}.")
+                error(String.format(words(R.string.p2_pair_no_answer, "Hermes Link didn't answer at %1\$s."), pairing.link))
             }
         }
+
+    private fun words(id: Int, english: String): String = chat.keryx.app.KeryxText.getOr(id, english)
 
     private fun client(allowInsecure: Boolean): OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(8, TimeUnit.SECONDS)

@@ -359,7 +359,9 @@ private fun KeryxSnackCard(notice: KeryxNotice, onAction: () -> Unit, onDismiss:
         if (notice.hasAction) {
             TextButton(onClick = onAction) {
                 Text(
-                    notice.actionLabel.orEmpty(),
+                    // UNDO is a fixed English token (the queue compares it); say it in the app's language here.
+                    if (notice.actionLabel == chat.keryx.app.presentation.KeryxNotice.UNDO) androidx.compose.ui.res.stringResource(chat.keryx.app.R.string.chat_action_undo)
+                    else notice.actionLabel.orEmpty(),
                     color = keryxAccentInk(),
                     fontSize = KeryxType.body,
                     fontWeight = FontWeight.SemiBold,

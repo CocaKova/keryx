@@ -171,7 +171,9 @@ fun BlockingRequestCard(
         )
         if (request.prompt.isNotBlank()) {
             Spacer(Modifier.height(6.dp))
-            Text(request.prompt, fontSize = KeryxType.body, lineHeight = 18.sp, color = onSurface)
+            // The sudo prompt is the transport's own English, fixed; say it in the app's language.
+            val promptShown = if (request.kind == BlockingKind.SUDO) stringResource(R.string.p2_sudo_prompt) else request.prompt
+            Text(promptShown, fontSize = KeryxType.body, lineHeight = 18.sp, color = onSurface)
         }
         }
         if (request.envVar.isNotBlank()) {
