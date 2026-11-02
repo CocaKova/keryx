@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import chat.keryx.app.transport.direct.GatewayRest
 import chat.keryx.app.transport.direct.McpCatalogEntry
 import chat.keryx.app.transport.direct.McpProbe
@@ -74,9 +76,9 @@ class AgentDelegate(
         _mcp.value = _mcp.value.copy(data = before.map { if (it.name == name) it.copy(enabled = enabled) else it })
         scope.launch {
             when (val res = r.mcpSetEnabled(name, enabled)) {
-                is Routed.Ok -> toast(if (enabled) "$name on — from the next session" else "$name off — from the next session")
-                is Routed.Failed -> { toast("Couldn't change $name: ${res.message.take(80)}"); refreshMcp() }
-                Routed.Missing -> { toast("This gateway can't switch MCP servers from here."); refreshMcp() }
+                is Routed.Ok -> toast(KeryxText.get(if (enabled) R.string.agent_mcp_on else R.string.agent_mcp_off, name))
+                is Routed.Failed -> { toast(KeryxText.get(R.string.agent_skill_change_failed, name, res.message.take(80))); refreshMcp() }
+                Routed.Missing -> { toast(KeryxText.get(R.string.agent_mcp_switch_unsupported)); refreshMcp() }
             }
         }
     }
@@ -216,11 +218,12 @@ class AgentDelegate(
             when (val res = r.saveSoul(profile, content)) {
                 is Routed.Ok -> {
                     _soul.value = HubDelegate.PanelState(data = SoulText(profile, content, exists = true))
-                    toast("Soul saved — new sessions start with it")
+                    toast(KeryxText.get(R.string.agent_soul_saved))
                     onDone(true)
                 }
-                is Routed.Failed -> { toast("Couldn't save: ${res.message.take(80)}"); onDone(false) }
-                Routed.Missing -> { toast("This gateway can't edit the soul from here."); onDone(false) }
+                is Routed.Failed -> { toast(KeryxText.get(R.string.agent_couldnt_save_reason, res.message.take(80))); onDone(false) }
+                Routed.Missing -> { toast(KeryxText.get(R.string.agent_soul_edit_unsupported)); onDone(false) }
+
             }
         }
     }

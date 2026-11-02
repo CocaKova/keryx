@@ -94,6 +94,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
+    // Writes the locales_config the system reads for Settings › Apps › Keryx › Language,
+    // from the values-<locale> folders; res/resources.properties names English as the default.
+    androidResources {
+        generateLocaleConfig = true
+    }
+
     buildFeatures {
       compose = true
       aidl = false

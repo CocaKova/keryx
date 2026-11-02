@@ -1,5 +1,6 @@
 package chat.keryx.app.notify
 
+import chat.keryx.app.KeryxText
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -98,7 +99,7 @@ class BuiltinPushService : Service() {
         // A sticky restart happens in the background, where Android 12+ refuses a foreground
         // start; that throw used to take the whole app down. Bow out; the next launch restarts it.
         val started = runCatching {
-            ServiceCompat.startForeground(this, NOTIF_ID, buildStatusNotification("Connecting…"), type)
+            ServiceCompat.startForeground(this, NOTIF_ID, buildStatusNotification(KeryxText.get(R.string.app_push_connecting)), type)
         }
         if (started.isFailure) {
             android.util.Log.w("KeryxPush", "foreground start refused", started.exceptionOrNull())
@@ -143,7 +144,7 @@ class BuiltinPushService : Service() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
             retries = 0
             android.util.Log.i("KeryxPush", "builtin: connected")
-            updateStatusNotification("Connected — built-in push")
+            updateStatusNotification(KeryxText.get(R.string.app_push_connected))
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
@@ -173,7 +174,7 @@ class BuiltinPushService : Service() {
         if (stopped) return
         val delay = (3_000L shl retries.coerceAtMost(6)).coerceAtMost(300_000L)
         retries++
-        updateStatusNotification("Reconnecting…")
+        updateStatusNotification(KeryxText.get(R.string.app_push_reconnecting))
         handler.removeCallbacksAndMessages(null)
         handler.postDelayed({ connect() }, delay)
     }
@@ -195,21 +196,31 @@ class BuiltinPushService : Service() {
 
     private fun ensureChannel() {
         val mgr = getSystemService(NotificationManager::class.java) ?: return
-        if (mgr.getNotificationChannel(CHANNEL_ID) != null) return
+        val name = KeryxText.get(R.string.app_channel_push)
+        val about = KeryxText.get(R.string.app_channel_push_desc)
+        // The words follow the app's language; the system keeps the rest of an existing channel.
+        mgr.getNotificationChannel(CHANNEL_ID)?.let { existing ->
+            if (existing.name?.toString() != name || existing.description != about) {
+                existing.name = name
+                existing.description = about
+                mgr.createNotificationChannel(existing)
+            }
+            return
+        }
         mgr.createNotificationChannel(
             NotificationChannel(
                 CHANNEL_ID,
-                "Push connection",
+                name,
                 // MIN: lives collapsed at the bottom of the shade, no icon in the status bar.
                 NotificationManager.IMPORTANCE_MIN,
-            ).apply { description = "Keryx's own connection to your push server (no distributor app needed)" },
+            ).apply { description = about },
         )
     }
 
     private fun buildStatusNotification(status: String) =
         NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_keryx)
-            .setContentTitle("Keryx push")
+            .setContentTitle(KeryxText.get(R.string.app_push_title))
             .setContentText(status)
             .setOngoing(true)
             .setShowWhen(false)

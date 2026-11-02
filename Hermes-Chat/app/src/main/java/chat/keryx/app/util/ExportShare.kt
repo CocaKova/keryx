@@ -1,5 +1,6 @@
 package chat.keryx.app.util
 
+import chat.keryx.app.R
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
@@ -34,7 +35,7 @@ suspend fun shareExport(context: Context, file: SessionExportDelegate.ExportFile
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     context.startActivity(
-        Intent.createChooser(send, "Share ${staged.name}").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        Intent.createChooser(send, context.getString(R.string.app_share_named, staged.name)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     )
     true
 }.getOrDefault(false)

@@ -1,0 +1,837 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The chat area: chat screen, composer, bubbles, drawer, archive, call screen and sheets. Keys are chat_-prefixed. -->
+
+    <!-- Navigation drawer -->
+    <string name="chat_theme_to_light">Switch to light</string>
+    <string name="chat_theme_follow_system">Follow system</string>
+    <string name="chat_theme_to_dark">Switch to dark</string>
+    <string name="chat_new_chat">New chat</string>
+    <!-- Placeholder of the drawer's search field. -->
+    <string name="chat_drawer_jump_hint">Jump to…</string>
+    <!-- Drawer filter chip: sessions waiting on the user. -->
+    <string name="chat_lens_needs_you">Needs you</string>
+    <!-- Drawer filter chip: sessions with a turn in progress. -->
+    <string name="chat_lens_running">Running</string>
+    <!-- Drawer filter chip. -->
+    <string name="chat_lens_unread">Unread</string>
+    <!-- Drawer filter chip. -->
+    <string name="chat_lens_archived">Archived</string>
+    <!-- Section header: pending room invitations. -->
+    <string name="chat_drawer_invites">Invites</string>
+    <!-- A place in the app (the kanban board). -->
+    <string name="chat_place_missions">Missions</string>
+    <!-- A place in the app: scheduled job runs (noun). -->
+    <string name="chat_place_runs">Runs</string>
+    <string name="chat_place_bots">Bots</string>
+    <string name="chat_place_projects">Projects</string>
+    <!-- A place in the app for git work. -->
+    <string name="chat_place_shipyard">Shipyard</string>
+    <!-- A place in the app (noun). -->
+    <string name="chat_place_archive">Archive</string>
+    <string name="chat_place_gateway">Gateway</string>
+    <string name="chat_place_settings">Settings</string>
+    <!-- Section header in the drawer's search results. -->
+    <string name="chat_drawer_places">Places</string>
+    <!-- Section header in the drawer's search results. -->
+    <string name="chat_drawer_commands">Commands</string>
+    <string name="chat_drawer_no_matches">No matches</string>
+    <string name="chat_drawer_nothing_archived">Nothing archived</string>
+    <string name="chat_drawer_nothing_waiting">Nothing waiting on you</string>
+    <string name="chat_drawer_nothing_running">Nothing running</string>
+    <string name="chat_drawer_all_read">All read</string>
+    <string name="chat_session_id_copied">Session id copied</string>
+    <!-- Toast: a session moved to the named project. -->
+    <string name="chat_moved_to_project">Moved to %1$s</string>
+    <!-- Loading older sessions. -->
+    <string name="chat_drawer_reaching_back">Reaching back…</string>
+    <!-- %1$s is a plural noun such as sessions or rooms. -->
+    <string name="chat_drawer_show_older">Show older %1$s</string>
+    <!-- Section header: search hits inside message text. -->
+    <string name="chat_drawer_in_transcripts">In transcripts</string>
+    <string name="chat_demo_gateway">demo gateway</string>
+    <string name="chat_demo_gateway_page">Your gateway\'s page lives here once you connect one.</string>
+    <!-- Button: connect a gateway. -->
+    <string name="chat_connect">Connect</string>
+    <!-- Accessibility action label. -->
+    <string name="chat_open_gateway">Open the Gateway</string>
+    <string name="chat_settings">Settings</string>
+    <!-- Accessibility: collapse the named section. -->
+    <string name="chat_shelf_fold">Fold %1$s</string>
+    <!-- Accessibility: expand the named section. -->
+    <string name="chat_shelf_open">Open %1$s</string>
+    <string name="chat_room_forked">Forked from another conversation</string>
+    <string name="chat_room_temporary">Temporary — deleted at next launch</string>
+    <string name="chat_room_pinned">Pinned</string>
+    <string name="chat_mark_unread">Mark as unread</string>
+    <!-- Menu verb: archive a session. -->
+    <string name="chat_archive">Archive</string>
+    <string name="chat_archive_hint">Off the list, still on the gateway</string>
+    <string name="chat_restore_to_list">Restore to the list</string>
+    <string name="chat_export_ellipsis">Export…</string>
+    <string name="chat_copy_session_id">Copy session id</string>
+    <string name="chat_invite_user">Invite user…</string>
+    <string name="chat_rename_ellipsis">Rename…</string>
+    <string name="chat_move_to_project">Move to project…</string>
+    <string name="chat_leave_room">Leave room</string>
+    <string name="chat_delete_session_ellipsis">Delete session…</string>
+    <string name="chat_invite_to">Invite to %1$s</string>
+    <!-- Button. -->
+    <string name="chat_invite">Invite</string>
+    <string name="chat_cancel">Cancel</string>
+    <string name="chat_leave_title">Leave %1$s?</string>
+    <string name="chat_leave_body">You\'ll stop receiving its messages; rejoining needs a new invite.</string>
+    <!-- Button: leave a room. -->
+    <string name="chat_leave">Leave</string>
+    <string name="chat_rename_session">Rename session</string>
+    <!-- Button. -->
+    <string name="chat_rename">Rename</string>
+    <string name="chat_delete_title">Delete %1$s?</string>
+    <string name="chat_delete_session_body">Deletes the session and its whole transcript from the gateway. This can\'t be undone.</string>
+    <!-- Button. -->
+    <string name="chat_delete">Delete</string>
+    <string name="chat_invited_to_room">You\'ve been invited to this room</string>
+    <string name="chat_decline">Decline</string>
+    <string name="chat_accept">Accept</string>
+    <!-- Accessibility: a turn is in progress. -->
+    <string name="chat_running">Running</string>
+    <!-- Compact relative time: just now. -->
+    <string name="chat_age_now">now</string>
+    <!-- Compact relative time in minutes, e.g. 5m. -->
+    <string name="chat_age_minutes">%1$dm</string>
+    <!-- Compact relative time in hours. -->
+    <string name="chat_age_hours">%1$dh</string>
+    <!-- Compact relative time in days. -->
+    <string name="chat_age_days">%1$dd</string>
+    <!-- Compact relative time in weeks. -->
+    <string name="chat_age_weeks">%1$dw</string>
+    <!-- Accessibility: a place's name and how many cards wait on the user. -->
+    <plurals name="chat_door_needs_you">
+        <item quantity="one">%1$s, %2$s needs you</item>
+        <item quantity="other">%1$s, %2$s need you</item>
+    </plurals>
+    <string name="chat_door_unread">%1$s, %2$s unread</string>
+
+    <!-- App shell: top bar, bot /new choice, reasoning menu, demo strip -->
+    <!-- %1$s is a bot's name. -->
+    <string name="chat_bot_new_title">Start fresh with %1$s?</string>
+    <!-- Bot Chat is a bot's long-running conversation; Compact is the button that shrinks the context. -->
+    <string name="chat_bot_new_body">Compact keeps this conversation and clears %1$s\'s working context.\n\nA fresh Bot Chat retires this one — it stays readable under %1$s\'s past chats — and starts a new one.</string>
+    <!-- Button. -->
+    <string name="chat_bot_new_fresh">Fresh Bot Chat</string>
+    <!-- Button: compact (shrink) the working context. -->
+    <string name="chat_bot_new_compact">Compact</string>
+    <!-- Chip by a room title: this is a bot's long-running chat. -->
+    <string name="chat_bot_chat_chip">Bot Chat</string>
+    <string name="chat_menu">Menu</string>
+    <!-- Accessibility: the drawer button with a count. -->
+    <plurals name="chat_menu_waiting">
+        <item quantity="one">Menu, %d waiting on you</item>
+        <item quantity="other">Menu, %d waiting on you</item>
+    </plurals>
+    <plurals name="chat_menu_unread">
+        <item quantity="one">Menu, %d unread</item>
+        <item quantity="other">Menu, %d unread</item>
+    </plurals>
+    <!-- %1$s is the reason. -->
+    <string name="chat_new_session_failed">Couldn\'t start a session. %1$s</string>
+    <string name="chat_new_session_hold">New session (hold for options)</string>
+    <!-- A run is one execution of a scheduled job. -->
+    <string name="chat_unpin_run">Unpin this run</string>
+    <string name="chat_pin_run">Pin this run</string>
+    <string name="chat_new_session">New session</string>
+    <string name="chat_new_session_confirm_title">Start a new session?</string>
+    <!-- /new is a command; keep it as is. -->
+    <string name="chat_new_session_confirm_body">The agent is still working — /new ends the current run and its result is discarded.</string>
+    <string name="chat_new_session_confirm">End run &amp; start new</string>
+    <string name="chat_find_in_chat">Find in chat</string>
+    <string name="chat_call_needs_voice">Set the STT and TTS endpoints in Settings → Voice first</string>
+    <!-- Accessibility: start a voice call. -->
+    <string name="chat_call">Call</string>
+    <!-- Menu header, shown in capitals. -->
+    <string name="chat_reasoning_header">REASONING</string>
+    <string name="chat_reasoning_sub_default">effort persists across sessions</string>
+    <!-- Fallback name for a local model. -->
+    <string name="chat_reasoning_local_brain">local brain</string>
+    <!-- Fallback name for a model. -->
+    <string name="chat_reasoning_model">model</string>
+    <!-- %1$s is the model name. -->
+    <string name="chat_reasoning_sub_binary">%1$s · on/off switch</string>
+    <string name="chat_reasoning_sub_none">%1$s · no reasoning dial</string>
+    <string name="chat_reasoning_sub_session">%1$s · this session\'s ladder</string>
+    <string name="chat_reasoning_sub_scale">%1$s · effort scale</string>
+    <string name="chat_reasoning_no_dial">This model takes no effort level — Hermes sends none.</string>
+    <string name="chat_reasoning_every_session">Every session</string>
+    <string name="chat_reasoning_this_session">This session only</string>
+    <string name="chat_reasoning_show">Show reasoning</string>
+    <string name="chat_reasoning_hide">Hide reasoning</string>
+    <string name="chat_reasoning_reset">Reset session override</string>
+    <string name="chat_demo_label">Demo</string>
+    <string name="chat_demo_connect">Connect your gateway</string>
+
+    <!-- Chat screen -->
+    <string name="chat_attach_failed">Couldn\'t attach that (unreadable, or over 50 MB)</string>
+    <string name="chat_no_camera">No camera app answered</string>
+    <string name="chat_mic_unavailable">Mic unavailable</string>
+    <string name="chat_transcription_failed">Transcription failed: %1$s</string>
+    <string name="chat_mic_permission">Keryx needs mic access to dictate</string>
+    <string name="chat_nothing_to_read">Nothing to read aloud</string>
+    <string name="chat_typing_one">%1$s is typing…</string>
+    <string name="chat_typing_two">%1$s and %2$s are typing…</string>
+    <string name="chat_typing_many">Several people are typing…</string>
+    <string name="chat_jump_newest">Jump to newest</string>
+    <plurals name="chat_jump_newest_count">
+        <item quantity="one">Jump to newest, %d new</item>
+        <item quantity="other">Jump to newest, %d new</item>
+    </plurals>
+    <string name="chat_attachments_cant_queue">Attachments can\'t queue — send after this turn finishes</string>
+    <!-- Steer = redirect the agent mid-turn. -->
+    <string name="chat_stop_hint">Type your correction first — then tap steers the turn, hold for more</string>
+    <string name="chat_busy_queue">Queue for the next turn</string>
+    <string name="chat_busy_aside">Ask aside — answered outside the chat</string>
+    <string name="chat_busy_redirect">Redirect — restart the reply with this</string>
+    <!-- Starter prompt: tapping it sends this text to the agent. -->
+    <string name="chat_starter_1">What can you do in this session?</string>
+    <!-- Starter prompt. -->
+    <string name="chat_starter_2">What\'s on my plate today?</string>
+    <!-- Starter prompt. -->
+    <string name="chat_starter_3">What did we work on recently?</string>
+    <!-- Starter prompt. -->
+    <string name="chat_starter_4">Help me plan something small, step by step.</string>
+    <!-- Title over an empty session. -->
+    <string name="chat_fresh_page">A fresh page</string>
+    <string name="chat_fresh_page_sub">Ask anything, or start from one of these.</string>
+    <string name="chat_today">Today</string>
+    <string name="chat_yesterday">Yesterday</string>
+
+    <!-- Message bubble -->
+    <!-- An agent spoke without being asked. %1$s = agent name, %2$s = time. -->
+    <string name="chat_arrival_mark">%1$s · unprompted · %2$s</string>
+    <!-- Accessibility: what a long-press on a message opens. -->
+    <string name="chat_bubble_hold_label">Reply, react or copy</string>
+    <string name="chat_copied">Copied</string>
+    <string name="chat_undo_title">Take back the last exchange?</string>
+    <string name="chat_undo_body">Your message and this reply leave the session\'s history on the gateway. The next thing you say continues from before them.</string>
+    <string name="chat_undo_confirm">Take it back</string>
+    <!-- Button: keep it, do not undo. -->
+    <string name="chat_keep">Keep</string>
+    <string name="chat_select_text">Select text</string>
+    <string name="chat_delete_message_title">Delete message?</string>
+    <string name="chat_delete_message_body">It\'s removed for everyone — this can\'t be undone.</string>
+    <!-- Accessibility: the message was sent. -->
+    <string name="chat_sent">Sent</string>
+    <string name="chat_stop_speaking">Stop speaking</string>
+    <string name="chat_go_to_quoted">Go to the quoted message</string>
+    <string name="chat_reaction_take_back">Take back your reaction</string>
+    <string name="chat_reaction_add">Add your reaction</string>
+    <string name="chat_react">React</string>
+    <string name="chat_action_reply">Reply</string>
+    <string name="chat_action_copy">Copy</string>
+    <string name="chat_action_copy_text">Copy text</string>
+    <!-- Label: this message is kept in the Archive. -->
+    <string name="chat_action_saved">Saved</string>
+    <string name="chat_action_save">Save</string>
+    <string name="chat_action_unsave">Remove from Saved</string>
+    <string name="chat_action_keep_archive">Keep in Archive</string>
+    <string name="chat_action_stop">Stop</string>
+    <string name="chat_action_read_aloud">Read aloud</string>
+    <string name="chat_action_select">Select</string>
+    <string name="chat_action_edit">Edit</string>
+    <string name="chat_action_edit_desc">Edit and send again</string>
+    <string name="chat_action_retry">Retry</string>
+    <string name="chat_action_retry_desc">Take it back and say it again</string>
+    <!-- Verb: start a new session from this point. -->
+    <string name="chat_action_branch">Branch</string>
+    <string name="chat_action_branch_desc">Branch a new session from here</string>
+    <string name="chat_action_undo">Undo</string>
+    <string name="chat_action_undo_desc">Take back the last exchange</string>
+    <string name="chat_action_delete_desc">Delete message</string>
+    <!-- Fallback name of an attached file in a reply quote. -->
+    <string name="chat_reply_attachment">attachment</string>
+    <!-- Fallback text of a reply quote with no text. -->
+    <string name="chat_reply_message">message</string>
+
+    <!-- Archive -->
+    <!-- Title of the Archive space (noun). -->
+    <string name="chat_archive_title">Archive</string>
+    <string name="chat_archive_waking">waking the index…</string>
+    <!-- %1$s is a formatted count of messages indexed so far. -->
+    <plurals name="chat_archive_reaching">
+        <item quantity="one">%1$s remembered · reaching back…</item>
+        <item quantity="other">%1$s remembered · reaching back…</item>
+    </plurals>
+    <!-- %1$s is a formatted message count, %2$s an error. -->
+    <plurals name="chat_archive_error">
+        <item quantity="one">%1$s remembered · %2$s</item>
+        <item quantity="other">%1$s remembered · %2$s</item>
+    </plurals>
+    <!-- %1$s is a formatted count. -->
+    <plurals name="chat_archive_done">
+        <item quantity="one">%1$s message remembered</item>
+        <item quantity="other">%1$s messages remembered</item>
+    </plurals>
+    <string name="chat_archive_jump_date">Jump to date</string>
+    <string name="chat_archive_nothing_that_day">Nothing indexed yet for that day</string>
+    <!-- Button. -->
+    <string name="chat_open">Open</string>
+    <!-- Archive tab. -->
+    <string name="chat_archive_tab_search">Search</string>
+    <!-- Archive tab: messages the user kept. -->
+    <string name="chat_archive_tab_saved">Saved</string>
+    <!-- Archive tab: photos and files. -->
+    <string name="chat_archive_tab_media">Media</string>
+    <string name="chat_archive_search_hint">Search everything ever said…</string>
+    <!-- Header, shown in capitals. -->
+    <string name="chat_archive_recent">RECENTLY REMEMBERED</string>
+    <string name="chat_archive_empty_title">Nothing remembered yet</string>
+    <string name="chat_archive_empty_body">The index fills as sessions are swept. Then every message the app has seen is one search away.</string>
+    <string name="chat_archive_search_idle">Every message the app has ever seen, one search away.</string>
+    <!-- %1$s is the search query. -->
+    <string name="chat_archive_no_hits">Nothing yet for “%1$s”</string>
+    <string name="chat_archive_opening">Opening the archive…</string>
+    <string name="chat_archive_saved_empty_title">Nothing kept yet</string>
+    <string name="chat_archive_saved_empty_body">Long-press a message and tap the bookmark to keep it here.</string>
+    <string name="chat_archive_looking">Looking through what\'s indexed…</string>
+    <string name="chat_archive_media_empty_title">No photos or files yet</string>
+    <string name="chat_archive_media_empty_body">Pictures and files from your chats gather here as the index fills.</string>
+    <!-- Fallback description of an image with no file name. -->
+    <string name="chat_image">image</string>
+    <!-- The user, as a message sender. -->
+    <string name="chat_you">You</string>
+    <!-- Title: messages around a chosen moment. -->
+    <string name="chat_archive_context">Context</string>
+    <string name="chat_archive_context_failed">That moment couldn\'t be loaded (it may predate this login\'s keys).</string>
+    <!-- Button: load earlier messages. -->
+    <string name="chat_archive_reach_earlier">Reach earlier</string>
+    <!-- Button: load later messages. -->
+    <string name="chat_archive_reach_later">Reach later</string>
+
+    <!-- Composer -->
+    <string name="chat_attach">Attach</string>
+    <!-- Placeholder of the message field. -->
+    <string name="chat_composer_hint">Message…</string>
+    <!-- Steer = redirect the agent while it works. Keep the ■ symbol. -->
+    <string name="chat_composer_hint_steer_stop">Type to steer this turn — ■ stops</string>
+    <string name="chat_composer_hint_steer">Type to steer this turn</string>
+    <string name="chat_dictate_stop">Stop dictation</string>
+    <string name="chat_dictate">Dictate</string>
+    <string name="chat_send_steer">Steer the running turn</string>
+    <string name="chat_send_queue">Queue for next turn</string>
+    <string name="chat_send_stop">Stop the turn</string>
+    <!-- Button: send the message. -->
+    <string name="chat_send">Send</string>
+    <!-- Accessibility: what holding the send button does. -->
+    <string name="chat_send_hold_menu">Queue, ask aside or redirect</string>
+    <string name="chat_send_hold_queue">Queue for next turn instead</string>
+    <string name="chat_send_hold_stop">What stop does</string>
+    <string name="chat_choose_model">Choose a model</string>
+    <!-- Accessibility: the current model's name. -->
+    <string name="chat_model_label">Model: %1$s</string>
+    <!-- Fallback label of the reasoning pill. -->
+    <string name="chat_reasoning">reasoning</string>
+    <string name="chat_steer_hint">↪ steers the turn · hold to queue</string>
+    <string name="chat_replying_to">Replying to %1$s</string>
+    <string name="chat_cancel_reply">Cancel reply</string>
+    <string name="chat_image_attached">Image attached</string>
+    <string name="chat_file_attached">File attached</string>
+    <string name="chat_remove_attachment">Remove attachment</string>
+    <string name="chat_attach_photo">Photo</string>
+    <string name="chat_attach_file">File</string>
+    <string name="chat_attach_camera">Camera</string>
+
+    <!-- Tool theater: a turn's tool calls -->
+    <string name="chat_tool_succeeded">Succeeded</string>
+    <string name="chat_tool_failed">Failed</string>
+    <string name="chat_tool_no_verdict">No verdict</string>
+    <!-- Short duration in seconds, e.g. 3s. -->
+    <string name="chat_duration_seconds">%1$ds</string>
+    <!-- Short duration in milliseconds, e.g. 250ms. -->
+    <string name="chat_duration_millis">%1$dms</string>
+    <string name="chat_tool_flagged">⚠ Hermes flagged this output</string>
+    <!-- %1$s lists the risks found. -->
+    <string name="chat_tool_flagged_with">⚠ Hermes flagged this output: %1$s</string>
+    <!-- A file change (noun), shown after a ▸ fold arrow. -->
+    <string name="chat_tool_diff">diff</string>
+    <string name="chat_tool_diff_show">Show the diff</string>
+    <string name="chat_tool_diff_hide">Hide the diff</string>
+    <string name="chat_tool_diff_label">Diff</string>
+    <!-- What a tool printed (noun), shown after a ▸ fold arrow. -->
+    <string name="chat_tool_output">output</string>
+    <string name="chat_tool_output_show">Show the output</string>
+    <string name="chat_tool_output_hide">Hide the output</string>
+    <string name="chat_tool_output_label">Output</string>
+    <string name="chat_tool_exit_failed">Exit code %1$d, failed</string>
+    <string name="chat_tool_exit_ok">Exit code 0</string>
+    <plurals name="chat_tools_running">
+        <item quantity="one">Running %d tool…</item>
+        <item quantity="other">Running %d tools…</item>
+    </plurals>
+    <plurals name="chat_tools_ran">
+        <item quantity="one">Ran %d tool</item>
+        <item quantity="other">Ran %d tools</item>
+    </plurals>
+    <!-- Quantity follows the total (%2$d). -->
+    <plurals name="chat_subagents_running">
+        <item quantity="one">%1$d of %2$d subagent running</item>
+        <item quantity="other">%1$d of %2$d subagents running</item>
+    </plurals>
+    <string name="chat_subagent_running">Subagent running</string>
+    <plurals name="chat_delegated_tasks">
+        <item quantity="one">Delegated %d task</item>
+        <item quantity="other">Delegated %d tasks</item>
+    </plurals>
+    <string name="chat_delegated_task">Delegated a task</string>
+    <string name="chat_working">Working…</string>
+    <plurals name="chat_output_steps">
+        <item quantity="one">%d output step</item>
+        <item quantity="other">%d output steps</item>
+    </plurals>
+    <!-- %1$s is the run's summary, %2$d how many calls failed. -->
+    <plurals name="chat_run_with_failed">
+        <item quantity="one">%1$s · %2$d failed</item>
+        <item quantity="other">%1$s · %2$d failed</item>
+    </plurals>
+    <string name="chat_steps_fold">Fold the steps away</string>
+    <string name="chat_steps_show">Show the steps</string>
+    <!-- Accessibility: open this run full screen. -->
+    <string name="chat_tap_in_run">Tap in to this run</string>
+    <!-- State of a fold: expanded. -->
+    <string name="chat_state_open">Open</string>
+    <!-- State of a fold: collapsed. -->
+    <string name="chat_state_folded">Folded</string>
+
+    <!-- Approval and question cards -->
+    <string name="chat_approval_needed">Approval needed</string>
+    <string name="chat_approval_once">Allow once</string>
+    <!-- Approval choice: allow for the rest of this session. -->
+    <string name="chat_approval_session">Session</string>
+    <!-- Approval choice: always allow. -->
+    <string name="chat_approval_always">Always</string>
+    <string name="chat_approval_deny">Deny</string>
+    <string name="chat_asking">Hermes is asking</string>
+    <!-- Question %1$d of %2$d. -->
+    <string name="chat_asking_batch">Hermes is asking · %1$d of %2$d</string>
+    <string name="chat_sudo_needed">Sudo password needed</string>
+    <string name="chat_credential_needed">Credential needed</string>
+    <!-- %1$s is an environment variable name. -->
+    <string name="chat_stored_as">Stored on the gateway as %1$s</string>
+    <string name="chat_multi_answers">Several answers are allowed — type them comma-separated below.</string>
+    <string name="chat_your_answer">Your answer</string>
+    <string name="chat_password">Password</string>
+    <!-- Placeholder: a secret's value. -->
+    <string name="chat_value">Value</string>
+    <!-- Button: skip the question. -->
+    <string name="chat_skip">Skip</string>
+
+    <!-- New chat sheet -->
+    <string name="chat_new_conversation">New conversation</string>
+    <string name="chat_new_session_body">A fresh gateway session. Name it now, or let the first exchange title it.</string>
+    <string name="chat_title_optional">Title (optional)</string>
+    <!-- Label over a choice of agent profiles. -->
+    <string name="chat_agent">Agent</string>
+    <!-- Toggle: a throwaway session. -->
+    <string name="chat_temporary">Temporary</string>
+    <string name="chat_temporary_body">Deleted from the gateway at the app\'s next launch</string>
+    <!-- Button. -->
+    <string name="chat_create">Create</string>
+    <!-- An error message after a warning sign. -->
+    <string name="chat_error_line">⚠ %1$s</string>
+    <string name="chat_direct_message">Direct message</string>
+    <string name="chat_direct_message_sub">Chat one-on-one with a user</string>
+    <!-- Button. -->
+    <string name="chat_start">Start</string>
+    <string name="chat_new_room">New room</string>
+    <string name="chat_new_room_sub">A named room; invite people now or later</string>
+    <string name="chat_room_name">Room name</string>
+    <!-- Keep @user:server as is: it is the address format. -->
+    <string name="chat_invite_optional">Invite @user:server (optional)</string>
+    <string name="chat_join_by_address">Join by address</string>
+    <!-- Button: join a room. -->
+    <string name="chat_join">Join</string>
+
+    <!-- Session prune dialog -->
+    <string name="chat_prune_preview_failed">preview failed</string>
+    <string name="chat_prune_confirm_title">Confirm session prune</string>
+    <plurals name="chat_prune_confirm_sub">
+        <item quantity="one">Permanently deletes %d session</item>
+        <item quantity="other">Permanently deletes %d sessions</item>
+    </plurals>
+    <string name="chat_prune_title">Prune sessions</string>
+    <string name="chat_prune_body">Deletes ended sessions from the gateway\'s record — permanently, transcripts included. Active sessions are never touched.</string>
+    <string name="chat_prune_older_than">Older than</string>
+    <!-- Short form of a number of days, e.g. 30d. -->
+    <string name="chat_prune_days">%1$dd</string>
+    <string name="chat_prune_max_messages">Only sessions with ≤ N messages (optional)</string>
+    <string name="chat_prune_include_archived">Include archived sessions</string>
+    <string name="chat_prune_nothing">Nothing matches these filters.</string>
+    <!-- %2$s and %3$s are dates. -->
+    <plurals name="chat_prune_matched">
+        <item quantity="one">%1$d session match · oldest %2$s · newest %3$s</item>
+        <item quantity="other">%1$d sessions match · oldest %2$s · newest %3$s</item>
+    </plurals>
+    <!-- A session's title and its message count. -->
+    <plurals name="chat_prune_sample">
+        <item quantity="one">· %1$s (%2$d msg)</item>
+        <item quantity="other">· %1$s (%2$d msgs)</item>
+    </plurals>
+    <!-- Button: show what would be deleted. -->
+    <string name="chat_prune_preview">Preview</string>
+    <string name="chat_prune_delete_count">Delete %1$d…</string>
+    <string name="chat_prune_delete">Delete…</string>
+    <plurals name="chat_prune_final_title">
+        <item quantity="one">Delete %d session permanently?</item>
+        <item quantity="other">Delete %d sessions permanently?</item>
+    </plurals>
+    <string name="chat_prune_final_body">Rows and transcript files are removed from the gateway. There is no undo.</string>
+    <string name="chat_prune_delete_n">Delete %1$d</string>
+
+    <!-- Media in messages -->
+    <!-- Shown after an emoji while a picture or video loads. -->
+    <string name="chat_loading_lower">loading…</string>
+    <string name="chat_load_attachment_failed">Couldn\'t load attachment</string>
+    <!-- Fallback description of a GIF with no file name. -->
+    <string name="chat_animated_image">animated image</string>
+    <!-- Fallback description of a video with no file name. -->
+    <string name="chat_video">video</string>
+    <!-- %1$s is a folder such as Pictures/Keryx. -->
+    <string name="chat_saved_to">Saved to %1$s</string>
+    <string name="chat_save_failed">Couldn\'t save</string>
+    <string name="chat_save_to_device">Save to device</string>
+    <string name="chat_share_failed">Couldn\'t share</string>
+    <string name="chat_share">Share</string>
+    <string name="chat_close">Close</string>
+    <string name="chat_no_app_for_file">No app can open this file</string>
+    <!-- Title of the system app chooser. -->
+    <string name="chat_open_with">Open with</string>
+
+    <!-- Inline image actions -->
+    <string name="chat_copy_image">Copy image</string>
+    <string name="chat_image_copied">Image copied — paste it into a post</string>
+    <string name="chat_image_fetch_failed">Couldn\'t fetch the image — link copied instead</string>
+    <string name="chat_copy_link">Copy link</string>
+    <string name="chat_link_copied">Link copied</string>
+    <string name="chat_save_to_photos">Save to Photos</string>
+    <string name="chat_save_image_failed">Couldn\'t save that image</string>
+    <string name="chat_open_in_browser">Open in browser</string>
+    <string name="chat_no_app_for_link">Nothing here opens that link</string>
+
+    <!-- Turn failure card -->
+    <string name="chat_gateway_log">Gateway log</string>
+    <string name="chat_details_copied">Details copied</string>
+    <string name="chat_copy_details">Copy details</string>
+
+    <!-- Reasoning disclosure -->
+    <string name="chat_thinking">Thinking…</string>
+    <!-- Past tense: the agent thought (before answering). -->
+    <string name="chat_thought">Thought</string>
+    <string name="chat_thought_briefly">Thought briefly</string>
+    <!-- %1$s is a duration such as 12s or 1m 5s. -->
+    <string name="chat_thought_for">Thought for %1$s</string>
+    <string name="chat_reasoning_show_a11y">Show the reasoning</string>
+    <string name="chat_reasoning_hide_a11y">Hide the reasoning</string>
+    <!-- Short duration, e.g. 1m 5s. -->
+    <string name="chat_duration_min_sec">%1$dm %2$ds</string>
+    <!-- Chip: jump to the newest line. -->
+    <string name="chat_newest">newest</string>
+
+    <!-- Raw config editor -->
+    <!-- %1$s is a file name. -->
+    <string name="chat_config_unsaved">%1$s · unsaved</string>
+    <string name="chat_saving">Saving…</string>
+    <!-- Button. -->
+    <string name="chat_save">Save</string>
+    <!-- %1$s is the reason. -->
+    <string name="chat_config_load_failed">Couldn\'t load config.yaml. %1$s</string>
+    <string name="chat_loading">Loading…</string>
+    <string name="chat_config_restart_note">Saved changes take effect on the next gateway restart for most sections.</string>
+    <string name="chat_save_anyway_title">Save anyway?</string>
+    <string name="chat_save_anyway">Save anyway</string>
+    <string name="chat_discard_title">Discard changes?</string>
+    <string name="chat_config_untouched">config.yaml on the gateway is untouched.</string>
+    <string name="chat_discard">Discard</string>
+    <string name="chat_keep_editing">Keep editing</string>
+
+    <!-- Session export dialog -->
+    <!-- %1$s is the session's title. -->
+    <string name="chat_export_title">Export “%1$s”</string>
+    <string name="chat_this_session">this session</string>
+    <string name="chat_export_markdown_detail">The conversation as you read it: who said what, tools on one line, long output trimmed.</string>
+    <string name="chat_export_json_detail">The gateway\'s complete export: every row, undone turns and the system prompt included. Re-importable.</string>
+    <string name="chat_export_share_failed">Couldn\'t open the share sheet.</string>
+    <string name="chat_export_failed">The export failed.</string>
+    <string name="chat_exporting">Exporting…</string>
+
+    <!-- Command palette (offline preset descriptions; the commands themselves stay as typed) -->
+    <string name="chat_cmd_new">Start a fresh conversation</string>
+    <string name="chat_cmd_compress">Compress / summarize this thread</string>
+    <string name="chat_cmd_handoff">Hand off context to a new session</string>
+    <string name="chat_cmd_steer">Steer the agent mid-task</string>
+    <string name="chat_cmd_think">Ask for deeper reasoning</string>
+    <string name="chat_cmd_model">Switch the active model</string>
+    <string name="chat_cmd_reset">Reset the agent\'s working state</string>
+    <string name="chat_cmd_help">List what this agent can do</string>
+    <string name="chat_cmd_status">Show agent + system status</string>
+    <string name="chat_cmd_memory">Recall or edit long-term memory</string>
+    <string name="chat_cmd_tools">List available tools</string>
+    <!-- Tag on a recently used command. -->
+    <string name="chat_cmd_recent">recent</string>
+    <!-- Tag on a command that runs a skill. -->
+    <string name="chat_cmd_skill">skill</string>
+
+    <!-- Room transitions (Settings › Appearance names them; see RoomTransition.labelRes) -->
+    <!-- Name of an animation between chats. -->
+    <string name="chat_transition_dissolve">Dissolve</string>
+    <string name="chat_transition_dissolve_blurb">The room re-forms through a soft blur, with the braille wake.</string>
+    <!-- Name of an animation between chats. -->
+    <string name="chat_transition_passage">Passage</string>
+    <string name="chat_transition_passage_blurb">The new room slides in on a lit seam while the old one steps back.</string>
+    <!-- Name of an animation between chats. -->
+    <string name="chat_transition_weave">Weave</string>
+    <string name="chat_transition_weave_blurb">Amber and violet ribbons cross upward and the room changes behind them.</string>
+    <!-- Name of an animation between chats. -->
+    <string name="chat_transition_bloom">Bloom</string>
+    <string name="chat_transition_bloom_blurb">The new room opens as a circle from the row you tapped.</string>
+    <!-- Name of an animation between chats. -->
+    <string name="chat_transition_rise">Rise</string>
+    <string name="chat_transition_rise_blurb">The old room tips back and sinks; the new one rises into place.</string>
+    <!-- Animation speed. -->
+    <string name="chat_speed_slow">Slow</string>
+    <!-- Animation speed. -->
+    <string name="chat_speed_normal">Normal</string>
+    <!-- Animation speed. -->
+    <string name="chat_speed_fast">Fast</string>
+
+    <!-- Pet picker -->
+    <string name="chat_pet_choose">Choose a pet</string>
+    <!-- %1$s is the pet's name. -->
+    <string name="chat_pet_rides">%1$s rides along in the drawer</string>
+    <string name="chat_pet_gateway">Pets live on the gateway — every surface shows the same one</string>
+    <plurals name="chat_pet_search">
+        <item quantity="one">Search %d pet…</item>
+        <item quantity="other">Search %d pets…</item>
+    </plurals>
+    <!-- Section header. -->
+    <string name="chat_pet_installed_header">Installed</string>
+    <!-- Petdex is a product name. -->
+    <string name="chat_pet_catalog_header">Petdex catalog</string>
+    <!-- Hermes Link is a product name. -->
+    <string name="chat_pet_none">No pets available — is Hermes Link configured?</string>
+    <string name="chat_pet_no_match">No pets match “%1$s”</string>
+    <string name="chat_pet_badge_active">active</string>
+    <string name="chat_pet_badge_hatched">hatched locally</string>
+    <string name="chat_pet_badge_curated">curated</string>
+    <string name="chat_pet_badge_installed">installed</string>
+    <!-- Accessibility: the pet in use. -->
+    <string name="chat_pet_active">Active</string>
+
+    <!-- Shared design pieces -->
+    <string name="chat_back">Back</string>
+    <!-- Accessibility: close the named space. -->
+    <string name="chat_close_named">Close %1$s</string>
+    <!-- Accessibility: content is on its way. -->
+    <string name="chat_loading_a11y">Loading</string>
+
+    <!-- Call screen -->
+    <!-- Header shown in capitals; keep KERYX. -->
+    <string name="chat_call_header">KERYX · CALL</string>
+    <string name="chat_call_mic_needed">Keryx needs the microphone for a call.</string>
+    <!-- Call state caption, lower case. -->
+    <string name="chat_call_listening">listening</string>
+    <!-- Call state caption: speech is being transcribed. -->
+    <string name="chat_call_hearing">hearing you…</string>
+    <!-- Call state caption. -->
+    <string name="chat_call_thinking">thinking</string>
+    <!-- Call state caption while the agent speaks. -->
+    <string name="chat_call_interrupt">tap the orb to interrupt</string>
+    <!-- Call state caption. -->
+    <string name="chat_call_muted">muted</string>
+    <!-- Call state caption. -->
+    <string name="chat_call_ended">call ended</string>
+    <!-- What the call heard the user say, in quotation marks. -->
+    <string name="chat_call_heard">“%1$s”</string>
+    <string name="chat_call_unmute">Unmute</string>
+    <string name="chat_call_mute">Mute</string>
+    <string name="chat_call_end">End call</string>
+
+    <!-- Markers in agent messages: sources, phone actions, distilled skills -->
+    <!-- Header over a message's cited sources. -->
+    <string name="chat_sources">Sources</string>
+    <!-- Fallback kind of a cited source. -->
+    <string name="chat_source">source</string>
+    <!-- Where a phone action lands, shown in capitals. -->
+    <string name="chat_hand_clipboard">CLIPBOARD</string>
+    <!-- Where a phone action lands, shown in capitals. -->
+    <string name="chat_hand_phone">PHONE</string>
+    <!-- Where a phone action lands, shown in capitals. -->
+    <string name="chat_hand_share">SHARE</string>
+    <!-- Where a phone action lands, shown in capitals. -->
+    <string name="chat_hand_app">APP</string>
+    <!-- A phone action opens something; shown in capitals. -->
+    <string name="chat_hand_opens">OPENS</string>
+    <!-- The agent saved a new skill it learned. -->
+    <string name="chat_skill_distilled">Skill Distilled</string>
+    <!-- Skill Forge is a screen name. -->
+    <string name="chat_open_skill_forge">Open in Skill Forge →</string>
+
+    <!-- Live turn renderers -->
+    <!-- Accessibility: open the running turn full screen. -->
+    <string name="chat_tap_in_turn">Tap in to the turn</string>
+    <!-- Matrix is a protocol name. -->
+    <string name="chat_stream_dropped">Stream dropped — recovering via Matrix sync…</string>
+
+    <!-- Context breakdown sheet -->
+    <!-- The direct door = connecting straight to a gateway; the window = the model's context window. -->
+    <string name="chat_context_direct_only">Only the direct door can itemise the window.</string>
+    <string name="chat_context_read_failed">Couldn\'t read the window</string>
+    <!-- Title: the model's context window. -->
+    <string name="chat_context_title">Context</string>
+    <!-- Amounts such as 12.5k of 128k. -->
+    <string name="chat_context_used">%1$s of %2$s tokens</string>
+    <string name="chat_context_no_agent">The gateway has no live agent for this session yet — send something first.</string>
+
+    <!-- Rich blocks: charts and diffs -->
+    <!-- Fallback title of a chart. -->
+    <string name="chat_chart">Chart</string>
+    <!-- Accessibility: %1$s = title, %2$s = chart type (bar, line, pie…). -->
+    <string name="chat_chart_summary">%1$s. %2$s chart.</string>
+    <!-- %3$s is the unit, e.g. ms or dollars. -->
+    <string name="chat_chart_summary_unit">%1$s. %2$s chart, in %3$s.</string>
+    <!-- A missing data point. -->
+    <string name="chat_chart_no_value">no value</string>
+    <!-- Fallback name of a chart's data series. -->
+    <string name="chat_chart_series">Series %1$d</string>
+    <!-- Under the sum in a donut chart's middle. -->
+    <string name="chat_chart_total">total</string>
+    <string name="chat_show_less">Show less</string>
+    <plurals name="chat_show_all_lines">
+        <item quantity="one">Show all %d line</item>
+        <item quantity="other">Show all %d lines</item>
+    </plurals>
+
+    <!-- Aside bubble: a question answered outside the chat -->
+    <!-- Header; ASIDE in capitals. -->
+    <string name="chat_aside_header">ASIDE · not part of the chat</string>
+    <string name="chat_dismiss">Dismiss</string>
+    <string name="chat_aside_answering">…answering aside</string>
+    <string name="chat_aside_failed">The aside failed: %1$s</string>
+    <string name="chat_aside_no_answer">No answer came back.</string>
+
+    <!-- Message content -->
+    <!-- Status tag on an agent action, in capitals. -->
+    <string name="chat_action_success">SUCCESS</string>
+    <!-- Status tag on an agent action, in capitals. -->
+    <string name="chat_action_failed">FAILED</string>
+    <!-- Status tag on an agent action with no result yet, in capitals. -->
+    <string name="chat_action_tag">ACTION</string>
+    <string name="chat_reasoning_live">Reasoning…</string>
+    <string name="chat_reasoning_title">Reasoning</string>
+    <!-- Link: show the picture instead of its SVG source. -->
+    <string name="chat_show_drawing">show drawing</string>
+    <!-- Accessibility: an image the agent drew. -->
+    <string name="chat_drawing">Drawing</string>
+
+    <!-- Find bar -->
+    <!-- Button: close the find bar. -->
+    <string name="chat_done">Done</string>
+
+    <!-- Empty-state illustrations (accessibility descriptions) -->
+    <string name="chat_art_mission_board">An empty mission board with the herald\'s staff leaning on it</string>
+    <string name="chat_art_winged_clock">A winged clock with an arrow curving round it</string>
+    <string name="chat_art_robot">A robot head topped with the herald\'s winged orb, an empty place either side</string>
+    <string name="chat_art_folder">A folder holding a page, with a branch drawn on it</string>
+    <string name="chat_art_scroll">An unrolled scroll with a magnifying glass over it</string>
+    <string name="chat_art_bookmark">A page with one line marked and a bookmark ribbon</string>
+    <string name="chat_art_picture">A framed picture of a hill and sun, with an empty frame behind it</string>
+
+    <!-- Context ring (chat memory) -->
+    <!-- Accessibility: opens the chat-memory sheet. -->
+    <string name="chat_memory">Chat memory</string>
+    <!-- Accessibility. k = thousand. -->
+    <string name="chat_ring_base">Chat memory %1$dk of %2$dk tokens, %3$d percent</string>
+    <!-- %1$s is the sentence above (chat_ring_base). -->
+    <plurals name="chat_ring_replies">
+        <item quantity="one">%1$s, about %2$d reply before the summary</item>
+        <item quantity="other">%1$s, about %2$d replies before the summary</item>
+    </plurals>
+    <!-- k = thousand tokens. -->
+    <string name="chat_ring_until">%1$s, %2$dk until the summary</string>
+    <string name="chat_ring_next">%1$s, the next reply starts a summary</string>
+
+    <!-- Gateway folder field -->
+    <!-- Keep the example path as is. -->
+    <string name="chat_folder_hint">Folder on the gateway (e.g. ~/workspace/keryx)</string>
+    <string name="chat_folder_found">✓ folder found</string>
+    <string name="chat_folder_missing">no folder there yet</string>
+    <string name="chat_known_workspaces">Known workspaces</string>
+    <string name="chat_folder_truncated">more than 30 folders here — keep typing to narrow</string>
+    <string name="chat_folder_more">+%1$d more — keep typing to narrow</string>
+
+    <!-- Session console: a live turn run from the gateway page -->
+    <string name="chat_console_starting">starting…</string>
+    <string name="chat_console_streaming">agent is working</string>
+    <string name="chat_console_waiting">waiting for approval</string>
+    <string name="chat_console_completed">turn complete</string>
+    <string name="chat_console_lost">connection lost</string>
+    <string name="chat_console_lost_why">connection lost — %1$s</string>
+    <string name="chat_console_failed">failed</string>
+    <string name="chat_console_failed_why">failed — %1$s</string>
+    <!-- Button: stop the running turn. -->
+    <string name="chat_stop">Stop</string>
+    <!-- Button. -->
+    <string name="chat_clear">Clear</string>
+
+    <!-- Timeline marks and compaction -->
+    <string name="chat_mark_hide">Hide what it said</string>
+    <string name="chat_mark_read">Read what it said</string>
+    <!-- Accessibility: a system notice in the timeline. -->
+    <string name="chat_mark_system">System: %1$s</string>
+    <string name="chat_summary_hide">Hide the summary</string>
+    <string name="chat_summary_read">Read the summary</string>
+    <!-- %1$s is a time of day. -->
+    <string name="chat_context_compacted">🗜 Context compacted · %1$s</string>
+    <!-- Header over the session's numbers. -->
+    <string name="chat_this_session_title">This session</string>
+
+    <!-- Goal strip -->
+    <!-- %1$s = ticks fired (e.g. 3/10), %2$s = status. -->
+    <string name="chat_goal_loop">↻ loop · %1$s · %2$s</string>
+    <!-- %1$d = times fired, %2$s = status. -->
+    <string name="chat_goal_heartbeat">♥ heartbeat · %1$d · %2$s</string>
+    <string name="chat_goal_close">Close the goal</string>
+    <string name="chat_goal_open">Open the goal</string>
+    <!-- A command's exit code. -->
+    <string name="chat_goal_exit">exit %1$d</string>
+
+    <!-- Delegation wings: subagents a turn sent out -->
+    <string name="chat_subagent_running_lower">subagent running</string>
+    <plurals name="chat_subagents_count">
+        <item quantity="one">%d subagent</item>
+        <item quantity="other">%d subagents</item>
+    </plurals>
+    <string name="chat_subagent">subagent</string>
+    <!-- Fallback goal of a subagent. -->
+    <string name="chat_delegated_task_lower">delegated task</string>
+    <plurals name="chat_tool_count">
+        <item quantity="one">%d tool</item>
+        <item quantity="other">%d tools</item>
+    </plurals>
+    <!-- Tokens in thousands, abbreviated. -->
+    <string name="chat_tokens_k">%1$dk tok</string>
+    <!-- Files written by a subagent. -->
+    <plurals name="chat_files_written">
+        <item quantity="one">%d written</item>
+        <item quantity="other">%d written</item>
+    </plurals>
+    <string name="chat_interrupted">interrupted</string>
+    <!-- Compact duration, e.g. 1m5s. -->
+    <string name="chat_duration_min_sec_compact">%1$dm%2$ds</string>
+
+    <!-- Flight plan strip: the agent's step list -->
+    <!-- Header in capitals: the agent's list of steps. -->
+    <string name="chat_flight_plan">FLIGHT PLAN</string>
+    <string name="chat_flight_all_done">all steps landed</string>
+    <!-- %1$s is the next step. -->
+    <string name="chat_flight_next">next: %1$s</string>
+    <!-- Keep both address formats exactly as they are; translate only 'or'. -->
+    <string name="chat_join_sub">#alias:server or !roomid:server</string>
+</resources>

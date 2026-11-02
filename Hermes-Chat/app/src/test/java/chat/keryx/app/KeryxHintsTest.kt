@@ -27,19 +27,19 @@ class KeryxHintsTest {
         assertEquals(ids.size, ids.toSet().size)
         assertEquals(KeryxHints.ALL, ids.toSet())
         for (dest in spaces) {
-            val step = KeryxHints.due(dest, emptySet()) ?: error("no hint due for ${dest.route}")
+            val step = KeryxHints.due(dest, emptySet(), words = EnglishStrings::get) ?: error("no hint due for ${dest.route}")
             assertEquals(KeryxHints.idFor(dest), step.target)
             assertFalse(step.title.isNullOrBlank())
             assertFalse(step.text.isNullOrBlank())
-            assertNull(KeryxHints.due(dest, setOf(step.target!!)))
+            assertNull(KeryxHints.due(dest, setOf(step.target!!), words = EnglishStrings::get))
         }
     }
 
     @Test
     fun `places without a hint, and no place at all, say nothing`() {
-        assertNull(KeryxHints.due(KeryxDest.Settings, emptySet()))
-        assertNull(KeryxHints.due(KeryxDest.Archive, emptySet()))
-        assertNull(KeryxHints.due(null, emptySet()))
+        assertNull(KeryxHints.due(KeryxDest.Settings, emptySet(), words = EnglishStrings::get))
+        assertNull(KeryxHints.due(KeryxDest.Archive, emptySet(), words = EnglishStrings::get))
+        assertNull(KeryxHints.due(null, emptySet(), words = EnglishStrings::get))
     }
 
     @Test

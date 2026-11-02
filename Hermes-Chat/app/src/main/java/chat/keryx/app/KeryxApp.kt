@@ -135,8 +135,14 @@ class KeryxApp : Application() {
     /** Room id → [chat.keryx.core.model.AlertPolicy.keyOf] the last message alerted for it. */
     private val lastAlerted = java.util.concurrent.ConcurrentHashMap<String, String>()
 
+    override fun attachBaseContext(newBase: android.content.Context) {
+        // The app's own language below Android 13 (13+ the system applies it).
+        super.attachBaseContext(KeryxLocale.wrap(newBase))
+    }
+
     override fun onCreate() {
         super.onCreate()
+        KeryxText.install(this)
         traced("Keryx:crashLog") { CrashLog.install(applicationContext) }
         traced("Keryx:imageDecoder") { installAnimatedImageDecoder() }
         settingsRepository = traced("Keryx:settings") { SettingsRepositoryImpl(applicationContext) }
@@ -367,7 +373,7 @@ class KeryxApp : Application() {
             message = (if (last.senderName.isBlank() && last.sender == SenderType.HERMES)
                 last.copy(senderName = agent?.label ?: heraldName(last)) else last)
                 // A turn that died wordlessly still says why.
-                .let { m -> if (failed && m.content.isBlank()) m.copy(content = m.failure?.message?.ifBlank { null } ?: "The turn failed") else m },
+                .let { m -> if (failed && m.content.isBlank()) m.copy(content = m.failure?.message?.ifBlank { null } ?: getString(R.string.app_turn_failed)) else m },
             conversation = room.name,
             botLabel = if (isBotChat) room.name else null,
             botHandle = if (isBotChat) (room.heraldIds.firstOrNull() ?: room.id) else agent?.handle,
@@ -516,13 +522,13 @@ class KeryxApp : Application() {
         ?: chat.keryx.core.model.Heralds.localpart(m.senderId).ifEmpty { "Herald" }
 
     private fun notificationSnippet(m: Message): String = when {
-        m.mediaKind == MediaKind.IMAGE -> "🖼 Photo"
-        m.mediaKind != null -> "📎 ${m.fileName.ifBlank { "Attachment" }}"
+        m.mediaKind == MediaKind.IMAGE -> "🖼 " + getString(R.string.app_photo)
+        m.mediaKind != null -> "📎 ${m.fileName.ifBlank { getString(R.string.app_attachment) }}"
         // extractKeryx first: raw ⟦…⟧ markers (ask options, citations) must never show in a banner.
         m.content.isNotBlank() ->
             MessageParser.extractKeryx(m.content).text
-                .lineSequence().firstOrNull { it.isNotBlank() }?.trim()?.take(160) ?: "New message"
-        else -> "New message"
+                .lineSequence().firstOrNull { it.isNotBlank() }?.trim()?.take(160) ?: getString(R.string.app_new_message)
+        else -> getString(R.string.app_new_message)
     }
 
     /** ⟦keryx:ask⟧ decision options for a notification — agent messages only: a human quoting the
@@ -557,4 +563,46 @@ class KeryxApp : Application() {
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
         override fun onActivityDestroyed(activity: Activity) {}
     }
+}
+
+/**
+ * The app's words for code with no screen of its own to read them through: the ViewModel and its
+ * delegates, the tour, notifications. Read through the application context, in the language the
+ * app speaks now: on Android 13+ the system keeps that context current; below it the choice lives
+ * in [KeryxLocale]'s prefs, so each read re-wraps (cached per language) and a change made in
+ * Settings is heard without a restart.
+ *
+ * Installed first thing in [KeryxApp.onCreate]; nothing reads it earlier.
+ */
+object KeryxText {
+    @Volatile private var app: android.content.Context? = null
+    @Volatile private var wrapped: Pair<String, android.content.Context>? = null
+
+    fun install(context: android.content.Context) {
+        app = context.applicationContext ?: context
+    }
+
+    private fun context(): android.content.Context {
+        val base = app ?: error("KeryxText read before KeryxApp.onCreate")
+        if (android.os.Build.VERSION.SDK_INT >= 33) return base
+        val tag = KeryxLocale.current(base)
+        wrapped?.let { (t, c) -> if (t == tag) return c }
+        // Built here, not by KeryxLocale.wrap: the application itself was wrapped at launch, so
+        // "follow the phone" has to name the phone's languages rather than keep the old choice.
+        val config = android.content.res.Configuration(base.resources.configuration)
+        config.setLocales(
+            if (tag.isEmpty()) android.content.res.Resources.getSystem().configuration.locales
+            else android.os.LocaleList.forLanguageTags(tag),
+        )
+        val c = base.createConfigurationContext(config)
+        wrapped = tag to c
+        return c
+    }
+
+    fun get(@androidx.annotation.StringRes id: Int): String = context().getString(id)
+
+    fun get(@androidx.annotation.StringRes id: Int, vararg args: Any): String = context().getString(id, *args)
+
+    fun plural(@androidx.annotation.PluralsRes id: Int, count: Int, vararg args: Any): String =
+        context().resources.getQuantityString(id, count, *args)
 }

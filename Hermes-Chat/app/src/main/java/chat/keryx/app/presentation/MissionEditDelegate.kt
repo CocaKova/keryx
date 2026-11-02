@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.KeryxText
+import chat.keryx.app.R
 import chat.keryx.app.data.remote.HermesStreamClient.KanbanTask
 import chat.keryx.app.presentation.ui.components.CardMove
 import chat.keryx.app.transport.direct.GatewayRest
@@ -90,7 +92,7 @@ class MissionEditDelegate(
                 val q = board?.takeIf { it.isNotBlank() }?.let { "?board=" + java.net.URLEncoder.encode(it, "UTF-8") }.orEmpty()
                 val res = r.call("PATCH", "/api/plugins/kanban/tasks/${java.net.URLEncoder.encode(task.id, "UTF-8")}$q", payload)
                 if (res.isFailure) {
-                    toast("Edit refused: ${CronRestParser.errorDetail(res.exceptionOrNull()?.message).take(100)}")
+                    toast(KeryxText.get(R.string.work_mission_edit_refused, CronRestParser.errorDetail(res.exceptionOrNull()?.message).take(100)))
                     onDone(false)
                     return@launch
                 }
@@ -99,7 +101,7 @@ class MissionEditDelegate(
                 // The move toasts where the card landed and refreshes the board itself.
                 missions.kanbanAction(task.id, CardMove.REASSIGN, assignee = assignee) { onDone(true) }
             } else {
-                toast("Mission updated")
+                toast(KeryxText.get(R.string.work_mission_updated))
                 missions.refreshKanban()
                 onDone(true)
             }

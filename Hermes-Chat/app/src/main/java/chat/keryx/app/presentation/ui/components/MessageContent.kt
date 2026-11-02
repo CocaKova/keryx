@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.RepeatMode
@@ -500,7 +502,11 @@ fun ActionOutputCard(
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = when (action.success) { true -> "SUCCESS"; false -> "FAILED"; null -> "ACTION" },
+                text = when (action.success) {
+                    true -> stringResource(R.string.chat_action_success)
+                    false -> stringResource(R.string.chat_action_failed)
+                    null -> stringResource(R.string.chat_action_tag)
+                },
                 color = statusColor,
                 fontSize = KeryxType.micro,
                 fontWeight = FontWeight.Bold,
@@ -601,7 +607,7 @@ internal fun ReasoningCanvas(text: String, baseColor: Color, active: Boolean) {
             Text("💭", fontSize = KeryxType.body)
             Spacer(modifier = Modifier.width(7.dp))
             Text(
-                text = if (active) "Reasoning…" else "Reasoning",
+                text = if (active) stringResource(R.string.chat_reasoning_live) else stringResource(R.string.chat_reasoning_title),
                 color = accent.copy(alpha = 0.92f),
                 fontSize = KeryxType.caption,
                 fontWeight = FontWeight.SemiBold,
@@ -1078,7 +1084,7 @@ private fun SvgBlock(code: String, textColor: Color) {
     if (failed || showSource) {
         ScrollableCodeBlock(code, textColor, language = "svg")
         if (!failed) Text(
-            "show drawing",
+            stringResource(R.string.chat_show_drawing),
             color = textColor.copy(alpha = 0.55f),
             fontSize = KeryxType.micro,
             modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable { showSource = false }.padding(4.dp),
@@ -1094,7 +1100,7 @@ private fun SvgBlock(code: String, textColor: Color) {
     }
     coil3.compose.AsyncImage(
         model = request,
-        contentDescription = "Drawing",
+        contentDescription = stringResource(R.string.chat_drawing),
         contentScale = androidx.compose.ui.layout.ContentScale.Fit,
         onError = { failed = true },
         modifier = Modifier

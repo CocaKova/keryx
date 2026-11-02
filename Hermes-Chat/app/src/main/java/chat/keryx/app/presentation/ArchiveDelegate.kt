@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import chat.keryx.core.model.Message
 import chat.keryx.core.model.SenderType
 import chat.keryx.core.transport.ChatTransport
@@ -146,7 +148,7 @@ class ArchiveDelegate(
                 )
             }
             _savedIds.value = store.savedIds(message.roomId)
-            val said = if (kept) "Removed from Saved" else "Kept — find it in the Archive"
+            val said = KeryxText.get(if (kept) R.string.app_unsaved else R.string.app_saved)
             // Un-keeping is the one that loses something; both directions get the same Undo.
             if (undoable) notice(KeryxNotice.undo(said) { toggleSaved(message, undoable = false) })
             else toast(said)

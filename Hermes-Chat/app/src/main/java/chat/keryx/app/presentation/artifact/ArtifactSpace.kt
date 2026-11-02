@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.artifact
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.stringResource
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.webkit.WebResourceRequest
@@ -99,7 +101,7 @@ fun ArtifactSpace(
     val ready = page as? Page.Ready
 
     KeryxSpace(
-        title = "Page",
+        title = stringResource(R.string.work_artifact_page),
         hint = chat.keryx.app.presentation.tour.KeryxHints.ARTIFACT,
         onClose = onClose,
         standalone = false,
@@ -107,7 +109,7 @@ fun ArtifactSpace(
             Text(
                 text = buildString {
                     append(dest.name)
-                    ready?.let { append("  ·  ").append(humanSize(it.bytes.size)) }
+                    ready?.let { append("  ·  ").append(android.text.format.Formatter.formatShortFileSize(context, it.bytes.size.toLong())) }
                 },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = KeryxType.micro,
@@ -125,18 +127,18 @@ fun ArtifactSpace(
                     busy = true
                     scope.launch {
                         val where = saveMediaToDevice(context, ready.bytes, dest.name, MediaKind.FILE)
-                        snack.show(if (where != null) "Saved to $where" else "Couldn't save")
+                        snack.show(if (where != null) context.getString(R.string.work_artifact_saved_to, where) else context.getString(R.string.work_artifact_save_failed))
                         busy = false
                     }
-                }) { Icon(KeryxGlyphs.Download, contentDescription = "Save to device", tint = tint) }
+                }) { Icon(KeryxGlyphs.Download, contentDescription = stringResource(R.string.work_artifact_save), tint = tint) }
                 IconButton(onClick = {
                     if (busy) return@IconButton
                     busy = true
                     scope.launch {
-                        if (!shareMedia(context, ready.bytes, dest.name, MediaKind.FILE)) snack.show("Couldn't share")
+                        if (!shareMedia(context, ready.bytes, dest.name, MediaKind.FILE)) snack.show(context.getString(R.string.work_artifact_share_failed))
                         busy = false
                     }
-                }) { Icon(KeryxGlyphs.Share, contentDescription = "Share", tint = tint) }
+                }) { Icon(KeryxGlyphs.Share, contentDescription = stringResource(R.string.work_artifact_share), tint = tint) }
                 IconButton(onClick = {
                     if (busy) return@IconButton
                     busy = true
@@ -146,12 +148,12 @@ fun ArtifactSpace(
                         }
                         busy = false
                     }
-                }) { Icon(KeryxGlyphs.Exit, contentDescription = "Open with", tint = tint) }
+                }) { Icon(KeryxGlyphs.Exit, contentDescription = stringResource(R.string.work_artifact_open_with), tint = tint) }
             }
             IconButton(onClick = { reloadTick++ }) {
                 Icon(
                     KeryxGlyphs.Refresh,
-                    contentDescription = "Reload",
+                    contentDescription = stringResource(R.string.work_artifact_reload),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -160,26 +162,26 @@ fun ArtifactSpace(
         when (val p = page) {
             Page.Loading -> Text(
                 // Honest on both doors: the bytes may come through the room, not the gateway.
-                "Opening ${dest.name}…",
+                stringResource(R.string.work_artifact_opening_named, dest.name),
                 fontSize = KeryxType.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
             )
             is Page.Failed -> Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp)) {
                 Text(
-                    "Couldn't open ${dest.name}",
+                    stringResource(R.string.work_artifact_open_failed, dest.name),
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = KeryxType.bodyLarge,
                 )
                 Text(
-                    p.why,
+                    p.why ?: stringResource(p.fallback),
                     color = MaterialTheme.colorScheme.error,
                     fontSize = KeryxType.caption,
                     lineHeight = 17.sp,
                     modifier = Modifier.padding(top = 6.dp),
                 )
                 TextButton(onClick = { reloadTick++ }, modifier = Modifier.padding(top = 4.dp)) {
-                    Text("Try again", fontSize = KeryxType.caption)
+                    Text(stringResource(R.string.work_try_again), fontSize = KeryxType.caption)
                 }
             }
             is Page.Ready -> Box(
@@ -204,7 +206,7 @@ fun ArtifactSpace(
 /** The loaded page, or why there is none. */
 private sealed interface Page {
     data object Loading : Page
-    data class Failed(val why: String) : Page
+    data class Failed(val why: String?, @androidx.annotation.StringRes val fallback: Int = 0) : Page
     /** [path] is set when the page came by path: its folder answers its relative links (2.16). */
     class Ready(val html: String, val bytes: ByteArray, val path: String? = null) : Page
 }
@@ -220,16 +222,16 @@ private suspend fun load(
         // The transport answers null on a failed download (it logs, never throws).
         val bytes = fetchMedia(room, event)
         if (bytes != null) return Page.Ready(bytes.decodeToString(), bytes)
-        if (dest.path == null) return Page.Failed("The file didn't come through the room.")
+        if (dest.path == null) return Page.Failed(null, R.string.work_artifact_err_room)
     }
-    val path = dest.path ?: return Page.Failed("Nothing to open.")
-    if (rest == null) return Page.Failed("A page by path can only be read over the gateway door.")
-    val head = rest.readText(path).getOrElse { return Page.Failed(it.message ?: "The gateway didn't answer.") }
+    val path = dest.path ?: return Page.Failed(null, R.string.work_artifact_err_nothing)
+    if (rest == null) return Page.Failed(null, R.string.work_artifact_err_door)
+    val head = rest.readText(path).getOrElse { return Page.Failed(it.message, R.string.work_artifact_err_no_answer) }
     if (!head.truncated) {
         return Page.Ready(head.text, head.text.encodeToByteArray(), path)
     }
     // Past the preview cap: the whole file, not the head of it.
-    val bytes = rest.downloadFile(path).getOrElse { return Page.Failed(it.message ?: "The download failed.") }
+    val bytes = rest.downloadFile(path).getOrElse { return Page.Failed(it.message, R.string.work_artifact_err_download) }
     return Page.Ready(bytes.decodeToString(), bytes, path)
 }
 
@@ -314,8 +316,4 @@ private fun ArtifactWebView(
     )
 }
 
-private fun humanSize(bytes: Int): String = when {
-    bytes < 1024 -> "$bytes B"
-    bytes < 1024 * 1024 -> "${bytes / 1024} KB"
-    else -> "%.1f MB".format(bytes / (1024f * 1024f))
-}
+

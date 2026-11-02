@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import chat.keryx.app.domain.repository.SettingsRepository
 import chat.keryx.core.model.RoomProfile
 import chat.keryx.core.transport.ChatTransport
@@ -54,7 +56,8 @@ class SessionsDelegate(
         val name = rooms.value.firstOrNull { it.id == roomId }?.name?.takeIf { it.isNotBlank() }
         fun undo(pinnedNow: Boolean) {
             if (!undoable) return
-            val what = (if (pinnedNow) "Pinned" else "Unpinned") + (name?.let { " “${it.take(40)}”" } ?: "")
+            val what = if (name != null) KeryxText.get(if (pinnedNow) R.string.app_pinned_named else R.string.app_unpinned_named, name.take(40))
+            else KeryxText.get(if (pinnedNow) R.string.app_pinned else R.string.app_unpinned)
             notice(KeryxNotice.undo(what) { togglePin(roomId, undoable = false) })
         }
         if (gw != null) {
@@ -62,7 +65,7 @@ class SessionsDelegate(
             scope.launch {
                 gw.pinSession(roomId, pinned = !nowPinned)
                     .onSuccess { undo(pinnedNow = !nowPinned) }
-                    .onFailure { toast("${if (nowPinned) "Unpin" else "Pin"} failed: ${it.message?.take(80)}") }
+                    .onFailure { toast(KeryxText.get(if (nowPinned) R.string.app_unpin_failed else R.string.app_pin_failed, it.message?.take(80).orEmpty())) }
             }
             return
         }
@@ -81,14 +84,14 @@ class SessionsDelegate(
         scope.launch {
             gw.markSessionRead(sessionId, read = false)
                 .onSuccess {
-                    notice(KeryxNotice.undo("Marked unread") {
+                    notice(KeryxNotice.undo(KeryxText.get(R.string.app_marked_unread)) {
                         scope.launch {
                             gw.markSessionRead(sessionId, read = true)
-                                .onFailure { toast("Couldn't mark read: ${it.message?.take(80)}") }
+                                .onFailure { toast(KeryxText.get(R.string.app_mark_read_failed, it.message?.take(80).orEmpty())) }
                         }
                     })
                 }
-                .onFailure { toast("Couldn't mark unread: ${it.message?.take(80)}") }
+                .onFailure { toast(KeryxText.get(R.string.app_mark_unread_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -162,12 +165,12 @@ class SessionsDelegate(
             // Every way out below says so: a silent skip read as "sticky model doesn't work".
             val catalog = gw.modelOptions(sessionId).getOrElse {
                 android.util.Log.w("KeryxModel", "sticky model: catalog unavailable: ${it.message}")
-                toast("Couldn't read the models — opened on the gateway's default")
+                toast(KeryxText.get(R.string.app_sticky_no_catalog))
                 return@launch
             }
             val lastName = recents.first().substringAfter('|')
             val choice = chat.keryx.core.model.ModelPicker.stickyChoice(recents, catalog) ?: run {
-                toast("$lastName isn't served now — opened on the gateway's default")
+                toast(KeryxText.get(R.string.app_sticky_not_served, lastName))
                 return@launch
             }
             // The ledger fell through to an older pick: say the newest one is gone, not "your last pick".
@@ -175,13 +178,13 @@ class SessionsDelegate(
             // Already this session's route: nothing to switch, and no "model changed" notice
             // to inject into a chat that has not started.
             if (catalog.isCurrent(choice)) {
-                if (fellBack) toast("$lastName isn't served now — opened on the gateway's default")
+                if (fellBack) toast(KeryxText.get(R.string.app_sticky_not_served, lastName))
                 return@launch
             }
             val model = choice.name
             gw.selectModel(sessionId, model, choice.provider)
                 .onSuccess { out ->
-                    if (out.confirmRequired) toast("$model needs confirming — pick it in the model picker")
+                    if (out.confirmRequired) toast(KeryxText.get(R.string.app_sticky_needs_confirm, model))
                     else {
                         // The pill and the reasoning dial read the route it switched to now,
                         // not the profile default a chat without a first message reports.
@@ -189,14 +192,14 @@ class SessionsDelegate(
                         // Never silent: a chat that opens on a model other than the gateway's
                         // says so, and says why, so a surprise on the first turn is impossible.
                         toast(
-                            if (fellBack) "Opened on $model — $lastName isn't served now"
-                            else "Opened on $model — your last pick (sticky model, in Settings)",
+                            if (fellBack) KeryxText.get(R.string.app_sticky_opened_fallback, model, lastName)
+                            else KeryxText.get(R.string.app_sticky_opened, model),
                         )
                     }
                 }
                 .onFailure {
                     android.util.Log.w("KeryxModel", "sticky model refused: ${it.message}")
-                    toast("$model refused — opened on the gateway's default")
+                    toast(KeryxText.get(R.string.app_sticky_refused, model))
                 }
         }
     }
@@ -219,14 +222,14 @@ class SessionsDelegate(
                     if (profile == null || profile.isDefault) applyStickyModel(sessionId)
                     openRoomById(sessionId); onDone(null)
                 }
-                ?.onFailure { onDone(it.message?.take(120) ?: "couldn't create the session") }
+                ?.onFailure { onDone(it.message?.take(120) ?: KeryxText.get(R.string.app_create_session_failed)) }
         }
     }
 
     fun renameSession(sessionId: String, title: String) {
         scope.launch {
             gateway?.renameSession(sessionId, title)
-                ?.onFailure { toast("Rename failed: ${it.message?.take(80)}") }
+                ?.onFailure { toast(KeryxText.get(R.string.app_rename_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -243,11 +246,11 @@ class SessionsDelegate(
         val name = rooms.value.firstOrNull { it.id == sessionId }?.name?.takeIf { it.isNotBlank() }
         scope.launch {
             gateway?.archiveSession(sessionId)
-                ?.onFailure { toast("Couldn't archive: ${it.message?.take(80)}") }
+                ?.onFailure { toast(KeryxText.get(R.string.app_archive_failed, it.message?.take(80).orEmpty())) }
                 ?.onSuccess {
                     _archivedRooms.value = _archivedRooms.value.filterNot { it.id == sessionId }
                     if (undoable) notice(
-                        KeryxNotice.undo("Archived" + (name?.let { " “${it.take(40)}”" } ?: "")) {
+                        KeryxNotice.undo(if (name != null) KeryxText.get(R.string.app_archived_named, name.take(40)) else KeryxText.get(R.string.app_archived)) {
                             unarchiveSession(sessionId, undoable = false)
                         }
                     )
@@ -259,11 +262,11 @@ class SessionsDelegate(
         val name = _archivedRooms.value.firstOrNull { it.id == sessionId }?.name?.takeIf { it.isNotBlank() }
         scope.launch {
             gateway?.unarchiveSession(sessionId)
-                ?.onFailure { toast("Couldn't restore: ${it.message?.take(80)}") }
+                ?.onFailure { toast(KeryxText.get(R.string.app_restore_failed, it.message?.take(80).orEmpty())) }
                 ?.onSuccess {
                     _archivedRooms.value = _archivedRooms.value.filterNot { it.id == sessionId }
                     if (undoable) notice(
-                        KeryxNotice.undo("Restored" + (name?.let { " “${it.take(40)}”" } ?: "")) {
+                        KeryxNotice.undo(if (name != null) KeryxText.get(R.string.app_restored_named, name.take(40)) else KeryxText.get(R.string.app_restored)) {
                             archiveSession(sessionId, undoable = false)
                         }
                     )
@@ -279,7 +282,7 @@ class SessionsDelegate(
         scope.launch {
             gateway?.archivedSessions()
                 ?.onSuccess { _archivedRooms.value = it }
-                ?.onFailure { toast("Couldn't read the archive: ${it.message?.take(80)}") }
+                ?.onFailure { toast(KeryxText.get(R.string.app_archive_read_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -291,7 +294,7 @@ class SessionsDelegate(
     fun loadMoreSessions() {
         val d = direct ?: return
         scope.launch {
-            d.loadMoreSessions().onFailure { toast("Couldn't load older sessions: ${it.message?.take(80)}") }
+            d.loadMoreSessions().onFailure { toast(KeryxText.get(R.string.app_older_sessions_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -311,14 +314,14 @@ class SessionsDelegate(
         scope.launch {
             gateway?.deleteSession(sessionId)
                 ?.onSuccess {
-                    toast("Session deleted")
+                    toast(KeryxText.get(R.string.app_session_deleted))
                     unmarkTemporary(sessionId) // a hand-deleted temp owes the sweep nothing
                     if (settings.lastRoomId == sessionId) settings.lastRoomId = null
                     // Move off the dead session so the chat pane never points at a transcript
                     // that's gone (same shape as leaveRoom's move-off).
                     moveOffRoom(sessionId)
                 }
-                ?.onFailure { toast("Delete failed: ${it.message?.take(80)}") }
+                ?.onFailure { toast(KeryxText.get(R.string.app_delete_failed, it.message?.take(80).orEmpty())) }
         }
     }
 

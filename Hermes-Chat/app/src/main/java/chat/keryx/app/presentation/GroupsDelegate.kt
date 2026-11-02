@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import chat.keryx.core.model.BotProfile
 import chat.keryx.core.model.GroupApproval
 import chat.keryx.core.model.GroupChats
@@ -84,17 +86,17 @@ class GroupsDelegate(
                     _rooms.value = HubDelegate.PanelState(data = rows)
                 }
                 .onFailure { e ->
-                    _rooms.value = _rooms.value.copy(error = e.message?.take(120) ?: "rooms unavailable", refreshing = false)
+                    _rooms.value = _rooms.value.copy(error = e.message?.take(120) ?: KeryxText.get(R.string.app_group_rooms_unavailable), refreshing = false)
                 }
         }
     }
 
     fun create(name: String, bots: List<BotProfile>, onDone: (GroupRoom?, String?) -> Unit) {
-        val gw = gateway ?: return onDone(null, "not connected to a gateway")
+        val gw = gateway ?: return onDone(null, KeryxText.get(R.string.app_not_connected))
         scope.launch {
             gw.createGroup(name, bots)
                 .onSuccess { room -> refresh(); onDone(room, null) }
-                .onFailure { e -> onDone(null, e.message?.take(160) ?: "couldn't create the room") }
+                .onFailure { e -> onDone(null, e.message?.take(160) ?: KeryxText.get(R.string.app_create_room_failed)) }
         }
     }
 
@@ -171,23 +173,23 @@ class GroupsDelegate(
         scope.launch {
             gw.sendToGroup(roomId, body, threadId ?: GroupChats.newId("thread"), GroupChats.newId("keryx"))
                 .onSuccess { poke() } // read it back now rather than on the next tick
-                .onFailure { e -> deps.toast("Couldn't send: ${e.message?.take(100) ?: "try again"}") }
+                .onFailure { e -> deps.toast(KeryxText.get(R.string.app_send_failed, e.message?.take(100) ?: KeryxText.get(R.string.app_try_again))) }
         }
     }
 
-    fun stop() = act("Couldn't stop the room") { gw, id -> gw.stopGroup(id) }
+    fun stop() = act(R.string.app_group_stop_failed) { gw, id -> gw.stopGroup(id) }
 
     fun approve(approval: GroupApproval, choice: String) =
-        act("Couldn't answer the approval") { gw, id -> gw.approveInGroup(id, approval, choice) }
+        act(R.string.app_group_approval_failed) { gw, id -> gw.approveInGroup(id, approval, choice) }
 
-    fun retry(taskId: String) = act("Couldn't retry") { gw, id -> gw.retryInGroup(id, taskId) }
+    fun retry(taskId: String) = act(R.string.app_retry_failed) { gw, id -> gw.retryInGroup(id, taskId) }
 
     fun rename(roomId: String, name: String) {
         val gw = gateway ?: return
         scope.launch {
             gw.renameGroup(roomId, name)
                 .onSuccess { refresh(); poke() }
-                .onFailure { e -> deps.toast("Couldn't rename: ${e.message?.take(100) ?: "try again"}") }
+                .onFailure { e -> deps.toast(KeryxText.get(R.string.app_group_rename_failed, e.message?.take(100) ?: KeryxText.get(R.string.app_try_again))) }
         }
     }
 
@@ -200,17 +202,17 @@ class GroupsDelegate(
                     refresh()
                     onDone()
                 }
-                .onFailure { e -> deps.toast("Couldn't disband: ${e.message?.take(100) ?: "try again"}") }
+                .onFailure { e -> deps.toast(KeryxText.get(R.string.app_group_disband_failed, e.message?.take(100) ?: KeryxText.get(R.string.app_try_again))) }
         }
     }
 
-    private fun act(failure: String, call: suspend (chat.keryx.core.transport.GatewayCapabilities, String) -> Result<Unit>) {
+    private fun act(@androidx.annotation.StringRes failure: Int, call: suspend (chat.keryx.core.transport.GatewayCapabilities, String) -> Result<Unit>) {
         val gw = gateway ?: return
         val roomId = _view.value?.roomId ?: return
         scope.launch {
             call(gw, roomId)
                 .onSuccess { poke() }
-                .onFailure { e -> deps.toast("$failure: ${e.message?.take(100) ?: "try again"}") }
+                .onFailure { e -> deps.toast(KeryxText.get(failure, e.message?.take(100) ?: KeryxText.get(R.string.app_try_again))) }
         }
     }
 }

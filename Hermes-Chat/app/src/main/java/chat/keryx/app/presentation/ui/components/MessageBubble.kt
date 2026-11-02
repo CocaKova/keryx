@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -75,7 +77,7 @@ internal fun ArrivalMark(message: Message) {
         HeraldSigil(light, fontSize = KeryxType.micro)
         Spacer(modifier = Modifier.width(6.dp))
         Text(
-            text = "${light.name} · unprompted · $clock",
+            text = stringResource(R.string.chat_arrival_mark, light.name, clock),
             color = light.accent.copy(alpha = 0.85f),
             fontSize = KeryxType.micro,
             fontWeight = FontWeight.Medium,
@@ -317,7 +319,7 @@ fun MessageBubble(
                     .combinedClickable(
                         onClick = {},
                         // TalkBack's "double-tap and hold" names what the hold opens (2.16).
-                        onLongClickLabel = "Reply, react or copy",
+                        onLongClickLabel = stringResource(R.string.chat_bubble_hold_label),
                         onLongClick = { showReactionPicker = true },
                         onDoubleClick = { heartBloomTick++; onReact("❤️") },
                     )
@@ -412,6 +414,7 @@ fun MessageBubble(
         if (showReactionPicker) {
             val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
             val copySnack = LocalKeryxSnack.current
+            val copiedWord = stringResource(R.string.chat_copied)
             ReactionPickerRow(
                 onPick = { emoji -> showReactionPicker = false; onReact(emoji) },
                 onReply = { showReactionPicker = false; onReply() },
@@ -425,7 +428,7 @@ fun MessageBubble(
                             chat.keryx.core.protocol.MessageParser.extractKeryx(message.content).text,
                         ),
                     )
-                    copySnack.show("Copied")
+                    copySnack.show(copiedWord)
                 },
                 onDelete = onDelete?.let { { showReactionPicker = false; confirmDelete = true } },
                 onUndoTurn = onUndoTurn?.let { { showReactionPicker = false; confirmUndo = true } },
@@ -444,21 +447,21 @@ fun MessageBubble(
         if (confirmUndo) {
             androidx.compose.material3.AlertDialog(
                 onDismissRequest = { confirmUndo = false },
-                title = { Text("Take back the last exchange?", fontSize = KeryxType.titleLarge) },
-                text = { Text("Your message and this reply leave the session's history on the gateway. The next thing you say continues from before them.", fontSize = KeryxType.body) },
+                title = { Text(stringResource(R.string.chat_undo_title), fontSize = KeryxType.titleLarge) },
+                text = { Text(stringResource(R.string.chat_undo_body), fontSize = KeryxType.body) },
                 confirmButton = {
                     TextButton(onClick = { confirmUndo = false; onUndoTurn?.invoke() }) {
-                        Text("Take it back", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.chat_undo_confirm), color = MaterialTheme.colorScheme.error)
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { confirmUndo = false }) { Text("Keep") }
+                    TextButton(onClick = { confirmUndo = false }) { Text(stringResource(R.string.chat_keep)) }
                 },
             )
         }
 
         if (selectOpen) {
-            KeryxSheet(onDismiss = { selectOpen = false }, title = "Select text") {
+            KeryxSheet(onDismiss = { selectOpen = false }, title = stringResource(R.string.chat_select_text)) {
                 androidx.compose.foundation.text.selection.SelectionContainer {
                     Text(
                         chat.keryx.core.protocol.MessageParser.extractKeryx(message.content).text,
@@ -476,15 +479,15 @@ fun MessageBubble(
         if (confirmDelete) {
             androidx.compose.material3.AlertDialog(
                 onDismissRequest = { confirmDelete = false },
-                title = { Text("Delete message?", fontSize = KeryxType.titleLarge) },
-                text = { Text("It's removed for everyone — this can't be undone.", fontSize = KeryxType.body) },
+                title = { Text(stringResource(R.string.chat_delete_message_title), fontSize = KeryxType.titleLarge) },
+                text = { Text(stringResource(R.string.chat_delete_message_body), fontSize = KeryxType.body) },
                 confirmButton = {
                     TextButton(onClick = { confirmDelete = false; onDelete?.invoke() }) {
-                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.chat_delete), color = MaterialTheme.colorScheme.error)
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+                    TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.chat_cancel)) }
                 },
             )
         }
@@ -525,9 +528,10 @@ fun MessageBubble(
                 // Sent indicator (Element-style). The message is a real timeline event, so it's
                 // delivered. Accent at 0.8 measured 2.62:1 on paper; keryxAccentInk is the same
                 // hue pressed into it (and the raw accent back again on the void).
+                val sentLabel = stringResource(R.string.chat_sent)
                 Text(
                     "✓", color = keryxAccentInk(), fontSize = KeryxType.micro,
-                    modifier = Modifier.semantics { contentDescription = "Sent" },
+                    modifier = Modifier.semantics { contentDescription = sentLabel },
                 )
             }
             if (speaking && onSpeak != null) {
@@ -552,11 +556,11 @@ fun MessageBubble(
                     modifier = Modifier
                         .size(32.dp)
                         .clip(CircleShape)
-                        .clickable(onClickLabel = "Stop speaking") { onSpeak() },
+                        .clickable(onClickLabel = stringResource(R.string.chat_stop_speaking)) { onSpeak() },
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.VolumeUp,
-                        contentDescription = "Stop speaking",
+                        contentDescription = stringResource(R.string.chat_stop_speaking),
                         tint = MaterialTheme.colorScheme.primary.copy(alpha = pulse),
                         modifier = Modifier.size(15.dp),
                     )
@@ -575,14 +579,14 @@ private fun ReplyQuote(replyTo: Message, textColor: Color, onClick: (() -> Unit)
             .padding(bottom = 6.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(accent.copy(alpha = 0.10f))
-            .then(if (onClick != null) Modifier.clickable(onClickLabel = "Go to the quoted message") { onClick() } else Modifier)
+            .then(if (onClick != null) Modifier.clickable(onClickLabel = stringResource(R.string.chat_go_to_quoted)) { onClick() } else Modifier)
             .height(IntrinsicSize.Min),
     ) {
         Box(modifier = Modifier.width(3.dp).fillMaxHeight().background(accent.copy(alpha = 0.7f)))
         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)) {
             Text(shortSender(replyTo.senderName), color = accent, fontSize = KeryxType.micro, fontWeight = FontWeight.SemiBold)
             Text(
-                text = replyPreviewText(replyTo),
+                text = replyPreviewText(replyTo, stringResource(R.string.chat_reply_attachment), stringResource(R.string.chat_reply_message)),
                 color = textColor.copy(alpha = 0.7f),
                 fontSize = KeryxType.caption,
                 maxLines = 2,
@@ -609,7 +613,7 @@ private fun ReactionChips(reactions: List<MessageReaction>, isMine: Boolean, onR
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
                     .background(bg)
-                    .clickable(onClickLabel = if (r.mine) "Take back your reaction" else "Add your reaction") { onReact(r.emoji) }
+                    .clickable(onClickLabel = if (r.mine) stringResource(R.string.chat_reaction_take_back) else stringResource(R.string.chat_reaction_add)) { onReact(r.emoji) }
                     .padding(horizontal = 8.dp, vertical = 3.dp),
             ) {
                 Text(r.emoji, fontSize = KeryxType.body)
@@ -711,7 +715,7 @@ private fun ReactionPickerRow(
                             modifier = Modifier
                                 .graphicsLayer { scaleX = scale; scaleY = scale; alpha = scale.coerceIn(0f, 1f) }
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable(onClickLabel = "React") { onPick(emoji) }
+                                .clickable(onClickLabel = stringResource(R.string.chat_react)) { onPick(emoji) }
                                 .padding(4.dp),
                         )
                     }
@@ -729,41 +733,41 @@ private fun ReactionPickerRow(
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                     maxItemsInEachRow = 5,
                 ) {
-                    PickerAction(KeryxGlyphs.Reply, "Reply", "Reply", primary, onReply)
-                    PickerAction(KeryxGlyphs.Copy, "Copy", "Copy text", primary, onCopy)
+                    PickerAction(KeryxGlyphs.Reply, stringResource(R.string.chat_action_reply), stringResource(R.string.chat_action_reply), primary, onReply)
+                    PickerAction(KeryxGlyphs.Copy, stringResource(R.string.chat_action_copy), stringResource(R.string.chat_action_copy_text), primary, onCopy)
                     if (onToggleKeep != null) {
                         PickerAction(
                             if (kept == true) KeryxGlyphs.BookmarkFilled else KeryxGlyphs.Bookmark,
-                            if (kept == true) "Saved" else "Save",
-                            if (kept == true) "Remove from Saved" else "Keep in Archive",
+                            if (kept == true) stringResource(R.string.chat_action_saved) else stringResource(R.string.chat_action_save),
+                            if (kept == true) stringResource(R.string.chat_action_unsave) else stringResource(R.string.chat_action_keep_archive),
                             primary, onToggleKeep,
                         )
                     }
                     if (onSpeak != null) {
                         PickerAction(
                             if (speaking) KeryxGlyphs.StopSquare else KeryxGlyphs.Volume,
-                            if (speaking) "Stop" else "Read aloud",
-                            if (speaking) "Stop speaking" else "Read aloud",
+                            if (speaking) stringResource(R.string.chat_action_stop) else stringResource(R.string.chat_action_read_aloud),
+                            if (speaking) stringResource(R.string.chat_stop_speaking) else stringResource(R.string.chat_action_read_aloud),
                             primary, onSpeak,
                         )
                     }
                     if (onSelect != null) {
-                        PickerAction(androidx.compose.material.icons.Icons.Filled.TextFields, "Select", "Select text", primary, onSelect)
+                        PickerAction(androidx.compose.material.icons.Icons.Filled.TextFields, stringResource(R.string.chat_action_select), stringResource(R.string.chat_select_text), primary, onSelect)
                     }
                     if (onEdit != null) {
-                        PickerAction(androidx.compose.material.icons.Icons.Filled.Edit, "Edit", "Edit and send again", primary, onEdit)
+                        PickerAction(androidx.compose.material.icons.Icons.Filled.Edit, stringResource(R.string.chat_action_edit), stringResource(R.string.chat_action_edit_desc), primary, onEdit)
                     }
                     if (onRetry != null) {
-                        PickerAction(KeryxGlyphs.Refresh, "Retry", "Take it back and say it again", primary, onRetry)
+                        PickerAction(KeryxGlyphs.Refresh, stringResource(R.string.chat_action_retry), stringResource(R.string.chat_action_retry_desc), primary, onRetry)
                     }
                     if (onBranch != null) {
-                        PickerAction(KeryxGlyphs.GitBranch, "Branch", "Branch a new session from here", primary, onBranch)
+                        PickerAction(KeryxGlyphs.GitBranch, stringResource(R.string.chat_action_branch), stringResource(R.string.chat_action_branch_desc), primary, onBranch)
                     }
                     if (onUndoTurn != null) {
-                        PickerAction(androidx.compose.material.icons.Icons.AutoMirrored.Filled.Undo, "Undo", "Take back the last exchange", danger, onUndoTurn)
+                        PickerAction(androidx.compose.material.icons.Icons.AutoMirrored.Filled.Undo, stringResource(R.string.chat_action_undo), stringResource(R.string.chat_action_undo_desc), danger, onUndoTurn)
                     }
                     if (onDelete != null) {
-                        PickerAction(KeryxGlyphs.Trash, "Delete", "Delete message", danger, onDelete)
+                        PickerAction(KeryxGlyphs.Trash, stringResource(R.string.chat_delete), stringResource(R.string.chat_action_delete_desc), danger, onDelete)
                     }
                 }
             }
@@ -802,10 +806,11 @@ private fun PickerAction(
     }
 }
 
-internal fun replyPreviewText(m: Message): String = when {
+/** [attachment] and [empty] are the fallbacks' words; composables pass the translated ones. */
+internal fun replyPreviewText(m: Message, attachment: String = "attachment", empty: String = "message"): String = when {
     m.content.isNotBlank() -> m.content.lineSequence().firstOrNull { it.isNotBlank() }?.trim() ?: m.content.trim()
-    m.mediaKind != null -> "📎 ${m.fileName.ifBlank { "attachment" }}"
-    else -> "message"
+    m.mediaKind != null -> "📎 ${m.fileName.ifBlank { attachment }}"
+    else -> empty
 }
 
 /** MXIDs compact to their localpart; a resolved display name passes through untouched
@@ -814,4 +819,4 @@ internal fun shortSender(id: String): String =
     if (id.startsWith("@") && ':' in id) id.trimStart('@').substringBefore(':') else id
 
 internal fun formatClock(ts: Long): String =
-    java.text.SimpleDateFormat("h:mm a", java.util.Locale.getDefault()).format(java.util.Date(ts))
+    java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT, java.util.Locale.getDefault()).format(java.util.Date(ts))

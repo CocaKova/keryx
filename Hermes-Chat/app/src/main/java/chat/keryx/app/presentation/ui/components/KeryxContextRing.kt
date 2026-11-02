@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.animation.core.animateFloatAsState
@@ -95,6 +98,7 @@ fun KeryxContextRing(
     val left = toCompaction?.left ?: (max - used).coerceAtLeast(0L)
     val label = if (drainSince != null) null
         else chat.keryx.core.model.ContextOutlook.shortLabel(reading, repliesLeft, left)
+    val ringLabel = contextRingLabel(used, max, toCompaction?.left, repliesLeft)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         // The ring is 15dp of drawing; the target rides the composer footer's own 36dp band
@@ -102,9 +106,9 @@ fun KeryxContextRing(
         modifier = modifier
             .heightIn(min = 36.dp)
             .clip(RoundedCornerShape(KeryxRadius.chip))
-            .let { m -> if (onTap != null) m.clickable(onClickLabel = "Chat memory", onClick = onTap) else m }
+            .let { m -> if (onTap != null) m.clickable(onClickLabel = stringResource(R.string.chat_memory), onClick = onTap) else m }
             // The ring is a drawing, so it says in words what it shows (3.0 accessibility pass).
-            .semantics { contentDescription = contextRingLabel(used, max, toCompaction?.left, repliesLeft) }
+            .semantics { contentDescription = ringLabel }
             .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
         if (label != null) {
@@ -159,13 +163,14 @@ fun KeryxContextRing(
 private val Gilt = androidx.compose.ui.graphics.Color(0xFFD4A537)
 
 /** What the context ring says aloud: how full the chat is, and how far the summary is. */
+@Composable
 internal fun contextRingLabel(used: Long, max: Long, toCompaction: Long?, repliesLeft: Int? = null): String {
     val pct = if (max > 0) (used * 100 / max).coerceIn(0, 100) else 0
-    val base = "Chat memory ${used / 1000}k of ${max / 1000}k tokens, $pct percent"
+    val base = stringResource(R.string.chat_ring_base, (used / 1000).toInt(), (max / 1000).toInt(), pct.toInt())
     return when {
         toCompaction == null -> base
-        toCompaction > 0L && repliesLeft != null -> "$base, about $repliesLeft replies before the summary"
-        toCompaction > 0L -> "$base, ${(toCompaction + 999) / 1000}k until the summary"
-        else -> "$base, the next reply starts a summary"
+        toCompaction > 0L && repliesLeft != null -> pluralStringResource(R.plurals.chat_ring_replies, repliesLeft, base, repliesLeft)
+        toCompaction > 0L -> stringResource(R.string.chat_ring_until, base, ((toCompaction + 999) / 1000).toInt())
+        else -> stringResource(R.string.chat_ring_next, base)
     }
 }

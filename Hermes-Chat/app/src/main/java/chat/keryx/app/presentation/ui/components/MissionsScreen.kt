@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -121,6 +124,33 @@ internal fun blockKindLabel(kind: String, status: String): String = when {
     kind == "dependency" -> "waiting on a parent card"
     kind == "transient" -> "paused — clears itself"
     status == "blocked" -> "blocked"
+    else -> status
+}
+
+/** A lane's name in the app's language; a status the app doesn't know keeps its own name. */
+@Composable
+internal fun sectionTitle(section: MissionSection): String = when (section.key) {
+    NEEDS_YOU -> stringResource(R.string.work_lane_needs_you)
+    "running" -> stringResource(R.string.work_lane_running)
+    "ready" -> stringResource(R.string.work_lane_ready)
+    "triage" -> stringResource(R.string.work_lane_triage)
+    "todo" -> stringResource(R.string.work_lane_todo)
+    "scheduled" -> stringResource(R.string.work_lane_scheduled)
+    "blocked" -> stringResource(R.string.work_lane_blocked)
+    "review" -> stringResource(R.string.work_lane_review)
+    "done" -> stringResource(R.string.work_lane_done)
+    else -> section.label
+}
+
+/** [blockKindLabel], from the app's resources (the English one stays for the JVM tests). */
+@Composable
+internal fun blockKindText(kind: String, status: String): String = when {
+    status == "review" -> stringResource(R.string.work_block_review)
+    kind == "needs_input" -> stringResource(R.string.work_block_needs_input)
+    kind == "capability" -> stringResource(R.string.work_block_capability)
+    kind == "dependency" -> stringResource(R.string.work_block_dependency)
+    kind == "transient" -> stringResource(R.string.work_block_transient)
+    status == "blocked" -> stringResource(R.string.work_block_blocked)
     else -> status
 }
 
@@ -302,7 +332,7 @@ fun MissionsScreen(
     }
 
     KeryxSpace(
-        title = "Missions",
+        title = stringResource(R.string.work_missions),
         hint = chat.keryx.app.presentation.tour.KeryxHints.MISSIONS,
         onClose = onDismissRequest,
         standalone = false,
@@ -315,12 +345,12 @@ fun MissionsScreen(
                 Spacer(Modifier.width(6.dp))
                 Text(
                     text = when {
-                        needsCount > 0 -> "$needsCount need${if (needsCount == 1) "s" else ""} you" +
-                            (if (runningCount > 0) " · $runningCount running" else "")
-                        runningCount > 0 -> "$runningCount running" +
+                        needsCount > 0 -> pluralStringResource(R.plurals.work_missions_need_you, needsCount, needsCount) +
+                            (if (runningCount > 0) " · " + stringResource(R.string.work_missions_n_running, runningCount) else "")
+                        runningCount > 0 -> stringResource(R.string.work_missions_n_running, runningCount) +
                             (board?.board?.let { " · $it" } ?: "")
-                        board?.board != null -> "board: ${board?.board}"
-                        else -> "the agent's board"
+                        board?.board != null -> stringResource(R.string.work_missions_board_named, board?.board.orEmpty())
+                        else -> stringResource(R.string.work_missions_board_default)
                     },
                     fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -334,7 +364,7 @@ fun MissionsScreen(
             if (!selecting) IconButton(onClick = { viewModel.missions.refreshKanban() }, enabled = !refreshing) {
                 Icon(
                     Icons.Default.Refresh,
-                    contentDescription = "Refresh",
+                    contentDescription = stringResource(R.string.work_ship_refresh),
                     tint = if (refreshing) MaterialTheme.colorScheme.onSurfaceVariant
                            else MaterialTheme.colorScheme.primary,
                 )
@@ -356,7 +386,7 @@ fun MissionsScreen(
                 ) {
                     Icon(
                         Icons.Default.Add,
-                        contentDescription = "New mission",
+                        contentDescription = stringResource(R.string.work_mission_new),
                         tint = contrastColorFor(accent),
                     )
                 }
@@ -395,11 +425,11 @@ fun MissionsScreen(
                     value = query,
                     onValueChange = { query = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Find a mission", fontSize = KeryxType.body) },
+                    placeholder = { Text(stringResource(R.string.work_missions_search), fontSize = KeryxType.body) },
                     singleLine = true,
                     shape = RoundedCornerShape(KeryxRadius.field),
                     trailingIcon = if (filtering) ({
-                        TextButton(onClick = { query = ""; ownerFilter = null }) { Text("Clear", fontSize = KeryxType.caption) }
+                        TextButton(onClick = { query = ""; ownerFilter = null }) { Text(stringResource(R.string.work_clear), fontSize = KeryxType.caption) }
                     }) else null,
                 )
                 if (owners.size > 1) Row(
@@ -409,7 +439,7 @@ fun MissionsScreen(
                     owners.forEach { (owner, n) ->
                         val on = ownerFilter == owner
                         Text(
-                            (if (owner == chat.keryx.app.presentation.MissionFilter.UNASSIGNED) "Nobody" else owner.replaceFirstChar { it.uppercase() }) + " $n",
+                            (if (owner == chat.keryx.app.presentation.MissionFilter.UNASSIGNED) stringResource(R.string.work_missions_nobody) else owner.replaceFirstChar { it.uppercase() }) + " $n",
                             fontSize = KeryxType.caption,
                             maxLines = 1,
                             color = if (on) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
@@ -449,7 +479,7 @@ fun MissionsScreen(
                         Box(Modifier.size(6.dp).clip(CircleShape).background(color))
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            "${section.label} ${section.cards.size}",
+                            "${sectionTitle(section)} ${section.cards.size}",
                             fontSize = KeryxType.micro,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -462,16 +492,16 @@ fun MissionsScreen(
 
         when {
             error != null && board == null -> MissionsEmptyState(
-                line1 = "Board unreachable",
+                line1 = stringResource(R.string.work_missions_unreachable),
                 line2 = chat.keryx.core.model.FriendlyError.of(error),
             )
             sections.isEmpty() && filtering -> MissionsEmptyState(
-                line1 = "Nothing matches",
-                line2 = "No card says that" + (ownerFilter?.let { " for this owner" } ?: "") + ". Clear the search to see the whole board.",
+                line1 = stringResource(R.string.work_missions_no_match),
+                line2 = if (ownerFilter != null) stringResource(R.string.work_missions_no_match_owner_body) else stringResource(R.string.work_missions_no_match_body),
             )
             sections.isEmpty() -> MissionsEmptyState(
-                line1 = "No missions on the board",
-                line2 = "Give your agent a mission. Triage parks it for a spec first; otherwise the dispatcher picks it up.",
+                line1 = stringResource(R.string.work_missions_empty),
+                line2 = stringResource(R.string.work_missions_empty_body),
                 onCreate = { createOpen = true },
             )
             else -> LazyColumn(
@@ -491,7 +521,7 @@ fun MissionsScreen(
                             modifier = Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 2.dp),
                         ) {
                             KeryxSectionHeader(
-                                label = section.label,
+                                label = sectionTitle(section),
                                 dotColor = statusColor(status),
                                 count = cards.size,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -499,14 +529,14 @@ fun MissionsScreen(
                             )
                             when {
                                 selecting -> LaneAction(
-                                    if (cards.all { it.id in chosen }) "Unselect lane" else "Select all",
+                                    if (cards.all { it.id in chosen }) stringResource(R.string.work_missions_unselect_lane) else stringResource(R.string.work_missions_select_all),
                                 ) {
                                     selected = toggleLane(selected, cards)
                                     if (liveSelection(selected, sections).isEmpty()) exitSelection()
                                 }
                                 // The swarm's leftovers, in one move: every finished card off
                                 // the board. Behind a confirm that states the count.
-                                status == "done" && bulk == null -> LaneAction("Clear done") {
+                                status == "done" && bulk == null -> LaneAction(stringResource(R.string.work_missions_clear_done)) {
                                     pendingArchive = doneLaneIds(sections) to true
                                 }
                             }
@@ -570,18 +600,19 @@ fun MissionsScreen(
         val allCards = tasks.values.flatten()
         val running = allCards.count { it.id in ids && it.status == "running" }
         val n = ids.size
-        val noun = if (n == 1) "mission" else "missions"
         AlertDialog(
             onDismissRequest = { pendingArchive = null },
-            title = { Text(if (clearDone) "Clear $n done $noun?" else "Archive $n $noun?") },
+            title = {
+                Text(
+                    if (clearDone) pluralStringResource(R.plurals.work_missions_clear_title, n, n)
+                    else pluralStringResource(R.plurals.work_missions_archive_title, n, n),
+                )
+            },
             text = {
                 Text(
                     buildString {
-                        append(if (clearDone) "Every card in Done comes off the board." else "They come off the board.")
-                        if (running > 0) append(
-                            " $running of them ${if (running == 1) "is" else "are"} running — " +
-                                "${if (running == 1) "its worker stops" else "their workers stop"}.",
-                        )
+                        append(if (clearDone) stringResource(R.string.work_missions_clear_body) else stringResource(R.string.work_missions_archive_body))
+                        if (running > 0) append(" ").append(pluralStringResource(R.plurals.work_missions_archive_running, running, running))
                     },
                 )
             },
@@ -589,9 +620,9 @@ fun MissionsScreen(
                 TextButton(onClick = {
                     pendingArchive = null
                     viewModel.missions.kanbanArchiveMany(ids) { exitSelection() }
-                }) { Text("Archive $n", color = KeryxStatus.bad) }
+                }) { Text(stringResource(R.string.work_missions_archive_n, n), color = KeryxStatus.bad) }
             },
-            dismissButton = { TextButton(onClick = { pendingArchive = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { pendingArchive = null }) { Text(stringResource(R.string.mk_cancel)) } },
         )
     }
 }
@@ -637,14 +668,15 @@ private fun SelectionBar(
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (selecting) {
                 IconButton(onClick = onCancel, enabled = progress == null) {
-                    Icon(KeryxGlyphs.Close, contentDescription = "Cancel selection", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(KeryxGlyphs.Close, contentDescription = stringResource(R.string.work_missions_cancel_selection), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else Spacer(Modifier.width(10.dp))
             Text(
                 when {
-                    progress != null -> "Archiving ${progress.done} of ${progress.total}…" +
-                        (if (progress.failed > 0) " · ${progress.failed} failed" else "")
-                    else -> "$count selected"
+                    progress != null && progress.failed > 0 ->
+                        stringResource(R.string.work_missions_archiving_failed, progress.done, progress.total, progress.failed)
+                    progress != null -> stringResource(R.string.work_missions_archiving, progress.done, progress.total)
+                    else -> stringResource(R.string.work_missions_selected, count)
                 },
                 fontSize = KeryxType.body,
                 fontWeight = FontWeight.SemiBold,
@@ -653,7 +685,7 @@ private fun SelectionBar(
             )
             if (selecting && progress == null) {
                 TextButton(onClick = onArchive, enabled = count > 0) {
-                    Text("Archive", color = if (count > 0) KeryxStatus.bad else MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.work_move_archive), color = if (count > 0) KeryxStatus.bad else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -688,18 +720,18 @@ private fun AlertsHintRow(onTurnOn: () -> Unit, onDismiss: () -> Unit) {
         )
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text("Ring me when missions finish", fontSize = KeryxType.body, fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.work_alerts_hint), fontSize = KeryxType.body, fontWeight = FontWeight.Medium)
             Text(
-                "A notification when a mission completes, blocks, or gives up",
+                stringResource(R.string.work_alerts_hint_body),
                 fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        TextButton(onClick = onTurnOn) { Text("Turn on", fontSize = KeryxType.caption) }
+        TextButton(onClick = onTurnOn) { Text(stringResource(R.string.work_turn_on), fontSize = KeryxType.caption) }
         IconButton(onClick = onDismiss) {
             Icon(
                 KeryxGlyphs.Close,
-                contentDescription = "Dismiss",
+                contentDescription = stringResource(R.string.work_dismiss),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(16.dp),
             )
@@ -724,7 +756,7 @@ private fun MissionsEmptyState(
         body = line2,
         modifier = modifier,
         illustration = { MissionBoardIllustration() },
-        actionLabel = if (onCreate != null) "Give it a mission" else null,
+        actionLabel = if (onCreate != null) stringResource(R.string.work_missions_give_mission) else null,
         onAction = onCreate,
     )
 }
@@ -804,7 +836,7 @@ private fun MissionCard(
                     if (subscribed) {
                         Icon(
                             Icons.Outlined.Notifications,
-                            contentDescription = "Alerts on",
+                            contentDescription = stringResource(R.string.work_mission_alerts_on),
                             tint = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.size(14.dp),
                         )
@@ -835,7 +867,7 @@ private fun MissionCard(
                     }
                     if (task.consecutiveFailures > 0) {
                         Text(
-                            "⚠ ${task.consecutiveFailures} fail${if (task.consecutiveFailures > 1) "s" else ""}",
+                            "⚠ " + pluralStringResource(R.plurals.work_mission_fails, task.consecutiveFailures, task.consecutiveFailures),
                             fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.error,
                         )
@@ -853,7 +885,7 @@ private fun MissionCard(
                     // The ask, not the brief: what the card is waiting on is the one line that
                     // decides whether to open it. The kind pill says whose move it is.
                     Spacer(Modifier.height(6.dp))
-                    StatusPill(blockKindLabel(task.blockKind, task.status), color)
+                    StatusPill(blockKindText(task.blockKind, task.status), color)
                     Spacer(Modifier.height(4.dp))
                     Text(
                         task.ask,
@@ -892,7 +924,7 @@ private fun SelectMark(selected: Boolean, accent: Color) {
     ) {
         if (selected) Icon(
             Icons.Default.Check,
-            contentDescription = "Selected",
+            contentDescription = stringResource(R.string.work_mission_selected),
             tint = contrastColorFor(accent),
             modifier = Modifier.size(13.dp),
         )
@@ -942,14 +974,15 @@ private fun DiagBadge(task: KanbanTask) {
     )
 }
 
+@Composable
 private fun missionAge(task: KanbanTask): String {
     val ref = task.completedAt ?: task.startedAt ?: task.createdAt
-    val mins = ((System.currentTimeMillis() / 1000L) - ref) / 60
+    val mins = (((System.currentTimeMillis() / 1000L) - ref) / 60).toInt()
     return when {
-        mins < 1 -> "just now"
-        mins < 60 -> "${mins}m"
-        mins < 60 * 24 -> "${mins / 60}h"
-        else -> "${mins / (60 * 24)}d"
+        mins < 1 -> stringResource(R.string.work_age_just_now)
+        mins < 60 -> stringResource(R.string.work_age_m, mins)
+        mins < 60 * 24 -> stringResource(R.string.work_age_h, mins / 60)
+        else -> stringResource(R.string.work_age_d, mins / (60 * 24))
     }
 }
 
@@ -987,7 +1020,7 @@ private fun MissionDetailSheet(
             val d = detail
             when {
                 loadError != null -> Text(
-                    "Couldn't load this mission: $loadError",
+                    stringResource(R.string.work_mission_load_failed, loadError.orEmpty()),
                     color = MaterialTheme.colorScheme.error,
                     fontSize = KeryxType.caption,
                     modifier = Modifier.padding(vertical = 20.dp),
@@ -1025,7 +1058,7 @@ private fun MissionDetailSheet(
     watchRun?.let { run ->
         val sid = run.sessionId ?: return@let
         val cardTitle = detail?.task?.title?.ifBlank { null } ?: taskId
-        val sessionTitle = "$cardTitle · run #${run.id}"
+        val sessionTitle = stringResource(R.string.work_mission_run_title, cardTitle, run.id)
         val live = detail?.task?.let { chat.keryx.app.presentation.MissionStory.isLive(run, it) } ?: (run.endedAt == null)
         SessionTranscriptSheet(
             sessionId = sid,
@@ -1080,7 +1113,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.StoryCard(
     // The title, with Edit and the ⋯ moves beside it.
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(t.title, fontSize = KeryxType.headline, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-        if (canEdit) TextButton(onClick = onEdit) { Text("Edit", fontSize = KeryxType.caption) }
+        if (canEdit) TextButton(onClick = onEdit) { Text(stringResource(R.string.work_edit), fontSize = KeryxType.caption) }
         CardMovesMenu(
             status = t.status,
             currentAssignee = t.assignee,
@@ -1172,7 +1205,7 @@ private fun FocusBox(f: chat.keryx.app.presentation.MissionStory.Focus) {
             )
         } else MissionProse(f.text)
         if (long) Text(
-            if (open) "Less" else "More ›",
+            if (open) stringResource(R.string.work_less) else stringResource(R.string.work_more),
             fontSize = KeryxType.caption,
             fontWeight = FontWeight.Medium,
             color = keryxAccentInk(),
@@ -1202,7 +1235,7 @@ private fun ActionArea(
     onMove: (CardMove) -> Unit,
     onNote: (String) -> Unit,
 ) {
-    val who = agent ?: "your agent"
+    val who = agent ?: stringResource(R.string.work_your_agent)
     var text by remember(task.id, task.status) { mutableStateOf("") }
     var noteOpen by remember(task.id) { mutableStateOf(false) }
     val answering = primary == Primary.APPROVE || primary == Primary.REPLY || primary == Primary.REPLY_UNBLOCK
@@ -1215,9 +1248,9 @@ private fun ActionArea(
                 placeholder = {
                     Text(
                         when {
-                            primary == Primary.APPROVE -> "A note for $who (optional to approve, needed to ask for changes)"
-                            answering -> "Your answer. $who reads it next"
-                            else -> "A note $who reads on its next run"
+                            primary == Primary.APPROVE -> stringResource(R.string.work_mission_note_approve, who)
+                            answering -> stringResource(R.string.work_mission_note_answer, who)
+                            else -> stringResource(R.string.work_mission_note_next_run, who)
                         },
                         fontSize = KeryxType.caption,
                     )
@@ -1231,26 +1264,26 @@ private fun ActionArea(
         Row(verticalAlignment = Alignment.CenterVertically) {
             when (primary) {
                 Primary.APPROVE -> TextButton(enabled = text.isNotBlank(), onClick = { onRequestChanges(text.trim()); text = "" }) {
-                    Text("Ask for changes", fontSize = KeryxType.caption, color = KeryxStatus.bad)
+                    Text(stringResource(R.string.work_mission_ask_changes), fontSize = KeryxType.caption, color = KeryxStatus.bad)
                 }
                 Primary.REPLY_UNBLOCK -> TextButton(enabled = text.isNotBlank(), onClick = { onReply(text.trim(), false); text = "" }) {
-                    Text("Reply only", fontSize = KeryxType.caption)
+                    Text(stringResource(R.string.work_mission_reply_only), fontSize = KeryxType.caption)
                 }
                 Primary.REPLY -> Unit
                 else -> if (noteOpen) TextButton(
                     enabled = text.isNotBlank(),
                     onClick = { onNote(text.trim()); text = ""; noteOpen = false },
-                ) { Text("Send note", fontSize = KeryxType.caption) }
-                else TextButton(onClick = { noteOpen = true }) { Text("Add a note", fontSize = KeryxType.caption) }
+                ) { Text(stringResource(R.string.work_mission_send_note), fontSize = KeryxType.caption) }
+                else TextButton(onClick = { noteOpen = true }) { Text(stringResource(R.string.work_mission_add_note), fontSize = KeryxType.caption) }
             }
             Spacer(Modifier.weight(1f))
             when (primary) {
-                Primary.APPROVE -> VerdictButton("Approve", enabled = true) { onApprove(text.trim()); text = "" }
-                Primary.REPLY_UNBLOCK -> VerdictButton("Reply & unblock", enabled = text.isNotBlank()) { onReply(text.trim(), true); text = "" }
-                Primary.REPLY -> VerdictButton("Reply", enabled = text.isNotBlank()) { onReply(text.trim(), false); text = "" }
-                Primary.WATCH -> VerdictButton("Watch it work", enabled = true, onClick = onWatch)
-                Primary.START -> VerdictButton("Start it", enabled = true) { onMove(CardMove.START) }
-                Primary.UNBLOCK -> VerdictButton(if (task.status == "scheduled") "Start now" else "Unblock", enabled = true) { onMove(CardMove.UNBLOCK) }
+                Primary.APPROVE -> VerdictButton(stringResource(R.string.work_mission_approve), enabled = true) { onApprove(text.trim()); text = "" }
+                Primary.REPLY_UNBLOCK -> VerdictButton(stringResource(R.string.work_mission_reply_unblock), enabled = text.isNotBlank()) { onReply(text.trim(), true); text = "" }
+                Primary.REPLY -> VerdictButton(stringResource(R.string.work_mission_reply), enabled = text.isNotBlank()) { onReply(text.trim(), false); text = "" }
+                Primary.WATCH -> VerdictButton(stringResource(R.string.work_mission_watch), enabled = true, onClick = onWatch)
+                Primary.START -> VerdictButton(stringResource(R.string.work_move_start), enabled = true) { onMove(CardMove.START) }
+                Primary.UNBLOCK -> VerdictButton(if (task.status == "scheduled") stringResource(R.string.work_mission_start_now) else stringResource(R.string.work_move_unblock), enabled = true) { onMove(CardMove.UNBLOCK) }
                 Primary.NONE -> Unit
             }
         }
@@ -1262,10 +1295,10 @@ private fun ActionArea(
 private fun WhatHappened(moments: List<chat.keryx.app.presentation.MissionStory.Moment>, nowS: Long) {
     val shown = moments.takeLast(6)
     Column {
-        KeryxSectionHeader(label = "What happened", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        KeryxSectionHeader(label = stringResource(R.string.work_mission_what_happened), color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(6.dp))
         if (moments.size > shown.size) Text(
-            "${moments.size - shown.size} earlier step${if (moments.size - shown.size == 1) "" else "s"} under Details",
+            pluralStringResource(R.plurals.work_mission_earlier_steps, moments.size - shown.size, moments.size - shown.size),
             fontSize = KeryxType.micro,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 4.dp),
@@ -1306,16 +1339,16 @@ private fun DetailsSection(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(KeryxRadius.chip)).clickable { open = !open }.padding(vertical = 6.dp),
         ) {
-            Text("Details", fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.work_details), fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.width(6.dp))
             Text(if (open) "▾" else "›", fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
             if (!open) Text(
                 listOfNotNull(
-                    "task",
-                    d.runs.takeIf { it.isNotEmpty() }?.let { "runs" },
-                    "settings",
-                    d.events.takeIf { it.isNotEmpty() }?.let { "log" },
+                    stringResource(R.string.work_details_task),
+                    d.runs.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.work_details_runs) },
+                    stringResource(R.string.work_details_settings),
+                    d.events.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.work_details_log) },
                 ).joinToString(" · "),
                 fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1335,52 +1368,52 @@ private fun DetailsSection(
             }
             if (t.blockKind.isNotBlank() || t.blockRecurrences > 0) Text(
                 listOfNotNull(
-                    t.blockKind.takeIf { it.isNotBlank() }?.let { blockKindLabel(it, t.status) },
-                    t.blockRecurrences.takeIf { it > 0 }?.let { "blocked ${it + 1}×" },
+                    t.blockKind.takeIf { it.isNotBlank() }?.let { blockKindText(it, t.status) },
+                    t.blockRecurrences.takeIf { it > 0 }?.let { stringResource(R.string.work_details_blocked_times, it + 1) },
                 ).joinToString(" · "),
                 fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (d.parents.isNotEmpty() || d.children.isNotEmpty()) Column {
-                if (d.parents.isNotEmpty()) LinkRow("Waits on", d.parents, onOpenTask)
+                if (d.parents.isNotEmpty()) LinkRow(stringResource(R.string.work_details_waits_on), d.parents, onOpenTask)
                 if (d.parents.isNotEmpty() && d.children.isNotEmpty()) Spacer(Modifier.height(6.dp))
-                if (d.children.isNotEmpty()) LinkRow("Unlocks", d.children, onOpenTask)
+                if (d.children.isNotEmpty()) LinkRow(stringResource(R.string.work_details_unlocks), d.children, onOpenTask)
             }
             if (d.diagnostics.isNotEmpty()) {
-                KeryxSectionHeader(label = "Diagnostics", count = d.diagnostics.size, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                KeryxSectionHeader(label = stringResource(R.string.work_details_diagnostics), count = d.diagnostics.size, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 d.diagnostics.forEach { DiagnosticRow(it) }
             }
             if (d.runs.isNotEmpty()) RunDeck(d.runs, cardRunning = t.status == "running", onOpenRun = onWatch)
             val shownText = focus?.text.orEmpty()
             if (t.latestSummary.isNotBlank() && !sameWords(t.latestSummary, t.ask) && !sameWords(t.latestSummary, shownText)) Column {
-                KeryxSectionHeader(label = "Latest handoff", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                KeryxSectionHeader(label = stringResource(R.string.work_details_latest_handoff), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(6.dp))
                 MissionProse(t.latestSummary)
             }
             if (t.result.isNotBlank() && !sameWords(t.result, shownText) && !sameWords(t.result, t.latestSummary)) Column {
-                KeryxSectionHeader(label = "Result", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                KeryxSectionHeader(label = stringResource(R.string.work_details_result), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(6.dp))
                 MissionProse(t.result)
             }
             if (t.lastFailureError.isNotBlank() && !sameWords(t.lastFailureError, shownText)) Text(
-                "Last error: ${t.lastFailureError}",
+                stringResource(R.string.work_details_last_error, t.lastFailureError),
                 fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.error,
             )
             if (t.body.isNotBlank() && !sameWords(t.body, shownText)) BriefSection(t.body)
             if (d.attachments.isNotEmpty()) Column {
-                KeryxSectionHeader(label = "Attachments", count = d.attachments.size, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                KeryxSectionHeader(label = stringResource(R.string.work_details_attachments), count = d.attachments.size, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(4.dp))
                 d.attachments.forEach { a ->
                     Text(
-                        "📎 ${a.filename}" + (if (a.size > 0) "  ·  ${a.size / 1024} KB" else ""),
+                        "📎 ${a.filename}" + (if (a.size > 0) "  ·  " + android.text.format.Formatter.formatShortFileSize(androidx.compose.ui.platform.LocalContext.current, a.size) else ""),
                         fontSize = KeryxType.caption,
                         fontFamily = FontFamily.Monospace,
                     )
                 }
             }
             if (d.comments.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                KeryxSectionHeader(label = "Comments", color = MaterialTheme.colorScheme.onSurfaceVariant, count = d.comments.size)
+                KeryxSectionHeader(label = stringResource(R.string.work_details_comments), color = MaterialTheme.colorScheme.onSurfaceVariant, count = d.comments.size)
                 d.comments.forEach { c ->
                     // Comments wear the chat voice: author chip over a soft bubble.
                     Column {
@@ -1472,13 +1505,13 @@ private fun AlertToggle(taskId: String, viewModel: ChatViewModel) {
         )
         Spacer(Modifier.width(8.dp))
         Column(Modifier.weight(1f)) {
-            Text("Tell me when it's done", fontSize = KeryxType.body)
+            Text(stringResource(R.string.work_alert_tell_me), fontSize = KeryxType.body)
             Text(
                 // 3.0: the old line ("Lands in <chat> as a real message — no polling") named the
                 // chat you last had open, which read like a bug on a card about something else.
                 when {
-                    subscribed -> "On. You get a message when it finishes or needs you."
-                    roomName != null -> "You get a message in “$roomName” when it finishes or needs you."
+                    subscribed -> stringResource(R.string.work_alert_on)
+                    roomName != null -> stringResource(R.string.work_alert_in_room, roomName)
                     else -> viewModel.missions.alertUnavailableReason
                 },
                 fontSize = KeryxType.micro,
@@ -1555,7 +1588,7 @@ private fun DiagnosticRow(diag: chat.keryx.app.data.remote.HermesStreamClient.Ka
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                if (diag.stale) "outlived" else diag.severity,
+                if (diag.stale) stringResource(R.string.work_diag_outlived) else diag.severity,
                 fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.SemiBold,
@@ -1574,7 +1607,7 @@ private fun DiagnosticRow(diag: chat.keryx.app.data.remote.HermesStreamClient.Ka
         if (diag.stale) {
             Spacer(Modifier.height(4.dp))
             Text(
-                "A later run ended some other way — this is history, not the current state.",
+                stringResource(R.string.work_diag_stale),
                 fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1598,7 +1631,7 @@ private fun RunDeck(runs: List<KanbanRun>, cardRunning: Boolean, onOpenRun: (Kan
     val ink = MaterialTheme.colorScheme.onSurface
     val newestFirst = runs.sortedByDescending { it.id }
     Column {
-        KeryxSectionHeader(label = "Runs", count = runs.size, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        KeryxSectionHeader(label = stringResource(R.string.work_runs), count = runs.size, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(8.dp))
         androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             items(newestFirst, key = { it.id }) { run ->
@@ -1617,7 +1650,7 @@ private fun RunDeck(runs: List<KanbanRun>, cardRunning: Boolean, onOpenRun: (Kan
                 Column(Modifier.width(236.dp)) {
                     KeryxRunCard(
                         glyph = runGlyph(outcome, live),
-                        title = "#${run.id} · ${run.profile.ifBlank { "worker" }}",
+                        title = "#${run.id} · ${run.profile.ifBlank { stringResource(R.string.work_run_worker) }}",
                         ink = ink,
                         modifier = Modifier.width(236.dp),
                         tint = tint,
@@ -1627,7 +1660,7 @@ private fun RunDeck(runs: List<KanbanRun>, cardRunning: Boolean, onOpenRun: (Kan
                             runLength(run.durationSeconds ?: if (live) (System.currentTimeMillis() / 1000L) - run.startedAt else null),
                             missionClock(run.startedAt),
                         ),
-                        activity = if (live) "working…" else null,
+                        activity = if (live) stringResource(R.string.work_run_working) else null,
                         alive = live,
                         summary = chat.keryx.core.protocol.MessageParser.extractKeryx(summary).text.trim(),
                         summaryColor = if (failed) KeryxStatus.bad else ink.copy(alpha = 0.78f),
@@ -1636,7 +1669,7 @@ private fun RunDeck(runs: List<KanbanRun>, cardRunning: Boolean, onOpenRun: (Kan
                     // The quiet way in, under the card: an older gateway sends no session id and
                     // the deck looks exactly as it did.
                     if (openable) Text(
-                        if (live) "Watch session ›" else "View session ›",
+                        if (live) stringResource(R.string.work_run_watch_session) else stringResource(R.string.work_run_view_session),
                         fontSize = KeryxType.micro,
                         fontWeight = FontWeight.Medium,
                         color = keryxAccentInk(),
@@ -1666,7 +1699,8 @@ internal fun runGlyph(outcome: String, live: Boolean): String = when {
 /** "Sep 24 18:38" — when a run started, in the phone's own zone. */
 private fun missionClock(epochSeconds: Long): String? {
     if (epochSeconds <= 0) return null
-    return java.text.SimpleDateFormat("MMM d HH:mm", java.util.Locale.getDefault())
+    val locale = java.util.Locale.getDefault()
+    return java.text.SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(locale, "MMMdHHmm"), locale)
         .format(java.util.Date(epochSeconds * 1000L))
 }
 
@@ -1679,7 +1713,7 @@ private fun BriefSection(body: String) {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.clickable { open = !open },
         ) {
-            KeryxSectionHeader(label = "Brief", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            KeryxSectionHeader(label = stringResource(R.string.work_mission_brief), color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(6.dp))
             Text(if (open) "▾" else "▸", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -1706,12 +1740,12 @@ private fun EventsSection(events: List<chat.keryx.app.data.remote.HermesStreamCl
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().clickable { open = !open }.padding(vertical = 4.dp),
         ) {
-            KeryxSectionHeader(label = "Events", count = rows.size, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            KeryxSectionHeader(label = stringResource(R.string.work_details_events), count = rows.size, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(6.dp))
             Text(if (open) "▾" else "▸", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
             if (beats > 0) Text(
-                "$beats heartbeat${if (beats == 1) "" else "s"} folded",
+                pluralStringResource(R.plurals.work_details_heartbeats, beats, beats),
                 fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1729,7 +1763,7 @@ private fun EventsSection(events: List<chat.keryx.app.data.remote.HermesStreamCl
                     )
                     Column(Modifier.weight(1f)) {
                         Text(
-                            e.kind.replace('_', ' ') + (e.runId?.let { "  · run $it" } ?: ""),
+                            e.kind.replace('_', ' ') + (e.runId?.let { "  · " + stringResource(R.string.work_details_event_run, it) } ?: ""),
                             fontSize = KeryxType.micro,
                             fontWeight = FontWeight.SemiBold,
                         )
@@ -1756,11 +1790,11 @@ private fun EventsSection(events: List<chat.keryx.app.data.remote.HermesStreamCl
 private fun SteeringSection(taskId: String, task: KanbanTask, viewModel: ChatViewModel, onChanged: () -> Unit) {
     Column {
         KeryxSectionHeader(
-            label = "Steering",
+            label = stringResource(R.string.work_steering),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(4.dp))
-        Text("Thinking depth", fontSize = KeryxType.micro,
+        Text(stringResource(R.string.work_steering_depth), fontSize = KeryxType.micro,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(4.dp))
         androidx.compose.foundation.layout.FlowRow(
@@ -1768,7 +1802,7 @@ private fun SteeringSection(taskId: String, task: KanbanTask, viewModel: ChatVie
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             val current = task.reasoningEffort
-            (listOf("" to "Inherit") +
+            (listOf("" to stringResource(R.string.work_steering_inherit)) +
                 chat.keryx.core.model.ReasoningEffort.VALUES
                     .map { it to chat.keryx.core.model.ReasoningEffort.label(it) }).forEach { (value, label) ->
                 val selected = value == current
@@ -1800,7 +1834,7 @@ private fun SteeringSection(taskId: String, task: KanbanTask, viewModel: ChatVie
             value = modelDraft,
             onValueChange = { modelDraft = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Model pin (blank = profile's own)", fontSize = KeryxType.caption) },
+            label = { Text(stringResource(R.string.work_steering_model_pin), fontSize = KeryxType.caption) },
             textStyle = androidx.compose.ui.text.TextStyle(
                 fontSize = KeryxType.body, fontFamily = FontFamily.Monospace),
             shape = RoundedCornerShape(KeryxRadius.field),
@@ -1809,7 +1843,7 @@ private fun SteeringSection(taskId: String, task: KanbanTask, viewModel: ChatVie
                 if (modelDraft.trim() != task.modelOverride) {
                     TextButton(onClick = {
                         viewModel.missions.kanbanSetModel(taskId, modelDraft.trim()) { onChanged() }
-                    }) { Text(if (modelDraft.isBlank()) "Clear" else "Pin") }
+                    }) { Text(if (modelDraft.isBlank()) stringResource(R.string.work_clear) else stringResource(R.string.work_steering_pin)) }
                 }
             },
         )
@@ -1821,7 +1855,7 @@ private fun SteeringSection(taskId: String, task: KanbanTask, viewModel: ChatVie
 private fun MissionCreateDialog(
     profiles: List<String>,
     canNotify: Boolean,
-    notifyUnavailableReason: String = "Open a room first — alerts land in a Matrix room",
+    notifyUnavailableReason: String = stringResource(R.string.work_alert_need_room),
     onCreate: (title: String, assignee: String, body: String, triage: Boolean, notify: Boolean, priority: Int, goalMode: Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -1840,13 +1874,13 @@ private fun MissionCreateDialog(
             color = MaterialTheme.colorScheme.surface,
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                KeryxSectionHeader("New mission")
+                KeryxSectionHeader(stringResource(R.string.work_mission_new))
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Title") },
+                    label = { Text(stringResource(R.string.work_mission_title)) },
                     singleLine = true,
                     shape = RoundedCornerShape(KeryxRadius.field),
                 )
@@ -1855,11 +1889,11 @@ private fun MissionCreateDialog(
                     value = body,
                     onValueChange = { body = it },
                     modifier = Modifier.fillMaxWidth().height(110.dp),
-                    label = { Text("Brief (what done looks like)") },
+                    label = { Text(stringResource(R.string.work_mission_brief_hint)) },
                     shape = RoundedCornerShape(KeryxRadius.field),
                 )
                 Spacer(Modifier.height(10.dp))
-                Text("Assignee", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.work_mission_assignee), fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(4.dp))
                 // FlowRow, not Row: five profiles overflow a phone-width dialog, and a plain Row
                 // squeezes the last chip to letter-per-line confetti instead of wrapping.
@@ -1892,10 +1926,10 @@ private fun MissionCreateDialog(
                 Spacer(Modifier.height(10.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text("Work until the brief is met", fontSize = KeryxType.body)
+                        Text(stringResource(R.string.work_mission_goal), fontSize = KeryxType.body)
                         Text(
-                            if (goalMode) "Goal mode — a judge re-reads the brief after each turn"
-                            else "One run, then it reports back",
+                            if (goalMode) stringResource(R.string.work_mission_goal_on)
+                            else stringResource(R.string.work_mission_goal_off),
                             fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -1905,10 +1939,10 @@ private fun MissionCreateDialog(
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text("Park in triage", fontSize = KeryxType.body)
+                        Text(stringResource(R.string.work_mission_triage), fontSize = KeryxType.body)
                         Text(
-                            if (triage) "Spec-first — nothing runs until promoted"
-                            else "Dispatcher spawns a worker for it",
+                            if (triage) stringResource(R.string.work_mission_triage_on)
+                            else stringResource(R.string.work_mission_triage_off),
                             fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -1918,9 +1952,9 @@ private fun MissionCreateDialog(
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text("Notify me when it ends", fontSize = KeryxType.body)
+                        Text(stringResource(R.string.work_mission_notify), fontSize = KeryxType.body)
                         Text(
-                            if (canNotify) "A real message lands in your room on completion"
+                            if (canNotify) stringResource(R.string.work_mission_notify_on)
                             else notifyUnavailableReason,
                             fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1934,11 +1968,11 @@ private fun MissionCreateDialog(
                 }
                 Spacer(Modifier.height(14.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.mk_cancel)) }
                     TextButton(
                         enabled = title.isNotBlank(),
                         onClick = { onCreate(title.trim(), assignee, body.trim(), triage, notify && canNotify, priority, goalMode) },
-                    ) { Text("Create") }
+                    ) { Text(stringResource(R.string.work_create)) }
                 }
             }
         }
@@ -1948,14 +1982,14 @@ private fun MissionCreateDialog(
 /** Priority steps (2.16): the gateway orders higher numbers first, the card shows "P<n>". */
 @Composable
 internal fun MissionPriorityPicker(priority: Int, onPick: (Int) -> Unit) {
-    Text("Priority — higher runs first", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(stringResource(R.string.work_mission_priority), fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
     Spacer(Modifier.height(4.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         val steps = (chat.keryx.app.presentation.MissionEditForm.PRIORITIES + priority).distinct().sorted()
         steps.forEach { p ->
             val on = p == priority
             Text(
-                chat.keryx.app.presentation.MissionEditForm.priorityLabel(p),
+                if (p <= 0) stringResource(R.string.work_mission_priority_normal) else chat.keryx.app.presentation.MissionEditForm.priorityLabel(p),
                 fontSize = KeryxType.caption,
                 maxLines = 1,
                 color = if (on) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
@@ -1984,23 +2018,23 @@ internal fun MissionEditDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = RoundedCornerShape(KeryxRadius.sheet), color = MaterialTheme.colorScheme.surface) {
             Column(modifier = Modifier.padding(20.dp).verticalScroll(rememberScrollState())) {
-                KeryxSectionHeader("Edit mission")
+                KeryxSectionHeader(stringResource(R.string.work_mission_edit))
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value = title, onValueChange = { title = it }, modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Title") }, singleLine = true, shape = RoundedCornerShape(KeryxRadius.field),
+                    label = { Text(stringResource(R.string.work_mission_title)) }, singleLine = true, shape = RoundedCornerShape(KeryxRadius.field),
                     isError = chat.keryx.app.presentation.MissionEditForm.problem(title) != null,
                 )
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = body, onValueChange = { body = it }, modifier = Modifier.fillMaxWidth().height(140.dp),
-                    label = { Text("Brief") }, shape = RoundedCornerShape(KeryxRadius.field),
+                    label = { Text(stringResource(R.string.work_mission_brief)) }, shape = RoundedCornerShape(KeryxRadius.field),
                 )
                 Spacer(Modifier.height(10.dp))
                 MissionPriorityPicker(priority) { priority = it }
                 if (owners.isNotEmpty()) {
                     Spacer(Modifier.height(10.dp))
-                    Text("Owner", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.work_mission_owner), fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
                     androidx.compose.foundation.layout.FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -2023,11 +2057,11 @@ internal fun MissionEditDialog(
                 }
                 Spacer(Modifier.height(14.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.mk_cancel)) }
                     TextButton(
                         enabled = chat.keryx.app.presentation.MissionEditForm.problem(title) == null,
                         onClick = { onSave(title, body, priority, assignee) },
-                    ) { Text("Save") }
+                    ) { Text(stringResource(R.string.work_save)) }
                 }
             }
         }

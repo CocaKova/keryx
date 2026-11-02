@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -87,13 +89,13 @@ fun SkillForgeSheet(
     // 1.23: the Forge joins the KeryxSpace family — same dusk chrome as the Hub and Missions,
     // its skill path riding the live slot, edit/save as space actions.
     KeryxSpace(
-        title = "Skill Forge",
+        title = stringResource(R.string.agent_forge_title),
         onClose = requestClose,
         liveSlot = {
             Text(
                 detail?.let { d ->
                     (d.category?.let { "$it/" } ?: "") + d.name +
-                        if (d.readonly) " · read-only" else ""
+                        if (d.readonly) " · " + stringResource(R.string.agent_forge_read_only) else ""
                 } ?: skillName,
                 fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
@@ -106,14 +108,14 @@ fun SkillForgeSheet(
                 IconButton(onClick = { confirmDelete = true }) {
                     Icon(
                         Icons.Default.Delete,
-                        contentDescription = "Delete skill",
+                        contentDescription = stringResource(R.string.agent_forge_delete_skill),
                         tint = MaterialTheme.colorScheme.error,
                     )
                 }
                 IconButton(onClick = { draft = d.content; editing = true; statusLine = null }) {
                     Icon(
                         Icons.Default.Edit,
-                        contentDescription = "Edit",
+                        contentDescription = stringResource(R.string.agent_edit),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -133,7 +135,7 @@ fun SkillForgeSheet(
                             }
                         }
                     },
-                ) { Text(if (saving) "Saving…" else "Save") }
+                ) { Text(if (saving) stringResource(R.string.agent_saving) else stringResource(R.string.agent_save)) }
             }
         },
     ) {
@@ -150,13 +152,13 @@ fun SkillForgeSheet(
                     val d = detail
                     when {
                         loadError != null -> Text(
-                            "Couldn't load skill: $loadError",
+                            stringResource(R.string.agent_forge_load_failed, loadError.orEmpty()),
                             color = MaterialTheme.colorScheme.error,
                             fontSize = KeryxType.caption,
                             modifier = Modifier.padding(vertical = 20.dp),
                         )
                         d == null -> Text(
-                            "Loading…",
+                            stringResource(R.string.agent_loading),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = KeryxType.caption,
                             modifier = Modifier.padding(vertical = 20.dp),
@@ -185,7 +187,7 @@ fun SkillForgeSheet(
                             if (d.files.isNotEmpty()) {
                                 Spacer(Modifier.height(16.dp))
                                 Text(
-                                    "Sidecar files",
+                                    stringResource(R.string.agent_forge_sidecar_files),
                                     fontSize = KeryxType.micro,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -213,11 +215,10 @@ fun SkillForgeSheet(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete this skill?", fontSize = KeryxType.titleLarge) },
+            title = { Text(stringResource(R.string.agent_forge_delete_title), fontSize = KeryxType.titleLarge) },
             text = {
                 Text(
-                    "“${d?.name ?: skillName}” moves to the trash and stops loading into the " +
-                        "agent. You can restore it from Skills ▸ Trash until you purge it.",
+                    stringResource(R.string.agent_forge_delete_body, d?.name ?: skillName),
                     fontSize = KeryxType.body,
                 )
             },
@@ -227,10 +228,10 @@ fun SkillForgeSheet(
                     viewModel.hub.skillDelete(d?.name ?: skillName) { ok, message ->
                         if (ok) onDismiss() else statusLine = message
                     }
-                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                }) { Text(stringResource(R.string.agent_delete), color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) { Text("Keep it") }
+                TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.agent_keep_it)) }
             },
         )
     }
@@ -239,15 +240,16 @@ fun SkillForgeSheet(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmDiscard = false },
-            title = { Text("Discard changes?", fontSize = KeryxType.titleLarge) },
-            text = { Text("The edit hasn't been saved to the gateway.", fontSize = KeryxType.body) },
+            title = { Text(stringResource(R.string.agent_forge_discard_title), fontSize = KeryxType.titleLarge) },
+            text = { Text(stringResource(R.string.agent_forge_discard_body), fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = { confirmDiscard = false; onDismiss() }) {
-                    Text("Discard", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.agent_discard), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDiscard = false }) { Text("Keep editing") }
+                TextButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.agent_keep_editing)) }
+
             },
         )
     }

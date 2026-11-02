@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import chat.keryx.app.presentation.tour.KeryxTour
 import chat.keryx.app.presentation.tour.tourTarget
 import chat.keryx.app.presentation.ui.components.roomCrossing
@@ -302,7 +305,7 @@ fun ChatScreen(
                     }.getOrNull()
                 }
                 if (staged == null) {
-                    viewModel.toast("Couldn't attach that (unreadable, or over 50 MB)")
+                    viewModel.toast(context.getString(R.string.chat_attach_failed))
                     continue
                 }
                 pendingAttachments = (pendingAttachments + staged).takeLast(MAX_ATTACHMENTS)
@@ -347,7 +350,7 @@ fun ChatScreen(
         val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         cameraUri = uri
         runCatching { cameraLauncher.launch(uri) }
-            .onFailure { viewModel.toast("No camera app answered") }
+            .onFailure { viewModel.toast(context.getString(R.string.chat_no_camera)) }
     }
 
     // Composer state. A TextFieldState (2.13.12), not a TextFieldValue: only the state-based field
@@ -551,7 +554,7 @@ fun ChatScreen(
             .onSuccess { dictation = DictationPhase.RECORDING }
             .onFailure {
                 dictation = DictationPhase.IDLE
-                viewModel.toast("Mic unavailable")
+                viewModel.toast(context.getString(R.string.chat_mic_unavailable))
             }
     }
 
@@ -565,14 +568,14 @@ fun ChatScreen(
         viewModel.voice.transcribe(take) { result ->
             dictation = DictationPhase.IDLE
             result.onSuccess(::insertTranscript).onFailure {
-                viewModel.toast("Transcription failed: ${it.message}")
+                viewModel.toast(context.getString(R.string.chat_transcription_failed, it.message.orEmpty()))
             }
         }
     }
 
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) startDictation()
-        else viewModel.toast("Keryx needs mic access to dictate")
+        else viewModel.toast(context.getString(R.string.chat_mic_permission))
     }
 
     fun onMicTap() {
@@ -613,7 +616,7 @@ fun ChatScreen(
     fun speakMessage(message: Message) {
         val text = chat.keryx.app.presentation.TtsText.speakable(message.content)
         if (text.isBlank()) {
-            viewModel.toast("Nothing to read aloud")
+            viewModel.toast(context.getString(R.string.chat_nothing_to_read))
             return
         }
         if (ttsUrl.isBlank()) {
@@ -883,9 +886,9 @@ fun ChatScreen(
                     Box(modifier = Modifier.animateItem()) {
                         Text(
                             text = when (typingHumans.size) {
-                                1 -> "${typingHumans[0]} is typing…"
-                                2 -> "${typingHumans[0]} and ${typingHumans[1]} are typing…"
-                                else -> "Several people are typing…"
+                                1 -> stringResource(R.string.chat_typing_one, typingHumans[0])
+                                2 -> stringResource(R.string.chat_typing_two, typingHumans[0], typingHumans[1])
+                                else -> stringResource(R.string.chat_typing_many)
                             },
                             fontSize = KeryxType.caption,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -989,7 +992,7 @@ fun ChatScreen(
             val aiStarters by viewModel.starters.aiStarters.collectAsState()
             val roomId = currentRoom?.id
             LaunchedEffect(roomId, aiOn) { if (aiOn) viewModel.starters.loadStarters(roomId) }
-            val prompts = aiStarters[viewModel.starters.starterKey(roomId)]?.takeIf { aiOn && it.isNotEmpty() } ?: STARTER_PROMPTS
+            val prompts = aiStarters[viewModel.starters.starterKey(roomId)]?.takeIf { aiOn && it.isNotEmpty() } ?: starterPrompts()
             val needsYou by viewModel.missions.needsYouCount.collectAsState()
             val jobsPanel by viewModel.hub.jobs.collectAsState()
             LaunchedEffect(remindersOn) { if (remindersOn && jobsPanel.data == null) viewModel.hub.refreshJobs() }
@@ -1052,7 +1055,7 @@ fun ChatScreen(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .clickable(onClickLabel = "Jump to newest") { scope.launch { listState.animateScrollToItem(0) } }
+                        .clickable(onClickLabel = stringResource(R.string.chat_jump_newest)) { scope.launch { listState.animateScrollToItem(0) } }
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                 ) {
                     if (missedWhileAway > 0) {
@@ -1067,7 +1070,7 @@ fun ChatScreen(
                     }
                     Icon(
                         chat.keryx.app.presentation.ui.components.KeryxGlyphs.ChevronDown,
-                        contentDescription = if (missedWhileAway > 0) "Jump to newest, $missedWhileAway new" else "Jump to newest",
+                        contentDescription = if (missedWhileAway > 0) pluralStringResource(R.plurals.chat_jump_newest_count, missedWhileAway, missedWhileAway) else stringResource(R.string.chat_jump_newest),
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                         modifier = Modifier.size(18.dp),
                     )
@@ -1253,23 +1256,23 @@ fun ChatScreen(
                 },
                 onQueue = {
                     if (pendingAttachments.isNotEmpty()) {
-                        viewModel.toast("Attachments can't queue — send after this turn finishes")
+                        viewModel.toast(context.getString(R.string.chat_attachments_cant_queue))
                     } else if (composerField.text.isNotBlank()) {
                         viewModel.turns.queueMessage(takeComposerText())
                     }
                 },
                 onStop = { viewModel.turns.interruptTurn() },
                 onStopHint = {
-                    viewModel.toast("Type your correction first — then tap steers the turn, hold for more")
+                    viewModel.toast(context.getString(R.string.chat_stop_hint))
                 },
                 busyMenu = if (viewModel.transportIsDirect) buildList {
-                    add("Queue for the next turn" to {
+                    add(context.getString(R.string.chat_busy_queue) to {
                         if (composerField.text.isNotBlank()) viewModel.turns.queueMessage(takeComposerText())
                     })
-                    add("Ask aside — answered outside the chat" to {
+                    add(context.getString(R.string.chat_busy_aside) to {
                         if (composerField.text.isNotBlank()) viewModel.turns.askAside(takeComposerText())
                     })
-                    if (redirectAvailable) add("Redirect — restart the reply with this" to {
+                    if (redirectAvailable) add(context.getString(R.string.chat_busy_redirect) to {
                         if (composerField.text.isNotBlank()) viewModel.turns.redirectTurn(takeComposerText())
                     })
                 } else null,
@@ -1508,7 +1511,7 @@ private fun EmptyChat(viewModel: ChatViewModel, modifier: Modifier = Modifier) {
                     modifier = Modifier.size(16.dp),
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("New session")
+                Text(stringResource(R.string.chat_new_session))
             }
             if (showNewSession) {
                 chat.keryx.app.presentation.ui.components.NewChatSheet(
@@ -1522,11 +1525,12 @@ private fun EmptyChat(viewModel: ChatViewModel, modifier: Modifier = Modifier) {
 
 /** Ways into an empty session (2.16) — the generic set, for any user on any gateway: shown when
  *  AI starters are off, not yet written, or the gateway has no `/keryx/suggestions`. */
-internal val STARTER_PROMPTS = listOf(
-    "What can you do in this session?",
-    "What's on my plate today?",
-    "What did we work on recently?",
-    "Help me plan something small, step by step.",
+@Composable
+internal fun starterPrompts(): List<String> = listOf(
+    stringResource(R.string.chat_starter_1),
+    stringResource(R.string.chat_starter_2),
+    stringResource(R.string.chat_starter_3),
+    stringResource(R.string.chat_starter_4),
 )
 
 @Composable
@@ -1542,14 +1546,14 @@ private fun StarterPrompts(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            "A fresh page",
+            stringResource(R.string.chat_fresh_page),
             color = MaterialTheme.colorScheme.onSurface,
             fontSize = KeryxType.title,
             fontWeight = FontWeight.Medium,
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            "Ask anything, or start from one of these.",
+            stringResource(R.string.chat_fresh_page_sub),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = KeryxType.caption,
         )
@@ -1591,7 +1595,9 @@ private fun StarterPrompts(
 /** A quiet centered chip marking a day boundary ("Today", "Yesterday", "Wednesday, Jul 2"). */
 @Composable
 fun DaySeparator(epochMillis: Long) {
-    val label = remember(epochMillis) {
+    val today = stringResource(R.string.chat_today)
+    val yesterdayWord = stringResource(R.string.chat_yesterday)
+    val label = remember(epochMillis, today, yesterdayWord) {
         val now = java.util.Calendar.getInstance()
         val then = java.util.Calendar.getInstance().apply { timeInMillis = epochMillis }
         val sameDay = { a: java.util.Calendar, b: java.util.Calendar ->
@@ -1600,12 +1606,18 @@ fun DaySeparator(epochMillis: Long) {
         }
         val yesterday = (now.clone() as java.util.Calendar).apply { add(java.util.Calendar.DAY_OF_YEAR, -1) }
         when {
-            sameDay(now, then) -> "Today"
-            sameDay(yesterday, then) -> "Yesterday"
+            sameDay(now, then) -> today
+            sameDay(yesterday, then) -> yesterdayWord
             now.get(java.util.Calendar.YEAR) == then.get(java.util.Calendar.YEAR) ->
-                java.text.SimpleDateFormat("EEEE, MMM d", java.util.Locale.getDefault()).format(then.time)
+                java.text.SimpleDateFormat(
+                    android.text.format.DateFormat.getBestDateTimePattern(java.util.Locale.getDefault(), "EEEEMMMd"),
+                    java.util.Locale.getDefault(),
+                ).format(then.time)
             else ->
-                java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.getDefault()).format(then.time)
+                java.text.SimpleDateFormat(
+                    android.text.format.DateFormat.getBestDateTimePattern(java.util.Locale.getDefault(), "yMMMd"),
+                    java.util.Locale.getDefault(),
+                ).format(then.time)
         }
     }
     Row(

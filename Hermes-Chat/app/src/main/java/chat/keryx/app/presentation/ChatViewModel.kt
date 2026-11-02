@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import chat.keryx.core.model.ToolGrammar
@@ -68,12 +70,6 @@ class ChatViewModel(
     private val gateway get() = transport.gateway
 
     companion object {
-        /** Test link, when the Link answers but the API server behind it doesn't. */
-        const val LINK_UP_API_DOWN =
-            "Hermes Link is up, but Hermes's API server behind it isn't running, so Missions and Runs " +
-                "won't load. Set API_SERVER_ENABLED=true and an API_SERVER_KEY in ~/.hermes/.env, " +
-                "then restart the gateway."
-
         private const val INITIAL_LIMIT = 50
         private const val PAGE = 50
         // Soft ceiling + decay for the loaded window (see loadOlderMessages/onViewportAtBottom):
@@ -554,8 +550,8 @@ class ChatViewModel(
         val room = _currentRoom.value ?: return
         viewModelScope.launch {
             instruments?.respondApproval(room.id, choice)
-                ?.onSuccess { resolved -> if (!resolved) _toasts.tryEmit("Approval had already expired") }
-                ?.onFailure { _toasts.tryEmit("Approval failed: ${it.message?.take(80)}") }
+                ?.onSuccess { resolved -> if (!resolved) _toasts.tryEmit(KeryxText.get(R.string.app_approval_expired)) }
+                ?.onFailure { _toasts.tryEmit(KeryxText.get(R.string.app_approval_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -563,7 +559,7 @@ class ChatViewModel(
         val room = _currentRoom.value ?: return
         viewModelScope.launch {
             direct?.respondBlocking(room.id, request.requestId, request.kind, answer)
-                ?.onFailure { _toasts.tryEmit("Reply failed: ${it.message?.take(80)}") }
+                ?.onFailure { _toasts.tryEmit(KeryxText.get(R.string.app_reply_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -1349,7 +1345,7 @@ class ChatViewModel(
                             // a silently dead side-channel just looks like "streaming doesn't work".
                             _liveStream.value = null
                             if (!ev.connected) {
-                                _toasts.tryEmit("Hermes Link unreachable (${ev.reason.take(80)}) — using Matrix sync")
+                                _toasts.tryEmit(KeryxText.get(R.string.app_link_unreachable_matrix, ev.reason.take(80)))
                             }
                         } else if (isAppForeground?.invoke() == false) {
                             // Mid-stream drop while the app is OFF SCREEN — Doze cutting the
@@ -1741,7 +1737,7 @@ class ChatViewModel(
         val session = _currentRoom.value ?: return
         viewModelScope.launch {
             runCatching { transport.sendAttachment(session.id, bytes, fileName, contentType, caption) }
-                .onFailure { if (it !is kotlinx.coroutines.CancellationException) toast("Couldn't send: ${it.message?.take(80)}") }
+                .onFailure { if (it !is kotlinx.coroutines.CancellationException) toast(KeryxText.get(R.string.app_send_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -1760,7 +1756,7 @@ class ChatViewModel(
                 else files.forEachIndexed { i, f ->
                     transport.sendAttachment(session.id, f.bytes, f.name, f.contentType, caption.takeIf { i == 0 })
                 }
-            }.onFailure { toast("Couldn't send: ${it.message?.take(80)}") }
+            }.onFailure { toast(KeryxText.get(R.string.app_send_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -1811,14 +1807,14 @@ class ChatViewModel(
     fun setRoomAvatar(roomId: String, bytes: ByteArray, contentType: String) {
         viewModelScope.launch {
             matrix?.setRoomAvatar(roomId, bytes, contentType)
-                ?.onSuccess { _toasts.tryEmit("Room photo updated") }
+                ?.onSuccess { _toasts.tryEmit(KeryxText.get(R.string.app_room_photo_updated)) }
                 ?.onFailure {
                     android.util.Log.w("KeryxAvatar", "set avatar failed for $roomId: ${it.message}", it)
                     val raw = it.message.orEmpty()
                     val msg = if ("403" in raw || raw.contains("forbidden", true) || raw.contains("M_FORBIDDEN")) {
-                        "No permission to set this room's photo — you need moderator rights in it."
+                        KeryxText.get(R.string.app_room_photo_forbidden)
                     } else {
-                        "Couldn't set photo: ${raw.take(140).ifBlank { "unknown error" }}"
+                        KeryxText.get(R.string.app_room_photo_failed, raw.take(140).ifBlank { KeryxText.get(R.string.app_unknown_error) })
                     }
                     _toasts.tryEmit(msg)
                 }
@@ -1851,9 +1847,9 @@ class ChatViewModel(
                     d.branchWhole(session.id, name)
                         .onSuccess { (stored, title) ->
                             openSessionById(stored, title)
-                            toast("Branched — a copy of this whole conversation")
+                            toast(KeryxText.get(R.string.app_branched))
                         }
-                        .onFailure { toast("Branch failed: ${it.message?.take(80)}") }
+                        .onFailure { toast(KeryxText.get(R.string.app_branch_failed, it.message?.take(80).orEmpty())) }
                 }
                 return
             }
@@ -1906,7 +1902,7 @@ class ChatViewModel(
                 _awaitingReply.value = false
                 settingsRepository.setDraft(session.id, rawContent)
                 _unsent.tryEmit(session.id to rawContent)
-                toast("Not sent. ${chat.keryx.core.model.FriendlyError.of(e.message)}")
+                toast(KeryxText.get(R.string.app_not_sent, chat.keryx.core.model.FriendlyError.of(e.message)))
             }
         }
         _replyTarget.value = null
@@ -1969,11 +1965,11 @@ class ChatViewModel(
         val d = direct ?: return
         viewModelScope.launch {
             d.undoLastTurn(room.id)
-                .onSuccess { n -> _toasts.tryEmit(if (n > 0) "Took back the last exchange" else "Nothing to take back") }
+                .onSuccess { n -> _toasts.tryEmit(KeryxText.get(if (n > 0) R.string.app_undo_done else R.string.app_undo_nothing)) }
                 .onFailure { e ->
                     val why = e.message.orEmpty()
                     _toasts.tryEmit(
-                        if ("busy" in why) "Still working — stop the turn first" else "Couldn't undo: ${why.take(80)}",
+                        if ("busy" in why) KeryxText.get(R.string.app_still_working) else KeryxText.get(R.string.app_undo_failed, why.take(80)),
                     )
                 }
         }
@@ -1995,12 +1991,12 @@ class ChatViewModel(
                     // Nothing taken back means the exchange is still there: re-sending would
                     // ask the same thing twice.
                     if (removed > 0) sendMessage(prompt)
-                    else _toasts.tryEmit("Nothing to retry — the gateway had no turn to take back")
+                    else _toasts.tryEmit(KeryxText.get(R.string.app_retry_nothing))
                 }
                 .onFailure { e ->
                     val why = e.message.orEmpty()
                     _toasts.tryEmit(
-                        if ("busy" in why) "Still working — stop the turn first" else "Couldn't retry: ${why.take(80)}",
+                        if ("busy" in why) KeryxText.get(R.string.app_still_working) else KeryxText.get(R.string.app_retry_failed, why.take(80)),
                     )
                 }
         }
@@ -2024,11 +2020,11 @@ class ChatViewModel(
             d.undoLastTurn(room.id)
                 .onSuccess { removed ->
                     prefillComposer(text)
-                    if (removed > 0) toast("Taken back — edit it and send again")
+                    if (removed > 0) toast(KeryxText.get(R.string.app_taken_back_edit))
                 }
                 .onFailure {
                     prefillComposer(text)
-                    toast("Couldn't take it back — your words are in the composer to send again")
+                    toast(KeryxText.get(R.string.app_take_back_failed))
                 }
         }
     }
@@ -2092,7 +2088,7 @@ class ChatViewModel(
     fun testGatewayLink() {
         val url = _gatewayUrl.value.trim()
         if (url.isBlank()) {
-            _toasts.tryEmit("Set a Gateway URL first")
+            _toasts.tryEmit(KeryxText.get(R.string.app_set_gateway_url_first))
             return
         }
         viewModelScope.launch {
@@ -2100,7 +2096,7 @@ class ChatViewModel(
             client.health()
                 .onSuccess {
                     _linkHealth.value = LinkHealth.OK
-                    _toasts.tryEmit("Hermes Link OK — $it")
+                    _toasts.tryEmit(KeryxText.get(R.string.app_link_ok, it))
                 }
                 .onFailure { failed ->
                     _linkHealth.value = LinkHealth.UNREACHABLE
@@ -2109,8 +2105,8 @@ class ChatViewModel(
                     val relay = failed.message?.let { Regex("HTTP 50[234]").matches(it) } == true
                     val link = if (relay) client.linkHealth().getOrNull() else null
                     _toasts.tryEmit(
-                        if (link != null) LINK_UP_API_DOWN
-                        else "Hermes Link failed: ${(failed.message ?: "connection error").take(80)}",
+                        if (link != null) KeryxText.get(R.string.app_link_up_api_down)
+                        else KeryxText.get(R.string.app_link_failed, (failed.message ?: KeryxText.get(R.string.app_connection_error)).take(80)),
                     )
                 }
         }

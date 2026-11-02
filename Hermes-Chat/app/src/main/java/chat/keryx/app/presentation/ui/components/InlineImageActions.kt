@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -136,7 +138,7 @@ fun InlineImageSheet(url: String, onDismiss: () -> Unit) {
             // The image first, the address second. "Copy" on a GIF nearly always means
             // "put it in a post", and a media-CDN link pasted into X stays a link — X only
             // expands URLs it has a card for. The file is what posts as a GIF.
-            SheetAction(KeryxGlyphs.Image, if (busy) "Working…" else "Copy image", enabled = !busy) {
+            SheetAction(KeryxGlyphs.Image, if (busy) stringResource(R.string.chat_working) else stringResource(R.string.chat_copy_image), enabled = !busy) {
                 busy = true
                 scope.launch {
                     val bytes = fetchBytes(url)
@@ -144,48 +146,48 @@ fun InlineImageSheet(url: String, onDismiss: () -> Unit) {
                         copyMediaToClipboard(context, bytes, name, kind, url)
                     busy = false
                     if (ok) {
-                        snack.show("Image copied — paste it into a post")
+                        snack.show(context.getString(R.string.chat_image_copied))
                     } else {
                         clipboard.setText(AnnotatedString(url))
-                        snack.show("Couldn't fetch the image — link copied instead")
+                        snack.show(context.getString(R.string.chat_image_fetch_failed))
                     }
                     onDismiss()
                 }
             }
-            SheetAction(KeryxGlyphs.Copy, "Copy link", enabled = !busy) {
+            SheetAction(KeryxGlyphs.Copy, stringResource(R.string.chat_copy_link), enabled = !busy) {
                 clipboard.setText(AnnotatedString(url))
-                snack.show("Link copied")
+                snack.show(context.getString(R.string.chat_link_copied))
                 onDismiss()
             }
-            SheetAction(KeryxGlyphs.Share, if (busy) "Working…" else "Share", enabled = !busy) {
+            SheetAction(KeryxGlyphs.Share, if (busy) stringResource(R.string.chat_working) else stringResource(R.string.chat_share), enabled = !busy) {
                 busy = true
                 scope.launch {
                     val bytes = fetchBytes(url)
                     busy = false
                     if (bytes == null || !shareMedia(context, bytes, name, kind)) {
-                        snack.show("Couldn't fetch the image — link copied instead")
+                        snack.show(context.getString(R.string.chat_image_fetch_failed))
                         clipboard.setText(AnnotatedString(url))
                     }
                     onDismiss()
                 }
             }
-            SheetAction(KeryxGlyphs.Download, if (busy) "Working…" else "Save to Photos", enabled = !busy) {
+            SheetAction(KeryxGlyphs.Download, if (busy) stringResource(R.string.chat_working) else stringResource(R.string.chat_save_to_photos), enabled = !busy) {
                 busy = true
                 scope.launch {
                     val bytes = fetchBytes(url)
                     val where = bytes?.let { saveMediaToDevice(context, it, name, kind) }
                     busy = false
-                    snack.show(where?.let { "Saved to $it" } ?: "Couldn't save that image")
+                    snack.show(where?.let { context.getString(R.string.chat_saved_to, it) } ?: context.getString(R.string.chat_save_image_failed))
                     onDismiss()
                 }
             }
-            SheetAction(KeryxGlyphs.Exit, "Open in browser", enabled = !busy) {
+            SheetAction(KeryxGlyphs.Exit, stringResource(R.string.chat_open_in_browser), enabled = !busy) {
                 runCatching {
                     context.startActivity(
                         Intent(Intent.ACTION_VIEW, Uri.parse(url))
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     )
-                }.onFailure { snack.show("Nothing here opens that link") }
+                }.onFailure { snack.show(context.getString(R.string.chat_no_app_for_link)) }
                 onDismiss()
             }
         }

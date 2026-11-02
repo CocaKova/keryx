@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.KeryxText
+import chat.keryx.app.R
 import chat.keryx.app.data.remote.HermesStreamClient
 import chat.keryx.app.data.remote.HermesStreamClient.KanbanTask
 import chat.keryx.app.notify.MissionAlertsWorker
@@ -80,14 +82,14 @@ class MissionsDelegate(
     fun refreshKanban() {
         val client = client() ?: run {
             if (demo) _kanbanBoard.value = chat.keryx.app.transport.demo.DemoBoard.board(System.currentTimeMillis())
-            else _kanbanError.value = "Hermes Link is off — enable it in Settings"
+            else _kanbanError.value = KeryxText.get(R.string.work_link_off)
             return
         }
         _kanbanRefreshing.value = true
         scope.launch {
             client.kanbanBoard()
                 .onSuccess { _kanbanBoard.value = it; _kanbanError.value = null }
-                .onFailure { _kanbanError.value = it.message?.take(120) ?: "board unavailable" }
+                .onFailure { _kanbanError.value = it.message?.take(120) ?: KeryxText.get(R.string.work_board_unavailable) }
             _kanbanRefreshing.value = false
         }
         refreshKanbanSubs()
@@ -276,13 +278,13 @@ class MissionsDelegate(
         if (settings.transportMode != "direct" || settings.missionAlertsEnabled) return
         setAlertsEnabled(true)
         chat.keryx.app.notify.MissionAlertsWorker.setEnabled(context, true)
-        toast("Mission alerts on — the phone rings when a mission ends (Settings ▸ Mission alerts)")
+        toast(KeryxText.get(R.string.work_alerts_armed))
     }
 
     /** Why alerts are unavailable, in the door's own words. */
     val alertUnavailableReason: String
-        get() = if (settings.transportMode == "direct") "Open a session first — alerts land in the chat you last had open"
-        else "Open a room first — alerts land in a Matrix room"
+        get() = if (settings.transportMode == "direct") KeryxText.get(R.string.work_alert_need_session)
+        else KeryxText.get(R.string.work_alert_need_room)
 
     fun alertRoomName(): String? =
         alertRoom()?.let { id -> rooms().firstOrNull { it.id == id }?.name ?: id }
@@ -298,7 +300,7 @@ class MissionsDelegate(
                     return@launch
                 }
                 client.kanbanSubscribe(taskId, room, alertPlatform())
-                    .onFailure { toast("Alert failed: ${it.message?.take(80)}") }
+                    .onFailure { toast(KeryxText.get(R.string.work_alert_failed, it.message?.take(80).orEmpty())) }
             } else {
                 _kanbanSubs.value[taskId].orEmpty().forEach { sub ->
                     client.kanbanUnsubscribe(taskId, sub.chatId, sub.platform.ifBlank { "matrix" })
@@ -331,12 +333,12 @@ class MissionsDelegate(
         scope.launch {
             client.kanbanCreate(title, assignee, body, triage, priority = priority, goalMode = goalMode)
                 .onSuccess { taskId ->
-                    toast("Mission created${if (triage) " (triage)" else ""}")
+                    toast(KeryxText.get(if (triage) R.string.work_mission_created_triage else R.string.work_mission_created))
                     val room = alertRoom()
                     if (notify && room != null) client.kanbanSubscribe(taskId, room, alertPlatform())
                     refreshKanban()
                 }
-                .onFailure { toast("Create failed: ${it.message?.take(80)}") }
+                .onFailure { toast(KeryxText.get(R.string.work_create_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -345,7 +347,7 @@ class MissionsDelegate(
         scope.launch {
             client.kanbanComment(taskId, body)
                 .onSuccess { onDone() }
-                .onFailure { toast("Comment failed: ${it.message?.take(80)}") }
+                .onFailure { toast(KeryxText.get(R.string.work_comment_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -358,15 +360,16 @@ class MissionsDelegate(
                 .onSuccess { r ->
                     toast(
                         when {
-                            r.unblocked -> "Answered — back to ${r.status.ifBlank { "work" }}"
-                            unblock -> "Answered — the card stays put (gateway can't unblock yet)"
-                            else -> "Answered"
+                            r.unblocked && r.status.isNotBlank() -> KeryxText.get(R.string.work_answered_status, r.status)
+                            r.unblocked -> KeryxText.get(R.string.work_answered_back)
+                            unblock -> KeryxText.get(R.string.work_answered_stays)
+                            else -> KeryxText.get(R.string.work_answered)
                         },
                     )
                     onDone()
                     refreshKanban()
                 }
-                .onFailure { toast("Reply failed: ${it.message?.take(80)}") }
+                .onFailure { toast(KeryxText.get(R.string.work_reply_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -375,8 +378,8 @@ class MissionsDelegate(
         val client = clientFor("approve their work") ?: return
         scope.launch {
             client.kanbanApprove(taskId, note)
-                .onSuccess { toast("Approved — mission done"); onDone(); refreshKanban() }
-                .onFailure { toast(verdictFailure("Approve", it)) }
+                .onSuccess { toast(KeryxText.get(R.string.work_approved)); onDone(); refreshKanban() }
+                .onFailure { toast(verdictFailure(KeryxText.get(R.string.work_mission_approve), it)) }
         }
     }
 
@@ -385,8 +388,8 @@ class MissionsDelegate(
         val client = clientFor("send work back") ?: return
         scope.launch {
             client.kanbanRequestChanges(taskId, reason)
-                .onSuccess { status -> toast("Changes requested — back to ${status.ifBlank { "the implementer" }}"); onDone(); refreshKanban() }
-                .onFailure { toast(verdictFailure("Request changes", it)) }
+                .onSuccess { status -> toast(if (status.isNotBlank()) KeryxText.get(R.string.work_changes_requested_status, status) else KeryxText.get(R.string.work_changes_requested)); onDone(); refreshKanban() }
+                .onFailure { toast(verdictFailure(KeryxText.get(R.string.work_mission_ask_changes), it)) }
         }
     }
 
@@ -414,8 +417,8 @@ class MissionsDelegate(
     private fun verdictFailure(what: String, e: Throwable): String =
         if ((e as? chat.keryx.app.data.remote.HermesStreamClient.GatewayError)?.httpStatus == 404 &&
             e.message?.contains("unknown task") != true
-        ) "$what needs the 2.14 gateway plugin"
-        else "$what failed: ${e.message?.take(80)}"
+        ) KeryxText.get(R.string.work_verdict_needs_plugin, what)
+        else KeryxText.get(R.string.work_verdict_failed, what, e.message?.take(80).orEmpty())
 
     /** Pin (blank = clear) the mission's model override; takes effect on its next dispatch. */
     fun kanbanSetModel(taskId: String, model: String, onDone: () -> Unit = {}) {
@@ -423,7 +426,7 @@ class MissionsDelegate(
         scope.launch {
             client.kanbanSetModel(taskId, model)
                 .onSuccess { onDone() }
-                .onFailure { toast("Model pin failed: ${it.message?.take(80)}") }
+                .onFailure { toast(KeryxText.get(R.string.work_model_pin_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -433,7 +436,7 @@ class MissionsDelegate(
         scope.launch {
             client.kanbanSetReasoning(taskId, effort)
                 .onSuccess { onDone() }
-                .onFailure { toast("Depth pin failed: ${it.message?.take(80)}") }
+                .onFailure { toast(KeryxText.get(R.string.work_depth_pin_failed, it.message?.take(80).orEmpty())) }
         }
     }
 

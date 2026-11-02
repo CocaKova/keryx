@@ -58,11 +58,11 @@ object CrashLog {
         if (text.isBlank()) return
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, "Keryx crash log")
+            putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.app_crash_log_subject))
             putExtra(Intent.EXTRA_TEXT, text.takeLast(60_000))
         }
         context.startActivity(
-            Intent.createChooser(send, "Share crash log").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            Intent.createChooser(send, context.getString(R.string.app_crash_log_share)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
     }
 

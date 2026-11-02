@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -103,16 +105,16 @@ fun GroupChatSpace(dest: KeryxDest.Group, viewModel: ChatViewModel, onClose: () 
         actions = {
             if (v?.busy == true) {
                 IconButton(onClick = groups::stop) {
-                    Icon(KeryxGlyphs.StopSquare, contentDescription = "Stop the room", tint = MaterialTheme.colorScheme.error)
+                    Icon(KeryxGlyphs.StopSquare, contentDescription = stringResource(R.string.agent_room_stop), tint = MaterialTheme.colorScheme.error)
                 }
             }
             Box {
                 IconButton(onClick = { menu = true }) {
-                    Icon(KeryxGlyphs.Kebab, contentDescription = "Room options", tint = MaterialTheme.colorScheme.onSurface)
+                    Icon(KeryxGlyphs.Kebab, contentDescription = stringResource(R.string.agent_room_options), tint = MaterialTheme.colorScheme.onSurface)
                 }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                    DropdownMenuItem(text = { Text("Rename") }, onClick = { menu = false; renaming = true })
-                    DropdownMenuItem(text = { Text("Disband", color = MaterialTheme.colorScheme.error) }, onClick = { menu = false; disbanding = true })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.agent_rename)) }, onClick = { menu = false; renaming = true })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.agent_room_disband), color = MaterialTheme.colorScheme.error) }, onClick = { menu = false; disbanding = true })
                 }
             }
         },
@@ -137,7 +139,7 @@ fun GroupChatSpace(dest: KeryxDest.Group, viewModel: ChatViewModel, onClose: () 
                 } else if (lines.isEmpty()) {
                     item {
                         Text(
-                            "Say something to the room. Everyone hears it; @mention someone to ask just them.",
+                            stringResource(R.string.agent_room_intro),
                             fontSize = KeryxType.caption,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 24.dp),
@@ -154,7 +156,7 @@ fun GroupChatSpace(dest: KeryxDest.Group, viewModel: ChatViewModel, onClose: () 
                         head != null && head.seq < line.seq
                     if (continues) {
                         Text(
-                            "↳ in thread: " + head!!.text.lineSequence().first().take(60),
+                            stringResource(R.string.agent_room_in_thread, head!!.text.lineSequence().first().take(60)),
                             fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -176,9 +178,9 @@ fun GroupChatSpace(dest: KeryxDest.Group, viewModel: ChatViewModel, onClose: () 
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 when (names.size) {
-                                    0 -> "The room is thinking…"
-                                    1 -> names.single() + " is thinking…"
-                                    else -> names.joinToString(", ") + " are thinking…"
+                                    0 -> stringResource(R.string.agent_room_thinking)
+                                    1 -> stringResource(R.string.agent_room_one_thinking, names.single())
+                                    else -> stringResource(R.string.agent_room_many_thinking, names.joinToString(", "))
                                 },
                                 fontSize = KeryxType.caption,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -192,11 +194,11 @@ fun GroupChatSpace(dest: KeryxDest.Group, viewModel: ChatViewModel, onClose: () 
             v?.driver?.approvals?.forEach { a ->
                 val who = room?.member(a.memberId)?.label ?: a.memberId
                 KeryxCard(tint = KeryxStatus.warn, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
-                    Text("$who wants to run", fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.agent_room_wants_to_run, who), fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold)
                     Text(a.description, fontSize = KeryxType.caption, maxLines = 4, overflow = TextOverflow.Ellipsis)
                     Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                        TextButton(onClick = { groups.approve(a, "deny") }) { Text("Deny") }
-                        TextButton(onClick = { groups.approve(a, "once") }) { Text("Allow once") }
+                        TextButton(onClick = { groups.approve(a, "deny") }) { Text(stringResource(R.string.agent_deny)) }
+                        TextButton(onClick = { groups.approve(a, "once") }) { Text(stringResource(R.string.agent_allow_once)) }
                     }
                 }
             }
@@ -204,11 +206,11 @@ fun GroupChatSpace(dest: KeryxDest.Group, viewModel: ChatViewModel, onClose: () 
                 KeryxCard(tint = KeryxStatus.warn, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "A turn ended without a clear result.",
+                            stringResource(R.string.agent_room_turn_unclear),
                             fontSize = KeryxType.caption,
                             modifier = Modifier.weight(1f),
                         )
-                        TextButton(onClick = { groups.retry(taskId) }) { Text("Retry") }
+                        TextButton(onClick = { groups.retry(taskId) }) { Text(stringResource(R.string.agent_retry)) }
                     }
                 }
             }
@@ -239,14 +241,14 @@ fun GroupChatSpace(dest: KeryxDest.Group, viewModel: ChatViewModel, onClose: () 
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
                 ) {
                     Text(
-                        "Replying in thread: $replySnippet",
+                        stringResource(R.string.agent_room_replying, replySnippet),
                         fontSize = KeryxType.micro,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
-                    TextButton(onClick = { replyThread = null; replySnippet = "" }) { Text("Cancel") }
+                    TextButton(onClick = { replyThread = null; replySnippet = "" }) { Text(stringResource(R.string.mk_cancel)) }
                 }
             }
             Row(
@@ -256,7 +258,7 @@ fun GroupChatSpace(dest: KeryxDest.Group, viewModel: ChatViewModel, onClose: () 
                 OutlinedTextField(
                     value = draft,
                     onValueChange = { draft = it },
-                    placeholder = { Text("Message the room") },
+                    placeholder = { Text(stringResource(R.string.agent_room_message_hint)) },
                     maxLines = 6,
                     shape = RoundedCornerShape(KeryxRadius.field),
                     modifier = Modifier.weight(1f),
@@ -271,7 +273,7 @@ fun GroupChatSpace(dest: KeryxDest.Group, viewModel: ChatViewModel, onClose: () 
                         replySnippet = ""
                     },
                 ) {
-                    Icon(KeryxGlyphs.ArrowUp, contentDescription = "Send", tint = MaterialTheme.colorScheme.primary)
+                    Icon(KeryxGlyphs.ArrowUp, contentDescription = stringResource(R.string.agent_send), tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -282,31 +284,32 @@ fun GroupChatSpace(dest: KeryxDest.Group, viewModel: ChatViewModel, onClose: () 
         AlertDialog(
             shape = RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { renaming = false },
-            title = { Text("Rename room", fontSize = KeryxType.titleLarge) },
+            title = { Text(stringResource(R.string.agent_room_rename_title), fontSize = KeryxType.titleLarge) },
             text = { OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true) },
             confirmButton = {
-                TextButton(enabled = name.isNotBlank(), onClick = { renaming = false; groups.rename(room.roomId, name) }) { Text("Rename") }
+                TextButton(enabled = name.isNotBlank(), onClick = { renaming = false; groups.rename(room.roomId, name) }) { Text(stringResource(R.string.agent_rename)) }
             },
-            dismissButton = { TextButton(onClick = { renaming = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { renaming = false }) { Text(stringResource(R.string.mk_cancel)) } },
         )
     }
     if (disbanding) {
         AlertDialog(
             shape = RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { disbanding = false },
-            title = { Text("Disband ${room?.name ?: dest.name}?", fontSize = KeryxType.titleLarge) },
+            title = { Text(stringResource(R.string.agent_room_disband_title, room?.name ?: dest.name), fontSize = KeryxType.titleLarge) },
             text = {
                 Text(
-                    "The room and its conversation are removed for good, on every device. The bots and their own chats are untouched.",
+                    stringResource(R.string.agent_room_disband_body),
                     fontSize = KeryxType.body,
                 )
             },
             confirmButton = {
                 TextButton(onClick = { disbanding = false; groups.disband(dest.roomId, onClose) }) {
-                    Text("Disband", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.agent_room_disband), color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { disbanding = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { disbanding = false }) { Text(stringResource(R.string.mk_cancel)) } },
+
         )
     }
 }

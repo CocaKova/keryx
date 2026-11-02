@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,14 +44,14 @@ fun AsideBubble(aside: TurnControlDelegate.Aside, onDismiss: () -> Unit, modifie
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "ASIDE · not part of the chat",
+                stringResource(R.string.chat_aside_header),
                 color = quiet,
                 fontSize = KeryxType.micro,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.weight(1f),
             )
             TextButton(onClick = onDismiss, modifier = Modifier.size(width = 64.dp, height = 32.dp)) {
-                Text("Dismiss", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.chat_dismiss), fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.primary)
             }
         }
         Text(aside.question, color = quiet, fontSize = KeryxType.caption, fontStyle = FontStyle.Italic)
@@ -57,9 +59,9 @@ fun AsideBubble(aside: TurnControlDelegate.Aside, onDismiss: () -> Unit, modifie
         val answer = aside.answer
         Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
             when {
-                answer == null -> Text("…answering aside", color = quiet, fontSize = KeryxType.caption)
-                aside.failed -> Text("The aside failed: $answer", color = MaterialTheme.colorScheme.error, fontSize = KeryxType.caption)
-                answer.isBlank() -> Text("No answer came back.", color = quiet, fontSize = KeryxType.caption)
+                answer == null -> Text(stringResource(R.string.chat_aside_answering), color = quiet, fontSize = KeryxType.caption)
+                aside.failed -> Text(stringResource(R.string.chat_aside_failed, answer), color = MaterialTheme.colorScheme.error, fontSize = KeryxType.caption)
+                answer.isBlank() -> Text(stringResource(R.string.chat_aside_no_answer), color = quiet, fontSize = KeryxType.caption)
                 else -> MessageContent(content = answer, textColor = ink)
             }
         }

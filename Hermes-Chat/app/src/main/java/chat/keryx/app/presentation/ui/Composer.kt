@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import chat.keryx.app.presentation.tour.tourTarget
 import chat.keryx.app.presentation.tour.KeryxTour
 import android.provider.OpenableColumns
@@ -221,7 +223,7 @@ internal fun Composer(
             IconButton(onClick = { attachMenu = !attachMenu }, modifier = Modifier.size(48.dp)) {
                 Icon(
                     chat.keryx.app.presentation.ui.components.KeryxGlyphs.Plus,
-                    contentDescription = "Attach",
+                    contentDescription = stringResource(R.string.chat_attach),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(22.dp).graphicsLayer { rotationZ = addRotation },
                 )
@@ -252,9 +254,9 @@ internal fun Composer(
                     // Mid-turn the placeholder IS the teacher: the affordance reached for was
                     // /steer because nothing said the composer could do it.
                     when (busyAction) {
-                        null -> "Message…"
-                        "stop" -> "Type to steer this turn — ■ stops"
-                        else -> "Type to steer this turn"
+                        null -> stringResource(R.string.chat_composer_hint)
+                        "stop" -> stringResource(R.string.chat_composer_hint_steer_stop)
+                        else -> stringResource(R.string.chat_composer_hint_steer)
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -299,7 +301,7 @@ internal fun Composer(
                 } else {
                     Icon(
                         chat.keryx.app.presentation.ui.components.KeryxGlyphs.Mic,
-                        contentDescription = if (recording) "Stop dictation" else "Dictate",
+                        contentDescription = if (recording) stringResource(R.string.chat_dictate_stop) else stringResource(R.string.chat_dictate),
                         tint = if (recording) MaterialTheme.colorScheme.error
                                else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.graphicsLayer { scaleX = pulse; scaleY = pulse },
@@ -324,11 +326,11 @@ internal fun Composer(
         // while a turn runs it becomes steer (text), queue (payload/compacting; also steer's
         // long-press), or stop (empty). One button, states legible by glyph.
         val (glyph, label) = when (busyAction) {
-            "steer" -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.Steer to "Steer the running turn"
-            "queue" -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.Stack to "Queue for next turn"
-            "stop" -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.StopSquare to "Stop the turn"
+            "steer" -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.Steer to stringResource(R.string.chat_send_steer)
+            "queue" -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.Stack to stringResource(R.string.chat_send_queue)
+            "stop" -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.StopSquare to stringResource(R.string.chat_send_stop)
             // Arrow-up, the desktop's send — never a paper plane among hand-drawn glyphs.
-            else -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.ArrowUp to "Send"
+            else -> chat.keryx.app.presentation.ui.components.KeryxGlyphs.ArrowUp to stringResource(R.string.chat_send)
         }
         val armed = composerField.text.isNotBlank() || busyAction == "stop"
         // Idle, the circle was the accent at 55% ALPHA and the arrow on it was hard white. On
@@ -366,8 +368,8 @@ internal fun Composer(
                         // mind with the turn, and a screen reader has no glyph to go on.
                         onClickLabel = label,
                         onLongClickLabel = when (busyAction) {
-                            "steer" -> if (busyMenu != null) "Queue, ask aside or redirect" else "Queue for next turn instead"
-                            "stop" -> "What stop does"
+                            "steer" -> if (busyMenu != null) stringResource(R.string.chat_send_hold_menu) else stringResource(R.string.chat_send_hold_queue)
+                            "stop" -> stringResource(R.string.chat_send_hold_stop)
                             else -> null
                         },
                         onClick = {
@@ -508,7 +510,8 @@ internal fun ComposerFooter(
         // Model pill — the live brain by name, ▾ inside the same hit target.
         var modelMenu by remember { mutableStateOf(false) }
         val modelName = (usage?.model ?: "").ifBlank { catalog?.model.orEmpty() }
-            .ifBlank { caps?.model.orEmpty() }.ifBlank { "model" }.substringAfter('/')
+            .ifBlank { caps?.model.orEmpty() }.ifBlank { stringResource(R.string.chat_reasoning_model) }.substringAfter('/')
+        val modelPillLabel = stringResource(R.string.chat_model_label, modelName)
         Box {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -516,9 +519,9 @@ internal fun ComposerFooter(
                     .heightIn(min = 36.dp)
                     .tourTarget(KeryxTour.MODEL)
                     .clip(pillShape)
-                    .clickable(onClickLabel = "Choose a model") { modelMenu = true; onRefreshCaps(); onRefreshCatalog() }
+                    .clickable(onClickLabel = stringResource(R.string.chat_choose_model)) { modelMenu = true; onRefreshCaps(); onRefreshCatalog() }
                     // Read as the model, not the menu's triangle.
-                    .semantics { contentDescription = "Model: $modelName" }
+                    .semantics { contentDescription = modelPillLabel }
                     .padding(horizontal = 8.dp, vertical = 4.dp),
             ) {
                 // The name rises into place when the brain changes — the readout answers the pick.
@@ -556,7 +559,8 @@ internal fun ComposerFooter(
         Spacer(modifier = Modifier.width(4.dp))
         // Reasoning pill — the relocated top-bar menu, now living where the thinking happens.
         var reasoningMenu by remember { mutableStateOf(false) }
-        val levelLabel = caps?.let { c -> chat.keryx.core.model.ReasoningEffort.label(c.current, c.labels).ifBlank { "reasoning" } } ?: "reasoning"
+        val reasoningWord = stringResource(R.string.chat_reasoning)
+        val levelLabel = caps?.let { c -> chat.keryx.core.model.ReasoningEffort.label(c.current, c.labels).ifBlank { reasoningWord } } ?: reasoningWord
         Box {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -610,7 +614,7 @@ internal fun ComposerFooter(
         if (busyAction == "steer") {
             Spacer(Modifier.width(10.dp))
             Text(
-                "↪ steers the turn · hold to queue",
+                stringResource(R.string.chat_steer_hint),
                 fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f),
                 maxLines = 1,
@@ -637,9 +641,9 @@ internal fun ReplyBar(target: Message, onDismiss: () -> Unit) {
     ) {
         Box(modifier = Modifier.width(3.dp).fillMaxHeight().background(accent))
         Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp, vertical = 8.dp)) {
-            Text("Replying to ${shortSender(target.senderName)}", color = accent, fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.chat_replying_to, shortSender(target.senderName)), color = accent, fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold)
             Text(
-                text = replyPreviewText(target),
+                text = replyPreviewText(target, stringResource(R.string.chat_reply_attachment), stringResource(R.string.chat_reply_message)),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = KeryxType.caption,
                 maxLines = 1,
@@ -647,7 +651,7 @@ internal fun ReplyBar(target: Message, onDismiss: () -> Unit) {
             )
         }
         IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-            Icon(chat.keryx.app.presentation.ui.components.KeryxGlyphs.Close, contentDescription = "Cancel reply", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+            Icon(chat.keryx.app.presentation.ui.components.KeryxGlyphs.Close, contentDescription = stringResource(R.string.chat_cancel_reply), tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -676,7 +680,7 @@ internal fun AttachmentPreview(att: PendingAttachment, onRemove: () -> Unit) {
             Icon(
                 if (att.isImage) chat.keryx.app.presentation.ui.components.KeryxGlyphs.Image
                 else chat.keryx.app.presentation.ui.components.KeryxGlyphs.FileClip,
-                contentDescription = if (att.isImage) "Image attached" else "File attached",
+                contentDescription = if (att.isImage) stringResource(R.string.chat_image_attached) else stringResource(R.string.chat_file_attached),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(22.dp),
             )
@@ -691,7 +695,7 @@ internal fun AttachmentPreview(att: PendingAttachment, onRemove: () -> Unit) {
             modifier = Modifier.weight(1f, fill = false).widthIn(max = 220.dp),
         )
         IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
-            Icon(chat.keryx.app.presentation.ui.components.KeryxGlyphs.Close, contentDescription = "Remove attachment", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+            Icon(chat.keryx.app.presentation.ui.components.KeryxGlyphs.Close, contentDescription = stringResource(R.string.chat_remove_attachment), tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -712,10 +716,10 @@ internal fun DreamAttachBloom(visible: Boolean, onPhoto: () -> Unit, onFile: () 
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(start = 8.dp, bottom = 10.dp),
         ) {
-            DreamPill("Photo", chat.keryx.app.presentation.ui.components.KeryxGlyphs.Image, accent, delayMs = 0) { onPhoto() }
-            DreamPill("File", chat.keryx.app.presentation.ui.components.KeryxGlyphs.FileClip, accent, delayMs = 55) { onFile() }
+            DreamPill(stringResource(R.string.chat_attach_photo), chat.keryx.app.presentation.ui.components.KeryxGlyphs.Image, accent, delayMs = 0) { onPhoto() }
+            DreamPill(stringResource(R.string.chat_attach_file), chat.keryx.app.presentation.ui.components.KeryxGlyphs.FileClip, accent, delayMs = 55) { onFile() }
             if (onCamera != null) {
-                DreamPill("Camera", chat.keryx.app.presentation.ui.components.KeryxGlyphs.Scope, accent, delayMs = 110) { onCamera() }
+                DreamPill(stringResource(R.string.chat_attach_camera), chat.keryx.app.presentation.ui.components.KeryxGlyphs.Scope, accent, delayMs = 110) { onCamera() }
             }
         }
     }

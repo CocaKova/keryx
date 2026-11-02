@@ -1,5 +1,6 @@
 package chat.keryx.app.audio
 
+import chat.keryx.app.R
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -167,7 +168,7 @@ class CallController(
             val heard = runCatching { transcribe(take) }
                 .onFailure { e ->
                     log("STT failed: $e")
-                    _ui.update { it.copy(error = "hearing failed: ${e.message?.take(80)}") }
+                    _ui.update { it.copy(error = context.getString(R.string.app_call_hearing_failed, e.message?.take(80).orEmpty())) }
                     delay(1_200) // don't spin a hot loop against a dead endpoint
                 }
                 .getOrNull()?.trim().orEmpty()
@@ -216,7 +217,7 @@ class CallController(
 
             override fun onTurnFailed() {
                 log("turn FAILED")
-                _ui.update { it.copy(error = "the agent's turn failed") }
+                _ui.update { it.copy(error = context.getString(R.string.app_call_turn_failed)) }
                 chunker.flush()?.let { sentences.trySend(it) }
                 sentences.close()
                 ended.complete(Unit)
@@ -239,7 +240,7 @@ class CallController(
                     val opened = runCatching { viewModel.voice.openSpeechStream(speakable) }
                     opened.exceptionOrNull()?.let { e ->
                         log("TTS open failed: $e")
-                        _ui.update { it.copy(error = "voice failed: ${e.message?.take(80)}") }
+                        _ui.update { it.copy(error = context.getString(R.string.app_call_voice_failed, e.message?.take(80).orEmpty())) }
                     }
                     val stream = opened.getOrNull()
                     if (stream != null) {
@@ -263,7 +264,7 @@ class CallController(
                         val r = runCatching { viewModel.voice.synthesizeBlocking(speakable, f) }
                         r.exceptionOrNull()?.let { e ->
                             log("TTS mp3 failed: $e")
-                            _ui.update { it.copy(error = "voice failed: ${e.message?.take(80)}") }
+                            _ui.update { it.copy(error = context.getString(R.string.app_call_voice_failed, e.message?.take(80).orEmpty())) }
                         }
                         if (r.isSuccess) ready.send(SentenceAudio.Mp3(speakable, f)) else f.delete()
                     }
@@ -298,7 +299,7 @@ class CallController(
                     }
                     log("turn watchdog fired — nothing from the gateway for ${idle / 1000}s " +
                         "(turn ${(now - sentAt) / 1000}s old)")
-                    _ui.update { it.copy(error = "no reply from the gateway") }
+                    _ui.update { it.copy(error = context.getString(R.string.app_call_no_reply)) }
                     chunker.flush()?.let { sentences.trySend(it) }
                     sentences.close()
                     ended.complete(Unit)

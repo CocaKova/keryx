@@ -73,6 +73,9 @@ import chat.keryx.core.model.ToolCall
 import chat.keryx.core.model.ToolGrammar
 import chat.keryx.core.protocol.MessageParser
 import kotlinx.coroutines.delay
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import chat.keryx.app.presentation.ui.components.KeryxType
 
 /**
@@ -113,7 +116,7 @@ fun TapInScreen(
     }
 
     KeryxSpace(
-        title = "Tap-In",
+        title = stringResource(R.string.settings_tapin_title),
         hint = chat.keryx.app.presentation.tour.KeryxHints.TAP_IN,
         onClose = onClose,
         standalone = standalone,
@@ -126,7 +129,7 @@ fun TapInScreen(
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    state.subline.ifBlank { if (state.running) "just started" else "nothing to show yet" },
+                    state.subline.ifBlank { if (state.running) stringResource(R.string.settings_tapin_just_started) else stringResource(R.string.settings_tapin_nothing_yet) },
                     fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -153,7 +156,7 @@ fun TapInScreen(
             if (state.mind.isNotBlank()) item("mind") { Mind(state.mind, ink, reduced) }
             if (state.hasCrew) item("crew") { CrewDeck(state.crew, state.running, now, ink, accent2, onOpenHelper) }
             if (state.rail.isNotEmpty()) item("rail-head") {
-                KeryxSectionHeader("Rail", count = state.rail.size)
+                KeryxSectionHeader(stringResource(R.string.settings_tapin_rail), count = state.rail.size)
             }
             items(state.rail.size, key = { "rail-$it" }) { i ->
                 RailRow(state.rail[i], last = i == state.rail.size - 1, ink = ink, accent = accent, live = state.running)
@@ -161,8 +164,8 @@ fun TapInScreen(
             if (state.answer.isNotBlank()) item("answer") { Saying(state.answer, ink, state.running) }
             if (state.isEmpty) item("empty") {
                 Text(
-                    if (state.running) "The turn has not shown anything yet — the first tool or thought lands here."
-                    else "Nothing was watched on this turn.",
+                    if (state.running) stringResource(R.string.settings_tapin_empty_running)
+                    else stringResource(R.string.settings_tapin_empty_done),
                     color = ink.copy(alpha = 0.55f),
                     fontSize = KeryxType.body,
                     fontStyle = FontStyle.Italic,
@@ -176,7 +179,7 @@ fun TapInScreen(
         Column(Modifier.fillMaxWidth().imePadding()) {
             if (steer != null && state.running) {
                 SteerBar(
-                    placeholder = "Type to steer this turn · hold to queue",
+                    placeholder = stringResource(R.string.settings_tapin_steer_hint),
                     onSteer = steer.onSteer,
                     onStop = steer.onStop,
                     onQueue = steer.onQueue,
@@ -250,7 +253,7 @@ private fun Headline(state: TapInState, ink: Color, accent: Color, reduced: Bool
 @Composable
 private fun Mind(mind: String, ink: Color, reduced: Boolean) {
     Column {
-        KeryxSectionHeader("Mind")
+        KeryxSectionHeader(stringResource(R.string.settings_tapin_mind))
         Spacer(Modifier.height(6.dp))
         Text(
             mind,
@@ -302,14 +305,14 @@ internal fun CrewDeck(
     val landed = crew.count { !it.run.running }
     Column {
         KeryxSectionHeader(
-            "Crew",
+            stringResource(R.string.settings_tapin_crew),
             count = crew.size,
             dotColor = if (live && landed < crew.size) accent2 else null,
         )
         if (crew.size > 1) {
             Spacer(Modifier.height(4.dp))
             Text(
-                "$landed of ${crew.size} landed",
+                stringResource(R.string.settings_tapin_crew_landed, landed, crew.size),
                 fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = ink.copy(alpha = 0.45f),
@@ -337,11 +340,11 @@ private fun CrewCard(member: CrewMember, live: Boolean, now: Long, ink: Color, o
     val canOpen = onOpen != null && run.hasRecord
     val meta = buildList {
         if (run.model.isNotBlank()) add(run.model)
-        if (run.toolCount > 0) add("${run.toolCount} tool${if (run.toolCount == 1) "" else "s"}")
+        if (run.toolCount > 0) add(pluralStringResource(R.plurals.settings_tapin_tools, run.toolCount, run.toolCount))
         run.elapsedSeconds(if (flying) now else 0L)?.takeIf { it > 0.0 }?.let { add(TapIn.clock((it * 1000).toLong())) }
-        if (run.totalTokens > 0) add("${TapIn.compact(run.totalTokens.toLong())} tok")
-        if (run.filesWrittenN > 0) add("${run.filesWrittenN} written")
-        if (member.interrupted) add("interrupted")
+        if (run.totalTokens > 0) add(stringResource(R.string.settings_tapin_tokens, TapIn.compact(run.totalTokens.toLong())))
+        if (run.filesWrittenN > 0) add(pluralStringResource(R.plurals.settings_tapin_files_written, run.filesWrittenN, run.filesWrittenN))
+        if (member.interrupted) add(stringResource(R.string.settings_tapin_interrupted))
     }
     // While it flies: the newest line it sent, breathing. Once it lands: what it came back
     // with — the summary IS the deliverable, so it gets the room the wing never had.
@@ -357,7 +360,7 @@ private fun CrewCard(member: CrewMember, live: Boolean, now: Long, ink: Color, o
         breathing = flying,
         meta = meta,
         activity = if (run.running) {
-            run.activity.ifBlank { if (run.state == chat.keryx.core.model.DelegationState.SPAWNING) "spawning…" else "working…" }
+            run.activity.ifBlank { if (run.state == chat.keryx.core.model.DelegationState.SPAWNING) stringResource(R.string.settings_tapin_spawning) else stringResource(R.string.settings_tapin_working) }
         } else null,
         alive = flying,
         summary = if (run.running) "" else
@@ -407,7 +410,7 @@ private fun RailRow(call: ToolCall, last: Boolean, ink: Color, accent: Color, li
 @Composable
 private fun Saying(answer: String, ink: Color, live: Boolean) {
     Column {
-        KeryxSectionHeader("Saying")
+        KeryxSectionHeader(stringResource(R.string.settings_tapin_saying))
         Spacer(Modifier.height(6.dp))
         // The chat's own markdown path (2.16): it was plain text, so a reply's headings, lists
         // and code arrived here as asterisks and backticks. While the turn streams it renders
@@ -442,17 +445,17 @@ private fun Instruments(state: TapInState, ink: Color) {
         if (used != null && max != null && max > 0L) {
             KeryxContextRing(used, max)
             Spacer(Modifier.width(10.dp))
-            Instrument(TapIn.compact(used), "of ${TapIn.compact(max)}", ink)
+            Instrument(TapIn.compact(used), stringResource(R.string.settings_tapin_of_max, TapIn.compact(max)), ink)
             Spacer(Modifier.width(16.dp))
         }
-        Instrument(state.toolCount.toString(), if (state.toolCount == 1) "tool" else "tools", ink)
+        Instrument(state.toolCount.toString(), pluralStringResource(R.plurals.settings_tapin_tools_unit, state.toolCount), ink)
         if (state.failedCount > 0) {
             Spacer(Modifier.width(16.dp))
-            Instrument(state.failedCount.toString(), "failed", ink, KeryxStatus.bad)
+            Instrument(state.failedCount.toString(), stringResource(R.string.settings_tapin_failed_unit), ink, KeryxStatus.bad)
         }
         if (state.hasCrew) {
             Spacer(Modifier.width(16.dp))
-            Instrument("${state.crewLanded}/${state.crew.size}", "crew", ink)
+            Instrument("${state.crewLanded}/${state.crew.size}", stringResource(R.string.settings_tapin_crew_unit), ink)
         }
         Spacer(Modifier.weight(1f))
         if (state.model.isNotBlank()) {

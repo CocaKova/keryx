@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -77,7 +79,7 @@ fun GatewayFolderField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text("Folder on the gateway (e.g. ~/workspace/keryx)") },
+            placeholder = { Text(stringResource(R.string.chat_folder_hint)) },
             singleLine = true,
             shape = RoundedCornerShape(KeryxRadius.field),
             modifier = Modifier.fillMaxWidth(),
@@ -87,8 +89,8 @@ fun GatewayFolderField(
         // rather than guessing — silence beats a wrong claim about someone else's disk.
         val verdict = when {
             value.isBlank() -> null
-            exists == true -> "✓ folder found" to MaterialTheme.colorScheme.secondary
-            exists == false -> "no folder there yet" to MaterialTheme.colorScheme.error
+            exists == true -> stringResource(R.string.chat_folder_found) to MaterialTheme.colorScheme.secondary
+            exists == false -> stringResource(R.string.chat_folder_missing) to MaterialTheme.colorScheme.error
             else -> null
         }
         verdict?.let { (word, tint) ->
@@ -101,7 +103,7 @@ fun GatewayFolderField(
         // Nothing typed: offer the workspaces the gateway already believes in.
         if (value.isBlank() && suggestions.isNotEmpty()) {
             Text(
-                "Known workspaces",
+                stringResource(R.string.chat_known_workspaces),
                 fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = chat.keryx.app.theme.quietInk(alpha = 0.6f),
@@ -131,8 +133,8 @@ fun GatewayFolderField(
         if (hidden > 0 || page?.truncated == true) {
             Text(
                 // No silent caps — ours at six rows, and the gateway's own at thirty.
-                if (page?.truncated == true) "more than 30 folders here — keep typing to narrow"
-                else "+$hidden more — keep typing to narrow",
+                if (page?.truncated == true) stringResource(R.string.chat_folder_truncated)
+                else stringResource(R.string.chat_folder_more, hidden),
                 fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = chat.keryx.app.theme.quietInk(alpha = 0.6f),

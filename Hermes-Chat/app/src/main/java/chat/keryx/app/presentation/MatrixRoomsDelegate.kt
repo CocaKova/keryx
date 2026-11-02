@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import chat.keryx.app.domain.repository.SettingsRepository
 import chat.keryx.core.transport.ChatTransport
 import kotlinx.coroutines.launch
@@ -25,16 +27,16 @@ class MatrixRoomsDelegate(
     fun acceptInvite(roomId: String) {
         scope.launch {
             matrix?.acceptInvite(roomId)
-                ?.onSuccess { toast("Joined — the room appears on the next sync") }
-                ?.onFailure { toast("Join failed: ${it.message?.take(80)}") }
+                ?.onSuccess { toast(KeryxText.get(R.string.app_room_joined)) }
+                ?.onFailure { toast(KeryxText.get(R.string.app_join_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
     fun declineInvite(roomId: String) {
         scope.launch {
             matrix?.leaveRoom(roomId)
-                ?.onSuccess { toast("Invite declined") }
-                ?.onFailure { toast("Decline failed: ${it.message?.take(80)}") }
+                ?.onSuccess { toast(KeryxText.get(R.string.app_invite_declined)) }
+                ?.onFailure { toast(KeryxText.get(R.string.app_decline_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -46,7 +48,7 @@ class MatrixRoomsDelegate(
         scope.launch {
             matrix?.startDirectMessage(userId)
                 ?.onSuccess { roomId -> openRoomById(roomId); onDone(null) }
-                ?.onFailure { onDone(it.message?.take(120) ?: "couldn't start the chat") }
+                ?.onFailure { onDone(it.message?.take(120) ?: KeryxText.get(R.string.app_start_chat_failed)) }
         }
     }
 
@@ -54,7 +56,7 @@ class MatrixRoomsDelegate(
         scope.launch {
             matrix?.createRoom(name, listOf(invitee))
                 ?.onSuccess { roomId -> openRoomById(roomId); onDone(null) }
-                ?.onFailure { onDone(it.message?.take(120) ?: "couldn't create the room") }
+                ?.onFailure { onDone(it.message?.take(120) ?: KeryxText.get(R.string.app_create_room_failed)) }
         }
     }
 
@@ -62,15 +64,15 @@ class MatrixRoomsDelegate(
         scope.launch {
             matrix?.joinRoomByAddress(address)
                 ?.onSuccess { roomId -> openRoomById(roomId); onDone(null) }
-                ?.onFailure { onDone(it.message?.take(120) ?: "couldn't join") }
+                ?.onFailure { onDone(it.message?.take(120) ?: KeryxText.get(R.string.app_join_failed_short)) }
         }
     }
 
     fun inviteUser(roomId: String, userId: String) {
         scope.launch {
             matrix?.inviteUser(roomId, userId)
-                ?.onSuccess { toast("Invite sent") }
-                ?.onFailure { toast("Invite failed: ${it.message?.take(80)}") }
+                ?.onSuccess { toast(KeryxText.get(R.string.app_invite_sent)) }
+                ?.onFailure { toast(KeryxText.get(R.string.app_invite_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -78,12 +80,12 @@ class MatrixRoomsDelegate(
         scope.launch {
             matrix?.leaveRoom(roomId)
                 ?.onSuccess {
-                    toast("Left room")
+                    toast(KeryxText.get(R.string.app_left_room))
                     if (settings.lastRoomId == roomId) settings.lastRoomId = null
                     // Move off the dead room so the chat pane never points at a membership we lost.
                     moveOffRoom(roomId)
                 }
-                ?.onFailure { toast("Leave failed: ${it.message?.take(80)}") }
+                ?.onFailure { toast(KeryxText.get(R.string.app_leave_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -91,7 +93,7 @@ class MatrixRoomsDelegate(
     fun deleteMessage(sessionId: String, eventId: String) {
         scope.launch {
             matrix?.redactMessage(sessionId, eventId)
-                ?.onFailure { toast("Delete failed: ${it.message?.take(80)}") }
+                ?.onFailure { toast(KeryxText.get(R.string.app_delete_failed, it.message?.take(80).orEmpty())) }
         }
     }
 

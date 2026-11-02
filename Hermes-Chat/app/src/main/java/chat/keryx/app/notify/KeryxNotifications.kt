@@ -1,5 +1,6 @@
 package chat.keryx.app.notify
 
+import chat.keryx.app.KeryxText
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -58,22 +59,38 @@ object KeryxNotifications {
     /** The lines shown per conversation, newest last — what MessagingStyle stacks. */
     private val history = java.util.concurrent.ConcurrentHashMap<String, ArrayDeque<NotificationCompat.MessagingStyle.Message>>()
 
+    /**
+     * Channel names follow the app's language: a channel that already exists only has its words
+     * refreshed (the system keeps everything else the user set on it). True when it existed.
+     */
+    private fun NotificationManager.refreshWords(id: String, name: String, about: String): Boolean {
+        val existing = getNotificationChannel(id) ?: return false
+        if (existing.name?.toString() != name || existing.description != about) {
+            existing.name = name
+            existing.description = about
+            createNotificationChannel(existing)
+        }
+        return true
+    }
+
     fun ensureChannel(context: Context) {
         val mgr = context.getSystemService(NotificationManager::class.java) ?: return
-        if (mgr.getNotificationChannel(CHANNEL_ID) != null) return
+        val name = KeryxText.get(R.string.app_channel_messages)
+        val about = KeryxText.get(R.string.app_channel_messages_desc)
+        if (mgr.refreshWords(CHANNEL_ID, name, about)) return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Messages",
+            name,
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = "New messages from your Hermes agents and rooms"
+            description = about
             enableVibration(true)
         }
         mgr.createNotificationChannel(channel)
     }
 
     /** The reader — "you" in the conversation, so replies you send from the shade file right. */
-    private val me: Person = Person.Builder().setName("You").setKey("me").build()
+    private val me: Person get() = Person.Builder().setName(KeryxText.get(R.string.app_notify_you)).setKey("me").build()
 
     /**
      * Post (or extend) the notification for [roomId] with [notice]: one conversation per
@@ -142,7 +159,7 @@ object KeryxNotifications {
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_keryx)
-            .setContentTitle(if (failed) "${notice.title} · turn failed" else notice.title)
+            .setContentTitle(if (failed) KeryxText.get(R.string.app_notify_title_failed, notice.title) else notice.title)
             .setContentText(notice.line)
             .setStyle(style)
             .setColor(if (failed) COLOR_FAILED else accentFor(notice.speakerKey, notice.speaker))
@@ -166,7 +183,7 @@ object KeryxNotifications {
                     NotificationCompat.Builder(context, CHANNEL_ID)
                         .setSmallIcon(R.drawable.ic_stat_keryx)
                         .setContentTitle(notice.conversation)
-                        .setContentText("New message")
+                        .setContentText(KeryxText.get(R.string.app_new_message))
                         .setColor(if (failed) COLOR_FAILED else accentFor(notice.speakerKey, notice.speaker))
                         .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                         .setContentIntent(tapIntent(context, roomId))
@@ -222,7 +239,7 @@ object KeryxNotifications {
         builder.addAction(
             NotificationCompat.Action.Builder(
                 R.drawable.ic_stat_keryx,
-                "Reply",
+                KeryxText.get(R.string.app_notify_reply),
                 // FLAG_MUTABLE: the system must write the RemoteInput result into this intent.
                 PendingIntent.getBroadcast(
                     context,
@@ -231,7 +248,7 @@ object KeryxNotifications {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
                 ),
             )
-                .addRemoteInput(RemoteInput.Builder(KEY_REMOTE_REPLY).setLabel("Reply to ${notice.speaker}").build())
+                .addRemoteInput(RemoteInput.Builder(KEY_REMOTE_REPLY).setLabel(KeryxText.get(R.string.app_notify_reply_to, notice.speaker)).build())
                 .setAllowGeneratedReplies(false)
                 .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
                 .setShowsUserInterface(false)
@@ -247,7 +264,7 @@ object KeryxNotifications {
             builder.addAction(
                 NotificationCompat.Action.Builder(
                     R.drawable.ic_stat_keryx,
-                    "Mark read",
+                    KeryxText.get(R.string.app_notify_mark_read),
                     PendingIntent.getBroadcast(
                         context,
                         "read:$roomId".hashCode(),
@@ -274,7 +291,7 @@ object KeryxNotifications {
         val summary = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_keryx)
             .setContentTitle("Keryx")
-            .setContentText(if (conversations == 1) "1 conversation" else "$conversations conversations")
+            .setContentText(KeryxText.plural(R.plurals.app_notify_conversations, conversations, conversations))
             .setColor(COLOR_KERYX)
             .setGroup(GROUP_KEY)
             .setGroupSummary(true)
@@ -425,13 +442,15 @@ object KeryxNotifications {
 
     fun ensureGateChannel(context: Context) {
         val mgr = context.getSystemService(NotificationManager::class.java) ?: return
-        if (mgr.getNotificationChannel(GATE_CHANNEL_ID) != null) return
+        val name = KeryxText.get(R.string.app_channel_gate)
+        val about = KeryxText.get(R.string.app_channel_gate_desc)
+        if (mgr.refreshWords(GATE_CHANNEL_ID, name, about)) return
         val channel = NotificationChannel(
             GATE_CHANNEL_ID,
-            "Approvals & questions",
+            name,
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = "An agent is stopped, waiting on your answer"
+            description = about
             enableVibration(true)
             // The command, the question and the session name stay off a secure lock screen;
             // it shows the notice's public version instead (see notifyGate).
@@ -528,9 +547,9 @@ object KeryxNotifications {
             )
         }
         if (notice.freeTextReply) {
-            val input = RemoteInput.Builder(KEY_GATE_REPLY).setLabel("Answer").build()
+            val input = RemoteInput.Builder(KEY_GATE_REPLY).setLabel(KeryxText.get(R.string.app_notify_answer)).build()
             builder.addAction(
-                NotificationCompat.Action.Builder(0, "Answer", gateIntent(NotificationActionReceiver.ACTION_GATE_REPLY, null))
+                NotificationCompat.Action.Builder(0, KeryxText.get(R.string.app_notify_answer), gateIntent(NotificationActionReceiver.ACTION_GATE_REPLY, null))
                     .addRemoteInput(input)
                     .setAllowGeneratedReplies(false)
                     .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
@@ -600,13 +619,15 @@ object KeryxNotifications {
 
     fun ensureRunChannel(context: Context) {
         val mgr = context.getSystemService(NotificationManager::class.java) ?: return
-        if (mgr.getNotificationChannel(RUN_CHANNEL_ID) != null) return
+        val name = KeryxText.get(R.string.app_channel_runs)
+        val about = KeryxText.get(R.string.app_channel_runs_desc)
+        if (mgr.refreshWords(RUN_CHANNEL_ID, name, about)) return
         val channel = NotificationChannel(
             RUN_CHANNEL_ID,
-            "Agent running",
+            name,
             NotificationManager.IMPORTANCE_LOW,
         ).apply {
-            description = "A silent status line while an agent works: what it is doing and for how long"
+            description = about
             setShowBadge(false)
         }
         mgr.createNotificationChannel(channel)
@@ -659,7 +680,7 @@ object KeryxNotifications {
             }
             builder.addAction(
                 NotificationCompat.Action.Builder(
-                    0, "Stop",
+                    0, KeryxText.get(R.string.app_notify_stop),
                     PendingIntent.getBroadcast(
                         context, "stop:$session".hashCode(), stop,
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
@@ -692,14 +713,16 @@ object KeryxNotifications {
 
     fun ensureMissionsChannel(context: Context) {
         val mgr = context.getSystemService(NotificationManager::class.java) ?: return
-        if (mgr.getNotificationChannel(MISSIONS_CHANNEL_ID) != null) return
+        val name = KeryxText.get(R.string.app_channel_missions)
+        val about = KeryxText.get(R.string.app_channel_missions_desc)
+        if (mgr.refreshWords(MISSIONS_CHANNEL_ID, name, about)) return
         val channel = NotificationChannel(
             MISSIONS_CHANNEL_ID,
-            "Missions",
+            name,
             // Default, not high: a finished background task is news, not an interruption.
             NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
-            description = "Missions completing, blocking, or giving up on the agent's board"
+            description = about
         }
         mgr.createNotificationChannel(channel)
     }

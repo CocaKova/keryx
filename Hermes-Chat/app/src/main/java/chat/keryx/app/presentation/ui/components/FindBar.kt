@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -53,7 +55,7 @@ fun FindBar(
             value = query,
             onValueChange = onQuery,
             singleLine = true,
-            placeholder = { Text("Find in chat", fontSize = KeryxType.body) },
+            placeholder = { Text(stringResource(R.string.chat_find_in_chat), fontSize = KeryxType.body) },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = { onOlder() }),
             modifier = Modifier.weight(1f).focusRequester(focus),
@@ -67,6 +69,6 @@ fun FindBar(
         )
         TextButton(onClick = onOlder, enabled = total > 1 || (total == 1 && index != 0)) { Text("▲", fontSize = KeryxType.body) }
         TextButton(onClick = onNewer, enabled = total > 1) { Text("▼", fontSize = KeryxType.body) }
-        TextButton(onClick = onClose) { Text("Done", fontSize = KeryxType.caption) }
+        TextButton(onClick = onClose) { Text(stringResource(R.string.chat_done), fontSize = KeryxType.caption) }
     }
 }

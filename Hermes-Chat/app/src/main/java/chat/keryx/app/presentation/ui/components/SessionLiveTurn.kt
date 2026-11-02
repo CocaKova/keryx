@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,12 +68,12 @@ fun SessionLiveTurn(viewModel: ChatViewModel) {
             Spacer(Modifier.width(8.dp))
             Text(
                 when (console.status) {
-                    "starting" -> "starting…"
-                    "streaming" -> "agent is working"
-                    "waiting" -> "waiting for approval"
-                    "completed" -> "turn complete"
-                    "lost" -> "connection lost" + (console.error?.let { " — $it" } ?: "")
-                    "failed" -> "failed" + (console.error?.let { " — $it" } ?: "")
+                    "starting" -> stringResource(R.string.chat_console_starting)
+                    "streaming" -> stringResource(R.string.chat_console_streaming)
+                    "waiting" -> stringResource(R.string.chat_console_waiting)
+                    "completed" -> stringResource(R.string.chat_console_completed)
+                    "lost" -> console.error?.let { stringResource(R.string.chat_console_lost_why, it) } ?: stringResource(R.string.chat_console_lost)
+                    "failed" -> console.error?.let { stringResource(R.string.chat_console_failed_why, it) } ?: stringResource(R.string.chat_console_failed)
                     else -> console.status
                 },
                 fontSize = KeryxType.caption,
@@ -85,10 +87,10 @@ fun SessionLiveTurn(viewModel: ChatViewModel) {
                     Icon(Icons.Default.Stop, contentDescription = null,
                         modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.width(4.dp))
-                    Text("Stop", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.chat_stop), fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
                 }
             } else {
-                TextButton(onClick = { viewModel.console.reset() }) { Text("Clear", fontSize = KeryxType.caption) }
+                TextButton(onClick = { viewModel.console.reset() }) { Text(stringResource(R.string.chat_clear), fontSize = KeryxType.caption) }
             }
         }
         if (console.reasoningTail.isNotBlank()) {

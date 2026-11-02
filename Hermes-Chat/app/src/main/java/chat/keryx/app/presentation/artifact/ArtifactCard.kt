@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.artifact
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -71,7 +73,7 @@ fun ArtifactCard(
             )
             Spacer(Modifier.height(1.dp))
             Text(
-                text = if (busy) "Opening…" else "Page · tap to open",
+                text = if (busy) stringResource(R.string.work_artifact_opening) else stringResource(R.string.work_artifact_page_tap),
                 color = textColor.copy(alpha = 0.6f),
                 fontSize = KeryxType.micro,
                 maxLines = 1,
@@ -79,7 +81,7 @@ fun ArtifactCard(
         }
         Spacer(Modifier.width(12.dp))
         Text(
-            text = "Open",
+            text = stringResource(R.string.work_artifact_open),
             color = textColor,
             fontSize = KeryxType.caption,
             fontWeight = FontWeight.SemiBold,
@@ -128,7 +130,7 @@ fun ArtifactPathChips(
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    text = "Open $name",
+                    text = stringResource(R.string.work_artifact_open_named, name),
                     color = textColor,
                     fontSize = KeryxType.caption,
                     fontWeight = FontWeight.Medium,

@@ -50,6 +50,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import chat.keryx.app.presentation.ChatViewModel
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import kotlin.math.atan2
 
 // Colour: the accent picker and the heralds' lights. Split out of SettingsDialog.kt in 2.10
@@ -83,10 +85,9 @@ internal fun HeraldsList(
     var editing by remember { mutableStateOf<String?>(null) }
 
     Spacer(Modifier.height(14.dp))
-    KeryxSectionHeader("Heralds", modifier = Modifier.padding(bottom = 6.dp))
+    KeryxSectionHeader(stringResource(R.string.settings_heralds), modifier = Modifier.padding(bottom = 6.dp))
     Text(
-        "Each life has its own color. Tap a herald to choose its light, or reset it to the one " +
-            "Keryx derived from its name.",
+        stringResource(R.string.settings_heralds_blurb),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         fontSize = KeryxType.micro,
     )
@@ -109,9 +110,9 @@ internal fun HeraldsList(
                 Text(key, fontSize = KeryxType.bodyLarge, fontWeight = FontWeight.Medium, color = light.accent)
                 Text(
                     when {
-                        light.primary -> "Primary — wears your own accents"
-                        overrides.containsKey(key) -> "Your colour"
-                        else -> "Derived from the name"
+                        light.primary -> stringResource(R.string.settings_herald_primary)
+                        overrides.containsKey(key) -> stringResource(R.string.settings_herald_custom)
+                        else -> stringResource(R.string.settings_herald_derived)
                     },
                     fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -138,7 +139,7 @@ internal fun HeraldsList(
             if (overrides.containsKey(key)) {
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(onClick = { onSetAccent(key, null) }) {
-                    Text("Reset to derived colour")
+                    Text(stringResource(R.string.settings_herald_reset))
                 }
             }
             Spacer(Modifier.height(10.dp))
@@ -219,7 +220,7 @@ fun ColorPickerPanel(
 
         // ── Brightness ──
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Brightness", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.settings_brightness), fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(10.dp))
             Slider(
                 value = bright,
@@ -268,15 +269,15 @@ fun ColorPickerPanel(
 }
 
 /** Accent pairs that already go together (makeover): one tap sets both halves of the gradient. */
-internal val ACCENT_PALETTES: List<Triple<String, Color, Color>> = listOf(
-    Triple("Ember", Color(0xFFE55A00), Color(0xFF8B5CF6)),
-    Triple("Gilded", Color(0xFFE0A458), Color(0xFFB45309)),
-    Triple("Nightshade", Color(0xFF8205E5), Color(0xFF00FFFA)),
-    Triple("Tidewater", Color(0xFF0EA5E9), Color(0xFF10B981)),
-    Triple("Rose", Color(0xFFEC4899), Color(0xFFF59E0B)),
-    Triple("Moss", Color(0xFF65A30D), Color(0xFF0D9488)),
-    Triple("Frost", Color(0xFF94A3B8), Color(0xFF60A5FA)),
-    Triple("Crimson", Color(0xFFDC2626), Color(0xFF7C3AED)),
+internal val ACCENT_PALETTES: List<Triple<Int, Color, Color>> = listOf(
+    Triple(R.string.settings_palette_ember, Color(0xFFE55A00), Color(0xFF8B5CF6)),
+    Triple(R.string.settings_palette_gilded, Color(0xFFE0A458), Color(0xFFB45309)),
+    Triple(R.string.settings_palette_nightshade, Color(0xFF8205E5), Color(0xFF00FFFA)),
+    Triple(R.string.settings_palette_tidewater, Color(0xFF0EA5E9), Color(0xFF10B981)),
+    Triple(R.string.settings_palette_rose, Color(0xFFEC4899), Color(0xFFF59E0B)),
+    Triple(R.string.settings_palette_moss, Color(0xFF65A30D), Color(0xFF0D9488)),
+    Triple(R.string.settings_palette_frost, Color(0xFF94A3B8), Color(0xFF60A5FA)),
+    Triple(R.string.settings_palette_crimson, Color(0xFFDC2626), Color(0xFF7C3AED)),
 )
 
 private fun Color.same(other: Color) = (toArgb() and 0xFFFFFF) == (other.toArgb() and 0xFFFFFF)
@@ -307,7 +308,7 @@ internal fun AccentPalettes(accent: Color, accent2: Color, onPick: (Color, Color
             }
         }
         Text(
-            picked?.first ?: "Your own pair",
+            picked?.first?.let { stringResource(it) } ?: stringResource(R.string.settings_palette_own),
             fontSize = KeryxType.caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 6.dp),

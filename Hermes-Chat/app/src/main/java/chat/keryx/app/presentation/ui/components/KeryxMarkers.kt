@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -60,7 +62,7 @@ fun CitationsBar(items: List<MessageParser.Citation>, baseColor: Color) {
             // alpha, so every `accent.copy(alpha = …)` label in this file was between 2.16:1
             // and 2.87:1 there. keryxAccentInk presses the same hue into the paper and hands
             // the raw accent straight back on the void, so dark mode is untouched.
-            Text("Sources", color = keryxAccentInk(accent), fontSize = KeryxType.micro, fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.chat_sources), color = keryxAccentInk(accent), fontSize = KeryxType.micro, fontWeight = FontWeight.Medium)
             items.forEach { c ->
                 val sel = selected == c.n
                 Box(
@@ -100,7 +102,7 @@ fun CitationsBar(items: List<MessageParser.Citation>, baseColor: Color) {
                         Text(kindEmoji(c.kind), fontSize = KeryxType.body)
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            c.kind.ifBlank { "source" },
+                            c.kind.ifBlank { stringResource(R.string.chat_source) },
                             color = keryxAccentInk(accent),
                             fontSize = KeryxType.micro,
                             fontWeight = FontWeight.SemiBold,
@@ -265,7 +267,7 @@ fun HandsTiles(actions: List<chat.keryx.core.model.PhoneAction>, baseColor: Colo
                 // "dials a number" on a tile whose whole consent model IS the tap. It was
                 // 2.16:1 on parchment, the least readable string in the family.
                 Text(
-                    handWhere(action.kind), color = keryxAccentInk(accent), fontSize = KeryxType.micro,
+                    stringResource(handWhere(action.kind)), color = keryxAccentInk(accent), fontSize = KeryxType.micro,
                     letterSpacing = 1.sp,
                 )
             }
@@ -291,12 +293,12 @@ private fun handGlyph(kind: chat.keryx.core.model.PhoneAction.Kind) = when (kind
 }
 
 /** The trailing word: where the tap lands. */
-private fun handWhere(kind: chat.keryx.core.model.PhoneAction.Kind) = when (kind) {
-    chat.keryx.core.model.PhoneAction.Kind.COPY -> "CLIPBOARD"
-    chat.keryx.core.model.PhoneAction.Kind.TORCH -> "PHONE"
-    chat.keryx.core.model.PhoneAction.Kind.SHARE -> "SHARE"
-    chat.keryx.core.model.PhoneAction.Kind.OPEN -> "APP"
-    else -> "OPENS"
+private fun handWhere(kind: chat.keryx.core.model.PhoneAction.Kind): Int = when (kind) {
+    chat.keryx.core.model.PhoneAction.Kind.COPY -> R.string.chat_hand_clipboard
+    chat.keryx.core.model.PhoneAction.Kind.TORCH -> R.string.chat_hand_phone
+    chat.keryx.core.model.PhoneAction.Kind.SHARE -> R.string.chat_hand_share
+    chat.keryx.core.model.PhoneAction.Kind.OPEN -> R.string.chat_hand_app
+    else -> R.string.chat_hand_opens
 }
 
 /**
@@ -322,7 +324,7 @@ fun SkillDistilledPill(skill: MessageParser.Segment.SkillDistilled, baseColor: C
         ) {
             Text("✦", fontSize = KeryxType.caption)
             Spacer(modifier = Modifier.width(7.dp))
-            Text("Skill Distilled", color = accent.copy(alpha = 0.92f), fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.chat_skill_distilled), color = accent.copy(alpha = 0.92f), fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold)
             if (skill.name.isNotBlank()) {
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("· ${skill.name}", color = baseColor, fontSize = KeryxType.caption)
@@ -349,7 +351,7 @@ fun SkillDistilledPill(skill: MessageParser.Segment.SkillDistilled, baseColor: C
                 val openForge = LocalSkillForgeOpener.current
                 // 2dp of padding round an 11sp line is a ~17dp target on the panel's only link.
                 Text(
-                    "Open in Skill Forge →",
+                    stringResource(R.string.chat_open_skill_forge),
                     color = keryxAccentInk(accent),
                     fontSize = KeryxType.micro,
                     fontWeight = FontWeight.SemiBold,

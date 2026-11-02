@@ -1,5 +1,9 @@
 package chat.keryx.app.share
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
+import chat.keryx.app.KeryxLocale
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -103,13 +107,18 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
         return Payload(combined, uris)
     }
 
+    override fun attachBaseContext(newBase: android.content.Context) {
+        // The app's own language below Android 13 (13+ the system applies it).
+        super.attachBaseContext(KeryxLocale.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val app = application as KeryxApp
         val settings = app.settingsRepository
         val payload = payloadFrom(intent)
         if (payload.text.isBlank() && payload.uris.isEmpty()) {
-            Toast.makeText(this, "Nothing to share", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.app_share_nothing), Toast.LENGTH_SHORT).show()
             finish()
             return
         }
@@ -164,7 +173,7 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
         )
         prompt.authenticate(
             androidx.biometric.BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Unlock Keryx")
+                .setTitle(getString(R.string.note_unlock_title))
                 .setAllowedAuthenticators(
                     androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK or
                         androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL,
@@ -206,13 +215,13 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
                 .onSuccess {
                     // Still a system Toast (2.16 moved the app onto KeryxSnack): this activity
                     // finishes on the next line, and only a Toast outlives the window it came from.
-                    Toast.makeText(this@ShareActivity, "Sent to $roomName", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ShareActivity, getString(R.string.note_sent_to, roomName), Toast.LENGTH_SHORT).show()
                     finish()
                 }
                 .onFailure { e ->
                     Toast.makeText(
                         this@ShareActivity,
-                        e.message?.take(120) ?: "Send failed",
+                        e.message?.take(120) ?: getString(R.string.note_send_failed),
                         Toast.LENGTH_LONG,
                     ).show()
                 }
@@ -226,13 +235,13 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
         // content:// only, and never our own provider: a shared file:// path (or our own
         // authority) would have Keryx read its private files and send them to the agent.
         if (uri.scheme != "content" || uri.authority?.startsWith(packageName) == true) {
-            error("Keryx can only send files shared from another app")
+            error(getString(R.string.app_share_foreign_only))
         }
         val size = contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)
             ?.use { c -> if (c.moveToFirst() && !c.isNull(0)) c.getLong(0) else -1L } ?: -1L
         // sendAttachment buffers the whole file; refuse what neither RAM nor the homeserver's
         // upload cap would survive, with a real message instead of an OOM.
-        if (size > MAX_SHARE_BYTES) error("File too large to send (${size / (1024 * 1024)} MB)")
+        if (size > MAX_SHARE_BYTES) error(getString(R.string.app_share_too_large_mb, size / (1024 * 1024)))
         val name = contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
             ?.use { c -> if (c.moveToFirst() && !c.isNull(0)) c.getString(0) else null }
             ?: uri.lastPathSegment ?: "shared"
@@ -249,11 +258,11 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
                 val n = input.read(buf)
                 if (n < 0) break
                 total += n
-                if (total > MAX_SHARE_BYTES) error("File too large to send")
+                if (total > MAX_SHARE_BYTES) error(getString(R.string.app_share_too_large))
                 out.write(buf, 0, n)
             }
             out.toByteArray()
-        } ?: error("Couldn't read $name")
+        } ?: error(getString(R.string.app_share_read_failed, name))
         return Triple(bytes, name, mime)
     }
 
@@ -304,9 +313,10 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
             Spacer(Modifier.height(12.dp))
 
             // What's being shared, at a glance.
+            val attachments = pluralStringResource(R.plurals.app_share_attachments, payload.uris.size, payload.uris.size)
             val summary = buildString {
                 if (payload.uris.isNotEmpty()) {
-                    append(if (payload.uris.size == 1) "1 attachment" else "${payload.uris.size} attachments")
+                    append(attachments)
                     if (payload.text.isNotBlank()) append(" · ")
                 }
                 if (payload.text.isNotBlank()) append(payload.text.replace('\n', ' '))
@@ -367,8 +377,8 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
                 value = comment,
                 onValueChange = { comment = it },
                 enabled = !isSending,
-                label = { Text("Add a note (optional)") },
-                placeholder = { Text("Summarize this / remember this / …") },
+                label = { Text(stringResource(R.string.app_share_note_label)) },
+                placeholder = { Text(stringResource(R.string.app_share_note_hint)) },
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(10.dp))
@@ -386,9 +396,9 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
                         strokeWidth = 2.dp,
                     )
                     Spacer(Modifier.width(10.dp))
-                    Text("Sending…")
+                    Text(stringResource(R.string.app_notify_sending))
                 } else {
-                    Text("Send")
+                    Text(stringResource(R.string.note_send))
                 }
             }
         }
@@ -403,9 +413,9 @@ class ShareActivity : androidx.fragment.app.FragmentActivity() {
         ) {
             KeryxWordmark(fontSize = KeryxType.hero)
             Spacer(Modifier.height(10.dp))
-            Text("Locked", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = KeryxType.body)
+            Text(stringResource(R.string.note_locked), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = KeryxType.body)
             Spacer(Modifier.height(20.dp))
-            androidx.compose.material3.OutlinedButton(onClick = onUnlock) { Text("Unlock") }
+            androidx.compose.material3.OutlinedButton(onClick = onUnlock) { Text(stringResource(R.string.note_unlock)) }
         }
     }
 

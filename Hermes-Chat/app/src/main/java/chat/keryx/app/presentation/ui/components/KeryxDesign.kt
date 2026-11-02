@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import chat.keryx.app.presentation.tour.tourTarget
 
 import androidx.compose.animation.EnterTransition
@@ -1025,7 +1027,7 @@ private fun KeryxSpaceBody(
                     IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
                         Icon(
                             androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.chat_back),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -1066,7 +1068,7 @@ private fun KeryxSpaceBody(
                 IconButton(onClick = onClose) {
                     Icon(
                         KeryxGlyphs.Close,
-                        contentDescription = "Close $title",
+                        contentDescription = stringResource(R.string.chat_close_named, title),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -1215,5 +1217,8 @@ fun KeryxSkeletonLine(fraction: Float = 0.6f, height: Dp = 10.dp, modifier: Modi
     )
 }
 
-private fun Modifier.keryxLoadingSemantics(): Modifier =
-    semantics { contentDescription = "Loading" }
+@Composable
+private fun Modifier.keryxLoadingSemantics(): Modifier {
+    val loading = stringResource(R.string.chat_loading_a11y)
+    return semantics { contentDescription = loading }
+}

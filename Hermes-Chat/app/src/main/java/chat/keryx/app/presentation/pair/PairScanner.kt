@@ -80,6 +80,8 @@ import chat.keryx.core.pair.PairingLink
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 
 /**
  * Pairing by QR (3.0): the scanner for the code `hermes keryx pair` prints, and the pieces the
@@ -110,7 +112,7 @@ fun PairScanDialog(onDismiss: () -> Unit, onScanned: (PairingLink) -> Unit) {
             when (val parsed = PairingLink.parse(decodeImage(context, uri))) {
                 is PairingLink.Parsed.Ok -> onScanned(parsed.pairing)
                 is PairingLink.Parsed.Rejected -> pickedNote =
-                    if (parsed.why == PairingLink.NOT_PAIRING) "No pairing code found in that image." else parsed.why
+                    if (parsed.why == PairingLink.NOT_PAIRING) context.getString(R.string.settings_pair_no_code_in_image) else parsed.why
             }
         }
     }
@@ -185,7 +187,7 @@ private fun ScannerBody(onScanned: (PairingLink) -> Unit, onPick: () -> Unit, pi
                 val provider = future.get()
                 provider.unbind(preview, analysis)
                 camera = provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, analysis)
-            }.onFailure { note = "The camera wouldn't start. Close this and type the address instead." }
+            }.onFailure { note = context.getString(R.string.settings_pair_camera_failed) }
         }, ContextCompat.getMainExecutor(context))
         onDispose {
             done.set(true)
@@ -216,7 +218,7 @@ private fun ScannerBody(onScanned: (PairingLink) -> Unit, onPick: () -> Unit, pi
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                "Scan a pairing code",
+                stringResource(R.string.settings_pair_scan),
                 color = Color.White,
                 fontSize = KeryxType.headline,
                 fontWeight = FontWeight.SemiBold,
@@ -250,21 +252,24 @@ private fun ScannerBody(onScanned: (PairingLink) -> Unit, onPick: () -> Unit, pi
                             tint = Color.White,
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text(if (torch) "Light off" else "Light on", color = Color.White, fontSize = KeryxType.bodyLarge)
+                        Text(if (torch) stringResource(R.string.settings_pair_light_off) else stringResource(R.string.settings_pair_light_on), color = Color.White, fontSize = KeryxType.bodyLarge)
                     }
                 }
                 TextButton(onClick = onPick) {
                     Icon(Icons.Outlined.Image, contentDescription = null, tint = Color.White)
                     Spacer(Modifier.width(8.dp))
-                    Text("Use a screenshot", color = Color.White, fontSize = KeryxType.bodyLarge)
+                    Text(stringResource(R.string.settings_pair_use_screenshot), color = Color.White, fontSize = KeryxType.bodyLarge)
                 }
             }
         }
     }
 }
 
-private fun buildCommandHint() =
-    "On your gateway, run hermes keryx pair, then point the camera at the code it shows."
+@Composable
+private fun buildCommandHint() = stringResource(R.string.settings_pair_camera_hint, PAIR_COMMAND)
+
+/** The gateway-side command; never translated. */
+private const val PAIR_COMMAND = "hermes keryx pair"
 
 @Composable
 private fun NoCamera(onRetry: () -> Unit, onPick: () -> Unit, note: String?, onDismiss: () -> Unit) {
@@ -276,21 +281,21 @@ private fun NoCamera(onRetry: () -> Unit, onPick: () -> Unit, note: String?, onD
         Icon(Icons.Outlined.QrCodeScanner, contentDescription = null, tint = Color.White, modifier = Modifier.size(48.dp))
         Spacer(Modifier.height(16.dp))
         Text(
-            "Keryx needs the camera to read the code. It only looks while this screen is open, and keeps nothing it sees.",
+            stringResource(R.string.settings_pair_camera_why),
             color = Color.White,
             fontSize = KeryxType.bodyLarge,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(20.dp))
-        Button(onClick = onRetry) { Text("Allow the camera", fontSize = KeryxType.titleLarge) }
+        Button(onClick = onRetry) { Text(stringResource(R.string.settings_pair_allow_camera), fontSize = KeryxType.titleLarge) }
         TextButton(onClick = onPick) {
-            Text("Use a screenshot of the code", color = Color.White, fontSize = KeryxType.bodyLarge)
+            Text(stringResource(R.string.settings_pair_use_screenshot_code), color = Color.White, fontSize = KeryxType.bodyLarge)
         }
         note?.let {
             Text(it, color = Color(0xFFFFC56B), fontSize = KeryxType.body, textAlign = TextAlign.Center)
         }
         TextButton(onClick = onDismiss) {
-            Text("Type the address instead", color = Color.White, fontSize = KeryxType.bodyLarge)
+            Text(stringResource(R.string.settings_pair_type_instead), color = Color.White, fontSize = KeryxType.bodyLarge)
         }
     }
 }
@@ -348,13 +353,19 @@ fun ScanPairingButton(enabled: Boolean, onClick: () -> Unit, modifier: Modifier 
         ) {
             Icon(Icons.Outlined.QrCodeScanner, contentDescription = null)
             Spacer(Modifier.width(10.dp))
-            Text("Scan a pairing code", fontSize = KeryxType.titleLarge)
+            Text(stringResource(R.string.settings_pair_scan), fontSize = KeryxType.titleLarge)
         }
         Text(
-            androidx.compose.ui.text.buildAnnotatedString {
-                append("From ")
-                withStyle(androidx.compose.ui.text.SpanStyle(fontFamily = FontFamily.Monospace)) { append("hermes keryx pair") }
-                append(" on your gateway, or type it in below.")
+            stringResource(R.string.settings_pair_from_command, PAIR_COMMAND).let { hint ->
+                // The command keeps its monospace wherever the translation puts it.
+                val at = hint.indexOf(PAIR_COMMAND)
+                androidx.compose.ui.text.buildAnnotatedString {
+                    if (at < 0) append(hint) else {
+                        append(hint.substring(0, at))
+                        withStyle(androidx.compose.ui.text.SpanStyle(fontFamily = FontFamily.Monospace)) { append(PAIR_COMMAND) }
+                        append(hint.substring(at + PAIR_COMMAND.length))
+                    }
+                }
             },
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = KeryxType.caption,
@@ -382,7 +393,7 @@ fun PairingBanner(pairing: PairingLink, onCancel: () -> Unit, enabled: Boolean, 
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "Pairing with ${pairing.name}",
+                        stringResource(R.string.settings_pair_pairing_with, pairing.name),
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = KeryxType.title,
                         fontWeight = FontWeight.SemiBold,
@@ -394,7 +405,7 @@ fun PairingBanner(pairing: PairingLink, onCancel: () -> Unit, enabled: Boolean, 
                         fontFamily = FontFamily.Monospace,
                     )
                 }
-                TextButton(onClick = onCancel, enabled = enabled) { Text("Cancel", fontSize = KeryxType.body) }
+                TextButton(onClick = onCancel, enabled = enabled) { Text(stringResource(R.string.mk_cancel), fontSize = KeryxType.body) }
             }
             if (pairing.unencrypted) {
                 Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.Top) {
@@ -404,14 +415,14 @@ fun PairingBanner(pairing: PairingLink, onCancel: () -> Unit, enabled: Boolean, 
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "Not encrypted: this is plain http to an internet address. Pair over your home network or Tailscale instead if you can.",
+                        stringResource(R.string.settings_pair_unencrypted),
                         color = MaterialTheme.colorScheme.error,
                         fontSize = KeryxType.caption,
                     )
                 }
             }
             Text(
-                "If your gateway has a sign-in page, it opens next. This phone then gets a Link token of its own; the gateway's key never leaves it.",
+                stringResource(R.string.settings_pair_sign_in_next),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = KeryxType.caption,
                 modifier = Modifier.padding(top = 8.dp),

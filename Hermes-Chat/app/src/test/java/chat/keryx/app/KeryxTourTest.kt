@@ -12,6 +12,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import javax.xml.parsers.DocumentBuilderFactory
+import org.w3c.dom.Element
 
 /**
  * The app's own tour (3.0): what it may point at on each door, where its card sits, and a check
@@ -26,7 +28,7 @@ class KeryxTourTest {
 
     @Test
     fun `the direct door with Link offers every stop, ending on the gateway with Add a gateway`() {
-        val full = KeryxTour.builtIn(TourPreset.FULL, ids(direct), direct)
+        val full = KeryxTour.builtIn(TourPreset.FULL, ids(direct), direct, words = EnglishStrings::get)
         assertEquals(12, full.size)
         assertEquals(KeryxTour.MACHINE, full.last().target)
         assertEquals(KeryxTour.CTA_ADD_GATEWAY, full.last().cta?.id)
@@ -35,7 +37,7 @@ class KeryxTourTest {
                 KeryxTour.FLIGHT_PLAN, KeryxTour.APPROVAL,
                 KeryxTour.COMPOSER, KeryxTour.MODEL, KeryxTour.NEW_SESSION, KeryxTour.DRAWER_BUTTON,
             ),
-            KeryxTour.builtIn(TourPreset.QUICK, ids(direct), direct).map { it.target },
+            KeryxTour.builtIn(TourPreset.QUICK, ids(direct), direct, words = EnglishStrings::get).map { it.target },
         )
     }
 
@@ -47,7 +49,7 @@ class KeryxTourTest {
         for (gone in listOf(KeryxTour.NEW_SESSION, KeryxTour.LENSES, KeryxTour.RUNS, KeryxTour.BOTS, KeryxTour.FLIGHT_PLAN, KeryxTour.APPROVAL)) {
             assertFalse(gone, gone in offered)
         }
-        val full = KeryxTour.builtIn(TourPreset.FULL, offered, matrix)
+        val full = KeryxTour.builtIn(TourPreset.FULL, offered, matrix, words = EnglishStrings::get)
         assertTrue(full.all { it.target in offered })
         // No fleet on Matrix: the last stop just ends.
         assertNull(full.last().cta)
@@ -56,7 +58,7 @@ class KeryxTourTest {
     @Test
     fun `the demo's tour opens by saying what it is and ends on connecting a real gateway`() {
         val demo = KeryxTour.Context(direct = true, link = false, demo = true)
-        val full = KeryxTour.builtIn(TourPreset.FULL, ids(demo), demo)
+        val full = KeryxTour.builtIn(TourPreset.FULL, ids(demo), demo, words = EnglishStrings::get)
         assertNull("the welcome is narration, mid-screen", full.first().target)
         assertEquals(KeryxTour.MACHINE, full.last().target)
         assertEquals(KeryxTour.CTA_CONNECT, full.last().cta?.id)
@@ -68,7 +70,7 @@ class KeryxTourTest {
 
     @Test
     fun `a real gateway's tour never tells you to try the demo's approval`() {
-        val stop = KeryxTour.builtIn(TourPreset.QUICK, ids(direct), direct).first { it.target == KeryxTour.APPROVAL }
+        val stop = KeryxTour.builtIn(TourPreset.QUICK, ids(direct), direct, words = EnglishStrings::get).first { it.target == KeryxTour.APPROVAL }
         assertFalse(stop.text.orEmpty().contains("Try it"))
     }
 
@@ -116,13 +118,39 @@ class KeryxTourTest {
     fun `What's new opens with narration and only points at what the door draws`() {
         for (ctx in listOf(direct, matrix)) {
             val offered = ids(ctx)
-            val steps = KeryxTour.whatsNew(offered, ctx)
+            val steps = KeryxTour.whatsNew(offered, ctx, words = EnglishStrings::get)
             assertNull("the opener is narration, mid-screen", steps.first().target)
             assertTrue(steps.drop(1).all { it.target in offered })
             assertTrue("a look, not a tour: a handful of stops", steps.size in 3..6)
         }
         // Matrix never sees the agent's pointing, so What's new doesn't promise it there.
-        assertFalse(KeryxTour.whatsNew(ids(matrix), matrix).any { "point at" in (it.text ?: "") })
-        assertTrue(KeryxTour.whatsNew(ids(direct), direct).any { it.target == KeryxTour.COMPOSER })
+        assertFalse(KeryxTour.whatsNew(ids(matrix), matrix, words = EnglishStrings::get).any { "point at" in (it.text ?: "") })
+        assertTrue(KeryxTour.whatsNew(ids(direct), direct, words = EnglishStrings::get).any { it.target == KeryxTour.COMPOSER })
+    }
+}
+
+/**
+ * The app's English strings, as the tour's and the hints' `words`: a plain-JVM test has no
+ * Resources, so an id is named through R by reflection and read from res/values/strings*.xml.
+ * The tour's copy lives in strings_app.xml; these tests read the very words a phone in English
+ * shows.
+ */
+internal object EnglishStrings {
+    private val byName: Map<String, String> by lazy {
+        val dir = listOf(File("src/main/res/values"), File("app/src/main/res/values")).first { it.isDirectory }
+        dir.listFiles { f -> f.name.startsWith("strings") && f.name.endsWith(".xml") }.orEmpty().flatMap { f ->
+            val nodes = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(f).getElementsByTagName("string")
+            (0 until nodes.length).map { nodes.item(it) as Element }
+                .map { it.getAttribute("name") to it.textContent.replace("\\'", "'").replace("\\\"", "\"") }
+        }.toMap()
+    }
+
+    private val names: Map<Int, String> by lazy {
+        chat.keryx.app.R.string::class.java.fields.associate { it.getInt(null) to it.name }
+    }
+
+    fun get(id: Int): String {
+        val name = names[id] ?: error("no R.string field for $id")
+        return byName[name] ?: error("no English string named $name")
     }
 }

@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -60,6 +62,7 @@ internal fun WorkingStatusBar(
         }
         val elapsed = startedAt?.let { ((now - it).coerceAtLeast(0L)) / 1000 } ?: 0L
         val clock = "${elapsed / 60}:${"%02d".format(elapsed % 60)}"
+        val tapInLabel = stringResource(R.string.chat_tap_in_turn)
         val rim by androidx.compose.animation.animateColorAsState(
             toolTint ?: MaterialTheme.colorScheme.primary, label = "cloudRim",
         )
@@ -84,7 +87,7 @@ internal fun WorkingStatusBar(
                     .clickable(
                         interactionSource = source,
                         indication = null,
-                        onClickLabel = "Tap in to the turn",
+                        onClickLabel = tapInLabel,
                         onClick = onTapIn,
                     )
             } else Modifier)
@@ -94,7 +97,7 @@ internal fun WorkingStatusBar(
                 .clearAndSetSemantics {
                     liveRegion = LiveRegionMode.Polite
                     contentDescription = label
-                    if (onTapIn != null) onClick(label = "Tap in to the turn") { onTapIn(); true }
+                    if (onTapIn != null) onClick(label = tapInLabel) { onTapIn(); true }
                 },
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -225,7 +228,7 @@ internal fun StreamingBubble(
                 Text("⚡", fontSize = KeryxType.micro)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Stream dropped — recovering via Matrix sync…",
+                    text = stringResource(R.string.chat_stream_dropped),
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     fontSize = KeryxType.micro,
                 )

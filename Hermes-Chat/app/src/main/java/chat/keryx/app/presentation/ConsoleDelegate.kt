@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import chat.keryx.core.model.Theater
 import chat.keryx.core.model.TheaterEvent
 import chat.keryx.core.model.TheaterState
@@ -98,11 +100,11 @@ class ConsoleDelegate(deps: GatewayDeps) {
     /** Launch a run (or resume into the selected session) and start streaming its events. */
     fun launch(prompt: String) {
         if (_console.value.live) {
-            toast("A run is already live — stop it or let it finish")
+            toast(KeryxText.get(R.string.app_console_run_live))
             return
         }
         val client = client() ?: run {
-            toast("Hermes Link is off — enable it in Settings")
+            toast(KeryxText.get(R.string.app_link_off))
             return
         }
         val target = _consoleSessionTarget.value
@@ -225,7 +227,7 @@ class ConsoleDelegate(deps: GatewayDeps) {
         scope.launch {
             // approval.responded arrives on the event stream and flips the UI back itself.
             client.runApproval(runId, choice)
-                .onFailure { toast("Approval failed: ${it.message?.take(80)}") }
+                .onFailure { toast(KeryxText.get(R.string.app_approval_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -237,7 +239,7 @@ class ConsoleDelegate(deps: GatewayDeps) {
             scope.launch {
                 // run.cancelled arrives on the stream; consoleFinish runs from there.
                 client.runStop(c.runId)
-                    .onFailure { toast("Stop failed: ${it.message?.take(80)}") }
+                    .onFailure { toast(KeryxText.get(R.string.app_stop_failed, it.message?.take(80).orEmpty())) }
             }
         } else {
             // Session dialect has no stop route — disconnecting cancels the turn server-side.

@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -175,7 +177,7 @@ private fun EmptyArtCanvas(description: String, modifier: Modifier, draw: EmptyA
  */
 @Composable
 fun MissionBoardIllustration(modifier: Modifier = Modifier) =
-    EmptyArtCanvas("An empty mission board with the herald's staff leaning on it", modifier) {
+    EmptyArtCanvas(stringResource(R.string.chat_art_mission_board), modifier) {
         card(24f, 22f, 172f, 112f, 12f, ink.line.copy(alpha = 0.45f))
         for (x in listOf(81f, 139f)) line(ink.line.copy(alpha = 0.22f), x, 34f, x, 122f)
         for (x in listOf(36f, 94f, 152f)) card(x, 38f, 34f, 6f, 3f, edge = null, fill = ink.line.copy(alpha = 0.18f))
@@ -202,7 +204,7 @@ fun MissionBoardIllustration(modifier: Modifier = Modifier) =
 /** Runs, nothing scheduled: a clock with the staff's orb and wings, and the turn of a repeat. */
 @Composable
 fun RunsClockIllustration(modifier: Modifier = Modifier) =
-    EmptyArtCanvas("A winged clock with an arrow curving round it", modifier) {
+    EmptyArtCanvas(stringResource(R.string.chat_art_winged_clock), modifier) {
         val cx = 100f; val cy = 92f; val r = 44f
         ring(ink.line.copy(alpha = 0.45f), cx, cy, r, fill = ink.surface)
         for (h in 0 until 12) {
@@ -245,7 +247,7 @@ fun RunsClockIllustration(modifier: Modifier = Modifier) =
 /** Bots, none yet: one head under the staff's orb and wings, an empty place either side. */
 @Composable
 fun BotsIllustration(modifier: Modifier = Modifier) =
-    EmptyArtCanvas("A robot head topped with the herald's winged orb, an empty place either side", modifier) {
+    EmptyArtCanvas(stringResource(R.string.chat_art_robot), modifier) {
         ring(ink.line.copy(alpha = 0.3f), 34f, 92f, 20f)
         ring(ink.line.copy(alpha = 0.3f), 186f, 92f, 20f)
         line(ink.line.copy(alpha = 0.3f), 34f, 84f, 34f, 100f)
@@ -267,7 +269,7 @@ fun BotsIllustration(modifier: Modifier = Modifier) =
 /** Projects, none yet: a workspace folder, a page in it, and a branch on the flap. */
 @Composable
 fun ProjectsFolderIllustration(modifier: Modifier = Modifier) =
-    EmptyArtCanvas("A folder holding a page, with a branch drawn on it", modifier) {
+    EmptyArtCanvas(stringResource(R.string.chat_art_folder), modifier) {
         val frame = ink.line.copy(alpha = 0.45f)
         card(36f, 36f, 56f, 24f, 8f, frame)
         card(36f, 48f, 148f, 98f, 10f, frame)
@@ -287,7 +289,7 @@ fun ProjectsFolderIllustration(modifier: Modifier = Modifier) =
 /** Archive search, nothing indexed: a scroll and the lens over it. */
 @Composable
 fun ArchiveScrollIllustration(modifier: Modifier = Modifier) =
-    EmptyArtCanvas("An unrolled scroll with a magnifying glass over it", modifier) {
+    EmptyArtCanvas(stringResource(R.string.chat_art_scroll), modifier) {
         val frame = ink.line.copy(alpha = 0.45f)
         card(44f, 32f, 112f, 100f, 6f, frame)
         card(36f, 24f, 128f, 14f, 7f, frame)
@@ -304,7 +306,7 @@ fun ArchiveScrollIllustration(modifier: Modifier = Modifier) =
 /** Archive saved, nothing kept: a page with one line marked and the ribbon in it. */
 @Composable
 fun ArchiveBookmarkIllustration(modifier: Modifier = Modifier) =
-    EmptyArtCanvas("A page with one line marked and a bookmark ribbon", modifier) {
+    EmptyArtCanvas(stringResource(R.string.chat_art_bookmark), modifier) {
         card(42f, 36f, 112f, 124f, 10f, ink.line.copy(alpha = 0.3f), fill = null, dashed = true)
         card(56f, 26f, 112f, 124f, 10f, ink.line.copy(alpha = 0.45f))
         writing(72f, 56f, listOf(64f, 74f))
@@ -318,7 +320,7 @@ fun ArchiveBookmarkIllustration(modifier: Modifier = Modifier) =
 /** Archive media, nothing indexed: a picture in front of an empty frame, a file beside it. */
 @Composable
 fun ArchiveMediaIllustration(modifier: Modifier = Modifier) =
-    EmptyArtCanvas("A framed picture of a hill and sun, with an empty frame behind it", modifier) {
+    EmptyArtCanvas(stringResource(R.string.chat_art_picture), modifier) {
         card(36f, 26f, 110f, 84f, 8f, ink.line.copy(alpha = 0.3f), fill = null, dashed = true)
         card(70f, 50f, 120f, 92f, 8f, ink.ink, width = 2.5f)
         fill(ink.violet.copy(alpha = 0.22f)) {

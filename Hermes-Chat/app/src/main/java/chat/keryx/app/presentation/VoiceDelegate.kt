@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,7 +62,7 @@ class VoiceDelegate(deps: GatewayDeps) {
         val url = _sttUrl.value.trim()
         if (url.isBlank()) {
             audio.delete()
-            onResult(Result.failure(IllegalStateException("No STT endpoint configured")))
+            onResult(Result.failure(IllegalStateException(KeryxText.get(R.string.app_no_stt_endpoint))))
             return
         }
         scope.launch {
@@ -101,7 +103,7 @@ class VoiceDelegate(deps: GatewayDeps) {
      * Throws when no endpoint is configured or the server errors.
      */
     fun openSpeechStream(text: String): chat.keryx.app.data.remote.TtsClient.PcmStream? {
-        val client = ttsClient() ?: throw IllegalStateException("No TTS endpoint configured")
+        val client = ttsClient() ?: throw IllegalStateException(KeryxText.get(R.string.app_no_tts_endpoint))
         if (ttsStreams == false) return null
         val stream = client.openStream(text, _ttsVoice.value.trim(), _ttsModel.value.trim())
         ttsStreams = stream != null
@@ -110,7 +112,7 @@ class VoiceDelegate(deps: GatewayDeps) {
 
     /** Blocking (worker thread) mp3 synthesis into [into]. */
     fun synthesizeBlocking(text: String, into: java.io.File): java.io.File {
-        val client = ttsClient() ?: throw IllegalStateException("No TTS endpoint configured")
+        val client = ttsClient() ?: throw IllegalStateException(KeryxText.get(R.string.app_no_tts_endpoint))
         return client.synthesize(text, _ttsVoice.value.trim(), _ttsModel.value.trim(), into)
     }
 
@@ -134,7 +136,7 @@ class VoiceDelegate(deps: GatewayDeps) {
     fun synthesizeSpeech(text: String, into: java.io.File, onResult: (Result<java.io.File>) -> Unit) {
         val url = _ttsUrl.value.trim()
         if (url.isBlank()) {
-            onResult(Result.failure(IllegalStateException("No TTS endpoint configured")))
+            onResult(Result.failure(IllegalStateException(KeryxText.get(R.string.app_no_tts_endpoint))))
             return
         }
         scope.launch {
@@ -162,13 +164,13 @@ class VoiceDelegate(deps: GatewayDeps) {
                 conn.connectTimeout = 4_000; conn.readTimeout = 4_000
                 conn.responseCode; conn.disconnect(); null
             } catch (e: Exception) {
-                "$label unreachable at $base (${e.javaClass.simpleName.removeSuffix("Exception")})"
+                KeryxText.get(R.string.app_voice_unreachable, label, base, e.javaClass.simpleName.removeSuffix("Exception"))
             }
         }
         val stt = _sttUrl.value.trim(); val tts = _ttsUrl.value.trim()
-        if (stt.isBlank()) return "no STT endpoint set"
-        if (tts.isBlank()) return "no TTS endpoint set"
-        return reach("ears (STT)", stt) ?: reach("voice (TTS)", tts)
+        if (stt.isBlank()) return KeryxText.get(R.string.app_no_stt_set)
+        if (tts.isBlank()) return KeryxText.get(R.string.app_no_tts_set)
+        return reach(KeryxText.get(R.string.app_voice_ears), stt) ?: reach(KeryxText.get(R.string.app_voice_mouth), tts)
     }
 
     /** Both voice endpoints are configured — the Call has ears and a mouth. */

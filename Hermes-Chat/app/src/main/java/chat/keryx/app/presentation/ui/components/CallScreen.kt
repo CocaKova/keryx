@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -264,7 +266,7 @@ fun CallScreen(
                     },
                 ) {
                     Text(
-                        "KERYX · CALL",
+                        stringResource(R.string.chat_call_header),
                         fontSize = KeryxType.micro, letterSpacing = 6.sp, fontWeight = FontWeight.SemiBold,
                         color = Color.White.copy(alpha = 0.5f),
                     )
@@ -286,7 +288,7 @@ fun CallScreen(
 
                 when {
                     denied -> Text(
-                        "Keryx needs the microphone for a call.",
+                        stringResource(R.string.chat_call_mic_needed),
                         color = Color.White.copy(alpha = 0.8f), fontSize = KeryxType.bodyLarge,
                         textAlign = TextAlign.Center,
                     )
@@ -307,15 +309,15 @@ fun CallScreen(
 
                 Spacer(Modifier.height(30.dp))
                 val caption = when (ui.phase) {
-                    CallController.Phase.LISTENING -> "listening"
-                    CallController.Phase.TRANSCRIBING -> "hearing you…"
+                    CallController.Phase.LISTENING -> stringResource(R.string.chat_call_listening)
+                    CallController.Phase.TRANSCRIBING -> stringResource(R.string.chat_call_hearing)
                     // The chat's own work label already names the tool in the shared
                     // grammar ("Reading notes.md", "Running terminal") — say it here too.
                     CallController.Phase.THINKING ->
-                        if (awaiting && workLabel != "Working") workLabel.lowercase() else "thinking"
-                    CallController.Phase.SPEAKING -> "tap the orb to interrupt"
-                    CallController.Phase.MUTED -> "muted"
-                    CallController.Phase.ENDED -> "call ended"
+                        if (awaiting && workLabel != "Working") workLabel.lowercase() else stringResource(R.string.chat_call_thinking)
+                    CallController.Phase.SPEAKING -> stringResource(R.string.chat_call_interrupt)
+                    CallController.Phase.MUTED -> stringResource(R.string.chat_call_muted)
+                    CallController.Phase.ENDED -> stringResource(R.string.chat_call_ended)
                 }
                 Crossfade(
                     targetState = caption,
@@ -354,7 +356,7 @@ fun CallScreen(
                     ) { heard ->
                         if (heard.isNotBlank()) {
                             Text(
-                                "“$heard”",
+                                stringResource(R.string.chat_call_heard, heard),
                                 fontSize = KeryxType.body, color = accent.copy(alpha = 0.9f),
                                 textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.fillMaxWidth(),
@@ -400,7 +402,7 @@ fun CallScreen(
                         diameter = 60.dp,
                         fill = Color.White.copy(alpha = if (mutedUi) 0.26f else 0.08f),
                         halo = if (mutedUi) MutedSteel else null,
-                        contentDescription = if (mutedUi) "Unmute" else "Mute",
+                        contentDescription = if (mutedUi) stringResource(R.string.chat_call_unmute) else stringResource(R.string.chat_call_mute),
                         onClick = {
                             haptics.commit()
                             mutedUi = !mutedUi
@@ -418,7 +420,7 @@ fun CallScreen(
                         diameter = 76.dp,
                         fill = EndRed,
                         halo = EndRed,
-                        contentDescription = "End call",
+                        contentDescription = stringResource(R.string.chat_call_end),
                         onClick = {
                             haptics.press()
                             close()

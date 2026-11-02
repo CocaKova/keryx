@@ -1,5 +1,6 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
@@ -61,6 +62,26 @@ enum class RoomTransition(val key: String, val label: String, val blurb: String)
     BLOOM("bloom", "Bloom", "The new room opens as a circle from the row you tapped."),
     RISE("rise", "Rise", "The old room tips back and sinks; the new one rises into place.");
 
+    /** [label], translated: resolve with stringResource. [label] stays the English name. */
+    @get:androidx.annotation.StringRes
+    val labelRes: Int get() = when (this) {
+        DISSOLVE -> R.string.chat_transition_dissolve
+        PASSAGE -> R.string.chat_transition_passage
+        WEAVE -> R.string.chat_transition_weave
+        BLOOM -> R.string.chat_transition_bloom
+        RISE -> R.string.chat_transition_rise
+    }
+
+    /** [blurb], translated. */
+    @get:androidx.annotation.StringRes
+    val blurbRes: Int get() = when (this) {
+        DISSOLVE -> R.string.chat_transition_dissolve_blurb
+        PASSAGE -> R.string.chat_transition_passage_blurb
+        WEAVE -> R.string.chat_transition_weave_blurb
+        BLOOM -> R.string.chat_transition_bloom_blurb
+        RISE -> R.string.chat_transition_rise_blurb
+    }
+
     companion object {
         fun of(key: String?): RoomTransition = entries.firstOrNull { it.key == key } ?: DISSOLVE
     }
@@ -75,6 +96,14 @@ enum class RoomTransitionSpeed(val key: String, val label: String, val factor: F
     SLOW("slow", "Slow", 1.5f),
     NORMAL("normal", "Normal", 1f),
     FAST("fast", "Fast", 0.6f);
+
+    /** [label], translated: resolve with stringResource. */
+    @get:androidx.annotation.StringRes
+    val labelRes: Int get() = when (this) {
+        SLOW -> R.string.chat_speed_slow
+        NORMAL -> R.string.chat_speed_normal
+        FAST -> R.string.chat_speed_fast
+    }
 
     /** [ms] of a crossing at this speed. */
     fun scaled(ms: Int): Int = (ms * factor).toInt()

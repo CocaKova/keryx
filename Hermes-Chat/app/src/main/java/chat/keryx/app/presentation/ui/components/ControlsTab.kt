@@ -50,6 +50,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import chat.keryx.app.data.remote.HermesStreamClient.ConfigKnob
 import chat.keryx.app.presentation.ChatViewModel
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -89,17 +91,16 @@ fun ControlsTab(viewModel: ChatViewModel) {
     swapTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { swapTarget = null },
-            title = { Text("Swap to \"$target\"?", fontSize = KeryxType.titleLarge) },
+            title = { Text(stringResource(R.string.settings_controls_swap_title, target), fontSize = KeryxType.titleLarge) },
             text = { Text(
-                "The gateway runs the operator's swap command — the brain (and possibly the " +
-                    "gateway itself) restarts. Chats pause until the new brain is up.",
+                stringResource(R.string.settings_controls_swap_body),
                 fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = { viewModel.hub.brainSelect(target); swapTarget = null }) {
-                    Text("Swap")
+                    Text(stringResource(R.string.settings_controls_swap))
                 }
             },
-            dismissButton = { TextButton(onClick = { swapTarget = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { swapTarget = null }) { Text(stringResource(R.string.mk_cancel)) } },
         )
     }
 
@@ -124,10 +125,10 @@ fun ControlsTab(viewModel: ChatViewModel) {
                 // --- Reasoning dial (write side of /keryx/capabilities) ---------------------
                 is ControlRow.Reasoning -> {
                     val c = row.caps
-                    SectionLabel("Reasoning")
+                    SectionLabel(stringResource(R.string.settings_brain_reasoning))
                     Text(
-                        if (c.mode == "binary") "This brain's thinking is an on/off switch."
-                        else "How hard the brain thinks before answering.",
+                        if (c.mode == "binary") stringResource(R.string.settings_controls_reasoning_binary)
+                        else stringResource(R.string.settings_controls_reasoning_levels),
                         fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(6.dp))
@@ -138,7 +139,7 @@ fun ControlsTab(viewModel: ChatViewModel) {
                         onSelect = { viewModel.hub.reasoningSet(it) },
                     )
                     Text(
-                        "applies next session",
+                        stringResource(R.string.settings_controls_applies_next_session),
                         fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
                     )
@@ -146,10 +147,10 @@ fun ControlsTab(viewModel: ChatViewModel) {
 
                 // --- Brains (operator-configured picker; hidden when unconfigured) ----------
                 is ControlRow.BrainHeader -> {
-                    SectionLabel("Brain")
+                    SectionLabel(stringResource(R.string.settings_card_brain))
                     if (row.active.isNotBlank()) {
                         Row(modifier = Modifier.padding(bottom = 4.dp)) {
-                            Text("Active", fontSize = KeryxType.body,
+                            Text(stringResource(R.string.settings_controls_brain_active), fontSize = KeryxType.body,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.width(86.dp))
                             Text(row.active, fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
@@ -210,12 +211,12 @@ fun ControlsTab(viewModel: ChatViewModel) {
                     onSet = { value -> viewModel.hub.configSet(row.knob.key, value) },
                 )
                 is ControlRow.NoMatch -> Text(
-                    "Nothing matches \"${row.query}\".",
+                    stringResource(R.string.settings_controls_no_match, row.query),
                     fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 12.dp),
                 )
                 is ControlRow.NoKnobs -> Text(
-                    "This gateway doesn't offer remote controls (keryx-stream plugin 1.21+).",
+                    stringResource(R.string.settings_controls_none),
                     fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 12.dp),
                 )
@@ -224,14 +225,14 @@ fun ControlsTab(viewModel: ChatViewModel) {
                 is ControlRow.Footer -> {
                     Spacer(Modifier.height(14.dp))
                     OutlinedButton(onClick = { logsOpen = true }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Gateway log")
+                        Text(stringResource(R.string.settings_controls_gateway_log))
                     }
                     Spacer(Modifier.height(8.dp))
                     OutlinedButton(onClick = { rawOpen = true }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Edit config.yaml")
+                        Text(stringResource(R.string.settings_controls_edit_config, "config.yaml"))
                     }
                     Text(
-                        "Everything above, plus every setting no knob covers. Backed up before each save.",
+                        stringResource(R.string.settings_controls_edit_config_sub),
                         fontSize = KeryxType.micro,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
@@ -267,21 +268,21 @@ private val GROUP_ORDER = listOf(
 
 /** One line under each group name — what lives there, so a section can be skipped unopened.
  *  Only for the groups the plugin ships; an unknown group simply has no blurb. */
-internal val GROUP_BLURBS: Map<String, String> = mapOf(
-    "Behavior" to "What a message does mid-task, and how long a turn may run.",
-    "Display" to "What the chat shows: reasoning, progress, footers, timestamps.",
-    "Missions" to "The dispatcher's cadence, limits and default hands.",
-    "Compression" to "When context compacts and how much it protects.",
-    "Agent" to "Turn timeouts, retries and the guidance the agent is given.",
-    "Memory" to "What the agent remembers between turns and sessions.",
-    "Skills" to "How skills are found, loaded and kept.",
-    "Tools" to "Output caps and loop guards on tool calls.",
-    "Terminal" to "The shell the agent runs commands in.",
-    "Browser" to "The browser the agent drives, and its patience.",
-    "Delegation" to "Subagents: how many, how deep, how long.",
-    "Voice" to "Speech in and out.",
-    "Safety" to "Approvals, confirmations and hard stops.",
-    "Gateway" to "The gateway process itself.",
+internal val GROUP_BLURBS: Map<String, Int> = mapOf(
+    "Behavior" to R.string.settings_controls_blurb_behavior,
+    "Display" to R.string.settings_controls_blurb_display,
+    "Missions" to R.string.settings_controls_blurb_missions,
+    "Compression" to R.string.settings_controls_blurb_compression,
+    "Agent" to R.string.settings_controls_blurb_agent,
+    "Memory" to R.string.settings_controls_blurb_memory,
+    "Skills" to R.string.settings_controls_blurb_skills,
+    "Tools" to R.string.settings_controls_blurb_tools,
+    "Terminal" to R.string.settings_controls_blurb_terminal,
+    "Browser" to R.string.settings_controls_blurb_browser,
+    "Delegation" to R.string.settings_controls_blurb_delegation,
+    "Voice" to R.string.settings_controls_blurb_voice,
+    "Safety" to R.string.settings_controls_blurb_safety,
+    "Gateway" to R.string.settings_controls_blurb_gateway,
 )
 
 /**
@@ -351,13 +352,13 @@ private fun KnobsHeader(
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Box(Modifier.weight(1f)) {
                 KeryxSectionHeader(
-                    "Gateway settings",
+                    stringResource(R.string.settings_controls_gateway_settings),
                     count = total,
                     modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
                 )
             }
             TextButton(onClick = onToggleAll) {
-                Text(if (anyExpanded) "Collapse all" else "Expand all", fontSize = KeryxType.micro)
+                Text(if (anyExpanded) stringResource(R.string.settings_controls_collapse_all) else stringResource(R.string.settings_controls_expand_all), fontSize = KeryxType.micro)
             }
         }
         OutlinedTextField(
@@ -367,11 +368,11 @@ private fun KnobsHeader(
             singleLine = true,
             textStyle = androidx.compose.ui.text.TextStyle(fontSize = KeryxType.body),
             placeholder = {
-                Text("Find a setting…", fontSize = KeryxType.body,
+                Text(stringResource(R.string.settings_search_hint), fontSize = KeryxType.body,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             },
             trailingIcon = if (query.isBlank()) null else ({
-                TextButton(onClick = { onQuery("") }) { Text("Clear", fontSize = KeryxType.micro) }
+                TextButton(onClick = { onQuery("") }) { Text(stringResource(R.string.settings_clear), fontSize = KeryxType.micro) }
             }),
             shape = RoundedCornerShape(12.dp),
         )
@@ -426,7 +427,7 @@ private fun GroupHeader(name: String, count: Int, expanded: Boolean, onToggle: (
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             GROUP_BLURBS[name]?.let {
-                Text(it, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                Text(stringResource(it), fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
@@ -448,7 +449,7 @@ private fun KnobRow(knob: ConfigKnob, busy: Boolean, onSet: (JsonPrimitive) -> U
                     Text(knob.label, fontSize = KeryxType.body, fontWeight = FontWeight.Medium)
                     if (knob.locked) {
                         Spacer(Modifier.width(6.dp))
-                        Text("locked", fontSize = KeryxType.micro,
+                        Text(stringResource(R.string.settings_controls_locked), fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Spacer(Modifier.width(6.dp))
@@ -471,7 +472,7 @@ private fun KnobRow(knob: ConfigKnob, busy: Boolean, onSet: (JsonPrimitive) -> U
                 choices = knob.choices,
                 // A blank choice is a real value (profile knobs: "the dispatcher decides") —
                 // it needs a visible chip.
-                labels = if ("" in knob.choices) mapOf("" to "unset") else emptyMap(),
+                labels = if ("" in knob.choices) mapOf("" to stringResource(R.string.settings_controls_unset)) else emptyMap(),
                 selected = knob.value,
                 enabled = !knob.locked && !busy,
                 onSelect = { onSet(JsonPrimitive(it)) },
@@ -493,7 +494,7 @@ private fun KnobRow(knob: ConfigKnob, busy: Boolean, onSet: (JsonPrimitive) -> U
                         enabled = !knob.locked && !busy &&
                             text.toIntOrNull() != null && text != knob.value,
                         onClick = { text.toIntOrNull()?.let { onSet(JsonPrimitive(it)) } },
-                    ) { Text("Save", fontSize = KeryxType.caption) }
+                    ) { Text(stringResource(R.string.settings_controls_save), fontSize = KeryxType.caption) }
                     val bounds = listOfNotNull(knob.min, knob.max)
                     if (bounds.size == 2) {
                         Text("${knob.min}–${knob.max}", fontSize = KeryxType.micro,
@@ -522,7 +523,7 @@ private fun KnobRow(knob: ConfigKnob, busy: Boolean, onSet: (JsonPrimitive) -> U
                         enabled = !knob.locked && !busy &&
                             text.toDoubleOrNull() != null && text != knob.value,
                         onClick = { text.toDoubleOrNull()?.let { onSet(JsonPrimitive(it)) } },
-                    ) { Text("Save", fontSize = KeryxType.caption) }
+                    ) { Text(stringResource(R.string.settings_controls_save), fontSize = KeryxType.caption) }
                     val bounds = listOfNotNull(knob.minF, knob.maxF)
                     if (bounds.size == 2) {
                         Text("${knob.minF}–${knob.maxF}", fontSize = KeryxType.micro,
@@ -593,7 +594,7 @@ internal fun GatewayLogViewer(viewModel: ChatViewModel, onDismiss: () -> Unit) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
             Column(Modifier.fillMaxSize().padding(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("GATEWAY LOG", fontSize = KeryxType.caption, letterSpacing = 3.sp,
+                    Text(stringResource(R.string.settings_controls_gateway_log).uppercase(), fontSize = KeryxType.caption, letterSpacing = 3.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.weight(1f))
@@ -603,12 +604,12 @@ internal fun GatewayLogViewer(viewModel: ChatViewModel, onDismiss: () -> Unit) {
                                 fontWeight = if (lines == n) FontWeight.Bold else FontWeight.Normal)
                         }
                     }
-                    TextButton(onClick = onDismiss) { Text("Close", fontSize = KeryxType.caption) }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_close), fontSize = KeryxType.caption) }
                 }
                 when {
                     error != null -> Text("⚠ $error", fontSize = KeryxType.caption,
                         color = MaterialTheme.colorScheme.error)
-                    text == null -> Text("Fetching…", fontSize = KeryxType.caption,
+                    text == null -> Text(stringResource(R.string.settings_controls_fetching), fontSize = KeryxType.caption,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     else -> {
                         val scroll = rememberScrollState()

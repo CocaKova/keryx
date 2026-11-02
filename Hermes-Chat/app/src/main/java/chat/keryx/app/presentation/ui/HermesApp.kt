@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import chat.keryx.app.presentation.tour.tourTarget
 import chat.keryx.app.presentation.tour.KeryxTour
 import androidx.compose.ui.text.withStyle
@@ -217,20 +220,18 @@ fun HermesApp(viewModel: ChatViewModel) {
         AlertDialog(
             shape = RoundedCornerShape(chat.keryx.app.presentation.ui.components.KeryxRadius.sheet),
             onDismissRequest = { viewModel.resolveBotNew(null) },
-            title = { Text("Start fresh with ${bot.label}?", fontSize = KeryxType.titleLarge) },
+            title = { Text(stringResource(R.string.chat_bot_new_title, bot.label), fontSize = KeryxType.titleLarge) },
             text = {
                 Text(
-                    "Compact keeps this conversation and clears ${bot.label}'s working context.\n\n" +
-                        "A fresh Bot Chat retires this one — it stays readable under ${bot.label}'s " +
-                        "past chats — and starts a new one.",
+                    stringResource(R.string.chat_bot_new_body, bot.label),
                     fontSize = KeryxType.body,
                 )
             },
             confirmButton = {
-                TextButton(onClick = { viewModel.resolveBotNew(true) }) { Text("Fresh Bot Chat") }
+                TextButton(onClick = { viewModel.resolveBotNew(true) }) { Text(stringResource(R.string.chat_bot_new_fresh)) }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.resolveBotNew(false) }) { Text("Compact") }
+                TextButton(onClick = { viewModel.resolveBotNew(false) }) { Text(stringResource(R.string.chat_bot_new_compact)) }
             },
         )
     }
@@ -539,7 +540,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                                     if (botHere != null) {
                                         Spacer(Modifier.width(6.dp))
                                         Text(
-                                            text = "Bot Chat",
+                                            text = stringResource(R.string.chat_bot_chat_chip),
                                             color = chipInk,
                                             fontSize = KeryxType.micro,
                                             maxLines = 1,
@@ -643,9 +644,9 @@ fun HermesApp(viewModel: ChatViewModel) {
                                 Icon(
                                     chat.keryx.app.presentation.ui.components.KeryxGlyphs.Sidebar,
                                     contentDescription = when {
-                                        urgent > 0 -> "Menu, $urgent waiting on you"
-                                        unreadRooms > 0 -> "Menu, $unreadRooms unread"
-                                        else -> "Menu"
+                                        urgent > 0 -> pluralStringResource(R.plurals.chat_menu_waiting, urgent, urgent)
+                                        unreadRooms > 0 -> pluralStringResource(R.plurals.chat_menu_unread, unreadRooms, unreadRooms)
+                                        else -> stringResource(R.string.chat_menu)
                                     },
                                     tint = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.graphicsLayer { rotationZ = 14f * nudge.value },
@@ -689,7 +690,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                                             // session, the fresh session runs as that bot.
                                             viewModel.sessions.createSession("", profile = viewModel.bots.agentOf(currentRoom?.id)) { err ->
                                                 creating = false
-                                                if (err != null) viewModel.toast("Couldn't start a session. ${chat.keryx.core.model.FriendlyError.of(err.toString())}")
+                                                if (err != null) viewModel.toast(appContext.getString(R.string.chat_new_session_failed, chat.keryx.core.model.FriendlyError.of(err.toString())))
                                             }
                                         },
                                         onLongClick = {
@@ -701,7 +702,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                             ) {
                                 Icon(
                                     chat.keryx.app.presentation.ui.components.KeryxGlyphs.NewChat,
-                                    contentDescription = "New session (hold for options)",
+                                    contentDescription = stringResource(R.string.chat_new_session_hold),
                                     tint = MaterialTheme.colorScheme.primary.copy(alpha = if (creating) 0.4f else 1f),
                                 )
                             }
@@ -725,7 +726,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                                     Icon(
                                         if (pinned) chat.keryx.app.presentation.ui.components.KeryxGlyphs.PinFilled
                                         else chat.keryx.app.presentation.ui.components.KeryxGlyphs.Pin,
-                                        contentDescription = if (pinned) "Unpin this run" else "Pin this run",
+                                        contentDescription = if (pinned) stringResource(R.string.chat_unpin_run) else stringResource(R.string.chat_pin_run),
                                         tint = if (pinned) MaterialTheme.colorScheme.primary
                                         else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                                     )
@@ -751,7 +752,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                             }) {
                                 Icon(
                                     chat.keryx.app.presentation.ui.components.KeryxGlyphs.NewChat,
-                                    contentDescription = "New session",
+                                    contentDescription = stringResource(R.string.chat_new_session),
                                     tint = MaterialTheme.colorScheme.primary,
                                 )
                             }
@@ -761,10 +762,10 @@ fun HermesApp(viewModel: ChatViewModel) {
                                         chat.keryx.app.presentation.ui.components.KeryxRadius.sheet
                                     ),
                                     onDismissRequest = { confirmNewSession = false },
-                                    title = { Text("Start a new session?", fontSize = KeryxType.titleLarge) },
+                                    title = { Text(stringResource(R.string.chat_new_session_confirm_title), fontSize = KeryxType.titleLarge) },
                                     text = {
                                         Text(
-                                            "The agent is still working — /new ends the current run and its result is discarded.",
+                                            stringResource(R.string.chat_new_session_confirm_body),
                                             fontSize = KeryxType.body,
                                         )
                                     },
@@ -773,10 +774,10 @@ fun HermesApp(viewModel: ChatViewModel) {
                                             confirmNewSession = false
                                             viewModel.composer.recordCommandUse("/new")
                                             viewModel.sendMessage("/new")
-                                        }) { Text("End run & start new", color = MaterialTheme.colorScheme.error) }
+                                        }) { Text(stringResource(R.string.chat_new_session_confirm), color = MaterialTheme.colorScheme.error) }
                                     },
                                     dismissButton = {
-                                        TextButton(onClick = { confirmNewSession = false }) { Text("Cancel") }
+                                        TextButton(onClick = { confirmNewSession = false }) { Text(stringResource(R.string.chat_cancel)) }
                                     },
                                 )
                             }
@@ -784,7 +785,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                             IconButton(onClick = { viewModel.setFindOpen(!viewModel.findOpen.value) }) {
                                 Icon(
                                     chat.keryx.app.presentation.ui.components.KeryxGlyphs.Search,
-                                    contentDescription = "Find in chat",
+                                    contentDescription = stringResource(R.string.chat_find_in_chat),
                                     tint = MaterialTheme.colorScheme.primary,
                                 )
                             }
@@ -794,11 +795,11 @@ fun HermesApp(viewModel: ChatViewModel) {
                             // both voice endpoints; a missing one gets a pointer, not a dead mic.
                             IconButton(onClick = {
                                 if (viewModel.voice.callReady()) showCall = true
-                                else viewModel.toast("Set the STT and TTS endpoints in Settings → Voice first")
+                                else viewModel.toast(appContext.getString(R.string.chat_call_needs_voice))
                             }) {
                                 Icon(
                                     chat.keryx.app.presentation.ui.components.KeryxGlyphs.Phone,
-                                    contentDescription = "Call",
+                                    contentDescription = stringResource(R.string.chat_call),
                                     tint = MaterialTheme.colorScheme.primary,
                                 )
                             }
@@ -978,7 +979,7 @@ internal fun ReasoningMenu(
     ) {
         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
             Text(
-                "REASONING",
+                stringResource(R.string.chat_reasoning_header),
                 color = accent,
                 fontSize = KeryxType.micro,
                 letterSpacing = 2.4.sp,
@@ -989,11 +990,11 @@ internal fun ReasoningMenu(
                 // models take the full effort scale. Until the probe answers, show the generic
                 // scale with a neutral subtitle.
                 text = when {
-                    caps == null -> "effort persists across sessions"
-                    caps.mode == "binary" -> "${caps.model.ifBlank { "local brain" }} · on/off switch"
-                    caps.mode == "none" -> "${caps.model.ifBlank { "model" }} · no reasoning dial"
-                    caps.scope == "session" -> "${caps.model.ifBlank { "model" }} · this session's ladder"
-                    else -> "${caps.model.ifBlank { "model" }} · effort scale"
+                    caps == null -> stringResource(R.string.chat_reasoning_sub_default)
+                    caps.mode == "binary" -> stringResource(R.string.chat_reasoning_sub_binary, caps.model.ifBlank { stringResource(R.string.chat_reasoning_local_brain) })
+                    caps.mode == "none" -> stringResource(R.string.chat_reasoning_sub_none, caps.model.ifBlank { stringResource(R.string.chat_reasoning_model) })
+                    caps.scope == "session" -> stringResource(R.string.chat_reasoning_sub_session, caps.model.ifBlank { stringResource(R.string.chat_reasoning_model) })
+                    else -> stringResource(R.string.chat_reasoning_sub_scale, caps.model.ifBlank { stringResource(R.string.chat_reasoning_model) })
                 },
                 color = chat.keryx.app.theme.quietInk(alpha = 0.55f),
                 fontSize = KeryxType.micro,
@@ -1059,7 +1060,7 @@ internal fun ReasoningMenu(
         }
         if (noDial) {
             Text(
-                "This model takes no effort level — Hermes sends none.",
+                stringResource(R.string.chat_reasoning_no_dial),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = KeryxType.caption,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -1071,7 +1072,7 @@ internal fun ReasoningMenu(
                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                     ) {
                         Text(
-                            if (everySession) "Every session" else "This session only",
+                            if (everySession) stringResource(R.string.chat_reasoning_every_session) else stringResource(R.string.chat_reasoning_this_session),
                             fontSize = KeryxType.caption,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f),
@@ -1093,20 +1094,20 @@ internal fun ReasoningMenu(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
         )
         DropdownMenuItem(
-            text = { Text("Show reasoning", fontSize = KeryxType.body) },
+            text = { Text(stringResource(R.string.chat_reasoning_show), fontSize = KeryxType.body) },
             onClick = { onCommand("show") },
             modifier = Modifier.height(rowHeight),
             contentPadding = rowPadding,
         )
         DropdownMenuItem(
-            text = { Text("Hide reasoning", fontSize = KeryxType.body) },
+            text = { Text(stringResource(R.string.chat_reasoning_hide), fontSize = KeryxType.body) },
             onClick = { onCommand("hide") },
             modifier = Modifier.height(rowHeight),
             contentPadding = rowPadding,
         )
         DropdownMenuItem(
             text = {
-                Text("Reset session override", fontSize = KeryxType.body,
+                Text(stringResource(R.string.chat_reasoning_reset), fontSize = KeryxType.body,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             },
             onClick = { onCommand("reset") },
@@ -1156,10 +1157,12 @@ private fun DemoStrip(onConnect: () -> Unit) {
             ) {
                 // One paragraph, so at large text it wraps as a sentence does, not as two blocks
                 // side by side (200% font split it into three ragged lines).
+                val demoWord = stringResource(R.string.chat_demo_label)
+                val demoConnect = stringResource(R.string.chat_demo_connect)
                 Text(
                     androidx.compose.ui.text.buildAnnotatedString {
-                        withStyle(androidx.compose.ui.text.SpanStyle(color = ink, fontWeight = FontWeight.SemiBold)) { append("Demo") }
-                        append("  ·  Connect your gateway")
+                        withStyle(androidx.compose.ui.text.SpanStyle(color = ink, fontWeight = FontWeight.SemiBold)) { append(demoWord) }
+                        append("  ·  $demoConnect")
                     },
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = KeryxType.caption,

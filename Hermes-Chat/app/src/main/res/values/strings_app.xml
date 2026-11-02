@@ -1,0 +1,454 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The app area: chat view model notices, notifications, tour and hints, voice and calls, share and note sheets, widget. Keys are app_-prefixed. -->
+
+    <!-- Message notifications -->
+    <!-- Notification body when the agent's turn ended in an error with no words. -->
+    <string name="app_turn_failed">The turn failed</string>
+    <!-- Stands in for an image message in a one-line preview. -->
+    <string name="app_photo">Photo</string>
+    <!-- Stands in for a file with no name in a one-line preview. -->
+    <string name="app_attachment">Attachment</string>
+    <!-- Notification body when the message has no previewable text. -->
+    <string name="app_new_message">New message</string>
+
+    <!-- Chat notices (in-app snackbars) -->
+    <string name="app_approval_expired">Approval had already expired</string>
+    <!-- %1$s = the error, in English from the server. -->
+    <string name="app_approval_failed">Approval failed: %1$s</string>
+    <!-- %1$s = the error. -->
+    <string name="app_reply_failed">Reply failed: %1$s</string>
+    <!-- Hermes Link is the gateway's streaming side channel; Matrix is a chat protocol. %1$s = the reason. -->
+    <string name="app_link_unreachable_matrix">Hermes Link unreachable (%1$s) — using Matrix sync</string>
+    <!-- %1$s = the error. -->
+    <string name="app_send_failed">Couldn\'t send: %1$s</string>
+    <string name="app_room_photo_updated">Room photo updated</string>
+    <string name="app_room_photo_forbidden">No permission to set this room\'s photo — you need moderator rights in it.</string>
+    <!-- %1$s = the error. -->
+    <string name="app_room_photo_failed">Couldn\'t set photo: %1$s</string>
+    <!-- Fills in for an error with no message, inside another sentence. -->
+    <string name="app_unknown_error">unknown error</string>
+    <!-- A chat was copied into a new session (a branch). -->
+    <string name="app_branched">Branched — a copy of this whole conversation</string>
+    <!-- %1$s = the error. -->
+    <string name="app_branch_failed">Branch failed: %1$s</string>
+    <!-- %1$s = a short explanation of why. -->
+    <string name="app_not_sent">Not sent. %1$s</string>
+    <!-- The last message and the agent's reply were removed. -->
+    <string name="app_undo_done">Took back the last exchange</string>
+    <string name="app_undo_nothing">Nothing to take back</string>
+    <string name="app_still_working">Still working — stop the turn first</string>
+    <!-- %1$s = the error. -->
+    <string name="app_undo_failed">Couldn\'t undo: %1$s</string>
+    <string name="app_retry_nothing">Nothing to retry — the gateway had no turn to take back</string>
+    <!-- %1$s = the error. -->
+    <string name="app_retry_failed">Couldn\'t retry: %1$s</string>
+    <string name="app_taken_back_edit">Taken back — edit it and send again</string>
+    <string name="app_take_back_failed">Couldn\'t take it back — your words are in the composer to send again</string>
+    <string name="app_set_gateway_url_first">Set a Gateway URL first</string>
+    <!-- Result of a connection test. %1$s = the gateway's health reply. -->
+    <string name="app_link_ok">Hermes Link OK — %1$s</string>
+    <!-- %1$s = the error. -->
+    <string name="app_link_failed">Hermes Link failed: %1$s</string>
+    <!-- Fills in for an error with no message, inside another sentence. -->
+    <string name="app_connection_error">connection error</string>
+    <!-- Keep API_SERVER_ENABLED=true, API_SERVER_KEY and ~/.hermes/.env exactly as written. -->
+    <string name="app_link_up_api_down">Hermes Link is up, but Hermes\'s API server behind it isn\'t running, so Missions and Runs won\'t load. Set API_SERVER_ENABLED=true and an API_SERVER_KEY in ~/.hermes/.env, then restart the gateway.</string>
+
+    <!-- Sessions -->
+    <!-- A session was pinned to the top of the list. -->
+    <string name="app_pinned">Pinned</string>
+    <!-- %1$s = the session's name. -->
+    <string name="app_pinned_named">Pinned “%1$s”</string>
+    <string name="app_unpinned">Unpinned</string>
+    <!-- %1$s = the session's name. -->
+    <string name="app_unpinned_named">Unpinned “%1$s”</string>
+    <!-- %1$s = the error. -->
+    <string name="app_pin_failed">Pin failed: %1$s</string>
+    <!-- %1$s = the error. -->
+    <string name="app_unpin_failed">Unpin failed: %1$s</string>
+    <string name="app_marked_unread">Marked unread</string>
+    <!-- %1$s = the error. -->
+    <string name="app_mark_read_failed">Couldn\'t mark read: %1$s</string>
+    <!-- %1$s = the error. -->
+    <string name="app_mark_unread_failed">Couldn\'t mark unread: %1$s</string>
+    <!-- A new chat could not reopen on the user's last model. -->
+    <string name="app_sticky_no_catalog">Couldn\'t read the models — opened on the gateway\'s default</string>
+    <!-- %1$s = a model name. -->
+    <string name="app_sticky_not_served">%1$s isn\'t served now — opened on the gateway\'s default</string>
+    <!-- %1$s = a model name. -->
+    <string name="app_sticky_needs_confirm">%1$s needs confirming — pick it in the model picker</string>
+    <!-- %1$s = the model the chat opened on; %2$s = the model last picked, no longer available. -->
+    <string name="app_sticky_opened_fallback">Opened on %1$s — %2$s isn\'t served now</string>
+    <!-- %1$s = a model name. "Sticky model" is the name of a setting. -->
+    <string name="app_sticky_opened">Opened on %1$s — your last pick (sticky model, in Settings)</string>
+    <!-- %1$s = a model name. -->
+    <string name="app_sticky_refused">%1$s refused — opened on the gateway\'s default</string>
+    <!-- Shown as an error under the new-chat form. -->
+    <string name="app_create_session_failed">couldn\'t create the session</string>
+    <!-- %1$s = the error. -->
+    <string name="app_rename_failed">Rename failed: %1$s</string>
+    <!-- %1$s = the error. -->
+    <string name="app_archive_failed">Couldn\'t archive: %1$s</string>
+    <!-- A session was archived (hidden from the list, still resumable). -->
+    <string name="app_archived">Archived</string>
+    <!-- %1$s = the session's name. -->
+    <string name="app_archived_named">Archived “%1$s”</string>
+    <!-- %1$s = the error. -->
+    <string name="app_restore_failed">Couldn\'t restore: %1$s</string>
+    <!-- An archived session was brought back. -->
+    <string name="app_restored">Restored</string>
+    <!-- %1$s = the session's name. -->
+    <string name="app_restored_named">Restored “%1$s”</string>
+    <!-- %1$s = the error. -->
+    <string name="app_archive_read_failed">Couldn\'t read the archive: %1$s</string>
+    <!-- %1$s = the error. -->
+    <string name="app_older_sessions_failed">Couldn\'t load older sessions: %1$s</string>
+    <string name="app_session_deleted">Session deleted</string>
+    <!-- %1$s = the error. -->
+    <string name="app_delete_failed">Delete failed: %1$s</string>
+
+    <!-- Steering a running turn -->
+    <!-- "Steer" = a note slipped to the agent while it works. -->
+    <string name="app_steered">Steered — the agent sees it on its next step</string>
+    <string name="app_steer_declined_queued">Agent declined the steer — queued for the next turn</string>
+    <!-- %1$s = the error. -->
+    <string name="app_queue_failed">Queue failed: %1$s</string>
+    <!-- %1$s = the error. -->
+    <string name="app_steer_failed">Steer failed: %1$s</string>
+    <!-- A goal control failed. %1$s = the error. -->
+    <string name="app_goal_failed">Goal: %1$s</string>
+    <!-- "Ask aside" = a side question answered without interrupting the agent. -->
+    <string name="app_aside_needs_direct">Asking aside needs the direct gateway</string>
+    <!-- %1$s = the error. -->
+    <string name="app_aside_failed">Ask aside failed: %1$s</string>
+    <string name="app_redirected">Redirected — the reply starts over with your correction</string>
+    <string name="app_redirect_between_calls">Between calls — your correction runs next</string>
+    <string name="app_redirect_finished_queued">The reply had finished — queued for the next turn</string>
+    <string name="app_redirect_unsupported">This agent can\'t redirect — steering instead</string>
+    <!-- %1$s = the error. -->
+    <string name="app_redirect_failed">Redirect failed: %1$s</string>
+    <string name="app_branched_from_message">Branched — this is a new session from that message</string>
+    <string name="app_queued">Queued — sends when this turn finishes</string>
+    <!-- The agent's turn was stopped. -->
+    <string name="app_stopped">Stopped</string>
+    <!-- %1$s = the error. -->
+    <string name="app_stop_failed">Stop failed: %1$s</string>
+    <!-- %1$s = a helper agent's role, e.g. "researcher". -->
+    <string name="app_crew_steered">Steered %1$s — it sees it on its next step</string>
+    <!-- %1$s = a helper agent's role. -->
+    <string name="app_crew_steer_rejected">%1$s didn\'t take it — it answers to another door, or it\'s already wrapping up</string>
+    <!-- %1$s = a helper agent's role. -->
+    <string name="app_crew_stopped">Stopped %1$s</string>
+    <!-- %1$s = a helper agent's role. -->
+    <string name="app_crew_already_finished">%1$s had already finished</string>
+
+    <!-- Model and thinking level -->
+    <!-- %1$s = the gateway's warning about the model (a full sentence, may be English). -->
+    <string name="app_model_confirm">%1$s Tap it again to confirm.</string>
+    <string name="app_model_expensive">This model is expensive.</string>
+    <!-- %1$s = a model name. -->
+    <string name="app_model_deferred">%1$s takes over at the next turn — this session</string>
+    <!-- %1$s = a model name. -->
+    <string name="app_model_deferred_global">%1$s takes over at the next turn — every session</string>
+    <!-- The model was switched. %1$s = a model name. -->
+    <string name="app_model_switched">%1$s — this session</string>
+    <!-- The model was switched for all sessions. %1$s = a model name. -->
+    <string name="app_model_switched_global">%1$s — every session</string>
+    <!-- %1$s = the error. -->
+    <string name="app_model_switch_refused">Switch refused: %1$s</string>
+    <!-- "Brain" = the AI model; "thinking level" = reasoning effort. -->
+    <string name="app_reasoning_refused_unknown">This brain refused that thinking level — pick a lower one.</string>
+    <!-- %1$s = a thinking level, e.g. "high". -->
+    <string name="app_reasoning_refused_floor">This brain refused %1$s thinking, and there\'s nothing lower to try.</string>
+    <!-- %1$s and %2$s = thinking levels, e.g. "high", "medium". -->
+    <string name="app_reasoning_dropped">This brain refused %1$s thinking — dropped to %2$s.</string>
+    <!-- %1$s and %2$s = thinking levels. -->
+    <string name="app_reasoning_drop_failed">This brain refused %1$s thinking; couldn\'t drop to %2$s.</string>
+    <!-- %1$s = a thinking level. -->
+    <string name="app_reasoning_set">Reasoning → %1$s — this session</string>
+    <!-- %1$s = a thinking level. -->
+    <string name="app_reasoning_set_global">Reasoning → %1$s for every session</string>
+    <!-- %1$s = the error. -->
+    <string name="app_reasoning_refused">Reasoning refused: %1$s</string>
+
+    <!-- Matrix rooms -->
+    <string name="app_room_joined">Joined — the room appears on the next sync</string>
+    <!-- %1$s = the error. -->
+    <string name="app_join_failed">Join failed: %1$s</string>
+    <string name="app_invite_declined">Invite declined</string>
+    <!-- %1$s = the error. -->
+    <string name="app_decline_failed">Decline failed: %1$s</string>
+    <!-- Shown as an error under a form. -->
+    <string name="app_start_chat_failed">couldn\'t start the chat</string>
+    <!-- Shown as an error under a form. -->
+    <string name="app_create_room_failed">couldn\'t create the room</string>
+    <!-- Shown as an error under a form. -->
+    <string name="app_join_failed_short">couldn\'t join</string>
+    <string name="app_invite_sent">Invite sent</string>
+    <!-- %1$s = the error. -->
+    <string name="app_invite_failed">Invite failed: %1$s</string>
+    <string name="app_left_room">Left room</string>
+    <!-- %1$s = the error. -->
+    <string name="app_leave_failed">Leave failed: %1$s</string>
+
+    <!-- Group chats -->
+    <!-- Fills in for an error with no message, after "Couldn't …:". -->
+    <string name="app_try_again">try again</string>
+    <!-- Group chat rooms could not be listed. -->
+    <string name="app_group_rooms_unavailable">rooms unavailable</string>
+    <string name="app_not_connected">not connected to a gateway</string>
+    <!-- %1$s = the error. -->
+    <string name="app_group_stop_failed">Couldn\'t stop the room: %1$s</string>
+    <!-- %1$s = the error. -->
+    <string name="app_group_approval_failed">Couldn\'t answer the approval: %1$s</string>
+    <!-- %1$s = the error. -->
+    <string name="app_group_rename_failed">Couldn\'t rename: %1$s</string>
+    <!-- "Disband" = close a group chat for good. %1$s = the error. -->
+    <string name="app_group_disband_failed">Couldn\'t disband: %1$s</string>
+
+    <!-- Voice -->
+    <!-- STT = speech to text. -->
+    <string name="app_no_stt_endpoint">No STT endpoint configured</string>
+    <!-- TTS = text to speech. -->
+    <string name="app_no_tts_endpoint">No TTS endpoint configured</string>
+    <string name="app_no_stt_set">no STT endpoint set</string>
+    <string name="app_no_tts_set">no TTS endpoint set</string>
+    <!-- %1$s = which voice service (ears or voice); %2$s = its URL; %3$s = a technical error name. -->
+    <string name="app_voice_unreachable">%1$s unreachable at %2$s (%3$s)</string>
+    <!-- The speech-to-text service, the agent's "ears". -->
+    <string name="app_voice_ears">ears (STT)</string>
+    <!-- The text-to-speech service, the agent's "voice". -->
+    <string name="app_voice_mouth">voice (TTS)</string>
+
+    <!-- Console and export -->
+    <string name="app_console_run_live">A run is already live — stop it or let it finish</string>
+    <string name="app_link_off">Hermes Link is off — enable it in Settings</string>
+    <!-- "Gateway door" = connecting straight to the Hermes gateway (not through Matrix). -->
+    <string name="app_export_needs_gateway">Export needs the gateway door.</string>
+    <string name="app_export_too_old">This gateway is too old to export a session.</string>
+    <!-- Default title of an exported chat. -->
+    <string name="app_export_subject">Hermes session</string>
+    <string name="app_export_unreadable">The export came back unreadable.</string>
+
+    <!-- Saved messages and pets -->
+    <string name="app_unsaved">Removed from Saved</string>
+    <string name="app_saved">Kept — find it in the Archive</string>
+    <!-- %1$s = a pet's name. -->
+    <string name="app_pet_adopt_failed">could not adopt %1$s</string>
+
+    <!-- Notifications (channels are listed in the phone's notification settings) -->
+    <!-- Notification channel name. -->
+    <string name="app_channel_messages">Messages</string>
+    <!-- Notification channel description. -->
+    <string name="app_channel_messages_desc">New messages from your Hermes agents and rooms</string>
+    <!-- The phone's owner, as a speaker in a notification conversation. -->
+    <string name="app_notify_you">You</string>
+    <!-- Notification title when the agent's turn failed. %1$s = the usual title (who spoke). -->
+    <string name="app_notify_title_failed">%1$s · turn failed</string>
+    <!-- Notification button. -->
+    <string name="app_notify_reply">Reply</string>
+    <!-- Hint in the notification's reply field. %1$s = who is being answered. -->
+    <string name="app_notify_reply_to">Reply to %1$s</string>
+    <!-- Notification button. -->
+    <string name="app_notify_mark_read">Mark read</string>
+    <!-- Summary of grouped notifications. %d = number of conversations. -->
+    <plurals name="app_notify_conversations">
+        <item quantity="one">%d conversation</item>
+        <item quantity="other">%d conversations</item>
+    </plurals>
+    <!-- Notification channel name. -->
+    <string name="app_channel_gate">Approvals &amp; questions</string>
+    <!-- Notification channel description. -->
+    <string name="app_channel_gate_desc">An agent is stopped, waiting on your answer</string>
+    <!-- Notification button and reply-field hint for a question the agent asked. -->
+    <string name="app_notify_answer">Answer</string>
+    <!-- Notification channel name. -->
+    <string name="app_channel_runs">Agent running</string>
+    <!-- Notification channel description. -->
+    <string name="app_channel_runs_desc">A silent status line while an agent works: what it is doing and for how long</string>
+    <!-- Notification button: stop the agent's running turn. -->
+    <string name="app_notify_stop">Stop</string>
+    <!-- Notification channel name. -->
+    <string name="app_channel_missions">Missions</string>
+    <!-- Notification channel description. -->
+    <string name="app_channel_missions_desc">Missions completing, blocking, or giving up on the agent\'s board</string>
+
+    <!-- Background work shown in the shade -->
+    <string name="app_push_checking">Checking for messages…</string>
+    <!-- %1$s = the reply being sent from the notification. -->
+    <string name="app_notify_sending_text">Sending: %1$s</string>
+    <string name="app_notify_answering">Answering…</string>
+    <string name="app_notify_gate_unreachable">Couldn\'t reach the gateway — tap to answer</string>
+    <string name="app_notify_answered">Answered — the agent is running again</string>
+    <string name="app_notify_request_timed_out">That request had already timed out</string>
+    <string name="app_notify_answer_failed">Couldn\'t answer — tap to open</string>
+    <string name="app_notify_sending">Sending…</string>
+    <!-- %1$s = the reply that failed to send. -->
+    <string name="app_notify_send_failed">Couldn\'t send “%1$s” — tap to open</string>
+
+    <!-- Built-in push connection -->
+    <string name="app_push_connecting">Connecting…</string>
+    <string name="app_push_connected">Connected — built-in push</string>
+    <string name="app_push_reconnecting">Reconnecting…</string>
+    <!-- Notification channel name. -->
+    <string name="app_channel_push">Push connection</string>
+    <!-- Notification channel description. A "distributor app" is a separate UnifiedPush app. -->
+    <string name="app_channel_push_desc">Keryx\'s own connection to your push server (no distributor app needed)</string>
+    <!-- Title of the ongoing notification for the app's own push connection. -->
+    <string name="app_push_title">Keryx push</string>
+
+    <!-- Opening links -->
+    <!-- "Connect your gateway" and "Scan a pairing code" name buttons in the app; keep them matching those buttons' translations. -->
+    <string name="app_scan_pairing_inside">Scan pairing codes inside Keryx: Connect your gateway › Scan a pairing code.</string>
+
+    <!-- Share sheet (sharing into Keryx from another app) -->
+    <string name="app_share_nothing">Nothing to share</string>
+    <string name="app_share_foreign_only">Keryx can only send files shared from another app</string>
+    <!-- %1$d = the file's size in megabytes. -->
+    <string name="app_share_too_large_mb">File too large to send (%1$d MB)</string>
+    <string name="app_share_too_large">File too large to send</string>
+    <!-- %1$s = a file name. -->
+    <string name="app_share_read_failed">Couldn\'t read %1$s</string>
+    <!-- %d = number of files being shared. -->
+    <plurals name="app_share_attachments">
+        <item quantity="one">%d attachment</item>
+        <item quantity="other">%d attachments</item>
+    </plurals>
+    <!-- Label of a text field: a note sent along with what is shared. -->
+    <string name="app_share_note_label">Add a note (optional)</string>
+    <!-- Example notes shown in the empty field. -->
+    <string name="app_share_note_hint">Summarize this / remember this / …</string>
+
+    <!-- Phone actions the agent offers (open an app, set an alarm, torch…) -->
+    <string name="app_hands_cannot">Nothing on this phone can do that</string>
+    <!-- %1$s = an app name the agent asked for. -->
+    <string name="app_hands_no_app">No app called “%1$s”</string>
+    <!-- %1$s = a technical action name, e.g. "alarm", "call". -->
+    <string name="app_hands_no_handler">Nothing on this phone handles %1$s</string>
+    <!-- The phone action failed. %1$s = the error. -->
+    <string name="app_hands_failed">Couldn\'t: %1$s</string>
+    <!-- The phone has no torch/flashlight. -->
+    <string name="app_hands_no_flash">No flash on this phone</string>
+
+    <!-- System share sheet titles -->
+    <string name="app_crash_log_subject">Keryx crash log</string>
+    <string name="app_crash_log_share">Share crash log</string>
+    <!-- Title of the system share sheet. -->
+    <string name="app_share">Share</string>
+    <!-- Title of the system share sheet. %1$s = a file name. -->
+    <string name="app_share_named">Share %1$s</string>
+
+    <!-- Voice call and read-aloud -->
+    <!-- On the voice call screen: speech recognition failed. %1$s = the error. -->
+    <string name="app_call_hearing_failed">hearing failed: %1$s</string>
+    <!-- On the voice call screen. -->
+    <string name="app_call_turn_failed">the agent\'s turn failed</string>
+    <!-- On the voice call screen: speech synthesis failed. %1$s = the error. -->
+    <string name="app_call_voice_failed">voice failed: %1$s</string>
+    <!-- On the voice call screen. -->
+    <string name="app_call_no_reply">no reply from the gateway</string>
+    <!-- Reading a reply aloud failed. %1$s = the error. -->
+    <string name="app_tts_failed">Speech failed: %1$s</string>
+    <string name="app_tts_audio_unavailable">Audio unavailable</string>
+    <string name="app_tts_no_audio">Speech server sent no audio</string>
+    <!-- No text-to-speech engine is installed. -->
+    <string name="app_tts_no_engine">No speech engine on this device</string>
+    <string name="app_tts_playback_failed">Speech playback failed</string>
+    <!-- %1$s = the error. -->
+    <string name="app_tts_playback_failed_why">Speech playback failed: %1$s</string>
+
+    <!-- The app's guided tour (Settings › About › Take the tour). Each stop: a short title and a sentence or two. -->
+    <string name="app_tour_welcome_title">Welcome to Keryx</string>
+    <string name="app_tour_welcome_text">This is a demo: a pretend gateway on your phone, and its agent is in the middle of a job. Here\'s a quick look around before you connect your own.</string>
+    <!-- The agent's step-by-step plan for a job. -->
+    <string name="app_tour_plan_title">Its plan</string>
+    <string name="app_tour_plan_text">Your agent breaks a job into steps and ticks them off as it goes. While it works, Keryx keeps a live notice of the job, so you can put the phone away.</string>
+    <string name="app_tour_approval_title">It asks first</string>
+    <string name="app_tour_approval_text">Before anything risky, like deleting a folder, your agent stops and asks. Answer here or right from the notification.</string>
+    <!-- The demo's version of the stop above; keep "Try it" as an invitation to tap the approval. -->
+    <string name="app_tour_approval_text_demo">Before anything risky, like deleting a folder, your agent stops and asks. Answer here or right from the notification. Try it when the tour\'s done, and watch it finish the job.</string>
+    <string name="app_tour_composer_title">Ask for anything</string>
+    <string name="app_tour_composer_text">Give your agent a job in plain words. It keeps working if you leave, and Keryx lets you know when it\'s done.</string>
+    <!-- "Brain" = the AI model. -->
+    <string name="app_tour_model_title">Which brain answers</string>
+    <string name="app_tour_model_text">Switch the model for this session, or for every session from here on.</string>
+    <string name="app_tour_new_session_title">A fresh page</string>
+    <string name="app_tour_new_session_text">Start a new session. Hold it for options, like a title or a temporary session.</string>
+    <string name="app_tour_drawer_title">Everything else</string>
+    <string name="app_tour_drawer_text">Your sessions and the rest of Keryx are behind this button.</string>
+    <string name="app_tour_lenses_title">What needs you</string>
+    <string name="app_tour_lenses_text">Narrow the list to sessions waiting on you, running right now, or unread.</string>
+    <!-- Name of a place in the app: a board of longer jobs. -->
+    <string name="app_tour_missions_title">Missions</string>
+    <string name="app_tour_missions_text">Hand your agent longer jobs as cards on a board. It works through them and asks when it needs you.</string>
+    <!-- Name of a place in the app: scheduled jobs. -->
+    <string name="app_tour_runs_title">Runs</string>
+    <string name="app_tour_runs_text">Scheduled jobs, and what each run turned up.</string>
+    <!-- Name of a place in the app: the agent's profiles. -->
+    <string name="app_tour_bots_title">Bots</string>
+    <string name="app_tour_bots_text">Your agent\'s other profiles. Each keeps its own memory, skills and chats.</string>
+    <!-- Name of a place in the app: the searchable history. -->
+    <string name="app_tour_archive_title">Archive</string>
+    <string name="app_tour_archive_text">Everything ever said, searchable on the phone, even with the gateway down.</string>
+    <!-- The gateway is the Hermes server the app talks to. -->
+    <string name="app_tour_gateway_title">Your gateway</string>
+    <string name="app_tour_gateway_text_demo">With your own Hermes, this shows the link, the model and the version. Everything you just saw works the same on a real gateway: connect yours and it\'s live.</string>
+    <string name="app_tour_gateway_text">The link, the model and the Hermes version. Tap it for the Gateway; the gear opens Settings, where this tour lives too.</string>
+    <string name="app_tour_gateway_text_direct">The link, the model and the Hermes version. Tap it for the Gateway; the gear opens Settings, where this tour lives too. Run more than one Hermes? Add it and switch between them here.</string>
+    <!-- Button ending the demo's tour. -->
+    <string name="app_tour_cta_connect">Connect your gateway</string>
+    <!-- Button ending the tour. -->
+    <string name="app_tour_cta_add_gateway">Add a gateway</string>
+
+    <!-- What's new in 3.0 (a short tour shown once after updating) -->
+    <string name="app_whatsnew_title">What\'s new in Keryx 3.0</string>
+    <string name="app_whatsnew_text">A quick look at what changed. Skip it if you like: it stays in Settings › About.</string>
+    <string name="app_whatsnew_point_title">Ask where something is</string>
+    <!-- Keep "keryx-stream 0.6" as is (a plugin name and version). -->
+    <string name="app_whatsnew_point_text">Ask your agent \"where are my scheduled jobs?\" and it can point at the place, right here on the phone. Your gateway needs keryx-stream 0.6 or newer.</string>
+    <string name="app_whatsnew_memory_title">Chat memory</string>
+    <string name="app_whatsnew_memory_text">The ring beside the model now says how many replies this chat has room for, and only once it matters. Tap it to see what\'s using the room.</string>
+    <!-- The drawer = the side menu. -->
+    <string name="app_whatsnew_drawer_title">A redrawn drawer</string>
+    <string name="app_whatsnew_drawer_text_direct">Each chat has its own colour and mark, a ring shows the ones at work, and these filters narrow the list to what needs you.</string>
+    <string name="app_whatsnew_drawer_text">Each chat has its own colour and mark, and a ring shows the ones at work.</string>
+    <string name="app_whatsnew_cards_title">Cards in plain words</string>
+    <!-- "Details" names a section on the card. -->
+    <string name="app_whatsnew_cards_text">A mission card now opens on what\'s going on and the one thing to do next. The technical details are still there, under Details.</string>
+    <string name="app_whatsnew_look_title">Look and updates</string>
+    <!-- Keep "keryx-stream" and the command "hermes keryx pair" as is. "Stable" and "Edge" are release channel names. -->
+    <string name="app_whatsnew_look_text_direct">Settings › Appearance has new thinking styles and five ways to move between chats. With a recent keryx-stream, the Gateway\'s Update panel lets you pick Stable releases or Edge. To add another Hermes, run hermes keryx pair on it and scan the code.</string>
+    <string name="app_whatsnew_look_text">Settings › Appearance has new thinking styles and five ways to move between chats. The tour and the space hints live in Settings › About.</string>
+
+    <!-- First-visit hints: one card the first time a place opens -->
+    <string name="app_hint_missions_title">Missions</string>
+    <string name="app_hint_missions_text">Longer jobs live here as cards. Your agents pick them up and work through them, and a card that needs you moves to the top. Tap + to hand one out.</string>
+    <string name="app_hint_runs_title">Runs</string>
+    <string name="app_hint_runs_text">Jobs on a schedule, like a morning brief or a nightly check. Each run\'s result lands here. Ask your agent and it can set one up for you.</string>
+    <string name="app_hint_bots_title">Bots</string>
+    <string name="app_hint_bots_text">Each bot is a profile of your Hermes, with its own memory, skills and chats. Open one to talk to it, or put a few in a group chat.</string>
+    <string name="app_hint_gateway_title">Your gateway</string>
+    <string name="app_hint_gateway_text">How the Hermes you\'re connected to is doing, and what\'s behind it: its model and settings, jobs, skills, memory and tools.</string>
+    <!-- Name of a full-screen view of the agent at work. -->
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">Your agent at work, full screen: what it\'s thinking, the tools it runs and the helpers it sends out. You can steer it from here too.</string>
+    <string name="app_hint_artifact_title">A page your agent made</string>
+    <string name="app_hint_artifact_text">Reports, mock-ups and pages your agent writes open here, on the phone. Save one or share it with the buttons up top.</string>
+
+    <!-- The tour's card -->
+    <!-- Accessibility: the name of the tour's card. -->
+    <string name="app_tour_pane">Tour</string>
+    <!-- Accessibility label of the card's close button. -->
+    <string name="app_tour_end">End the tour</string>
+    <!-- Which stop of the tour this is, e.g. "3 of 12". -->
+    <string name="app_tour_progress">%1$d of %2$d</string>
+    <!-- Button: the previous tour stop. -->
+    <string name="app_tour_back">Back</string>
+    <!-- Button: end the tour. -->
+    <string name="app_tour_done">Done</string>
+    <!-- Button: dismiss a one-off hint. -->
+    <string name="app_tour_got_it">Got it</string>
+    <!-- Button: the next tour stop. -->
+    <string name="app_tour_next">Next</string>
+</resources>

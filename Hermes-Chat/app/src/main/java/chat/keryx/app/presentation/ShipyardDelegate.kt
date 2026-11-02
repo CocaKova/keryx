@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.KeryxText
+import chat.keryx.app.R
 import chat.keryx.core.model.ShipyardCommitContext
 import chat.keryx.core.model.ShipyardDiff
 import chat.keryx.core.model.ShipyardRepo
@@ -153,7 +155,7 @@ class ShipyardDelegate(
         val gw = gateway ?: return@mutate
         gw.shipyardCommit(repo.path, message.trim(), push)
             .onSuccess {
-                toast(if (it.pushed) "Committed ${it.sha ?: ""} and pushed" else "Committed ${it.sha ?: ""}")
+                toast(KeryxText.get(if (it.pushed) R.string.work_ship_committed_pushed else R.string.work_ship_committed, it.sha.orEmpty()).trim())
                 _error.value = null
                 done(true)
             }
@@ -166,7 +168,7 @@ class ShipyardDelegate(
         val repo = _repo.value ?: return@mutate
         val gw = gateway ?: return@mutate
         gw.shipyardPush(repo.path)
-            .onSuccess { toast("Pushed ${repo.branch ?: ""}".trim()); _error.value = null }
+            .onSuccess { toast(KeryxText.get(R.string.work_ship_pushed, repo.branch.orEmpty()).trim()); _error.value = null }
             .onFailure { _error.value = friendly(it) }
         refreshTree()
         gw.shipyardShipInfo(repo.path).onSuccess { _shipInfo.value = it }
@@ -186,8 +188,8 @@ class ShipyardDelegate(
     private fun friendly(t: Throwable): String {
         val m = t.message.orEmpty()
         return when {
-            "shipyard_off" in m || "keryx.git is disabled" in m -> "The Shipyard is switched off on the gateway (keryx.git.enabled)."
-            m.isBlank() -> "The gateway did not answer."
+            "shipyard_off" in m || "keryx.git is disabled" in m -> KeryxText.get(R.string.work_ship_off)
+            m.isBlank() -> KeryxText.get(R.string.work_gateway_no_answer)
             else -> m.substringAfter(" — ", m).take(200)
         }
     }

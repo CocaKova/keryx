@@ -47,6 +47,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.keryx.app.presentation.ChatViewModel
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import chat.keryx.app.presentation.ui.components.BrailleSnakeAnimation
 import chat.keryx.app.presentation.ui.components.KeryxType
 
@@ -89,6 +91,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
     val accent = MaterialTheme.colorScheme.primary
     val focusManager = LocalFocusManager.current
     val context = androidx.compose.ui.platform.LocalContext.current
+    val loginFailed = stringResource(R.string.settings_login_failed)
 
     // The door change is a different process spine — relaunch cleanly into it.
     fun relaunch() = chat.keryx.app.presentation.ui.components.relaunchApp(context)
@@ -139,7 +142,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
     @Composable
     fun LookAroundLink() {
         TextButton(onClick = ::lookAround, enabled = !connecting, modifier = Modifier.padding(top = 8.dp)) {
-            Text("No gateway yet? Look around first", fontSize = KeryxType.body)
+            Text(stringResource(R.string.settings_login_look_around_link), fontSize = KeryxType.body)
         }
     }
 
@@ -175,10 +178,10 @@ fun LoginScreen(viewModel: ChatViewModel) {
         )
         Text(
             text = when {
-                welcome -> "Your Hermes agent, in your pocket."
-                connecting -> "Connecting…"
-                directDoor -> "Connect straight to your gateway"
-                else -> "Connect to your homeserver"
+                welcome -> stringResource(R.string.settings_login_tagline)
+                connecting -> stringResource(R.string.settings_login_connecting)
+                directDoor -> stringResource(R.string.settings_login_direct_title)
+                else -> stringResource(R.string.settings_login_matrix_title)
             },
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = KeryxType.bodyLarge,
@@ -192,9 +195,9 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 for (line in listOf(
-                    "Give your agent a job and watch every step it takes.",
-                    "Know the moment it's done, right from your lock screen.",
-                    "Hand off long jobs as missions and come back to results.",
+                    stringResource(R.string.settings_login_pitch_watch),
+                    stringResource(R.string.settings_login_pitch_notify),
+                    stringResource(R.string.settings_login_pitch_missions),
                 )) {
                     Row(verticalAlignment = Alignment.Top) {
                         Box(
@@ -215,16 +218,16 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 },
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(52.dp).heraldStage(0.7f, 1f),
             ) {
-                Text("Connect your gateway", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.settings_demo_connect), fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
             }
             androidx.compose.material3.OutlinedButton(
                 onClick = ::lookAround,
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp).height(52.dp).heraldStage(0.7f, 1f),
             ) {
-                Text("Look around first", fontSize = KeryxType.titleLarge)
+                Text(stringResource(R.string.settings_login_look_around), fontSize = KeryxType.titleLarge)
             }
             Text(
-                "A demo with a short tour. Nothing leaves your phone.",
+                stringResource(R.string.settings_login_demo_blurb),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = KeryxType.caption,
                 textAlign = TextAlign.Center,
@@ -250,7 +253,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 }
             }
             Door("Matrix", !directDoor) { directDoor = false; error = null }
-            Door("Direct to gateway", directDoor) { directDoor = true; error = null }
+            Door(stringResource(R.string.settings_door_direct), directDoor) { directDoor = true; error = null }
         }
 
         if (directDoor) {
@@ -272,8 +275,8 @@ fun LoginScreen(viewModel: ChatViewModel) {
             OutlinedTextField(
                 value = directName,
                 onValueChange = { directName = it; error = null },
-                label = { Text("Name") },
-                placeholder = { Text("Homelab") },
+                label = { Text(stringResource(R.string.settings_login_name)) },
+                placeholder = { Text(stringResource(R.string.settings_login_name_hint)) },
                 singleLine = true,
                 enabled = !connecting,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
@@ -281,7 +284,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
             OutlinedTextField(
                 value = directUrl,
                 onValueChange = { directUrl = it; error = null },
-                label = { Text("Gateway URL") },
+                label = { Text(stringResource(R.string.settings_row_link_url)) },
                 placeholder = { Text("http://your-host:8686") },
                 singleLine = true,
                 enabled = !connecting && pair == null,
@@ -291,7 +294,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
             OutlinedTextField(
                 value = directKey,
                 onValueChange = { directKey = it; error = null },
-                label = { Text("API key — ungated gateways only") },
+                label = { Text(stringResource(R.string.settings_login_api_key)) },
                 singleLine = true,
                 enabled = !connecting,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -300,7 +303,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                            contentDescription = if (passwordVisible) "Hide key" else "Show key",
+                            contentDescription = if (passwordVisible) stringResource(R.string.settings_login_hide_key) else stringResource(R.string.settings_login_show_key),
                         )
                     }
                 },
@@ -312,12 +315,12 @@ fun LoginScreen(viewModel: ChatViewModel) {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "Allow self-signed certificates",
+                        stringResource(R.string.settings_row_connection_insecure),
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = KeryxType.title,
                     )
                     Text(
-                        "Only for local / self-hosted gateways",
+                        stringResource(R.string.settings_insecure_gateways),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = KeryxType.caption,
                     )
@@ -354,7 +357,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                         onResult = { ok, needsRestart, message ->
                             if (!ok) {
                                 connecting = false
-                                error = message ?: "Login failed"
+                                error = message ?: loginFailed
                             } else if (needsRestart) {
                                 relaunch()
                             } else {
@@ -377,7 +380,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    Text("Connect", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.settings_login_connect), fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
                 }
             }
             LookAroundLink()
@@ -388,7 +391,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
             // Booted on the direct spine: a Matrix login needs the Matrix transport, which is
             // built at startup. Cross the doorway first; credentials come after the relaunch.
             Text(
-                "Keryx is currently in direct-gateway mode. Switching to Matrix restarts the app.",
+                stringResource(R.string.settings_login_direct_mode_note),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = KeryxType.body,
                 textAlign = TextAlign.Center,
@@ -398,7 +401,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 onClick = { viewModel.doors.switchTransport("matrix"); relaunch() },
                 modifier = Modifier.fillMaxWidth().padding(top = 24.dp).height(52.dp),
             ) {
-                Text("Switch to Matrix", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.settings_switch_to_matrix), fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
             }
             return@Column
         }
@@ -406,7 +409,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
         OutlinedTextField(
             value = homeserver,
             onValueChange = { homeserver = it; error = null },
-            label = { Text("Homeserver URL") },
+            label = { Text(stringResource(R.string.settings_row_connection_homeserver)) },
             placeholder = { Text("https://matrix.org") },
             singleLine = true,
             enabled = !connecting,
@@ -416,8 +419,8 @@ fun LoginScreen(viewModel: ChatViewModel) {
         OutlinedTextField(
             value = username,
             onValueChange = { username = it; error = null },
-            label = { Text("Username") },
-            placeholder = { Text("you") },
+            label = { Text(stringResource(R.string.settings_username)) },
+            placeholder = { Text(stringResource(R.string.settings_login_username_hint)) },
             singleLine = true,
             enabled = !connecting,
             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
@@ -425,7 +428,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
         OutlinedTextField(
             value = password,
             onValueChange = { password = it; error = null },
-            label = { Text("Password") },
+            label = { Text(stringResource(R.string.settings_password)) },
             singleLine = true,
             enabled = !connecting,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -434,7 +437,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(
                         imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                        contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                        contentDescription = if (passwordVisible) stringResource(R.string.settings_login_hide_password) else stringResource(R.string.settings_login_show_password),
                     )
                 }
             },
@@ -445,14 +448,14 @@ fun LoginScreen(viewModel: ChatViewModel) {
             onClick = { showAdvanced = !showAdvanced },
             modifier = Modifier.align(Alignment.Start),
         ) {
-            Text(if (showAdvanced) "Hide advanced" else "Advanced")
+            Text(if (showAdvanced) stringResource(R.string.settings_login_hide_advanced) else stringResource(R.string.settings_login_advanced))
         }
 
         if (showAdvanced) {
             OutlinedTextField(
                 value = agentId,
                 onValueChange = { agentId = it },
-                label = { Text("Hermes agent Matrix ID (optional)") },
+                label = { Text(stringResource(R.string.settings_login_agent_id)) },
                 placeholder = { Text("@hermes:your.server") },
                 singleLine = true,
                 enabled = !connecting,
@@ -464,12 +467,12 @@ fun LoginScreen(viewModel: ChatViewModel) {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "Allow self-signed certificates",
+                        stringResource(R.string.settings_row_connection_insecure),
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = KeryxType.title,
                     )
                     Text(
-                        "Only for local / self-hosted servers",
+                        stringResource(R.string.settings_insecure_servers),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = KeryxType.caption,
                     )
@@ -497,7 +500,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                 viewModel.setAllowInsecure(allowInsecure)
                 viewModel.doors.loginToMatrix(username.trim(), password) { success, message ->
                     connecting = false
-                    if (!success) error = message ?: "Login failed"
+                    if (!success) error = message ?: loginFailed
                 }
             },
             enabled = !connecting && homeserver.isNotBlank() && username.isNotBlank() && password.isNotBlank(),
@@ -510,7 +513,7 @@ fun LoginScreen(viewModel: ChatViewModel) {
                     strokeWidth = 2.dp,
                 )
             } else {
-                Text("Connect", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.settings_login_connect), fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
             }
         }
         LookAroundLink()

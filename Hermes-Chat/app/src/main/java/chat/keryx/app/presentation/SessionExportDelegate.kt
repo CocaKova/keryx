@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import chat.keryx.app.transport.direct.GatewayRest
 import chat.keryx.app.transport.direct.sessionExport
 import chat.keryx.core.model.ExportFormat
@@ -37,25 +39,25 @@ class SessionExportDelegate(
         agentName: String,
         nowMs: Long = System.currentTimeMillis(),
     ): Result<ExportFile> {
-        val r = rest() ?: return Result.failure(IllegalStateException("Export needs the gateway door."))
+        val r = rest() ?: return Result.failure(IllegalStateException(KeryxText.get(R.string.app_export_needs_gateway)))
         val body = when (val got = r.sessionExport(sessionId, profileFor(sessionId))) {
             is Routed.Ok -> got.value
             is Routed.Failed -> return Result.failure(IllegalStateException(got.message))
             Routed.Missing -> {
                 _supported.value = false
-                return Result.failure(IllegalStateException("This gateway is too old to export a session."))
+                return Result.failure(IllegalStateException(KeryxText.get(R.string.app_export_too_old)))
             }
         }
         val tz = kotlinx.datetime.TimeZone.currentSystemDefault()
         val name = SessionExport.fileName(title, sessionId, format, nowMs, tz)
-        val subject = title.ifBlank { "Hermes session" }
+        val subject = title.ifBlank { KeryxText.get(R.string.app_export_subject) }
         return withContext(Dispatchers.Default) {
             when (format) {
                 // The gateway's own file, byte for byte: re-importable, nothing reinterpreted.
                 ExportFormat.JSON -> Result.success(ExportFile(name, format.mime, subject, body.encodeToByteArray()))
                 ExportFormat.MARKDOWN -> {
                     val doc = SessionExport.parse(body)
-                        ?: return@withContext Result.failure<ExportFile>(IllegalStateException("The export came back unreadable."))
+                        ?: return@withContext Result.failure<ExportFile>(IllegalStateException(KeryxText.get(R.string.app_export_unreadable)))
                     val md = SessionExport.markdown(doc, agentName, tz)
                     Result.success(ExportFile(name, format.mime, subject, md.encodeToByteArray()))
                 }

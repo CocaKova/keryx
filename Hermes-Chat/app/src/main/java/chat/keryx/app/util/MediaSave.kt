@@ -1,5 +1,6 @@
 package chat.keryx.app.util
 
+import chat.keryx.app.R
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -146,7 +147,7 @@ suspend fun shareMedia(context: Context, bytes: ByteArray, fileName: String, kin
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(
-            Intent.createChooser(intent, "Share").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            Intent.createChooser(intent, context.getString(R.string.app_share)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
         true
     }.getOrDefault(false)

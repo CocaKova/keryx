@@ -1,0 +1,557 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings, sign-in, QR pairing, the model picker, gateway controls and updates, Tap-In. All keys are settings_-prefixed. -->
+
+    <!-- Settings search: each setting's name, as listed in search results. -->
+    <string name="settings_row_account_identity">Account</string>
+    <string name="settings_row_account_transport">Transport</string>
+    <string name="settings_row_agent_telemetry">Show telemetry</string>
+    <string name="settings_row_agent_alerts">Mission alerts</string>
+    <string name="settings_row_agent_resume">Reopen last chat on launch</string>
+    <string name="settings_row_agent_starters">Suggestions in empty chats</string>
+    <string name="settings_row_agent_sticky_model">New sessions use the last model picked</string>
+    <string name="settings_row_companion_pick">Companion</string>
+    <string name="settings_row_connection_gateway">Gateways</string>
+    <string name="settings_row_connection_fleet_resume">At startup, return to the last-used gateway</string>
+    <string name="settings_row_connection_insecure">Allow self-signed certificates</string>
+    <string name="settings_row_connection_homeserver">Homeserver URL</string>
+    <string name="settings_row_connection_heralds">Hermes Agent Matrix IDs</string>
+    <string name="settings_row_connection_push">Push notifications</string>
+    <string name="settings_row_connection_reauth">Re-authenticate</string>
+    <string name="settings_row_link_toggle">Hermes Link</string>
+    <string name="settings_row_link_url">Gateway URL</string>
+    <string name="settings_row_voice_stt">Voice dictation</string>
+    <string name="settings_row_voice_tts">Voice replies</string>
+    <string name="settings_row_appearance_theme">Theme</string>
+    <string name="settings_row_appearance_bubbles">Bubble style</string>
+    <string name="settings_row_appearance_text">Text size</string>
+    <string name="settings_row_appearance_accent">Accent colours</string>
+    <string name="settings_row_appearance_haptics">Haptic feedback</string>
+    <string name="settings_row_appearance_loading">Loading animation</string>
+    <string name="settings_row_appearance_transition">Room transition</string>
+    <string name="settings_row_privacy_lock">Biometric app lock</string>
+    <string name="settings_row_privacy_e2ee">End-to-end encryption</string>
+    <string name="settings_row_privacy_senses">Senses</string>
+    <string name="settings_row_sessions_archived">Archived sessions</string>
+    <string name="settings_row_sessions_prune">Prune sessions</string>
+    <string name="settings_row_about_tour">Take the tour</string>
+    <string name="settings_row_about_crash">Crash log</string>
+    <string name="settings_row_about_version">Version</string>
+    <!-- Settings: the names of its pages (also shown upper-cased as the page title). -->
+    <string name="settings_section_account">Account</string>
+    <string name="settings_section_agent">Agent</string>
+    <string name="settings_section_companion">Companion</string>
+    <string name="settings_section_gateway">Gateway</string>
+    <string name="settings_section_connection">Connection</string>
+    <string name="settings_section_hermes_link">Hermes Link</string>
+    <string name="settings_section_voice">Voice</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_privacy">Privacy &amp; Security</string>
+    <string name="settings_section_sessions">Sessions</string>
+    <string name="settings_section_about">About</string>
+
+    <!-- Settings screen: shared words. -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_close">Close</string>
+    <string name="settings_search_hint">Find a setting…</string>
+    <!-- Button: empty the search box / delete the crash log. -->
+    <string name="settings_clear">Clear</string>
+    <string name="settings_search_none">Nothing by that name</string>
+    <string name="settings_on">On</string>
+    <string name="settings_off">Off</string>
+    <string name="settings_hide">Hide</string>
+    <string name="settings_show">Show</string>
+    <!-- Button: share the crash log. -->
+    <string name="settings_share">Share</string>
+    <!-- "e.g." followed by example values the user could type. -->
+    <string name="settings_example">e.g. %1$s</string>
+
+    <!-- Settings hub: group headings. -->
+    <string name="settings_group_connection">Connection</string>
+    <string name="settings_group_agent">Agent</string>
+    <!-- Group heading: settings about the Keryx app itself. -->
+    <string name="settings_group_app">App</string>
+    <!-- Settings hub: each row's second line (what is set, or what the page holds). -->
+    <string name="settings_not_signed_in">Not signed in</string>
+    <string name="settings_hub_gateway_blank">Address, certificates &amp; Hermes Link</string>
+    <!-- %1$s = the gateway's name or address; "linked" = Hermes Link is on. -->
+    <string name="settings_hub_gateway_linked">%1$s · linked</string>
+    <string name="settings_hub_connection_blank">Homeserver &amp; agent</string>
+    <string name="settings_link_streaming">Live token streaming</string>
+    <string name="settings_hub_agent_blank">Brain, telemetry &amp; alerts</string>
+    <string name="settings_hub_companion_blank">The drawer mascot</string>
+    <string name="settings_hub_voice_dictation">Dictation</string>
+    <string name="settings_hub_voice_autospeak">Auto-speak</string>
+    <string name="settings_hub_voice_default">Spoken replies on tap</string>
+    <!-- %1$s = bubble style name (e.g. Gilded), %2$s = loading animation name (e.g. Constellation). -->
+    <string name="settings_hub_appearance">%1$s bubbles · %2$s</string>
+    <string name="settings_hub_lock_on">App lock on</string>
+    <string name="settings_hub_lock_off">App lock off</string>
+    <string name="settings_hub_sessions">Archived &amp; pruning</string>
+    <plurals name="settings_hub_archived">
+        <item quantity="one">%d archived</item>
+        <item quantity="other">%d archived</item>
+    </plurals>
+
+    <!-- Settings › Account. -->
+    <string name="settings_demo">Demo</string>
+    <string name="settings_demo_blurb">A pretend gateway on this phone. Nothing here leaves it.</string>
+    <string name="settings_demo_connect">Connect your gateway</string>
+    <string name="settings_no_gateway_set">No gateway set</string>
+    <string name="settings_no_homeserver_set">No homeserver set</string>
+    <string name="settings_sign_out">Sign out</string>
+    <!-- The transport that talks to the Hermes gateway directly (the other one is Matrix). -->
+    <string name="settings_door_direct">Direct to gateway</string>
+    <string name="settings_door_direct_blurb">No homeserver — straight to the hermes gateway.</string>
+    <!-- "herald" = the app's word for the agent that answers in a room. -->
+    <string name="settings_door_matrix_blurb">The herald\'s home — E2EE rooms over your homeserver.</string>
+    <string name="settings_switch_matrix_ready">Switching boots the Matrix door — a signed-in session resumes there.</string>
+    <string name="settings_switch_matrix_fresh">No Matrix session on file — you\'ll sign in after the switch.</string>
+    <string name="settings_switch_direct_ready">Gateway credentials are on file — switching connects with them.</string>
+    <string name="settings_switch_direct_fresh">No gateway credentials yet — you\'ll connect after the switch.</string>
+    <string name="settings_switch_to_matrix">Switch to Matrix</string>
+    <string name="settings_switch_to_direct">Switch to direct gateway</string>
+    <string name="settings_switch_to_matrix_q">Switch to Matrix?</string>
+    <string name="settings_switch_to_direct_q">Switch to the direct gateway?</string>
+    <string name="settings_switch_body">Keryx restarts on the other transport. Nothing is signed out — both sessions stay stored, and you can switch back the same way.</string>
+    <string name="settings_switch_restart">Switch &amp; restart</string>
+
+    <!-- Settings › Agent. "Brain" = the language model the agent runs on. -->
+    <string name="settings_card_brain">Brain</string>
+    <string name="settings_brain_model">Model</string>
+    <string name="settings_brain_reasoning">Reasoning</string>
+    <!-- Label: the gateway's current state (e.g. running). -->
+    <string name="settings_brain_state">State</string>
+    <string name="settings_brain_probing">Probing the gateway…</string>
+    <string name="settings_brain_console">Live console — controls, jobs, sessions, skills and tools live in the Gateway.</string>
+    <!-- Card title: how the agent makes itself seen and heard. -->
+    <string name="settings_card_presence">Presence</string>
+    <string name="settings_telemetry_sub">Automated check-ins and the runtime footer as quiet blocks. The self-improvement review always shows</string>
+    <string name="settings_alerts_sub">Notify when a mission on any of your gateways completes, blocks, or gives up — checked in the background every 15 minutes</string>
+    <string name="settings_resume_sub">Off: every cold start begins on the drawer</string>
+    <string name="settings_starters_sub">A new chat offers reminders and things to ask instead of a blank page</string>
+    <string name="settings_starters_ai">Written from your chats</string>
+    <string name="settings_starters_ai_sub">The gateway\'s title model drafts them from your recent topics and profile notes — one small model call per agent every few hours, billed if that model is a paid cloud one. Off: a generic set, no model calls</string>
+    <string name="settings_starters_reminders">Reminders</string>
+    <string name="settings_starters_reminders_sub">Missions waiting on you, unread replies, and a routine due soon</string>
+    <string name="settings_sticky_sub">Off: every new session starts on the gateway\'s default</string>
+
+    <!-- Settings › Companion (an animated mascot in the drawer). -->
+    <string name="settings_companion_lives">Lives in the drawer header — runs while the agent works</string>
+    <string name="settings_companion_none">No companion adopted yet — pick one from the gateway\'s petdex.</string>
+    <string name="settings_companion_change">Choose a different companion</string>
+    <string name="settings_companion_choose">Choose a companion</string>
+
+    <!-- Settings › Gateway / Connection. -->
+    <string name="settings_fleet_resume_on">A cold start opens where you left off</string>
+    <!-- "Primary" = the gateway marked primary in the list. -->
+    <string name="settings_fleet_resume_off">A cold start opens on Primary — the Desktop\'s default</string>
+    <string name="settings_insecure_gateways">Only for local / self-hosted gateways</string>
+    <string name="settings_insecure_servers">Only for local / self-hosted servers</string>
+    <string name="settings_heralds_help">Which senders get agent rendering. Separate several with commas to seat a council — the first one is your primary herald.</string>
+    <string name="settings_push_off">Off — notifications rely on the in-app sync staying alive</string>
+    <string name="settings_push_distributor">Via your UnifiedPush distributor</string>
+    <string name="settings_push_builtin">Built-in — Keryx holds its own connection to your push server</string>
+    <string name="settings_push_url">Push gateway URL</string>
+    <string name="settings_push_url_help">A Matrix push gateway — a self-hosted ntfy server works out of the box</string>
+    <string name="settings_push_need_url">Set the push gateway URL first (your ntfy server) — staying on in-app sync</string>
+    <string name="settings_push_builtin_active">Push active — Keryx holds its own connection, no distributor app needed</string>
+    <string name="settings_reauth_hide">Hide re-authenticate</string>
+    <string name="settings_username">Username</string>
+    <string name="settings_password">Password</string>
+    <string name="settings_login_need_creds">Enter username and password first.</string>
+    <string name="settings_login_authenticating">Authenticating…</string>
+    <string name="settings_login_ok">Success!</string>
+    <string name="settings_reauth_failed">Failed.</string>
+    <!-- Button: sign in. -->
+    <string name="settings_login">Login</string>
+    <string name="settings_link_direct_sub">The API server behind Missions, Runs, Shipyard and the Gateway space — chat itself streams over the direct connection</string>
+    <string name="settings_link_matrix_sub">Stream replies over the gateway side-channel (SSE); falls back to Matrix sync when unreachable</string>
+    <string name="settings_gateway_api_key">Gateway API key</string>
+    <string name="settings_test_link">Test link</string>
+
+    <!-- Settings › Voice. -->
+    <string name="settings_card_dictation">Voice Dictation</string>
+    <string name="settings_stt_blurb">Adds a mic to the composer: record, transcribe, and the text lands in the input field. Works with any OpenAI-compatible transcription endpoint — a self-hosted server on your own network, OpenAI, Groq…</string>
+    <string name="settings_stt_url">STT server URL</string>
+    <string name="settings_stt_url_help">Blank hides the mic. Bare host, /v1, or full /v1/audio/transcriptions path all work.</string>
+    <string name="settings_api_key_optional">API key (optional)</string>
+    <string name="settings_model_optional">Model (optional)</string>
+    <!-- %1$s = an example model id, e.g. whisper-1. -->
+    <string name="settings_model_hint">only if your provider requires one, e.g. %1$s</string>
+    <string name="settings_card_replies">Voice Replies</string>
+    <string name="settings_tts_blurb">Reads agent replies aloud — long-press a message and tap the speaker. Works out of the box with this device\'s voice; point it at any OpenAI-compatible speech endpoint (Kokoro, openedai-speech, LocalAI…) for a custom voice.</string>
+    <string name="settings_tts_autospeak">Auto-speak replies</string>
+    <string name="settings_tts_autospeak_sub">Speak each finished reply in the open chat — tap the message\'s speaker to stop</string>
+    <string name="settings_tts_url">TTS server URL (optional)</string>
+    <string name="settings_tts_url_help">Blank uses Android\'s built-in voice. Bare host, /v1, or full /v1/audio/speech path all work.</string>
+    <string name="settings_tts_voice">Voice (optional)</string>
+
+    <!-- Settings › Appearance. -->
+    <string name="settings_card_look">Look</string>
+    <!-- Theme choice: follow the phone's light/dark setting. -->
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_bubbles">Bubbles</string>
+    <string name="settings_text_small">Small</string>
+    <string name="settings_text_default">Default</string>
+    <string name="settings_text_large">Large</string>
+    <!-- A ready-made pair of accent colours. -->
+    <string name="settings_palette">Palette</string>
+    <string name="settings_accent">Accent</string>
+    <string name="settings_accent_2">Accent 2</string>
+    <string name="settings_accent_2_help">The gradient partner: bubbles, the working cloud, and borders blend Accent → Accent 2.</string>
+    <string name="settings_accent_preview">Accent → Accent 2</string>
+    <string name="settings_reset_default">Reset to Default</string>
+    <string name="settings_card_feel">Feel</string>
+    <!-- %1$s = a one-sentence description of the chosen room transition. -->
+    <string name="settings_transition_blurb">%1$s Reduced motion skips it.</string>
+    <string name="settings_transition_speed">Transition speed</string>
+
+    <!-- Settings › Privacy & Security. -->
+    <string name="settings_lock_sub">Require your fingerprint, face or screen lock to open Keryx</string>
+    <string name="settings_e2ee_sub">Enable Matrix E2EE session management</string>
+    <string name="settings_haptics_sub">A small tick when you press, send or switch. Off keeps Keryx still in the hand</string>
+
+    <!-- Settings › Sessions. -->
+    <string name="settings_card_archived">Archived</string>
+    <string name="settings_archived_none">Nothing archived. Long-press a session in the drawer to put it away — it stays on the gateway.</string>
+    <!-- Button: bring an archived session back. -->
+    <string name="settings_restore">Restore</string>
+    <string name="settings_card_pruning">Pruning</string>
+    <string name="settings_prune_blurb">Delete old, idle sessions from the gateway in one sweep — previewed before anything goes.</string>
+    <string name="settings_prune_button">Prune sessions…</string>
+
+    <!-- Settings › About. -->
+    <string name="settings_card_tour">Tour</string>
+    <string name="settings_tour_blurb">A look around Keryx. Quick covers what a first chat needs; full walks the drawer too and ends on your gateway.</string>
+    <string name="settings_tour_quick">Quick tour</string>
+    <string name="settings_tour_full">Full tour</string>
+    <!-- %1$s = a version number, e.g. 3.0. -->
+    <string name="settings_whats_new">What\'s new in %1$s</string>
+    <string name="settings_hints_again">Show the space hints again</string>
+    <string name="settings_hints_again_toast">Each space will explain itself again on your next visit.</string>
+    <string name="settings_card_diagnostics">Diagnostics</string>
+    <string name="settings_crash_none">No crashes recorded</string>
+    <!-- %1$d = size of the crash log in kilobytes. -->
+    <string name="settings_crash_size">Crash log: %1$d\u2009KB recorded</string>
+    <string name="settings_crash_note">Kept only on this device; share it when reporting a bug.</string>
+    <!-- Label in the version table: the app's own version. -->
+    <string name="settings_about_app">App</string>
+    <!-- Label in the version table: which transport (Matrix or direct) is in use. -->
+    <string name="settings_about_door">Door</string>
+    <string name="settings_copy_diagnostics">Copy diagnostics</string>
+    <string name="settings_diagnostics_copied">Diagnostics copied</string>
+
+    <!-- Settings › Connection: per-agent colours ("heralds" = the agents in a Matrix council). -->
+    <string name="settings_heralds">Heralds</string>
+    <string name="settings_heralds_blurb">Each life has its own color. Tap a herald to choose its light, or reset it to the one Keryx derived from its name.</string>
+    <string name="settings_herald_primary">Primary — wears your own accents</string>
+    <string name="settings_herald_custom">Your colour</string>
+    <string name="settings_herald_derived">Derived from the name</string>
+    <string name="settings_herald_reset">Reset to derived colour</string>
+    <string name="settings_brightness">Brightness</string>
+    <!-- Names of ready-made accent colour pairs. -->
+    <string name="settings_palette_ember">Ember</string>
+    <string name="settings_palette_gilded">Gilded</string>
+    <string name="settings_palette_nightshade">Nightshade</string>
+    <string name="settings_palette_tidewater">Tidewater</string>
+    <string name="settings_palette_rose">Rose</string>
+    <string name="settings_palette_moss">Moss</string>
+    <string name="settings_palette_frost">Frost</string>
+    <string name="settings_palette_crimson">Crimson</string>
+    <!-- Shown when the two accents match no ready-made palette. -->
+    <string name="settings_palette_own">Your own pair</string>
+
+    <!-- Settings › Appearance: a tiny sample conversation drawn in each bubble style (agent, you, agent). -->
+    <string name="settings_preview_bubble_1">All planned.</string>
+    <string name="settings_preview_bubble_2">Sounds good!</string>
+    <string name="settings_preview_bubble_3">On it.</string>
+
+    <!-- Gateway › Update: updating the Hermes agent on the gateway host. -->
+    <!-- %1$s = Hermes version number. -->
+    <string name="settings_update_hermes_version">Hermes %1$s</string>
+    <string name="settings_update_version_unknown">(version unknown)</string>
+    <!-- %1$s = a git commit id. -->
+    <string name="settings_update_at_head">at %1$s</string>
+    <!-- %1$s = a git commit id, %2$s = a git branch name. -->
+    <string name="settings_update_at_head_branch">at %1$s on %2$s</string>
+    <plurals name="settings_update_ahead">
+        <item quantity="one">%d local commit ahead</item>
+        <item quantity="other">%d local commits ahead</item>
+    </plurals>
+    <!-- %1$s = how Hermes was installed (e.g. git, pip). -->
+    <string name="settings_update_installed_via">installed via %1$s</string>
+    <string name="settings_update_local_refs">Counted against the host\'s own copy of upstream</string>
+    <!-- %1$s = how long ago, e.g. "3 min ago". -->
+    <string name="settings_update_local_refs_fetched">Counted against the host\'s own copy of upstream, fetched %1$s</string>
+    <string name="settings_update_count_unknown">Hermes sees a newer version but couldn\'t count the commits to it.</string>
+    <!-- %1$s = how long ago, e.g. "3 min ago". -->
+    <string name="settings_update_checked_ago">Checked %1$s</string>
+    <string name="settings_update_fetch_failed">Last fetch failed: %1$s</string>
+    <string name="settings_update_checking">Checking…</string>
+    <string name="settings_update_check">Check for updates</string>
+    <string name="settings_update_what_changes">What would change</string>
+    <plurals name="settings_update_more">
+        <item quantity="one">and %d more</item>
+        <item quantity="other">and %d more</item>
+    </plurals>
+    <string name="settings_update_now">Update now…</string>
+    <!-- %1$s = a shell command; keep the backticks. -->
+    <string name="settings_update_runs_cmd">Runs `%1$s` on the gateway host.</string>
+    <string name="settings_update_no_receipts">No update has run since this Hermes started keeping receipts.</string>
+    <string name="settings_update_last">Last update</string>
+    <!-- %1$s = a shell command; keep the backticks. -->
+    <string name="settings_update_confirm_cmd">Keryx asks the gateway to run `%1$s`.</string>
+    <string name="settings_update_confirm_warn">This restarts the agent\'s gateway. A turn in progress is cut off, and Keryx loses its connection for a minute or two while Hermes reinstalls and comes back.</string>
+    <plurals name="settings_update_will_land">
+        <item quantity="one">%d commit will land.</item>
+        <item quantity="other">%d commits will land.</item>
+    </plurals>
+    <string name="settings_update_and_restart">Update and restart</string>
+    <string name="settings_update_not_now">Not now</string>
+    <string name="settings_update_updates">Updates</string>
+    <string name="settings_update_managed_outside">This install\'s updates are managed outside Hermes.</string>
+    <!-- Update channel: tested releases only. -->
+    <string name="settings_update_stable">Stable</string>
+    <!-- Update channel: every new change as it lands. -->
+    <string name="settings_update_edge">Edge</string>
+    <!-- Accessibility action; %1$s = channel name (Stable or Edge). -->
+    <string name="settings_update_follow">Follow %1$s updates</string>
+    <string name="settings_update_switching">Switching…</string>
+    <string name="settings_update_last_release">the last release</string>
+    <string name="settings_update_to_stable">Switch to stable releases</string>
+    <!-- %1$s = a release like "v0.9.1", or "the last release". -->
+    <string name="settings_update_newer_than">This build is newer than stable %1$s.</string>
+    <string name="settings_update_stay">Stay on this build until the next stable release</string>
+    <string name="settings_update_stay_sub">Recommended. Nothing changes now; the next release updates you.</string>
+    <!-- %1$s = a release like "v0.9.1", or "the last release". -->
+    <string name="settings_update_go_back">Go back to %1$s now</string>
+    <string name="settings_update_go_back_sub">The Update button then moves Hermes back to that release and restarts it.</string>
+    <string name="settings_update_restarting_title">The gateway is restarting</string>
+    <!-- %1$s = a shell command; keep the backticks. -->
+    <string name="settings_update_updating_with">Updating with `%1$s`…</string>
+    <string name="settings_update_restarting_sub">That is the update at work. Keryx asks again every few seconds.</string>
+    <!-- %1$s = how long ago, e.g. "3 min ago". -->
+    <string name="settings_update_started">Started %1$s.</string>
+    <string name="settings_update_done">Done</string>
+    <string name="settings_update_silent">No word after 20 minutes</string>
+    <string name="settings_update_silent_sub">The update may still be running, or it stopped without writing a receipt. The host\'s own log has the answer (~/.hermes/logs/update.log, or keryx-update.log for the operator\'s command).</string>
+    <string name="settings_update_dismiss">Dismiss</string>
+    <string name="settings_update_no_record">Ended without a record</string>
+    <!-- %1$s = the name of an update step that did not run. -->
+    <string name="settings_update_skipped">skipped %1$s</string>
+    <!-- The three stages of an update, shown as a progress row. -->
+    <string name="settings_update_stage_installing">Installing</string>
+    <string name="settings_update_stage_restarting">Restarting</string>
+    <string name="settings_update_stage_back">Coming back</string>
+    <string name="settings_update_updated">Updated</string>
+    <string name="settings_update_sub_restarting">Restarting…</string>
+    <string name="settings_update_sub_updating">Updating…</string>
+    <string name="settings_update_sub_unknown">Is Hermes current?</string>
+    <string name="settings_update_sub_behind_unknown">behind, count unknown</string>
+    <string name="settings_update_sub_current">up to date</string>
+    <!-- Number of commits this Hermes is behind the latest. -->
+    <plurals name="settings_update_sub_behind">
+        <item quantity="one">%d behind</item>
+        <item quantity="other">%d behind</item>
+    </plurals>
+
+    <!-- Gateway › Controls: remote settings for the agent's gateway. -->
+    <!-- %1$s = the name of a model setup to switch to. -->
+    <string name="settings_controls_swap_title">Swap to \"%1$s\"?</string>
+    <string name="settings_controls_swap_body">The gateway runs the operator\'s swap command — the brain (and possibly the gateway itself) restarts. Chats pause until the new brain is up.</string>
+    <!-- Button: switch to the other brain (model). -->
+    <string name="settings_controls_swap">Swap</string>
+    <string name="settings_controls_reasoning_binary">This brain\'s thinking is an on/off switch.</string>
+    <string name="settings_controls_reasoning_levels">How hard the brain thinks before answering.</string>
+    <string name="settings_controls_applies_next_session">applies next session</string>
+    <!-- Label: the brain (model) in use right now. -->
+    <string name="settings_controls_brain_active">Active</string>
+    <!-- %1$s = what the user searched for. -->
+    <string name="settings_controls_no_match">Nothing matches \"%1$s\".</string>
+    <string name="settings_controls_none">This gateway doesn\'t offer remote controls (keryx-stream plugin 1.21+).</string>
+    <string name="settings_controls_gateway_log">Gateway log</string>
+    <!-- %1$s = a file name (config.yaml). -->
+    <string name="settings_controls_edit_config">Edit %1$s</string>
+    <string name="settings_controls_edit_config_sub">Everything above, plus every setting no knob covers. Backed up before each save.</string>
+    <string name="settings_controls_gateway_settings">Gateway settings</string>
+    <string name="settings_controls_collapse_all">Collapse all</string>
+    <string name="settings_controls_expand_all">Expand all</string>
+    <!-- A setting that cannot be changed from the phone. -->
+    <string name="settings_controls_locked">locked</string>
+    <!-- Choice chip: the setting has no value (the gateway decides). -->
+    <string name="settings_controls_unset">unset</string>
+    <string name="settings_controls_save">Save</string>
+    <string name="settings_controls_fetching">Fetching…</string>
+    <!-- One line under each group of gateway settings. The group names themselves come from the gateway. -->
+    <string name="settings_controls_blurb_behavior">What a message does mid-task, and how long a turn may run.</string>
+    <string name="settings_controls_blurb_display">What the chat shows: reasoning, progress, footers, timestamps.</string>
+    <string name="settings_controls_blurb_missions">The dispatcher\'s cadence, limits and default hands.</string>
+    <string name="settings_controls_blurb_compression">When context compacts and how much it protects.</string>
+    <string name="settings_controls_blurb_agent">Turn timeouts, retries and the guidance the agent is given.</string>
+    <string name="settings_controls_blurb_memory">What the agent remembers between turns and sessions.</string>
+    <string name="settings_controls_blurb_skills">How skills are found, loaded and kept.</string>
+    <string name="settings_controls_blurb_tools">Output caps and loop guards on tool calls.</string>
+    <string name="settings_controls_blurb_terminal">The shell the agent runs commands in.</string>
+    <string name="settings_controls_blurb_browser">The browser the agent drives, and its patience.</string>
+    <string name="settings_controls_blurb_delegation">Subagents: how many, how deep, how long.</string>
+    <string name="settings_controls_blurb_voice">Speech in and out.</string>
+    <string name="settings_controls_blurb_safety">Approvals, confirmations and hard stops.</string>
+    <string name="settings_controls_blurb_gateway">The gateway process itself.</string>
+
+    <!-- Sign-in / first-run screen. -->
+    <string name="settings_login_look_around_link">No gateway yet? Look around first</string>
+    <string name="settings_login_tagline">Your Hermes agent, in your pocket.</string>
+    <string name="settings_login_connecting">Connecting…</string>
+    <string name="settings_login_direct_title">Connect straight to your gateway</string>
+    <string name="settings_login_matrix_title">Connect to your homeserver</string>
+    <string name="settings_login_pitch_watch">Give your agent a job and watch every step it takes.</string>
+    <string name="settings_login_pitch_notify">Know the moment it\'s done, right from your lock screen.</string>
+    <string name="settings_login_pitch_missions">Hand off long jobs as missions and come back to results.</string>
+    <!-- Button: try the built-in demo instead of connecting. -->
+    <string name="settings_login_look_around">Look around first</string>
+    <string name="settings_login_demo_blurb">A demo with a short tour. Nothing leaves your phone.</string>
+    <!-- Field label: a name for this gateway. -->
+    <string name="settings_login_name">Name</string>
+    <!-- Example gateway name in an empty field. -->
+    <string name="settings_login_name_hint">Homelab</string>
+    <string name="settings_login_api_key">API key — ungated gateways only</string>
+    <string name="settings_login_hide_key">Hide key</string>
+    <string name="settings_login_show_key">Show key</string>
+    <string name="settings_login_failed">Login failed</string>
+    <!-- Button: sign in and connect. -->
+    <string name="settings_login_connect">Connect</string>
+    <string name="settings_login_direct_mode_note">Keryx is currently in direct-gateway mode. Switching to Matrix restarts the app.</string>
+    <!-- Example username in an empty field. -->
+    <string name="settings_login_username_hint">you</string>
+    <string name="settings_login_hide_password">Hide password</string>
+    <string name="settings_login_show_password">Show password</string>
+    <string name="settings_login_advanced">Advanced</string>
+    <string name="settings_login_hide_advanced">Hide advanced</string>
+    <string name="settings_login_agent_id">Hermes agent Matrix ID (optional)</string>
+
+    <!-- Model picker sheet. -->
+    <string name="settings_model_search_hint">Find a model, a lab, a provider…</string>
+    <string name="settings_model_reading_catalog">Reading the catalog…</string>
+    <!-- %1$s = what the user searched for. -->
+    <string name="settings_model_no_match">Nothing answers to “%1$s”</string>
+    <string name="settings_model_no_routes">No routes from the gateway</string>
+    <!-- Section: local model setups the operator can switch between. "Spire" is a tool name; keep it. -->
+    <string name="settings_model_machines">Machines</string>
+    <string name="settings_model_machines_blurb">the brains the Spire can swap in</string>
+    <!-- Where a model runs. -->
+    <string name="settings_model_kind_local">this machine</string>
+    <string name="settings_model_kind_cloud">cloud</string>
+    <!-- A provider that resells many labs' models. -->
+    <string name="settings_model_kind_aggregator">aggregator</string>
+    <string name="settings_model_kind_virtual">virtual</string>
+    <!-- Label over the model in use right now (shown upper-cased). -->
+    <string name="settings_model_now">Now</string>
+    <string name="settings_model_none">no model</string>
+    <string name="settings_model_reading_catalog_cd">Reading the catalog</string>
+    <string name="settings_model_reread_catalog">Re-read the catalog</string>
+    <string name="settings_model_scope_every">Every session</string>
+    <string name="settings_model_scope_this">This session only</string>
+    <string name="settings_model_scope_every_sub">Becomes the gateway\'s default — every client and scheduled run follows it</string>
+    <string name="settings_model_scope_this_sub">This chat — and this phone\'s new chats while “last model picked” is on in Settings</string>
+    <string name="settings_model_featured">Featured</string>
+    <!-- The model in use now. -->
+    <string name="settings_model_current">Current</string>
+    <!-- Short tags under a model's name. -->
+    <string name="settings_model_tag_fast">fast</string>
+    <!-- The model reasons before answering. -->
+    <string name="settings_model_tag_thinks">thinks</string>
+    <string name="settings_model_tag_always_thinks">always thinks</string>
+    <!-- Price: costs nothing. -->
+    <string name="settings_model_tag_free">free</string>
+    <string name="settings_model_tag_paid">paid tier</string>
+    <plurals name="settings_model_more">
+        <item quantity="one">%d more</item>
+        <item quantity="other">%d more</item>
+    </plurals>
+    <!-- This machine is the one serving the model now. -->
+    <string name="settings_model_serving">Serving</string>
+
+    <!-- Pairing a gateway by QR code. -->
+    <string name="settings_pair_no_code_in_image">No pairing code found in that image.</string>
+    <string name="settings_pair_camera_failed">The camera wouldn\'t start. Close this and type the address instead.</string>
+    <string name="settings_pair_scan">Scan a pairing code</string>
+    <!-- %1$s = a command typed on the gateway (hermes keryx pair); keep it as is. -->
+    <string name="settings_pair_camera_hint">On your gateway, run %1$s, then point the camera at the code it shows.</string>
+    <!-- Flashlight. -->
+    <string name="settings_pair_light_on">Light on</string>
+    <string name="settings_pair_light_off">Light off</string>
+    <string name="settings_pair_use_screenshot">Use a screenshot</string>
+    <string name="settings_pair_camera_why">Keryx needs the camera to read the code. It only looks while this screen is open, and keeps nothing it sees.</string>
+    <string name="settings_pair_allow_camera">Allow the camera</string>
+    <string name="settings_pair_use_screenshot_code">Use a screenshot of the code</string>
+    <string name="settings_pair_type_instead">Type the address instead</string>
+    <!-- %1$s = a command typed on the gateway (hermes keryx pair); keep it as is. -->
+    <string name="settings_pair_from_command">From %1$s on your gateway, or type it in below.</string>
+    <!-- %1$s = the gateway's name. -->
+    <string name="settings_pair_pairing_with">Pairing with %1$s</string>
+    <string name="settings_pair_unencrypted">Not encrypted: this is plain http to an internet address. Pair over your home network or Tailscale instead if you can.</string>
+    <string name="settings_pair_sign_in_next">If your gateway has a sign-in page, it opens next. This phone then gets a Link token of its own; the gateway\'s key never leaves it.</string>
+
+    <!-- Settings › Privacy › Senses: phone context the agent may receive with your messages. -->
+    <string name="settings_senses_battery">Battery</string>
+    <string name="settings_senses_battery_sub">Charge level and whether you\'re plugged in</string>
+    <string name="settings_senses_time">Local time</string>
+    <string name="settings_senses_time_sub">The clock and time zone you\'re actually standing in</string>
+    <!-- Rough location (town level). -->
+    <string name="settings_senses_place">Coarse place</string>
+    <string name="settings_senses_place_sub">Town-level only, rounded to about a kilometre</string>
+    <!-- %1$s = when, e.g. "5m ago" or "Never". -->
+    <string name="settings_senses_last_sent">Last sent: %1$s</string>
+    <string name="settings_senses_send_next">Send with my next message</string>
+    <string name="settings_senses_note">Rides inside your own messages, end-to-end encrypted. Nothing leaves the phone until you send.</string>
+
+    <!-- Tap-In: a live view of the agent's running turn. -->
+    <string name="settings_tapin_title">Tap-In</string>
+    <string name="settings_tapin_just_started">just started</string>
+    <string name="settings_tapin_nothing_yet">nothing to show yet</string>
+    <!-- Section: the list of tool calls the turn made, in order. -->
+    <string name="settings_tapin_rail">Rail</string>
+    <string name="settings_tapin_empty_running">The turn has not shown anything yet — the first tool or thought lands here.</string>
+    <string name="settings_tapin_empty_done">Nothing was watched on this turn.</string>
+    <string name="settings_tapin_steer_hint">Type to steer this turn · hold to queue</string>
+    <!-- Section: the helper agents (subagents) this turn sent out. -->
+    <string name="settings_tapin_crew">Crew</string>
+    <!-- %1$d helpers finished out of %2$d. -->
+    <string name="settings_tapin_crew_landed">%1$d of %2$d landed</string>
+    <plurals name="settings_tapin_tools">
+        <item quantity="one">%d tool</item>
+        <item quantity="other">%d tools</item>
+    </plurals>
+    <!-- %1$s = a token count like 12k ("tok" = tokens). -->
+    <string name="settings_tapin_tokens">%1$s tok</string>
+    <plurals name="settings_tapin_files_written">
+        <item quantity="one">%d written</item>
+        <item quantity="other">%d written</item>
+    </plurals>
+    <string name="settings_tapin_interrupted">interrupted</string>
+    <string name="settings_tapin_spawning">spawning…</string>
+    <string name="settings_tapin_working">working…</string>
+    <!-- Section: what the agent is saying (its answer so far). -->
+    <string name="settings_tapin_saying">Saying</string>
+    <!-- Section: the agent's latest reasoning. -->
+    <string name="settings_tapin_mind">Mind</string>
+    <!-- Under a token count: %1$s = the context window size, e.g. "of 128k". -->
+    <string name="settings_tapin_of_max">of %1$s</string>
+    <!-- Word shown under a number of tool calls (the number is shown separately). -->
+    <plurals name="settings_tapin_tools_unit">
+        <item quantity="one">tool</item>
+        <item quantity="other">tools</item>
+    </plurals>
+    <!-- Word under a count of failed tool calls. -->
+    <string name="settings_tapin_failed_unit">failed</string>
+    <!-- Word under "landed/total" helper counts. -->
+    <string name="settings_tapin_crew_unit">crew</string>
+    <!-- Button: send the typed text to the running turn to redirect it. -->
+    <string name="settings_tapin_steer">Steer</string>
+    <string name="settings_tapin_stop">Stop</string>
+    <string name="settings_tapin_type_to_steer">Type to steer</string>
+</resources>

@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import chat.keryx.app.transport.direct.GatewayRest
 import chat.keryx.app.transport.direct.memoryDelete
 import chat.keryx.app.transport.direct.memoryEdit
@@ -54,7 +56,7 @@ class MemoryDelegate(
         // No client yet is the door still dialing (or Matrix, where the spoke never shows) —
         // not an answer about the routes, so it never hides the spoke.
         val r = rest() ?: run {
-            _book.value = _book.value.copy(error = "The gateway door isn't open yet — try Refresh in a moment.", refreshing = false)
+            _book.value = _book.value.copy(error = KeryxText.get(R.string.agent_mem_door_not_open), refreshing = false)
             return
         }
         if (inFlight?.isActive == true) return
@@ -91,11 +93,11 @@ class MemoryDelegate(
 
     /** The entry's whole text — past the card's 1,200-char clip, and the edit's prefill. */
     suspend fun entryText(id: String): Result<String> {
-        val r = rest() ?: return Result.failure(IllegalStateException("The gateway door is closed."))
+        val r = rest() ?: return Result.failure(IllegalStateException(KeryxText.get(R.string.agent_mem_door_closed)))
         return when (val got = r.memoryEntryText(id)) {
             is Routed.Ok -> Result.success(got.value)
             is Routed.Failed -> Result.failure(IllegalStateException(got.message))
-            Routed.Missing -> Result.failure(IllegalStateException("This gateway can't open one entry."))
+            Routed.Missing -> Result.failure(IllegalStateException(KeryxText.get(R.string.agent_mem_cant_open_entry)))
         }
     }
 
@@ -105,12 +107,12 @@ class MemoryDelegate(
      * success re-reads the list, because the entry's id is a digest of its text and just changed.
      */
     fun save(id: String, content: String, onDone: (Boolean, String) -> Unit) =
-        mutate(onDone, after = "Saved. Sessions already running keep the copy they started with.") {
+        mutate(onDone, after = KeryxText.get(R.string.agent_mem_saved)) {
             it.memoryEdit(id, content.trim())
         }
 
     fun delete(id: String, onDone: (Boolean, String) -> Unit) =
-        mutate(onDone, after = "Forgotten. Sessions already running keep the copy they started with.") {
+        mutate(onDone, after = KeryxText.get(R.string.agent_mem_forgotten)) {
             it.memoryDelete(id)
         }
 
@@ -119,7 +121,7 @@ class MemoryDelegate(
         after: String,
         call: suspend (GatewayRest) -> Routed<String>,
     ) {
-        val r = rest() ?: run { onDone(false, "The gateway door is closed."); return }
+        val r = rest() ?: run { onDone(false, KeryxText.get(R.string.agent_mem_door_closed)); return }
         scope.launch {
             when (val res = call(r)) {
                 is Routed.Ok -> {
@@ -128,7 +130,8 @@ class MemoryDelegate(
                     refresh()
                 }
                 is Routed.Failed -> onDone(false, res.message)
-                Routed.Missing -> onDone(false, "This gateway can't change memory from here.")
+                Routed.Missing -> onDone(false, KeryxText.get(R.string.agent_mem_cant_change))
+
             }
         }
     }

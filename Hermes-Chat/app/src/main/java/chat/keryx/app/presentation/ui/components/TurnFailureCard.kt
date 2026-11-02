@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -70,7 +72,7 @@ internal fun TurnFailureCard(
                 .padding(horizontal = 14.dp, vertical = 12.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(KeryxGlyphs.Warning, contentDescription = "Failed", tint = bad, modifier = Modifier.width(18.dp))
+                Icon(KeryxGlyphs.Warning, contentDescription = stringResource(R.string.chat_tool_failed), tint = bad, modifier = Modifier.width(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(
                     failure.title,
@@ -100,10 +102,10 @@ internal fun TurnFailureCard(
             Spacer(Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 if (failure.retryable) TextButton(onClick = { viewModel.retryLastTurn() }) {
-                    Text("Retry", fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.chat_action_retry), fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold)
                 }
                 if (viewModel.transportIsDirect) TextButton(onClick = { logOpen = true }) {
-                    Text("Gateway log", fontSize = KeryxType.caption)
+                    Text(stringResource(R.string.chat_gateway_log), fontSize = KeryxType.caption)
                 }
                 TextButton(onClick = {
                     val details = buildString {
@@ -115,9 +117,9 @@ internal fun TurnFailureCard(
                     }.trim()
                     context.getSystemService(android.content.ClipboardManager::class.java)
                         ?.setPrimaryClip(android.content.ClipData.newPlainText("Keryx failure", details))
-                    snack.show("Details copied")
+                    snack.show(context.getString(R.string.chat_details_copied))
                 }) {
-                    Text("Copy details", fontSize = KeryxType.caption)
+                    Text(stringResource(R.string.chat_copy_details), fontSize = KeryxType.caption)
                 }
             }
         }

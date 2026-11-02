@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import chat.keryx.core.model.BotChatRef
 import chat.keryx.core.model.BotProfile
 import chat.keryx.core.model.BotRoster
@@ -138,7 +140,7 @@ class BotsDelegate(
                     }
                     .onFailure { e ->
                         _roster.value = _roster.value.copy(
-                            error = e.message?.take(120) ?: "roster unavailable", refreshing = false,
+                            error = e.message?.take(120) ?: KeryxText.get(R.string.agent_roster_unavailable), refreshing = false,
                         )
                     }
             }
@@ -227,7 +229,7 @@ class BotsDelegate(
                     openSession(ref.openId, bot.label)
                 }
                 .onFailure { e ->
-                    deps.toast("Couldn't open ${bot.label}: ${e.message?.take(100) ?: "try again"}")
+                    deps.toast(KeryxText.get(R.string.agent_bot_open_failed, bot.label, e.message?.take(100) ?: KeryxText.get(R.string.agent_try_again)))
                 }
         }
     }
@@ -253,13 +255,13 @@ class BotsDelegate(
                     }
                     open(cleared)
                 }
-                .onFailure { e -> deps.toast("Couldn't retire ${bot.label}'s chat: ${e.message?.take(100) ?: "try again"}") }
+                .onFailure { e -> deps.toast(KeryxText.get(R.string.agent_bot_retire_failed, bot.label, e.message?.take(100) ?: KeryxText.get(R.string.agent_try_again))) }
         }
     }
 
     /** [bot]'s side sessions and retired Bot Chats, for its Sessions sheet. */
     suspend fun sessions(bot: BotProfile): Result<chat.keryx.core.model.BotSessions> =
-        gateway?.botSessions(bot) ?: Result.failure(IllegalStateException("not connected to a gateway"))
+        gateway?.botSessions(bot) ?: Result.failure(IllegalStateException(KeryxText.get(R.string.agent_not_connected)))
 
     /** Open one of [bot]'s other sessions on the floor, in the bot's own store. */
     fun openSessionOf(bot: BotProfile, room: chat.keryx.core.model.RoomProfile) {
@@ -307,12 +309,12 @@ class BotsDelegate(
      * profile Bot-Mode-managed, which is the gateway's gate for `message_agent`.
      */
     fun configure(bot: BotProfile, title: String? = null, description: String? = null, hidden: Boolean? = null, onDone: (String?) -> Unit = {}) {
-        val gw = gateway ?: return onDone("not on the direct door")
+        val gw = gateway ?: return onDone(KeryxText.get(R.string.agent_not_direct))
         scope.launch {
             val meta = BotsJson.metaPatch(bot.meta, title, hidden, System.currentTimeMillis())
             gw.configureBot(bot.name, meta, description?.trim())
                 .onSuccess { refresh(force = true); onDone(null) }
-                .onFailure { onDone(it.message?.take(120) ?: "couldn't save") }
+                .onFailure { onDone(it.message?.take(120) ?: KeryxText.get(R.string.agent_couldnt_save)) }
         }
     }
 
@@ -322,13 +324,13 @@ class BotsDelegate(
      * reads before injecting `message_agent` into canonical Bot Chats.
      */
     fun enableMessaging(onDone: (String?) -> Unit = {}) {
-        val gw = gateway ?: return onDone("not on the direct door")
+        val gw = gateway ?: return onDone(KeryxText.get(R.string.agent_not_direct))
         val bots = _roster.value.data?.bots?.filter { !it.managed } ?: return onDone(null)
         scope.launch {
             var failed: String? = null
             for (bot in bots) {
                 val meta = BotsJson.metaPatch(bot.meta, bot.label, null, System.currentTimeMillis())
-                gw.configureBot(bot.name, meta, null).onFailure { failed = "${bot.label}: ${it.message?.take(80)}" }
+                gw.configureBot(bot.name, meta, null).onFailure { failed = KeryxText.get(R.string.agent_bot_error, bot.label, it.message?.take(80).toString()) }
             }
             refresh(force = true)
             onDone(failed)
@@ -340,12 +342,13 @@ class BotsDelegate(
      * with the kickoff so it introduces itself as the first message.
      */
     fun create(name: String, title: String, description: String, cloneFrom: String?, onDone: (String?) -> Unit) {
-        val gw = gateway ?: return onDone("not on the direct door")
+        val gw = gateway ?: return onDone(KeryxText.get(R.string.agent_not_direct))
         val slug = name.trim().lowercase()
-        if (!BotRoster.validName(slug)) return onDone("Name must be a slug: lowercase letters, digits, - or _")
+        if (!BotRoster.validName(slug)) return onDone(KeryxText.get(R.string.agent_bot_name_slug))
         scope.launch {
             gw.createBot(slug, description.trim().ifBlank { null }, cloneFrom)
-                .onFailure { onDone(it.message?.take(140) ?: "couldn't create the profile"); return@launch }
+                .onFailure { onDone(it.message?.take(140) ?: KeryxText.get(R.string.agent_bot_create_failed)); return@launch }
+
             val meta = BotsJson.metaPatch(null, title.trim().ifBlank { null }, null, System.currentTimeMillis())
             gw.configureBot(slug, meta, null).onFailure {
                 android.util.Log.w("KeryxBots", "new bot $slug: meta write failed: ${it.message}")

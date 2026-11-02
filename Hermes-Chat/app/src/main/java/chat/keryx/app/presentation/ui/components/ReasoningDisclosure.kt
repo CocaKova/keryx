@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import chat.keryx.app.theme.quietInk
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
@@ -77,11 +79,12 @@ fun ReasoningDisclosure(
     var userOpen by rememberSaveable(stateKey) { mutableStateOf<Boolean?>(null) }
     val open = userOpen ?: streaming
 
+    val foldState = if (open) stringResource(R.string.chat_state_open) else stringResource(R.string.chat_state_folded)
     val label = when {
-        streaming -> "Thinking…"
-        seconds == null -> "Thought"
-        seconds < 1 -> "Thought briefly"
-        else -> "Thought for ${formatThought(seconds)}"
+        streaming -> stringResource(R.string.chat_thinking)
+        seconds == null -> stringResource(R.string.chat_thought)
+        seconds < 1 -> stringResource(R.string.chat_thought_briefly)
+        else -> stringResource(R.string.chat_thought_for, formatThought(seconds))
     }
 
     // The dot breathes while thinking — motion that carries information keeps moving; under
@@ -113,8 +116,8 @@ fun ReasoningDisclosure(
                 // must not pull the list away from the tail it is following.
                 .keepInViewWhenOpened(userOpen == true && !streaming)
                 .clip(RoundedCornerShape(KeryxRadius.chip))
-                .clickable(onClickLabel = if (open) "Hide the reasoning" else "Show the reasoning") { userOpen = !open }
-                .semantics { stateDescription = if (open) "Open" else "Folded" }
+                .clickable(onClickLabel = if (open) stringResource(R.string.chat_reasoning_hide_a11y) else stringResource(R.string.chat_reasoning_show_a11y)) { userOpen = !open }
+                .semantics { stateDescription = foldState }
                 .padding(horizontal = 2.dp, vertical = 4.dp),
         ) {
             Box(
@@ -133,7 +136,7 @@ fun ReasoningDisclosure(
             if (streaming && seconds != null && seconds >= 1) {
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    "${seconds}s",
+                    stringResource(R.string.chat_duration_seconds, seconds),
                     fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     color = quietInk(alpha = 0.5f),
@@ -227,7 +230,7 @@ fun ReasoningDisclosure(
                         Text("\u25be", fontSize = KeryxType.micro, color = accent.copy(alpha = 0.9f))
                         Spacer(Modifier.width(5.dp))
                         Text(
-                            "newest",
+                            stringResource(R.string.chat_newest),
                             fontSize = KeryxType.micro,
                             fontWeight = FontWeight.Medium,
                             color = accent.copy(alpha = 0.9f),
@@ -240,5 +243,7 @@ fun ReasoningDisclosure(
 }
 
 /** 12s · 1m 5s — whole seconds, minutes past 60. */
+@Composable
 internal fun formatThought(seconds: Int): String =
-    if (seconds < 60) "${seconds}s" else "${seconds / 60}m ${seconds % 60}s"
+    if (seconds < 60) stringResource(R.string.chat_duration_seconds, seconds)
+    else stringResource(R.string.chat_duration_min_sec, seconds / 60, seconds % 60)

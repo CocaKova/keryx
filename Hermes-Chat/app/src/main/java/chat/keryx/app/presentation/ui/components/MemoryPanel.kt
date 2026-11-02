@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -101,11 +104,10 @@ private fun MemoryShelves(
                 val provider = st.activeProvider
                 Text(
                     when {
-                        st.active.isBlank() -> "Built-in memory: the two files below are all the agent keeps."
+                        st.active.isBlank() -> stringResource(R.string.agent_mem_builtin)
                         provider == null || provider.status == "missing" ->
-                            "Configured provider “${st.active}” isn't installed — the agent is on the built-in files below."
-                        else -> "Provider: ${st.active} (${provider.status.replace('_', ' ')}). Its own store lives " +
-                            "there; these are the built-in files the agent also writes."
+                            stringResource(R.string.agent_mem_provider_missing, st.active)
+                        else -> stringResource(R.string.agent_mem_provider, st.active, provider.status.replace('_', ' '))
                     },
                     fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -115,7 +117,7 @@ private fun MemoryShelves(
         if (entries == null) {
             item(key = "no-entries") {
                 Text(
-                    "This gateway reports its memory files but can't list their entries — a newer Hermes can.",
+                    stringResource(R.string.agent_mem_no_entries),
                     fontSize = KeryxType.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 12.dp),
@@ -128,7 +130,7 @@ private fun MemoryShelves(
                 value = query,
                 onValueChange = onQuery,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search ${entries.size} memories…", fontSize = KeryxType.caption) },
+                placeholder = { Text(pluralStringResource(R.plurals.agent_mem_search, entries.size, entries.size), fontSize = KeryxType.caption) },
                 textStyle = TextStyle(fontSize = KeryxType.body),
                 singleLine = true,
             )
@@ -136,7 +138,7 @@ private fun MemoryShelves(
         if (entries.isEmpty()) {
             item(key = "empty") {
                 Text(
-                    "Nothing remembered yet. The agent writes here with its memory tool, and you can ask it to.",
+                    stringResource(R.string.agent_mem_empty),
                     fontSize = KeryxType.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 12.dp),
@@ -147,7 +149,7 @@ private fun MemoryShelves(
         if (shown.isEmpty()) {
             item(key = "no-match") {
                 Text(
-                    "Nothing matches “${query.trim()}”.",
+                    stringResource(R.string.agent_mem_no_match, query.trim()),
                     fontSize = KeryxType.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 12.dp),
@@ -163,7 +165,7 @@ private fun MemoryShelves(
                     MemorySource.NOTES -> book.status?.notesBytes
                 }
                 SectionLabel(
-                    (if (source == MemorySource.PROFILE) "About you" else "The agent's notes") +
+                    (if (source == MemorySource.PROFILE) stringResource(R.string.agent_mem_about_you) else stringResource(R.string.agent_mem_agent_notes)) +
                         " · " + source.fileName +
                         (bytes?.let { " · " + MemorySearch.humanBytes(it) } ?: ""),
                 )
@@ -171,7 +173,7 @@ private fun MemoryShelves(
             items(rows, key = { it.id }) { e ->
                 KeryxCard(onClick = { onOpen(e) }) {
                     Text(
-                        e.title.ifBlank { "(untitled)" },
+                        e.title.ifBlank { stringResource(R.string.agent_mem_untitled) },
                         fontSize = KeryxType.body,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 2,
@@ -212,10 +214,12 @@ private fun MemoryEntryPage(
     LaunchedEffect(entry.id) {
         if (entry.maybeClipped) viewModel.memory.entryText(entry.id).onSuccess { full = it }
     }
+    // Hoisted: the failure lands in a coroutine, where stringResource can't be called.
+    val openFailedText = stringResource(R.string.agent_mem_open_failed)
 
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            TextButton(onClick = { if (!busy) onBack() }) { Text("← All memories", fontSize = KeryxType.caption) }
+            TextButton(onClick = { if (!busy) onBack() }) { Text(stringResource(R.string.agent_mem_all), fontSize = KeryxType.caption) }
             Spacer(Modifier.weight(1f))
             if (!editing) {
                 TextButton(enabled = !busy, onClick = {
@@ -226,16 +230,16 @@ private fun MemoryEntryPage(
                     scope.launch {
                         viewModel.memory.entryText(entry.id)
                             .onSuccess { draft = it; full = it; editing = true }
-                            .onFailure { statusLine = it.message ?: "Couldn't open the entry for editing." }
+                            .onFailure { statusLine = it.message ?: openFailedText }
                         busy = false
                     }
-                }) { Text("Edit", fontSize = KeryxType.caption) }
+                }) { Text(stringResource(R.string.agent_edit), fontSize = KeryxType.caption) }
                 TextButton(enabled = !busy, onClick = { confirmDelete = true }) {
-                    Text("Delete", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.agent_delete), fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
                 }
             } else {
                 TextButton(enabled = !busy, onClick = { editing = false; statusLine = null }) {
-                    Text("Cancel", fontSize = KeryxType.caption)
+                    Text(stringResource(R.string.mk_cancel), fontSize = KeryxType.caption)
                 }
                 TextButton(enabled = !busy && draft.isNotBlank() && draft.trim() != full?.trim(), onClick = {
                     busy = true
@@ -245,11 +249,11 @@ private fun MemoryEntryPage(
                         busy = false
                         if (ok) { editing = false; full = body; onSaved(body) } else statusLine = message
                     }
-                }) { Text(if (busy) "Saving…" else "Save", fontSize = KeryxType.caption) }
+                }) { Text(if (busy) stringResource(R.string.agent_saving) else stringResource(R.string.agent_save), fontSize = KeryxType.caption) }
             }
         }
         Text(
-            (if (entry.source == MemorySource.PROFILE) "About you" else "The agent's notes") + " · " + entry.source.fileName,
+            (if (entry.source == MemorySource.PROFILE) stringResource(R.string.agent_mem_about_you) else stringResource(R.string.agent_mem_agent_notes)) + " · " + entry.source.fileName,
             fontSize = KeryxType.micro,
             fontFamily = FontFamily.Monospace,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -279,7 +283,7 @@ private fun MemoryEntryPage(
                 )
                 if (full == null && entry.maybeClipped) {
                     Text(
-                        "…the rest is loading",
+                        stringResource(R.string.agent_mem_rest_loading),
                         fontSize = KeryxType.micro,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -293,11 +297,10 @@ private fun MemoryEntryPage(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Forget this?", fontSize = KeryxType.titleLarge) },
+            title = { Text(stringResource(R.string.agent_mem_forget_title), fontSize = KeryxType.titleLarge) },
             text = {
                 Text(
-                    "The entry is removed from ${entry.source.fileName} on the gateway. New sessions " +
-                        "start without it; there is no undo from the phone.",
+                    stringResource(R.string.agent_mem_forget_body, entry.source.fileName),
                     fontSize = KeryxType.body,
                 )
             },
@@ -309,9 +312,9 @@ private fun MemoryEntryPage(
                         busy = false
                         if (ok) onBack() else statusLine = message
                     }
-                }) { Text("Forget it", color = MaterialTheme.colorScheme.error) }
+                }) { Text(stringResource(R.string.agent_mem_forget_it), color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep it") } },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.agent_keep_it)) } },
         )
     }
 }
@@ -320,11 +323,13 @@ private fun MemoryEntryPage(
 @Composable
 internal fun memorySubtitle(viewModel: ChatViewModel): String {
     val panel by viewModel.memory.book.collectAsState()
-    val book = panel.data ?: return "What the agent remembers"
+    val fallback = stringResource(R.string.agent_mem_sub)
+    val book = panel.data ?: return fallback
     val n = book.entries?.size
     val provider = book.status?.active?.takeIf { it.isNotBlank() }
     return listOfNotNull(
-        n?.let { if (it == 1) "1 memory" else "$it memories" },
-        provider?.let { "provider $it" },
-    ).joinToString(" · ").ifBlank { "What the agent remembers" }
+        n?.let { pluralStringResource(R.plurals.agent_mem_count, it, it) },
+        provider?.let { stringResource(R.string.agent_mem_provider_short, it) },
+    ).joinToString(" · ").ifBlank { fallback }
+
 }

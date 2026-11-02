@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -54,12 +56,12 @@ fun CompactionDivider(message: Message) {
                 // The whole band is the target: a 11sp label alone is too small to aim at.
                 .heightIn(min = 36.dp)
                 .clip(RoundedCornerShape(KeryxRadius.chip))
-                .clickable(onClickLabel = if (open) "Hide the summary" else "Read the summary") { open = !open },
+                .clickable(onClickLabel = if (open) stringResource(R.string.chat_summary_hide) else stringResource(R.string.chat_summary_read)) { open = !open },
         ) {
             val line = meta.copy(alpha = 0.18f)
             Box(Modifier.weight(1f).height(1.dp).background(line))
             Text(
-                text = "🗜 Context compacted · $clock",
+                text = stringResource(R.string.chat_context_compacted, clock),
                 color = meta.copy(alpha = 0.75f),
                 fontSize = KeryxType.micro,
                 fontWeight = FontWeight.Medium,

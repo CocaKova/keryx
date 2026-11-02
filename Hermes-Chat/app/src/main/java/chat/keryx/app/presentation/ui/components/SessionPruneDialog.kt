@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +37,6 @@ import androidx.compose.ui.window.Dialog
 import chat.keryx.app.data.remote.HermesStreamClient.PrunePreview
 import chat.keryx.app.presentation.ChatViewModel
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
@@ -70,7 +72,7 @@ fun SessionPruneDialog(
         scope.launch {
             viewModel.hub.sessionsPrunePreview(ageDays, maxMessages, includeArchived)
                 .onSuccess { preview = it.preview; previewError = null }
-                .onFailure { previewError = it.message?.take(120) ?: "preview failed" }
+                .onFailure { previewError = it.message?.take(120) ?: context.getString(R.string.chat_prune_preview_failed) }
             working = false
         }
     }
@@ -99,8 +101,8 @@ fun SessionPruneDialog(
         )
         prompt.authenticate(
             androidx.biometric.BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Confirm session prune")
-                .setSubtitle("Permanently deletes ${preview?.matched ?: 0} sessions")
+                .setTitle(context.getString(R.string.chat_prune_confirm_title))
+                .setSubtitle((preview?.matched ?: 0).let { context.resources.getQuantityString(R.plurals.chat_prune_confirm_sub, it, it) })
                 .setAllowedAuthenticators(
                     androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK or
                         androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL,
@@ -120,22 +122,22 @@ fun SessionPruneDialog(
     Dialog(onDismissRequest = { if (!working) onDismiss() }) {
         Surface(shape = RoundedCornerShape(KeryxRadius.sheet), color = MaterialTheme.colorScheme.surface) {
             Column(modifier = Modifier.padding(20.dp)) {
-                KeryxSectionHeader("Prune sessions")
+                KeryxSectionHeader(stringResource(R.string.chat_prune_title))
                 Text(
-                    "Deletes ended sessions from the gateway's record — permanently, transcripts included. Active sessions are never touched.",
+                    stringResource(R.string.chat_prune_body),
                     fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
                 )
                 Spacer(Modifier.height(14.dp))
 
-                Text("Older than", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.chat_prune_older_than), fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     AGE_PRESETS.forEach { days ->
                         val selected = days == ageDays
                         Text(
-                            "${days}d",
+                            stringResource(R.string.chat_prune_days, days),
                             fontSize = KeryxType.caption,
                             color = if (selected) MaterialTheme.colorScheme.onPrimary
                                     else MaterialTheme.colorScheme.primary,
@@ -155,14 +157,14 @@ fun SessionPruneDialog(
                     value = maxMessagesText,
                     onValueChange = { maxMessagesText = it.filter(Char::isDigit); voidPreview() },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Only sessions with ≤ N messages (optional)", fontSize = KeryxType.micro) },
+                    label = { Text(stringResource(R.string.chat_prune_max_messages), fontSize = KeryxType.micro) },
                     singleLine = true,
                     textStyle = androidx.compose.ui.text.TextStyle(fontSize = KeryxType.body),
                 )
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "Include archived sessions",
+                        stringResource(R.string.chat_prune_include_archived),
                         fontSize = KeryxType.body,
                         modifier = Modifier.weight(1f),
                     )
@@ -180,21 +182,20 @@ fun SessionPruneDialog(
                 preview?.let { p ->
                     if (p.matched == 0) {
                         Text(
-                            "Nothing matches these filters.",
+                            stringResource(R.string.chat_prune_nothing),
                             fontSize = KeryxType.caption,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     } else {
                         Text(
-                            "${p.matched} session${if (p.matched == 1) "" else "s"} match · " +
-                                "oldest ${epochDate(p.oldestStartedAt)} · newest ${epochDate(p.newestStartedAt)}",
+                            pluralStringResource(R.plurals.chat_prune_matched, p.matched, p.matched, epochDate(p.oldestStartedAt), epochDate(p.newestStartedAt)),
                             fontSize = KeryxType.caption,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.tertiary,
                         )
                         p.sample.take(5).forEach { s ->
                             Text(
-                                "· ${s.title?.takeIf { it.isNotBlank() } ?: s.id.take(12)} (${s.messageCount} msgs)",
+                                pluralStringResource(R.plurals.chat_prune_sample, s.messageCount, s.title?.takeIf { it.isNotBlank() } ?: s.id.take(12), s.messageCount),
                                 fontSize = KeryxType.micro,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -206,9 +207,9 @@ fun SessionPruneDialog(
 
                 Spacer(Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss, enabled = !working) { Text("Cancel") }
+                    TextButton(onClick = onDismiss, enabled = !working) { Text(stringResource(R.string.chat_cancel)) }
                     TextButton(onClick = { runPreview() }, enabled = !working) {
-                        Text(if (working) "…" else "Preview")
+                        Text(if (working) "…" else stringResource(R.string.chat_prune_preview))
                     }
                     val p = preview
                     TextButton(
@@ -217,7 +218,7 @@ fun SessionPruneDialog(
                         onClick = { confirmOpen = true },
                     ) {
                         Text(
-                            "Delete${p?.matched?.let { " $it" } ?: ""}…",
+                            p?.matched?.let { stringResource(R.string.chat_prune_delete_count, it) } ?: stringResource(R.string.chat_prune_delete),
                             color = if (p != null && p.matched > 0) MaterialTheme.colorScheme.error
                                     else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -232,10 +233,10 @@ fun SessionPruneDialog(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmOpen = false },
-            title = { Text("Delete $matched sessions permanently?", fontSize = KeryxType.titleLarge) },
+            title = { Text(pluralStringResource(R.plurals.chat_prune_final_title, matched, matched), fontSize = KeryxType.titleLarge) },
             text = {
                 Text(
-                    "Rows and transcript files are removed from the gateway. There is no undo.",
+                    stringResource(R.string.chat_prune_final_body),
                     fontSize = KeryxType.body,
                 )
             },
@@ -243,10 +244,10 @@ fun SessionPruneDialog(
                 TextButton(onClick = {
                     confirmOpen = false
                     withLockGate { executePrune() }
-                }) { Text("Delete $matched", color = MaterialTheme.colorScheme.error) }
+                }) { Text(stringResource(R.string.chat_prune_delete_n, matched), color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmOpen = false }) { Text("Cancel") }
+                TextButton(onClick = { confirmOpen = false }) { Text(stringResource(R.string.chat_cancel)) }
             },
         )
     }
@@ -254,5 +255,5 @@ fun SessionPruneDialog(
 
 private fun epochDate(epochSeconds: Double?): String =
     epochSeconds?.let {
-        SimpleDateFormat("MMM d, yyyy", Locale.US).format(Date((it * 1000).toLong()))
+        java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM, Locale.getDefault()).format(Date((it * 1000).toLong()))
     } ?: "—"

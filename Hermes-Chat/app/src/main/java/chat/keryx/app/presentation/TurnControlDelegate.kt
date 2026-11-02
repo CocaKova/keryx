@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import chat.keryx.core.model.Message
 import chat.keryx.core.model.RoomProfile
 import chat.keryx.core.model.SenderType
@@ -58,14 +60,14 @@ class TurnControlDelegate(
             d.steerTurn(session.id, text)
                 .onSuccess { accepted ->
                     if (accepted) {
-                        toast("Steered — the agent sees it on its next step")
+                        toast(KeryxText.get(R.string.app_steered))
                     } else {
                         d.queuePrompt(session.id, text)
-                            .onSuccess { toast("Agent declined the steer — queued for the next turn") }
-                            .onFailure { toast("Queue failed: ${it.message?.take(80)}") }
+                            .onSuccess { toast(KeryxText.get(R.string.app_steer_declined_queued)) }
+                            .onFailure { toast(KeryxText.get(R.string.app_queue_failed, it.message?.take(80).orEmpty())) }
                     }
                 }
-                .onFailure { toast("Steer failed: ${it.message?.take(80)}") }
+                .onFailure { toast(KeryxText.get(R.string.app_steer_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -87,7 +89,7 @@ class TurnControlDelegate(
         val d = direct ?: return
         scope.launch {
             d.controlAction(session.id, action)
-                .onFailure { toast("Goal: ${it.message?.take(80)}") }
+                .onFailure { toast(KeryxText.get(R.string.app_goal_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -116,7 +118,7 @@ class TurnControlDelegate(
      */
     fun askAside(text: String) {
         val session = currentRoom.value ?: return
-        val d = direct ?: run { toast("Asking aside needs the direct gateway"); return }
+        val d = direct ?: run { toast(KeryxText.get(R.string.app_aside_needs_direct)); return }
         if (asideCollector == null) {
             asideCollector = scope.launch {
                 d.asideAnswers().collect { a ->
@@ -132,7 +134,7 @@ class TurnControlDelegate(
                 .onSuccess { task ->
                     _asides.value = (_asides.value + Aside(task, session.id, text)).takeLast(MAX_ASIDES)
                 }
-                .onFailure { toast("Ask aside failed: ${it.message?.take(80)}") }
+                .onFailure { toast(KeryxText.get(R.string.app_aside_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -158,20 +160,20 @@ class TurnControlDelegate(
                 .onSuccess { outcome ->
                     when (outcome) {
                         chat.keryx.core.model.RedirectOutcome.REDIRECTED ->
-                            toast("Redirected — the reply starts over with your correction")
+                            toast(KeryxText.get(R.string.app_redirected))
                         chat.keryx.core.model.RedirectOutcome.QUEUED ->
-                            toast("Between calls — your correction runs next")
+                            toast(KeryxText.get(R.string.app_redirect_between_calls))
                         chat.keryx.core.model.RedirectOutcome.REJECTED ->
                             d.queuePrompt(session.id, text)
-                                .onSuccess { toast("The reply had finished — queued for the next turn") }
-                                .onFailure { toast("Queue failed: ${it.message?.take(80)}") }
+                                .onSuccess { toast(KeryxText.get(R.string.app_redirect_finished_queued)) }
+                                .onFailure { toast(KeryxText.get(R.string.app_queue_failed, it.message?.take(80).orEmpty())) }
                         chat.keryx.core.model.RedirectOutcome.UNSUPPORTED -> {
-                            toast("This agent can't redirect — steering instead")
+                            toast(KeryxText.get(R.string.app_redirect_unsupported))
                             steerTurn(text)
                         }
                     }
                 }
-                .onFailure { toast("Redirect failed: ${it.message?.take(80)}") }
+                .onFailure { toast(KeryxText.get(R.string.app_redirect_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -186,9 +188,9 @@ class TurnControlDelegate(
             d.branchFrom(session.id, message.id, message.content, mine = message.sender == SenderType.ME)
                 .onSuccess { (stored, title) ->
                     openSessionById(stored, title)
-                    toast("Branched — this is a new session from that message")
+                    toast(KeryxText.get(R.string.app_branched_from_message))
                 }
-                .onFailure { toast("Branch failed: ${it.message?.take(80)}") }
+                .onFailure { toast(KeryxText.get(R.string.app_branch_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -203,8 +205,8 @@ class TurnControlDelegate(
         }
         scope.launch {
             d.queuePrompt(session.id, text)
-                .onSuccess { toast("Queued — sends when this turn finishes") }
-                .onFailure { toast("Queue failed: ${it.message?.take(80)}") }
+                .onSuccess { toast(KeryxText.get(R.string.app_queued)) }
+                .onFailure { toast(KeryxText.get(R.string.app_queue_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -214,8 +216,8 @@ class TurnControlDelegate(
         val d = direct ?: return
         scope.launch {
             d.interruptTurn(session.id)
-                .onSuccess { toast("Stopped") }
-                .onFailure { toast("Stop failed: ${it.message?.take(80)}") }
+                .onSuccess { toast(KeryxText.get(R.string.app_stopped)) }
+                .onFailure { toast(KeryxText.get(R.string.app_stop_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -252,10 +254,10 @@ class TurnControlDelegate(
         scope.launch {
             d.steerCrew(parentSessionId, subagentId, text)
                 .onSuccess { queued ->
-                    if (queued) toast("Steered $role — it sees it on its next step")
-                    else toast("$role didn't take it — it answers to another door, or it's already wrapping up")
+                    if (queued) toast(KeryxText.get(R.string.app_crew_steered, role))
+                    else toast(KeryxText.get(R.string.app_crew_steer_rejected, role))
                 }
-                .onFailure { toast("Steer failed: ${it.message?.take(80)}") }
+                .onFailure { toast(KeryxText.get(R.string.app_steer_failed, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -281,9 +283,9 @@ class TurnControlDelegate(
         scope.launch {
             d.stopCrew(parentSessionId, subagentId)
                 .onSuccess { found ->
-                    if (found) toast("Stopped $role") else toast("$role had already finished")
+                    if (found) toast(KeryxText.get(R.string.app_crew_stopped, role)) else toast(KeryxText.get(R.string.app_crew_already_finished, role))
                 }
-                .onFailure { toast("Stop failed: ${it.message?.take(80)}") }
+                .onFailure { toast(KeryxText.get(R.string.app_stop_failed, it.message?.take(80).orEmpty())) }
         }
     }
 

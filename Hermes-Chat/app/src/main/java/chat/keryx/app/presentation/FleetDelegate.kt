@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import chat.keryx.app.domain.repository.SettingsRepository
 import chat.keryx.core.transport.ChatTransport
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,7 +68,7 @@ class FleetDelegate(
     fun removeGateway(id: String): String? {
         val f = _fleet.value
         if (f.byId(id) == null) return null
-        if (id == f.activeId) return "Switch to another gateway first"
+        if (id == f.activeId) return KeryxText.get(R.string.agent_fleet_switch_first)
         saveFleet(f.remove(id))
         settings.forgetGateway(id)
         purgeGatewayFiles(id)
@@ -79,7 +81,7 @@ class FleetDelegate(
      * gateway's credential (not the active one's). Reports a sentence, never a stack.
      */
     fun testGateway(id: String, onResult: (ok: Boolean, message: String) -> Unit) {
-        val entry = _fleet.value.byId(id) ?: return onResult(false, "Not on the fleet")
+        val entry = _fleet.value.byId(id) ?: return onResult(false, KeryxText.get(R.string.agent_fleet_not_on_fleet))
         scope.launch {
             val scoped = settings.forGateway(id)
             val insecure = settings.allowInsecure
@@ -88,13 +90,13 @@ class FleetDelegate(
                 chat.keryx.app.transport.direct.DirectAuth(scoped, insecure),
             )
             val st = rest.status().getOrElse {
-                return@launch onResult(false, "Unreachable: ${it.message?.take(120) ?: "no answer"}")
+                return@launch onResult(false, KeryxText.get(R.string.agent_fleet_unreachable, it.message?.take(120) ?: KeryxText.get(R.string.agent_fleet_no_answer)))
             }
             val version = st.version.takeIf { it.isNotBlank() }?.let { " · hermes $it" }.orEmpty()
-            if (!scoped.directLoggedIn) return@launch onResult(true, "Reachable$version — not signed in yet")
+            if (!scoped.directLoggedIn) return@launch onResult(true, KeryxText.get(R.string.agent_fleet_reachable_not_signed_in, version))
             rest.validateToken().fold(
-                onSuccess = { onResult(true, "Reachable$version") },
-                onFailure = { onResult(false, "Reachable$version, but the sign-in was refused: ${it.message?.take(100)}") },
+                onSuccess = { onResult(true, KeryxText.get(R.string.agent_fleet_reachable, version)) },
+                onFailure = { onResult(false, KeryxText.get(R.string.agent_fleet_reachable_refused, version, it.message?.take(100).toString())) },
             )
         }
     }
@@ -148,7 +150,7 @@ class FleetDelegate(
                 if (ok) onResult(true, restart || switched, message) else failed(message)
             }
             if (pair != null && hostOf(entry.url) != pair.host) {
-                failed("The address changed after the scan. Scan the pairing code again.")
+                failed(KeryxText.get(R.string.agent_fleet_address_changed))
                 return@launch
             }
             val insecure = settings.allowInsecure
@@ -159,19 +161,19 @@ class FleetDelegate(
                 val p = pair ?: return null to null
                 return chat.keryx.app.transport.direct.LinkPairing.claim(p, deviceName, insecure).fold(
                     onSuccess = { (p.link to it) to null },
-                    onFailure = { null to "Signed in. Hermes Link didn't pair: ${it.message}" },
+                    onFailure = { null to KeryxText.get(R.string.agent_fleet_link_not_paired, it.message.toString()) },
                 )
             }
             val probe = chat.keryx.app.transport.direct.GatewayRest(entry.url, apiKey, insecure)
             val st = probe.status().getOrElse {
-                failed(it.message?.take(160) ?: "Gateway unreachable")
+                failed(it.message?.take(160) ?: KeryxText.get(R.string.agent_fleet_gateway_unreachable))
                 return@launch
             }
             if (!st.authRequired) {
                 // Ungated gateway: the legacy token dialect, exactly as before.
                 if (pair != null && apiKey.isBlank()) {
                     // The code only pairs the Link; this dashboard wants its session token.
-                    failed("This gateway doesn't sign in through the browser. Enter its session token, then Connect.")
+                    failed(KeryxText.get(R.string.agent_fleet_needs_token))
                     return@launch
                 }
                 runCatching { if (apiKey.isNotBlank()) probe.validateToken().getOrThrow() }.fold(
@@ -181,7 +183,7 @@ class FleetDelegate(
                         val (link, notice) = claimLink()
                         commitDirectDoor(entry.url, apiKey, switched, onOk, link, notice)
                     },
-                    onFailure = { failed(it.message?.take(160) ?: "Gateway unreachable") },
+                    onFailure = { failed(it.message?.take(160) ?: KeryxText.get(R.string.agent_fleet_gateway_unreachable)) },
                 )
                 return@launch
             }
@@ -205,7 +207,7 @@ class FleetDelegate(
                     val (link, notice) = claimLink()
                     commitDirectDoor(entry.url, null, switched, onOk, link, notice)
                 },
-                onFailure = { failed(it.message?.take(160) ?: "Browser sign-in failed") },
+                onFailure = { failed(it.message?.take(160) ?: KeryxText.get(R.string.agent_fleet_browser_failed)) },
             )
         }
     }
@@ -301,13 +303,14 @@ class FleetDelegate(
     fun loginToMatrix(username: String, password: String, onResult: (Boolean, String?) -> Unit) {
         scope.launch {
             val result = matrix?.login(username, password)
-                ?: Result.failure(IllegalStateException("This transport has no Matrix login"))
+                ?: Result.failure(IllegalStateException(KeryxText.get(R.string.agent_fleet_no_matrix)))
             result.fold(
                 onSuccess = {
                     settings.lastMatrixUsername = username
-                    onResult(true, "Logged in")
+                    onResult(true, KeryxText.get(R.string.agent_fleet_logged_in))
                 },
-                onFailure = { onResult(false, it.message ?: "Login failed. Check URL or credentials.") },
+                onFailure = { onResult(false, it.message ?: KeryxText.get(R.string.agent_fleet_login_failed)) },
+
             )
         }
     }

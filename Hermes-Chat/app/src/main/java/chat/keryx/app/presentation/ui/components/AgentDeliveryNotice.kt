@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -69,7 +71,7 @@ fun AgentDeliveryNotice(
         )
         Spacer(Modifier.width(5.dp))
         Text(
-            "relayed · ${delivery.sender}",
+            stringResource(R.string.agent_relayed_from, delivery.sender),
             fontSize = KeryxType.micro,
             fontWeight = FontWeight.Medium,
             color = mark,
@@ -115,7 +117,7 @@ fun AgentDeliverySentNotice(
             )
             Spacer(Modifier.width(8.dp))
             Text(
-                if (pending) "Messaging $target…" else "Messaged $target",
+                if (pending) stringResource(R.string.agent_messaging, target) else stringResource(R.string.agent_messaged, target),
                 fontSize = KeryxType.caption,
                 fontWeight = FontWeight.Medium,
                 color = mark,
@@ -154,7 +156,8 @@ fun AgentDeliverySentNotice(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "Message from $target",
+                    stringResource(R.string.agent_message_from, target),
+
                     fontSize = KeryxType.caption,
                     fontWeight = FontWeight.Medium,
                     color = mark,

@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.RepeatMode
@@ -136,6 +138,11 @@ fun ToolTheaterRow(
             // watched turn fills it in for real from the beat.
             // Verdicts wear the app's status colours (2.6.2): a seen success is quietly green,
             // a failure is the same red every failed thing in Keryx wears, unknown stays ink.
+            val verdictLabel = when (ok) {
+                true -> stringResource(R.string.chat_tool_succeeded)
+                false -> stringResource(R.string.chat_tool_failed)
+                null -> stringResource(R.string.chat_tool_no_verdict)
+            }
             Text(
                 when (ok) { true -> "✓"; false -> "✕"; null -> "·" },
                 fontSize = KeryxType.micro,
@@ -150,7 +157,7 @@ fun ToolTheaterRow(
                     null -> baseColor.copy(alpha = 0.45f)
                 },
                 modifier = Modifier.width(6.dp).semantics {
-                    contentDescription = when (ok) { true -> "Succeeded"; false -> "Failed"; null -> "No verdict" }
+                    contentDescription = verdictLabel
                 },
             )
             Spacer(modifier = Modifier.width(7.dp))
@@ -201,7 +208,7 @@ fun ToolTheaterRow(
             if (durS != null && durS > 0.0) {
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    if (durS >= 1.0) "${durS.toInt()}s" else "${(durS * 1000).toInt()}ms",
+                    if (durS >= 1.0) stringResource(R.string.chat_duration_seconds, durS.toInt()) else stringResource(R.string.chat_duration_millis, (durS * 1000).toInt()),
                     fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     color = baseColor.copy(alpha = 0.35f),
@@ -220,9 +227,10 @@ fun ToolTheaterRow(
         val risky = beat?.takeIf { it.flagged } ?: call.takeIf { it.flagged }
         if (risky != null) {
             Text(
-                text = "⚠ Hermes flagged this output" +
-                    risky.riskFindings.takeIf { it.isNotEmpty() }
-                        ?.joinToString(", ", prefix = ": ") { it.replace('_', ' ') }.orEmpty(),
+                text = risky.riskFindings.takeIf { it.isNotEmpty() }
+                    ?.joinToString(", ") { it.replace('_', ' ') }
+                    ?.let { stringResource(R.string.chat_tool_flagged_with, it) }
+                    ?: stringResource(R.string.chat_tool_flagged),
                 color = KeryxStatus.warn,
                 fontSize = KeryxType.micro,
                 maxLines = 2,
@@ -279,16 +287,17 @@ fun ToolTheaterRow(
             var open by androidx.compose.runtime.saveable.rememberSaveable(call.name + call.context) {
                 mutableStateOf(false)
             }
+            val diffLabel = stringResource(R.string.chat_tool_diff_label)
             Text(
-                if (open) "▾ diff" else "▸ diff",
+                (if (open) "▾ " else "▸ ") + stringResource(R.string.chat_tool_diff),
                 fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = baseColor.copy(alpha = 0.72f),
                 modifier = Modifier
                     .padding(start = 15.dp)
                     .clip(RoundedCornerShape(KeryxRadius.chip))
-                    .clickable(onClickLabel = if (open) "Hide the diff" else "Show the diff") { open = !open }
-                    .semantics { contentDescription = "Diff" }
+                    .clickable(onClickLabel = if (open) stringResource(R.string.chat_tool_diff_hide) else stringResource(R.string.chat_tool_diff_show)) { open = !open }
+                    .semantics { contentDescription = diffLabel }
                     .padding(horizontal = 4.dp, vertical = 8.dp),
             )
             if (open) {
@@ -316,25 +325,27 @@ private fun ToolOutputToggle(
     onToggle: () -> Unit,
 ) {
     if (parsed.body.isNotBlank()) {
+        val outputLabel = stringResource(R.string.chat_tool_output_label)
         // ⚠️ `padding().clickable()` puts the padding OUTSIDE the hit area, so this was a
         // 9.5sp line of text and nothing else: a **~12dp** target, and the only way into a
         // tool's payload. Padding moved inside the clickable, and the ink lifted from 0.42
         // (2.58:1 on parchment — the least readable interactive string in the run) to the
         // 0.72 the tool's own title beside it already uses.
         Text(
-            if (open) "▾ output" else "▸ output",
+            (if (open) "▾ " else "▸ ") + stringResource(R.string.chat_tool_output),
             fontSize = KeryxType.micro,
             fontFamily = FontFamily.Monospace,
             color = baseColor.copy(alpha = 0.72f),
             modifier = Modifier
                 .clip(RoundedCornerShape(KeryxRadius.chip))
-                .clickable(onClickLabel = if (open) "Hide the output" else "Show the output") { onToggle() }
-                .semantics { contentDescription = "Output" }
+                .clickable(onClickLabel = if (open) stringResource(R.string.chat_tool_output_hide) else stringResource(R.string.chat_tool_output_show)) { onToggle() }
+                .semantics { contentDescription = outputLabel }
                 .padding(horizontal = 4.dp, vertical = 8.dp),
         )
     }
     val exit = parsed.exitCode ?: return
     val failed = exit != 0
+    val exitLabel = if (failed) stringResource(R.string.chat_tool_exit_failed, exit) else stringResource(R.string.chat_tool_exit_ok)
     Spacer(modifier = Modifier.width(4.dp))
     Text(
         if (failed) "✕ $exit" else "✓ $exit",
@@ -346,7 +357,7 @@ private fun ToolOutputToggle(
             .clip(RoundedCornerShape(KeryxRadius.chip))
             .background(if (failed) KeryxStatus.bad.copy(alpha = 0.10f) else baseColor.copy(alpha = 0.06f))
             .padding(horizontal = 5.dp, vertical = 1.dp)
-            .semantics { contentDescription = if (failed) "Exit code $exit, failed" else "Exit code 0" },
+            .semantics { contentDescription = exitLabel },
     )
 }
 
@@ -452,7 +463,8 @@ fun ToolTheaterRun(
     val steps = run.entries.count { it is ToolRunEntry.Note }
     // Remembered on the steps (3.0 perf): the newest run is rebuilt on every publish of the live
     // row, and the sentence walked every call of the turn through the grammar each time.
-    val label = remember(run.entries, active) { buildString {
+    val res = androidx.compose.ui.platform.LocalContext.current.resources
+    val label = remember(run.entries, active, res) { buildString {
         if (calls.isNotEmpty()) {
             append(
                 ToolGrammar.summarize(
@@ -467,24 +479,27 @@ fun ToolTheaterRun(
                 )
             )
         } else if (n > 0) {
-            append(if (active) "Running $n ${plural(n)}…" else "Ran $n ${plural(n)}")
+            append(
+                if (active) res.getQuantityString(R.plurals.chat_tools_running, n, n)
+                else res.getQuantityString(R.plurals.chat_tools_ran, n, n),
+            )
         } else if (wings.isNotEmpty()) {
             // A wings-only run (a background fan-out's dispatch or its landed report): the
             // rail says what it is; the header just counts.
             val flying = wings.count { it.running }
             append(
                 when {
-                    flying > 0 && wings.size > 1 -> "$flying of ${wings.size} subagents running"
-                    flying > 0 -> "Subagent running"
-                    wings.size > 1 -> "Delegated ${wings.size} tasks"
-                    else -> "Delegated a task"
+                    flying > 0 && wings.size > 1 -> res.getQuantityString(R.plurals.chat_subagents_running, wings.size, flying, wings.size)
+                    flying > 0 -> res.getString(R.string.chat_subagent_running)
+                    wings.size > 1 -> res.getQuantityString(R.plurals.chat_delegated_tasks, wings.size, wings.size)
+                    else -> res.getString(R.string.chat_delegated_task)
                 },
             )
         } else {
-            append(if (active) "Working…" else "$steps output ${if (steps == 1) "step" else "steps"}")
+            append(if (active) res.getString(R.string.chat_working) else res.getQuantityString(R.plurals.chat_output_steps, steps, steps))
         }
-        if (failed > 0) append(" · $failed failed")
-    } }
+    }.let { if (failed > 0) res.getQuantityString(R.plurals.chat_run_with_failed, failed, it, failed) else it } }
+    val runState = if (expanded) stringResource(R.string.chat_state_open) else stringResource(R.string.chat_state_folded)
     val enriched = remember(calls, structured) { Theater.align(calls.map { it.name }, structured) }
     // A run of exactly one call: its header already reads as that call's title.
     val singleCall = run.entries.size == 1 && calls.size == 1
@@ -507,11 +522,11 @@ fun ToolTheaterRun(
                 }
                 .combinedClickable(
                     onClick = { expanded = !expanded; onToggle(expanded) },
-                    onClickLabel = if (expanded) "Fold the steps away" else "Show the steps",
+                    onClickLabel = if (expanded) stringResource(R.string.chat_steps_fold) else stringResource(R.string.chat_steps_show),
                     onLongClick = onTapIn,
-                    onLongClickLabel = if (onTapIn != null) "Tap in to this run" else null,
+                    onLongClickLabel = if (onTapIn != null) stringResource(R.string.chat_tap_in_run) else null,
                 )
-                .semantics { stateDescription = if (expanded) "Open" else "Folded" }
+                .semantics { stateDescription = runState }
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
             // The header's glyph strip, each glyph in its family's colour: the run's shape at
@@ -668,4 +683,4 @@ fun ToolTheaterRun(
     }
 }
 
-private fun plural(n: Int) = if (n == 1) "tool" else "tools"
+

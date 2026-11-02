@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.tour
 
+import chat.keryx.app.KeryxText
+import chat.keryx.app.R
 import chat.keryx.core.tour.TourCta
 import chat.keryx.core.tour.TourPlace
 import chat.keryx.core.tour.TourPreset
@@ -67,51 +69,49 @@ object KeryxTour {
      * The app's own tour, as stops narrowed to what [available] holds. Quick is the four things
      * a first chat needs (the Desktop's essentials: where to ask, which brain, a fresh page,
      * where the rest lives); full goes on into the drawer and ends on the gateway.
+     *
+     * [words] reads the stops' strings (res/values/strings_app.xml): the app's language at run
+     * time, the English file in the plain-JVM tests.
      */
-    fun builtIn(preset: TourPreset, available: Set<String>, ctx: Context): List<TourStep> {
+    fun builtIn(
+        preset: TourPreset,
+        available: Set<String>,
+        ctx: Context,
+        words: (Int) -> String = { KeryxText.get(it) },
+    ): List<TourStep> {
+        fun stop(target: String?, title: Int, text: Int, cta: TourCta? = null) =
+            TourStep(target, words(title), words(text), cta = cta)
         // The demo's tour opens by saying what this is, in the middle of the screen.
         val welcome = if (ctx.demo) listOf(
-            TourStep(
-                null, "Welcome to Keryx",
-                "This is a demo: a pretend gateway on your phone, and its agent is in the middle of a job. " +
-                    "Here's a quick look around before you connect your own.",
-            ),
+            stop(null, R.string.app_tour_welcome_title, R.string.app_tour_welcome_text),
         ) else emptyList()
         // What an agent at work looks like, when there is one on screen: the demo opens on one.
         val atWork = listOf(
-            TourStep(
-                FLIGHT_PLAN, "Its plan",
-                "Your agent breaks a job into steps and ticks them off as it goes. While it works, Keryx keeps a " +
-                    "live notice of the job, so you can put the phone away.",
-            ),
-            TourStep(
-                APPROVAL, "It asks first",
-                "Before anything risky, like deleting a folder, your agent stops and asks. Answer here or right " +
-                    "from the notification." + if (ctx.demo) " Try it when the tour's done, and watch it finish the job." else "",
+            stop(FLIGHT_PLAN, R.string.app_tour_plan_title, R.string.app_tour_plan_text),
+            stop(
+                APPROVAL, R.string.app_tour_approval_title,
+                if (ctx.demo) R.string.app_tour_approval_text_demo else R.string.app_tour_approval_text,
             ),
         )
         val quick = welcome + atWork + listOf(
-            TourStep(COMPOSER, "Ask for anything", "Give your agent a job in plain words. It keeps working if you leave, and Keryx lets you know when it's done."),
-            TourStep(MODEL, "Which brain answers", "Switch the model for this session, or for every session from here on."),
-            TourStep(NEW_SESSION, "A fresh page", "Start a new session. Hold it for options, like a title or a temporary session."),
-            TourStep(DRAWER_BUTTON, "Everything else", "Your sessions and the rest of Keryx are behind this button."),
+            stop(COMPOSER, R.string.app_tour_composer_title, R.string.app_tour_composer_text),
+            stop(MODEL, R.string.app_tour_model_title, R.string.app_tour_model_text),
+            stop(NEW_SESSION, R.string.app_tour_new_session_title, R.string.app_tour_new_session_text),
+            stop(DRAWER_BUTTON, R.string.app_tour_drawer_title, R.string.app_tour_drawer_text),
         )
         val full = quick + listOf(
-            TourStep(LENSES, "What needs you", "Narrow the list to sessions waiting on you, running right now, or unread."),
-            TourStep(MISSIONS, "Missions", "Hand your agent longer jobs as cards on a board. It works through them and asks when it needs you."),
-            TourStep(RUNS, "Runs", "Scheduled jobs, and what each run turned up."),
-            TourStep(BOTS, "Bots", "Your agent's other profiles. Each keeps its own memory, skills and chats."),
-            TourStep(ARCHIVE, "Archive", "Everything ever said, searchable on the phone, even with the gateway down."),
-            if (ctx.demo) TourStep(
-                MACHINE, "Your gateway",
-                "With your own Hermes, this shows the link, the model and the version. Everything you just saw " +
-                    "works the same on a real gateway: connect yours and it's live.",
-                cta = TourCta("Connect your gateway", CTA_CONNECT),
-            ) else TourStep(
-                MACHINE, "Your gateway",
-                "The link, the model and the Hermes version. Tap it for the Gateway; the gear opens Settings, where this tour lives too." +
-                    if (ctx.direct) " Run more than one Hermes? Add it and switch between them here." else "",
-                cta = if (ctx.direct) TourCta("Add a gateway", CTA_ADD_GATEWAY) else null,
+            stop(LENSES, R.string.app_tour_lenses_title, R.string.app_tour_lenses_text),
+            stop(MISSIONS, R.string.app_tour_missions_title, R.string.app_tour_missions_text),
+            stop(RUNS, R.string.app_tour_runs_title, R.string.app_tour_runs_text),
+            stop(BOTS, R.string.app_tour_bots_title, R.string.app_tour_bots_text),
+            stop(ARCHIVE, R.string.app_tour_archive_title, R.string.app_tour_archive_text),
+            if (ctx.demo) stop(
+                MACHINE, R.string.app_tour_gateway_title, R.string.app_tour_gateway_text_demo,
+                cta = TourCta(words(R.string.app_tour_cta_connect), CTA_CONNECT),
+            ) else stop(
+                MACHINE, R.string.app_tour_gateway_title,
+                if (ctx.direct) R.string.app_tour_gateway_text_direct else R.string.app_tour_gateway_text,
+                cta = if (ctx.direct) TourCta(words(R.string.app_tour_cta_add_gateway), CTA_ADD_GATEWAY) else null,
             ),
         )
         return (if (preset == TourPreset.QUICK) quick else full).filter { it.target == null || it.target in available }
@@ -125,41 +125,24 @@ object KeryxTour {
      * controls, narrowed to what [available] holds like the built-in tour. A fresh install never
      * sees it (the welcome marks it seen); Settings › About replays it.
      */
-    fun whatsNew(available: Set<String>, ctx: Context): List<TourStep> = listOfNotNull(
-        TourStep(
-            null, "What's new in Keryx 3.0",
-            "A quick look at what changed. Skip it if you like: it stays in Settings › About.",
-        ),
-        // The agent pointing comes through Hermes Link on the direct door; Matrix never sees it.
-        if (ctx.direct) TourStep(
-            COMPOSER, "Ask where something is",
-            "Ask your agent \"where are my scheduled jobs?\" and it can point at the place, right here on " +
-                "the phone. Your gateway needs keryx-stream 0.6 or newer.",
-        ) else null,
-        TourStep(
-            MODEL, "Chat memory",
-            "The ring beside the model now says how many replies this chat has room for, and only once it " +
-                "matters. Tap it to see what's using the room.",
-        ),
-        if (ctx.direct) TourStep(
-            LENSES, "A redrawn drawer",
-            "Each chat has its own colour and mark, a ring shows the ones at work, and these filters narrow " +
-                "the list to what needs you.",
-        ) else TourStep(
-            DRAWER_BUTTON, "A redrawn drawer",
-            "Each chat has its own colour and mark, and a ring shows the ones at work.",
-        ),
-        TourStep(
-            MISSIONS, "Cards in plain words",
-            "A mission card now opens on what's going on and the one thing to do next. The technical " +
-                "details are still there, under Details.",
-        ),
-        TourStep(
-            MACHINE, "Look and updates",
-            "Settings › Appearance has new thinking styles and five ways to move between chats. " +
-                if (ctx.direct) "With a recent keryx-stream, the Gateway's Update panel lets you pick Stable releases " +
-                    "or Edge. To add another Hermes, run hermes keryx pair on it and scan the code." else
-                    "The tour and the space hints live in Settings › About.",
-        ),
-    ).filter { it.target == null || it.target in available }
+    fun whatsNew(
+        available: Set<String>,
+        ctx: Context,
+        words: (Int) -> String = { KeryxText.get(it) },
+    ): List<TourStep> {
+        fun stop(target: String?, title: Int, text: Int) = TourStep(target, words(title), words(text))
+        return listOfNotNull(
+            stop(null, R.string.app_whatsnew_title, R.string.app_whatsnew_text),
+            // The agent pointing comes through Hermes Link on the direct door; Matrix never sees it.
+            if (ctx.direct) stop(COMPOSER, R.string.app_whatsnew_point_title, R.string.app_whatsnew_point_text) else null,
+            stop(MODEL, R.string.app_whatsnew_memory_title, R.string.app_whatsnew_memory_text),
+            if (ctx.direct) stop(LENSES, R.string.app_whatsnew_drawer_title, R.string.app_whatsnew_drawer_text_direct)
+            else stop(DRAWER_BUTTON, R.string.app_whatsnew_drawer_title, R.string.app_whatsnew_drawer_text),
+            stop(MISSIONS, R.string.app_whatsnew_cards_title, R.string.app_whatsnew_cards_text),
+            stop(
+                MACHINE, R.string.app_whatsnew_look_title,
+                if (ctx.direct) R.string.app_whatsnew_look_text_direct else R.string.app_whatsnew_look_text,
+            ),
+        ).filter { it.target == null || it.target in available }
+    }
 }

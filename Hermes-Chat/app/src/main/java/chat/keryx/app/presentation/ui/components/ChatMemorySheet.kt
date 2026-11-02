@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -50,7 +52,7 @@ fun ChatMemorySheet(
         else -> MaterialTheme.colorScheme.primary
     }
     val sentence = ContextOutlook.sentence(repliesLeft, left, agent, hasTrigger = trigger > 0L)
-    KeryxSheet(onDismiss = onDismiss, title = "Chat memory") {
+    KeryxSheet(onDismiss = onDismiss, title = stringResource(R.string.agent_chatmem_title)) {
         Column(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -63,26 +65,26 @@ fun ChatMemorySheet(
             )
             if (trigger in 1 until max) {
                 Text(
-                    "The line marks the summary point.",
+                    stringResource(R.string.agent_chatmem_line),
                     fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Text(sentence, fontSize = KeryxType.bodyLarge, fontWeight = FontWeight.SemiBold)
             Text(
-                "After that the agent works from a summary of the older messages, so early details " +
-                    "may come back shorter. A long chat can be summarized more than once.",
+                stringResource(R.string.agent_chatmem_after),
                 fontSize = KeryxType.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 ContextOutlook.smallPrint(used, trigger, max) +
-                    (if (repliesLeft != null) " · the reply count is an estimate from this chat" else ""),
+                    (if (repliesLeft != null) " · " + stringResource(R.string.agent_chatmem_estimate) else ""),
                 fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (onWhatsUsing != null) {
-                OutlinedButton(onClick = onWhatsUsing) { Text("What's using it", fontSize = KeryxType.caption) }
+                OutlinedButton(onClick = onWhatsUsing) { Text(stringResource(R.string.agent_chatmem_whats_using), fontSize = KeryxType.caption) }
+
             }
             Spacer(Modifier.height(12.dp))
         }

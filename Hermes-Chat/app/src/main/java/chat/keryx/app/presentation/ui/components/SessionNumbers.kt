@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,7 +28,7 @@ internal fun SessionNumbers(meta: SessionMeta?, modifier: Modifier = Modifier) {
     if (head == null && totals == null) return
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            "This session",
+            stringResource(R.string.chat_this_session_title),
             fontSize = KeryxType.caption,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

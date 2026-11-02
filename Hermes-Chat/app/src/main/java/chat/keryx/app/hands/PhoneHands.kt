@@ -1,5 +1,6 @@
 package chat.keryx.app.hands
 
+import chat.keryx.app.R
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -91,16 +92,16 @@ object PhoneHands {
             }
             PhoneAction.Kind.TORCH -> torch(context, on = a.primary.lowercase() == "on")
             else -> {
-                val intent = intentFor(context, a) ?: return@runCatching "Nothing on this phone can do that"
-                if (a.kind == PhoneAction.Kind.OPEN && intent.component == null) return@runCatching "No app called “${a.primary}”"
+                val intent = intentFor(context, a) ?: return@runCatching context.getString(R.string.app_hands_cannot)
+                if (a.kind == PhoneAction.Kind.OPEN && intent.component == null) return@runCatching context.getString(R.string.app_hands_no_app, a.primary)
                 if (intent.resolveActivity(context.packageManager) == null && a.kind != PhoneAction.Kind.SHARE) {
-                    return@runCatching "Nothing on this phone handles ${a.kind.token}"
+                    return@runCatching context.getString(R.string.app_hands_no_handler, a.kind.token)
                 }
                 context.startActivity(intent)
                 null
             }
         }
-    }.getOrElse { "Couldn't: ${it.message?.take(80) ?: it::class.simpleName}" }
+    }.getOrElse { context.getString(R.string.app_hands_failed, it.message?.take(80) ?: it::class.simpleName.orEmpty()) }
 
     /** The launcher Intent for the installed app whose label matches [name] (case-insensitive,
      *  exact first, then contains) — or an Intent with no component when nothing does. */
@@ -120,7 +121,7 @@ object PhoneHands {
         val cm = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         val id = cm.cameraIdList.firstOrNull { cid ->
             cm.getCameraCharacteristics(cid).get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
-        } ?: return "No flash on this phone"
+        } ?: return context.getString(R.string.app_hands_no_flash)
         cm.setTorchMode(id, on)
         return null
     }

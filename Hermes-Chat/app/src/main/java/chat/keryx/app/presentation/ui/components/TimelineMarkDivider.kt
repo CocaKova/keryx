@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -62,11 +64,12 @@ fun TimelineMarkDivider(mark: TimelineMark, stateKey: String) {
                 .clip(RoundedCornerShape(KeryxRadius.chip))
                 .then(
                     if (detail != null) Modifier.clickable(
-                        onClickLabel = if (open) "Hide what it said" else "Read what it said",
+                        onClickLabel = if (open) stringResource(R.string.chat_mark_hide) else stringResource(R.string.chat_mark_read),
                     ) { open = !open } else Modifier
                 ),
         ) {
             val line = meta.copy(alpha = 0.18f)
+            val systemLabel = stringResource(R.string.chat_mark_system, mark.label)
             Box(Modifier.weight(1f).height(1.dp).background(line))
             Text(
                 text = when {
@@ -84,7 +87,7 @@ fun TimelineMarkDivider(mark: TimelineMark, stateKey: String) {
                 modifier = Modifier
                     .padding(horizontal = 12.dp)
                     .widthIn(max = 300.dp)
-                    .semantics { contentDescription = "System: ${mark.label}" },
+                    .semantics { contentDescription = systemLabel },
             )
             Box(Modifier.weight(1f).height(1.dp).background(line))
         }

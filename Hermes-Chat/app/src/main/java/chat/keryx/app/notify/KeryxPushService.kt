@@ -1,5 +1,7 @@
 package chat.keryx.app.notify
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
@@ -88,7 +90,7 @@ class PushSyncWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun getForegroundInfo(): androidx.work.ForegroundInfo =
-        KeryxNotifications.workerForeground(applicationContext, "Checking for messages…")
+        KeryxNotifications.workerForeground(applicationContext, KeryxText.get(R.string.app_push_checking))
 
     override suspend fun doWork(): Result {
         val app = applicationContext as? KeryxApp ?: return Result.failure()
@@ -123,7 +125,7 @@ class PushSyncWorker(
         if (message == null || message.sender == SenderType.ME) return Result.success()
         val roomName = withTimeoutOrNull(2_000L) {
             app.transport.getRooms().first().firstOrNull { it.id == roomId }?.name
-        } ?: "New message"
+        } ?: KeryxText.get(R.string.app_new_message)
         KeryxNotifications.notifyMessage(
             context = applicationContext,
             roomId = roomId,

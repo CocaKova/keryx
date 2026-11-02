@@ -18,8 +18,13 @@ internal class ProfileOps(private val gw: GatewayCalls) {
         })
         val applied = res["applied"] as? JsonObject
         if (meta != null && (applied?.get("ui_meta") as? JsonPrimitive)?.contentOrNull == "false") {
-            error("the gateway refused the bot's metadata" +
-                (applied["ui_meta_conflicts"]?.let { " (edited elsewhere — try again)" } ?: ""))
+            error(
+                chat.keryx.app.KeryxText.get(
+                    if (applied["ui_meta_conflicts"] != null) chat.keryx.app.R.string.agent_profile_meta_conflict
+                    else chat.keryx.app.R.string.agent_profile_meta_refused,
+                ),
+            )
+
         }
     }
 

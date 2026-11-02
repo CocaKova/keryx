@@ -70,6 +70,9 @@ import chat.keryx.core.model.ModelCatalog
 import chat.keryx.core.model.ModelChoice
 import chat.keryx.core.model.ModelPicker
 import chat.keryx.core.model.ModelPricing
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import kotlinx.coroutines.launch
 
 /**
@@ -125,7 +128,7 @@ fun ModelPickerSheet(
         onDismiss()
     }
 
-    KeryxSheet(onDismiss = onDismiss, title = "Model", sheetState = sheetState) {
+    KeryxSheet(onDismiss = onDismiss, title = stringResource(R.string.settings_brain_model), sheetState = sheetState) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Spacer(Modifier.height(6.dp))
             CurrentBrainCard(plan.current, catalog, loading, onRefresh)
@@ -134,12 +137,12 @@ fun ModelPickerSheet(
                 value = query,
                 onValueChange = { query = it },
                 singleLine = true,
-                placeholder = { Text("Find a model, a lab, a provider…", fontSize = KeryxType.body) },
+                placeholder = { Text(stringResource(R.string.settings_model_search_hint), fontSize = KeryxType.body) },
                 leadingIcon = { Icon(KeryxGlyphs.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
                 trailingIcon = {
                     AnimatedVisibility(query.isNotEmpty(), enter = keryxPop(), exit = keryxVanish()) {
                         IconButton(onClick = { query = "" }) {
-                            Icon(KeryxGlyphs.Close, contentDescription = "Clear", modifier = Modifier.size(16.dp))
+                            Icon(KeryxGlyphs.Close, contentDescription = stringResource(R.string.settings_clear), modifier = Modifier.size(16.dp))
                         }
                     }
                 },
@@ -182,9 +185,9 @@ fun ModelPickerSheet(
             if (rows.isEmpty()) item(key = "empty") {
                 Text(
                     when {
-                        loading && catalog == null -> "Reading the catalog…"
-                        query.isNotBlank() -> "Nothing answers to “${query.trim()}”"
-                        else -> "No routes from the gateway"
+                        loading && catalog == null -> stringResource(R.string.settings_model_reading_catalog)
+                        query.isNotBlank() -> stringResource(R.string.settings_model_no_match, query.trim())
+                        else -> stringResource(R.string.settings_model_no_routes)
                     },
                     fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 18.dp),
@@ -201,7 +204,7 @@ fun ModelPickerSheet(
                         )
                         is PickerRow.Fold -> FoldRow(row.count) { toggle(row.groupKey) }
                         is PickerRow.MachinesHead -> SectionHead(
-                            ModelPicker.Section("machines", "Machines", "the brains the Spire can swap in", null, null, emptyList()),
+                            ModelPicker.Section("machines", stringResource(R.string.settings_model_machines), stringResource(R.string.settings_model_machines_blurb), null, null, emptyList()),
                         )
                         is PickerRow.Machine -> MachineRow(row.entry, active = row.entry.name == brains?.active) {
                             haptics.commit(); onBrainPick(row.entry.name); onDismiss()
@@ -263,12 +266,13 @@ private fun kindTint(kind: ModelPicker.Kind?): Color = when (kind) {
     null -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 
-private fun kindWord(kind: ModelPicker.Kind?): String = when (kind) {
-    ModelPicker.Kind.LOCAL -> "this machine"
-    ModelPicker.Kind.CLOUD -> "cloud"
-    ModelPicker.Kind.AGGREGATOR -> "aggregator"
-    ModelPicker.Kind.VIRTUAL -> "virtual"
-    null -> ""
+@androidx.annotation.StringRes
+private fun kindWord(kind: ModelPicker.Kind?): Int? = when (kind) {
+    ModelPicker.Kind.LOCAL -> R.string.settings_model_kind_local
+    ModelPicker.Kind.CLOUD -> R.string.settings_model_kind_cloud
+    ModelPicker.Kind.AGGREGATOR -> R.string.settings_model_kind_aggregator
+    ModelPicker.Kind.VIRTUAL -> R.string.settings_model_kind_virtual
+    null -> null
 }
 
 @Composable
@@ -281,10 +285,10 @@ private fun CurrentBrainCard(current: ModelChoice?, catalog: ModelCatalog?, load
             Box(Modifier.size(9.dp).clip(CircleShape).background(kindTint(kind).copy(alpha = breathingAlpha(active = current != null, low = 0.5f))))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("NOW", fontSize = KeryxType.micro, letterSpacing = 2.sp, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.settings_model_now).uppercase(), fontSize = KeryxType.micro, letterSpacing = 2.sp, color = MaterialTheme.colorScheme.primary)
                 // The name slides up when the brain changes — the card answers the pick.
                 AnimatedContent(
-                    targetState = current?.shortName ?: catalog?.model?.ifBlank { null } ?: "no model",
+                    targetState = current?.shortName ?: catalog?.model?.ifBlank { null } ?: stringResource(R.string.settings_model_none),
                     transitionSpec = {
                         (fadeIn(KeryxMotion.settle) + slideInVertically(KeryxMotion.settleInt) { it / 2 })
                             .togetherWith(fadeOut(KeryxMotion.leave) + slideOutVertically(KeryxMotion.leaveInt) { -it / 2 })
@@ -298,7 +302,7 @@ private fun CurrentBrainCard(current: ModelChoice?, catalog: ModelCatalog?, load
                 }
                 val line = listOfNotNull(
                     provider?.name,
-                    kindWord(kind).takeIf { it.isNotEmpty() },
+                    kindWord(kind)?.let { stringResource(it) },
                     current?.lab?.takeIf { it.isNotEmpty() }?.let(ModelPicker::labName),
                 ).joinToString(" · ")
                 if (line.isNotBlank()) Text(line, fontSize = KeryxType.micro, color = meta, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -324,7 +328,7 @@ private fun CurrentBrainCard(current: ModelChoice?, catalog: ModelCatalog?, load
             IconButton(onClick = onRefresh, enabled = !loading) {
                 Icon(
                     KeryxGlyphs.Refresh,
-                    contentDescription = if (loading) "Reading the catalog" else "Re-read the catalog",
+                    contentDescription = if (loading) stringResource(R.string.settings_model_reading_catalog_cd) else stringResource(R.string.settings_model_reread_catalog),
                     tint = if (loading) MaterialTheme.colorScheme.primary else meta,
                     modifier = Modifier.size(18.dp).graphicsLayer { rotationZ = spin },
                 )
@@ -346,13 +350,13 @@ private fun ScopeRow(everySession: Boolean, onChange: (Boolean) -> Unit) {
     ) {
         Column(Modifier.weight(1f)) {
             Text(
-                if (everySession) "Every session" else "This session only",
+                if (everySession) stringResource(R.string.settings_model_scope_every) else stringResource(R.string.settings_model_scope_this),
                 fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
                 color = if (everySession) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                if (everySession) "Becomes the gateway's default — every client and scheduled run follows it"
-                else "This chat — and this phone's new chats while “last model picked” is on in Settings",
+                if (everySession) stringResource(R.string.settings_model_scope_every_sub)
+                else stringResource(R.string.settings_model_scope_this_sub),
                 fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
             )
@@ -453,12 +457,12 @@ private fun ModelRow(m: ModelChoice, current: Boolean, kind: ModelPicker.Kind?, 
             MetaLine(m, muted = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (m.featured) Icon(
-            KeryxGlyphs.Star, contentDescription = "Featured", tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f),
+            KeryxGlyphs.Star, contentDescription = stringResource(R.string.settings_model_featured), tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f),
             modifier = Modifier.size(12.dp),
         )
         if (current) {
             Spacer(Modifier.width(8.dp))
-            Icon(KeryxGlyphs.Check, contentDescription = "Current", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+            Icon(KeryxGlyphs.Check, contentDescription = stringResource(R.string.settings_model_current), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
         }
     }
 }
@@ -467,18 +471,18 @@ private fun ModelRow(m: ModelChoice, current: Boolean, kind: ModelPicker.Kind?, 
 @Composable
 private fun MetaLine(m: ModelChoice, muted: Color) {
     val parts = ArrayList<Pair<String, Color?>>()
-    if (m.fast) parts += "fast" to null
-    if (m.reasoning) parts += "thinks" to null
-    if (m.canDisableReasoning == false) parts += "always thinks" to null
+    if (m.fast) parts += stringResource(R.string.settings_model_tag_fast) to null
+    if (m.reasoning) parts += stringResource(R.string.settings_model_tag_thinks) to null
+    if (m.canDisableReasoning == false) parts += stringResource(R.string.settings_model_tag_always_thinks) to null
     m.pricing?.let { p ->
         when {
-            p.free -> parts += "free" to KeryxStatus.good
+            p.free -> parts += stringResource(R.string.settings_model_tag_free) to KeryxStatus.good
             p.input.isNotBlank() || p.output.isNotBlank() ->
                 parts += "${ModelPricing.compact(p.input)} / ${ModelPricing.compact(p.output)}" to null
         }
         p.discountPercent?.takeIf { it > 0 && !p.free }?.let { parts += "−$it%" to KeryxStatus.good }
     }
-    if (m.unavailable) parts += "paid tier" to KeryxStatus.warn
+    if (m.unavailable) parts += stringResource(R.string.settings_model_tag_paid) to KeryxStatus.warn
     if (parts.isEmpty()) return
     Row(verticalAlignment = Alignment.CenterVertically) {
         parts.forEachIndexed { i, (text, tint) ->
@@ -500,7 +504,7 @@ private fun FoldRow(count: Int, onClick: () -> Unit) {
     ) {
         Spacer(Modifier.width(19.dp))
         Text(
-            "$count more", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+            pluralStringResource(R.plurals.settings_model_more, count, count), fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
             fontFamily = FontFamily.Monospace,
         )
         Spacer(Modifier.width(6.dp))
@@ -542,6 +546,6 @@ private fun MachineRow(b: HermesStreamClient.BrainEntry, active: Boolean, onClic
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
-        if (active) Icon(KeryxGlyphs.Check, contentDescription = "Serving", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+        if (active) Icon(KeryxGlyphs.Check, contentDescription = stringResource(R.string.settings_model_serving), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
     }
 }

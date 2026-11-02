@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -87,8 +89,9 @@ fun RawConfigEditor(viewModel: ChatViewModel, onDismiss: () -> Unit) {
         onClose = requestClose,
         liveSlot = {
             Text(
-                path.substringAfterLast('/').ifBlank { "config.yaml" } +
-                    if (dirty) " · unsaved" else "",
+                path.substringAfterLast('/').ifBlank { "config.yaml" }.let {
+                    if (dirty) stringResource(R.string.chat_config_unsaved, it) else it
+                },
                 fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -97,7 +100,7 @@ fun RawConfigEditor(viewModel: ChatViewModel, onDismiss: () -> Unit) {
         actions = {
             if (draft != null) {
                 TextButton(enabled = !saving && dirty, onClick = { save(force = false) }) {
-                    Text(if (saving) "Saving…" else "Save")
+                    Text(if (saving) stringResource(R.string.chat_saving) else stringResource(R.string.chat_save))
                 }
             }
         },
@@ -114,20 +117,20 @@ fun RawConfigEditor(viewModel: ChatViewModel, onDismiss: () -> Unit) {
             }
             when {
                 loadError != null -> Text(
-                    "Couldn't load config.yaml. ${chat.keryx.core.model.FriendlyError.of(loadError)}",
+                    stringResource(R.string.chat_config_load_failed, chat.keryx.core.model.FriendlyError.of(loadError)),
                     color = MaterialTheme.colorScheme.error,
                     fontSize = KeryxType.caption,
                     modifier = Modifier.padding(vertical = 20.dp),
                 )
                 draft == null -> Text(
-                    "Loading…",
+                    stringResource(R.string.chat_loading),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = KeryxType.caption,
                     modifier = Modifier.padding(vertical = 20.dp),
                 )
                 else -> {
                     Text(
-                        "Saved changes take effect on the next gateway restart for most sections.",
+                        stringResource(R.string.chat_config_restart_note),
                         fontSize = KeryxType.micro,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 6.dp),
@@ -148,17 +151,17 @@ fun RawConfigEditor(viewModel: ChatViewModel, onDismiss: () -> Unit) {
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmForce = null },
-            title = { Text("Save anyway?", fontSize = KeryxType.titleLarge) },
+            title = { Text(stringResource(R.string.chat_save_anyway_title), fontSize = KeryxType.titleLarge) },
             // The gateway's own words — it counted the sections, so it says which ones go.
             text = { Text(message, fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmForce = null
                     save(force = true)
-                }) { Text("Save anyway", color = MaterialTheme.colorScheme.error) }
+                }) { Text(stringResource(R.string.chat_save_anyway), color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmForce = null }) { Text("Cancel") }
+                TextButton(onClick = { confirmForce = null }) { Text(stringResource(R.string.chat_cancel)) }
             },
         )
     }
@@ -167,15 +170,15 @@ fun RawConfigEditor(viewModel: ChatViewModel, onDismiss: () -> Unit) {
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmDiscard = false },
-            title = { Text("Discard changes?", fontSize = KeryxType.titleLarge) },
-            text = { Text("config.yaml on the gateway is untouched.", fontSize = KeryxType.body) },
+            title = { Text(stringResource(R.string.chat_discard_title), fontSize = KeryxType.titleLarge) },
+            text = { Text(stringResource(R.string.chat_config_untouched), fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = { confirmDiscard = false; onDismiss() }) {
-                    Text("Discard", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.chat_discard), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDiscard = false }) { Text("Keep editing") }
+                TextButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.chat_keep_editing)) }
             },
         )
     }

@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -101,6 +104,8 @@ fun BotsSpace(
     val showHidden by bots.showHidden.collectAsState()
     val routineCounts by bots.routineCounts.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
+    // Toasts land in callbacks, where stringResource can't be called.
+    val botsCtx = androidx.compose.ui.platform.LocalContext.current
     var editing by remember { mutableStateOf<BotProfile?>(null) }
     var creating by remember { mutableStateOf(false) }
     var routinesFor by remember { mutableStateOf<BotProfile?>(null) }
@@ -141,7 +146,7 @@ fun BotsSpace(
     }
 
     KeryxSpace(
-        title = "Bots",
+        title = stringResource(R.string.agent_bots_title),
         hint = chat.keryx.app.presentation.tour.KeryxHints.BOTS,
         onClose = onClose,
         standalone = false,
@@ -153,14 +158,14 @@ fun BotsSpace(
                 IconButton(onClick = { bots.setShowHidden(!showHidden) }) {
                     Icon(
                         KeryxGlyphs.Scope,
-                        contentDescription = if (showHidden) "Hide hidden bots" else "Show hidden bots",
+                        contentDescription = if (showHidden) stringResource(R.string.agent_bots_hide_hidden) else stringResource(R.string.agent_bots_show_hidden),
                         tint = if (showHidden) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
                 }
             }
             IconButton(onClick = { creating = true }) {
-                Icon(KeryxGlyphs.Plus, contentDescription = "New agent", tint = MaterialTheme.colorScheme.primary)
+                Icon(KeryxGlyphs.Plus, contentDescription = stringResource(R.string.agent_new_agent), tint = MaterialTheme.colorScheme.primary)
             }
         },
     ) {
@@ -168,10 +173,10 @@ fun BotsSpace(
         when {
             snap == null -> if (panel.error == null) PanelLoading()
             all.isEmpty() -> KeryxEmptyState(
-                title = "No bots yet",
-                body = "Each bot is a profile on your gateway, with its own model, memory and chats.",
+                title = stringResource(R.string.agent_bots_empty_title),
+                body = stringResource(R.string.agent_bots_empty_body),
                 illustration = { BotsIllustration() },
-                actionLabel = "Make the first bot",
+                actionLabel = stringResource(R.string.agent_bots_make_first),
                 onAction = { creating = true },
             )
             else -> LazyColumn(
@@ -184,7 +189,7 @@ fun BotsSpace(
                             value = query,
                             onValueChange = { query = it },
                             singleLine = true,
-                            placeholder = { Text("Search bots", fontSize = KeryxType.body) },
+                            placeholder = { Text(stringResource(R.string.agent_bots_search), fontSize = KeryxType.body) },
                             leadingIcon = { Icon(KeryxGlyphs.Search, contentDescription = null, modifier = Modifier.size(16.dp)) },
                             shape = RoundedCornerShape(KeryxRadius.field),
                             modifier = Modifier.fillMaxWidth(),
@@ -197,13 +202,13 @@ fun BotsSpace(
                     item(key = "groups-head") {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                             Text(
-                                "Group chats",
+                                stringResource(R.string.agent_group_chats),
                                 fontSize = KeryxType.caption,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.weight(1f),
                             )
-                            TextButton(onClick = { creatingGroup = true }) { Text("New group chat") }
+                            TextButton(onClick = { creatingGroup = true }) { Text(stringResource(R.string.agent_new_group_chat)) }
                         }
                     }
                     items(groupRows, key = { "group:" + it.room.roomId }) { row ->
@@ -211,7 +216,7 @@ fun BotsSpace(
                     }
                     item(key = "bots-head") {
                         Text(
-                            "Bots",
+                            stringResource(R.string.agent_bots_title),
                             fontSize = KeryxType.caption,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -230,7 +235,7 @@ fun BotsSpace(
                         onOpen = { open(bot) },
                         onNewSession = {
                             viewModel.sessions.createSession("", profile = bot) { err ->
-                                err?.let { viewModel.toast("Couldn't start a session with ${bot.label}. ${chat.keryx.core.model.FriendlyError.of(it.toString())}") }
+                                err?.let { viewModel.toast(botsCtx.getString(R.string.agent_bots_session_failed, bot.label, chat.keryx.core.model.FriendlyError.of(it.toString()))) }
                             }
                             onOpened()
                         },
@@ -254,7 +259,7 @@ fun BotsSpace(
                             enabling = true
                             bots.enableMessaging { err ->
                                 enabling = false
-                                viewModel.toast(err?.let { "Couldn't arm every bot — $it" } ?: "Bot messaging armed on this gateway")
+                                viewModel.toast(err?.let { botsCtx.getString(R.string.agent_bots_arm_failed, it) } ?: botsCtx.getString(R.string.agent_bots_armed))
                             }
                         },
                     )
@@ -303,18 +308,17 @@ fun BotsSpace(
         androidx.compose.material3.AlertDialog(
             shape = RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { freshFor = null },
-            title = { Text("Start a fresh Bot Chat?", fontSize = KeryxType.titleLarge) },
+            title = { Text(stringResource(R.string.agent_bots_fresh_title), fontSize = KeryxType.titleLarge) },
             text = {
                 Text(
-                    "${bot.label}'s current Bot Chat is retired — kept and readable under Sessions — " +
-                        "and a new, empty Bot Chat takes its place.",
+                    stringResource(R.string.agent_bots_fresh_body, bot.label),
                     fontSize = KeryxType.body,
                 )
             },
             confirmButton = {
-                TextButton(onClick = { freshFor = null; bots.startFresh(bot); onOpened() }) { Text("Start fresh") }
+                TextButton(onClick = { freshFor = null; bots.startFresh(bot); onOpened() }) { Text(stringResource(R.string.agent_bots_start_fresh)) }
             },
-            dismissButton = { TextButton(onClick = { freshFor = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { freshFor = null }) { Text(stringResource(R.string.mk_cancel)) } },
         )
     }
 }
@@ -364,19 +368,19 @@ private fun NewGroupSheet(
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val count = picked.size
-    KeryxSheet(onDismiss = onDismiss, title = "New group chat") {
+    KeryxSheet(onDismiss = onDismiss, title = stringResource(R.string.agent_new_group_chat)) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
                 singleLine = true,
-                placeholder = { Text("Room name") },
+                placeholder = { Text(stringResource(R.string.agent_room_name)) },
                 shape = RoundedCornerShape(KeryxRadius.field),
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(10.dp))
             Text(
-                "Pick ${chat.keryx.core.model.GroupChats.MIN_MEMBERS}–${chat.keryx.core.model.GroupChats.MAX_MEMBERS} bots · $count picked",
+                stringResource(R.string.agent_group_pick, chat.keryx.core.model.GroupChats.MIN_MEMBERS, chat.keryx.core.model.GroupChats.MAX_MEMBERS, count),
                 fontSize = KeryxType.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -405,7 +409,7 @@ private fun NewGroupSheet(
                     if (!joinable || bot.description.isNotBlank()) {
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            if (joinable) bot.description else "can't join rooms: \"_\" in its profile name",
+                            if (joinable) bot.description else stringResource(R.string.agent_group_cant_join),
                             fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -425,7 +429,7 @@ private fun NewGroupSheet(
                             if (room != null) onCreated(room) else error = err
                         }
                     },
-                ) { Text(if (busy) "Creating…" else "Create") }
+                ) { Text(if (busy) stringResource(R.string.agent_creating) else stringResource(R.string.agent_create)) }
             }
         }
     }
@@ -447,21 +451,21 @@ private fun BotSessionsSheet(
     val result by produceState<Result<chat.keryx.core.model.BotSessions>?>(initialValue = null, bot.name) {
         value = viewModel.bots.sessions(bot)
     }
-    KeryxSheet(onDismiss = onDismiss, title = "${bot.label} · sessions") {
+    KeryxSheet(onDismiss = onDismiss, title = stringResource(R.string.agent_bot_sessions_title, bot.label)) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
             Spacer(Modifier.height(6.dp))
             val r = result
             when {
-                r == null -> Text("Loading…", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                r == null -> Text(stringResource(R.string.agent_loading), fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 r.isFailure -> Text(
-                    "Couldn't load sessions: ${r.exceptionOrNull()?.message?.take(100) ?: "try again"}",
+                    stringResource(R.string.agent_bot_sessions_failed, r.exceptionOrNull()?.message?.take(100) ?: stringResource(R.string.agent_try_again)),
                     fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error,
                 )
                 else -> {
                     val data = r.getOrThrow()
-                    SessionSection("Recent", data.recent, "No side sessions or runs yet — the Bot Chat is the only one.", onOpen)
+                    SessionSection(stringResource(R.string.agent_recent), data.recent, stringResource(R.string.agent_bot_recent_empty), onOpen)
                     Spacer(Modifier.height(12.dp))
-                    SessionSection("Past Bot Chats", data.past, "None retired yet.", onOpen)
+                    SessionSection(stringResource(R.string.agent_past_bot_chats), data.past, stringResource(R.string.agent_none_retired), onOpen)
                 }
             }
         }
@@ -493,7 +497,7 @@ private fun SessionSection(
             val meta = buildString {
                 if (room.timestamp > 0) append(relativeWhen(room.timestamp))
                 if (room.source.isNotBlank()) { if (isNotEmpty()) append(" · "); append(room.source) }
-                if (room.messageCount > 0) { if (isNotEmpty()) append(" · "); append("${room.messageCount} msgs") }
+                if (room.messageCount > 0) { if (isNotEmpty()) append(" · "); append(pluralStringResource(R.plurals.agent_session_msgs, room.messageCount.toInt(), room.messageCount.toInt())) }
             }
             if (meta.isNotEmpty()) Text(meta, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -510,7 +514,7 @@ private fun ActiveNowStrip(active: List<BotProfile>, viewModel: ChatViewModel, o
         KeryxBreathingDot(color = KeryxStatus.good, alive = true)
         Spacer(Modifier.width(8.dp))
         Text(
-            "ACTIVE NOW",
+            stringResource(R.string.agent_active_now),
             fontSize = KeryxType.micro, letterSpacing = 1.5.sp, fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -623,16 +627,16 @@ private fun BotRow(
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
                     )
-                    if (bot.isDefault) Chip("main", MaterialTheme.colorScheme.primary)
+                    if (bot.isDefault) Chip(stringResource(R.string.agent_bot_main), MaterialTheme.colorScheme.primary)
                     if (pinned) {
                         Spacer(Modifier.width(4.dp))
-                        Icon(KeryxGlyphs.PinFilled, contentDescription = "Pinned", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(12.dp))
+                        Icon(KeryxGlyphs.PinFilled, contentDescription = stringResource(R.string.agent_pinned), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(12.dp))
                     }
-                    if (routines > 0) Chip("$routines routine${if (routines == 1) "" else "s"}", light.accent)
+                    if (routines > 0) Chip(pluralStringResource(R.plurals.agent_routines_count, routines, routines), light.accent)
                 }
                 val line = bot.canonical?.preview?.takeIf { it.isNotBlank() && !chat.keryx.core.model.SilenceTokens.isSilent(it) }
                     ?: bot.description.takeIf { it.isNotBlank() }
-                    ?: "Tap to start ${bot.label}'s chat"
+                    ?: stringResource(R.string.agent_bot_tap_to_start, bot.label)
                 Text(
                     line,
                     fontSize = KeryxType.caption,
@@ -642,7 +646,7 @@ private fun BotRow(
                 val meta = buildString {
                     bot.canonical?.lastActive?.takeIf { it > 0 }?.let { append(relativeWhen(it)) }
                     if (bot.model.isNotBlank()) { if (isNotEmpty()) append(" · "); append(bot.model) }
-                    if (!bot.managed) { if (isNotEmpty()) append(" · "); append("not armed") }
+                    if (!bot.managed) { if (isNotEmpty()) append(" · "); append(stringResource(R.string.agent_bot_not_armed)) }
                 }
                 if (meta.isNotEmpty()) Text(meta, fontSize = KeryxType.micro, color = chat.keryx.app.theme.quietInk(alpha = 0.7f), maxLines = 1)
             }
@@ -652,20 +656,20 @@ private fun BotRow(
             }
         }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-            DropdownMenuItem(text = { Text("Open chat") }, onClick = { menu = false; onOpen() })
-            DropdownMenuItem(text = { Text("Sessions") }, onClick = { menu = false; onSessions() })
-            DropdownMenuItem(text = { Text("New side session") }, onClick = { menu = false; onNewSession() })
+            DropdownMenuItem(text = { Text(stringResource(R.string.agent_open_chat)) }, onClick = { menu = false; onOpen() })
+            DropdownMenuItem(text = { Text(stringResource(R.string.agent_spoke_sessions)) }, onClick = { menu = false; onSessions() })
+            DropdownMenuItem(text = { Text(stringResource(R.string.agent_new_side_session)) }, onClick = { menu = false; onNewSession() })
             if (bot.canonical != null) {
-                DropdownMenuItem(text = { Text("Start a fresh Bot Chat") }, onClick = { menu = false; onFresh() })
+                DropdownMenuItem(text = { Text(stringResource(R.string.agent_start_fresh_bot_chat)) }, onClick = { menu = false; onFresh() })
             }
             DropdownMenuItem(
-                text = { Text(if (pinned) "Unpin from sessions" else "Pin to top of sessions") },
+                text = { Text(if (pinned) stringResource(R.string.agent_unpin_sessions) else stringResource(R.string.agent_pin_sessions)) },
                 onClick = { menu = false; onPin() },
             )
-            DropdownMenuItem(text = { Text("Edit name & role") }, onClick = { menu = false; onEdit() })
-            DropdownMenuItem(text = { Text("Routines" + if (routines > 0) " · $routines" else "") }, onClick = { menu = false; onRoutines() })
+            DropdownMenuItem(text = { Text(stringResource(R.string.agent_edit_name_role)) }, onClick = { menu = false; onEdit() })
+            DropdownMenuItem(text = { Text(if (routines > 0) stringResource(R.string.agent_routines_n, routines) else stringResource(R.string.agent_routines)) }, onClick = { menu = false; onRoutines() })
             DropdownMenuItem(
-                text = { Text(if (bot.hidden) "Unhide" else "Hide from roster") },
+                text = { Text(if (bot.hidden) stringResource(R.string.agent_unhide) else stringResource(R.string.agent_hide_from_roster)) },
                 onClick = { menu = false; onHide() },
             )
         }
@@ -702,23 +706,28 @@ private fun MessagingCard(armed: Boolean, protocolOn: Boolean, managed: Int, tot
             KeryxBreathingDot(color = if (armed) KeryxStatus.good else KeryxStatus.idle, alive = false)
             Spacer(Modifier.width(8.dp))
             Text(
-                if (armed) "Bot-to-bot messaging is on" else "Bot-to-bot messaging is off",
+                if (armed) stringResource(R.string.agent_msg_on) else stringResource(R.string.agent_msg_off),
                 fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold,
             )
         }
         Spacer(Modifier.height(4.dp))
         Text(
             when {
-                !protocolOn -> "The gateway's agent.bot_mode_protocol switch is off in config.yaml — flip it there and every Bot Chat learns the teammate protocol."
-                armed -> "$managed of $total profiles carry the Bot Mode block. Their Bot Chats can @mention each other with message_agent; a reply lands as a message from that bot."
-                else -> "Arm it once and every Bot Chat gets the message_agent tool: bots can hand work to each other by @name, and replies arrive attributed. Regular sessions are untouched."
+                !protocolOn -> stringResource(R.string.agent_msg_protocol_off)
+                armed -> stringResource(R.string.agent_msg_armed, managed, total)
+                else -> stringResource(R.string.agent_msg_explain)
             },
             fontSize = KeryxType.micro, lineHeight = 15.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (protocolOn && managed < total) {
             TextButton(onClick = onEnable, enabled = !busy) {
-                Text(if (busy) "Arming…" else if (armed) "Arm the remaining ${total - managed}" else "Turn on bot messaging", fontSize = KeryxType.caption)
+                Text(
+                    if (busy) stringResource(R.string.agent_arming)
+                    else if (armed) stringResource(R.string.agent_arm_remaining, total - managed)
+                    else stringResource(R.string.agent_turn_on_messaging),
+                    fontSize = KeryxType.caption,
+                )
             }
         }
     }
@@ -748,19 +757,19 @@ private fun BotEditSheet(
     var error by remember { mutableStateOf<String?>(null) }
     val slug = BotRoster.slug(name)
     val taken = bot == null && existing.any { it.name == slug }
-    KeryxSheet(onDismiss = onDismiss, title = if (bot == null) "New agent" else "Edit ${bot.label}", sheetState = sheetState) {
+    KeryxSheet(onDismiss = onDismiss, title = if (bot == null) stringResource(R.string.agent_new_agent) else stringResource(R.string.agent_edit_named, bot.label), sheetState = sheetState) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
             Spacer(Modifier.height(6.dp))
             if (bot == null) {
                 OutlinedTextField(
                     value = name, onValueChange = { name = it; error = null },
-                    label = { Text("Name") },
+                    label = { Text(stringResource(R.string.agent_name_label)) },
                     supportingText = {
                         Text(
                             when {
-                                taken -> "A profile named $slug already exists"
-                                slug.isNotBlank() && slug != name.trim() -> "Profile: $slug"
-                                else -> "The profile's name — lowercase, dashes ok"
+                                taken -> stringResource(R.string.agent_profile_taken, slug)
+                                slug.isNotBlank() && slug != name.trim() -> stringResource(R.string.agent_profile_slug, slug)
+                                else -> stringResource(R.string.agent_profile_name_hint)
                             },
                             fontSize = KeryxType.micro,
                         )
@@ -774,31 +783,32 @@ private fun BotEditSheet(
             }
             OutlinedTextField(
                 value = title, onValueChange = { title = it },
-                label = { Text("Title") },
-                supportingText = { Text("What the roster calls it (\"Research Buddy\") — also its @tag", fontSize = KeryxType.micro) },
+                label = { Text(stringResource(R.string.agent_title_label)) },
+                supportingText = { Text(stringResource(R.string.agent_bot_title_hint), fontSize = KeryxType.micro) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(
                 value = role, onValueChange = { role = it },
-                label = { Text("Role") },
-                supportingText = { Text("One line teammates read before choosing whom to message", fontSize = KeryxType.micro) },
+                label = { Text(stringResource(R.string.agent_role_label)) },
+                supportingText = { Text(stringResource(R.string.agent_role_hint), fontSize = KeryxType.micro) },
                 minLines = 2, maxLines = 4,
                 modifier = Modifier.fillMaxWidth(),
             )
             if (bot == null && existing.isNotEmpty()) {
                 Spacer(Modifier.height(10.dp))
-                KeryxSectionHeader("Start from")
+                KeryxSectionHeader(stringResource(R.string.agent_start_from))
                 Spacer(Modifier.height(6.dp))
                 Row(Modifier.horizontalScroll(rememberScrollState())) {
-                    ClonePill("Fresh profile", cloneFrom == null) { cloneFrom = null }
+                    ClonePill(stringResource(R.string.agent_fresh_profile), cloneFrom == null) { cloneFrom = null }
                     existing.filter { !it.hidden }.forEach { src ->
                         ClonePill(src.label, cloneFrom == src.name) { cloneFrom = src.name }
                     }
                 }
                 Text(
-                    if (cloneFrom == null) "Bundled skills, a clean memory." else "Copies ${existing.firstOrNull { it.name == cloneFrom }?.label}'s config, skills and SOUL.",
+                    if (cloneFrom == null) stringResource(R.string.agent_fresh_profile_desc)
+                    else stringResource(R.string.agent_clone_desc, existing.firstOrNull { it.name == cloneFrom }?.label.orEmpty()),
                     fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
                 )
@@ -809,7 +819,7 @@ private fun BotEditSheet(
             }
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onDismiss, enabled = !busy) { Text("Cancel") }
+                TextButton(onClick = onDismiss, enabled = !busy) { Text(stringResource(R.string.mk_cancel)) }
                 TextButton(
                     enabled = !busy && (bot != null || (slug.isNotBlank() && !taken)),
                     onClick = {
@@ -830,7 +840,14 @@ private fun BotEditSheet(
                             }
                         }
                     },
-                ) { Text(if (busy) (if (bot == null) "Creating…" else "Saving…") else if (bot == null) "Create" else "Save") }
+                ) {
+                    Text(
+                        stringResource(
+                            if (busy) (if (bot == null) R.string.agent_creating else R.string.agent_saving)
+                            else if (bot == null) R.string.agent_create else R.string.agent_save,
+                        ),
+                    )
+                }
             }
         }
     }
@@ -866,12 +883,12 @@ private fun BotRoutinesSheet(bot: BotProfile, viewModel: ChatViewModel, onOpenRu
     val jobsPanel by viewModel.hub.jobs.collectAsState()
     LaunchedEffect(Unit) { viewModel.hub.refreshJobs() }
     val jobs = remember(jobsPanel.data) { viewModel.bots.routines(bot) }
-    KeryxSheet(onDismiss = onDismiss, title = "${bot.label} · routines") {
+    KeryxSheet(onDismiss = onDismiss, title = stringResource(R.string.agent_bot_routines_title, bot.label)) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
             Spacer(Modifier.height(6.dp))
             if (jobs.isEmpty()) {
                 Text(
-                    "No routines yet. Ask ${bot.label} in its chat to schedule one — a job named \"${BotRoster.routineTag(bot.name)} …\" shows up here and runs in its own chat history.",
+                    stringResource(R.string.agent_routines_empty, bot.label, BotRoster.routineTag(bot.name)),
                     fontSize = KeryxType.caption, lineHeight = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
@@ -881,8 +898,8 @@ private fun BotRoutinesSheet(bot: BotProfile, viewModel: ChatViewModel, onOpenRu
                         Text(
                             buildString {
                                 append(job.scheduleDisplay)
-                                if (!job.enabled) append(" · paused")
-                                job.nextRunAt?.takeIf { it.isNotBlank() }?.let { append(" · next ").append(it) }
+                                if (!job.enabled) append(" · ").append(stringResource(R.string.agent_paused))
+                                job.nextRunAt?.takeIf { it.isNotBlank() }?.let { append(" · ").append(stringResource(R.string.agent_next_at, it)) }
                             },
                             fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -891,18 +908,20 @@ private fun BotRoutinesSheet(bot: BotProfile, viewModel: ChatViewModel, onOpenRu
                 }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onOpenRuns) { Text("Open Runs") }
+                TextButton(onClick = onOpenRuns) { Text(stringResource(R.string.agent_open_runs)) }
             }
         }
     }
 }
 
+@Composable
 private fun relativeWhen(ts: Long): String {
     val d = System.currentTimeMillis() - ts
     return when {
-        d < 60_000 -> "just now"
-        d < 3_600_000 -> "${d / 60_000}m ago"
-        d < 86_400_000 -> "${d / 3_600_000}h ago"
-        else -> "${d / 86_400_000}d ago"
+        d < 60_000 -> stringResource(R.string.agent_just_now)
+        d < 3_600_000 -> stringResource(R.string.agent_ago_m, (d / 60_000).toInt())
+        d < 86_400_000 -> stringResource(R.string.agent_ago_h, (d / 3_600_000).toInt())
+        else -> stringResource(R.string.agent_ago_d, (d / 86_400_000).toInt())
     }
 }
+

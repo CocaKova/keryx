@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import chat.keryx.app.presentation.tour.tourTarget
 import chat.keryx.app.presentation.tour.KeryxTour
 import androidx.compose.animation.core.animateFloat
@@ -407,9 +410,9 @@ fun NavigationDrawerContent(
                     null -> KeryxGlyphs.Moon
                 }
                 val themeLabel = when (isDarkTheme) {
-                    true -> "Switch to light"
-                    false -> "Follow system"
-                    null -> "Switch to dark"
+                    true -> stringResource(R.string.chat_theme_to_light)
+                    false -> stringResource(R.string.chat_theme_follow_system)
+                    null -> stringResource(R.string.chat_theme_to_dark)
                 }
                 IconButton(onClick = {
                     viewModel.prefs.toggleTheme(
@@ -441,7 +444,7 @@ fun NavigationDrawerContent(
                 if (!viewModel.transportIsDirect) IconButton(onClick = { showNewChat = true }) {
                     Icon(
                         KeryxGlyphs.Plus,
-                        contentDescription = "New chat",
+                        contentDescription = stringResource(R.string.chat_new_chat),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp),
                     )
@@ -469,7 +472,7 @@ fun NavigationDrawerContent(
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Jump to…") },
+                placeholder = { Text(stringResource(R.string.chat_drawer_jump_hint)) },
                 leadingIcon = { Icon(KeryxGlyphs.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
@@ -517,10 +520,10 @@ fun NavigationDrawerContent(
                         .padding(bottom = 8.dp),
                 ) {
                     listOf(
-                        LENS_NEEDS_YOU to "Needs you",
-                        LENS_RUNNING to "Running",
-                        LENS_UNREAD to "Unread",
-                        LENS_ARCHIVED to "Archived",
+                        LENS_NEEDS_YOU to stringResource(R.string.chat_lens_needs_you),
+                        LENS_RUNNING to stringResource(R.string.chat_lens_running),
+                        LENS_UNREAD to stringResource(R.string.chat_lens_unread),
+                        LENS_ARCHIVED to stringResource(R.string.chat_lens_archived),
                     ).forEach { (id, label) ->
                         val count = when (id) {
                             LENS_NEEDS_YOU -> rooms.count { it.id in needsYou }
@@ -619,10 +622,19 @@ fun NavigationDrawerContent(
                 else listOf(chat.keryx.core.model.RosterSection(chat.keryx.core.model.RosterGroup.TODAY, listRooms))
             }
 
+            // The palette's place names, resolved here: the list below is built outside composition.
+            val placeMissions = stringResource(R.string.chat_place_missions)
+            val placeRuns = stringResource(R.string.chat_place_runs)
+            val placeBots = stringResource(R.string.chat_place_bots)
+            val placeProjects = stringResource(R.string.chat_place_projects)
+            val placeShipyard = stringResource(R.string.chat_place_shipyard)
+            val placeArchive = stringResource(R.string.chat_place_archive)
+            val placeGateway = stringResource(R.string.chat_place_gateway)
+            val placeSettings = stringResource(R.string.chat_place_settings)
             LazyColumn(modifier = Modifier.weight(1f)) {
                 // Pending invitations first — they need a decision, not a scroll hunt.
                 if (invites.isNotEmpty() && query.isBlank()) {
-                    item { DrawerSectionHeader("Invites") }
+                    item { DrawerSectionHeader(stringResource(R.string.chat_drawer_invites)) }
                     items(invites, key = { "invite-${it.id}" }) { invite ->
                         InviteRow(
                             invite = invite,
@@ -677,17 +689,17 @@ fun NavigationDrawerContent(
                 if (query.isNotBlank()) {
                     val q = query.trim()
                     val places = buildList {
-                        add(Triple("Missions", KeryxGlyphs.Board, chat.keryx.app.presentation.ui.nav.KeryxDest.Missions))
-                        if (caps != null) add(Triple("Runs", KeryxGlyphs.Watch, chat.keryx.app.presentation.ui.nav.KeryxDest.Runs))
-                        if (direct) add(Triple("Bots", KeryxGlyphs.Robot, chat.keryx.app.presentation.ui.nav.KeryxDest.Bots))
-                        if (hasProjects) add(Triple("Projects", KeryxGlyphs.Folder, chat.keryx.app.presentation.ui.nav.KeryxDest.Projects))
-                        if (caps?.git == true) add(Triple("Shipyard", KeryxGlyphs.GitBranch, chat.keryx.app.presentation.ui.nav.KeryxDest.Shipyard))
-                        add(Triple("Archive", KeryxGlyphs.Archive, chat.keryx.app.presentation.ui.nav.KeryxDest.Archive))
-                        add(Triple("Gateway", KeryxGlyphs.Pulse, chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway))
-                        add(Triple("Settings", KeryxGlyphs.Sliders, chat.keryx.app.presentation.ui.nav.KeryxDest.Settings))
+                        add(Triple(placeMissions, KeryxGlyphs.Board, chat.keryx.app.presentation.ui.nav.KeryxDest.Missions))
+                        if (caps != null) add(Triple(placeRuns, KeryxGlyphs.Watch, chat.keryx.app.presentation.ui.nav.KeryxDest.Runs))
+                        if (direct) add(Triple(placeBots, KeryxGlyphs.Robot, chat.keryx.app.presentation.ui.nav.KeryxDest.Bots))
+                        if (hasProjects) add(Triple(placeProjects, KeryxGlyphs.Folder, chat.keryx.app.presentation.ui.nav.KeryxDest.Projects))
+                        if (caps?.git == true) add(Triple(placeShipyard, KeryxGlyphs.GitBranch, chat.keryx.app.presentation.ui.nav.KeryxDest.Shipyard))
+                        add(Triple(placeArchive, KeryxGlyphs.Archive, chat.keryx.app.presentation.ui.nav.KeryxDest.Archive))
+                        add(Triple(placeGateway, KeryxGlyphs.Pulse, chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway))
+                        add(Triple(placeSettings, KeryxGlyphs.Sliders, chat.keryx.app.presentation.ui.nav.KeryxDest.Settings))
                     }.filter { it.first.contains(q, ignoreCase = true) }
                     if (places.isNotEmpty()) {
-                        item(key = "palette-places") { DrawerSectionHeader("Places") }
+                        item(key = "palette-places") { DrawerSectionHeader(stringResource(R.string.chat_drawer_places)) }
                         items(places, key = { "place-" + it.first }) { (label, glyph, dest) ->
                             PaletteRow(icon = glyph, title = label, subtitle = null) { onOpenSpace(dest) }
                         }
@@ -699,7 +711,7 @@ fun NavigationDrawerContent(
                             c.description.contains(cq, ignoreCase = true)
                     }.take(6)
                     if (hits.isNotEmpty()) {
-                        item(key = "palette-commands") { DrawerSectionHeader("Commands") }
+                        item(key = "palette-commands") { DrawerSectionHeader(stringResource(R.string.chat_drawer_commands)) }
                         items(hits, key = { "cmd-" + it.cmd }) { c ->
                             PaletteRow(
                                 icon = KeryxGlyphs.Routes,
@@ -717,7 +729,7 @@ fun NavigationDrawerContent(
                     // Settings rows by name (2.10): the hit opens Settings on that row, lit.
                     val settingHits = chat.keryx.app.presentation.ui.components.SettingsCatalog.search(q, direct).take(5)
                     if (settingHits.isNotEmpty()) {
-                        item(key = "palette-settings") { DrawerSectionHeader("Settings") }
+                        item(key = "palette-settings") { DrawerSectionHeader(stringResource(R.string.chat_place_settings)) }
                         items(settingHits, key = { "setting-" + it.id }) { e ->
                             PaletteRow(icon = KeryxGlyphs.Sliders, title = e.title, subtitle = e.section(direct)) {
                                 viewModel.jumpToSetting(e.id)
@@ -731,13 +743,13 @@ fun NavigationDrawerContent(
                     item {
                         Text(
                             text = when {
-                                query.isNotBlank() -> "No matches"
-                                lens == LENS_ARCHIVED -> "Nothing archived"
-                                lens == LENS_NEEDS_YOU -> "Nothing waiting on you"
-                                lens == LENS_RUNNING -> "Nothing running"
-                                lens == LENS_UNREAD -> "All read"
+                                query.isNotBlank() -> stringResource(R.string.chat_drawer_no_matches)
+                                lens == LENS_ARCHIVED -> stringResource(R.string.chat_drawer_nothing_archived)
+                                lens == LENS_NEEDS_YOU -> stringResource(R.string.chat_drawer_nothing_waiting)
+                                lens == LENS_RUNNING -> stringResource(R.string.chat_drawer_nothing_running)
+                                lens == LENS_UNREAD -> stringResource(R.string.chat_drawer_all_read)
                                 rooms.isEmpty() -> lexicon.emptyList
-                                else -> "No matches"
+                                else -> stringResource(R.string.chat_drawer_no_matches)
                             },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = KeryxType.bodyLarge,
@@ -813,14 +825,14 @@ fun NavigationDrawerContent(
                             {
                                 val cm = moveCtx.getSystemService(android.content.ClipboardManager::class.java)
                                 cm?.setPrimaryClip(android.content.ClipData.newPlainText("session id", room.id))
-                                viewModel.toast("Session id copied")
+                                viewModel.toast(moveCtx.getString(R.string.chat_session_id_copied))
                             }
                         } else null,
                         moveTargets = if (direct) moveTargets else emptyList(),
                         onMoveToProject = if (direct) {
                             { target ->
                                 viewModel.projects.moveSessionToProject(room.id, target) { err ->
-                                    viewModel.toast(err ?: "Moved to ${target.name}")
+                                    viewModel.toast(err ?: moveCtx.getString(R.string.chat_moved_to_project, target.name))
                                 }
                             }
                         } else null,
@@ -851,7 +863,7 @@ fun NavigationDrawerContent(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            if (loadingMore) "Reaching back…" else "Show older ${lexicon.plural}",
+                            if (loadingMore) stringResource(R.string.chat_drawer_reaching_back) else stringResource(R.string.chat_drawer_show_older, lexicon.plural),
                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
                             fontSize = KeryxType.body,
                             fontWeight = FontWeight.Medium,
@@ -866,7 +878,7 @@ fun NavigationDrawerContent(
                     val shown = filtered.mapTo(HashSet()) { it.id }
                     val extras = deepHits.filterNot { it.sessionId in shown }.distinctBy { it.sessionId }
                     if (extras.isNotEmpty()) {
-                        item { DrawerSectionHeader("In transcripts") }
+                        item { DrawerSectionHeader(stringResource(R.string.chat_drawer_in_transcripts)) }
                         items(extras, key = { "hit-${it.sessionId}" }) { hit ->
                             SearchHitRow(hit = hit, onClick = {
                                 val room = rooms.firstOrNull { it.id == hit.sessionId }
@@ -905,7 +917,7 @@ fun NavigationDrawerContent(
                     if (drawerVisible) viewModel.missions.refreshKanbanQuietly()
                 }
                 DrawerDoor(
-                    KeryxGlyphs.Board, "Missions", Modifier.weight(1f).tourTarget(KeryxTour.MISSIONS),
+                    KeryxGlyphs.Board, stringResource(R.string.chat_place_missions), Modifier.weight(1f).tourTarget(KeryxTour.MISSIONS),
                     badge = missionsNeedYou,
                     urgent = true,
                     // The drawer composes while closed: the glow only breathes while it's seen.
@@ -918,7 +930,7 @@ fun NavigationDrawerContent(
                 // ride. Badged with what has landed since you last looked — the same ledger
                 // the Runs place's arrivals rail reads, so door and rail never disagree.
                 if (caps != null) DrawerDoor(
-                    KeryxGlyphs.Watch, "Runs", Modifier.weight(1f).tourTarget(KeryxTour.RUNS),
+                    KeryxGlyphs.Watch, stringResource(R.string.chat_place_runs), Modifier.weight(1f).tourTarget(KeryxTour.RUNS),
                     badge = cronBoard.data?.unread?.total ?: 0,
                 ) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Runs)
@@ -927,20 +939,20 @@ fun NavigationDrawerContent(
                 // since you last looked. Direct door only — on Matrix a room already is a
                 // profile, so the door would open onto the drawer you are standing in.
                 if (direct) DrawerDoor(
-                    KeryxGlyphs.Robot, "Bots", Modifier.weight(1f).tourTarget(KeryxTour.BOTS),
+                    KeryxGlyphs.Robot, stringResource(R.string.chat_place_bots), Modifier.weight(1f).tourTarget(KeryxTour.BOTS),
                     badge = botsUnread,
                 ) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Bots)
                 }
                 // Only where the gateway serves projects.* — the probe is the overview fetch.
-                if (hasProjects) DrawerDoor(KeryxGlyphs.Folder, "Projects", Modifier.weight(1f)) {
+                if (hasProjects) DrawerDoor(KeryxGlyphs.Folder, stringResource(R.string.chat_place_projects), Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Projects)
                 }
                 // Only where the gateway declares `git` (keryx.git.enabled) — a capability, not a probe.
-                if (caps?.git == true) DrawerDoor(KeryxGlyphs.GitBranch, "Shipyard", Modifier.weight(1f)) {
+                if (caps?.git == true) DrawerDoor(KeryxGlyphs.GitBranch, stringResource(R.string.chat_place_shipyard), Modifier.weight(1f)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Shipyard)
                 }
-                DrawerDoor(KeryxGlyphs.Archive, "Archive", Modifier.weight(1f).tourTarget(KeryxTour.ARCHIVE)) {
+                DrawerDoor(KeryxGlyphs.Archive, stringResource(R.string.chat_place_archive), Modifier.weight(1f).tourTarget(KeryxTour.ARCHIVE)) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Archive)
                 }
             }
@@ -971,11 +983,11 @@ fun NavigationDrawerContent(
             val stripContext = androidx.compose.ui.platform.LocalContext.current
             DrawerStatusStrip(
                 health = linkHealth,
-                model = if (viewModel.isDemo) "demo gateway" else caps?.model.orEmpty(),
+                model = if (viewModel.isDemo) stringResource(R.string.chat_demo_gateway) else caps?.model.orEmpty(),
                 version = hubHealth.data?.version.orEmpty(),
                 onOpenGateway = {
                     // The demo has no gateway page to show; the offer is the real one.
-                    if (viewModel.isDemo) viewModel.toast("Your gateway's page lives here once you connect one.", "Connect") {
+                    if (viewModel.isDemo) viewModel.toast(stripContext.getString(R.string.chat_demo_gateway_page), stripContext.getString(R.string.chat_connect)) {
                         viewModel.doors.leaveDemo()
                         chat.keryx.app.presentation.ui.components.relaunchApp(stripContext)
                     } else {
@@ -1018,7 +1030,7 @@ internal fun DrawerStatusStrip(
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(10.dp))
-                .clickable(onClickLabel = "Open the Gateway", onClick = onOpenGateway)
+                .clickable(onClickLabel = stringResource(R.string.chat_open_gateway), onClick = onOpenGateway)
                 .padding(horizontal = 8.dp, vertical = 12.dp),
         ) {
             chat.keryx.app.presentation.ui.components.LinkHealthDot(health = health, compact = true)
@@ -1035,7 +1047,7 @@ internal fun DrawerStatusStrip(
         IconButton(onClick = onOpenSettings) {
             Icon(
                 KeryxGlyphs.Sliders,
-                contentDescription = "Settings",
+                contentDescription = stringResource(R.string.chat_settings),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp),
             )
@@ -1124,7 +1136,7 @@ internal fun DrawerShelfHeader(
         }
         Icon(
             KeryxGlyphs.ChevronDown,
-            contentDescription = if (expanded) "Fold $title" else "Open $title",
+            contentDescription = if (expanded) stringResource(R.string.chat_shelf_fold, title) else stringResource(R.string.chat_shelf_open, title),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             modifier = Modifier.size(16.dp).graphicsLayer { rotationZ = chevron },
         )
@@ -1371,7 +1383,7 @@ fun RoomRow(
                     Spacer(modifier = Modifier.width(6.dp))
                     Icon(
                         imageVector = KeryxGlyphs.Fork,
-                        contentDescription = "Forked from another conversation",
+                        contentDescription = stringResource(R.string.chat_room_forked),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.size(12.dp),
                     )
@@ -1380,7 +1392,7 @@ fun RoomRow(
                     Spacer(modifier = Modifier.width(6.dp))
                     Icon(
                         imageVector = KeryxGlyphs.Hourglass,
-                        contentDescription = "Temporary — deleted at next launch",
+                        contentDescription = stringResource(R.string.chat_room_temporary),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.size(12.dp),
                     )
@@ -1389,7 +1401,7 @@ fun RoomRow(
                     Spacer(modifier = Modifier.width(6.dp))
                     Icon(
                         imageVector = KeryxGlyphs.Star,
-                        contentDescription = "Pinned",
+                        contentDescription = stringResource(R.string.chat_room_pinned),
                         tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
                         modifier = Modifier.size(12.dp),
                     )
@@ -1415,7 +1427,7 @@ fun RoomRow(
         Column(horizontalAlignment = Alignment.End) {
             if (room.timestamp > 0L) {
                 Text(
-                    text = formatRelativeTime(room.timestamp),
+                    text = relativeTimeLabel(room.timestamp),
                     color = chat.keryx.app.theme.quietInk(on = rowFill),
                     fontSize = KeryxType.micro,
                 )
@@ -1487,7 +1499,7 @@ fun RoomRow(
         )
         if (onMarkUnread != null) {
             DropdownMenuItem(
-                text = { Text("Mark as unread") },
+                text = { Text(stringResource(R.string.chat_mark_unread)) },
                 onClick = { menuOpen = false; onMarkUnread() },
             )
         }
@@ -1495,8 +1507,8 @@ fun RoomRow(
             DropdownMenuItem(
                 text = {
                     Column {
-                        Text("Archive")
-                        Text("Off the list, still on the gateway", fontSize = KeryxType.micro,
+                        Text(stringResource(R.string.chat_archive))
+                        Text(stringResource(R.string.chat_archive_hint), fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
@@ -1506,52 +1518,52 @@ fun RoomRow(
         }
         if (onUnarchive != null) {
             DropdownMenuItem(
-                text = { Text("Restore to the list") },
+                text = { Text(stringResource(R.string.chat_restore_to_list)) },
                 leadingIcon = { Icon(KeryxGlyphs.Archive, contentDescription = null, modifier = Modifier.size(16.dp)) },
                 onClick = { menuOpen = false; onUnarchive() },
             )
         }
         if (onExport != null) {
             DropdownMenuItem(
-                text = { Text("Export…") },
+                text = { Text(stringResource(R.string.chat_export_ellipsis)) },
                 leadingIcon = { Icon(KeryxGlyphs.Share, contentDescription = null, modifier = Modifier.size(16.dp)) },
                 onClick = { menuOpen = false; onExport() },
             )
         }
         if (onCopyId != null) {
             DropdownMenuItem(
-                text = { Text("Copy session id") },
+                text = { Text(stringResource(R.string.chat_copy_session_id)) },
                 leadingIcon = { Icon(KeryxGlyphs.Copy, contentDescription = null, modifier = Modifier.size(16.dp)) },
                 onClick = { menuOpen = false; onCopyId() },
             )
         }
         if (onInvite != null) {
             DropdownMenuItem(
-                text = { Text("Invite user…") },
+                text = { Text(stringResource(R.string.chat_invite_user)) },
                 onClick = { menuOpen = false; inviteOpen = true },
             )
         }
         if (onRename != null) {
             DropdownMenuItem(
-                text = { Text("Rename…") },
+                text = { Text(stringResource(R.string.chat_rename_ellipsis)) },
                 onClick = { menuOpen = false; renameOpen = true },
             )
         }
         if (onMoveToProject != null && moveTargets.isNotEmpty()) {
             DropdownMenuItem(
-                text = { Text("Move to project…") },
+                text = { Text(stringResource(R.string.chat_move_to_project)) },
                 onClick = { menuOpen = false; moveOpen = true },
             )
         }
         if (onLeave != null) {
             DropdownMenuItem(
-                text = { Text("Leave room", color = MaterialTheme.colorScheme.error) },
+                text = { Text(stringResource(R.string.chat_leave_room), color = MaterialTheme.colorScheme.error) },
                 onClick = { menuOpen = false; confirmLeave = true },
             )
         }
         if (onDelete != null) {
             DropdownMenuItem(
-                text = { Text("Delete session…", color = MaterialTheme.colorScheme.error) },
+                text = { Text(stringResource(R.string.chat_delete_session_ellipsis), color = MaterialTheme.colorScheme.error) },
                 onClick = { menuOpen = false; confirmDelete = true },
             )
         }
@@ -1580,7 +1592,7 @@ fun RoomRow(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { inviteOpen = false },
-            title = { Text("Invite to ${room.name}", fontSize = KeryxType.titleLarge) },
+            title = { Text(stringResource(R.string.chat_invite_to, room.name), fontSize = KeryxType.titleLarge) },
             text = {
                 OutlinedTextField(
                     value = inviteId,
@@ -1594,10 +1606,10 @@ fun RoomRow(
                 TextButton(
                     enabled = inviteId.isNotBlank(),
                     onClick = { inviteOpen = false; onInvite(inviteId.trim()) },
-                ) { Text("Invite") }
+                ) { Text(stringResource(R.string.chat_invite)) }
             },
             dismissButton = {
-                TextButton(onClick = { inviteOpen = false }) { Text("Cancel") }
+                TextButton(onClick = { inviteOpen = false }) { Text(stringResource(R.string.chat_cancel)) }
             },
         )
     }
@@ -1605,15 +1617,15 @@ fun RoomRow(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmLeave = false },
-            title = { Text("Leave ${room.name}?", fontSize = KeryxType.titleLarge) },
-            text = { Text("You'll stop receiving its messages; rejoining needs a new invite.", fontSize = KeryxType.body) },
+            title = { Text(stringResource(R.string.chat_leave_title, room.name), fontSize = KeryxType.titleLarge) },
+            text = { Text(stringResource(R.string.chat_leave_body), fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = { confirmLeave = false; onLeave?.invoke() }) {
-                    Text("Leave", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.chat_leave), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmLeave = false }) { Text("Cancel") }
+                TextButton(onClick = { confirmLeave = false }) { Text(stringResource(R.string.chat_cancel)) }
             },
         )
     }
@@ -1622,7 +1634,7 @@ fun RoomRow(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { renameOpen = false },
-            title = { Text("Rename session", fontSize = KeryxType.titleLarge) },
+            title = { Text(stringResource(R.string.chat_rename_session), fontSize = KeryxType.titleLarge) },
             text = {
                 OutlinedTextField(
                     value = newTitle,
@@ -1635,10 +1647,10 @@ fun RoomRow(
                 TextButton(
                     enabled = newTitle.isNotBlank() && newTitle.trim() != room.name,
                     onClick = { renameOpen = false; onRename(newTitle.trim()) },
-                ) { Text("Rename") }
+                ) { Text(stringResource(R.string.chat_rename)) }
             },
             dismissButton = {
-                TextButton(onClick = { renameOpen = false }) { Text("Cancel") }
+                TextButton(onClick = { renameOpen = false }) { Text(stringResource(R.string.chat_cancel)) }
             },
         )
     }
@@ -1646,15 +1658,15 @@ fun RoomRow(
         AlertDialog(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete ${room.name}?", fontSize = KeryxType.titleLarge) },
-            text = { Text("Deletes the session and its whole transcript from the gateway. This can't be undone.", fontSize = KeryxType.body) },
+            title = { Text(stringResource(R.string.chat_delete_title, room.name), fontSize = KeryxType.titleLarge) },
+            text = { Text(stringResource(R.string.chat_delete_session_body), fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = { confirmDelete = false; onDelete?.invoke() }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.chat_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+                TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.chat_cancel)) }
             },
         )
     }
@@ -1685,16 +1697,16 @@ private fun InviteRow(
             overflow = TextOverflow.Ellipsis,
         )
         Text(
-            "You've been invited to this room",
+            stringResource(R.string.chat_invited_to_room),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = KeryxType.micro,
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             TextButton(onClick = onDecline) {
-                Text("Decline", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = KeryxType.body)
+                Text(stringResource(R.string.chat_decline), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = KeryxType.body)
             }
             TextButton(onClick = onAccept) {
-                Text("Accept", color = MaterialTheme.colorScheme.primary, fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.chat_accept), color = MaterialTheme.colorScheme.primary, fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -1746,7 +1758,7 @@ private fun SearchHitRow(
             if (hit.lastActive > 0L) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = formatRelativeTime(hit.lastActive),
+                    text = relativeTimeLabel(hit.lastActive),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = KeryxType.micro,
                 )
@@ -1789,11 +1801,12 @@ private fun RoomAvatar(
             label = "roomRingSpin",
         )
     } else null
+    val runningLabel = stringResource(R.string.chat_running)
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .size(42.dp)
-            .then(if (running) Modifier.semantics { contentDescription = "Running" } else Modifier)
+            .then(if (running) Modifier.semantics { contentDescription = runningLabel } else Modifier)
             .drawWithContent {
                 drawContent()
                 if (!running) return@drawWithContent
@@ -1873,7 +1886,21 @@ private fun RoomAvatarPlate(
 private fun roomAvatarColor(name: String): Color =
     chat.keryx.app.presentation.ui.components.roomLightRaw(name)
 
-/** Compact relative timestamp: now, 5m, 3h, 2d, 1w. */
+/** [formatRelativeTime], in the user's language. */
+@Composable
+internal fun relativeTimeLabel(ts: Long): String {
+    if (ts <= 0L) return ""
+    val diff = System.currentTimeMillis() - ts
+    return when {
+        diff < 60_000L -> stringResource(R.string.chat_age_now)
+        diff < 3_600_000L -> stringResource(R.string.chat_age_minutes, (diff / 60_000L).toInt())
+        diff < 86_400_000L -> stringResource(R.string.chat_age_hours, (diff / 3_600_000L).toInt())
+        diff < 604_800_000L -> stringResource(R.string.chat_age_days, (diff / 86_400_000L).toInt())
+        else -> stringResource(R.string.chat_age_weeks, (diff / 604_800_000L).toInt())
+    }
+}
+
+/** Compact relative timestamp: now, 5m, 3h, 2d, 1w. English only: prefer [relativeTimeLabel] in composables. */
 internal fun formatRelativeTime(ts: Long): String {
     if (ts <= 0L) return ""
     val diff = System.currentTimeMillis() - ts
@@ -1931,8 +1958,8 @@ private fun DrawerDoor(
                 icon,
                 contentDescription = when {
                     badge <= 0 -> label
-                    urgent -> "$label, ${DoorBadge.label(badge)} need${if (badge == 1) "s" else ""} you"
-                    else -> "$label, ${DoorBadge.label(badge)} unread"
+                    urgent -> pluralStringResource(R.plurals.chat_door_needs_you, badge, label, DoorBadge.label(badge))
+                    else -> stringResource(R.string.chat_door_unread, label, DoorBadge.label(badge))
                 },
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxSize(),

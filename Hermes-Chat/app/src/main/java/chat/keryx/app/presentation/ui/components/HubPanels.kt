@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -151,7 +154,7 @@ internal fun StatusTab(
                     Text("▶", fontSize = KeryxType.caption, color = accent)
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "turn live — " + console.prompt.take(60),
+                        stringResource(R.string.agent_turn_live, console.prompt.take(60)),
                         fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f),
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -162,23 +165,26 @@ internal fun StatusTab(
 
         // The live brain, from the capabilities probe.
         item {
-            SectionLabel("Brain")
+            SectionLabel(stringResource(R.string.agent_section_brain))
             val rows = listOfNotNull(
-                caps?.model?.takeIf { it.isNotBlank() }?.let { "Model" to it },
+                caps?.model?.takeIf { it.isNotBlank() }?.let { stringResource(R.string.agent_row_model) to it },
                 caps?.let {
-                    "Reasoning" to chat.keryx.core.model.ReasoningEffort.label(it.current, it.labels).ifBlank { "—" } +
-                        if (it.mode == "binary") " (on/off brain)" else " (effort scale)"
+                    val level = chat.keryx.core.model.ReasoningEffort.label(it.current, it.labels).ifBlank { "—" }
+                    stringResource(R.string.agent_row_reasoning) to
+                        if (it.mode == "binary") stringResource(R.string.agent_reasoning_binary, level)
+                        else stringResource(R.string.agent_reasoning_scale, level)
                 },
-                panel.data?.version?.takeIf { it.isNotBlank() }?.let { "Gateway" to "hermes-agent $it" },
-                panel.data?.gatewayState?.takeIf { it.isNotBlank() }?.let { "State" to it },
+                panel.data?.version?.takeIf { it.isNotBlank() }?.let { stringResource(R.string.agent_row_gateway) to "hermes-agent $it" },
+                panel.data?.gatewayState?.takeIf { it.isNotBlank() }?.let { stringResource(R.string.agent_row_state) to it },
                 panel.data?.takeIf { it.activeAgents > 0 || it.busy }?.let {
-                    "Activity" to "${it.activeAgents} agent turn${if (it.activeAgents == 1) "" else "s"} in flight"
+                    stringResource(R.string.agent_row_activity) to
+                        pluralStringResource(R.plurals.agent_turns_in_flight, it.activeAgents, it.activeAgents)
                 },
             )
             if (rows.isEmpty()) {
                 Text(
-                    if (health == LinkHealth.UNREACHABLE) "Gateway unreachable — info unavailable"
-                    else "Probing gateway…",
+                    if (health == LinkHealth.UNREACHABLE) stringResource(R.string.agent_gateway_unreachable_info)
+                    else stringResource(R.string.agent_probing_gateway),
                     fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else rows.forEach { (k, v) ->
@@ -199,11 +205,11 @@ internal fun StatusTab(
             val footer by viewModel.runtimeFooter.collectAsState()
             footer?.let { f ->
                 if (f.contextPct != null || f.latency != null) {
-                    SectionLabel("Last turn")
+                    SectionLabel(stringResource(R.string.agent_section_last_turn))
                     f.contextPct?.let { pct ->
                         Row(verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(vertical = 3.dp)) {
-                            Text("Context", fontSize = KeryxType.body,
+                            Text(stringResource(R.string.agent_row_context), fontSize = KeryxType.body,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.width(86.dp))
                             Box(
@@ -232,7 +238,7 @@ internal fun StatusTab(
                     }
                     f.latency?.let { lat ->
                         Row(modifier = Modifier.padding(vertical = 3.dp)) {
-                            Text("Latency", fontSize = KeryxType.body,
+                            Text(stringResource(R.string.agent_row_latency), fontSize = KeryxType.body,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.width(86.dp))
                             Text(lat, fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
@@ -248,7 +254,7 @@ internal fun StatusTab(
         // Per-platform adapter states from /health/detailed.
         val platforms = panel.data?.platforms.orEmpty()
         if (platforms.isNotEmpty()) {
-            item { SectionLabel("Platforms") }
+            item { SectionLabel(stringResource(R.string.agent_section_platforms)) }
             items(platforms, key = { it.name }) { p ->
                 Row(verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(vertical = 3.dp)) {
@@ -270,7 +276,7 @@ internal fun StatusTab(
         // Models the gateway serves (`/v1/models`): its own name plus configured route aliases.
         val modelRows = models.data.orEmpty()
         if (modelRows.isNotEmpty()) {
-            item { SectionLabel("Models") }
+            item { SectionLabel(stringResource(R.string.agent_section_models)) }
             items(modelRows, key = { "model:" + it.id }) { m ->
                 Row(modifier = Modifier.padding(vertical = 3.dp)) {
                     Text(m.id, fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
@@ -288,12 +294,12 @@ internal fun StatusTab(
 
         // Quick actions: the session-management commands you reach for most, one tap away.
         item {
-            SectionLabel("Quick actions")
+            SectionLabel(stringResource(R.string.agent_section_quick_actions))
             val actions = listOf(
-                Triple("/status", "System status", "Agent, brain and platform health"),
-                Triple("/new", "Fresh session", "Start a clean conversation"),
-                Triple("/compress", "Compress", "Summarize this thread to free context"),
-                Triple("/handoff", "Handoff", "Carry context into a new session"),
+                Triple("/status", stringResource(R.string.agent_qa_status_title), stringResource(R.string.agent_qa_status_desc)),
+                Triple("/new", stringResource(R.string.agent_qa_new_title), stringResource(R.string.agent_qa_new_desc)),
+                Triple("/compress", stringResource(R.string.agent_qa_compress_title), stringResource(R.string.agent_qa_compress_desc)),
+                Triple("/handoff", stringResource(R.string.agent_qa_handoff_title), stringResource(R.string.agent_qa_handoff_desc)),
             )
             val haveRoom = currentRoom != null
             actions.forEach { (cmd, title, desc) ->
@@ -327,7 +333,7 @@ internal fun StatusTab(
             }
             Spacer(Modifier.height(10.dp))
             OutlinedButton(onClick = { viewModel.testGatewayLink() }, modifier = Modifier.fillMaxWidth()) {
-                Text("Test Hermes Link")
+                Text(stringResource(R.string.agent_test_link))
             }
         }
     }
@@ -349,21 +355,21 @@ internal fun JobsTab(viewModel: ChatViewModel) {
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
         ) {
             Text(
-                "Scheduled jobs the gateway runs on its own",
+                stringResource(R.string.agent_jobs_intro),
                 fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )
             TextButton(onClick = { createOpen = true }) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("New job", fontSize = KeryxType.caption)
+                Text(stringResource(R.string.agent_new_job), fontSize = KeryxType.caption)
             }
         }
         val jobs = panel.data
         when {
             jobs == null -> if (panel.error == null) PanelLoading()
             jobs.isEmpty() -> Text(
-                "No scheduled jobs — create one and the agent runs it on the cron you set.",
+                stringResource(R.string.agent_jobs_empty),
                 fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
             )
@@ -396,15 +402,15 @@ internal fun JobsTab(viewModel: ChatViewModel) {
     deleteTarget?.let { job ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Delete \"${job.name}\"?", fontSize = KeryxType.titleLarge) },
-            text = { Text("The schedule and its run history go with it. This can't be undone.",
+            title = { Text(stringResource(R.string.agent_delete_job_title, job.name), fontSize = KeryxType.titleLarge) },
+            text = { Text(stringResource(R.string.agent_delete_job_body),
                 fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = { viewModel.hub.jobDelete(job.id); deleteTarget = null }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.agent_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Keep") } },
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text(stringResource(R.string.agent_keep)) } },
         )
     }
 }
@@ -441,12 +447,12 @@ private fun JobCard(
                 }
             }
             IconButton(onClick = onRunNow) {
-                Icon(Icons.Default.PlayArrow, contentDescription = "Run now",
+                Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.agent_run_now),
                     tint = MaterialTheme.colorScheme.primary)
             }
             Switch(checked = job.enabled, onCheckedChange = { onToggle() })
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.DeleteOutline, contentDescription = "Delete",
+                Icon(Icons.Default.DeleteOutline, contentDescription = stringResource(R.string.agent_delete),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -457,9 +463,9 @@ private fun JobCard(
                     if (ok) KeryxStatus.good else KeryxStatus.bad))
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    "last run ${job.lastStatus}" +
+                    stringResource(R.string.agent_job_last_run, job.lastStatus.orEmpty()) +
                         (job.lastError?.takeIf { it.isNotBlank() }?.let { " — ${it.take(60)}" } ?: "") +
-                        if (job.repeatCompleted > 0) " · ${job.repeatCompleted} runs" else "",
+                        if (job.repeatCompleted > 0) " · " + pluralStringResource(R.plurals.agent_job_runs, job.repeatCompleted, job.repeatCompleted) else "",
                     fontSize = KeryxType.micro,
                     color = if (ok) MaterialTheme.colorScheme.onSurfaceVariant
                             else MaterialTheme.colorScheme.error,
@@ -468,23 +474,24 @@ private fun JobCard(
             }
             if (!job.enabled) {
                 Spacer(Modifier.width(8.dp))
-                Text("paused", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.agent_paused), fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
 
 /** "next in 8h 12m" from the gateway's ISO timestamp; null (hidden) when unparsable or paused. */
+@Composable
 private fun nextRunEta(job: HubJob): String? {
     if (!job.enabled) return null
     val at = HubJson.isoToMillis(job.nextRunAt) ?: return job.nextRunAt?.take(16)
-    val mins = (at - System.currentTimeMillis()) / 60_000L
+    val mins = ((at - System.currentTimeMillis()) / 60_000L).toInt()
     return when {
-        mins < 0 -> "due"
-        mins < 1 -> "next <1m"
-        mins < 60 -> "next in ${mins}m"
-        mins < 60 * 24 -> "next in ${mins / 60}h ${mins % 60}m"
-        else -> "next in ${mins / (60 * 24)}d"
+        mins < 0 -> stringResource(R.string.agent_next_due)
+        mins < 1 -> stringResource(R.string.agent_next_under_minute)
+        mins < 60 -> stringResource(R.string.agent_next_in_m, mins)
+        mins < 60 * 24 -> stringResource(R.string.agent_next_in_hm, mins / 60, mins % 60)
+        else -> stringResource(R.string.agent_next_in_d, mins / (60 * 24))
     }
 }
 
@@ -523,18 +530,18 @@ internal fun SessionsTab(viewModel: ChatViewModel, closeSpace: () -> Unit = {}) 
         PanelErrorLine(panel.error)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "What the agent has been doing — every persisted session, newest first",
+                stringResource(R.string.agent_sessions_intro),
                 fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f).padding(start = 20.dp, top = 4.dp, bottom = 4.dp),
             )
             // The 1.8 pruner: dry-run preview + count-restating confirm + app-lock gate.
-            TextButton(onClick = { pruneOpen = true }) { Text("Prune…", fontSize = KeryxType.caption) }
+            TextButton(onClick = { pruneOpen = true }) { Text(stringResource(R.string.agent_prune), fontSize = KeryxType.caption) }
         }
         val sessions = panel.data
         when {
             sessions == null -> if (panel.error == null) PanelLoading()
             sessions.isEmpty() -> Text(
-                "No sessions on record.",
+                stringResource(R.string.agent_sessions_empty),
                 fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
             )
@@ -583,10 +590,10 @@ private fun SessionCard(s: HubSession, onClick: () -> Unit) {
         Spacer(Modifier.height(4.dp))
         Text(
             listOfNotNull(
-                "${s.messageCount} msgs",
-                "${s.toolCallCount} tools".takeIf { s.toolCallCount > 0 },
-                "${s.apiCallCount} calls",
-                "${compactCount(s.inputTokens)} in · ${compactCount(s.outputTokens)} out",
+                pluralStringResource(R.plurals.agent_session_msgs, s.messageCount, s.messageCount),
+                pluralStringResource(R.plurals.agent_session_tools, s.toolCallCount, s.toolCallCount).takeIf { s.toolCallCount > 0 },
+                pluralStringResource(R.plurals.agent_session_calls, s.apiCallCount, s.apiCallCount),
+                stringResource(R.string.agent_tokens_in_out, compactCount(s.inputTokens), compactCount(s.outputTokens)),
                 epochAgo(s.lastActive),
             ).joinToString(" · "),
             fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -630,12 +637,12 @@ internal fun SessionTranscript(
         var title by remember { mutableStateOf(session.title.orEmpty()) }
         AlertDialog(
             onDismissRequest = { renameOpen = false },
-            title = { Text("Rename session", fontSize = KeryxType.titleLarge) },
+            title = { Text(stringResource(R.string.agent_rename_session), fontSize = KeryxType.titleLarge) },
             text = {
                 OutlinedTextField(
                     value = title, onValueChange = { title = it },
                     modifier = Modifier.fillMaxWidth(), singleLine = true,
-                    label = { Text("Title") },
+                    label = { Text(stringResource(R.string.agent_title_label)) },
                 )
             },
             confirmButton = {
@@ -645,25 +652,25 @@ internal fun SessionTranscript(
                         viewModel.hub.sessionRename(session.id, title.trim())
                         renameOpen = false
                     },
-                ) { Text("Rename") }
+                ) { Text(stringResource(R.string.agent_rename)) }
             },
-            dismissButton = { TextButton(onClick = { renameOpen = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { renameOpen = false }) { Text(stringResource(R.string.mk_cancel)) } },
         )
     }
     if (deleteOpen) {
         AlertDialog(
             onDismissRequest = { deleteOpen = false },
-            title = { Text("Delete this session?", fontSize = KeryxType.titleLarge) },
+            title = { Text(stringResource(R.string.agent_delete_session_title), fontSize = KeryxType.titleLarge) },
             text = { Text(
-                "The transcript (${session.messageCount} messages) goes with it. This can't be undone.",
+                pluralStringResource(R.plurals.agent_delete_session_body, session.messageCount, session.messageCount),
                 fontSize = KeryxType.body) },
             confirmButton = {
                 TextButton(onClick = {
                     deleteOpen = false
                     viewModel.hub.sessionDelete(session.id) { ok -> if (ok) onBack() }
-                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                }) { Text(stringResource(R.string.agent_delete), color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { deleteOpen = false }) { Text("Keep") } },
+            dismissButton = { TextButton(onClick = { deleteOpen = false }) { Text(stringResource(R.string.agent_keep)) } },
         )
     }
 
@@ -671,7 +678,7 @@ internal fun SessionTranscript(
         Row(verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(start = 6.dp, end = 20.dp)) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back to sessions")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.agent_back_to_sessions))
             }
             Column {
                 Text(session.title?.takeIf { it.isNotBlank() } ?: session.model,
@@ -691,10 +698,10 @@ internal fun SessionTranscript(
                 viewModel.hub.sessionFork(session.id) { fork ->
                     if (fork != null) onForked?.invoke(fork)
                 }
-            }) { Text("Fork", fontSize = KeryxType.caption) }
-            TextButton(onClick = { renameOpen = true }) { Text("Rename", fontSize = KeryxType.caption) }
+            }) { Text(stringResource(R.string.agent_fork), fontSize = KeryxType.caption) }
+            TextButton(onClick = { renameOpen = true }) { Text(stringResource(R.string.agent_rename), fontSize = KeryxType.caption) }
             TextButton(onClick = { deleteOpen = true }) {
-                Text("Delete", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
+                Text(stringResource(R.string.agent_delete), fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
             }
         }
         when {
@@ -742,7 +749,7 @@ internal fun SessionTranscript(
                             }
                         }
                         if (m.toolCallCount > 0) {
-                            Text("→ ${m.toolCallCount} tool call${if (m.toolCallCount > 1) "s" else ""}",
+                            Text(pluralStringResource(R.plurals.agent_tool_calls, m.toolCallCount, m.toolCallCount),
                                 fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.tertiary)
                         }
                     }
@@ -763,7 +770,7 @@ internal fun SessionTranscript(
                 value = resumePrompt,
                 onValueChange = { resumePrompt = it },
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Continue this session…", fontSize = KeryxType.body) },
+                placeholder = { Text(stringResource(R.string.agent_continue_session), fontSize = KeryxType.body) },
                 textStyle = androidx.compose.ui.text.TextStyle(fontSize = KeryxType.body),
                 enabled = !console.live,
                 maxLines = 4,
@@ -780,7 +787,7 @@ internal fun SessionTranscript(
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Send into this session",
+                    contentDescription = stringResource(R.string.agent_send_into_session),
                     tint = if (resumePrompt.isNotBlank() && !console.live) MaterialTheme.colorScheme.primary
                            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                 )
@@ -795,14 +802,15 @@ private fun compactCount(n: Long): String = when {
     else -> n.toString()
 }
 
+@Composable
 private fun epochAgo(epochSec: Double): String? {
     if (epochSec <= 0) return null
-    val mins = ((System.currentTimeMillis() / 1000L) - epochSec.toLong()) / 60
+    val mins = (((System.currentTimeMillis() / 1000L) - epochSec.toLong()) / 60).toInt()
     return when {
-        mins < 1 -> "just now"
-        mins < 60 -> "${mins}m ago"
-        mins < 60 * 24 -> "${mins / 60}h ago"
-        else -> "${mins / (60 * 24)}d ago"
+        mins < 1 -> stringResource(R.string.agent_just_now)
+        mins < 60 -> stringResource(R.string.agent_ago_m, mins)
+        mins < 60 * 24 -> stringResource(R.string.agent_ago_h, mins / 60)
+        else -> stringResource(R.string.agent_ago_d, mins / (60 * 24))
     }
 }
 
@@ -834,14 +842,14 @@ internal fun SkillsTab(viewModel: ChatViewModel) {
                     OutlinedTextField(
                         value = filter, onValueChange = { filter = it },
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text("Filter ${skills.size} skills…", fontSize = KeryxType.caption) },
+                        placeholder = { Text(pluralStringResource(R.plurals.agent_filter_skills, skills.size, skills.size), fontSize = KeryxType.caption) },
                         textStyle = androidx.compose.ui.text.TextStyle(fontSize = KeryxType.body),
                         singleLine = true,
                     )
                     IconButton(onClick = { creating = true }) {
                         Icon(
                             Icons.Default.Add,
-                            contentDescription = "New skill",
+                            contentDescription = stringResource(R.string.agent_new_skill),
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }
@@ -852,8 +860,8 @@ internal fun SkillsTab(viewModel: ChatViewModel) {
                         modifier = Modifier.padding(start = 12.dp),
                     ) {
                         Text(
-                            if (showTrash) "← Back to ${skills.size} skills"
-                            else "Trash (${trash.size})",
+                            if (showTrash) pluralStringResource(R.plurals.agent_back_to_skills, skills.size, skills.size)
+                            else stringResource(R.string.agent_trash_count, trash.size),
                             fontSize = KeryxType.caption,
                         )
                     }
@@ -874,7 +882,7 @@ internal fun SkillsTab(viewModel: ChatViewModel) {
                         // Makeover: how many are on, when the source knows (the dashboard does).
                         if (skills.any { it.enabled != null }) item(key = "skills-on") {
                             Text(
-                                "${skills.count { it.enabled != false }} of ${skills.size} on · a switch applies to new sessions",
+                                stringResource(R.string.agent_skills_on, skills.count { it.enabled != false }, skills.size),
                                 fontSize = KeryxType.micro,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -930,25 +938,25 @@ private fun SkillTrashList(
             Column(Modifier.fillMaxWidth()) {
                 Text(t.name, fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
                 Text(
-                    listOfNotNull(t.category, "deleted ${t.deletedAt}").joinToString(" · "),
+                    listOfNotNull(t.category, stringResource(R.string.agent_deleted_at, t.deletedAt)).joinToString(" · "),
                     fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     if (t.restorable) {
                         TextButton(onClick = { viewModel.hub.skillRestore(t.id, t.name) }) {
-                            Text("Restore", fontSize = KeryxType.caption)
+                            Text(stringResource(R.string.agent_restore), fontSize = KeryxType.caption)
                         }
                     } else {
                         Text(
-                            "a skill by that name exists again",
+                            stringResource(R.string.agent_skill_name_taken),
                             fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 14.dp),
                         )
                     }
                     TextButton(onClick = { confirmPurge = true }) {
-                        Text("Purge", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.agent_purge), fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
                     }
                 }
             }
@@ -956,16 +964,16 @@ private fun SkillTrashList(
                 AlertDialog(
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
                     onDismissRequest = { confirmPurge = false },
-                    title = { Text("Purge “${t.name}”?", fontSize = KeryxType.titleLarge) },
-                    text = { Text("This deletes it from disk for good. There is no undo.", fontSize = KeryxType.body) },
+                    title = { Text(stringResource(R.string.agent_purge_title, t.name), fontSize = KeryxType.titleLarge) },
+                    text = { Text(stringResource(R.string.agent_purge_body), fontSize = KeryxType.body) },
                     confirmButton = {
                         TextButton(onClick = {
                             confirmPurge = false
                             viewModel.hub.skillPurge(t.id, t.name)
-                        }) { Text("Purge", color = MaterialTheme.colorScheme.error) }
+                        }) { Text(stringResource(R.string.agent_purge), color = MaterialTheme.colorScheme.error) }
                     },
                     dismissButton = {
-                        TextButton(onClick = { confirmPurge = false }) { Text("Keep it") }
+                        TextButton(onClick = { confirmPurge = false }) { Text(stringResource(R.string.agent_keep_it)) }
                     },
                 )
             }
@@ -992,12 +1000,12 @@ private fun NewSkillDialog(viewModel: ChatViewModel, onClose: () -> Unit) {
     AlertDialog(
         shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.sheet),
         onDismissRequest = { if (!saving) onClose() },
-        title = { Text("New skill", fontSize = KeryxType.titleLarge) },
+        title = { Text(stringResource(R.string.agent_new_skill), fontSize = KeryxType.titleLarge) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = name, onValueChange = { name = it },
-                    label = { Text("Name", fontSize = KeryxType.caption) },
+                    label = { Text(stringResource(R.string.agent_name_label), fontSize = KeryxType.caption) },
                     singleLine = true,
                     textStyle = androidx.compose.ui.text.TextStyle(fontSize = KeryxType.body),
                 )
@@ -1024,9 +1032,9 @@ private fun NewSkillDialog(viewModel: ChatViewModel, onClose: () -> Unit) {
                         if (ok) onClose() else status = message
                     }
                 },
-            ) { Text(if (saving) "Creating…" else "Create") }
+            ) { Text(if (saving) stringResource(R.string.agent_creating) else stringResource(R.string.agent_create)) }
         },
-        dismissButton = { TextButton(onClick = onClose, enabled = !saving) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onClose, enabled = !saving) { Text(stringResource(R.string.mk_cancel)) } },
     )
 }
 
@@ -1040,9 +1048,9 @@ internal fun ToolsTab(viewModel: ChatViewModel) {
         PanelErrorLine(panel.error)
         val hub = panel.data
         Text(
-            if (hub?.canToggle == true) "Tool groups for the agent's chat platform — switches persist"
+            if (hub?.canToggle == true) stringResource(R.string.agent_tools_intro_toggle)
             // Legacy gateway: read-only, and only its own (api_server) platform surface exists.
-            else "Tool groups as the API platform sees them",
+            else stringResource(R.string.agent_tools_intro_readonly),
             fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
         )
@@ -1073,7 +1081,8 @@ internal fun ToolsTab(viewModel: ChatViewModel) {
                             Text(t.label.ifBlank { t.name }, fontSize = KeryxType.body,
                                 fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                             if (!t.configured) {
-                                Text("needs keys", fontSize = KeryxType.micro,
+                                Text(stringResource(R.string.agent_needs_keys), fontSize = KeryxType.micro,
+
                                     color = MaterialTheme.colorScheme.error)
                             }
                             if (hub.canToggle) {

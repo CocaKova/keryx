@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import chat.keryx.app.transport.direct.dashboardSkills
 import chat.keryx.app.transport.direct.skillToggle
 
@@ -106,7 +108,7 @@ class HubDelegate(
         fetch: suspend chat.keryx.app.data.remote.HermesStreamClient.() -> Result<T>,
     ) {
         val client = client() ?: run {
-            value = value.copy(error = "Hermes Link is off — enable it in Settings", refreshing = false)
+            value = value.copy(error = KeryxText.get(R.string.agent_link_off), refreshing = false)
             return
         }
         value = value.copy(refreshing = true)
@@ -114,7 +116,7 @@ class HubDelegate(
             client.fetch()
                 .onSuccess { value = PanelState(data = it) }
                 .onFailure {
-                    value = value.copy(error = it.message?.take(120) ?: "unavailable", refreshing = false)
+                    value = value.copy(error = it.message?.take(120) ?: KeryxText.get(R.string.agent_unavailable), refreshing = false)
                 }
         }
     }
@@ -185,7 +187,7 @@ class HubDelegate(
 
     fun refreshCron() {
         val client = client() ?: run {
-            _cron.value = _cron.value.copy(error = "Hermes Link is off — enable it in Settings", refreshing = false)
+            _cron.value = _cron.value.copy(error = KeryxText.get(R.string.agent_link_off), refreshing = false)
             return
         }
         _cron.value = _cron.value.copy(refreshing = true)
@@ -194,7 +196,7 @@ class HubDelegate(
             val runsRes = client.cronSessions()
             val failure = listOf(jobsRes, runsRes).firstNotNullOfOrNull { it.exceptionOrNull() }
             if (failure != null && runsRes.isFailure) {
-                _cron.value = _cron.value.copy(error = failure.message?.take(120) ?: "unavailable", refreshing = false)
+                _cron.value = _cron.value.copy(error = failure.message?.take(120) ?: KeryxText.get(R.string.agent_unavailable), refreshing = false)
                 return@launch
             }
             val jobs = jobsRes.getOrDefault(emptyList())
@@ -265,7 +267,7 @@ class HubDelegate(
         if (next == now) return
         _pinnedJobs.value = next
         settings.pinnedCronJobs = next
-        val said = if (pinned) "$name pinned to the top of your sessions" else "$name unpinned"
+        val said = KeryxText.get(if (pinned) R.string.agent_job_pinned else R.string.agent_job_unpinned, name)
         // The Undo flips back quietly — an undo that offers to undo itself is a loop.
         if (undoable) notice(KeryxNotice.undo(said) { cronSetJobPinned(name, !pinned, undoable = false) })
     }
@@ -300,7 +302,7 @@ class HubDelegate(
      */
     fun cronSetPinned(runId: String, pinned: Boolean, undoable: Boolean = true) {
         if (_cron.value.data == null) return
-        val client = client() ?: run { toast("Hermes Link is off — enable it in Settings"); return }
+        val client = client() ?: run { toast(KeryxText.get(R.string.agent_link_off)); return }
         fun flip(to: Boolean) {
             val b = _cron.value.data ?: return
             _cron.value = _cron.value.copy(
@@ -311,13 +313,13 @@ class HubDelegate(
         scope.launch {
             client.sessionPin(runId, pinned)
                 .onSuccess {
-                    val said = if (pinned) "Pinned — kept on the gateway" else "Unpinned"
+                    val said = KeryxText.get(if (pinned) R.string.agent_run_pinned else R.string.agent_run_unpinned)
                     if (undoable) notice(KeryxNotice.undo(said) { cronSetPinned(runId, !pinned, undoable = false) })
                     refreshCron()
                 }
                 .onFailure {
                     flip(!pinned)
-                    toast("${if (pinned) "Pin" else "Unpin"} refused: ${it.message?.take(80)}")
+                    toast(KeryxText.get(if (pinned) R.string.agent_pin_refused else R.string.agent_unpin_refused, it.message?.take(80).toString()))
                 }
         }
     }
@@ -383,8 +385,8 @@ class HubDelegate(
         val client = client() ?: return
         scope.launch {
             client.configSet(key, value)
-                .onSuccess { applies -> toast("Saved — applies $applies"); refreshConfig() }
-                .onFailure { toast("Change refused: ${it.message?.take(80)}"); refreshConfig() }
+                .onSuccess { applies -> toast(KeryxText.get(R.string.agent_saved_applies, applies.toString())); refreshConfig() }
+                .onFailure { toast(KeryxText.get(R.string.agent_change_refused, it.message?.take(80).toString())); refreshConfig() }
         }
     }
 
@@ -392,21 +394,21 @@ class HubDelegate(
         val client = client() ?: return
         scope.launch {
             client.reasoningSet(level)
-                .onSuccess { toast("Reasoning → ${chat.keryx.core.model.ReasoningEffort.label(level)} (next session)"); refreshReasoningCaps() }
-                .onFailure { toast("Change refused: ${it.message?.take(80)}") }
+                .onSuccess { toast(KeryxText.get(R.string.agent_reasoning_set, chat.keryx.core.model.ReasoningEffort.label(level))); refreshReasoningCaps() }
+                .onFailure { toast(KeryxText.get(R.string.agent_change_refused, it.message?.take(80).toString())) }
         }
     }
 
     suspend fun logs(lines: Int = 120): Result<chat.keryx.app.data.remote.HermesStreamClient.LogsTail> =
         client()?.logsTail(lines)
-            ?: Result.failure(IllegalStateException("Hermes Link is off"))
+            ?: Result.failure(IllegalStateException(KeryxText.get(R.string.agent_link_off_short)))
 
     fun brainSelect(name: String) {
         val client = client() ?: return
         scope.launch {
             client.brainSelect(name)
-                .onSuccess { toast("Swap started — watch the active brain") }
-                .onFailure { toast("Swap refused: ${it.message?.take(80)}") }
+                .onSuccess { toast(KeryxText.get(R.string.agent_swap_started)) }
+                .onFailure { toast(KeryxText.get(R.string.agent_swap_refused, it.message?.take(80).toString())) }
         }
     }
     fun refreshJobs() = _hubJobs.refreshFrom { jobs() }
@@ -425,11 +427,11 @@ class HubDelegate(
                 else -> {
                     val c = client()
                     if (c == null) {
-                        val why = (got as? chat.keryx.core.model.Routed.Failed)?.message ?: "This gateway lists no skills"
+                        val why = (got as? chat.keryx.core.model.Routed.Failed)?.message ?: KeryxText.get(R.string.agent_no_skills)
                         _hubSkills.value = _hubSkills.value.copy(error = why.take(120), refreshing = false)
                     } else c.skills()
                         .onSuccess { _hubSkills.value = PanelState(data = it) }
-                        .onFailure { _hubSkills.value = _hubSkills.value.copy(error = it.message?.take(120) ?: "unavailable", refreshing = false) }
+                        .onFailure { _hubSkills.value = _hubSkills.value.copy(error = it.message?.take(120) ?: KeryxText.get(R.string.agent_unavailable), refreshing = false) }
                 }
             }
         }
@@ -442,9 +444,9 @@ class HubDelegate(
         _hubSkills.value = _hubSkills.value.copy(data = before.map { if (it.name == name) it.copy(enabled = enabled) else it })
         scope.launch {
             when (val res = r.skillToggle(name, enabled)) {
-                is chat.keryx.core.model.Routed.Ok -> toast(if (enabled) "$name on — new sessions load it" else "$name off — new sessions skip it")
-                is chat.keryx.core.model.Routed.Failed -> { toast("Couldn't change $name: ${res.message.take(80)}"); refreshSkills() }
-                chat.keryx.core.model.Routed.Missing -> { toast("This gateway can't switch skills from here."); refreshSkills() }
+                is chat.keryx.core.model.Routed.Ok -> toast(KeryxText.get(if (enabled) R.string.agent_skill_on else R.string.agent_skill_off, name))
+                is chat.keryx.core.model.Routed.Failed -> { toast(KeryxText.get(R.string.agent_skill_change_failed, name, res.message.take(80))); refreshSkills() }
+                chat.keryx.core.model.Routed.Missing -> { toast(KeryxText.get(R.string.agent_skill_switch_unsupported)); refreshSkills() }
             }
         }
     }
@@ -458,7 +460,7 @@ class HubDelegate(
         includeArchived: Boolean,
     ): Result<chat.keryx.app.data.remote.HermesStreamClient.PruneResult> =
         client()?.sessionsPrune(olderThanDays, maxMessages, includeArchived, dryRun = true)
-            ?: Result.failure(IllegalStateException("Hermes Link is off"))
+            ?: Result.failure(IllegalStateException(KeryxText.get(R.string.agent_link_off_short)))
 
     /** The wet prune — permanent, transcripts included. Callers are responsible for having shown
      *  the dry-run count and the destructive confirm first. [onDone] gets the removed count. */
@@ -472,12 +474,12 @@ class HubDelegate(
         scope.launch {
             client.sessionsPrune(olderThanDays, maxMessages, includeArchived, dryRun = false)
                 .onSuccess { res ->
-                    toast("Pruned ${res.removed} session${if (res.removed == 1) "" else "s"}")
+                    toast(KeryxText.plural(R.plurals.agent_pruned, res.removed, res.removed))
                     refreshSessions()
                     onDone(res.removed)
                 }
                 .onFailure {
-                    toast("Prune failed: ${it.message?.take(80)}")
+                    toast(KeryxText.get(R.string.agent_prune_failed, it.message?.take(80).toString()))
                     onDone(null)
                 }
         }
@@ -502,27 +504,27 @@ class HubDelegate(
 
     suspend fun skillDetail(name: String): Result<chat.keryx.app.data.remote.HermesStreamClient.SkillDetail> =
         client()?.skillGet(name)
-            ?: Result.failure(IllegalStateException("Hermes Link is off"))
+            ?: Result.failure(IllegalStateException(KeryxText.get(R.string.agent_link_off_short)))
 
     /** Save a SKILL.md rewrite. [onDone] gets (success, message) — the gateway's own note on
      *  success ("index refreshes for new sessions") or its validation/scan error verbatim. */
     fun skillSave(name: String, content: String, onDone: (Boolean, String) -> Unit) {
-        val client = client() ?: run { onDone(false, "Hermes Link is off"); return }
+        val client = client() ?: run { onDone(false, KeryxText.get(R.string.agent_link_off_short)); return }
         scope.launch {
             client.skillPut(name, content)
                 .onSuccess { note -> refreshSkills(); onDone(true, note) }
-                .onFailure { onDone(false, it.message ?: "save failed") }
+                .onFailure { onDone(false, it.message ?: KeryxText.get(R.string.agent_save_failed)) }
         }
     }
 
     /** Create a skill from the phone. [onDone] gets (success, message); the gateway runs the same
      *  frontmatter validation and security scan the agent's own skill_manage tool does. */
     fun skillCreate(name: String, content: String, category: String?, onDone: (Boolean, String) -> Unit) {
-        val client = client() ?: run { onDone(false, "Hermes Link is off"); return }
+        val client = client() ?: run { onDone(false, KeryxText.get(R.string.agent_link_off_short)); return }
         scope.launch {
             client.skillCreate(name, content, category)
-                .onSuccess { refreshSkills(); onDone(true, "created — index refreshes for new sessions") }
-                .onFailure { onDone(false, it.message ?: "create failed") }
+                .onSuccess { refreshSkills(); onDone(true, KeryxText.get(R.string.agent_skill_created)) }
+                .onFailure { onDone(false, it.message ?: KeryxText.get(R.string.agent_create_failed)) }
         }
     }
 
@@ -543,21 +545,21 @@ class HubDelegate(
     /** Move a skill to the trash. The toast carries the undo affordance's whole reason for
      *  existing — nothing is actually gone until it's purged. */
     fun skillDelete(name: String, onDone: (Boolean, String) -> Unit) {
-        val client = client() ?: run { onDone(false, "Hermes Link is off"); return }
+        val client = client() ?: run { onDone(false, KeryxText.get(R.string.agent_link_off_short)); return }
         scope.launch {
             client.skillDelete(name)
                 .onSuccess { trashId ->
                     refreshSkills()
                     refreshSkillTrash()
                     // The gateway hands back the trash id exactly so this can be one tap.
-                    val said = "Moved “$name” to trash — restore it from Skills ▸ Trash"
+                    val said = KeryxText.get(R.string.agent_skill_trashed, name)
                     if (trashId.isNotBlank()) notice(KeryxNotice.undo(said) { skillRestore(trashId, name) })
                     else toast(said)
-                    onDone(true, "moved to trash")
+                    onDone(true, KeryxText.get(R.string.agent_moved_to_trash))
                 }
                 .onFailure {
-                    toast("Delete refused: ${it.message?.take(80)}")
-                    onDone(false, it.message ?: "delete failed")
+                    toast(KeryxText.get(R.string.agent_delete_refused, it.message?.take(80).toString()))
+                    onDone(false, it.message ?: KeryxText.get(R.string.agent_delete_failed_short))
                 }
         }
     }
@@ -569,9 +571,9 @@ class HubDelegate(
                 .onSuccess {
                     refreshSkills()
                     refreshSkillTrash()
-                    toast("Restored “$name”")
+                    toast(KeryxText.get(R.string.agent_restored, name))
                 }
-                .onFailure { toast("Restore failed: ${it.message?.take(80)}") }
+                .onFailure { toast(KeryxText.get(R.string.agent_restore_failed, it.message?.take(80).toString())) }
         }
     }
 
@@ -579,8 +581,8 @@ class HubDelegate(
         val client = client() ?: return
         scope.launch {
             client.skillPurge(id)
-                .onSuccess { refreshSkillTrash(); toast("Purged “$name” for good") }
-                .onFailure { toast("Purge failed: ${it.message?.take(80)}") }
+                .onSuccess { refreshSkillTrash(); toast(KeryxText.get(R.string.agent_purged, name)) }
+                .onFailure { toast(KeryxText.get(R.string.agent_purge_failed, it.message?.take(80).toString())) }
         }
     }
 
@@ -588,7 +590,7 @@ class HubDelegate(
 
     suspend fun configRaw(): Result<chat.keryx.app.data.remote.HermesStreamClient.RawConfig> =
         client()?.configRawGet()
-            ?: Result.failure(IllegalStateException("Hermes Link is off"))
+            ?: Result.failure(IllegalStateException(KeryxText.get(R.string.agent_link_off_short)))
 
     /** Save config.yaml wholesale. [onDone] gets (success, message, needsForce) — needsForce means
      *  the gateway thinks this is a truncated paste and wants an explicit confirmation. */
@@ -598,19 +600,19 @@ class HubDelegate(
         force: Boolean,
         onDone: (Boolean, String, Boolean) -> Unit,
     ) {
-        val client = client() ?: run { onDone(false, "Hermes Link is off", false); return }
+        val client = client() ?: run { onDone(false, KeryxText.get(R.string.agent_link_off_short), false); return }
         scope.launch {
             client.configRawPut(content, baseHash, force)
                 .onSuccess { res ->
                     // The curated knobs read the same file — re-pull so they don't show stale values.
                     refreshConfig()
-                    onDone(true, res.backup?.let { "Saved. Backup: ${it.substringAfterLast('/')}" }
-                        ?: "Saved.", false)
+                    onDone(true, res.backup?.let { KeryxText.get(R.string.agent_saved_backup, it.substringAfterLast('/')) }
+                        ?: KeryxText.get(R.string.agent_saved), false)
                 }
                 .onFailure { e ->
                     val needsForce =
                         (e as? chat.keryx.app.data.remote.HermesStreamClient.GatewayError)?.needsForce == true
-                    onDone(false, e.message ?: "save failed", needsForce)
+                    onDone(false, e.message ?: KeryxText.get(R.string.agent_save_failed), needsForce)
                 }
         }
     }
@@ -623,7 +625,7 @@ class HubDelegate(
             client.setToolsetEnabled(name, enabled)
                 .onSuccess { refreshToolsets() }
                 .onFailure {
-                    toast("Toolset change failed: ${it.message?.take(80)}")
+                    toast(KeryxText.get(R.string.agent_toolset_failed, it.message?.take(80).toString()))
                     refreshToolsets()
                 }
         }
@@ -637,14 +639,34 @@ class HubDelegate(
                 .onSuccess {
                     // Said out loud: from the Runs page a run fires in the background and the
                     // card only changes when it lands, so a silent tap read as a dead button.
-                    val said = when (action) { "run" -> "Running now"; "pause" -> "Paused"; "resume" -> "Resumed"; else -> "Done" }
+                    val said = KeryxText.get(
+                        when (action) {
+                            "run" -> R.string.agent_job_running_now
+                            "pause" -> R.string.agent_job_paused
+                            "resume" -> R.string.agent_job_resumed
+                            else -> R.string.agent_done
+                        },
+                    )
                     // Pause and resume are each other's undo; a run that has started is not.
                     val back = when (action) { "pause" -> "resume"; "resume" -> "pause"; else -> null }
                     if (back != null && undoable) notice(KeryxNotice.undo(said) { jobAction(jobId, back, undoable = false) })
                     else toast(said)
                     refreshJobs(); refreshCron()
                 }
-                .onFailure { toast("Job $action failed: ${it.message?.take(80)}") }
+                .onFailure {
+                    val why = it.message?.take(80).toString()
+                    toast(
+                        KeryxText.get(
+                            when (action) {
+                                "run" -> R.string.agent_job_run_failed
+                                "pause" -> R.string.agent_job_pause_failed
+                                "resume" -> R.string.agent_job_resume_failed
+                                else -> R.string.agent_job_action_failed
+                            },
+                            why,
+                        ),
+                    )
+                }
         }
     }
 
@@ -652,8 +674,8 @@ class HubDelegate(
         val client = client() ?: return
         scope.launch {
             client.jobDelete(jobId)
-                .onSuccess { toast("Job deleted"); refreshJobs(); refreshCron() }
-                .onFailure { toast("Delete failed: ${it.message?.take(80)}") }
+                .onSuccess { toast(KeryxText.get(R.string.agent_job_deleted)); refreshJobs(); refreshCron() }
+                .onFailure { toast(KeryxText.get(R.string.agent_delete_failed, it.message?.take(80).toString())) }
         }
     }
 
@@ -661,8 +683,8 @@ class HubDelegate(
         val client = client() ?: return
         scope.launch {
             client.jobCreate(name, schedule, prompt, deliver)
-                .onSuccess { toast("Job scheduled"); refreshJobs() }
-                .onFailure { toast("Schedule failed: ${it.message?.take(80)}") }
+                .onSuccess { toast(KeryxText.get(R.string.agent_job_scheduled)); refreshJobs() }
+                .onFailure { toast(KeryxText.get(R.string.agent_schedule_failed, it.message?.take(80).toString())) }
         }
     }
 
@@ -670,7 +692,7 @@ class HubDelegate(
         sessionId: String,
     ): Result<List<chat.keryx.app.data.remote.HermesStreamClient.HubMessage>> =
         client()?.sessionMessages(sessionId)
-            ?: Result.failure(IllegalStateException("Hermes Link is off"))
+            ?: Result.failure(IllegalStateException(KeryxText.get(R.string.agent_link_off_short)))
 
     // --- Sessions: actionable verbs (1.20) -------------------------------------------------------
 
@@ -679,7 +701,7 @@ class HubDelegate(
         scope.launch {
             client.sessionRename(sessionId, title)
                 .onSuccess { refreshSessions(); onDone(true) }
-                .onFailure { toast("Rename failed: ${it.message?.take(80)}"); onDone(false) }
+                .onFailure { toast(KeryxText.get(R.string.agent_rename_failed, it.message?.take(80).toString())); onDone(false) }
         }
     }
 
@@ -687,8 +709,8 @@ class HubDelegate(
         val client = client() ?: run { onDone(false); return }
         scope.launch {
             client.sessionDelete(sessionId)
-                .onSuccess { toast("Session deleted"); refreshSessions(); onDone(true) }
-                .onFailure { toast("Delete failed: ${it.message?.take(80)}"); onDone(false) }
+                .onSuccess { toast(KeryxText.get(R.string.agent_session_deleted)); refreshSessions(); onDone(true) }
+                .onFailure { toast(KeryxText.get(R.string.agent_delete_failed, it.message?.take(80).toString())); onDone(false) }
         }
     }
 
@@ -698,8 +720,8 @@ class HubDelegate(
         val client = client() ?: run { onDone(null); return }
         scope.launch {
             client.sessionFork(sessionId)
-                .onSuccess { fork -> toast("Forked — transcript carried forward"); refreshSessions(); onDone(fork) }
-                .onFailure { toast("Fork failed: ${it.message?.take(80)}"); onDone(null) }
+                .onSuccess { fork -> toast(KeryxText.get(R.string.agent_forked)); refreshSessions(); onDone(fork) }
+                .onFailure { toast(KeryxText.get(R.string.agent_fork_failed, it.message?.take(80).toString())); onDone(null) }
         }
     }
 
@@ -707,8 +729,9 @@ class HubDelegate(
         val client = client() ?: return
         scope.launch {
             client.jobUpdate(jobId, name, schedule, prompt, deliver)
-                .onSuccess { toast("Job updated"); refreshJobs() }
-                .onFailure { toast("Update failed: ${it.message?.take(80)}") }
+                .onSuccess { toast(KeryxText.get(R.string.agent_job_updated)); refreshJobs() }
+                .onFailure { toast(KeryxText.get(R.string.agent_update_failed, it.message?.take(80).toString())) }
+
         }
     }
 

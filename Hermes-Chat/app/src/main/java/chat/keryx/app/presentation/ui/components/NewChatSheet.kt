@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -74,7 +76,7 @@ fun NewChatSheet(
         if (err == null) { onDismiss(); onCreated() }
     }
 
-    KeryxSheet(onDismiss = onDismiss, title = if (viewModel.transportIsDirect) "New session" else "New conversation", sheetState = sheetState) {
+    KeryxSheet(onDismiss = onDismiss, title = if (viewModel.transportIsDirect) stringResource(R.string.chat_new_session) else stringResource(R.string.chat_new_conversation), sheetState = sheetState) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
             Spacer(Modifier.height(4.dp))
 
@@ -92,7 +94,7 @@ fun NewChatSheet(
                     .filter { !it.hidden || it.name == agentName }
                     .sortedByDescending { it.isDefault }
                 Text(
-                    "A fresh gateway session. Name it now, or let the first exchange title it.",
+                    stringResource(R.string.chat_new_session_body),
                     fontSize = KeryxType.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -100,14 +102,14 @@ fun NewChatSheet(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    placeholder = { Text("Title (optional)") },
+                    placeholder = { Text(stringResource(R.string.chat_title_optional)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.field),
                 )
                 if (agents.size > 1) {
                     Spacer(Modifier.height(10.dp))
-                    Text("Agent", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.chat_agent), fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
                     Row(
                         Modifier
@@ -142,21 +144,21 @@ fun NewChatSheet(
                     Spacer(Modifier.width(8.dp))
                     Column(Modifier.weight(1f)) {
                         Text(
-                            "Temporary",
+                            stringResource(R.string.chat_temporary),
                             fontSize = KeryxType.body,
                             fontWeight = FontWeight.Medium,
                             color = if (temporary) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
-                            "Deleted from the gateway at the app's next launch",
+                            stringResource(R.string.chat_temporary_body),
                             fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     androidx.compose.material3.Switch(checked = temporary, onCheckedChange = { temporary = it })
                 }
-                SheetActionRow(busy = busy, enabled = true, label = "Create") {
+                SheetActionRow(busy = busy, enabled = true, label = stringResource(R.string.chat_create)) {
                     busy = true; error = null
                     // Picked by name, so a roster that has not landed yet still creates on it.
                     val agent = agentName.takeIf { it.isNotBlank() }?.let { n ->
@@ -166,15 +168,15 @@ fun NewChatSheet(
                 }
                 error?.let {
                     Spacer(Modifier.height(6.dp))
-                    Text("⚠ $it", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.chat_error_line, it), fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
                 }
                 return@Column
             }
 
             NewChatRow(
                 icon = Icons.Default.Person,
-                title = "Direct message",
-                subtitle = "Chat one-on-one with a user",
+                title = stringResource(R.string.chat_direct_message),
+                subtitle = stringResource(R.string.chat_direct_message_sub),
                 open = expanded == "dm",
                 onClick = { expanded = "dm"; error = null },
             ) {
@@ -187,7 +189,7 @@ fun NewChatSheet(
                     modifier = Modifier.fillMaxWidth(),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.field),
                 )
-                SheetActionRow(busy = busy, enabled = userId.isNotBlank(), label = "Start") {
+                SheetActionRow(busy = busy, enabled = userId.isNotBlank(), label = stringResource(R.string.chat_start)) {
                     busy = true; error = null
                     viewModel.matrixRooms.startDirectMessage(userId.trim(), ::done)
                 }
@@ -195,8 +197,8 @@ fun NewChatSheet(
 
             NewChatRow(
                 icon = Icons.Default.Groups,
-                title = "New room",
-                subtitle = "A named room; invite people now or later",
+                title = stringResource(R.string.chat_new_room),
+                subtitle = stringResource(R.string.chat_new_room_sub),
                 open = expanded == "room",
                 onClick = { expanded = "room"; error = null },
             ) {
@@ -205,7 +207,7 @@ fun NewChatSheet(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    placeholder = { Text("Room name") },
+                    placeholder = { Text(stringResource(R.string.chat_room_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.field),
@@ -214,12 +216,12 @@ fun NewChatSheet(
                 OutlinedTextField(
                     value = invitee,
                     onValueChange = { invitee = it },
-                    placeholder = { Text("Invite @user:server (optional)") },
+                    placeholder = { Text(stringResource(R.string.chat_invite_optional)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.field),
                 )
-                SheetActionRow(busy = busy, enabled = name.isNotBlank(), label = "Create") {
+                SheetActionRow(busy = busy, enabled = name.isNotBlank(), label = stringResource(R.string.chat_create)) {
                     busy = true; error = null
                     viewModel.matrixRooms.createRoom(name.trim(), invitee.trim(), ::done)
                 }
@@ -227,8 +229,8 @@ fun NewChatSheet(
 
             NewChatRow(
                 icon = Icons.AutoMirrored.Filled.Login,
-                title = "Join by address",
-                subtitle = "#alias:server or !roomid:server",
+                title = stringResource(R.string.chat_join_by_address),
+                subtitle = stringResource(R.string.chat_join_sub),
                 open = expanded == "join",
                 onClick = { expanded = "join"; error = null },
             ) {
@@ -241,7 +243,7 @@ fun NewChatSheet(
                     modifier = Modifier.fillMaxWidth(),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(KeryxRadius.field),
                 )
-                SheetActionRow(busy = busy, enabled = address.isNotBlank(), label = "Join") {
+                SheetActionRow(busy = busy, enabled = address.isNotBlank(), label = stringResource(R.string.chat_join)) {
                     busy = true; error = null
                     viewModel.matrixRooms.joinRoomByAddress(address.trim(), ::done)
                 }
@@ -249,7 +251,7 @@ fun NewChatSheet(
 
             error?.let {
                 Spacer(Modifier.height(6.dp))
-                Text("⚠ $it", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
+                Text(stringResource(R.string.chat_error_line, it), fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
             }
         }
     }

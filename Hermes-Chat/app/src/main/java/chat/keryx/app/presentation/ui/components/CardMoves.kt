@@ -24,6 +24,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -96,6 +98,41 @@ internal fun menuLabel(move: CardMove): String = when (move) {
     else -> move.label
 }
 
+/** [menuLabel], from the app's resources (the English above stays for the JVM tests). */
+@androidx.annotation.StringRes
+internal fun menuLabelRes(move: CardMove): Int = when (move) {
+    CardMove.START -> R.string.work_move_menu_start
+    CardMove.UNBLOCK -> R.string.work_move_menu_unblock
+    CardMove.REASSIGN -> R.string.work_move_menu_reassign
+    CardMove.RECLAIM -> R.string.work_move_menu_reclaim
+    CardMove.PAUSE -> R.string.work_move_menu_pause
+    CardMove.DONE -> R.string.work_move_menu_done
+    CardMove.ARCHIVE -> R.string.work_move_menu_archive
+}
+
+/** The move's name as a dialog title, no ellipsis. */
+@androidx.annotation.StringRes
+private fun titleRes(move: CardMove): Int = when (move) {
+    CardMove.START -> R.string.work_move_start
+    CardMove.UNBLOCK -> R.string.work_move_unblock
+    CardMove.REASSIGN -> R.string.work_move_reassign
+    CardMove.RECLAIM -> R.string.work_move_reclaim
+    CardMove.PAUSE -> R.string.work_move_pause
+    CardMove.DONE -> R.string.work_move_done
+    CardMove.ARCHIVE -> R.string.work_move_archive
+}
+
+@androidx.annotation.StringRes
+private fun explainRes(move: CardMove): Int = when (move) {
+    CardMove.START -> R.string.work_move_start_explain
+    CardMove.UNBLOCK -> R.string.work_move_unblock_explain
+    CardMove.REASSIGN -> R.string.work_move_reassign_explain
+    CardMove.RECLAIM -> R.string.work_move_reclaim_explain
+    CardMove.PAUSE -> R.string.work_move_pause_explain
+    CardMove.DONE -> R.string.work_move_done_explain
+    CardMove.ARCHIVE -> R.string.work_move_archive_explain
+}
+
 /**
  * The card's other moves behind ⋯ (3.0): the sheet's one filled button makes the move that fits,
  * and these — hand over, pause, stop a run, mark done, archive — wait here instead of sitting in
@@ -123,7 +160,7 @@ internal fun CardMovesMenu(
             moves.forEach { move ->
                 val destructive = move == CardMove.ARCHIVE || move == CardMove.RECLAIM
                 androidx.compose.material3.DropdownMenuItem(
-                    text = { Text(menuLabel(move), color = if (destructive) KeryxStatus.bad else MaterialTheme.colorScheme.onSurface) },
+                    text = { Text(stringResource(menuLabelRes(move)), color = if (destructive) KeryxStatus.bad else MaterialTheme.colorScheme.onSurface) },
                     onClick = {
                         open = false
                         if (move.confirm || move == CardMove.REASSIGN) pending = move else onMove(move, "", "")
@@ -156,13 +193,13 @@ private fun MoveDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(shape = RoundedCornerShape(KeryxRadius.sheet), color = MaterialTheme.colorScheme.surface) {
             Column(Modifier.padding(20.dp)) {
-                KeryxSectionHeader(move.label.removeSuffix("…"))
+                KeryxSectionHeader(stringResource(titleRes(move)))
                 Spacer(Modifier.height(8.dp))
-                Text(move.explain, fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(explainRes(move)), fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (move == CardMove.REASSIGN) {
                     Spacer(Modifier.height(12.dp))
                     if (profiles.isEmpty()) {
-                        Text("No other profile to hand it to.", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.work_move_no_profile), fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
                     }
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -197,9 +234,9 @@ private fun MoveDialog(
                         placeholder = {
                             Text(
                                 when {
-                                    move.noteRequired == true -> "Why — the next run reads this"
-                                    move == CardMove.DONE -> "What got done (optional)"
-                                    else -> "A note on the card (optional)"
+                                    move.noteRequired == true -> stringResource(R.string.work_move_note_why)
+                                    move == CardMove.DONE -> stringResource(R.string.work_move_note_done)
+                                    else -> stringResource(R.string.work_move_note_optional)
                                 },
                                 fontSize = KeryxType.caption,
                             )
@@ -212,9 +249,9 @@ private fun MoveDialog(
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.mk_cancel)) }
                     TextButton(enabled = ready, onClick = { onConfirm(note.trim(), assignee) }) {
-                        Text(move.label.removeSuffix("…").let { if (move == CardMove.REASSIGN) "Hand over" else it })
+                        Text(if (move == CardMove.REASSIGN) stringResource(R.string.work_move_hand_over) else stringResource(titleRes(move)))
                     }
                 }
             }

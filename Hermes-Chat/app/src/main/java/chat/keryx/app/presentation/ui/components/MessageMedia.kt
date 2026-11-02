@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.graphics.drawable.AnimatedImageDrawable
@@ -214,7 +216,7 @@ private fun AnimatedImage(
                 .clip(RoundedCornerShape(12.dp))
                 .background(textColor.copy(alpha = 0.08f)),
         ) {
-            Text("\uD83C\uDFAC  loading\u2026", color = textColor.copy(alpha = 0.6f), fontSize = KeryxType.caption)
+            Text("\uD83C\uDFAC  " + stringResource(R.string.chat_loading_lower), color = textColor.copy(alpha = 0.6f), fontSize = KeryxType.caption)
         }
     }
 }
@@ -260,8 +262,8 @@ fun MessageMedia(
                 opening = true
                 scope.launch {
                     val bytes = loader()
-                    if (bytes == null) snack.show("Couldn't load attachment")
-                    else if (!openExternally(context, bytes, name, kind)) snack.show(NO_APP_FOR_FILE)
+                    if (bytes == null) snack.show(context.getString(R.string.chat_load_attachment_failed))
+                    else if (!openExternally(context, bytes, name, kind)) snack.show(context.getString(R.string.chat_no_app_for_file))
                     opening = false
                 }
             }
@@ -288,7 +290,7 @@ fun MessageMedia(
         if (animated != null) {
             AnimatedImage(
                 bytes = animated,
-                contentDescription = fileName.ifBlank { "animated image" },
+                contentDescription = fileName.ifBlank { stringResource(R.string.chat_animated_image) },
                 textColor = textColor,
                 modifier = Modifier
                     .widthIn(max = 260.dp)
@@ -309,7 +311,7 @@ fun MessageMedia(
         } else if (bmp != null) {
             Image(
                 bitmap = bmp,
-                contentDescription = fileName.ifBlank { "image" },
+                contentDescription = fileName.ifBlank { stringResource(R.string.chat_image) },
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .widthIn(max = 260.dp)
@@ -338,7 +340,7 @@ fun MessageMedia(
                     .clip(RoundedCornerShape(12.dp))
                     .background(textColor.copy(alpha = 0.08f)),
             ) {
-                Text("🖼  loading…", color = textColor.copy(alpha = 0.6f), fontSize = KeryxType.caption)
+                Text("🖼  " + stringResource(R.string.chat_loading_lower), color = textColor.copy(alpha = 0.6f), fontSize = KeryxType.caption)
             }
         }
     } else if (kind == MediaKind.VIDEO) {
@@ -351,14 +353,14 @@ fun MessageMedia(
         val scope = androidx.compose.runtime.rememberCoroutineScope()
         var opening by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
         FileChip(
-            kind, fileName.ifBlank { "attachment" }, textColor, opening,
+            kind, fileName.ifBlank { stringResource(R.string.chat_reply_attachment) }, textColor, opening,
             onLongClick = {
                 if (opening) return@FileChip
                 opening = true
                 scope.launch {
                     val bytes = loader()
                     val where = bytes?.let { saveMediaToDevice(context, it, fileName.ifBlank { "file" }, kind) }
-                    snack.show(if (where != null) "Saved to $where" else "Couldn't save")
+                    snack.show(if (where != null) context.getString(R.string.chat_saved_to, where) else context.getString(R.string.chat_save_failed))
                     opening = false
                 }
             },
@@ -367,8 +369,8 @@ fun MessageMedia(
             opening = true
             scope.launch {
                 val bytes = loader()
-                if (bytes == null) snack.show("Couldn't load attachment")
-                else if (!openExternally(context, bytes, fileName.ifBlank { "file" }, kind)) snack.show(NO_APP_FOR_FILE)
+                if (bytes == null) snack.show(context.getString(R.string.chat_load_attachment_failed))
+                else if (!openExternally(context, bytes, fileName.ifBlank { "file" }, kind)) snack.show(context.getString(R.string.chat_no_app_for_file))
                 opening = false
             }
         }
@@ -435,13 +437,13 @@ private fun InlineVideo(
         if (poster != null) {
             Image(
                 bitmap = poster,
-                contentDescription = fileName.ifBlank { "video" },
+                contentDescription = fileName.ifBlank { stringResource(R.string.chat_video) },
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
             )
         }
         if (video == null) {
-            Text("🎬  loading…", color = textColor.copy(alpha = 0.6f), fontSize = KeryxType.caption,
+            Text("🎬  " + stringResource(R.string.chat_loading_lower), color = textColor.copy(alpha = 0.6f), fontSize = KeryxType.caption,
                 modifier = Modifier.padding(horizontal = 40.dp, vertical = 50.dp))
         } else {
             // Play affordance + duration badge over the poster.
@@ -629,13 +631,13 @@ private fun MediaActionBar(
             scope.launch {
                 val bytes = bytesProvider()
                 val where = bytes?.let { saveMediaToDevice(context, it, fileName, kind) }
-                snack.show(if (where != null) "Saved to $where" else "Couldn't save")
+                snack.show(if (where != null) context.getString(R.string.chat_saved_to, where) else context.getString(R.string.chat_save_failed))
                 busy = false
             }
         }) {
             Icon(
                 androidx.compose.material.icons.Icons.Default.Download,
-                contentDescription = "Save to device",
+                contentDescription = stringResource(R.string.chat_save_to_device),
                 tint = if (busy) Color.White.copy(alpha = 0.4f) else Color.White,
             )
         }
@@ -645,23 +647,24 @@ private fun MediaActionBar(
             scope.launch {
                 val bytes = bytesProvider()
                 val ok = bytes != null && shareMedia(context, bytes, fileName, kind)
-                if (!ok) snack.show("Couldn't share")
+                if (!ok) snack.show(context.getString(R.string.chat_share_failed))
                 busy = false
             }
         }) {
             Icon(
                 androidx.compose.material.icons.Icons.Default.Share,
-                contentDescription = "Share",
+                contentDescription = stringResource(R.string.chat_share),
                 tint = if (busy) Color.White.copy(alpha = 0.4f) else Color.White,
             )
         }
         IconButton(onClick = onDismiss) {
-            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.chat_close), tint = Color.White)
         }
     }
 }
 
-/** What a failed [openExternally] says, wherever it was asked from. */
+/** What a failed [openExternally] says, wherever it was asked from. English: callers with a
+ *  Context use R.string.chat_no_app_for_file. */
 internal const val NO_APP_FOR_FILE = "No app can open this file"
 
 /** Stage the bytes and offer the system's "Open with" chooser. Shared with the artifact viewer.
@@ -684,7 +687,7 @@ internal suspend fun openExternally(
             setDataAndType(uri, mime)
             addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        context.startActivity(android.content.Intent.createChooser(intent, "Open with").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+        context.startActivity(android.content.Intent.createChooser(intent, context.getString(R.string.chat_open_with)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
     }.isSuccess
 }
 

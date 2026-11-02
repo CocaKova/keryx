@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -96,7 +99,7 @@ fun ProjectsSpace(
     val openNode = openId?.let { id -> nodes.firstOrNull { it.id == id } }
 
     KeryxSpace(
-        title = openNode?.label?.uppercase() ?: "Projects",
+        title = openNode?.label?.uppercase() ?: stringResource(R.string.work_projects),
         onClose = {
             if (openId != null) { openId = null; viewModel.projects.closeProjectDetail() } else onClose()
         },
@@ -118,10 +121,10 @@ fun ProjectsSpace(
 
         if (tree != null && nodes.isEmpty()) {
             KeryxEmptyState(
-                title = "No projects yet",
-                body = "A project is a workspace folder. Sessions whose work lives there group under it.",
+                title = stringResource(R.string.work_proj_none),
+                body = stringResource(R.string.work_proj_none_body),
                 illustration = { ProjectsFolderIllustration() },
-                actionLabel = "New project",
+                actionLabel = stringResource(R.string.work_proj_new),
                 onAction = { showCreate = true },
             )
             return@KeryxSpace
@@ -152,7 +155,7 @@ fun ProjectsSpace(
                     )
                     Spacer(Modifier.width(9.dp))
                     Text(
-                        "New project", fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
+                        stringResource(R.string.work_proj_new), fontSize = KeryxType.body, fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
@@ -160,7 +163,7 @@ fun ProjectsSpace(
             if (nodes.isEmpty()) {
                 item {
                     Text(
-                        error ?: "Loading projects…",
+                        error ?: stringResource(R.string.work_proj_loading),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = KeryxType.body,
                         lineHeight = 19.sp,
@@ -250,7 +253,7 @@ private fun ProjectCard(
                 Text(
                     // A discovered repo, not a project someone declared — labeled so the
                     // difference stays visible instead of silently blended.
-                    "auto",
+                    stringResource(R.string.work_proj_auto),
                     fontSize = KeryxType.micro,
                     fontFamily = FontFamily.Monospace,
                     color = chat.keryx.app.theme.quietInk(alpha = 0.55f),
@@ -258,7 +261,7 @@ private fun ProjectCard(
             }
         }
         val meta = buildList {
-            add(if (node.sessionCount == 1L) "1 session" else "${node.sessionCount} sessions")
+            add(pluralStringResource(R.plurals.work_proj_sessions, node.sessionCount.toInt(), node.sessionCount.toInt()))
             if (node.lastActiveMs > 0L) add(
                 formatRelativeTime(node.lastActiveMs)
             )
@@ -285,6 +288,7 @@ private fun ProjectCard(
             )
         }
     }
+    val archivedMsg = stringResource(R.string.work_proj_archived, node.label)
     androidx.compose.material3.DropdownMenu(
         expanded = menuOpen,
         onDismissRequest = { menuOpen = false },
@@ -296,29 +300,29 @@ private fun ProjectCard(
     ) {
         onArchive?.let { archive ->
             androidx.compose.material3.DropdownMenuItem(
-                text = { Text("Archive project") },
-                onClick = { menuOpen = false; archive { report(it, "Archived ${node.label}") } },
+                text = { Text(stringResource(R.string.work_proj_archive)) },
+                onClick = { menuOpen = false; archive { report(it, archivedMsg) } },
             )
         }
         onDelete?.let {
             androidx.compose.material3.DropdownMenuItem(
-                text = { Text("Delete project", color = MaterialTheme.colorScheme.error) },
+                text = { Text(stringResource(R.string.work_proj_delete), color = MaterialTheme.colorScheme.error) },
                 onClick = { menuOpen = false; confirmDelete = true },
             )
         }
     }
     } // end anchor Box
     if (confirmDelete && onDelete != null) {
+        val deletedMsg = stringResource(R.string.work_proj_deleted, node.label)
         AlertDialog(
             shape = RoundedCornerShape(KeryxRadius.sheet),
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete ${node.label}?", fontSize = KeryxType.titleLarge) },
+            title = { Text(stringResource(R.string.work_proj_delete_title, node.label), fontSize = KeryxType.titleLarge) },
             text = {
                 Text(
                     // The reassurance that makes this safe to tap: a project is a grouping
                     // row, and deleting it is not deleting anyone's work.
-                    "Only the project row goes. The folder on the gateway and every session " +
-                        "in it stay exactly where they are.",
+                    stringResource(R.string.work_proj_delete_body),
                     fontSize = KeryxType.body,
                     lineHeight = 18.sp,
                 )
@@ -326,10 +330,10 @@ private fun ProjectCard(
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false
-                    onDelete { report(it, "Deleted ${node.label}") }
-                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                    onDelete { report(it, deletedMsg) }
+                }) { Text(stringResource(R.string.work_delete), color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.mk_cancel)) } },
         )
     }
 }
@@ -364,14 +368,14 @@ private fun ProjectDetail(
                 }
                 Spacer(Modifier.weight(1f))
                 if (node.path != null) {
-                    TalariaActionChip(label = "New chat here", onClick = onNewChat)
+                    TalariaActionChip(label = stringResource(R.string.work_proj_new_chat_here), onClick = onNewChat)
                 }
             }
         }
         if (flat.isEmpty()) {
             item {
                 Text(
-                    if (hydrating) "Loading sessions…" else "No sessions in this workspace yet.",
+                    if (hydrating) stringResource(R.string.work_proj_loading_sessions) else stringResource(R.string.work_proj_no_sessions),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = KeryxType.body,
                     modifier = Modifier.padding(16.dp),
@@ -423,7 +427,7 @@ private fun ProjectDetail(
                         if (session.timestamp > 0L) add(
                             formatRelativeTime(session.timestamp)
                         )
-                        if (session.messageCount > 0L) add("${session.messageCount} msgs")
+                        if (session.messageCount > 0L) add(pluralStringResource(R.plurals.work_proj_msgs, session.messageCount.toInt(), session.messageCount.toInt()))
                         session.source.takeIf { it.isNotBlank() && it != "unknown" }?.let { add(it) }
                     }.joinToString(" · ")
                     if (meta.isNotEmpty()) {
@@ -455,13 +459,13 @@ private fun CreateProjectDialog(
     AlertDialog(
         shape = RoundedCornerShape(KeryxRadius.sheet),
         onDismissRequest = { if (!busy) onDismiss() },
-        title = { Text("New project", fontSize = KeryxType.titleLarge) },
+        title = { Text(stringResource(R.string.work_proj_new), fontSize = KeryxType.titleLarge) },
         text = {
             Column {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    placeholder = { Text("Project name") },
+                    placeholder = { Text(stringResource(R.string.work_proj_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -474,9 +478,7 @@ private fun CreateProjectDialog(
                 )
                 Text(
                     // The one fact that makes this form make sense: grouping is by workspace.
-                    "Sessions whose work lives in this folder belong to the project; " +
-                        "“Move to project” re-homes a session into it. The folder has to " +
-                        "exist on the gateway already — make it there first.",
+                    stringResource(R.string.work_proj_new_body),
                     fontSize = KeryxType.micro,
                     lineHeight = 15.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -500,9 +502,9 @@ private fun CreateProjectDialog(
                         if (e == null) onDismiss() else err = e
                     }
                 },
-            ) { Text(if (busy) "Creating…" else "Create") }
+            ) { Text(if (busy) stringResource(R.string.work_creating) else stringResource(R.string.work_create)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text(stringResource(R.string.mk_cancel)) } },
     )
 }
 

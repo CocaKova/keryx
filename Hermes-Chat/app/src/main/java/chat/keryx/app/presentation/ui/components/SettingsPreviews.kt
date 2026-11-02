@@ -139,9 +139,9 @@ internal fun BubbleStylePicker(selected: String, onSelect: (String) -> Unit) {
     PreviewGrid(BubbleStyles.ALL) { style, mod ->
         PreviewCard(picked = selected == style, label = style, onClick = { onSelect(style) }, modifier = mod) {
             Column(verticalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.heightIn(min = 70.dp)) {
-                MiniBubble("All planned.", mine = false, style = style)
-                MiniBubble("Sounds good!", mine = true, style = style)
-                MiniBubble("On it.", mine = false, style = style)
+                MiniBubble(stringResource(R.string.settings_preview_bubble_1), mine = false, style = style)
+                MiniBubble(stringResource(R.string.settings_preview_bubble_2), mine = true, style = style)
+                MiniBubble(stringResource(R.string.settings_preview_bubble_3), mine = false, style = style)
             }
         }
     }
@@ -203,7 +203,7 @@ internal fun RoomTransitionPreview(style: RoomTransition, speed: RoomTransitionS
         }
     }
     val shape = RoundedCornerShape(KeryxRadius.sheet)
-    val described = stringResource(R.string.mk_transition_preview, style.label, speed.label)
+    val described = stringResource(R.string.mk_transition_preview, stringResource(style.labelRes), stringResource(speed.labelRes))
     Box(
         modifier = modifier
             .fillMaxWidth()

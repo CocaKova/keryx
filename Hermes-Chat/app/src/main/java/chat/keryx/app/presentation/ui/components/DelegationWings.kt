@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -97,10 +100,10 @@ internal fun DelegationWings(
                 when {
                     // The fan-out size comes from the gateway's own task_count, so a single
                     // delegation never claims to be a squadron.
-                    flying > 0 && runs.size > 1 -> "$flying of ${runs.size} subagents running"
-                    flying > 0 -> "subagent running"
-                    runs.size > 1 -> "${runs.size} subagents"
-                    else -> "subagent"
+                    flying > 0 && runs.size > 1 -> pluralStringResource(R.plurals.chat_subagents_running, runs.size, flying, runs.size)
+                    flying > 0 -> stringResource(R.string.chat_subagent_running_lower)
+                    runs.size > 1 -> pluralStringResource(R.plurals.chat_subagents_count, runs.size, runs.size)
+                    else -> stringResource(R.string.chat_subagent)
                 },
                 color = baseColor.copy(alpha = 0.45f),
                 fontSize = KeryxType.micro,
@@ -145,12 +148,13 @@ private fun DelegationWing(
             // doing" is a live question, and afterwards it is a settled one. A running wing
             // opens onto its trail; a landed one opens onto its stored session.
             val canOpen = onOpen != null && run.hasRecord
+            val delegatedTask = stringResource(R.string.chat_delegated_task_lower)
             Text(
                 buildString {
                     // A fan-out's wings are told apart by their 1-based index, matching the
                     // gateway's own "[2] " prefixes in the CLI tree.
                     if (run.taskCount > 1) append("[${run.taskIndex + 1}] ")
-                    append(run.goal.ifBlank { "delegated task" })
+                    append(run.goal.ifBlank { delegatedTask })
                 },
                 color = baseColor.copy(alpha = 0.85f),
                 fontSize = KeryxType.micro,
@@ -168,11 +172,11 @@ private fun DelegationWing(
         }
         val meta = buildList {
             if (run.model.isNotBlank()) add(run.model)
-            if (run.toolCount > 0) add("${run.toolCount} tool${if (run.toolCount == 1) "" else "s"}")
+            if (run.toolCount > 0) add(pluralStringResource(R.plurals.chat_tool_count, run.toolCount, run.toolCount))
             durationLabel(run.elapsedSeconds(now))?.let { add(it) }
-            if (run.totalTokens > 0) add("${run.totalTokens / 1000}k tok")
-            if (run.filesWrittenN > 0) add("${run.filesWrittenN} written")
-            if (interrupted) add("interrupted")
+            if (run.totalTokens > 0) add(stringResource(R.string.chat_tokens_k, (run.totalTokens / 1000).toInt()))
+            if (run.filesWrittenN > 0) add(pluralStringResource(R.plurals.chat_files_written, run.filesWrittenN, run.filesWrittenN))
+            if (interrupted) add(stringResource(R.string.chat_interrupted))
         }
         if (meta.isNotEmpty()) {
             Text(
@@ -251,8 +255,10 @@ private fun Pulse(color: Color) {
     Box(Modifier.size(5.dp).clip(CircleShape).drawBehind { drawRect(color.copy(alpha = a?.value ?: 0.9f)) })
 }
 
+@Composable
 private fun durationLabel(seconds: Double?): String? {
     val s = seconds ?: return null
     if (s <= 0.0) return null
-    return if (s < 60.0) "${s.toInt()}s" else "${(s / 60).toInt()}m${(s % 60).toInt()}s"
+    return if (s < 60.0) stringResource(R.string.chat_duration_seconds, s.toInt())
+    else stringResource(R.string.chat_duration_min_sec_compact, (s / 60).toInt(), (s % 60).toInt())
 }

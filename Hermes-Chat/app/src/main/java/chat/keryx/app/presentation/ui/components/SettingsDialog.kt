@@ -49,6 +49,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import chat.keryx.app.presentation.ChatViewModel
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import kotlin.math.atan2
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -146,7 +149,7 @@ fun SettingsScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            (section ?: "Settings").uppercase(),
+                            (settingsSectionLabel(section)?.let { stringResource(it) } ?: section ?: stringResource(R.string.settings_title)).uppercase(),
                             fontSize = KeryxType.headline,
                             fontWeight = FontWeight.SemiBold,
                             letterSpacing = 5.sp,
@@ -155,11 +158,11 @@ fun SettingsScreen(
                     navigationIcon = {
                         if (section != null) {
                             IconButton(onClick = { section = null }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.settings_back))
                             }
                         } else {
                             IconButton(onClick = onDismissRequest) {
-                                Icon(Icons.Default.Close, contentDescription = "Close")
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.settings_close))
                             }
                         }
                     },
@@ -205,19 +208,20 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = query,
                             onValueChange = { query = it },
-                            placeholder = { Text("Find a setting…") },
+                            placeholder = { Text(stringResource(R.string.settings_search_hint)) },
                             leadingIcon = { Icon(KeryxGlyphs.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
                             trailingIcon = if (query.isNotBlank()) {
-                                { TextButton(onClick = { query = "" }) { Text("Clear", fontSize = KeryxType.micro) } }
+                                { TextButton(onClick = { query = "" }) { Text(stringResource(R.string.settings_clear), fontSize = KeryxType.micro) } }
                             } else null,
                             singleLine = true,
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
                         )
-                        val hits = remember(query, direct) { SettingsCatalog.search(query, direct) }
+                        val shownTitles = SettingsRow.entries.associateWith { stringResource(it.label) }
+                        val hits = remember(query, direct, shownTitles) { SettingsCatalog.search(query, direct) { shownTitles.getValue(it) } }
                         if (query.isNotBlank()) {
                             if (hits.isEmpty()) Text(
-                                "Nothing by that name",
+                                stringResource(R.string.settings_search_none),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = KeryxType.body,
                                 modifier = Modifier.padding(8.dp),
@@ -232,9 +236,9 @@ fun SettingsScreen(
                                         .padding(horizontal = 10.dp, vertical = 12.dp),
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(e.title, fontSize = KeryxType.title, fontWeight = FontWeight.Medium,
+                                        Text(stringResource(e.label), fontSize = KeryxType.title, fontWeight = FontWeight.Medium,
                                             color = MaterialTheme.colorScheme.onSurface)
-                                        Text(e.section(direct).orEmpty(), fontSize = KeryxType.caption,
+                                        Text(settingsSectionLabel(e.section(direct))?.let { stringResource(it) } ?: e.section(direct).orEmpty(), fontSize = KeryxType.caption,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                     Icon(KeryxGlyphs.ChevronRight, contentDescription = null,
@@ -246,9 +250,9 @@ fun SettingsScreen(
                         // Makeover: the rows sit in labelled groups, the Hermes Mobile way — a
                         // map of the app, not nine equal tiles. Each subtitle says what is SET
                         // ("Gilded bubbles · Constellation"), not what the page is about.
-                        KeryxHubGroup("Connection") {
-                            KeryxHubRow(Icons.Default.Person, "Account",
-                                currentUserId ?: "Not signed in") { section = "Account" }
+                        KeryxHubGroup(stringResource(R.string.settings_group_connection)) {
+                            KeryxHubRow(Icons.Default.Person, stringResource(R.string.settings_section_account),
+                                currentUserId ?: stringResource(R.string.settings_not_signed_in)) { section = "Account" }
                             KeryxHubDivider()
                             // One wire, one row (2.10): on the direct door the gateway IS the
                             // connection and Hermes Link is its API server, so they share a page.
@@ -257,55 +261,55 @@ fun SettingsScreen(
                                 val fleet by viewModel.doors.fleet.collectAsState()
                                 val active = fleet.active
                                 val where = active?.name
-                                    ?: viewModel.directGatewayUrl.ifBlank { "Address, certificates & Hermes Link" }
+                                    ?: viewModel.directGatewayUrl.ifBlank { stringResource(R.string.settings_hub_gateway_blank) }
                                         .removePrefix("https://").removePrefix("http://")
-                                KeryxHubRow(Icons.Default.Dns, "Gateways",
-                                    where + (if (sideChannelEnabled) " · linked" else ""),
+                                KeryxHubRow(Icons.Default.Dns, stringResource(R.string.settings_row_connection_gateway),
+                                    if (sideChannelEnabled) stringResource(R.string.settings_hub_gateway_linked, where) else where,
                                     trailing = if (fleet.hasChoice) fleet.size.toString() else null) { section = "Gateway" }
                             }
                             else {
-                                KeryxHubRow(Icons.Default.Dns, "Connection",
-                                    matrixUrl.ifBlank { "Homeserver & agent" }) { section = "Connection" }
+                                KeryxHubRow(Icons.Default.Dns, stringResource(R.string.settings_section_connection),
+                                    matrixUrl.ifBlank { stringResource(R.string.settings_hub_connection_blank) }) { section = "Connection" }
                                 KeryxHubDivider()
-                                KeryxHubRow(Icons.Default.Bolt, "Hermes Link",
-                                    if (sideChannelEnabled) "Live token streaming" else "Off",
-                                    trailing = if (sideChannelEnabled) "On" else null) { section = "Hermes Link" }
+                                KeryxHubRow(Icons.Default.Bolt, stringResource(R.string.settings_section_hermes_link),
+                                    if (sideChannelEnabled) stringResource(R.string.settings_link_streaming) else stringResource(R.string.settings_off),
+                                    trailing = if (sideChannelEnabled) stringResource(R.string.settings_on) else null) { section = "Hermes Link" }
                             }
                         }
-                        KeryxHubGroup("Agent") {
-                            KeryxHubRow(Icons.Default.Memory, "Agent",
-                                caps?.model?.takeIf { it.isNotBlank() } ?: "Brain, telemetry & alerts") { section = "Agent" }
+                        KeryxHubGroup(stringResource(R.string.settings_group_agent)) {
+                            KeryxHubRow(Icons.Default.Memory, stringResource(R.string.settings_section_agent),
+                                caps?.model?.takeIf { it.isNotBlank() } ?: stringResource(R.string.settings_hub_agent_blank)) { section = "Agent" }
                             KeryxHubDivider()
-                            KeryxHubRow(Icons.Default.Pets, "Companion",
-                                petInfo?.displayName?.takeIf { it.isNotBlank() } ?: "The drawer mascot") { section = "Companion" }
+                            KeryxHubRow(Icons.Default.Pets, stringResource(R.string.settings_section_companion),
+                                petInfo?.displayName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.settings_hub_companion_blank)) { section = "Companion" }
                             KeryxHubDivider()
-                            KeryxHubRow(Icons.Default.Mic, "Voice",
+                            KeryxHubRow(Icons.Default.Mic, stringResource(R.string.settings_section_voice),
                                 listOfNotNull(
-                                    if (sttUrl.isNotBlank()) "Dictation" else null,
-                                    if (ttsAutoSpeak) "Auto-speak" else null,
+                                    if (sttUrl.isNotBlank()) stringResource(R.string.settings_hub_voice_dictation) else null,
+                                    if (ttsAutoSpeak) stringResource(R.string.settings_hub_voice_autospeak) else null,
                                 // No STT server = no mic, but spoken replies still work on this
                                 // phone's own voice — so never just "Off".
-                                ).ifEmpty { listOf("Spoken replies on tap") }.joinToString(" · ")) { section = "Voice" }
+                                ).ifEmpty { listOf(stringResource(R.string.settings_hub_voice_default)) }.joinToString(" · ")) { section = "Voice" }
                         }
-                        KeryxHubGroup("App") {
-                            KeryxHubRow(Icons.Default.Palette, "Appearance",
-                                "$bubbleStyle bubbles · ${animationStyle.removeSuffix(" Drift")}") { section = "Appearance" }
+                        KeryxHubGroup(stringResource(R.string.settings_group_app)) {
+                            KeryxHubRow(Icons.Default.Palette, stringResource(R.string.settings_section_appearance),
+                                stringResource(R.string.settings_hub_appearance, bubbleStyle, animationStyle.removeSuffix(" Drift"))) { section = "Appearance" }
                             KeryxHubDivider()
-                            KeryxHubRow(Icons.Default.Lock, "Privacy & Security",
+                            KeryxHubRow(Icons.Default.Lock, stringResource(R.string.settings_section_privacy),
                                 listOfNotNull(
-                                    if (biometricLockEnabled) "App lock on" else "App lock off",
+                                    if (biometricLockEnabled) stringResource(R.string.settings_hub_lock_on) else stringResource(R.string.settings_hub_lock_off),
                                     if (e2eeEnabled && !direct) "E2EE" else null,
                                 ).joinToString(" · ")) { section = "Privacy & Security" }
                             if (direct) {
                                 val archived by viewModel.sessions.archivedRooms.collectAsState()
                                 KeryxHubDivider()
-                                KeryxHubRow(KeryxGlyphs.Stack, "Sessions",
-                                    "Archived & pruning",
-                                    trailing = archived.size.takeIf { it > 0 }?.let { "$it archived" }) { section = "Sessions" }
+                                KeryxHubRow(KeryxGlyphs.Stack, stringResource(R.string.settings_section_sessions),
+                                    stringResource(R.string.settings_hub_sessions),
+                                    trailing = archived.size.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.settings_hub_archived, it, it) }) { section = "Sessions" }
                             }
                         }
                         KeryxHubGroup {
-                            KeryxHubRow(Icons.Default.BugReport, "About",
+                            KeryxHubRow(Icons.Default.BugReport, stringResource(R.string.settings_section_about),
                                 "Keryx v${chat.keryx.app.BuildConfig.VERSION_NAME}" +
                                     (hubHealth.data?.version?.takeIf { it.isNotBlank() }?.let { " · hermes $it" } ?: "")) { section = "About" }
                         }
@@ -314,16 +318,16 @@ fun SettingsScreen(
 
                     // --- Account ---
                     // The demo (3.0 first run) has no account and no door to switch: just the way out.
-                    if (shown == "Account" && viewModel.isDemo) SettingsCard("Account", anchor = SettingsRow.ACCOUNT_IDENTITY) {
+                    if (shown == "Account" && viewModel.isDemo) SettingsCard(stringResource(R.string.settings_section_account), anchor = SettingsRow.ACCOUNT_IDENTITY) {
                         val demoContext = androidx.compose.ui.platform.LocalContext.current
                         Text(
-                            text = "Demo",
+                            text = stringResource(R.string.settings_demo),
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = KeryxType.title,
                         )
                         Text(
-                            text = "A pretend gateway on this phone. Nothing here leaves it.",
+                            text = stringResource(R.string.settings_demo_blurb),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = KeryxType.caption,
                         )
@@ -331,18 +335,18 @@ fun SettingsScreen(
                         Button(onClick = {
                             viewModel.doors.leaveDemo()
                             relaunchApp(demoContext)
-                        }) { Text("Connect your gateway") }
+                        }) { Text(stringResource(R.string.settings_demo_connect)) }
                     }
-                    if (shown == "Account" && !viewModel.isDemo) SettingsCard("Account", anchor = SettingsRow.ACCOUNT_IDENTITY) {
+                    if (shown == "Account" && !viewModel.isDemo) SettingsCard(stringResource(R.string.settings_section_account), anchor = SettingsRow.ACCOUNT_IDENTITY) {
                         Text(
-                            text = currentUserId ?: "Not signed in",
+                            text = currentUserId ?: stringResource(R.string.settings_not_signed_in),
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = KeryxType.title,
                         )
                         Text(
-                            text = if (viewModel.transportIsDirect) viewModel.directGatewayUrl.ifBlank { "No gateway set" }
-                            else matrixUrl.ifBlank { "No homeserver set" },
+                            text = if (viewModel.transportIsDirect) viewModel.directGatewayUrl.ifBlank { stringResource(R.string.settings_no_gateway_set) }
+                            else matrixUrl.ifBlank { stringResource(R.string.settings_no_homeserver_set) },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = KeryxType.caption,
                         )
@@ -353,7 +357,7 @@ fun SettingsScreen(
                         ) {
                             Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Sign out")
+                            Text(stringResource(R.string.settings_sign_out))
                         }
                     }
 
@@ -361,58 +365,53 @@ fun SettingsScreen(
                     // (Phase 4's second door, made a switch: the Matrix session stays in
                     // Trixnity's store, the sealed direct token stays in prefs — flipping the
                     // door just decides which spine the next process life boots.)
-                    if (shown == "Account" && !viewModel.isDemo) SettingsCard("Transport", anchor = SettingsRow.ACCOUNT_TRANSPORT) {
+                    if (shown == "Account" && !viewModel.isDemo) SettingsCard(stringResource(R.string.settings_row_account_transport), anchor = SettingsRow.ACCOUNT_TRANSPORT) {
                         val direct = viewModel.transportIsDirect
                         val otherReady =
                             if (direct) viewModel.doors.matrixSessionOnFile else viewModel.doors.directCredentialsOnFile
                         var confirmSwitch by remember { mutableStateOf(false) }
                         val settingsContext = androidx.compose.ui.platform.LocalContext.current
                         Text(
-                            text = if (direct) "Direct to gateway" else "Matrix",
+                            text = if (direct) stringResource(R.string.settings_door_direct) else "Matrix",
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = KeryxType.title,
                         )
                         Text(
-                            text = buildString {
-                                append(if (direct) "No homeserver — straight to the hermes gateway." else "The herald's home — E2EE rooms over your homeserver.")
-                            },
+                            text = if (direct) stringResource(R.string.settings_door_direct_blurb) else stringResource(R.string.settings_door_matrix_blurb),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = KeryxType.caption,
                         )
                         Spacer(Modifier.height(10.dp))
                         Text(
                             text = when {
-                                direct && otherReady -> "Switching boots the Matrix door — a signed-in session resumes there."
-                                direct -> "No Matrix session on file — you'll sign in after the switch."
-                                otherReady -> "Gateway credentials are on file — switching connects with them."
-                                else -> "No gateway credentials yet — you'll connect after the switch."
+                                direct && otherReady -> stringResource(R.string.settings_switch_matrix_ready)
+                                direct -> stringResource(R.string.settings_switch_matrix_fresh)
+                                otherReady -> stringResource(R.string.settings_switch_direct_ready)
+                                else -> stringResource(R.string.settings_switch_direct_fresh)
                             },
                             color = chat.keryx.app.theme.quietInk(alpha = 0.8f),
                             fontSize = KeryxType.caption,
                         )
                         Spacer(Modifier.height(10.dp))
                         OutlinedButton(onClick = { confirmSwitch = true }) {
-                            Text(if (direct) "Switch to Matrix" else "Switch to direct gateway")
+                            Text(if (direct) stringResource(R.string.settings_switch_to_matrix) else stringResource(R.string.settings_switch_to_direct))
                         }
                         if (confirmSwitch) {
                             AlertDialog(
                                 onDismissRequest = { confirmSwitch = false },
-                                title = { Text(if (direct) "Switch to Matrix?" else "Switch to the direct gateway?") },
+                                title = { Text(if (direct) stringResource(R.string.settings_switch_to_matrix_q) else stringResource(R.string.settings_switch_to_direct_q)) },
                                 text = {
-                                    Text(
-                                        "Keryx restarts on the other transport. Nothing is signed out — " +
-                                            "both sessions stay stored, and you can switch back the same way.",
-                                    )
+                                    Text(stringResource(R.string.settings_switch_body))
                                 },
                                 confirmButton = {
                                     TextButton(onClick = {
                                         viewModel.doors.switchTransport(if (direct) "matrix" else "direct")
                                         relaunchApp(settingsContext)
-                                    }) { Text("Switch & restart") }
+                                    }) { Text(stringResource(R.string.settings_switch_restart)) }
                                 },
                                 dismissButton = {
-                                    TextButton(onClick = { confirmSwitch = false }) { Text("Cancel") }
+                                    TextButton(onClick = { confirmSwitch = false }) { Text(stringResource(R.string.mk_cancel)) }
                                 },
                             )
                         }
@@ -424,18 +423,18 @@ fun SettingsScreen(
                             viewModel.hub.refreshReasoningCaps()
                             viewModel.hub.refreshHealth()
                         }
-                        SettingsCard("Brain") {
+                        SettingsCard(stringResource(R.string.settings_card_brain)) {
                             val rows = listOfNotNull(
-                                caps?.model?.takeIf { it.isNotBlank() }?.let { "Model" to it },
+                                caps?.model?.takeIf { it.isNotBlank() }?.let { stringResource(R.string.settings_brain_model) to it },
                                 caps?.let {
-                                    "Reasoning" to chat.keryx.core.model.ReasoningEffort.label(it.current, it.labels).ifBlank { "—" }
+                                    stringResource(R.string.settings_brain_reasoning) to chat.keryx.core.model.ReasoningEffort.label(it.current, it.labels).ifBlank { "—" }
                                 },
-                                hubHealth.data?.version?.takeIf { it.isNotBlank() }?.let { "Gateway" to "hermes-agent $it" },
-                                hubHealth.data?.gatewayState?.takeIf { it.isNotBlank() }?.let { "State" to it },
+                                hubHealth.data?.version?.takeIf { it.isNotBlank() }?.let { stringResource(R.string.settings_section_gateway) to "hermes-agent $it" },
+                                hubHealth.data?.gatewayState?.takeIf { it.isNotBlank() }?.let { stringResource(R.string.settings_brain_state) to it },
                             )
                             if (rows.isEmpty()) {
                                 Text(
-                                    hubHealth.error ?: "Probing the gateway…",
+                                    hubHealth.error ?: stringResource(R.string.settings_brain_probing),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = KeryxType.caption,
                                 )
@@ -449,54 +448,54 @@ fun SettingsScreen(
                             }
                             Spacer(Modifier.height(6.dp))
                             Text(
-                                "Live console — controls, jobs, sessions, skills and tools live in the Gateway.",
+                                stringResource(R.string.settings_brain_console),
                                 color = chat.keryx.app.theme.quietInk(alpha = 0.7f),
                                 fontSize = KeryxType.micro,
                             )
                         }
-                        SettingsCard("Presence") {
+                        SettingsCard(stringResource(R.string.settings_card_presence)) {
                             SettingsSwitchRow(
                                 anchor = SettingsRow.AGENT_TELEMETRY,
-                                title = "Show telemetry",
-                                subtitle = "Automated check-ins and the runtime footer as quiet blocks. The self-improvement review always shows",
+                                title = stringResource(R.string.settings_row_agent_telemetry),
+                                subtitle = stringResource(R.string.settings_telemetry_sub),
                                 checked = showTelemetry,
                                 onCheckedChange = onShowTelemetryChanged,
                             )
                             SettingsSwitchRow(
                                 anchor = SettingsRow.AGENT_ALERTS,
-                                title = "Mission alerts",
-                                subtitle = "Notify when a mission on any of your gateways completes, blocks, or gives up — checked in the background every 15 minutes",
+                                title = stringResource(R.string.settings_row_agent_alerts),
+                                subtitle = stringResource(R.string.settings_alerts_sub),
                                 checked = missionAlertsEnabled,
                                 onCheckedChange = onMissionAlertsChanged,
                             )
                             val resume by viewModel.resumeLastRoom.collectAsState()
                             SettingsSwitchRow(
                                 anchor = SettingsRow.AGENT_RESUME,
-                                title = "Reopen last chat on launch",
-                                subtitle = "Off: every cold start begins on the drawer",
+                                title = stringResource(R.string.settings_row_agent_resume),
+                                subtitle = stringResource(R.string.settings_resume_sub),
                                 checked = resume,
                                 onCheckedChange = { viewModel.setResumeLastRoom(it) },
                             )
                             val starters by viewModel.starters.starterSuggestions.collectAsState()
                             SettingsSwitchRow(
                                 anchor = SettingsRow.AGENT_STARTERS,
-                                title = "Suggestions in empty chats",
-                                subtitle = "A new chat offers reminders and things to ask instead of a blank page",
+                                title = stringResource(R.string.settings_row_agent_starters),
+                                subtitle = stringResource(R.string.settings_starters_sub),
                                 checked = starters,
                                 onCheckedChange = { viewModel.starters.setStarterSuggestions(it) },
                             )
                             if (starters) {
                                 val aiStarters by viewModel.starters.starterAiPrompts.collectAsState()
                                 SettingsSwitchRow(
-                                    title = "Written from your chats",
-                                    subtitle = "The gateway's title model drafts them from your recent topics and profile notes — one small model call per agent every few hours, billed if that model is a paid cloud one. Off: a generic set, no model calls",
+                                    title = stringResource(R.string.settings_starters_ai),
+                                    subtitle = stringResource(R.string.settings_starters_ai_sub),
                                     checked = aiStarters,
                                     onCheckedChange = { viewModel.starters.setStarterAiPrompts(it) },
                                 )
                                 val reminders by viewModel.starters.starterReminders.collectAsState()
                                 SettingsSwitchRow(
-                                    title = "Reminders",
-                                    subtitle = "Missions waiting on you, unread replies, and a routine due soon",
+                                    title = stringResource(R.string.settings_starters_reminders),
+                                    subtitle = stringResource(R.string.settings_starters_reminders_sub),
                                     checked = reminders,
                                     onCheckedChange = { viewModel.starters.setStarterReminders(it) },
                                 )
@@ -505,8 +504,8 @@ fun SettingsScreen(
                                 val sticky by viewModel.sessions.stickyModel.collectAsState()
                                 SettingsSwitchRow(
                                     anchor = SettingsRow.AGENT_STICKY_MODEL,
-                                    title = "New sessions use the last model picked",
-                                    subtitle = "Off: every new session starts on the gateway's default",
+                                    title = stringResource(R.string.settings_row_agent_sticky_model),
+                                    subtitle = stringResource(R.string.settings_sticky_sub),
                                     checked = sticky,
                                     onCheckedChange = { viewModel.sessions.setStickyModel(it) },
                                 )
@@ -515,7 +514,7 @@ fun SettingsScreen(
                     }
 
                     // --- Companion (the petdex mascot) ---
-                    if (shown == "Companion") SettingsCard("Companion", anchor = SettingsRow.COMPANION_PICK) {
+                    if (shown == "Companion") SettingsCard(stringResource(R.string.settings_section_companion), anchor = SettingsRow.COMPANION_PICK) {
                         LaunchedEffect(Unit) { viewModel.pet.refreshPet() }
                         var showPetPicker by remember { mutableStateOf(false) }
                         if (showPetPicker) {
@@ -535,20 +534,20 @@ fun SettingsScreen(
                                     Text(pet.displayName.ifBlank { pet.slug },
                                         fontWeight = FontWeight.SemiBold, fontSize = KeryxType.title,
                                         color = MaterialTheme.colorScheme.onSurface)
-                                    Text("Lives in the drawer header — runs while the agent works",
+                                    Text(stringResource(R.string.settings_companion_lives),
                                         fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         } else {
                             Text(
-                                "No companion adopted yet — pick one from the gateway's petdex.",
+                                stringResource(R.string.settings_companion_none),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = KeryxType.caption,
                             )
                         }
                         Spacer(Modifier.height(12.dp))
                         OutlinedButton(onClick = { showPetPicker = true }) {
-                            Text(if (petInfo != null) "Choose a different companion" else "Choose a companion")
+                            Text(if (petInfo != null) stringResource(R.string.settings_companion_change) else stringResource(R.string.settings_companion_choose))
                         }
                     }
 
@@ -559,7 +558,7 @@ fun SettingsScreen(
                     // The fleet (2.11): the Desktop's Settings → Gateways registry. One card holds
                     // every gateway the phone can reach; the row that used to say "sign out and
                     // connect again" is now "Add gateway".
-                    if (shown == "Gateway") SettingsCard("Gateways", anchor = SettingsRow.CONNECTION_GATEWAY) {
+                    if (shown == "Gateway") SettingsCard(stringResource(R.string.settings_row_connection_gateway), anchor = SettingsRow.CONNECTION_GATEWAY) {
                         val settingsContext = androidx.compose.ui.platform.LocalContext.current
                         GatewayRegistry(viewModel, onRelaunch = { relaunchApp(settingsContext) })
                         val fleet by viewModel.doors.fleet.collectAsState()
@@ -567,9 +566,9 @@ fun SettingsScreen(
                             Spacer(Modifier.height(8.dp))
                             SettingsSwitchRow(
                                 anchor = SettingsRow.CONNECTION_FLEET_RESUME,
-                                title = "At startup, return to the last-used gateway",
-                                subtitle = if (fleet.resumeLastGateway) "A cold start opens where you left off"
-                                else "A cold start opens on Primary — the Desktop's default",
+                                title = stringResource(R.string.settings_row_connection_fleet_resume),
+                                subtitle = if (fleet.resumeLastGateway) stringResource(R.string.settings_fleet_resume_on)
+                                else stringResource(R.string.settings_fleet_resume_off),
                                 checked = fleet.resumeLastGateway,
                                 onCheckedChange = viewModel.doors::setResumeLastGateway,
                             )
@@ -577,17 +576,17 @@ fun SettingsScreen(
                         Spacer(Modifier.height(12.dp))
                         SettingsSwitchRow(
                             anchor = SettingsRow.CONNECTION_INSECURE,
-                            title = "Allow self-signed certificates",
-                            subtitle = "Only for local / self-hosted gateways",
+                            title = stringResource(R.string.settings_row_connection_insecure),
+                            subtitle = stringResource(R.string.settings_insecure_gateways),
                             checked = allowInsecure,
                             onCheckedChange = onAllowInsecureChanged,
                         )
                     }
-                    if (shown == "Connection") SettingsCard("Connection", anchor = SettingsRow.CONNECTION_HOMESERVER) {
+                    if (shown == "Connection") SettingsCard(stringResource(R.string.settings_section_connection), anchor = SettingsRow.CONNECTION_HOMESERVER) {
                         OutlinedTextField(
                             value = matrixUrl,
                             onValueChange = onMatrixUrlChanged,
-                            label = { Text("Homeserver URL") },
+                            label = { Text(stringResource(R.string.settings_row_connection_homeserver)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
@@ -595,13 +594,10 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = agentMatrixId,
                             onValueChange = onAgentMatrixIdChanged,
-                            label = { Text("Hermes Agent Matrix IDs") },
+                            label = { Text(stringResource(R.string.settings_row_connection_heralds)) },
                             placeholder = { Text("@hermes:example.com, @scout:example.com") },
                             supportingText = {
-                                Text(
-                                    "Which senders get agent rendering. Separate several with commas " +
-                                        "to seat a council — the first one is your primary herald."
-                                )
+                                Text(stringResource(R.string.settings_heralds_help))
                             },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
@@ -616,20 +612,20 @@ fun SettingsScreen(
                         Spacer(Modifier.height(8.dp))
                         SettingsSwitchRow(
                             anchor = SettingsRow.CONNECTION_INSECURE,
-                            title = "Allow self-signed certificates",
-                            subtitle = "Only for local / self-hosted servers",
+                            title = stringResource(R.string.settings_row_connection_insecure),
+                            subtitle = stringResource(R.string.settings_insecure_servers),
                             checked = allowInsecure,
                             onCheckedChange = onAllowInsecureChanged,
                         )
                         SettingsSwitchRow(
                             anchor = SettingsRow.CONNECTION_PUSH,
-                            title = "Push notifications",
+                            title = stringResource(R.string.settings_row_connection_push),
                             subtitle = when {
-                                !pushEnabled -> "Off — notifications rely on the in-app sync staying alive"
+                                !pushEnabled -> stringResource(R.string.settings_push_off)
                                 org.unifiedpush.android.connector.UnifiedPush
                                     .getDistributors(androidx.compose.ui.platform.LocalContext.current)
-                                    .isNotEmpty() -> "Via your UnifiedPush distributor"
-                                else -> "Built-in — Keryx holds its own connection to your push server"
+                                    .isNotEmpty() -> stringResource(R.string.settings_push_distributor)
+                                else -> stringResource(R.string.settings_push_builtin)
                             },
                             checked = pushEnabled,
                             onCheckedChange = onPushEnabledChanged,
@@ -640,10 +636,10 @@ fun SettingsScreen(
                             OutlinedTextField(
                                 value = pushGatewayUrl,
                                 onValueChange = onPushGatewayUrlChanged,
-                                label = { Text("Push gateway URL") },
+                                label = { Text(stringResource(R.string.settings_push_url)) },
                                 placeholder = { Text("https://ntfy.example.com") },
                                 supportingText = {
-                                    Text("A Matrix push gateway — a self-hosted ntfy server works out of the box", fontSize = KeryxType.micro)
+                                    Text(stringResource(R.string.settings_push_url_help), fontSize = KeryxType.micro)
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
@@ -653,7 +649,7 @@ fun SettingsScreen(
                         var reauth by remember { mutableStateOf(false) }
                         SettingsAnchor(SettingsRow.CONNECTION_REAUTH) {
                         TextButton(onClick = { reauth = !reauth }) {
-                            Text(if (reauth) "Hide re-authenticate" else "Re-authenticate")
+                            Text(if (reauth) stringResource(R.string.settings_reauth_hide) else stringResource(R.string.settings_row_connection_reauth))
                         }
                         }
                         if (reauth) {
@@ -661,10 +657,14 @@ fun SettingsScreen(
                             var passwordInput by remember { mutableStateOf("") }
                             var passwordVisible by remember { mutableStateOf(false) }
                             var testStatus by remember { mutableStateOf("") }
+                            val needCreds = stringResource(R.string.settings_login_need_creds)
+                            val authenticating = stringResource(R.string.settings_login_authenticating)
+                            val loginOk = stringResource(R.string.settings_login_ok)
+                            val loginFailed = stringResource(R.string.settings_reauth_failed)
                             OutlinedTextField(
                                 value = usernameInput,
                                 onValueChange = { usernameInput = it },
-                                label = { Text("Username") },
+                                label = { Text(stringResource(R.string.settings_username)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true
                             )
@@ -672,11 +672,11 @@ fun SettingsScreen(
                             OutlinedTextField(
                                 value = passwordInput,
                                 onValueChange = { passwordInput = it },
-                                label = { Text("Password") },
+                                label = { Text(stringResource(R.string.settings_password)) },
                                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                                 trailingIcon = {
                                     TextButton(onClick = { passwordVisible = !passwordVisible }) {
-                                        Text(if (passwordVisible) "Hide" else "Show", fontSize = KeryxType.caption)
+                                        Text(if (passwordVisible) stringResource(R.string.settings_hide) else stringResource(R.string.settings_show), fontSize = KeryxType.caption)
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -686,16 +686,16 @@ fun SettingsScreen(
                             Button(
                                 onClick = {
                                     if (usernameInput.isBlank() || passwordInput.isBlank()) {
-                                        testStatus = "Enter username and password first."
+                                        testStatus = needCreds
                                     } else {
-                                        testStatus = "Authenticating…"
+                                        testStatus = authenticating
                                         onLoginRequested(usernameInput, passwordInput) { success, msg ->
-                                            testStatus = msg ?: if (success) "Success!" else "Failed."
+                                            testStatus = msg ?: if (success) loginOk else loginFailed
                                         }
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                            ) { Text("Login") }
+                            ) { Text(stringResource(R.string.settings_login)) }
                             if (testStatus.isNotEmpty()) {
                                 Text(testStatus, color = MaterialTheme.colorScheme.primary, fontSize = KeryxType.caption, modifier = Modifier.padding(top = 8.dp))
                             }
@@ -703,17 +703,17 @@ fun SettingsScreen(
                     }
 
                     // --- Hermes Link (side-channel streaming) ---
-                    if (shown == "Hermes Link" || shown == "Gateway") SettingsCard("Hermes Link", anchor = SettingsRow.LINK_URL) {
+                    if (shown == "Hermes Link" || shown == "Gateway") SettingsCard(stringResource(R.string.settings_section_hermes_link), anchor = SettingsRow.LINK_URL) {
                         // The same link serves two jobs by door. On Matrix it is the SSE
                         // side-channel that streams tokens ahead of sync. On the direct door the
                         // websocket already streams; the link is the API server the spaces ride
                         // (Missions, Runs, Shipyard, the Gateway space, the pet).
                         SettingsSwitchRow(
                             anchor = SettingsRow.LINK_TOGGLE,
-                            title = if (viewModel.transportIsDirect) "Hermes Link" else "Live token streaming",
+                            title = if (viewModel.transportIsDirect) stringResource(R.string.settings_section_hermes_link) else stringResource(R.string.settings_link_streaming),
                             subtitle = if (viewModel.transportIsDirect)
-                                "The API server behind Missions, Runs, Shipyard and the Gateway space — chat itself streams over the direct connection"
-                            else "Stream replies over the gateway side-channel (SSE); falls back to Matrix sync when unreachable",
+                                stringResource(R.string.settings_link_direct_sub)
+                            else stringResource(R.string.settings_link_matrix_sub),
                             checked = sideChannelEnabled,
                             onCheckedChange = onSideChannelEnabledChanged,
                         )
@@ -721,7 +721,7 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = gatewayUrl,
                             onValueChange = onGatewayUrlChanged,
-                            label = { Text("Gateway URL") },
+                            label = { Text(stringResource(R.string.settings_row_link_url)) },
                             placeholder = { Text("http://your-gateway-host:8642") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
@@ -732,11 +732,11 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = gatewayApiKey,
                             onValueChange = onGatewayApiKeyChanged,
-                            label = { Text("Gateway API key") },
+                            label = { Text(stringResource(R.string.settings_gateway_api_key)) },
                             visualTransformation = if (keyVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             trailingIcon = {
                                 TextButton(onClick = { keyVisible = !keyVisible }) {
-                                    Text(if (keyVisible) "Hide" else "Show", fontSize = KeryxType.caption)
+                                    Text(if (keyVisible) stringResource(R.string.settings_hide) else stringResource(R.string.settings_show), fontSize = KeryxType.caption)
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -751,16 +751,14 @@ fun SettingsScreen(
                             enabled = sideChannelEnabled,
                             shape = RoundedCornerShape(KeryxRadius.field),
                         ) {
-                            Text("Test link", fontSize = KeryxType.body)
+                            Text(stringResource(R.string.settings_test_link), fontSize = KeryxType.body)
                         }
                     }
 
                     // --- Voice dictation ---
-                    if (shown == "Voice") SettingsCard("Voice Dictation", anchor = SettingsRow.VOICE_STT) {
+                    if (shown == "Voice") SettingsCard(stringResource(R.string.settings_card_dictation), anchor = SettingsRow.VOICE_STT) {
                         Text(
-                            "Adds a mic to the composer: record, transcribe, and the text lands in the " +
-                                "input field. Works with any OpenAI-compatible transcription endpoint — " +
-                                "a self-hosted server on your own network, OpenAI, Groq…",
+                            stringResource(R.string.settings_stt_blurb),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = KeryxType.caption,
                         )
@@ -768,9 +766,9 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = sttUrl,
                             onValueChange = onSttUrlChanged,
-                            label = { Text("STT server URL") },
+                            label = { Text(stringResource(R.string.settings_stt_url)) },
                             placeholder = { Text("http://your-stt-host:8123") },
-                            supportingText = { Text("Blank hides the mic. Bare host, /v1, or full /v1/audio/transcriptions path all work.", fontSize = KeryxType.micro) },
+                            supportingText = { Text(stringResource(R.string.settings_stt_url_help), fontSize = KeryxType.micro) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                         )
@@ -779,11 +777,11 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = sttApiKey,
                             onValueChange = onSttApiKeyChanged,
-                            label = { Text("API key (optional)") },
+                            label = { Text(stringResource(R.string.settings_api_key_optional)) },
                             visualTransformation = if (sttKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             trailingIcon = {
                                 TextButton(onClick = { sttKeyVisible = !sttKeyVisible }) {
-                                    Text(if (sttKeyVisible) "Hide" else "Show", fontSize = KeryxType.caption)
+                                    Text(if (sttKeyVisible) stringResource(R.string.settings_hide) else stringResource(R.string.settings_show), fontSize = KeryxType.caption)
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -793,26 +791,23 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = sttModel,
                             onValueChange = onSttModelChanged,
-                            label = { Text("Model (optional)") },
-                            placeholder = { Text("only if your provider requires one, e.g. whisper-1") },
+                            label = { Text(stringResource(R.string.settings_model_optional)) },
+                            placeholder = { Text(stringResource(R.string.settings_model_hint, "whisper-1")) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                         )
                     }
 
-                    if (shown == "Voice") SettingsCard("Voice Replies", anchor = SettingsRow.VOICE_TTS) {
+                    if (shown == "Voice") SettingsCard(stringResource(R.string.settings_card_replies), anchor = SettingsRow.VOICE_TTS) {
                         Text(
-                            "Reads agent replies aloud — long-press a message and tap the speaker. " +
-                                "Works out of the box with this device's voice; point it at any " +
-                                "OpenAI-compatible speech endpoint (Kokoro, openedai-speech, LocalAI…) " +
-                                "for a custom voice.",
+                            stringResource(R.string.settings_tts_blurb),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = KeryxType.caption,
                         )
                         Spacer(Modifier.height(4.dp))
                         SettingsSwitchRow(
-                            title = "Auto-speak replies",
-                            subtitle = "Speak each finished reply in the open chat — tap the message's speaker to stop",
+                            title = stringResource(R.string.settings_tts_autospeak),
+                            subtitle = stringResource(R.string.settings_tts_autospeak_sub),
                             checked = ttsAutoSpeak,
                             onCheckedChange = onTtsAutoSpeakChanged,
                         )
@@ -820,9 +815,9 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = ttsUrl,
                             onValueChange = onTtsUrlChanged,
-                            label = { Text("TTS server URL (optional)") },
+                            label = { Text(stringResource(R.string.settings_tts_url)) },
                             placeholder = { Text("http://your-tts-host:8880") },
-                            supportingText = { Text("Blank uses Android's built-in voice. Bare host, /v1, or full /v1/audio/speech path all work.", fontSize = KeryxType.micro) },
+                            supportingText = { Text(stringResource(R.string.settings_tts_url_help), fontSize = KeryxType.micro) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                         )
@@ -831,11 +826,11 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = ttsApiKey,
                             onValueChange = onTtsApiKeyChanged,
-                            label = { Text("API key (optional)") },
+                            label = { Text(stringResource(R.string.settings_api_key_optional)) },
                             visualTransformation = if (ttsKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             trailingIcon = {
                                 TextButton(onClick = { ttsKeyVisible = !ttsKeyVisible }) {
-                                    Text(if (ttsKeyVisible) "Hide" else "Show", fontSize = KeryxType.caption)
+                                    Text(if (ttsKeyVisible) stringResource(R.string.settings_hide) else stringResource(R.string.settings_show), fontSize = KeryxType.caption)
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -845,8 +840,8 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = ttsVoice,
                             onValueChange = onTtsVoiceChanged,
-                            label = { Text("Voice (optional)") },
-                            placeholder = { Text("e.g. alloy / af_sky") },
+                            label = { Text(stringResource(R.string.settings_tts_voice)) },
+                            placeholder = { Text(stringResource(R.string.settings_example, "alloy / af_sky")) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                         )
@@ -854,38 +849,43 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = ttsModel,
                             onValueChange = onTtsModelChanged,
-                            label = { Text("Model (optional)") },
-                            placeholder = { Text("only if your provider requires one, e.g. tts-1") },
+                            label = { Text(stringResource(R.string.settings_model_optional)) },
+                            placeholder = { Text(stringResource(R.string.settings_model_hint, "tts-1")) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                         )
                     }
 
                     // --- Message Appearance ---
-                    if (shown == "Appearance") SettingsCard("Look") {
+                    if (shown == "Appearance") SettingsCard(stringResource(R.string.settings_card_look)) {
                         val isDark by viewModel.prefs.isDarkTheme.collectAsState()
                         SettingsAnchor(SettingsRow.APPEARANCE_THEME) {
-                            SettingsChoiceLabel("Theme")
+                            SettingsChoiceLabel(stringResource(R.string.settings_row_appearance_theme))
                             KeryxSegmented(
-                                options = listOf("system" to "System", "light" to "Light", "dark" to "Dark"),
+                                options = listOf("system" to stringResource(R.string.settings_theme_system), "light" to stringResource(R.string.settings_theme_light), "dark" to stringResource(R.string.settings_theme_dark)),
                                 selected = when (isDark) { null -> "system"; true -> "dark"; false -> "light" },
                                 onSelect = { viewModel.prefs.toggleTheme(when (it) { "dark" -> true; "light" -> false; else -> null }) },
                             )
                         }
                         Spacer(Modifier.height(18.dp))
                         SettingsAnchor(SettingsRow.APPEARANCE_BUBBLES) {
-                            SettingsChoiceLabel("Bubbles")
+                            SettingsChoiceLabel(stringResource(R.string.settings_bubbles))
                             // Makeover: pick by looking — four little conversations, drawn with
                             // the real bubble look and your accents.
                             BubbleStylePicker(selected = bubbleStyle, onSelect = onBubbleStyleChanged)
                         }
                         Spacer(Modifier.height(18.dp))
                         SettingsAnchor(SettingsRow.APPEARANCE_TEXT) {
-                            SettingsChoiceLabel("Text size")
-                            val sizes = listOf("Small" to 0.85f, "Default" to 1.0f, "Large" to 1.2f)
+                            SettingsChoiceLabel(stringResource(R.string.settings_row_appearance_text))
+                            val sizes = listOf("small" to 0.85f, "default" to 1.0f, "large" to 1.2f)
+                            val sizeLabels = mapOf(
+                                "small" to stringResource(R.string.settings_text_small),
+                                "default" to stringResource(R.string.settings_text_default),
+                                "large" to stringResource(R.string.settings_text_large),
+                            )
                             KeryxSegmented(
-                                options = sizes.map { it.first to it.first },
-                                selected = sizes.firstOrNull { kotlin.math.abs(messageTextScale - it.second) < 0.01f }?.first ?: "Default",
+                                options = sizes.map { it.first to sizeLabels.getValue(it.first) },
+                                selected = sizes.firstOrNull { kotlin.math.abs(messageTextScale - it.second) < 0.01f }?.first ?: "default",
                                 onSelect = { pick -> sizes.firstOrNull { it.first == pick }?.let { onMessageTextScaleChanged(it.second) } },
                             )
                         }
@@ -894,17 +894,17 @@ fun SettingsScreen(
                         // both — then each accent's presets, and the full wheel only behind the
                         // rainbow circle. Two 180dp wheels used to open the page.
                         SettingsAnchor(SettingsRow.APPEARANCE_ACCENT) {
-                            SettingsChoiceLabel("Palette")
+                            SettingsChoiceLabel(stringResource(R.string.settings_palette))
                             AccentPalettes(currentAccentColor, currentAccentColor2) { a, b ->
                                 onAccentColorChanged(a); onAccentColor2Changed(b)
                             }
                         }
                         Spacer(Modifier.height(18.dp))
-                        AccentRow("Accent", currentAccentColor, onAccentColorChanged, discSize = 180.dp)
+                        AccentRow(stringResource(R.string.settings_accent), currentAccentColor, onAccentColorChanged, discSize = 180.dp)
                         Spacer(Modifier.height(16.dp))
-                        AccentRow("Accent 2", currentAccentColor2, onAccentColor2Changed, discSize = 150.dp)
+                        AccentRow(stringResource(R.string.settings_accent_2), currentAccentColor2, onAccentColor2Changed, discSize = 150.dp)
                         Text(
-                            "The gradient partner: bubbles, the working cloud, and borders blend Accent → Accent 2.",
+                            stringResource(R.string.settings_accent_2_help),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = KeryxType.micro,
                             modifier = Modifier.padding(top = 6.dp),
@@ -922,20 +922,20 @@ fun SettingsScreen(
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
                                 .align(Alignment.CenterHorizontally)
                         ) {
-                            Text("Accent → Accent 2", color = currentAccentColor2, fontWeight = FontWeight.Bold, fontSize = KeryxType.bodyLarge)
+                            Text(stringResource(R.string.settings_accent_preview), color = currentAccentColor2, fontWeight = FontWeight.Bold, fontSize = KeryxType.bodyLarge)
                         }
                         Spacer(Modifier.height(16.dp))
                         OutlinedButton(onClick = onResetAppearance, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                            Text("Reset to Default")
+                            Text(stringResource(R.string.settings_reset_default))
                         }
                     }
 
                     // --- Privacy & Security ---
-                    if (shown == "Privacy & Security") SettingsCard("Privacy & Security", anchor = SettingsRow.PRIVACY_LOCK) {
+                    if (shown == "Privacy & Security") SettingsCard(stringResource(R.string.settings_section_privacy), anchor = SettingsRow.PRIVACY_LOCK) {
                         SettingsSwitchRow(
                             anchor = SettingsRow.PRIVACY_LOCK,
-                            title = "Biometric App Lock",
-                            subtitle = "Require your fingerprint, face or screen lock to open Keryx",
+                            title = stringResource(R.string.settings_row_privacy_lock),
+                            subtitle = stringResource(R.string.settings_lock_sub),
                             checked = biometricLockEnabled,
                             onCheckedChange = onBiometricLockChanged
                         )
@@ -944,8 +944,8 @@ fun SettingsScreen(
                             Spacer(Modifier.height(8.dp))
                             SettingsSwitchRow(
                                 anchor = SettingsRow.PRIVACY_E2EE,
-                                title = "End-to-End Encryption",
-                                subtitle = "Enable Matrix E2EE session management",
+                                title = stringResource(R.string.settings_row_privacy_e2ee),
+                                subtitle = stringResource(R.string.settings_e2ee_sub),
                                 checked = e2eeEnabled,
                                 onCheckedChange = onE2eeChanged
                             )
@@ -957,11 +957,11 @@ fun SettingsScreen(
                     if (shown == "Privacy & Security") SettingsAnchor(SettingsRow.PRIVACY_SENSES) { chat.keryx.app.senses.SensesSettingsCard() }
 
                     // --- Interface ---
-                    if (shown == "Appearance") SettingsCard("Feel") {
+                    if (shown == "Appearance") SettingsCard(stringResource(R.string.settings_card_feel)) {
                         SettingsSwitchRow(
                             anchor = SettingsRow.APPEARANCE_HAPTICS,
-                            title = "Haptic Feedback",
-                            subtitle = "A small tick when you press, send or switch. Off keeps Keryx still in the hand",
+                            title = stringResource(R.string.settings_row_appearance_haptics),
+                            subtitle = stringResource(R.string.settings_haptics_sub),
                             checked = hapticsEnabled,
                             onCheckedChange = onHapticsChanged
                         )
@@ -985,23 +985,23 @@ fun SettingsScreen(
                         Spacer(Modifier.height(18.dp))
                         SettingsAnchor(SettingsRow.APPEARANCE_TRANSITION) {
                             val transition by viewModel.prefs.roomTransition.collectAsState()
-                            SettingsChoiceLabel("Room transition")
+                            SettingsChoiceLabel(stringResource(R.string.settings_row_appearance_transition))
                             KeryxSegmented(
-                                options = RoomTransition.entries.map { it.key to it.label },
+                                options = RoomTransition.entries.map { it.key to stringResource(it.labelRes) },
                                 selected = transition.key,
                                 onSelect = { viewModel.prefs.setRoomTransition(RoomTransition.of(it)) },
                             )
                             Spacer(Modifier.height(6.dp))
                             Text(
-                                transition.blurb + " Reduced motion skips it.",
+                                stringResource(R.string.settings_transition_blurb, stringResource(transition.blurbRes)),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = KeryxType.caption,
                             )
                             Spacer(Modifier.height(12.dp))
                             val speed by viewModel.prefs.roomTransitionSpeed.collectAsState()
-                            SettingsChoiceLabel("Transition speed")
+                            SettingsChoiceLabel(stringResource(R.string.settings_transition_speed))
                             KeryxSegmented(
-                                options = RoomTransitionSpeed.entries.map { it.key to it.label },
+                                options = RoomTransitionSpeed.entries.map { it.key to stringResource(it.labelRes) },
                                 selected = speed.key,
                                 onSelect = { viewModel.prefs.setRoomTransitionSpeed(RoomTransitionSpeed.of(it)) },
                             )
@@ -1013,11 +1013,11 @@ fun SettingsScreen(
                     }
 
                     // --- Sessions (direct door): what left the list, and the sweep ---
-                    if (shown == "Sessions") SettingsCard("Archived", anchor = SettingsRow.SESSIONS_ARCHIVED) {
+                    if (shown == "Sessions") SettingsCard(stringResource(R.string.settings_card_archived), anchor = SettingsRow.SESSIONS_ARCHIVED) {
                         val archived by viewModel.sessions.archivedRooms.collectAsState()
                         LaunchedEffect(Unit) { viewModel.sessions.loadArchivedSessions() }
                         if (archived.isEmpty()) Text(
-                            "Nothing archived. Long-press a session in the drawer to put it away — it stays on the gateway.",
+                            stringResource(R.string.settings_archived_none),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = KeryxType.caption,
                         )
@@ -1042,28 +1042,28 @@ fun SettingsScreen(
                                         maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                                 }
                                 TextButton(onClick = { viewModel.sessions.unarchiveSession(room.id) }) {
-                                    Text("Restore", fontSize = KeryxType.caption)
+                                    Text(stringResource(R.string.settings_restore), fontSize = KeryxType.caption)
                                 }
                             }
                         }
                     }
-                    if (shown == "Sessions") SettingsCard("Pruning", anchor = SettingsRow.SESSIONS_PRUNE) {
+                    if (shown == "Sessions") SettingsCard(stringResource(R.string.settings_card_pruning), anchor = SettingsRow.SESSIONS_PRUNE) {
                         var pruneOpen by remember { mutableStateOf(false) }
                         Text(
-                            "Delete old, idle sessions from the gateway in one sweep — previewed before anything goes.",
+                            stringResource(R.string.settings_prune_blurb),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = KeryxType.caption,
                         )
                         Spacer(Modifier.height(10.dp))
                         OutlinedButton(onClick = { pruneOpen = true }, shape = RoundedCornerShape(KeryxRadius.field)) {
-                            Text("Prune sessions…", fontSize = KeryxType.body)
+                            Text(stringResource(R.string.settings_prune_button), fontSize = KeryxType.body)
                         }
                         if (pruneOpen) SessionPruneDialog(viewModel = viewModel, onDismiss = { pruneOpen = false })
                     }
 
-                    if (shown == "About") SettingsCard("Tour", anchor = SettingsRow.ABOUT_TOUR) {
+                    if (shown == "About") SettingsCard(stringResource(R.string.settings_card_tour), anchor = SettingsRow.ABOUT_TOUR) {
                         Text(
-                            "A look around Keryx. Quick covers what a first chat needs; full walks the drawer too and ends on your gateway.",
+                            stringResource(R.string.settings_tour_blurb),
                             fontSize = KeryxType.body,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -1072,33 +1072,34 @@ fun SettingsScreen(
                             OutlinedButton(
                                 onClick = { viewModel.requestTour(chat.keryx.core.tour.TourPreset.QUICK) },
                                 shape = RoundedCornerShape(KeryxRadius.field),
-                            ) { Text("Quick tour", fontSize = KeryxType.body) }
+                            ) { Text(stringResource(R.string.settings_tour_quick), fontSize = KeryxType.body) }
                             OutlinedButton(
                                 onClick = { viewModel.requestTour(chat.keryx.core.tour.TourPreset.FULL) },
                                 shape = RoundedCornerShape(KeryxRadius.field),
-                            ) { Text("Full tour", fontSize = KeryxType.body) }
+                            ) { Text(stringResource(R.string.settings_tour_full), fontSize = KeryxType.body) }
                         }
                         TextButton(onClick = { viewModel.requestWhatsNew() }) {
-                            Text("What's new in 3.0", fontSize = KeryxType.body)
+                            Text(stringResource(R.string.settings_whats_new, "3.0"), fontSize = KeryxType.body)
                         }
                         Spacer(Modifier.height(4.dp))
                         // First-visit hints (3.0): Missions, Runs and the rest explain themselves once.
+                        val hintsAgain = stringResource(R.string.settings_hints_again_toast)
                         TextButton(onClick = {
                             viewModel.prefs.showHintsAgain()
-                            viewModel.toast("Each space will explain itself again on your next visit.")
-                        }) { Text("Show the space hints again", fontSize = KeryxType.body) }
+                            viewModel.toast(hintsAgain)
+                        }) { Text(stringResource(R.string.settings_hints_again), fontSize = KeryxType.body) }
                     }
-                    if (shown == "About") SettingsCard("Diagnostics", anchor = SettingsRow.ABOUT_CRASH) {
+                    if (shown == "About") SettingsCard(stringResource(R.string.settings_card_diagnostics), anchor = SettingsRow.ABOUT_CRASH) {
                         val diagContext = androidx.compose.ui.platform.LocalContext.current
                         var crashText by remember { mutableStateOf(chat.keryx.app.CrashLog.read(diagContext)) }
                         Text(
-                            text = if (crashText.isBlank()) "No crashes recorded"
-                                else "Crash log: ${crashText.length / 1024} KB recorded",
+                            text = if (crashText.isBlank()) stringResource(R.string.settings_crash_none)
+                                else stringResource(R.string.settings_crash_size, crashText.length / 1024),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = KeryxType.body,
                         )
                         Text(
-                            text = "Kept only on this device; share it when reporting a bug.",
+                            text = stringResource(R.string.settings_crash_note),
                             color = chat.keryx.app.theme.quietInk(alpha = 0.6f),
                             fontSize = KeryxType.micro,
                         )
@@ -1108,7 +1109,7 @@ fun SettingsScreen(
                                 onClick = { chat.keryx.app.CrashLog.share(diagContext) },
                                 enabled = crashText.isNotBlank(),
                                 shape = RoundedCornerShape(KeryxRadius.field),
-                            ) { Text("Share", fontSize = KeryxType.body) }
+                            ) { Text(stringResource(R.string.settings_share), fontSize = KeryxType.body) }
                             OutlinedButton(
                                 onClick = {
                                     chat.keryx.app.CrashLog.clear(diagContext)
@@ -1117,16 +1118,16 @@ fun SettingsScreen(
                                 enabled = crashText.isNotBlank(),
                                 shape = RoundedCornerShape(KeryxRadius.field),
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                            ) { Text("Clear", fontSize = KeryxType.body) }
+                            ) { Text(stringResource(R.string.settings_clear), fontSize = KeryxType.body) }
                         }
                     }
                     if (shown == "About") SettingsCard("Keryx", anchor = SettingsRow.ABOUT_VERSION) {
                         val aboutContext = androidx.compose.ui.platform.LocalContext.current
                         val lines = listOfNotNull(
-                            "App" to "Keryx v${chat.keryx.app.BuildConfig.VERSION_NAME} (${chat.keryx.app.BuildConfig.VERSION_CODE})",
-                            "Door" to (if (viewModel.transportIsDirect) "Direct to gateway" else "Matrix"),
-                            hubHealth.data?.version?.takeIf { it.isNotBlank() }?.let { "Gateway" to "hermes-agent $it" },
-                            caps?.model?.takeIf { it.isNotBlank() }?.let { "Brain" to it },
+                            stringResource(R.string.settings_about_app) to "Keryx v${chat.keryx.app.BuildConfig.VERSION_NAME} (${chat.keryx.app.BuildConfig.VERSION_CODE})",
+                            stringResource(R.string.settings_about_door) to (if (viewModel.transportIsDirect) stringResource(R.string.settings_door_direct) else "Matrix"),
+                            hubHealth.data?.version?.takeIf { it.isNotBlank() }?.let { stringResource(R.string.settings_section_gateway) to "hermes-agent $it" },
+                            caps?.model?.takeIf { it.isNotBlank() }?.let { stringResource(R.string.settings_card_brain) to it },
                             "Android" to "${android.os.Build.VERSION.RELEASE} (API ${android.os.Build.VERSION.SDK_INT})",
                         )
                         lines.forEach { (k, v) ->
@@ -1140,15 +1141,16 @@ fun SettingsScreen(
                         Spacer(Modifier.height(10.dp))
                         // The Desktop's "Copy error details": versions, door, brain — the lines a
                         // bug report needs and a person never remembers. No secrets ride along.
+                        val copied = stringResource(R.string.settings_diagnostics_copied)
                         OutlinedButton(
                             onClick = {
                                 val text = lines.joinToString("\n") { (k, v) -> "$k: $v" }
                                 aboutContext.getSystemService(android.content.ClipboardManager::class.java)
                                     ?.setPrimaryClip(android.content.ClipData.newPlainText("Keryx diagnostics", text))
-                                viewModel.toast("Diagnostics copied")
+                                viewModel.toast(copied)
                             },
                             shape = RoundedCornerShape(KeryxRadius.field),
-                        ) { Text("Copy diagnostics", fontSize = KeryxType.body) }
+                        ) { Text(stringResource(R.string.settings_copy_diagnostics), fontSize = KeryxType.body) }
                     }
 
                     Spacer(Modifier.height(40.dp))
@@ -1270,10 +1272,10 @@ fun SettingsPlace(viewModel: ChatViewModel, onClose: () -> Unit) {
                     chat.keryx.app.notify.PushManager.EnableResult.NoGateway -> {
                         // Don't latch a switch that can't deliver — say why instead.
                         viewModel.setPushEnabled(false)
-                        viewModel.toast("Set the push gateway URL first (your ntfy server) — staying on in-app sync")
+                        viewModel.toast(context.getString(R.string.settings_push_need_url))
                     }
                     chat.keryx.app.notify.PushManager.EnableResult.BuiltinActive ->
-                        viewModel.toast("Push active — Keryx holds its own connection, no distributor app needed")
+                        viewModel.toast(context.getString(R.string.settings_push_builtin_active))
                     chat.keryx.app.notify.PushManager.EnableResult.Requested -> Unit
                 }
             } else {

@@ -77,7 +77,7 @@ internal fun agentDisplayName(viewModel: ChatViewModel): String {
     return soulHeading(soul.data?.content)
         ?: profile?.takeIf { it.isNotBlank() && it != "default" }?.replaceFirstChar { it.uppercase() }
         ?: fleet.active?.name?.takeIf { it.isNotBlank() }
-        ?: "Your agent"
+        ?: stringResource(R.string.agent_your_agent)
 }
 
 internal fun soulHeading(content: String?): String? =
@@ -199,7 +199,7 @@ internal fun AgentStatStrip(viewModel: ChatViewModel, open: (String) -> Unit) {
     ) {
         StatTile(
             value = pct?.let { "$it%" } ?: "—",
-            label = "context",
+            label = stringResource(R.string.agent_stat_context),
             tint = when {
                 pct == null -> null
                 pct >= 80 -> KeryxStatus.bad
@@ -211,15 +211,16 @@ internal fun AgentStatStrip(viewModel: ChatViewModel, open: (String) -> Unit) {
             modifier = Modifier.weight(1f),
         )
         StatTile(
-            value = if (turns > 0) turns.toString() else "idle",
-            label = if (turns == 1) "turn running" else if (turns > 1) "turns running" else "right now",
+            value = if (turns > 0) turns.toString() else stringResource(R.string.agent_stat_idle),
+            label = if (turns > 0) pluralStringResource(R.plurals.agent_stat_turns_running, turns)
+                else stringResource(R.string.agent_stat_right_now),
             tint = if (turns > 0) MaterialTheme.colorScheme.primary else null,
             onClick = { open("sessions") },
             modifier = Modifier.weight(1f),
         )
         StatTile(
             value = jobs.data?.size?.toString() ?: "—",
-            label = "scheduled",
+            label = stringResource(R.string.agent_stat_scheduled),
             tint = null,
             onClick = { open("jobs") },
             modifier = Modifier.weight(1f),
@@ -271,13 +272,13 @@ internal fun AgentQuickActions(viewModel: ChatViewModel, onDismiss: () -> Unit) 
     val currentRoom by viewModel.currentRoom.collectAsState()
     val haveRoom = currentRoom != null
     val actions = listOf(
-        "/new" to "Fresh session",
-        "/compress" to "Compress",
-        "/handoff" to "Handoff",
-        "/status" to "Status",
+        "/new" to stringResource(R.string.agent_qa_new_title),
+        "/compress" to stringResource(R.string.agent_qa_compress_title),
+        "/handoff" to stringResource(R.string.agent_qa_handoff_title),
+        "/status" to stringResource(R.string.agent_spoke_status),
     )
     Column(Modifier.fillMaxWidth().padding(top = 16.dp)) {
-        KeryxSectionHeader("In this chat", modifier = Modifier.padding(start = 6.dp, bottom = 8.dp))
+        KeryxSectionHeader(stringResource(R.string.agent_in_this_chat), modifier = Modifier.padding(start = 6.dp, bottom = 8.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(actions, key = { it.first }) { (cmd, title) ->
                 val source = remember { MutableInteractionSource() }
@@ -333,7 +334,7 @@ internal fun McpTab(viewModel: ChatViewModel) {
         LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp)) {
             if (servers.isEmpty()) item(key = "mcp-empty") {
                 Text(
-                    "No MCP servers yet. Add one on the gateway with `hermes mcp add`, and it shows up here.",
+                    stringResource(R.string.agent_mcp_empty),
                     fontSize = KeryxType.body,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 20.dp),
@@ -341,7 +342,7 @@ internal fun McpTab(viewModel: ChatViewModel) {
             } else {
                 item(key = "mcp-group") {
                     val on = servers.count { it.enabled }
-                    KeryxHubGroup("Servers · $on of ${servers.size} on", modifier = Modifier.animateContentSize(KeryxMotion.settleSize)) {
+                    KeryxHubGroup(stringResource(R.string.agent_mcp_servers_on, on, servers.size), modifier = Modifier.animateContentSize(KeryxMotion.settleSize)) {
                         servers.forEachIndexed { i, s ->
                             if (i > 0) KeryxHubDivider()
                             McpRow(
@@ -354,7 +355,7 @@ internal fun McpTab(viewModel: ChatViewModel) {
                 }
                 item(key = "mcp-note") {
                     Text(
-                        "A switch takes effect from the agent's next session. Servers stay in the gateway's config either way.",
+                        stringResource(R.string.agent_mcp_note),
                         fontSize = KeryxType.micro,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 10.dp),
@@ -417,9 +418,9 @@ private fun McpRow(
                     modifier = Modifier.padding(top = 2.dp),
                 )
                 val extras = listOfNotNull(
-                    s.envCount.takeIf { it > 0 }?.let { if (it == 1) "1 env var" else "$it env vars" },
-                    s.auth?.let { "auth: $it" },
-                    s.plugin?.let { "from plugin $it" },
+                    s.envCount.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.agent_mcp_env_vars, it, it) },
+                    s.auth?.let { stringResource(R.string.agent_mcp_auth, it) },
+                    s.plugin?.let { stringResource(R.string.agent_mcp_from_plugin, it) },
                 )
                 if (extras.isNotEmpty()) Text(
                     extras.joinToString(" · "),
@@ -707,12 +708,12 @@ internal fun SoulTab(viewModel: ChatViewModel) {
                     modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
                 ) {
                     Text(
-                        "${draft.length} chars · new sessions start with it",
+                        pluralStringResource(R.plurals.agent_soul_chars_note, draft.length, draft.length),
                         fontSize = KeryxType.micro,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                     )
-                    TextButton(onClick = { editing = false }, enabled = !saving) { Text("Cancel") }
+                    TextButton(onClick = { editing = false }, enabled = !saving) { Text(stringResource(R.string.mk_cancel)) }
                     Spacer(Modifier.width(6.dp))
                     Button(
                         onClick = {
@@ -720,7 +721,7 @@ internal fun SoulTab(viewModel: ChatViewModel) {
                             viewModel.agent.saveSoul(draft) { ok -> saving = false; if (ok) editing = false }
                         },
                         enabled = !saving && draft != soul.content,
-                    ) { Text(if (saving) "Saving…" else "Save") }
+                    ) { Text(if (saving) stringResource(R.string.agent_saving) else stringResource(R.string.agent_save)) }
                 }
             }
             else -> Column(
@@ -728,14 +729,14 @@ internal fun SoulTab(viewModel: ChatViewModel) {
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
                     Text(
-                        if (soul.exists) "SOUL.md · profile ${soul.profile} · ${soul.content.length} chars"
-                        else "No SOUL.md on profile ${soul.profile} — Hermes uses its stock persona.",
+                        if (soul.exists) stringResource(R.string.agent_soul_info, soul.profile, soul.content.length)
+                        else stringResource(R.string.agent_soul_missing, soul.profile),
                         fontSize = KeryxType.micro,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f).padding(start = 6.dp),
                     )
                     OutlinedButton(onClick = { draft = soul.content; editing = true }) {
-                        Text(if (soul.exists) "Edit" else "Write one", fontSize = KeryxType.body)
+                        Text(if (soul.exists) stringResource(R.string.agent_edit) else stringResource(R.string.agent_write_one), fontSize = KeryxType.body)
                     }
                 }
                 if (soul.exists) {
@@ -838,7 +839,8 @@ internal fun AgentDoorCard(viewModel: ChatViewModel, onOpen: () -> Unit) {
         }
         Spacer(Modifier.width(8.dp))
         androidx.compose.material3.Icon(
-            KeryxGlyphs.ChevronRight, contentDescription = "Open the agent's page",
+            KeryxGlyphs.ChevronRight, contentDescription = stringResource(R.string.agent_open_agent_page),
+
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             modifier = Modifier.size(20.dp),
         )

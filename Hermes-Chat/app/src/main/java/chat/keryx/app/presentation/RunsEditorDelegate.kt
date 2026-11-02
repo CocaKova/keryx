@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.KeryxText
+import chat.keryx.app.R
 import chat.keryx.app.data.remote.HermesStreamClient.HubJob
 import chat.keryx.app.transport.direct.GatewayRest
 import chat.keryx.core.model.CronJobDraft
@@ -105,7 +107,7 @@ class RunsEditorDelegate(
         val useDashboard = r != null && _extras.value.dashboard
         val link = client()
         if (!useDashboard && link == null) {
-            toast("Hermes Link is off — enable it in Settings")
+            toast(KeryxText.get(R.string.work_link_off))
             onDone(false)
             return
         }
@@ -140,12 +142,12 @@ class RunsEditorDelegate(
             }
             result
                 .onSuccess {
-                    toast(if (original == null) "Job scheduled" else "Job updated")
+                    toast(KeryxText.get(if (original == null) R.string.work_job_scheduled else R.string.work_job_updated))
                     hub.refreshJobs(); hub.refreshCron()
                     onDone(true)
                 }
                 .onFailure {
-                    toast("Couldn't save: ${CronRestParser.errorDetail(it.message).take(120)}")
+                    toast(KeryxText.get(R.string.work_job_save_failed, CronRestParser.errorDetail(it.message).take(120)))
                     onDone(false)
                 }
         }
@@ -163,12 +165,12 @@ class RunsEditorDelegate(
         scope.launch {
             r.call("POST", "/api/cron/blueprints/instantiate", body)
                 .onSuccess {
-                    toast("${bp.title} scheduled")
+                    toast(KeryxText.get(R.string.work_job_bp_scheduled, bp.title))
                     hub.refreshJobs(); hub.refreshCron()
                     onDone(true)
                 }
                 .onFailure {
-                    toast("Couldn't schedule: ${CronRestParser.errorDetail(it.message).take(120)}")
+                    toast(KeryxText.get(R.string.work_job_schedule_failed, CronRestParser.errorDetail(it.message).take(120)))
                     onDone(false)
                 }
         }

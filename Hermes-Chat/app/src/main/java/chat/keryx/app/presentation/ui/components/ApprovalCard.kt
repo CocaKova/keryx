@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -74,7 +76,7 @@ fun ApprovalCard(
         Column(Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Assertive }) {
         // Pressed like the accent: warn clears AA on bare paper but read 4.47:1 on this card's
         // own warn wash (3.0 accessibility pass).
-        KeryxSectionHeader("Approval needed", color = keryxAccentInk(warn))
+        KeryxSectionHeader(stringResource(R.string.chat_approval_needed), color = keryxAccentInk(warn))
         if (approval.description.isNotBlank()) {
             Spacer(Modifier.height(6.dp))
             Text(
@@ -107,10 +109,10 @@ fun ApprovalCard(
         FlowRow {
             approval.choices.forEach { choice ->
                 val (label, color) = when (choice) {
-                    "once" -> "Allow once" to MaterialTheme.colorScheme.onSurface
-                    "session" -> "Session" to MaterialTheme.colorScheme.onSurface
-                    "always" -> "Always" to MaterialTheme.colorScheme.onSurface
-                    "deny" -> "Deny" to MaterialTheme.colorScheme.error
+                    "once" -> stringResource(R.string.chat_approval_once) to MaterialTheme.colorScheme.onSurface
+                    "session" -> stringResource(R.string.chat_approval_session) to MaterialTheme.colorScheme.onSurface
+                    "always" -> stringResource(R.string.chat_approval_always) to MaterialTheme.colorScheme.onSurface
+                    "deny" -> stringResource(R.string.chat_approval_deny) to MaterialTheme.colorScheme.error
                     else -> choice to MaterialTheme.colorScheme.onSurface
                 }
                 ApprovalButton(label, color, modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)) {
@@ -158,10 +160,10 @@ fun BlockingRequestCard(
             when (request.kind) {
                 // A batch is walked one question at a time; say where in it this one sits.
                 BlockingKind.CLARIFY ->
-                    if (request.total > 1) "Hermes is asking · ${request.ordinal} of ${request.total}"
-                    else "Hermes is asking"
-                BlockingKind.SUDO -> "Sudo password needed"
-                BlockingKind.SECRET -> "Credential needed"
+                    if (request.total > 1) stringResource(R.string.chat_asking_batch, request.ordinal, request.total)
+                    else stringResource(R.string.chat_asking)
+                BlockingKind.SUDO -> stringResource(R.string.chat_sudo_needed)
+                BlockingKind.SECRET -> stringResource(R.string.chat_credential_needed)
             },
             // The only explicit accent left on a section header in the app; the default is
             // already the ink form, so this was the one that stayed at 3.26:1 on paper.
@@ -176,7 +178,7 @@ fun BlockingRequestCard(
             Spacer(Modifier.height(4.dp))
             Text(
                 // Say where it lands: this is stored on the gateway, not just used once.
-                "Stored on the gateway as ${request.envVar}",
+                stringResource(R.string.chat_stored_as, request.envVar),
                 fontSize = KeryxType.micro,
                 fontFamily = FontFamily.Monospace,
                 color = onSurface.copy(alpha = 0.6f),
@@ -197,7 +199,7 @@ fun BlockingRequestCard(
             }
             if (request.multiSelect) {
                 Text(
-                    "Several answers are allowed — type them comma-separated below.",
+                    stringResource(R.string.chat_multi_answers),
                     fontSize = KeryxType.micro,
                     color = onSurface.copy(alpha = 0.55f),
                 )
@@ -214,9 +216,9 @@ fun BlockingRequestCard(
             placeholder = {
                 Text(
                     when (request.kind) {
-                        BlockingKind.CLARIFY -> "Your answer"
-                        BlockingKind.SUDO -> "Password"
-                        BlockingKind.SECRET -> "Value"
+                        BlockingKind.CLARIFY -> stringResource(R.string.chat_your_answer)
+                        BlockingKind.SUDO -> stringResource(R.string.chat_password)
+                        BlockingKind.SECRET -> stringResource(R.string.chat_value)
                     },
                     fontSize = KeryxType.body,
                 )
@@ -240,14 +242,14 @@ fun BlockingRequestCard(
             // looks pressable and does nothing is worse than no button: it reads as the app
             // being broken. It now dims with its own state.
             ApprovalButton(
-                label = "Send",
+                label = stringResource(R.string.chat_send),
                 color = keryxAccentInk(accent),
                 enabled = typed.isNotBlank(),
             ) { haptics.commit(); onAnswer(typed) }
             Spacer(Modifier.width(8.dp))
             // Blank IS the answer the gateway reads as "skipped" — it releases the tool
             // with an empty result rather than leaving the turn parked on the timeout.
-            ApprovalButton(label = "Skip", color = onSurface, weight = FontWeight.Normal) {
+            ApprovalButton(label = stringResource(R.string.chat_skip), color = onSurface, weight = FontWeight.Normal) {
                 onAnswer("")
             }
         }

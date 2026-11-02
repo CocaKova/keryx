@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.tour
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
@@ -356,6 +358,7 @@ private fun TourCard(
     LaunchedEffect(Unit) { arrive.animateTo(1f, spring(dampingRatio = 0.85f, stiffness = 380f)) }
     val rise = with(LocalDensity.current) { 10.dp.toPx() }
     val accent = MaterialTheme.colorScheme.primary
+    val pane = stringResource(R.string.app_tour_pane)
     Surface(
         shape = RoundedCornerShape(KeryxRadius.sheet),
         color = MaterialTheme.colorScheme.surface,
@@ -369,7 +372,7 @@ private fun TourCard(
             }
             // Read out as each stop arrives; the pane title tells TalkBack where it is.
             .semantics {
-                paneTitle = "Tour"
+                paneTitle = pane
                 liveRegion = LiveRegionMode.Polite
             },
     ) {
@@ -385,7 +388,7 @@ private fun TourCard(
                 IconButton(onClick = onClose) {
                     Icon(
                         KeryxGlyphs.Close,
-                        contentDescription = "End the tour",
+                        contentDescription = stringResource(R.string.app_tour_end),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp),
                     )
@@ -403,14 +406,14 @@ private fun TourCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (run.paged && run.steps.size > 1) {
                     Text(
-                        "${run.index + 1} of ${run.steps.size}",
+                        stringResource(R.string.app_tour_progress, run.index + 1, run.steps.size),
                         fontSize = KeryxType.caption,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 Spacer(Modifier.weight(1f))
                 if (run.paged && !run.isFirst) {
-                    TextButton(onClick = onBack) { Text("Back") }
+                    TextButton(onClick = onBack) { Text(stringResource(R.string.app_tour_back)) }
                     Spacer(Modifier.width(4.dp))
                 }
                 val fill = keryxAccentInk()
@@ -418,16 +421,16 @@ private fun TourCard(
                 // The last stop hands over to the next thing to do, on a row of its own below
                 // (beside Back and Done it wrapped); "Done" stays for anyone who only wanted the
                 // look around.
-                if (cta != null) TextButton(onClick = onNext) { Text("Done") }
+                if (cta != null) TextButton(onClick = onNext) { Text(stringResource(R.string.app_tour_done)) }
                 else Button(
                     onClick = onNext,
                     colors = ButtonDefaults.buttonColors(containerColor = fill, contentColor = contrastColorFor(fill)),
                 ) {
                     Text(
                         when {
-                            !run.paged -> "Got it"
-                            run.isLast -> "Done"
-                            else -> "Next"
+                            !run.paged -> stringResource(R.string.app_tour_got_it)
+                            run.isLast -> stringResource(R.string.app_tour_done)
+                            else -> stringResource(R.string.app_tour_next)
                         },
                         fontWeight = FontWeight.SemiBold,
                     )

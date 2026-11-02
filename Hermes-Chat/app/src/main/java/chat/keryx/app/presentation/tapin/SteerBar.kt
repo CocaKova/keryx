@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.sp
 import chat.keryx.app.presentation.ui.components.KeryxGlyphs
 import chat.keryx.app.presentation.ui.components.contrastColorFor
 import chat.keryx.app.presentation.ui.components.KeryxType
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 
 /**
  * The one-line steer composer (2.13), for the places the chat composer is not: the foot of
@@ -107,9 +109,9 @@ fun SteerBar(
             else -> KeryxGlyphs.Steer
         }
         val label = when {
-            armed -> "Steer"
-            stopping -> "Stop"
-            else -> "Type to steer"
+            armed -> stringResource(R.string.settings_tapin_steer)
+            stopping -> stringResource(R.string.settings_tapin_stop)
+            else -> stringResource(R.string.settings_tapin_type_to_steer)
         }
         Box(
             contentAlignment = Alignment.Center,

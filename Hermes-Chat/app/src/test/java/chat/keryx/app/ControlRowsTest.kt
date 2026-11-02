@@ -96,6 +96,6 @@ class ControlRowsTest {
             "Behavior", "Display", "Missions", "Compression", "Agent", "Memory", "Skills",
             "Tools", "Terminal", "Browser", "Delegation", "Voice", "Safety",
         )
-        shipped.forEach { assertTrue("blurb for $it", GROUP_BLURBS[it].orEmpty().isNotBlank()) }
+        shipped.forEach { assertTrue("blurb for $it", GROUP_BLURBS[it] != null) }
     }
 }

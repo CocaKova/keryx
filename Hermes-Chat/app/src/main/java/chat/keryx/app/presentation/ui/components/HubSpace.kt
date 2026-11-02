@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
@@ -101,6 +103,17 @@ internal fun HubPanel.shownLabel(): String = labelRes?.let { androidx.compose.ui
 /** The landing's cards, in order: what the agent thinks with, reaches, does, and is. */
 val AGENT_GROUPS = listOf("Mind", "Reach", "Work", "Self", "Machine")
 
+/** A card's heading as the screen shows it; [AGENT_GROUPS] keeps the stable English ids. */
+@Composable
+private fun agentGroupLabel(group: String): String = when (group) {
+    "Mind" -> stringResource(R.string.agent_group_mind)
+    "Reach" -> stringResource(R.string.agent_group_reach)
+    "Work" -> stringResource(R.string.agent_group_work)
+    "Self" -> stringResource(R.string.agent_group_self)
+    "Machine" -> stringResource(R.string.agent_group_machine)
+    else -> group
+}
+
 private const val HUB_POLL_MS = 10_000L
 private const val LANDING = "status"
 
@@ -109,11 +122,13 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
     HubPanel(
         id = "controls",
         label = "Controls",
+        labelRes = R.string.agent_spoke_controls,
         icon = KeryxGlyphs.Sliders,
         refresh = { vm -> vm.hub.refreshConfig(); vm.hub.refreshBrains(); vm.hub.refreshReasoningCaps() },
         subtitle = { vm ->
             val caps by vm.hub.reasoningCaps.collectAsState()
-            caps?.model?.takeIf { it.isNotBlank() }?.let { "Brain · $it" } ?: "Brain, knobs, config"
+            caps?.model?.takeIf { it.isNotBlank() }?.let { stringResource(R.string.agent_controls_sub_model, it) }
+                ?: stringResource(R.string.agent_controls_sub)
         },
         content = { ControlsTab(it.viewModel) },
         group = "Mind",
@@ -121,6 +136,7 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
     HubPanel(
         id = "update",
         label = "Update",
+        labelRes = R.string.agent_spoke_update,
         icon = KeryxGlyphs.Download,
         refresh = { vm -> vm.hermesUpdate.refresh() },
         subtitle = { vm -> updateSubtitle(vm) },
@@ -134,10 +150,11 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
     HubPanel(
         id = "jobs",
         label = "Jobs",
+        labelRes = R.string.agent_spoke_jobs,
         icon = KeryxGlyphs.Calendar,
         live = true,
         refresh = { vm -> vm.hub.refreshJobs() },
-        subtitle = { "Schedules the agent keeps" },
+        subtitle = { stringResource(R.string.agent_jobs_sub) },
         content = { JobsTab(it.viewModel) },
         group = "Work",
         trailing = { vm ->
@@ -148,10 +165,11 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
     HubPanel(
         id = "sessions",
         label = "Sessions",
+        labelRes = R.string.agent_spoke_sessions,
         icon = KeryxGlyphs.Stack,
         live = true,
         refresh = { vm -> vm.hub.refreshSessions() },
-        subtitle = { "Every transcript, resume or prune" },
+        subtitle = { stringResource(R.string.agent_sessions_sub) },
         content = { SessionsTab(it.viewModel, it.closeSpace) },
         group = "Work",
         trailing = { vm ->
@@ -179,21 +197,23 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
     HubPanel(
         id = "skills",
         label = "Skills",
+        labelRes = R.string.agent_spoke_skills,
         icon = KeryxGlyphs.Star,
         refresh = { vm -> vm.hub.refreshSkills() },
-        subtitle = { "What the agent knows how to do" },
+        subtitle = { stringResource(R.string.agent_skills_sub) },
         content = { SkillsTab(it.viewModel) },
         group = "Mind",
         trailing = { vm ->
             val skills by vm.hub.skills.collectAsState()
             skills.data?.let { l ->
-                if (l.any { it.enabled != null }) "${l.count { it.enabled != false }} of ${l.size}" else l.size.toString()
+                if (l.any { it.enabled != null }) stringResource(R.string.agent_n_of_m, l.count { it.enabled != false }, l.size) else l.size.toString()
             }
         },
     ),
     HubPanel(
         id = "memory",
         label = "Memory",
+        labelRes = R.string.agent_spoke_memory,
         icon = KeryxGlyphs.Bookmark,
         refresh = { vm -> vm.memory.refresh() },
         subtitle = { vm -> memorySubtitle(vm) },
@@ -207,9 +227,10 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
     HubPanel(
         id = "tools",
         label = "Tools",
+        labelRes = R.string.agent_spoke_tools,
         icon = KeryxGlyphs.Plug,
         refresh = { vm -> vm.hub.refreshToolsets() },
-        subtitle = { "Toolsets the agent can call" },
+        subtitle = { stringResource(R.string.agent_tools_sub) },
         content = { ToolsTab(it.viewModel) },
         group = "Reach",
         trailing = { vm ->
@@ -221,12 +242,13 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
     HubPanel(
         id = "mcp",
         label = "MCP servers",
+        labelRes = R.string.agent_spoke_mcp,
         icon = KeryxGlyphs.Routes,
         refresh = { vm -> vm.agent.refreshMcp() },
         subtitle = { vm ->
             val mcp by vm.agent.mcp.collectAsState()
             mcp.data?.filter { it.enabled }?.take(3)?.joinToString(", ") { it.name }?.ifBlank { null }
-                ?: "Outside services, switched on or off"
+                ?: stringResource(R.string.agent_mcp_sub)
         },
         content = { McpTab(it.viewModel) },
         shown = { vm ->
@@ -237,18 +259,19 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
         group = "Reach",
         trailing = { vm ->
             val mcp by vm.agent.mcp.collectAsState()
-            mcp.data?.let { l -> "${l.count { it.enabled }} of ${l.size}" }
+            mcp.data?.let { l -> stringResource(R.string.agent_n_of_m, l.count { it.enabled }, l.size) }
         },
     ),
     HubPanel(
         id = "soul",
         label = "Soul",
+        labelRes = R.string.agent_spoke_soul,
         icon = KeryxGlyphs.Star,
         refresh = { vm -> vm.agent.refreshSoul() },
         subtitle = { vm ->
             val soul by vm.agent.soul.collectAsState()
-            soul.data?.let { s -> if (s.exists) soulGist(s.content) else "Not written — the stock persona" }
-                ?: "Who the agent is, in its own file"
+            soul.data?.let { s -> if (s.exists) soulGist(s.content) else stringResource(R.string.agent_soul_sub_none) }
+                ?: stringResource(R.string.agent_soul_sub)
         },
         content = { SoulTab(it.viewModel) },
         shown = { vm ->
@@ -261,10 +284,11 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
     HubPanel(
         id = "health",
         label = "Status",
+        labelRes = R.string.agent_spoke_status,
         icon = KeryxGlyphs.Pulse,
         live = true,
         refresh = { vm -> vm.hub.refreshHealth(); vm.hub.refreshModels() },
-        subtitle = { "Health, platforms, models, last turn" },
+        subtitle = { stringResource(R.string.agent_status_sub) },
         content = { StatusTab(it.viewModel, it.health, it.closeSpace) },
         group = "Machine",
     ),
@@ -306,7 +330,7 @@ fun GatewaySpace(viewModel: ChatViewModel, health: LinkHealth, onDismiss: () -> 
     }
 
     KeryxSpace(
-        title = spoke?.shownLabel() ?: "Gateway",
+        title = spoke?.shownLabel() ?: stringResource(R.string.agent_gateway_title),
         hint = if (spoke == null) chat.keryx.app.presentation.tour.KeryxHints.GATEWAY else null,
         onClose = onDismiss,
         onBack = if (spoke != null) ({ spokeId = null }) else null,
@@ -331,7 +355,7 @@ fun GatewaySpace(viewModel: ChatViewModel, health: LinkHealth, onDismiss: () -> 
         },
         actions = {
             IconButton(onClick = { if (spoke == null) refreshLanding(viewModel) else spoke.refresh(viewModel) }) {
-                Icon(KeryxGlyphs.Refresh, contentDescription = "Refresh",
+                Icon(KeryxGlyphs.Refresh, contentDescription = stringResource(R.string.agent_refresh),
                     tint = MaterialTheme.colorScheme.primary)
             }
         },
@@ -387,13 +411,13 @@ private fun AgentLanding(
         item(key = "error") { PanelErrorLine(panel.error) }
         if (console.live) item(key = "live") {
             KeryxHubGroup {
-                KeryxHubRow(KeryxGlyphs.Play, "Turn live", console.prompt.take(80)) { open("sessions") }
+                KeryxHubRow(KeryxGlyphs.Play, stringResource(R.string.agent_turn_live_row), console.prompt.take(80)) { open("sessions") }
             }
         }
         AGENT_GROUPS.forEach { group ->
             item(key = "group-$group") {
                 val rows = GATEWAY_SPOKES.filter { it.group == group && it.shown(viewModel) }
-                if (rows.isNotEmpty()) KeryxHubGroup(group) {
+                if (rows.isNotEmpty()) KeryxHubGroup(agentGroupLabel(group)) {
                     rows.forEachIndexed { i, p ->
                         if (i > 0) KeryxHubDivider()
                         KeryxHubRow(
@@ -418,10 +442,12 @@ internal fun linkHealthColor(health: LinkHealth): Color = when (health) {
 }
 
 /** One-line description of a link-health state, shared by the header and the Status panel. */
+@Composable
 internal fun linkHealthLabel(health: LinkHealth): String = when (health) {
-    LinkHealth.LIVE -> "Streaming live"
-    LinkHealth.OK -> "Connected"
-    LinkHealth.UNKNOWN -> "Checking…"
-    LinkHealth.OFF -> "Side-channel off"
-    else -> "Unreachable"
+    LinkHealth.LIVE -> stringResource(R.string.agent_link_live)
+    LinkHealth.OK -> stringResource(R.string.agent_link_ok)
+    LinkHealth.UNKNOWN -> stringResource(R.string.agent_link_checking)
+    LinkHealth.OFF -> stringResource(R.string.agent_link_sidechannel_off)
+    else -> stringResource(R.string.agent_link_unreachable)
 }
+

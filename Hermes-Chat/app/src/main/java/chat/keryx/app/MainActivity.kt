@@ -75,7 +75,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
             },
         )
         val info = androidx.biometric.BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Unlock Keryx")
+            .setTitle(getString(R.string.note_unlock_title))
             .setAllowedAuthenticators(
                 androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK or
                     androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL,
@@ -115,6 +115,11 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
 
         /** Returning within this window skips re-auth (quick app switches stay fluid). */
         const val RELOCK_AFTER_MS = 60_000L
+    }
+
+    override fun attachBaseContext(newBase: android.content.Context) {
+        // The app's own language below Android 13 (13+ the system applies it).
+        super.attachBaseContext(KeryxLocale.wrap(newBase))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -234,7 +239,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
         // never pair anything; say where the scanner is instead of opening silently.
         if (chat.keryx.core.pair.PairingLink.looksLikePairing(intent.dataString)) {
             intent.data = null
-            viewModel.toast("Scan pairing codes inside Keryx: Connect your gateway › Scan a pairing code.")
+            viewModel.toast(getString(R.string.app_scan_pairing_inside))
             return
         }
         val link = chat.keryx.core.model.KeryxLink.parse(intent.dataString) ?: return
@@ -328,7 +333,7 @@ private fun LockScreen(onUnlock: () -> Unit) {
         chat.keryx.app.presentation.ui.components.KeryxWordmark(fontSize = KeryxType.splash)
         androidx.compose.foundation.layout.Spacer(Modifier.height(10.dp))
         androidx.compose.material3.Text(
-            "Locked",
+            androidx.compose.ui.res.stringResource(R.string.note_locked),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = KeryxType.body,
         )
@@ -340,7 +345,7 @@ private fun LockScreen(onUnlock: () -> Unit) {
                 modifier = Modifier.size(16.dp),
             )
             androidx.compose.foundation.layout.Spacer(Modifier.width(8.dp))
-            androidx.compose.material3.Text("Unlock")
+            androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(R.string.note_unlock))
         }
     }
 }

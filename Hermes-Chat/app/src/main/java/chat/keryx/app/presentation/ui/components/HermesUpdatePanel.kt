@@ -52,6 +52,9 @@ import chat.keryx.core.model.UpdatePlan
 import chat.keryx.core.model.UpdatePlanner
 import chat.keryx.core.model.UpdateReceipt
 import chat.keryx.core.model.UpdateText
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import kotlinx.coroutines.delay
 
 /**
@@ -118,22 +121,25 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
             item(key = "here") {
                 KeryxCard {
                     Text(
-                        "Hermes " + (check?.currentVersion?.takeIf { it.isNotBlank() } ?: plugin?.version.orEmpty())
-                            .ifBlank { "(version unknown)" },
+                        stringResource(R.string.settings_update_hermes_version, (check?.currentVersion?.takeIf { it.isNotBlank() } ?: plugin?.version.orEmpty())
+                            .ifBlank { stringResource(R.string.settings_update_version_unknown) }),
                         fontSize = KeryxType.title,
                         fontWeight = FontWeight.SemiBold,
                     )
                     plugin?.takeIf { it.head.isNotBlank() }?.let { p ->
                         Text(
-                            "at ${p.head}" + (p.headBranch.takeIf { it.isNotBlank() }?.let { " on $it" } ?: "") +
-                                (if (p.ahead > 0) " · ${p.ahead} local commit${if (p.ahead == 1) "" else "s"} ahead" else ""),
+                            listOfNotNull(
+                                p.headBranch.takeIf { it.isNotBlank() }?.let { stringResource(R.string.settings_update_at_head_branch, p.head, it) }
+                                    ?: stringResource(R.string.settings_update_at_head, p.head),
+                                if (p.ahead > 0) pluralStringResource(R.plurals.settings_update_ahead, p.ahead, p.ahead) else null,
+                            ).joinToString(" · "),
                             fontSize = KeryxType.micro,
                             fontFamily = FontFamily.Monospace,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     check?.installMethod?.takeIf { it.isNotBlank() }?.let {
-                        Text("installed via $it", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.settings_update_installed_via, it), fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -152,39 +158,39 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
                     )
                     if (behind?.fromLocalRefs == true) {
                         Text(
-                            "Counted against the host's own copy of upstream" +
-                                (UpdateText.ago(behind.checkedAt, now)?.let { ", fetched $it" } ?: ""),
+                            UpdateText.ago(behind.checkedAt, now)?.let { stringResource(R.string.settings_update_local_refs_fetched, it) }
+                                ?: stringResource(R.string.settings_update_local_refs),
                             fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     if (behind?.count == -1) {
                         Text(
-                            "Hermes sees a newer version but couldn't count the commits to it.",
+                            stringResource(R.string.settings_update_count_unknown),
                             fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     if (b.checkedAtMs > 0L && !b.checking) {
                         Text(
-                            "Checked " + UpdateText.agoMs(b.checkedAtMs, now),
+                            stringResource(R.string.settings_update_checked_ago, UpdateText.agoMs(b.checkedAtMs, now)),
                             fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     plugin?.checkError?.takeIf { it.isNotBlank() }?.let {
-                        Text("Last fetch failed: $it", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.settings_update_fetch_failed, it), fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.error)
                     }
                     Spacer(Modifier.height(6.dp))
                     OutlinedButton(enabled = !b.checking, onClick = { viewModel.hermesUpdate.checkNow() }) {
-                        Text(if (b.checking) "Checking…" else "Check for updates", fontSize = KeryxType.caption)
+                        Text(if (b.checking) stringResource(R.string.settings_update_checking) else stringResource(R.string.settings_update_check), fontSize = KeryxType.caption)
                     }
                 }
             }
 
             val commits = check?.commits.orEmpty()
             if (commits.isNotEmpty()) {
-                item(key = "commits-label") { SectionLabel("What would change") }
+                item(key = "commits-label") { SectionLabel(stringResource(R.string.settings_update_what_changes)) }
                 commits.forEach { c ->
                     item(key = "commit-" + c.sha) {
                         Column(Modifier.fillMaxWidth()) {
@@ -213,7 +219,7 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
                 }
                 val more = (check?.behind ?: 0) - commits.size
                 if (more > 0) item(key = "commits-more") {
-                    Text("and $more more", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(pluralStringResource(R.plurals.settings_update_more, more, more), fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -229,10 +235,10 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
                     )
                     UpdatePlanner.worthOffering(behind) -> Column {
                         OutlinedButton(onClick = { confirm = plan }) {
-                            Text("Update now…", fontSize = KeryxType.body, color = KeryxStatus.warn)
+                            Text(stringResource(R.string.settings_update_now), fontSize = KeryxType.body, color = KeryxStatus.warn)
                         }
                         Text(
-                            "Runs `${plan.command}` on the gateway host.",
+                            stringResource(R.string.settings_update_runs_cmd, plan.command),
                             fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -247,13 +253,13 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
                 item(key = "last") {
                     if (receipt == null) {
                         Text(
-                            "No update has run since this Hermes started keeping receipts.",
+                            stringResource(R.string.settings_update_no_receipts),
                             fontSize = KeryxType.micro,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     } else {
                         Column {
-                            SectionLabel("Last update")
+                            SectionLabel(stringResource(R.string.settings_update_last))
                             ReceiptCard(receipt, now, updating = rv?.phase is UpdatePhase.Working)
                         }
                     }
@@ -271,24 +277,23 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "Keryx asks the gateway to run `${p.command}`.",
+                        stringResource(R.string.settings_update_confirm_cmd, p.command),
                         fontSize = KeryxType.body,
                     )
                     Text(
-                        "This restarts the agent's gateway. A turn in progress is cut off, and Keryx loses " +
-                            "its connection for a minute or two while Hermes reinstalls and comes back.",
+                        stringResource(R.string.settings_update_confirm_warn),
                         fontSize = KeryxType.body,
                         fontWeight = FontWeight.SemiBold,
                     )
-                    n?.let { Text(if (it == 1) "1 commit will land." else "$it commits will land.", fontSize = KeryxType.body) }
+                    n?.let { Text(pluralStringResource(R.plurals.settings_update_will_land, it, it), fontSize = KeryxType.body) }
                 }
             },
             confirmButton = {
                 TextButton(onClick = { confirm = null; viewModel.hermesUpdate.start(p) }) {
-                    Text("Update and restart", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.settings_update_and_restart), color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { confirm = null }) { Text("Not now") } },
+            dismissButton = { TextButton(onClick = { confirm = null }) { Text(stringResource(R.string.settings_update_not_now)) } },
         )
     }
 
@@ -311,19 +316,19 @@ internal fun UpdateTab(viewModel: ChatViewModel) {
 private fun ChannelCard(ch: UpdateChannel, busy: Boolean, onPick: (String) -> Unit) {
     KeryxCard {
         Text(
-            "Updates",
+            stringResource(R.string.settings_update_updates),
             fontSize = KeryxType.micro,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(6.dp))
         if (!ch.canSet) {
-            Text(ch.message ?: "This install's updates are managed outside Hermes.", fontSize = KeryxType.caption)
+            Text(ch.message ?: stringResource(R.string.settings_update_managed_outside), fontSize = KeryxType.caption)
             return@KeryxCard
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            ChannelChoice("Stable", selected = !ch.isEdge, enabled = !busy) { onPick("stable") }
-            ChannelChoice("Edge", selected = ch.isEdge, enabled = !busy) { onPick("main") }
+            ChannelChoice(stringResource(R.string.settings_update_stable), selected = !ch.isEdge, enabled = !busy) { onPick("stable") }
+            ChannelChoice(stringResource(R.string.settings_update_edge), selected = ch.isEdge, enabled = !busy) { onPick("main") }
         }
         Spacer(Modifier.height(8.dp))
         Text(
@@ -332,7 +337,7 @@ private fun ChannelCard(ch: UpdateChannel, busy: Boolean, onPick: (String) -> Un
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            if (busy) "Switching…" else ChannelText.status(ch),
+            if (busy) stringResource(R.string.settings_update_switching) else ChannelText.status(ch),
             fontSize = KeryxType.micro,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -342,6 +347,7 @@ private fun ChannelCard(ch: UpdateChannel, busy: Boolean, onPick: (String) -> Un
 @Composable
 private fun ChannelChoice(label: String, selected: Boolean, enabled: Boolean, onClick: () -> Unit) {
     val accent = MaterialTheme.colorScheme.primary
+    val follow = stringResource(R.string.settings_update_follow, label)
     Text(
         label,
         fontSize = KeryxType.body,
@@ -350,7 +356,7 @@ private fun ChannelChoice(label: String, selected: Boolean, enabled: Boolean, on
         modifier = Modifier
             .clip(RoundedCornerShape(KeryxRadius.chip))
             .background(if (selected) accent else accent.copy(alpha = 0.12f))
-            .clickable(enabled = enabled && !selected, onClickLabel = "Follow $label updates", onClick = onClick)
+            .clickable(enabled = enabled && !selected, onClickLabel = follow, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp),
     )
 }
@@ -364,24 +370,24 @@ private fun ChannelChoiceSheet(
     onGoBack: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val release = stableVersion?.takeIf { it.isNotBlank() }?.let { "v$it" } ?: "the last release"
-    KeryxSheet(onDismiss = onDismiss, title = "Switch to stable releases") {
+    val release = stableVersion?.takeIf { it.isNotBlank() }?.let { "v$it" } ?: stringResource(R.string.settings_update_last_release)
+    KeryxSheet(onDismiss = onDismiss, title = stringResource(R.string.settings_update_to_stable)) {
         Column(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("This build is newer than stable $release.", fontSize = KeryxType.body)
+            Text(stringResource(R.string.settings_update_newer_than, release), fontSize = KeryxType.body)
             KeryxCard(onClick = onStay, tint = MaterialTheme.colorScheme.primary) {
-                Text("Stay on this build until the next stable release", fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
-                Text("Recommended. Nothing changes now; the next release updates you.", fontSize = KeryxType.micro,
+                Text(stringResource(R.string.settings_update_stay), fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.settings_update_stay_sub), fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             KeryxCard(onClick = onGoBack) {
-                Text("Go back to $release now", fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
-                Text("The Update button then moves Hermes back to that release and restarts it.",
+                Text(stringResource(R.string.settings_update_go_back, release), fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.settings_update_go_back_sub),
                     fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.mk_cancel)) }
             Spacer(Modifier.height(8.dp))
         }
     }
@@ -416,13 +422,13 @@ private fun RunCard(rv: HermesUpdateDelegate.RunView, onDismiss: () -> Unit) {
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    if (phase.restarting) "The gateway is restarting" else "Updating with `${rv.run.plan.command}`…",
+                    if (phase.restarting) stringResource(R.string.settings_update_restarting_title) else stringResource(R.string.settings_update_updating_with, rv.run.plan.command),
                     fontSize = KeryxType.body,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    if (phase.restarting) "That is the update at work. Keryx asks again every few seconds."
-                    else "Started ${UpdateText.agoMs(rv.run.startedAtMs, System.currentTimeMillis())}.",
+                    if (phase.restarting) stringResource(R.string.settings_update_restarting_sub)
+                    else stringResource(R.string.settings_update_started, UpdateText.agoMs(rv.run.startedAtMs, System.currentTimeMillis())),
                     fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -440,18 +446,16 @@ private fun RunCard(rv: HermesUpdateDelegate.RunView, onDismiss: () -> Unit) {
                 Text(phase.detail, fontSize = KeryxType.caption)
                 phase.receipt?.let { ReceiptLines(it) }
                 LogTail(rv.lines)
-                TextButton(onClick = onDismiss) { Text("Done", fontSize = KeryxType.caption) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_update_done), fontSize = KeryxType.caption) }
             }
             UpdatePhase.Silent -> {
-                Text("No word after 20 minutes", fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold, color = KeryxStatus.warn)
+                Text(stringResource(R.string.settings_update_silent), fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold, color = KeryxStatus.warn)
                 Text(
-                    "The update may still be running, or it stopped without writing a receipt. " +
-                        "The host's own log has the answer (~/.hermes/logs/update.log, or keryx-update.log for " +
-                        "the operator's command).",
+                    stringResource(R.string.settings_update_silent_sub),
                     fontSize = KeryxType.caption,
                 )
                 LogTail(rv.lines)
-                TextButton(onClick = onDismiss) { Text("Dismiss", fontSize = KeryxType.caption) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_update_dismiss), fontSize = KeryxType.caption) }
             }
         }
     }
@@ -463,10 +467,11 @@ private fun ReceiptCard(r: UpdateReceipt, now: Long, updating: Boolean) {
     // A receipt left at "running" with nothing running now: Hermes never wrote how it ended
     // (it happens when the update restarts the dashboard mid-run). Say that, not "Running".
     val unfinished = r.outcome == "running" && !updating
+    val noRecord = stringResource(R.string.settings_update_no_record)
     KeryxCard(tint = outcome?.let { outcomeColor(it) }) {
         Text(
             (outcome?.let { UpdateText.outcomeTitle(it) }
-                ?: if (unfinished) "Ended without a record" else r.outcome.replaceFirstChar { it.uppercase() }) +
+                ?: if (unfinished) noRecord else r.outcome.replaceFirstChar { it.uppercase() }) +
                 ((r.finishedAt ?: r.startedAt).let { UpdateText.ago(it, now) }?.let { " · $it" } ?: ""),
             fontSize = KeryxType.body,
             fontWeight = FontWeight.SemiBold,
@@ -488,7 +493,9 @@ private fun ReceiptCard(r: UpdateReceipt, now: Long, updating: Boolean) {
 /** What the receipt says went wrong or was left out — the honest small print. */
 @Composable
 private fun ReceiptLines(r: UpdateReceipt) {
-    (r.failedSteps.map { "✕ $it" } + r.restartProblems.map { "✕ $it" } + r.skips.map { "– skipped $it" })
+    val context = androidx.compose.ui.platform.LocalContext.current
+    (r.failedSteps.map { "✕ $it" } + r.restartProblems.map { "✕ $it" } +
+        r.skips.map { "– " + context.getString(R.string.settings_update_skipped, it) })
         .forEach { line ->
             Text(
                 line,
@@ -508,7 +515,11 @@ private fun ReceiptLines(r: UpdateReceipt) {
 @Composable
 private fun UpdateStages(stage: Int) {
     val reduced by rememberReducedMotion()
-    val labels = listOf("Installing", "Restarting", "Coming back")
+    val labels = listOf(
+        stringResource(R.string.settings_update_stage_installing),
+        stringResource(R.string.settings_update_stage_restarting),
+        stringResource(R.string.settings_update_stage_back),
+    )
     val accent = MaterialTheme.colorScheme.primary
     val pulse = breathingAlpha(active = true, low = 0.35f, periodMillis = 1200)
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -592,7 +603,7 @@ private fun SuccessMark(color: Color) {
             .clip(CircleShape)
             .background(color),
     ) {
-        Icon(KeryxGlyphs.Check, contentDescription = "Updated", tint = contrastColorFor(color), modifier = Modifier.size(15.dp))
+        Icon(KeryxGlyphs.Check, contentDescription = stringResource(R.string.settings_update_updated), tint = contrastColorFor(color), modifier = Modifier.size(15.dp))
     }
 }
 
@@ -622,15 +633,15 @@ internal fun updateSubtitle(viewModel: ChatViewModel): String {
     val board by viewModel.hermesUpdate.board.collectAsState()
     val run by viewModel.hermesUpdate.run.collectAsState()
     val p = run?.phase
-    if (p is UpdatePhase.Working) return if (p.restarting) "Restarting…" else "Updating…"
-    val b = board ?: return "Is Hermes current?"
+    if (p is UpdatePhase.Working) return if (p.restarting) stringResource(R.string.settings_update_sub_restarting) else stringResource(R.string.settings_update_sub_updating)
+    val b = board ?: return stringResource(R.string.settings_update_sub_unknown)
     val version = b.check?.currentVersion?.takeIf { it.isNotBlank() } ?: b.plugin?.version.orEmpty()
     val behind = UpdatePlanner.behind(b.plugin, b.check)
     val count = when (val n = behind?.count) {
         null -> null
-        -1 -> "behind, count unknown"
-        0 -> "up to date"
-        else -> "$n behind"
+        -1 -> stringResource(R.string.settings_update_sub_behind_unknown)
+        0 -> stringResource(R.string.settings_update_sub_current)
+        else -> (n ?: 0).let { pluralStringResource(R.plurals.settings_update_sub_behind, it, it) }
     }
-    return listOfNotNull(version.takeIf { it.isNotBlank() }, count).joinToString(" · ").ifBlank { "Is Hermes current?" }
+    return listOfNotNull(version.takeIf { it.isNotBlank() }, count).joinToString(" · ").ifBlank { stringResource(R.string.settings_update_sub_unknown) }
 }

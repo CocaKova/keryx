@@ -1,5 +1,6 @@
 package chat.keryx.app.note
 
+import chat.keryx.app.KeryxLocale
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
@@ -94,6 +95,11 @@ class NoteActivity : androidx.fragment.app.FragmentActivity() {
     override fun onStop() {
         super.onStop()
         if (!unlocking && !isChangingConfigurations) finish()
+    }
+
+    override fun attachBaseContext(newBase: android.content.Context) {
+        // The app's own language below Android 13 (13+ the system applies it).
+        super.attachBaseContext(KeryxLocale.wrap(newBase))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

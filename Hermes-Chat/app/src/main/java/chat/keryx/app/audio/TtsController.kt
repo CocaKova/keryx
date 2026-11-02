@@ -1,5 +1,6 @@
 package chat.keryx.app.audio
 
+import chat.keryx.app.R
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -94,7 +95,7 @@ class TtsController(
                     if (gen == generation) {
                         abandonFocus()
                         _state.value = State()
-                        onError("Speech failed: ${e.message}")
+                        onError(context.getString(R.string.app_tts_failed, e.message.orEmpty()))
                     }
                 }
             }
@@ -104,7 +105,7 @@ class TtsController(
     private fun streamPcm(messageId: String, gen: Int, stream: TtsClient.PcmStream) {
         if (!requestFocus()) {
             stream.close()
-            main.post { if (gen == generation) { _state.value = State(); onError("Audio unavailable") } }
+            main.post { if (gen == generation) { _state.value = State(); onError(context.getString(R.string.app_tts_audio_unavailable)) } }
             return
         }
         val player = PcmPlayer(stream.sampleRate, playbackAttributes)
@@ -132,7 +133,7 @@ class TtsController(
                 if (gen == generation) {
                     abandonFocus()
                     _state.value = State()
-                    if (!gotAudio) onError("Speech server sent no audio")
+                    if (!gotAudio) onError(context.getString(R.string.app_tts_no_audio))
                 }
             }
         }
@@ -161,7 +162,7 @@ class TtsController(
                         } else {
                             pendingUtterance = null
                             _state.value = State()
-                            onError("No speech engine on this device")
+                            onError(context.getString(R.string.app_tts_no_engine))
                         }
                     }
                 }
@@ -185,14 +186,14 @@ class TtsController(
         if (!requestFocus()) {
             file.delete()
             _state.value = State()
-            onError("Audio unavailable")
+            onError(context.getString(R.string.app_tts_audio_unavailable))
             return
         }
         val mp = MediaPlayer()
         mp.setAudioAttributes(playbackAttributes)
         mp.setOnCompletionListener { main.post { stopFilePlayback() } }
         mp.setOnErrorListener { _, _, _ ->
-            main.post { stopFilePlayback(); onError("Speech playback failed") }
+            main.post { stopFilePlayback(); onError(context.getString(R.string.app_tts_playback_failed)) }
             true
         }
         try {
@@ -204,7 +205,7 @@ class TtsController(
             file.delete()
             abandonFocus()
             _state.value = State()
-            onError("Speech playback failed: ${e.message}")
+            onError(context.getString(R.string.app_tts_playback_failed_why, e.message.orEmpty()))
             return
         }
         player = mp
@@ -240,7 +241,7 @@ class TtsController(
         }
         if (!requestFocus()) {
             _state.value = State()
-            onError("Audio unavailable")
+            onError(context.getString(R.string.app_tts_audio_unavailable))
             return
         }
         // Long replies exceed the engine's per-utterance cap; chunk and mark done on the last one.

@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.KeryxText
+import chat.keryx.app.R
 import chat.keryx.core.model.FolderPage
 import chat.keryx.core.model.ProjectInfo
 import chat.keryx.core.model.ProjectTreeNode
@@ -107,13 +109,13 @@ class ProjectsDelegate(
     fun closeProjectDetail() { _detail.value = null }
 
     fun createProject(name: String, folderPath: String, onDone: (String?) -> Unit) {
-        val gw = gateway ?: return onDone("not on the gateway door")
+        val gw = gateway ?: return onDone(KeryxText.get(R.string.work_proj_not_gateway))
         scope.launch {
             val bad = folderComplaint(folderPath)
             if (bad != null) { onDone(bad); return@launch }
             gw.createProject(name, folderPath.ifBlank { null })
                 .onSuccess { refreshProjects(); onDone(null) }
-                .onFailure { onDone(it.message?.take(160) ?: "couldn't create the project") }
+                .onFailure { onDone(it.message?.take(160) ?: KeryxText.get(R.string.work_proj_create_failed)) }
         }
     }
 
@@ -128,12 +130,12 @@ class ProjectsDelegate(
         val path = folderPath.trim()
         if (path.isBlank()) return null
         if (!path.startsWith("/") && !path.startsWith("~")) {
-            return "Give the full folder — starting with ~/ or / — so it means one place on the gateway."
+            return KeryxText.get(R.string.work_proj_full_folder)
         }
         val probe = gw.folderExists(path)
         if (probe.isFailure) return null
         return if (probe.getOrDefault(true)) null
-        else "No folder at $path on the gateway — create it there first, or pick one below."
+        else KeryxText.get(R.string.work_proj_no_folder, path)
     }
 
     fun browseFolders(query: String, onResult: (FolderPage?) -> Unit) {
@@ -142,28 +144,28 @@ class ProjectsDelegate(
     }
 
     fun deleteProject(projectId: String, onDone: (String?) -> Unit) {
-        val gw = gateway ?: return onDone("not on the gateway door")
+        val gw = gateway ?: return onDone(KeryxText.get(R.string.work_proj_not_gateway))
         scope.launch {
             gw.deleteProject(projectId)
                 .onSuccess { refreshProjects(); onDone(null) }
-                .onFailure { onDone(it.message?.take(160) ?: "couldn't delete the project") }
+                .onFailure { onDone(it.message?.take(160) ?: KeryxText.get(R.string.work_proj_delete_failed)) }
         }
     }
 
     fun archiveProject(projectId: String, onDone: (String?) -> Unit) {
-        val gw = gateway ?: return onDone("not on the gateway door")
+        val gw = gateway ?: return onDone(KeryxText.get(R.string.work_proj_not_gateway))
         scope.launch {
             gw.archiveProject(projectId)
                 .onSuccess { refreshProjects(); onDone(null) }
-                .onFailure { onDone(it.message?.take(160) ?: "couldn't archive the project") }
+                .onFailure { onDone(it.message?.take(160) ?: KeryxText.get(R.string.work_proj_archive_failed)) }
         }
     }
 
     /** "Pin" a session into a project = re-home its workspace. The gateway refuses mid-turn;
      *  that refusal is surfaced, not retried. */
     fun moveSessionToProject(sessionId: String, target: ProjectInfo, onDone: (String?) -> Unit) {
-        val gw = gateway ?: return onDone("not on the gateway door")
-        val cwd = target.anchorPath ?: return onDone("\"${target.name}\" has no folder to move into")
+        val gw = gateway ?: return onDone(KeryxText.get(R.string.work_proj_not_gateway))
+        val cwd = target.anchorPath ?: return onDone(KeryxText.get(R.string.work_proj_no_anchor, target.name))
         scope.launch {
             gw.moveSessionToProject(sessionId, cwd)
                 .onSuccess { refreshProjects(); onDone(null) }
@@ -171,10 +173,10 @@ class ProjectsDelegate(
                     val msg = e.message ?: ""
                     onDone(
                         when {
-                            "busy" in msg -> "Session is mid-turn — move it when the agent finishes"
+                            "busy" in msg -> KeryxText.get(R.string.work_proj_move_busy)
                             "does not exist" in msg ->
-                                "\"${target.name}\" points at $cwd, and there's no such folder on the gateway — fix or delete the project."
-                            else -> msg.take(160).ifBlank { "move failed" }
+                                KeryxText.get(R.string.work_proj_move_missing, target.name, cwd)
+                            else -> msg.take(160).ifBlank { KeryxText.get(R.string.work_proj_move_failed) }
                         }
                     )
                 }
@@ -184,12 +186,12 @@ class ProjectsDelegate(
     /** New chat born inside a project's workspace; opens directly (a zero-message session
      *  isn't listed yet, so an id-lookup would park forever). */
     fun newChatInProject(node: ProjectTreeNode, onDone: (String?) -> Unit) {
-        val gw = gateway ?: return onDone("not on the gateway door")
-        val cwd = node.path ?: return onDone("this project has no folder")
+        val gw = gateway ?: return onDone(KeryxText.get(R.string.work_proj_not_gateway))
+        val cwd = node.path ?: return onDone(KeryxText.get(R.string.work_proj_no_folder_here))
         scope.launch {
             gw.createSessionIn(null, cwd)
                 .onSuccess { id -> onSessionCreated(id); openSession(id, "New session"); onDone(null) }
-                .onFailure { onDone(it.message?.take(120) ?: "couldn't create the session") }
+                .onFailure { onDone(it.message?.take(120) ?: KeryxText.get(R.string.work_proj_session_failed)) }
         }
     }
 }

@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
@@ -240,14 +243,18 @@ private fun niceAxis(minV: Double, maxV: Double, target: Int = 4, includeZero: B
     return Axis(lo, hi, step)
 }
 
-private fun chartSummary(c: RichBlock.Chart): String = buildString {
-    append(c.title ?: "Chart").append(". ")
-    append(c.type.name.lowercase()).append(" chart")
-    c.unit?.let { append(", in ").append(it) }
-    append(". ")
+private fun chartSummary(c: RichBlock.Chart, res: android.content.res.Resources): String = buildString {
+    val title = c.title ?: res.getString(R.string.chat_chart)
+    val type = c.type.name.lowercase()
+    append(
+        c.unit?.let { res.getString(R.string.chat_chart_summary_unit, title, type, it) }
+            ?: res.getString(R.string.chat_chart_summary, title, type),
+    )
+    append(" ")
+    val noValue = res.getString(R.string.chat_chart_no_value)
     c.series.forEach { s ->
         s.name?.let { append(it).append(": ") }
-        append(c.labels.zip(s.values).joinToString(", ") { (l, v) -> "$l ${v?.let(::chartNumber) ?: "no value"}" })
+        append(c.labels.zip(s.values).joinToString(", ") { (l, v) -> "$l ${v?.let(::chartNumber) ?: noValue}" })
         append(". ")
     }
 }
@@ -272,7 +279,8 @@ private fun TextMeasurer.one(text: String, style: TextStyle, maxWidth: Int = Int
 private fun ChartBlock(c: RichBlock.Chart, textColor: Color, modifier: Modifier) {
     val palette = chartPalette(textColor)
     val progress = rememberDrawIn(c)
-    val summary = remember(c) { chartSummary(c) }
+    val res = androidx.compose.ui.platform.LocalContext.current.resources
+    val summary = remember(c, res) { chartSummary(c, res) }
     Column(modifier = modifier.blockSurface(textColor).padding(12.dp)) {
         val title = listOfNotNull(c.title, c.unit?.takeIf { !shortUnit(it) }?.let { "($it)" }).joinToString(" ")
         if (title.isNotBlank()) {
@@ -290,7 +298,7 @@ private fun ChartBlock(c: RichBlock.Chart, textColor: Color, modifier: Modifier)
         val pie = c.type == RichBlock.ChartType.PIE || c.type == RichBlock.ChartType.DONUT
         if (!pie && c.series.size > 1) {
             Spacer(Modifier.height(8.dp))
-            Legend(c.series.mapIndexed { i, s -> (s.name ?: "Series ${i + 1}") to palette[i % palette.size] }, textColor)
+            Legend(c.series.mapIndexed { i, s -> (s.name ?: stringResource(R.string.chat_chart_series, i + 1)) to palette[i % palette.size] }, textColor)
         }
     }
 }
@@ -585,6 +593,7 @@ private fun PieChart(c: RichBlock.Chart, palette: List<Color>, textColor: Color,
     val measurer = rememberTextMeasurer()
     val centreStyle = TextStyle(color = textColor, fontSize = KeryxType.title, fontWeight = FontWeight.SemiBold)
     val centreSub = axisStyle(textColor)
+    val totalWord = stringResource(R.string.chat_chart_total)
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Canvas(Modifier.size(132.dp)) {
             val d = min(size.width, size.height)
@@ -605,7 +614,7 @@ private fun PieChart(c: RichBlock.Chart, palette: List<Color>, textColor: Color,
             }
             if (donut) {
                 val big = measurer.one(withUnit(total, c.unit), centreStyle)
-                val small = measurer.one("total", centreSub)
+                val small = measurer.one(totalWord, centreSub)
                 val h = big.size.height + small.size.height
                 drawText(big, topLeft = Offset(size.width / 2f - big.size.width / 2f, size.height / 2f - h / 2f))
                 drawText(small, topLeft = Offset(size.width / 2f - small.size.width / 2f, size.height / 2f - h / 2f + big.size.height))
@@ -710,7 +719,7 @@ private fun DiffBlock(d: RichBlock.Diff, textColor: Color, modifier: Modifier) {
         }
         if (d.lines.size > DIFF_FOLD + 5) {
             Text(
-                if (expanded) "Show less" else "Show all ${d.lines.size} lines",
+                if (expanded) stringResource(R.string.chat_show_less) else pluralStringResource(R.plurals.chat_show_all_lines, d.lines.size, d.lines.size),
                 color = accent, fontSize = KeryxType.micro, fontWeight = FontWeight.Medium,
                 modifier = Modifier
                     .padding(start = 6.dp, bottom = 6.dp)

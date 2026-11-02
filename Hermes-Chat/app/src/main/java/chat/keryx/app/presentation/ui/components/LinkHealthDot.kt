@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -54,10 +56,11 @@ internal fun LinkHealthDot(
     }
     val snack = LocalKeryxSnack.current
     val label = when (health) {
-        chat.keryx.app.presentation.LinkHealth.LIVE -> "Hermes Link: streaming live"
-        chat.keryx.app.presentation.LinkHealth.OK -> "Hermes Link: connected"
-        chat.keryx.app.presentation.LinkHealth.UNKNOWN -> "Hermes Link: checking"
-        else -> "Hermes Link: unreachable"
+        chat.keryx.app.presentation.LinkHealth.LIVE -> stringResource(R.string.agent_dot_live)
+        chat.keryx.app.presentation.LinkHealth.OK -> stringResource(R.string.agent_dot_ok)
+        chat.keryx.app.presentation.LinkHealth.UNKNOWN -> stringResource(R.string.agent_dot_checking)
+        else -> stringResource(R.string.agent_dot_unreachable)
+
     }
     // The dot is 7dp because it is a whisper. The TAP is not: the click used to sit on the dot
     // itself — a 7dp target, under 3mm, in a top bar whose neighbours are 48dp icon buttons, so

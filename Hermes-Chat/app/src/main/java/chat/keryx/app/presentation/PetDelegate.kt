@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -133,7 +135,7 @@ class PetDelegate(deps: GatewayDeps) {
                         )
                     }
                 }
-                .onFailure { _petSelectError.value = it.message ?: "could not adopt $slug" }
+                .onFailure { _petSelectError.value = it.message ?: KeryxText.get(R.string.app_pet_adopt_failed, slug) }
             _petSelecting.value = null
         }
     }

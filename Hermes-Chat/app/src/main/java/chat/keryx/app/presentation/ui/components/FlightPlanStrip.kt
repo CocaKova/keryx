@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -105,7 +107,7 @@ fun FlightPlanStrip(plan: TodoPlan) {
             Dot(if (plan.allDone) good else accent, 7.dp, if (plan.allDone) ({ 0.9f }) else pulse)
             Spacer(Modifier.width(8.dp))
             Text(
-                "FLIGHT PLAN",
+                stringResource(R.string.chat_flight_plan),
                 color = quiet,
                 fontSize = KeryxType.micro,
                 fontWeight = FontWeight.Medium,
@@ -121,9 +123,11 @@ fun FlightPlanStrip(plan: TodoPlan) {
             Spacer(Modifier.width(10.dp))
             Text(
                 when {
-                    plan.allDone -> "all steps landed"
-                    else -> plan.active?.content ?: "next: " +
-                        (plan.items.firstOrNull { it.status == "pending" }?.content ?: "—")
+                    plan.allDone -> stringResource(R.string.chat_flight_all_done)
+                    else -> plan.active?.content ?: stringResource(
+                        R.string.chat_flight_next,
+                        plan.items.firstOrNull { it.status == "pending" }?.content ?: "—",
+                    )
                 },
                 color = onSurface.copy(alpha = if (plan.allDone) 0.45f else FlightPlanFloor.LINE_ALPHA),
                 fontSize = KeryxType.caption,

@@ -35,7 +35,8 @@ class AgentRunService : Service() {
         // startForeground is owed within seconds of the start whatever has happened since, so a
         // run that already ended still gets its moment — and is then taken straight down.
         val shown = notice ?: RunNotice(
-            title = "Keryx", text = "Finishing…", lines = emptyList(),
+            title = "Keryx", text = getString(chat.keryx.app.R.string.agent_run_finishing), lines = emptyList(),
+
             sessionId = null, colorKey = null, startedAt = System.currentTimeMillis(),
         )
         val type = if (Build.VERSION.SDK_INT >= 34) {

@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import android.content.Context
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -235,7 +238,7 @@ fun RunsSpace(
     val narrowing = filter != CronFilter.ALL || searching
 
     KeryxSpace(
-        title = "Runs",
+        title = stringResource(R.string.work_runs),
         hint = chat.keryx.app.presentation.tour.KeryxHints.RUNS,
         onClose = onClose,
         standalone = false,
@@ -246,8 +249,8 @@ fun RunsSpace(
                 Text(
                     buildString {
                         // Short enough to survive beside "Mark N read": the chips carry the rest.
-                        append("${rows.size} jobs")
-                        if (failing > 0) append(" · $failing failing")
+                        append(pluralStringResource(R.plurals.work_runs_jobs, rows.size, rows.size))
+                        if (failing > 0) append(" · ").append(stringResource(R.string.work_runs_failing, failing))
                     },
                     fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                     color = if (failing > 0) KeryxStatus.bad else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -257,7 +260,7 @@ fun RunsSpace(
         },
         actions = {
             IconButton(onClick = { openEditor(null) }) {
-                Icon(KeryxGlyphs.Plus, contentDescription = "New job", tint = MaterialTheme.colorScheme.primary)
+                Icon(KeryxGlyphs.Plus, contentDescription = stringResource(R.string.work_job_new), tint = MaterialTheme.colorScheme.primary)
             }
             // Only where there is something to clear: a permanent "mark all read" on a quiet
             // screen is a button that does nothing, which teaches people not to press buttons.
@@ -266,7 +269,7 @@ fun RunsSpace(
             val unread = board?.unread
             if (unread != null && unread.any && (!railFolded || narrowing)) {
                 TextButton(onClick = { viewModel.hub.cronMarkAllSeen() }) {
-                    Text("Mark ${unread.total} read", fontSize = KeryxType.caption)
+                    Text(stringResource(R.string.work_runs_mark_n_read, unread.total), fontSize = KeryxType.caption)
                 }
             }
         },
@@ -275,10 +278,10 @@ fun RunsSpace(
         when {
             board == null -> if (panel.error == null) PanelLoading()
             board.cards.isEmpty() -> KeryxEmptyState(
-                title = "Nothing scheduled yet",
-                body = "Schedule a job here, or ask your agent to. It can set one up with its cronjob tool.",
+                title = stringResource(R.string.work_runs_empty),
+                body = stringResource(R.string.work_runs_empty_body),
                 illustration = { RunsClockIllustration() },
-                actionLabel = "Schedule a job",
+                actionLabel = stringResource(R.string.work_runs_schedule_job),
                 onAction = { openEditor(null) },
             )
             else -> {
@@ -339,8 +342,8 @@ fun RunsSpace(
                     if (visible.isEmpty()) {
                         item(key = "runs-none") {
                             Text(
-                                if (searching) "No job matches “${query.trim()}”."
-                                else "No ${filter.label.lowercase()} jobs.",
+                                if (searching) stringResource(R.string.work_runs_no_match, query.trim())
+                                else stringResource(R.string.work_runs_no_filtered, filterLabel(filter)),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = KeryxType.body,
                                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 16.dp),
@@ -509,7 +512,7 @@ private fun PinnedShelf(
                 modifier = Modifier.size(12.dp),
             )
             Spacer(Modifier.width(7.dp))
-            KeryxSectionHeader("Pinned", count = board.pinned.size, color = onSurface.copy(alpha = 0.8f))
+            KeryxSectionHeader(stringResource(R.string.work_runs_pinned), count = board.pinned.size, color = onSurface.copy(alpha = 0.8f))
             Spacer(Modifier.weight(1f))
             Text(if (folded) "▸" else "▾", color = quiet.copy(alpha = 0.6f), fontSize = KeryxType.micro)
         }
@@ -528,7 +531,7 @@ private fun PinnedShelf(
                     trailing = {
                         Icon(
                             KeryxGlyphs.PinFilled,
-                            contentDescription = "Pinned",
+                            contentDescription = stringResource(R.string.work_runs_pinned),
                             tint = onSurface.copy(alpha = 0.45f),
                             modifier = Modifier.size(11.dp),
                         )
@@ -543,7 +546,7 @@ private fun PinnedShelf(
                     modifier = Modifier.padding(top = 2.dp),
                 ) {
                     Text(
-                        if (showAll) "Show fewer" else "Show all ${board.pinned.size}",
+                        if (showAll) stringResource(R.string.work_runs_show_fewer) else stringResource(R.string.work_runs_show_all, board.pinned.size),
                         fontSize = KeryxType.micro, color = quiet,
                     )
                 }
@@ -577,7 +580,7 @@ private fun NewArrivals(
             .border(0.5.dp, accent.copy(alpha = 0.30f), RoundedCornerShape(KeryxRadius.sheet))
             .padding(horizontal = 12.dp, vertical = 12.dp),
     ) {
-        KeryxSectionHeader("New since you looked", count = board.unread.total, color = accent)
+        KeryxSectionHeader(stringResource(R.string.work_runs_new_since), count = board.unread.total, color = accent)
         Spacer(Modifier.height(2.dp))
         board.unread.runs.take(NEW_RAIL_MAX).forEach { run ->
             val jobName = jobOf[run.id] ?: run.title.substringBefore(" · ", run.title)
@@ -592,7 +595,7 @@ private fun NewArrivals(
                 trailing = if (run.pinned) ({
                     Icon(
                         KeryxGlyphs.PinFilled,
-                        contentDescription = "Pinned",
+                        contentDescription = stringResource(R.string.work_runs_pinned),
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
                         modifier = Modifier.size(11.dp),
                     )
@@ -603,7 +606,7 @@ private fun NewArrivals(
         }
         if (board.unread.total > NEW_RAIL_MAX) {
             Text(
-                "and ${board.unread.total - NEW_RAIL_MAX} more below",
+                stringResource(R.string.work_runs_more_below, board.unread.total - NEW_RAIL_MAX),
                 color = quiet.copy(alpha = 0.7f),
                 fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                 modifier = Modifier.padding(top = 8.dp, start = 12.dp),
@@ -756,7 +759,7 @@ private fun RunMenu(
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
         DropdownMenuItem(
-            text = { Text(if (run.pinned) "Unpin" else "Pin — keep this run") },
+            text = { Text(if (run.pinned) stringResource(R.string.work_runs_unpin) else stringResource(R.string.work_runs_pin_keep)) },
             leadingIcon = {
                 Icon(
                     if (run.pinned) KeryxGlyphs.PinFilled else KeryxGlyphs.Pin,
@@ -768,7 +771,7 @@ private fun RunMenu(
         )
         if (unread) {
             DropdownMenuItem(
-                text = { Text("Mark read") },
+                text = { Text(stringResource(R.string.work_runs_mark_read)) },
                 leadingIcon = {
                     Icon(KeryxGlyphs.Check, contentDescription = null, modifier = Modifier.size(16.dp))
                 },
@@ -776,7 +779,7 @@ private fun RunMenu(
             )
         }
         DropdownMenuItem(
-            text = { Text("Open") },
+            text = { Text(stringResource(R.string.work_artifact_open)) },
             leadingIcon = {
                 Icon(KeryxGlyphs.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
             },
@@ -863,7 +866,7 @@ private fun RunCard(
                     // The job sits at the top of the sessions: say so where its name is.
                     Icon(
                         KeryxGlyphs.PinFilled,
-                        contentDescription = "Pinned to sessions",
+                        contentDescription = stringResource(R.string.work_runs_pinned_sessions),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(11.dp),
                     )
@@ -878,7 +881,7 @@ private fun RunCard(
                 if (unreadCount > 0) {
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "$unreadCount new",
+                        stringResource(R.string.work_runs_n_new, unreadCount),
                         fontSize = KeryxType.micro, fontWeight = FontWeight.SemiBold,
                         color = keryxAccentInk(),
                         modifier = Modifier
@@ -893,7 +896,7 @@ private fun RunCard(
                     Spacer(Modifier.width(8.dp))
                     Icon(
                         KeryxGlyphs.PinFilled,
-                        contentDescription = "${card.pinnedCount} pinned",
+                        contentDescription = pluralStringResource(R.plurals.work_runs_n_pinned, card.pinnedCount, card.pinnedCount),
                         tint = quiet.copy(alpha = 0.7f),
                         modifier = Modifier.size(10.dp),
                     )
@@ -913,10 +916,10 @@ private fun RunCard(
                 job?.let { j ->
                     CronHumanize.schedule(j.scheduleDisplay).takeIf { it.isNotBlank() }?.let { add(it) }
                     j.nextRunAt?.let { CronHumanize.nextIn(it, System.currentTimeMillis()) }?.let { add(it) }
-                    if (!j.enabled) add("paused")
+                    if (!j.enabled) add(stringResource(R.string.work_runs_paused))
                 }
-                if (!card.scheduled) add("job no longer scheduled")
-                if (card.neverRun) add("no runs yet")
+                if (!card.scheduled) add(stringResource(R.string.work_runs_unscheduled))
+                if (card.neverRun) add(stringResource(R.string.work_runs_no_runs))
             }
             if (meta.isNotEmpty()) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
@@ -979,7 +982,7 @@ private fun RunCard(
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        "since last run · ${d.summary}",
+                        stringResource(R.string.work_runs_since_last, d.summary),
                         fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
                         color = if (d.same) quiet.copy(alpha = 0.7f) else onSurface.copy(alpha = 0.8f),
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -1036,7 +1039,7 @@ private fun DeltaLines(prefix: String, lines: List<String>, color: Color, max: I
     }
     if (lines.size > max) {
         Text(
-            "$prefix ${lines.size - max} more",
+            stringResource(R.string.work_runs_delta_more, prefix, lines.size - max),
             fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace,
             color = color.copy(alpha = 0.7f),
             modifier = Modifier.padding(start = 2.dp, top = 2.dp),
@@ -1045,23 +1048,53 @@ private fun DeltaLines(prefix: String, lines: List<String>, color: Color, max: I
 }
 
 /** "4h ago" — the rail and run rows answer "how stale" faster than a clock time does. */
-private fun relativeWhen(ts: Long): String {
-    val mins = ((System.currentTimeMillis() - ts) / 60_000L).coerceAtLeast(0)
+@Composable
+private fun relativeWhen(ts: Long, nowMs: Long = System.currentTimeMillis()): String {
+    val mins = ((nowMs - ts) / 60_000L).coerceAtLeast(0).toInt()
     return when {
-        mins < 1 -> "now"
-        mins < 60 -> "${mins}m ago"
-        mins < 60 * 24 -> "${mins / 60}h ago"
-        else -> "${mins / (60 * 24)}d ago"
+        mins < 1 -> stringResource(R.string.work_ago_now)
+        mins < 60 -> stringResource(R.string.work_ago_m, mins)
+        mins < 60 * 24 -> stringResource(R.string.work_ago_h, mins / 60)
+        else -> stringResource(R.string.work_ago_d, mins / (60 * 24))
     }
 }
 
+/** [relativeWhen] with [CronTriage.ago]'s dash for "never". */
+@Composable
+private fun agoOrDash(ts: Long, nowMs: Long): String = if (ts <= 0L) "—" else relativeWhen(ts, nowMs)
+
+/** A [CronFilter]'s chip name, in the app's language. */
+@Composable
+private fun filterLabel(f: CronFilter): String = stringResource(
+    when (f) {
+        CronFilter.ALL -> R.string.work_runs_filter_all
+        CronFilter.UNREAD -> R.string.work_runs_filter_unread
+        CronFilter.FAILING -> R.string.work_runs_filter_failing
+        CronFilter.PAUSED -> R.string.work_runs_filter_paused
+        CronFilter.NEVER_RUN -> R.string.work_runs_filter_never_run
+    },
+)
+
+/** A [CronSection]'s header, in the app's language. */
+@Composable
+private fun sectionLabel(s: CronSection): String = stringResource(
+    when (s) {
+        CronSection.ATTENTION -> R.string.work_runs_section_attention
+        CronSection.RECENT -> R.string.work_runs_section_recent
+        CronSection.SCRIPTS -> R.string.work_runs_section_scripts
+        CronSection.QUIET -> R.string.work_runs_section_quiet
+    },
+)
+
 /** The shelf's clock: today's kept run still reads as "4h ago", but a run kept for weeks is
  *  "Aug 12" — a date you can cite, not a countdown you have to convert. Past a year, the year. */
+@Composable
 private fun keptWhen(ts: Long): String {
     val ageDays = (System.currentTimeMillis() - ts) / 86_400_000L
     if (ageDays < 1) return relativeWhen(ts)
-    val pattern = if (ageDays < 365) "MMM d" else "MMM d, yyyy"
-    return java.text.SimpleDateFormat(pattern, java.util.Locale.getDefault()).format(java.util.Date(ts))
+    val locale = java.util.Locale.getDefault()
+    val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, if (ageDays < 365) "MMMd" else "yMMMd")
+    return java.text.SimpleDateFormat(pattern, locale).format(java.util.Date(ts))
 }
 
 // --- 2.14: the page for A LOT of jobs ------------------------------------------------------------
@@ -1118,7 +1151,7 @@ private fun RunList(
                 if (run.pinned) {
                     Icon(
                         KeryxGlyphs.PinFilled,
-                        contentDescription = "Pinned",
+                        contentDescription = stringResource(R.string.work_runs_pinned),
                         tint = onSurface.copy(alpha = 0.45f),
                         modifier = Modifier.size(10.dp),
                     )
@@ -1141,7 +1174,7 @@ private fun RunList(
     }
     if (card.runs.size > 20) {
         Text(
-            "${card.runs.size - 20} older runs in Gateway ▸ Sessions",
+            stringResource(R.string.work_runs_older, card.runs.size - 20),
             fontSize = KeryxType.micro, color = quiet.copy(alpha = 0.6f),
             modifier = Modifier.padding(top = 2.dp),
         )
@@ -1186,12 +1219,12 @@ private fun JobMenu(
                         append(" · ")
                         append(
                             when {
-                                paused -> "paused"
-                                job.state.equals("completed", ignoreCase = true) -> "finished"
-                                else -> job.state.ifBlank { "scheduled" }
+                                paused -> stringResource(R.string.work_runs_paused)
+                                job.state.equals("completed", ignoreCase = true) -> stringResource(R.string.work_runs_finished)
+                                else -> job.state.ifBlank { stringResource(R.string.work_runs_scheduled) }
                             },
                         )
-                        if (job.scriptOnly) append(" · script, no transcript")
+                        if (job.scriptOnly) append(" · ").append(stringResource(R.string.work_runs_script_no_transcript))
                     },
                     fontSize = KeryxType.caption, fontFamily = FontFamily.Monospace, color = quiet,
                 )
@@ -1199,7 +1232,7 @@ private fun JobMenu(
                 if (err != null) {
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        if (job.failureStreak > 1) "FAILED ${job.failureStreak} RUNS IN A ROW" else "LAST RUN FAILED",
+                        if (job.failureStreak > 1) stringResource(R.string.work_runs_failed_streak, job.failureStreak) else stringResource(R.string.work_runs_last_failed),
                         fontSize = KeryxType.micro, letterSpacing = 1.5.sp, color = KeryxStatus.bad,
                     )
                     Spacer(Modifier.height(4.dp))
@@ -1228,37 +1261,37 @@ private fun JobMenu(
                     TextButton(onClick = { clipboard.setText(androidx.compose.ui.text.AnnotatedString(err)) }) {
                         Icon(KeryxGlyphs.Copy, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Copy error", fontSize = KeryxType.caption)
+                        Text(stringResource(R.string.work_runs_copy_error), fontSize = KeryxType.caption)
                     }
-                    SheetAction(KeryxGlyphs.Wrench, "Ask the agent to fix it", "A new chat with the job and its error, ready to send") {
+                    SheetAction(KeryxGlyphs.Wrench, stringResource(R.string.work_runs_ask_fix), stringResource(R.string.work_runs_ask_fix_detail)) {
                         onDismiss(); verbs.askFix(card, job)
                     }
                 }
                 Spacer(Modifier.height(8.dp))
-                SheetAction(KeryxGlyphs.Play, "Run now", if (err != null) "Try it again — the error clears if it passes" else "Fire it once, off schedule") {
+                SheetAction(KeryxGlyphs.Play, stringResource(R.string.work_runs_run_now), if (err != null) stringResource(R.string.work_runs_run_now_retry) else stringResource(R.string.work_runs_run_now_detail)) {
                     onDismiss(); viewModel.hub.jobAction(job.id, "run")
                 }
                 SheetAction(
                     if (paused) KeryxGlyphs.Play else KeryxGlyphs.StopSquare,
-                    if (paused) "Resume" else "Pause",
-                    if (paused) "Back on its schedule" else "Stops firing until you resume it",
+                    if (paused) stringResource(R.string.work_runs_resume) else stringResource(R.string.work_move_pause),
+                    if (paused) stringResource(R.string.work_runs_resume_detail) else stringResource(R.string.work_runs_pause_detail),
                 ) {
                     onDismiss(); viewModel.hub.jobAction(job.id, if (paused) "resume" else "pause")
                 }
-                SheetAction(KeryxGlyphs.Sliders, "Edit job", "Prompt, schedule, where the report goes") {
+                SheetAction(KeryxGlyphs.Sliders, stringResource(R.string.work_job_edit), stringResource(R.string.work_runs_edit_detail)) {
                     onDismiss(); verbs.edit(job)
                 }
             }
             SheetAction(
                 if (jobPinned) KeryxGlyphs.PinFilled else KeryxGlyphs.Pin,
-                if (jobPinned) "Unpin from sessions" else "Pin to top of sessions",
+                if (jobPinned) stringResource(R.string.work_runs_unpin_sessions) else stringResource(R.string.work_runs_pin_sessions),
                 null,
             ) { onDismiss(); viewModel.hub.cronSetJobPinned(card.name, !jobPinned) }
             card.latest?.let { latest ->
-                SheetAction(KeryxGlyphs.ChevronRight, "Open newest run", null) { onDismiss(); verbs.open(latest) }
+                SheetAction(KeryxGlyphs.ChevronRight, stringResource(R.string.work_runs_open_newest), null) { onDismiss(); verbs.open(latest) }
             }
             if (job != null) {
-                SheetAction(KeryxGlyphs.Trash, "Delete job", "Removes the schedule; past runs stay", tint = KeryxStatus.bad) {
+                SheetAction(KeryxGlyphs.Trash, stringResource(R.string.work_runs_delete_job), stringResource(R.string.work_runs_delete_job_detail), tint = KeryxStatus.bad) {
                     confirmDelete = true
                 }
                 // Every run, script fires included, where the dashboard serves the list.
@@ -1271,14 +1304,14 @@ private fun JobMenu(
     if (confirmDelete && job != null) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete “${card.name}”?") },
-            text = { Text("The job stops for good. Its past runs stay readable.") },
+            title = { Text(stringResource(R.string.work_runs_delete_title, card.name)) },
+            text = { Text(stringResource(R.string.work_runs_delete_body)) },
             confirmButton = {
                 TextButton(onClick = { confirmDelete = false; onDismiss(); viewModel.hub.jobDelete(job.id) }) {
-                    Text("Delete", color = KeryxStatus.bad)
+                    Text(stringResource(R.string.work_delete), color = KeryxStatus.bad)
                 }
             },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep") } },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.work_keep)) } },
         )
     }
 }
@@ -1324,9 +1357,9 @@ private fun FailureActions(card: CronJobCard, job: HubJob?, viewModel: ChatViewM
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(top = 6.dp).horizontalScroll(rememberScrollState()),
     ) {
-        FailureChip(KeryxGlyphs.Play, "Run now") { viewModel.hub.jobAction(job.id, "run") }
-        FailureChip(KeryxGlyphs.Wrench, "Fix with agent") { verbs.askFix(card, job) }
-        FailureChip(null, "Details") { onDetails() }
+        FailureChip(KeryxGlyphs.Play, stringResource(R.string.work_runs_run_now)) { viewModel.hub.jobAction(job.id, "run") }
+        FailureChip(KeryxGlyphs.Wrench, stringResource(R.string.work_runs_fix_with_agent)) { verbs.askFix(card, job) }
+        FailureChip(null, stringResource(R.string.work_details)) { onDetails() }
     }
 }
 
@@ -1424,7 +1457,7 @@ private fun RunsControls(
                 Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                     if (query.isEmpty()) {
                         Text(
-                            "Find a job, a headline, a schedule…",
+                            stringResource(R.string.work_runs_search_hint),
                             fontSize = KeryxType.body, color = quiet.copy(alpha = 0.7f),
                             maxLines = 1, overflow = TextOverflow.Ellipsis,
                         )
@@ -1442,7 +1475,7 @@ private fun RunsControls(
                 }
                 if (query.isNotEmpty()) {
                     IconButton(onClick = { onQuery("") }, modifier = Modifier.size(32.dp)) {
-                        Icon(KeryxGlyphs.Close, contentDescription = "Clear search", modifier = Modifier.size(14.dp))
+                        Icon(KeryxGlyphs.Close, contentDescription = stringResource(R.string.work_clear_search), modifier = Modifier.size(14.dp))
                     }
                 }
             }
@@ -1498,7 +1531,7 @@ private fun FilterPill(filter: CronFilter, count: Int, selected: Boolean, onClic
             Spacer(Modifier.width(6.dp))
         }
         Text(
-            filter.label, fontSize = KeryxType.micro, letterSpacing = 0.4.sp, maxLines = 1,
+            filterLabel(filter), fontSize = KeryxType.micro, letterSpacing = 0.4.sp, maxLines = 1,
             color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.width(5.dp))
@@ -1518,7 +1551,7 @@ private fun DensitySwitch(compact: Boolean, onCompact: (Boolean) -> Unit) {
             .clip(RoundedCornerShape(KeryxRadius.chip))
             .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(KeryxRadius.chip)),
     ) {
-        listOf(false to "Cards", true to "List").forEach { (isList, label) ->
+        listOf(false to stringResource(R.string.work_runs_density_cards), true to stringResource(R.string.work_runs_density_list)).forEach { (isList, label) ->
             val on = isList == compact
             Text(
                 label,
@@ -1564,7 +1597,7 @@ private fun SectionHead(
             .padding(top = 4.dp, bottom = 8.dp, start = 6.dp, end = 4.dp),
     ) {
         KeryxSectionHeader(
-            section.label,
+            sectionLabel(section),
             dotColor = dot,
             count = count,
             // Attention speaks in its verdict; the other two in the page's ordinary ink.
@@ -1573,7 +1606,7 @@ private fun SectionHead(
         Spacer(Modifier.weight(1f))
         if (onToggle != null) {
             Text(
-                if (open) "▾" else "▸ show",
+                if (open) "▾" else stringResource(R.string.work_runs_show_folded),
                 color = quiet.copy(alpha = 0.6f), fontSize = KeryxType.micro,
             )
         }
@@ -1609,7 +1642,7 @@ private fun RailSummary(
         Box(Modifier.size(7.dp).clip(CircleShape).background(accent))
         Spacer(Modifier.width(8.dp))
         Text(
-            "${board.unread.total} new · ${board.unread.byJob.size} jobs",
+            stringResource(R.string.work_runs_n_new, board.unread.total) + " · " + pluralStringResource(R.plurals.work_runs_jobs, board.unread.byJob.size, board.unread.byJob.size),
             color = keryxAccentInk(accent),
             fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold,
             maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -1619,7 +1652,7 @@ private fun RailSummary(
         Text(if (open) "▾" else "▸", color = quiet.copy(alpha = 0.6f), fontSize = KeryxType.micro)
         Spacer(Modifier.weight(1f))
         TextButton(onClick = onMarkAll) {
-            Text("Mark read", fontSize = KeryxType.caption)
+            Text(stringResource(R.string.work_runs_mark_read), fontSize = KeryxType.caption)
         }
     }
 }
@@ -1666,20 +1699,20 @@ private fun CompactRunRow(
     // The meta line, most urgent word first so an ellipsis eats the schedule, never the verdict.
     val meta = buildList {
         when (row.health) {
-            CronHealth.FAILED -> add("failed ${CronTriage.ago(row.lastActivity, nowMs)}")
-            CronHealth.RUNNING -> add("running now")
+            CronHealth.FAILED -> add(stringResource(R.string.work_runs_failed_ago, agoOrDash(row.lastActivity, nowMs)))
+            CronHealth.RUNNING -> add(stringResource(R.string.work_runs_running_now))
             CronHealth.PAUSED -> {
-                add(if (facts?.state.equals("completed", ignoreCase = true)) "done" else "paused")
-                if (row.lastActivity > 0L) add("last ${CronTriage.ago(row.lastActivity, nowMs)}")
+                add(if (facts?.state.equals("completed", ignoreCase = true)) stringResource(R.string.work_runs_done) else stringResource(R.string.work_runs_paused))
+                if (row.lastActivity > 0L) add(stringResource(R.string.work_runs_last_ago, agoOrDash(row.lastActivity, nowMs)))
             }
-            CronHealth.IDLE -> add("never run")
-            CronHealth.OK -> add(CronTriage.ago(row.lastActivity, nowMs))
+            CronHealth.IDLE -> add(stringResource(R.string.work_runs_never_run))
+            CronHealth.OK -> add(agoOrDash(row.lastActivity, nowMs))
         }
         if (row.health != CronHealth.PAUSED) {
             facts?.nextRunAt?.let { CronHumanize.nextIn(it, nowMs) }?.let { add(it) }
         }
         facts?.schedule?.let { CronHumanize.schedule(it) }?.takeIf { it.isNotBlank() }?.let { add(it) }
-        if (!card.scheduled) add("job no longer scheduled")
+        if (!card.scheduled) add(stringResource(R.string.work_runs_unscheduled))
     }
 
     val source = remember { MutableInteractionSource() }
@@ -1728,7 +1761,7 @@ private fun CompactRunRow(
                             if (jobPinned) {
                                 Icon(
                                     KeryxGlyphs.PinFilled,
-                                    contentDescription = "Pinned to sessions",
+                                    contentDescription = stringResource(R.string.work_runs_pinned_sessions),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(10.dp),
                                 )
@@ -1778,7 +1811,7 @@ private fun CompactRunRow(
                             RunList(card = card, isNew = { it in unreadIds }, verbs = verbs)
                         } else if (!failed) {
                             Text(
-                                "No transcripts on the gateway for this job.",
+                                stringResource(R.string.work_runs_no_transcripts),
                                 fontSize = KeryxType.micro, color = quiet.copy(alpha = 0.7f),
                                 modifier = Modifier.padding(top = 4.dp),
                             )
@@ -1836,14 +1869,18 @@ private fun OutcomeStrip(ticks: List<CronTick>) {
     val bad = KeryxStatus.bad
     val accent = MaterialTheme.colorScheme.primary
     val failedCount = ticks.count { it.failed }
+    val stripLabel = when {
+        ticks.isEmpty() -> stringResource(R.string.work_job_no_runs)
+        failedCount > 0 -> pluralStringResource(R.plurals.work_runs_strip_failed, ticks.size, ticks.size, failedCount)
+        else -> pluralStringResource(R.plurals.work_runs_strip, ticks.size, ticks.size)
+    }
     Row(
         horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.End),
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .width((CronTriage.STRIP_MAX * 5).dp)
             .semantics {
-                contentDescription = if (ticks.isEmpty()) "No runs yet"
-                else "Last ${ticks.size} runs" + (if (failedCount > 0) ", $failedCount failed" else "")
+                contentDescription = stripLabel
             },
     ) {
         ticks.forEach { t ->

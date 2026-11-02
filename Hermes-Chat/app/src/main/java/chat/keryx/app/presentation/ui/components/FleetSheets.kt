@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -76,7 +78,7 @@ fun GatewayRegistry(
     var testing by remember { mutableStateOf<Set<String>>(emptySet()) }
 
     Text(
-        text = "Every Hermes gateway this phone can reach. Sessions, jobs, bots and the Hub are the active gateway's; switching moves the whole workspace.",
+        text = stringResource(R.string.agent_fleet_intro),
         color = chat.keryx.app.theme.quietInk(alpha = 0.85f),
         fontSize = KeryxType.caption,
     )
@@ -105,8 +107,8 @@ fun GatewayRegistry(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false),
                         )
-                        if (active) FleetPill("Active", filled = true)
-                        if (primary) FleetPill("Primary", filled = false)
+                        if (active) FleetPill(stringResource(R.string.agent_fleet_active), filled = true)
+                        if (primary) FleetPill(stringResource(R.string.agent_fleet_primary), filled = false)
                     }
                     Text(
                         text = entry.hostLabel,
@@ -121,15 +123,15 @@ fun GatewayRegistry(
                 Box {
                     IconButton(onClick = { menu = true }) {
                         if (entry.id in testing) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                        else Icon(KeryxGlyphs.Kebab, contentDescription = "Gateway actions", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        else Icon(KeryxGlyphs.Kebab, contentDescription = stringResource(R.string.agent_fleet_actions), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         if (!active) DropdownMenuItem(
-                            text = { Text("Switch to") },
+                            text = { Text(stringResource(R.string.agent_fleet_switch_to)) },
                             onClick = { menu = false; if (viewModel.doors.switchGateway(entry.id)) onRelaunch() },
                         )
                         DropdownMenuItem(
-                            text = { Text("Test") },
+                            text = { Text(stringResource(R.string.agent_fleet_test)) },
                             onClick = {
                                 menu = false
                                 testing = testing + entry.id
@@ -139,13 +141,13 @@ fun GatewayRegistry(
                                 }
                             },
                         )
-                        DropdownMenuItem(text = { Text("Rename") }, onClick = { menu = false; renaming = entry })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.agent_rename)) }, onClick = { menu = false; renaming = entry })
                         if (!primary) DropdownMenuItem(
-                            text = { Text("Make primary") },
+                            text = { Text(stringResource(R.string.agent_fleet_make_primary)) },
                             onClick = { menu = false; viewModel.doors.setPrimaryGateway(entry.id) },
                         )
                         if (!active) DropdownMenuItem(
-                            text = { Text("Remove", color = MaterialTheme.colorScheme.error) },
+                            text = { Text(stringResource(R.string.agent_remove), color = MaterialTheme.colorScheme.error) },
                             onClick = { menu = false; removing = entry },
                         )
                     }
@@ -166,10 +168,10 @@ fun GatewayRegistry(
     OutlinedButton(onClick = { adding = true }) {
         Icon(KeryxGlyphs.Plug, contentDescription = null, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(8.dp))
-        Text("Add gateway")
+        Text(stringResource(R.string.agent_fleet_add))
     }
     if (fleet.size == 1) Text(
-        text = "Primary is the fallback when the gateway you were on is gone. Make primary never switches the workspace.",
+        text = stringResource(R.string.agent_fleet_primary_note),
         color = chat.keryx.app.theme.quietInk(alpha = 0.7f),
         fontSize = KeryxType.micro,
         modifier = Modifier.padding(top = 8.dp),
@@ -180,16 +182,16 @@ fun GatewayRegistry(
         var error by remember(entry.id) { mutableStateOf<String?>(null) }
         AlertDialog(
             onDismissRequest = { renaming = null },
-            title = { Text("Rename gateway") },
+            title = { Text(stringResource(R.string.agent_fleet_rename_title)) },
             text = {
                 Column {
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it; error = null },
-                        label = { Text("Name") },
+                        label = { Text(stringResource(R.string.agent_name_label)) },
                         singleLine = true,
                         isError = error != null,
-                        supportingText = { error?.let { Text(it) } ?: Text("Shown wherever this gateway appears") },
+                        supportingText = { error?.let { Text(it) } ?: Text(stringResource(R.string.agent_fleet_name_hint)) },
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -198,29 +200,28 @@ fun GatewayRegistry(
                 TextButton(onClick = {
                     val problem = viewModel.doors.renameGateway(entry.id, name)
                     if (problem == null) renaming = null else error = problem
-                }) { Text("Save") }
+                }) { Text(stringResource(R.string.agent_save)) }
             },
-            dismissButton = { TextButton(onClick = { renaming = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { renaming = null }) { Text(stringResource(R.string.mk_cancel)) } },
         )
     }
 
     removing?.let { entry ->
         AlertDialog(
             onDismissRequest = { removing = null },
-            title = { Text("Remove ${entry.name}?") },
+            title = { Text(stringResource(R.string.agent_fleet_remove_title, entry.name)) },
             text = {
                 Text(
-                    "Its sign-in, read-marks, cached transcripts and archive leave this phone. " +
-                        "The gateway itself is not touched — you can add it again any time.",
+                    stringResource(R.string.agent_fleet_remove_body),
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.doors.removeGateway(entry.id)?.let { viewModel.toast(it) }
                     removing = null
-                }) { Text("Remove", color = MaterialTheme.colorScheme.error) }
+                }) { Text(stringResource(R.string.agent_remove), color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { removing = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { removing = null }) { Text(stringResource(R.string.mk_cancel)) } },
         )
     }
 
@@ -284,9 +285,11 @@ fun AddGatewaySheet(
         )
     }
 
-    KeryxSheet(onDismiss = { if (!connecting) onDismiss() }, title = "Add gateway", sheetState = sheetState) {
+    // Hoisted: the sign-in result lands in a callback, where stringResource can't be called.
+    val couldNotConnect = stringResource(R.string.agent_fleet_could_not_connect)
+    KeryxSheet(onDismiss = { if (!connecting) onDismiss() }, title = stringResource(R.string.agent_fleet_add), sheetState = sheetState) {
         Text(
-            text = "A running hermes dashboard, reachable from this phone — over the LAN, Tailscale or the internet.",
+            text = stringResource(R.string.agent_fleet_add_intro),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = KeryxType.caption,
             modifier = Modifier.padding(horizontal = 20.dp),
@@ -310,9 +313,9 @@ fun AddGatewaySheet(
         OutlinedTextField(
             value = name,
             onValueChange = { name = it; error = null },
-            label = { Text("Name") },
-            placeholder = { Text("Homelab") },
-            supportingText = { Text("Required, unique — shown wherever this gateway appears") },
+            label = { Text(stringResource(R.string.agent_name_label)) },
+            placeholder = { Text(stringResource(R.string.agent_fleet_name_example)) },
+            supportingText = { Text(stringResource(R.string.agent_fleet_name_required)) },
             singleLine = true,
             enabled = !connecting,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
@@ -320,7 +323,7 @@ fun AddGatewaySheet(
         OutlinedTextField(
             value = url,
             onValueChange = { url = it; error = null },
-            label = { Text("Gateway URL") },
+            label = { Text(stringResource(R.string.agent_fleet_url)) },
             placeholder = { Text("http://your-host:9119") },
             singleLine = true,
             enabled = !connecting && pair == null,
@@ -330,8 +333,8 @@ fun AddGatewaySheet(
         OutlinedTextField(
             value = key,
             onValueChange = { key = it; error = null },
-            label = { Text("Session token — ungated gateways only") },
-            supportingText = { Text("A gated gateway signs in through your browser instead") },
+            label = { Text(stringResource(R.string.agent_fleet_token)) },
+            supportingText = { Text(stringResource(R.string.agent_fleet_token_hint)) },
             singleLine = true,
             enabled = !connecting,
             visualTransformation = PasswordVisualTransformation(),
@@ -359,7 +362,7 @@ fun AddGatewaySheet(
                     },
                     onResult = { ok, needsRestart, message ->
                         connecting = false
-                        if (ok) onConnected(needsRestart) else error = message ?: "Could not connect"
+                        if (ok) onConnected(needsRestart) else error = message ?: couldNotConnect
                     },
                     name = name.trim(),
                     pair = pair,
@@ -370,7 +373,7 @@ fun AddGatewaySheet(
             modifier = Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 20.dp).padding(top = 8.dp),
         ) {
             if (connecting) CircularProgressIndicator(modifier = Modifier.size(22.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
-            else Text("Connect", fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
+            else Text(stringResource(R.string.agent_fleet_connect), fontSize = KeryxType.titleLarge, fontWeight = FontWeight.SemiBold)
         }
         Spacer(Modifier.height(24.dp))
     }
@@ -389,13 +392,14 @@ fun FleetSelector(
     if (!fleet.hasChoice) return
     var open by remember { mutableStateOf(false) }
     val active = fleet.active ?: return
+    val switchLabel = stringResource(R.string.agent_fleet_switch_gateway)
     Box(modifier = Modifier.fillMaxWidth()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(10.dp))
-                .clickable(onClickLabel = "Switch gateway") { open = true }
+                .clickable(onClickLabel = switchLabel) { open = true }
                 .padding(horizontal = 8.dp, vertical = 8.dp),
         ) {
             Icon(
@@ -439,7 +443,8 @@ fun FleetSelector(
                 )
             }
             DropdownMenuItem(
-                text = { Text("Manage gateways…", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                text = { Text(stringResource(R.string.agent_fleet_manage), color = MaterialTheme.colorScheme.onSurfaceVariant) },
+
                 onClick = { open = false; onManage() },
             )
         }

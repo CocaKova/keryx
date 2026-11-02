@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -51,21 +53,19 @@ fun SessionExportDialog(
     AlertDialog(
         shape = RoundedCornerShape(KeryxRadius.sheet),
         onDismissRequest = { if (!busy) onDismiss() },
-        title = { Text("Export “${title.ifBlank { "this session" }}”", fontSize = KeryxType.titleLarge) },
+        title = { Text(stringResource(R.string.chat_export_title, title.ifBlank { stringResource(R.string.chat_this_session) }), fontSize = KeryxType.titleLarge) },
         text = {
             Column(Modifier.selectableGroup()) {
                 FormatRow(
                     selected = format == ExportFormat.MARKDOWN,
                     title = "Markdown",
-                    detail = "The conversation as you read it: who said what, tools on one line, " +
-                        "long output trimmed.",
+                    detail = stringResource(R.string.chat_export_markdown_detail),
                     onSelect = { format = ExportFormat.MARKDOWN },
                 )
                 FormatRow(
                     selected = format == ExportFormat.JSON,
                     title = "JSON",
-                    detail = "The gateway's complete export: every row, undone turns and the " +
-                        "system prompt included. Re-importable.",
+                    detail = stringResource(R.string.chat_export_json_detail),
                     onSelect = { format = ExportFormat.JSON },
                 )
                 error?.let {
@@ -87,16 +87,16 @@ fun SessionExportDialog(
                     viewModel.exports.export(sessionId, title, format, agent).fold(
                         onSuccess = { file ->
                             if (shareExport(context, file)) onDismiss()
-                            else error = "Couldn't open the share sheet."
+                            else error = context.getString(R.string.chat_export_share_failed)
                         },
-                        onFailure = { error = it.message ?: "The export failed." },
+                        onFailure = { error = it.message ?: context.getString(R.string.chat_export_failed) },
                     )
                     busy = false
                 }
-            }) { Text(if (busy) "Exporting…" else "Share") }
+            }) { Text(if (busy) stringResource(R.string.chat_exporting) else stringResource(R.string.chat_share)) }
         },
         dismissButton = {
-            TextButton(enabled = !busy, onClick = onDismiss) { Text("Cancel") }
+            TextButton(enabled = !busy, onClick = onDismiss) { Text(stringResource(R.string.chat_cancel)) }
         },
     )
 }

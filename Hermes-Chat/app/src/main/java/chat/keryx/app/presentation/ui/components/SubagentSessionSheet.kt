@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -101,7 +104,7 @@ fun SubagentSessionSheet(
                 Text("⑂", fontSize = KeryxType.title, color = MaterialTheme.colorScheme.tertiary)
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    run.goal.ifBlank { "Delegated task" },
+                    run.goal.ifBlank { stringResource(R.string.agent_sub_delegated_task) },
                     fontSize = KeryxType.title,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -117,17 +120,17 @@ fun SubagentSessionSheet(
                 }
             }
             val meta = buildList {
-                if (run.taskCount > 1) add("task ${run.taskIndex + 1} of ${run.taskCount}")
+                if (run.taskCount > 1) add(stringResource(R.string.agent_sub_task_n_of_m, run.taskIndex + 1, run.taskCount))
                 if (run.model.isNotBlank()) add(run.model)
-                if (run.toolCount > 0) add("${run.toolCount} tool${if (run.toolCount == 1) "" else "s"}")
-                run.elapsedSeconds(now)?.takeIf { it > 0 }?.let { add("${it.toInt()}s") }
-                if (run.running) add("running")
-                if (run.totalTokens > 0) add("${run.totalTokens / 1000}k tok")
-                if (run.apiCalls > 0) add("${run.apiCalls} calls")
-                if (run.filesReadN > 0) add("${run.filesReadN} read")
-                if (run.filesWrittenN > 0) add("${run.filesWrittenN} written")
-                if (run.state == DelegationState.FAILED) add("failed")
-                if (run.state == DelegationState.INTERRUPTED) add("interrupted")
+                if (run.toolCount > 0) add(pluralStringResource(R.plurals.agent_session_tools, run.toolCount, run.toolCount))
+                run.elapsedSeconds(now)?.takeIf { it > 0 }?.let { add(stringResource(R.string.agent_sub_seconds, it.toInt())) }
+                if (run.running) add(stringResource(R.string.agent_sub_running))
+                if (run.totalTokens > 0) add(stringResource(R.string.agent_sub_ktok, (run.totalTokens / 1000).toInt()))
+                if (run.apiCalls > 0) add(pluralStringResource(R.plurals.agent_session_calls, run.apiCalls.toInt(), run.apiCalls.toInt()))
+                if (run.filesReadN > 0) add(stringResource(R.string.agent_sub_files_read, run.filesReadN.toInt()))
+                if (run.filesWrittenN > 0) add(stringResource(R.string.agent_sub_files_written, run.filesWrittenN.toInt()))
+                if (run.state == DelegationState.FAILED) add(stringResource(R.string.agent_sub_failed))
+                if (run.state == DelegationState.INTERRUPTED) add(stringResource(R.string.agent_sub_interrupted))
             }
             if (meta.isNotEmpty()) {
                 Text(
@@ -159,6 +162,9 @@ fun SubagentSessionSheet(
                 val earlier by produceState("", run.key) { if (addressable) value = watch.tail(run.key) }
                 val mind = remember(childMessages, earlier) { CrewMind.of(childMessages, earlier) }
                 var confirmStop by remember { mutableStateOf(false) }
+                // Hoisted: the helper's name rides into notices sent from callbacks.
+                val theHelper = stringResource(R.string.agent_sub_the_helper)
+                val shownRole = role.ifBlank { stringResource(R.string.agent_sub_this_helper) }
                 Column(Modifier.fillMaxWidth().heightIn(max = 460.dp)) {
                     if (mind.empty) {
                         TrailList(run.trail, live = true)
@@ -169,19 +175,19 @@ fun SubagentSessionSheet(
                 if (!addressable) return@Column
                 Spacer(Modifier.padding(top = 10.dp))
                 chat.keryx.app.presentation.tapin.SteerBar(
-                    placeholder = "A word in ${role.ifBlank { "this helper" }}'s ear…",
-                    onSteer = { text -> watch.steer(run.key, role.ifBlank { "the helper" }, text) },
+                    placeholder = stringResource(R.string.agent_sub_steer_hint, shownRole),
+                    onSteer = { text -> watch.steer(run.key, role.ifBlank { theHelper }, text) },
                     onStop = { confirmStop = true },
                 )
                 if (confirmStop) {
                     AlertDialog(
                         onDismissRequest = { confirmStop = false },
-                        title = { Text("Stop ${role.ifBlank { "this helper" }}?") },
-                        text = { Text("Only this helper stops. The turn that sent it keeps going and reads whatever it had so far.") },
+                        title = { Text(stringResource(R.string.agent_sub_stop_title, shownRole)) },
+                        text = { Text(stringResource(R.string.agent_sub_stop_body)) },
                         confirmButton = {
-                            TextButton(onClick = { confirmStop = false; watch.stop(run.key, role.ifBlank { "the helper" }) }) { Text("Stop it") }
+                            TextButton(onClick = { confirmStop = false; watch.stop(run.key, role.ifBlank { theHelper }) }) { Text(stringResource(R.string.agent_sub_stop_it)) }
                         },
-                        dismissButton = { TextButton(onClick = { confirmStop = false }) { Text("Keep going") } },
+                        dismissButton = { TextButton(onClick = { confirmStop = false }) { Text(stringResource(R.string.agent_sub_keep_going)) } },
                     )
                 }
                 return@Column
@@ -189,9 +195,11 @@ fun SubagentSessionSheet(
 
             // Re-keyed on `running` as well as the id, so a sheet opened over a flying wing
             // fetches the real transcript the moment that wing settles underneath it.
+            // Hoisted: the produce block is a coroutine, where stringResource can't be called.
+            val noSessionId = stringResource(R.string.agent_sub_no_session_id)
             val state by produceState<Result<List<HubMessage>>?>(initialValue = null, run.sessionId, run.running) {
                 value = if (run.sessionId.isBlank()) {
-                    Result.failure(IllegalStateException("This gateway didn't send a session id"))
+                    Result.failure(IllegalStateException(noSessionId))
                 } else {
                     fetch(run.sessionId)
                 }
@@ -206,7 +214,7 @@ fun SubagentSessionSheet(
                         modifier = Modifier.width(16.dp).heightIn(min = 16.dp, max = 16.dp),
                     )
                     Spacer(Modifier.width(10.dp))
-                    Text("Opening the subagent's session…", fontSize = KeryxType.caption)
+                    Text(stringResource(R.string.agent_sub_opening), fontSize = KeryxType.caption)
                 }
 
                 else -> result.fold(
@@ -220,9 +228,9 @@ fun SubagentSessionSheet(
                             // the gateway holds.
                             Text(
                                 if (run.trail.isNotEmpty())
-                                    "The gateway stored no transcript for this subagent — this is what it was seen doing."
+                                    stringResource(R.string.agent_sub_no_transcript_seen)
                                 else
-                                    "The gateway has no stored transcript for this subagent.",
+                                    stringResource(R.string.agent_sub_no_transcript),
                                 fontSize = KeryxType.caption,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -250,7 +258,7 @@ fun SubagentSessionSheet(
                     },
                     onFailure = { e ->
                         Text(
-                            "Couldn't open it — ${e.message?.take(120) ?: "unknown error"}",
+                            stringResource(R.string.agent_sub_open_failed, e.message?.take(120) ?: stringResource(R.string.agent_unknown_error)),
                             fontSize = KeryxType.caption,
                             color = MaterialTheme.colorScheme.error,
                         )
@@ -303,7 +311,7 @@ private fun CrewMindView(mind: CrewMind, trail: List<DelegationBeat>, modifier: 
                     .padding(horizontal = 10.dp, vertical = 8.dp),
             ) {
                 Text(
-                    if (earlierOpen) "Before you opened this" else "Before you opened this · tap to read",
+                    if (earlierOpen) stringResource(R.string.agent_sub_before_opened) else stringResource(R.string.agent_sub_before_opened_tap),
                     fontSize = KeryxType.micro,
                     fontWeight = FontWeight.Medium,
                     color = base.copy(alpha = 0.55f),
@@ -323,7 +331,7 @@ private fun CrewMindView(mind: CrewMind, trail: List<DelegationBeat>, modifier: 
         if (mind.thinking.isNotBlank()) item(key = "thinking") {
             Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp)) {
                 Text(
-                    if (mind.streaming) "Thinking" else "Thought",
+                    if (mind.streaming) stringResource(R.string.agent_sub_thinking) else stringResource(R.string.agent_sub_thought),
                     fontSize = KeryxType.micro,
                     fontWeight = FontWeight.Medium,
                     color = if (mind.streaming) accent else base.copy(alpha = 0.55f),
@@ -339,7 +347,7 @@ private fun CrewMindView(mind: CrewMind, trail: List<DelegationBeat>, modifier: 
         }
         if (mind.tools.isNotEmpty()) item(key = "tools") {
             Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp)) {
-                Text("Did", fontSize = KeryxType.micro, fontWeight = FontWeight.Medium, color = base.copy(alpha = 0.55f))
+                Text(stringResource(R.string.agent_sub_did), fontSize = KeryxType.micro, fontWeight = FontWeight.Medium, color = base.copy(alpha = 0.55f))
                 mind.tools.forEachIndexed { i, call ->
                     val newest = mind.streaming && i == mind.tools.lastIndex && call.status == chat.keryx.core.model.ToolStatus.EXECUTING
                     Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
@@ -363,7 +371,7 @@ private fun CrewMindView(mind: CrewMind, trail: List<DelegationBeat>, modifier: 
                 val missed = trail.count { it.kind == "tool" } - mind.tools.size
                 if (missed > 0) {
                     Text(
-                        "+ $missed before the window opened",
+                        stringResource(R.string.agent_sub_missed, missed),
                         fontSize = KeryxType.micro,
                         color = base.copy(alpha = 0.45f),
                         modifier = Modifier.padding(top = 4.dp, start = 20.dp),
@@ -373,7 +381,7 @@ private fun CrewMindView(mind: CrewMind, trail: List<DelegationBeat>, modifier: 
         }
         if (mind.saying.isNotBlank()) item(key = "saying") {
             Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp)) {
-                Text("Said", fontSize = KeryxType.micro, fontWeight = FontWeight.Medium, color = base.copy(alpha = 0.55f))
+                Text(stringResource(R.string.agent_sub_said_heading), fontSize = KeryxType.micro, fontWeight = FontWeight.Medium, color = base.copy(alpha = 0.55f))
                 Text(
                     mind.saying,
                     fontSize = KeryxType.body,
@@ -401,7 +409,7 @@ private fun TrailList(trail: List<DelegationBeat>, live: Boolean) {
     val accent = MaterialTheme.colorScheme.tertiary
     if (trail.isEmpty()) {
         Text(
-            if (live) "It hasn't reported anything yet." else "Nothing was recorded for this subagent.",
+            if (live) stringResource(R.string.agent_sub_nothing_yet) else stringResource(R.string.agent_sub_nothing_recorded),
             fontSize = KeryxType.caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -462,8 +470,8 @@ private fun ChildTurn(m: HubMessage) {
     val isTool = m.toolName.isNotBlank()
     val label = when {
         isTool -> ToolGrammar.title(m.toolName, "", running = false)
-        m.role == "assistant" -> "said"
-        m.role == "user" -> "was asked"
+        m.role == "assistant" -> stringResource(R.string.agent_sub_said)
+        m.role == "user" -> stringResource(R.string.agent_sub_was_asked)
         else -> m.role
     }
     Column(
@@ -563,7 +571,7 @@ fun SessionTranscriptSheet(
                     modifier = Modifier.weight(1f),
                 )
                 if (onOpenInChat != null) {
-                    TextButton(onClick = onOpenInChat) { Text("Open in chat", fontSize = KeryxType.caption) }
+                    TextButton(onClick = onOpenInChat) { Text(stringResource(R.string.agent_open_in_chat), fontSize = KeryxType.caption) }
                 }
             }
             if (meta.isNotBlank()) {
@@ -586,14 +594,15 @@ fun SessionTranscriptSheet(
                         modifier = Modifier.width(16.dp).heightIn(min = 16.dp, max = 16.dp),
                     )
                     Spacer(Modifier.width(10.dp))
-                    Text("Opening the session…", fontSize = KeryxType.caption)
+                    Text(stringResource(R.string.agent_sub_opening_session), fontSize = KeryxType.caption)
                 }
                 else -> result.fold(
                     onSuccess = { messages ->
                         if (messages.isEmpty()) {
                             Text(
-                                if (live) "Nothing written yet — it fills in as the worker goes."
-                                else "The gateway has no stored transcript for this session.",
+                                if (live) stringResource(R.string.agent_sub_nothing_written)
+                                else stringResource(R.string.agent_sub_no_session_transcript),
+
                                 fontSize = KeryxType.caption,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -620,7 +629,7 @@ fun SessionTranscriptSheet(
                     },
                     onFailure = { e ->
                         Text(
-                            "Couldn't open it — ${e.message?.take(120) ?: "unknown error"}",
+                            stringResource(R.string.agent_sub_open_failed, e.message?.take(120) ?: stringResource(R.string.agent_unknown_error)),
                             fontSize = KeryxType.caption,
                             color = MaterialTheme.colorScheme.error,
                         )

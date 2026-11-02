@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import chat.keryx.core.model.ModelCatalog
 import chat.keryx.core.model.ModelChoice
 import chat.keryx.core.transport.ChatTransport
@@ -133,18 +135,17 @@ class ModelDelegate(
         }
         val confirm = awaitingConfirm == choice
         awaitingConfirm = null
-        val reach = if (global) "every session" else "this session"
         scope.launch {
             gw.selectModel(roomId, choice.name, choice.provider, confirm, global)
                 .onSuccess { out ->
                     when {
                         out.confirmRequired -> {
                             awaitingConfirm = choice
-                            toast("${out.message.ifBlank { "This model is expensive." }} Tap it again to confirm.")
+                            toast(KeryxText.get(R.string.app_model_confirm, out.message.ifBlank { KeryxText.get(R.string.app_model_expensive) }))
                         }
                         out.deferred -> {
                             remember(choice)
-                            toast("${out.model} takes over at the next turn — $reach")
+                            toast(KeryxText.get(if (global) R.string.app_model_deferred_global else R.string.app_model_deferred, out.model))
                             _catalog.value = _catalog.value?.copy(
                                 model = out.model.ifBlank { choice.name }, provider = choice.provider,
                             )
@@ -152,7 +153,7 @@ class ModelDelegate(
                         }
                         else -> {
                             remember(choice)
-                            toast("${out.model} — $reach")
+                            toast(KeryxText.get(if (global) R.string.app_model_switched_global else R.string.app_model_switched, out.model))
                             _catalog.value = _catalog.value?.copy(
                                 model = out.model.ifBlank { choice.name }, provider = choice.provider,
                             )
@@ -160,7 +161,7 @@ class ModelDelegate(
                         }
                     }
                 }
-                .onFailure { toast("Switch refused: ${it.message?.take(80)}") }
+                .onFailure { toast(KeryxText.get(R.string.app_model_switch_refused, it.message?.take(80).orEmpty())) }
         }
     }
 
@@ -200,7 +201,7 @@ class ModelDelegate(
         if (current.isBlank()) return
         if (model.isBlank()) {
             // Nothing to key the memory on — say the true thing rather than guess a rung.
-            toast("This brain refused that thinking level — pick a lower one.")
+            toast(KeryxText.get(R.string.app_reasoning_refused_unknown))
             return
         }
         if (!refusedLevels.add(chat.keryx.core.model.ReasoningEffort.rejectionKey(model, current))) return
@@ -210,16 +211,16 @@ class ModelDelegate(
         }
         val next = chat.keryx.core.model.ReasoningEffort.fallbackBelow(model, current, refusedLevels)
         if (next == null) {
-            toast("This brain refused ${label(current)} thinking, and there's nothing lower to try.")
+            toast(KeryxText.get(R.string.app_reasoning_refused_floor, label(current)))
             return
         }
         d.setReasoningEffort(roomId, next, global = false)
             .onSuccess {
-                toast("This brain refused ${label(current)} thinking — dropped to ${label(next)}.")
+                toast(KeryxText.get(R.string.app_reasoning_dropped, label(current), label(next)))
                 refreshReasoningCaps()
             }
             .onFailure {
-                toast("This brain refused ${label(current)} thinking; couldn't drop to ${label(next)}.")
+                toast(KeryxText.get(R.string.app_reasoning_drop_failed, label(current), label(next)))
             }
     }
 
@@ -257,10 +258,10 @@ class ModelDelegate(
                 d.setReasoningEffort(roomId, level, global)
                     .onSuccess { v ->
                         val said = chat.keryx.core.model.ReasoningEffort.label(v.ifBlank { level }, hub.reasoningCaps.value?.labels.orEmpty())
-                        toast(if (global) "Reasoning → $said for every session" else "Reasoning → $said — this session")
+                        toast(KeryxText.get(if (global) R.string.app_reasoning_set_global else R.string.app_reasoning_set, said))
                         refreshReasoningCaps()
                     }
-                    .onFailure { toast("Reasoning refused: ${it.message?.take(80)}") }
+                    .onFailure { toast(KeryxText.get(R.string.app_reasoning_refused, it.message?.take(80).orEmpty())) }
             }
             return
         }

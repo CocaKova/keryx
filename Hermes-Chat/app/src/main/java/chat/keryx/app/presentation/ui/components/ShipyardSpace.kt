@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -89,7 +92,7 @@ fun ShipyardSpace(
     val title = when {
         openFile != null -> openFile!!.substringAfterLast('/')
         repo != null -> repo!!.label
-        else -> "Shipyard"
+        else -> stringResource(R.string.work_shipyard)
     }
 
     KeryxSpace(
@@ -123,7 +126,7 @@ fun ShipyardSpace(
                         ) {
                             androidx.compose.material3.Icon(
                                 KeryxGlyphs.Close,
-                                contentDescription = "Dismiss this error",
+                                contentDescription = stringResource(R.string.work_dismiss_error),
                                 tint = KeryxStatus.bad,
                                 modifier = Modifier.size(16.dp),
                             )
@@ -158,15 +161,15 @@ fun ShipyardSpace(
                 Spacer(Modifier.height(8.dp))
                 if (row != null && scope == "uncommitted") {
                     ShipyardChip(
-                        label = if (row.staged) "Unstage" else "Stage",
+                        label = if (row.staged) stringResource(R.string.work_ship_unstage) else stringResource(R.string.work_ship_stage),
                         enabled = !busy,
                         onClick = { yard.stage(row.path, row.staged) },
                     )
                     Spacer(Modifier.height(8.dp))
                 }
                 when {
-                    d == null -> Text("reading the diff…", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    d.diff.isBlank() -> Text("No diff — the file is unchanged in this scope.", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    d == null -> Text(stringResource(R.string.work_ship_reading_diff), fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    d.diff.isBlank() -> Text(stringResource(R.string.work_ship_no_diff), fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     else -> {
                         DiffPanel(
                             diff = d.diff,
@@ -177,7 +180,7 @@ fun ShipyardSpace(
                         if (d.clipped) {
                             Spacer(Modifier.height(6.dp))
                             Text(
-                                "clipped by the gateway: ${d.omittedLines} of ${d.totalLines} lines not shown",
+                                stringResource(R.string.work_ship_clipped, d.omittedLines, d.totalLines),
                                 fontSize = KeryxType.micro,
                                 color = KeryxStatus.warn,
                             )
@@ -233,10 +236,10 @@ private fun RepoRoster(repos: List<ShipyardRepo>, onOpen: (ShipyardRepo) -> Unit
                     )
                     .padding(14.dp),
             ) {
-                KeryxSectionHeader("Nothing to review")
+                KeryxSectionHeader(stringResource(R.string.work_ship_nothing))
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    "No repos the gateway will let a phone review. A project's folder or a discovered repo under the gateway user's home appears here.",
+                    stringResource(R.string.work_ship_nothing_body),
                     fontSize = KeryxType.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -290,7 +293,7 @@ private fun RepoReview(
             // The branch line: where we are, and whether the remote agrees.
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    status?.branch ?: repo.branch ?: "detached",
+                    status?.branch ?: repo.branch ?: stringResource(R.string.work_ship_detached),
                     fontFamily = FontFamily.Monospace,
                     fontSize = KeryxType.body,
                     fontWeight = FontWeight.SemiBold,
@@ -299,7 +302,7 @@ private fun RepoReview(
                 status?.let { st ->
                     if (st.ahead > 0) Text("↑${st.ahead}", fontSize = KeryxType.caption, color = KeryxStatus.warn)
                     if (st.behind > 0) Text(" ↓${st.behind}", fontSize = KeryxType.caption, color = KeryxStatus.warn)
-                    if (st.ahead == 0 && st.behind == 0 && !st.detached) Text("in step", fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (st.ahead == 0 && st.behind == 0 && !st.detached) Text(stringResource(R.string.work_ship_in_step), fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             shipInfoLine?.let { Text(it, fontSize = KeryxType.micro, color = KeryxStatus.good) }
@@ -307,20 +310,20 @@ private fun RepoReview(
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ShipyardChip("Working tree", filled = scope == "uncommitted", onClick = { onScope("uncommitted") })
-                ShipyardChip("Branch", filled = scope == "branch", onClick = { onScope("branch") })
+                ShipyardChip(stringResource(R.string.work_ship_working_tree), filled = scope == "uncommitted", onClick = { onScope("uncommitted") })
+                ShipyardChip(stringResource(R.string.work_ship_branch), filled = scope == "branch", onClick = { onScope("branch") })
                 Spacer(Modifier.weight(1f))
-                ShipyardChip("Refresh", onClick = onRefresh)
+                ShipyardChip(stringResource(R.string.work_ship_refresh), onClick = onRefresh)
             }
         }
         item {
             val st = status
             val summary = when {
-                st == null -> "reading the tree…"
-                scope == "branch" -> "${files?.size ?: 0} files changed on this branch"
-                st.clean -> "Clean — nothing to commit."
-                else -> "${st.changed} changed · ${st.staged} staged · ${st.untracked} untracked" +
-                    if (st.conflicted > 0) " · ${st.conflicted} conflicted" else ""
+                st == null -> stringResource(R.string.work_ship_reading_tree)
+                scope == "branch" -> pluralStringResource(R.plurals.work_ship_branch_files, files?.size ?: 0, files?.size ?: 0)
+                st.clean -> stringResource(R.string.work_ship_clean)
+                st.conflicted > 0 -> stringResource(R.string.work_ship_summary_conflicted, st.changed, st.staged, st.untracked, st.conflicted)
+                else -> stringResource(R.string.work_ship_summary, st.changed, st.staged, st.untracked)
             }
             KeryxSectionHeader(summary, count = null)
         }
@@ -330,7 +333,7 @@ private fun RepoReview(
         // sentence naming the wait (PanelLoading), so this speaks the same way.
         if (hydrating) item {
             Text(
-                "Reading the working tree…",
+                stringResource(R.string.work_ship_reading_working_tree),
                 fontSize = KeryxType.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 10.dp),
@@ -372,10 +375,10 @@ private fun RepoReview(
             val canCommit = st != null && !st.clean && !busy
             val canPush = st != null && st.ahead > 0 && !busy && !st.detached
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                ShipyardChip("Stage all", enabled = canCommit, onClick = onStageAll)
-                ShipyardChip("Commit…", enabled = canCommit, filled = canCommit, onClick = onCommit)
+                ShipyardChip(stringResource(R.string.work_ship_stage_all), enabled = canCommit, onClick = onStageAll)
+                ShipyardChip(stringResource(R.string.work_ship_commit_more), enabled = canCommit, filled = canCommit, onClick = onCommit)
                 ShipyardChip(
-                    if (st != null && st.ahead > 0) "Push ↑${st.ahead}" else "Push",
+                    if (st != null && st.ahead > 0) stringResource(R.string.work_ship_push_ahead, st.ahead) else stringResource(R.string.work_ship_push),
                     enabled = canPush,
                     filled = canPush,
                     onClick = onPush,
@@ -398,12 +401,12 @@ private fun CommitSheet(
     var message by remember { mutableStateOf("") }
     var push by remember { mutableStateOf(false) }
     val haptics = LocalKeryxHaptics.current
-    KeryxSheet(onDismiss = onDismiss, title = "Commit") {
+    KeryxSheet(onDismiss = onDismiss, title = stringResource(R.string.work_ship_commit)) {
         Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp)) {
             val st = status
             Text(
-                if (st != null && st.staged > 0) "${st.staged} staged file${if (st.staged == 1) "" else "s"} will be committed."
-                else "Nothing is staged — everything in the working tree will be committed.",
+                if (st != null && st.staged > 0) pluralStringResource(R.plurals.work_ship_staged_files, st.staged, st.staged)
+                else stringResource(R.string.work_ship_nothing_staged),
                 fontSize = KeryxType.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -412,14 +415,14 @@ private fun CommitSheet(
                 value = message,
                 onValueChange = { message = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Message") },
+                label = { Text(stringResource(R.string.work_ship_message)) },
                 minLines = 2,
                 maxLines = 6,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
             )
             ctx?.recentSubjects?.takeIf { it.isNotEmpty() }?.let { recent ->
                 Spacer(Modifier.height(10.dp))
-                Text("RECENT", fontSize = KeryxType.micro, letterSpacing = 1.4.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.work_ship_recent), fontSize = KeryxType.micro, letterSpacing = 1.4.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 recent.take(4).forEach { s ->
                     Text(s, fontSize = KeryxType.micro, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
                         modifier = Modifier.padding(top = 2.dp))
@@ -428,12 +431,12 @@ private fun CommitSheet(
             Spacer(Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { push = !push }) {
                 Checkbox(checked = push, onCheckedChange = { push = it })
-                Text("Push after committing", fontSize = KeryxType.body)
+                Text(stringResource(R.string.work_ship_push_after), fontSize = KeryxType.body)
             }
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
                 ShipyardChip(
-                    label = if (push) "Commit & push" else "Commit",
+                    label = if (push) stringResource(R.string.work_ship_commit_push) else stringResource(R.string.work_ship_commit),
                     filled = true,
                     enabled = message.isNotBlank() && !busy,
                     onClick = {

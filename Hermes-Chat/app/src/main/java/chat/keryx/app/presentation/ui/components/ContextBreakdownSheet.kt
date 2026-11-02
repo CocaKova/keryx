@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,12 +47,14 @@ internal fun ContextBreakdownSheet(viewModel: ChatViewModel, onDismiss: () -> Un
     var error by remember { mutableStateOf<String?>(null) }
     // Live while the sheet is up (the transport's meta flow; the ~1 s usage tick moves it).
     val numbers by remember { viewModel.sessionNumbers() }.collectAsState(null)
+    val directOnly = stringResource(R.string.chat_context_direct_only)
+    val readFailed = stringResource(R.string.chat_context_read_failed)
     LaunchedEffect(Unit) {
         val r = viewModel.contextBreakdown()
-        if (r == null) error = "Only the direct door can itemise the window."
-        else r.onSuccess { data = it }.onFailure { error = it.message ?: "Couldn't read the window" }
+        if (r == null) error = directOnly
+        else r.onSuccess { data = it }.onFailure { error = it.message ?: readFailed }
     }
-    KeryxSheet(onDismiss = onDismiss, title = "Context") {
+    KeryxSheet(onDismiss = onDismiss, title = stringResource(R.string.chat_context_title)) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
             val d = data
             when {
@@ -67,7 +71,7 @@ internal fun ContextBreakdownSheet(viewModel: ChatViewModel, onDismiss: () -> Un
                         Spacer(Modifier.width(10.dp))
                         Column {
                             Text(
-                                "${compact(d.used)} of ${compact(d.max)} tokens",
+                                stringResource(R.string.chat_context_used, compact(d.used), compact(d.max)),
                                 fontSize = KeryxType.body,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -123,7 +127,7 @@ internal fun ContextBreakdownSheet(viewModel: ChatViewModel, onDismiss: () -> Un
                         }
                     }
                     if (d.categories.isEmpty()) Text(
-                        "The gateway has no live agent for this session yet — send something first.",
+                        stringResource(R.string.chat_context_no_agent),
                         fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(16.dp))

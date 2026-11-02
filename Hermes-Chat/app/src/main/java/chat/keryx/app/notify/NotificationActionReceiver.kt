@@ -1,5 +1,7 @@
 package chat.keryx.app.notify
 
+import chat.keryx.app.R
+import chat.keryx.app.KeryxText
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -62,7 +64,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
         // Immediate repost: a fired RemoteInput pins a spinner on the notification until it's
         // updated with the same id — the worker then overwrites this with the sent/failed state.
-        KeryxNotifications.notifyActionResult(context, roomId, roomName, "→ Sending: $text")
+        KeryxNotifications.notifyActionResult(context, roomId, roomName, "→ " + KeryxText.get(R.string.app_notify_sending_text, text))
 
         val work = OneTimeWorkRequestBuilder<SendTextWorker>()
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
@@ -99,7 +101,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
         }?.trim()
         if (answer.isNullOrEmpty()) return
 
-        KeryxNotifications.notifyGateResult(context, sessionId, sessionName, "→ Answering…")
+        KeryxNotifications.notifyGateResult(context, sessionId, sessionName, "→ " + KeryxText.get(R.string.app_notify_answering))
 
         val work = OneTimeWorkRequestBuilder<GateAnswerWorker>()
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
@@ -147,7 +149,7 @@ class GateAnswerWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun getForegroundInfo(): androidx.work.ForegroundInfo =
-        KeryxNotifications.workerForeground(applicationContext, "Answering…")
+        KeryxNotifications.workerForeground(applicationContext, KeryxText.get(R.string.app_notify_answering))
 
     override suspend fun doWork(): Result {
         val app = applicationContext as? KeryxApp ?: return Result.failure()
@@ -161,7 +163,7 @@ class GateAnswerWorker(
         if (!direct.awaitConnected(CONNECT_WAIT_MS)) {
             if (runAttemptCount < MAX_ATTEMPTS) return Result.retry()
             KeryxNotifications.notifyGateResult(
-                applicationContext, sessionId, name, "⚠️ Couldn't reach the gateway — tap to answer",
+                applicationContext, sessionId, name, "⚠️ " + KeryxText.get(R.string.app_notify_gate_unreachable),
             )
             return Result.failure()
         }
@@ -171,15 +173,15 @@ class GateAnswerWorker(
                 direct.respondApproval(sessionId, answer, inputData.getString(KEY_REQUEST)).map { resolved ->
                     // resolved=0 means the wait had already failed closed. Saying "approved"
                     // there would be a lie about a command that is not going to run.
-                    if (resolved) "Answered — the agent is running again"
-                    else "That request had already timed out"
+                    if (resolved) KeryxText.get(R.string.app_notify_answered)
+                    else KeryxText.get(R.string.app_notify_request_timed_out)
                 }
             } else {
                 val blockingKind = chat.keryx.core.model.BlockingKind.entries.firstOrNull { it.name == kind }
                 val requestId = inputData.getString(KEY_REQUEST)
                 if (blockingKind == null || requestId.isNullOrBlank()) return Result.failure()
                 direct.respondBlocking(sessionId, requestId, blockingKind, answer)
-                    .map { "Answered — the agent is running again" }
+                    .map { KeryxText.get(R.string.app_notify_answered) }
             }
 
         return outcome.fold(
@@ -193,7 +195,7 @@ class GateAnswerWorker(
                 android.util.Log.w("KeryxGate", "answer failed for $sessionId", err)
                 if (runAttemptCount < MAX_ATTEMPTS) return Result.retry()
                 KeryxNotifications.notifyGateResult(
-                    applicationContext, sessionId, name, "⚠️ Couldn't answer — tap to open",
+                    applicationContext, sessionId, name, "⚠️ " + KeryxText.get(R.string.app_notify_answer_failed),
                 )
                 Result.failure()
             },
@@ -219,7 +221,7 @@ class SendTextWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun getForegroundInfo(): androidx.work.ForegroundInfo =
-        KeryxNotifications.workerForeground(applicationContext, "Sending…")
+        KeryxNotifications.workerForeground(applicationContext, KeryxText.get(R.string.app_notify_sending))
 
     override suspend fun doWork(): Result {
         val app = applicationContext as? KeryxApp ?: return Result.failure()
@@ -248,7 +250,7 @@ class SendTextWorker(
                 Result.retry()
             } else {
                 KeryxNotifications.notifyActionResult(
-                    applicationContext, roomId, roomName, "⚠️ Couldn't send \"$text\" — tap to open",
+                    applicationContext, roomId, roomName, "⚠️ " + KeryxText.get(R.string.app_notify_send_failed, text),
                 )
                 Result.failure()
             }

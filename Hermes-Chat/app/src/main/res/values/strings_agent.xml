@@ -1,0 +1,576 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The agent page, bots, gateways and helpers. Keys are agent_-prefixed. Keryx and Hermes are product names: keep them as they are. -->
+
+    <!-- ===== The Gateway landing and its spoke rows (HubSpace) ===== -->
+    <!-- Title of the agent/gateway page. -->
+    <string name="agent_gateway_title">Gateway</string>
+    <string name="agent_spoke_controls">Controls</string>
+    <!-- Spoke for updating the Hermes install. Noun. -->
+    <string name="agent_spoke_update">Update</string>
+    <!-- Scheduled jobs (cron). -->
+    <string name="agent_spoke_jobs">Jobs</string>
+    <string name="agent_spoke_sessions">Sessions</string>
+    <string name="agent_spoke_skills">Skills</string>
+    <string name="agent_spoke_memory">Memory</string>
+    <string name="agent_spoke_tools">Tools</string>
+    <string name="agent_spoke_mcp">MCP servers</string>
+    <!-- The agent's persona file (SOUL.md). -->
+    <string name="agent_spoke_soul">Soul</string>
+    <string name="agent_spoke_status">Status</string>
+    <!-- The landing's card headings: what the agent thinks with, reaches, does, is, and runs on. -->
+    <string name="agent_group_mind">Mind</string>
+    <string name="agent_group_reach">Reach</string>
+    <string name="agent_group_work">Work</string>
+    <string name="agent_group_self">Self</string>
+    <string name="agent_group_machine">Machine</string>
+    <!-- The arg is the model name. -->
+    <string name="agent_controls_sub_model">Brain · %1$s</string>
+    <string name="agent_controls_sub">Brain, knobs, config</string>
+    <string name="agent_jobs_sub">Schedules the agent keeps</string>
+    <string name="agent_sessions_sub">Every transcript, resume or prune</string>
+    <string name="agent_skills_sub">What the agent knows how to do</string>
+    <!-- e.g. 9 of 12 (switched on, of all). -->
+    <string name="agent_n_of_m">%1$d of %2$d</string>
+    <string name="agent_tools_sub">Toolsets the agent can call</string>
+    <string name="agent_mcp_sub">Outside services, switched on or off</string>
+    <string name="agent_soul_sub_none">Not written — the stock persona</string>
+    <string name="agent_soul_sub">Who the agent is, in its own file</string>
+    <string name="agent_status_sub">Health, platforms, models, last turn</string>
+    <string name="agent_refresh">Refresh</string>
+    <string name="agent_turn_live_row">Turn live</string>
+    <string name="agent_link_live">Streaming live</string>
+    <string name="agent_link_ok">Connected</string>
+    <string name="agent_link_checking">Checking…</string>
+    <string name="agent_link_sidechannel_off">Side-channel off</string>
+    <string name="agent_link_unreachable">Unreachable</string>
+
+    <!-- ===== The Gateway's spokes (HubPanels) ===== -->
+    <!-- Status: a phone-launched turn streaming right now; the arg is the start of its prompt. -->
+    <string name="agent_turn_live">turn live — %1$s</string>
+    <string name="agent_section_brain">Brain</string>
+    <string name="agent_row_model">Model</string>
+    <string name="agent_row_reasoning">Reasoning</string>
+    <string name="agent_row_gateway">Gateway</string>
+    <!-- The gateway's own state word follows (e.g. running). -->
+    <string name="agent_row_state">State</string>
+    <string name="agent_row_activity">Activity</string>
+    <!-- The reasoning level, then what kind of control the model has. -->
+    <string name="agent_reasoning_binary">%1$s (on/off brain)</string>
+    <string name="agent_reasoning_scale">%1$s (effort scale)</string>
+    <plurals name="agent_turns_in_flight">
+        <item quantity="one">%d agent turn in flight</item>
+        <item quantity="other">%d agent turns in flight</item>
+    </plurals>
+    <string name="agent_gateway_unreachable_info">Gateway unreachable — info unavailable</string>
+    <string name="agent_probing_gateway">Probing gateway…</string>
+    <string name="agent_section_last_turn">Last turn</string>
+    <!-- How full the model's context window was on the last turn. -->
+    <string name="agent_row_context">Context</string>
+    <string name="agent_row_latency">Latency</string>
+    <string name="agent_section_platforms">Platforms</string>
+    <string name="agent_section_models">Models</string>
+    <string name="agent_section_quick_actions">Quick actions</string>
+    <string name="agent_qa_status_title">System status</string>
+    <string name="agent_qa_status_desc">Agent, brain and platform health</string>
+    <string name="agent_qa_new_title">Fresh session</string>
+    <string name="agent_qa_new_desc">Start a clean conversation</string>
+    <string name="agent_qa_compress_title">Compress</string>
+    <string name="agent_qa_compress_desc">Summarize this thread to free context</string>
+    <string name="agent_qa_handoff_title">Handoff</string>
+    <string name="agent_qa_handoff_desc">Carry context into a new session</string>
+    <string name="agent_test_link">Test Hermes Link</string>
+    <string name="agent_jobs_intro">Scheduled jobs the gateway runs on its own</string>
+    <string name="agent_new_job">New job</string>
+    <string name="agent_jobs_empty">No scheduled jobs — create one and the agent runs it on the cron you set.</string>
+    <string name="agent_delete_job_title">Delete \"%1$s\"?</string>
+    <string name="agent_delete_job_body">The schedule and its run history go with it. This can\'t be undone.</string>
+    <string name="agent_delete">Delete</string>
+    <!-- Dismisses a delete confirmation without deleting. -->
+    <string name="agent_keep">Keep</string>
+    <string name="agent_run_now">Run now</string>
+    <!-- The status word comes from the gateway (e.g. ok, error). -->
+    <string name="agent_job_last_run">last run %1$s</string>
+    <plurals name="agent_job_runs">
+        <item quantity="one">%d run</item>
+        <item quantity="other">%d runs</item>
+    </plurals>
+    <string name="agent_paused">paused</string>
+    <!-- A scheduled job is overdue to run. -->
+    <string name="agent_next_due">due</string>
+    <string name="agent_next_under_minute">next &lt;1m</string>
+    <!-- Time until the job's next run, abbreviated: m = minutes, h = hours, d = days. -->
+    <string name="agent_next_in_m">next in %1$dm</string>
+    <string name="agent_next_in_hm">next in %1$dh %2$dm</string>
+    <string name="agent_next_in_d">next in %1$dd</string>
+    <string name="agent_sessions_intro">What the agent has been doing — every persisted session, newest first</string>
+    <string name="agent_prune">Prune…</string>
+    <string name="agent_sessions_empty">No sessions on record.</string>
+    <plurals name="agent_session_msgs">
+        <item quantity="one">%d msg</item>
+        <item quantity="other">%d msgs</item>
+    </plurals>
+    <plurals name="agent_session_tools">
+        <item quantity="one">%d tool</item>
+        <item quantity="other">%d tools</item>
+    </plurals>
+    <plurals name="agent_session_calls">
+        <item quantity="one">%d call</item>
+        <item quantity="other">%d calls</item>
+    </plurals>
+    <!-- Token counts read and written, e.g. 12.3K in · 4.1K out. -->
+    <string name="agent_tokens_in_out">%1$s in · %2$s out</string>
+    <string name="agent_rename_session">Rename session</string>
+    <string name="agent_title_label">Title</string>
+    <string name="agent_rename">Rename</string>
+    <string name="agent_delete_session_title">Delete this session?</string>
+    <plurals name="agent_delete_session_body">
+        <item quantity="one">The transcript (%d message) goes with it. This can\'t be undone.</item>
+        <item quantity="other">The transcript (%d messages) goes with it. This can\'t be undone.</item>
+    </plurals>
+    <string name="agent_back_to_sessions">Back to sessions</string>
+    <!-- Verb: copy a session into a new one. -->
+    <string name="agent_fork">Fork</string>
+    <plurals name="agent_tool_calls">
+        <item quantity="one">→ %d tool call</item>
+        <item quantity="other">→ %d tool calls</item>
+    </plurals>
+    <string name="agent_continue_session">Continue this session…</string>
+    <string name="agent_send_into_session">Send into this session</string>
+    <string name="agent_just_now">just now</string>
+    <!-- Abbreviated time ago: m = minutes, h = hours, d = days. -->
+    <string name="agent_ago_m">%1$dm ago</string>
+    <string name="agent_ago_h">%1$dh ago</string>
+    <string name="agent_ago_d">%1$dd ago</string>
+    <plurals name="agent_filter_skills">
+        <item quantity="one">Filter %d skill…</item>
+        <item quantity="other">Filter %d skills…</item>
+    </plurals>
+    <string name="agent_new_skill">New skill</string>
+    <plurals name="agent_back_to_skills">
+        <item quantity="one">← Back to %d skill</item>
+        <item quantity="other">← Back to %d skills</item>
+    </plurals>
+    <string name="agent_trash_count">Trash (%1$d)</string>
+    <string name="agent_skills_on">%1$d of %2$d on · a switch applies to new sessions</string>
+    <!-- The arg is when the skill was deleted, as the gateway wrote it. -->
+    <string name="agent_deleted_at">deleted %1$s</string>
+    <string name="agent_restore">Restore</string>
+    <string name="agent_skill_name_taken">a skill by that name exists again</string>
+    <!-- Verb: delete permanently. -->
+    <string name="agent_purge">Purge</string>
+    <string name="agent_purge_title">Purge “%1$s”?</string>
+    <string name="agent_purge_body">This deletes it from disk for good. There is no undo.</string>
+    <string name="agent_keep_it">Keep it</string>
+    <string name="agent_name_label">Name</string>
+    <string name="agent_creating">Creating…</string>
+    <string name="agent_create">Create</string>
+    <string name="agent_tools_intro_toggle">Tool groups for the agent\'s chat platform — switches persist</string>
+    <string name="agent_tools_intro_readonly">Tool groups as the API platform sees them</string>
+    <string name="agent_needs_keys">needs keys</string>
+
+    <!-- ===== The agent page: hero, stats, MCP, Soul, drawer door (AgentPanels) ===== -->
+    <string name="agent_your_agent">Your agent</string>
+    <!-- Stat tile caption under a percentage: how full the context window is. -->
+    <string name="agent_stat_context">context</string>
+    <!-- Stat tile value when no turn is running. -->
+    <string name="agent_stat_idle">idle</string>
+    <!-- Stat tile caption under a count of agent turns running now (the count is shown above it, larger). -->
+    <plurals name="agent_stat_turns_running">
+        <item quantity="one">turn running</item>
+        <item quantity="other">turns running</item>
+    </plurals>
+    <!-- Stat tile caption under "idle". -->
+    <string name="agent_stat_right_now">right now</string>
+    <!-- Stat tile caption under a count of scheduled jobs. -->
+    <string name="agent_stat_scheduled">scheduled</string>
+    <string name="agent_in_this_chat">In this chat</string>
+    <string name="agent_mcp_empty">No MCP servers yet. Add one on the gateway with `hermes mcp add`, and it shows up here.</string>
+    <string name="agent_mcp_servers_on">Servers · %1$d of %2$d on</string>
+    <string name="agent_mcp_note">A switch takes effect from the agent\'s next session. Servers stay in the gateway\'s config either way.</string>
+    <plurals name="agent_mcp_env_vars">
+        <item quantity="one">%d env var</item>
+        <item quantity="other">%d env vars</item>
+    </plurals>
+    <!-- The arg is the auth kind (e.g. bearer, oauth). -->
+    <string name="agent_mcp_auth">auth: %1$s</string>
+    <string name="agent_mcp_from_plugin">from plugin %1$s</string>
+    <plurals name="agent_soul_chars_note">
+        <item quantity="one">%d char · new sessions start with it</item>
+        <item quantity="other">%d chars · new sessions start with it</item>
+    </plurals>
+    <string name="agent_saving">Saving…</string>
+    <string name="agent_save">Save</string>
+    <!-- %1$s = profile name, %2$d = length in characters. -->
+    <string name="agent_soul_info">SOUL.md · profile %1$s · %2$d chars</string>
+    <string name="agent_soul_missing">No SOUL.md on profile %1$s — Hermes uses its stock persona.</string>
+    <string name="agent_edit">Edit</string>
+    <string name="agent_write_one">Write one</string>
+    <string name="agent_open_agent_page">Open the agent\'s page</string>
+
+    <!-- ===== Memory spoke (MemoryPanel) ===== -->
+    <string name="agent_mem_builtin">Built-in memory: the two files below are all the agent keeps.</string>
+    <!-- The arg is a memory provider's name. -->
+    <string name="agent_mem_provider_missing">Configured provider “%1$s” isn\'t installed — the agent is on the built-in files below.</string>
+    <!-- %1$s = provider name, %2$s = its status as the gateway reports it. -->
+    <string name="agent_mem_provider">Provider: %1$s (%2$s). Its own store lives there; these are the built-in files the agent also writes.</string>
+    <string name="agent_mem_no_entries">This gateway reports its memory files but can\'t list their entries — a newer Hermes can.</string>
+    <plurals name="agent_mem_search">
+        <item quantity="one">Search %d memory…</item>
+        <item quantity="other">Search %d memories…</item>
+    </plurals>
+    <string name="agent_mem_empty">Nothing remembered yet. The agent writes here with its memory tool, and you can ask it to.</string>
+    <string name="agent_mem_no_match">Nothing matches “%1$s”.</string>
+    <!-- Shelf headings: the user's profile memory, then the agent's own notes. -->
+    <string name="agent_mem_about_you">About you</string>
+    <string name="agent_mem_agent_notes">The agent\'s notes</string>
+    <string name="agent_mem_untitled">(untitled)</string>
+    <string name="agent_mem_all">← All memories</string>
+    <string name="agent_mem_open_failed">Couldn\'t open the entry for editing.</string>
+    <string name="agent_mem_rest_loading">…the rest is loading</string>
+    <string name="agent_mem_forget_title">Forget this?</string>
+    <!-- The arg is a file name (e.g. USER.md). -->
+    <string name="agent_mem_forget_body">The entry is removed from %1$s on the gateway. New sessions start without it; there is no undo from the phone.</string>
+    <string name="agent_mem_forget_it">Forget it</string>
+    <string name="agent_mem_sub">What the agent remembers</string>
+    <plurals name="agent_mem_count">
+        <item quantity="one">%d memory</item>
+        <item quantity="other">%d memories</item>
+    </plurals>
+    <string name="agent_mem_provider_short">provider %1$s</string>
+
+    <!-- ===== Skill Forge: view and edit one skill (SkillForgeSheet) ===== -->
+    <string name="agent_forge_title">Skill Forge</string>
+    <string name="agent_forge_read_only">read-only</string>
+    <string name="agent_forge_delete_skill">Delete skill</string>
+    <string name="agent_forge_load_failed">Couldn\'t load skill: %1$s</string>
+    <string name="agent_loading">Loading…</string>
+    <!-- Extra files that ship beside a skill's SKILL.md. -->
+    <string name="agent_forge_sidecar_files">Sidecar files</string>
+    <string name="agent_forge_delete_title">Delete this skill?</string>
+    <string name="agent_forge_delete_body">“%1$s” moves to the trash and stops loading into the agent. You can restore it from Skills ▸ Trash until you purge it.</string>
+    <string name="agent_forge_discard_title">Discard changes?</string>
+    <string name="agent_forge_discard_body">The edit hasn\'t been saved to the gateway.</string>
+    <string name="agent_discard">Discard</string>
+    <string name="agent_keep_editing">Keep editing</string>
+
+    <!-- ===== Chat memory sheet: how full the model's context is (ChatMemorySheet) ===== -->
+    <string name="agent_chatmem_title">Chat memory</string>
+    <string name="agent_chatmem_line">The line marks the summary point.</string>
+    <string name="agent_chatmem_after">After that the agent works from a summary of the older messages, so early details may come back shorter. A long chat can be summarized more than once.</string>
+    <!-- Appended to the small print after a middle dot. -->
+    <string name="agent_chatmem_estimate">the reply count is an estimate from this chat</string>
+    <string name="agent_chatmem_whats_using">What\'s using it</string>
+
+    <!-- ===== The link-health dot's spoken label (LinkHealthDot) ===== -->
+    <string name="agent_dot_live">Hermes Link: streaming live</string>
+    <string name="agent_dot_ok">Hermes Link: connected</string>
+    <string name="agent_dot_checking">Hermes Link: checking</string>
+    <string name="agent_dot_unreachable">Hermes Link: unreachable</string>
+
+    <!-- ===== Messages between agents, in the transcript (AgentDeliveryNotice) ===== -->
+    <!-- A message that another agent relayed in; the arg is that agent's name. -->
+    <string name="agent_relayed_from">relayed · %1$s</string>
+    <!-- The arg is the other agent's name. -->
+    <string name="agent_messaging">Messaging %1$s…</string>
+    <string name="agent_messaged">Messaged %1$s</string>
+    <string name="agent_message_from">Message from %1$s</string>
+
+    <!-- ===== Bots: the roster of agent profiles (BotsSpace) ===== -->
+    <!-- "Bot" = one agent profile on the gateway. -->
+    <string name="agent_bots_title">Bots</string>
+    <string name="agent_bots_hide_hidden">Hide hidden bots</string>
+    <string name="agent_bots_show_hidden">Show hidden bots</string>
+    <string name="agent_new_agent">New agent</string>
+    <string name="agent_bots_empty_title">No bots yet</string>
+    <string name="agent_bots_empty_body">Each bot is a profile on your gateway, with its own model, memory and chats.</string>
+    <string name="agent_bots_make_first">Make the first bot</string>
+    <string name="agent_bots_search">Search bots</string>
+    <string name="agent_group_chats">Group chats</string>
+    <string name="agent_new_group_chat">New group chat</string>
+    <!-- %1$s = bot name, %2$s = the reason. -->
+    <string name="agent_bots_session_failed">Couldn\'t start a session with %1$s. %2$s</string>
+    <string name="agent_bots_arm_failed">Couldn\'t arm every bot — %1$s</string>
+    <string name="agent_bots_armed">Bot messaging armed on this gateway</string>
+    <!-- "Bot Chat" = a bot's main, ongoing conversation. -->
+    <string name="agent_bots_fresh_title">Start a fresh Bot Chat?</string>
+    <string name="agent_bots_fresh_body">%1$s\'s current Bot Chat is retired — kept and readable under Sessions — and a new, empty Bot Chat takes its place.</string>
+    <string name="agent_bots_start_fresh">Start fresh</string>
+    <string name="agent_room_name">Room name</string>
+    <!-- %1$d–%2$d = allowed range of members, %3$d = how many are picked so far. -->
+    <string name="agent_group_pick">Pick %1$d–%2$d bots · %3$d picked</string>
+    <string name="agent_group_cant_join">can\'t join rooms: \"_\" in its profile name</string>
+    <!-- Sheet title: a bot's name, then "sessions". -->
+    <string name="agent_bot_sessions_title">%1$s · sessions</string>
+    <string name="agent_bot_sessions_failed">Couldn\'t load sessions: %1$s</string>
+    <string name="agent_try_again">try again</string>
+    <string name="agent_recent">Recent</string>
+    <string name="agent_bot_recent_empty">No side sessions or runs yet — the Bot Chat is the only one.</string>
+    <string name="agent_past_bot_chats">Past Bot Chats</string>
+    <string name="agent_none_retired">None retired yet.</string>
+    <!-- Shown in capitals as a small label. -->
+    <string name="agent_active_now">ACTIVE NOW</string>
+    <!-- Chip on the default (main) bot. -->
+    <string name="agent_bot_main">main</string>
+    <string name="agent_pinned">Pinned</string>
+    <plurals name="agent_routines_count">
+        <item quantity="one">%d routine</item>
+        <item quantity="other">%d routines</item>
+    </plurals>
+    <string name="agent_bot_tap_to_start">Tap to start %1$s\'s chat</string>
+    <!-- The bot isn't set up for bot-to-bot messaging. -->
+    <string name="agent_bot_not_armed">not armed</string>
+    <string name="agent_open_chat">Open chat</string>
+    <string name="agent_new_side_session">New side session</string>
+    <string name="agent_start_fresh_bot_chat">Start a fresh Bot Chat</string>
+    <string name="agent_unpin_sessions">Unpin from sessions</string>
+    <string name="agent_pin_sessions">Pin to top of sessions</string>
+    <string name="agent_edit_name_role">Edit name &amp; role</string>
+    <string name="agent_routines">Routines</string>
+    <string name="agent_routines_n">Routines · %1$d</string>
+    <string name="agent_unhide">Unhide</string>
+    <string name="agent_hide_from_roster">Hide from roster</string>
+    <string name="agent_msg_on">Bot-to-bot messaging is on</string>
+    <string name="agent_msg_off">Bot-to-bot messaging is off</string>
+    <string name="agent_msg_protocol_off">The gateway\'s agent.bot_mode_protocol switch is off in config.yaml — flip it there and every Bot Chat learns the teammate protocol.</string>
+    <string name="agent_msg_armed">%1$d of %2$d profiles carry the Bot Mode block. Their Bot Chats can @mention each other with message_agent; a reply lands as a message from that bot.</string>
+    <string name="agent_msg_explain">Arm it once and every Bot Chat gets the message_agent tool: bots can hand work to each other by @name, and replies arrive attributed. Regular sessions are untouched.</string>
+    <string name="agent_arming">Arming…</string>
+    <string name="agent_arm_remaining">Arm the remaining %1$d</string>
+    <string name="agent_turn_on_messaging">Turn on bot messaging</string>
+    <string name="agent_edit_named">Edit %1$s</string>
+    <string name="agent_profile_taken">A profile named %1$s already exists</string>
+    <string name="agent_profile_slug">Profile: %1$s</string>
+    <string name="agent_profile_name_hint">The profile\'s name — lowercase, dashes ok</string>
+    <string name="agent_bot_title_hint">What the roster calls it (\"Research Buddy\") — also its @tag</string>
+    <string name="agent_role_label">Role</string>
+    <string name="agent_role_hint">One line teammates read before choosing whom to message</string>
+    <string name="agent_start_from">Start from</string>
+    <string name="agent_fresh_profile">Fresh profile</string>
+    <string name="agent_fresh_profile_desc">Bundled skills, a clean memory.</string>
+    <string name="agent_clone_desc">Copies %1$s\'s config, skills and SOUL.</string>
+    <!-- Sheet title: a bot's name, then "routines" (its scheduled jobs). -->
+    <string name="agent_bot_routines_title">%1$s · routines</string>
+    <!-- %1$s = bot name, %2$s = the job-name prefix that marks a routine. -->
+    <string name="agent_routines_empty">No routines yet. Ask %1$s in its chat to schedule one — a job named \"%2$s …\" shows up here and runs in its own chat history.</string>
+    <!-- The arg is when the job runs next, as the gateway wrote it. -->
+    <string name="agent_next_at">next %1$s</string>
+    <!-- "Runs" is the name of the app's page of scheduled-job runs. -->
+    <string name="agent_open_runs">Open Runs</string>
+
+    <!-- ===== A group chat of several bots (GroupChatSpace) ===== -->
+    <string name="agent_room_stop">Stop the room</string>
+    <string name="agent_room_options">Room options</string>
+    <!-- Verb: dissolve the group chat for good. -->
+    <string name="agent_room_disband">Disband</string>
+    <string name="agent_room_intro">Say something to the room. Everyone hears it; @mention someone to ask just them.</string>
+    <!-- The arg is the opening words of the thread's first message. -->
+    <string name="agent_room_in_thread">↳ in thread: %1$s</string>
+    <string name="agent_room_thinking">The room is thinking…</string>
+    <string name="agent_room_one_thinking">%1$s is thinking…</string>
+    <!-- The arg is a comma-separated list of bot names. -->
+    <string name="agent_room_many_thinking">%1$s are thinking…</string>
+    <!-- A bot asks permission to run a command; the command's description follows below. -->
+    <string name="agent_room_wants_to_run">%1$s wants to run</string>
+    <string name="agent_deny">Deny</string>
+    <string name="agent_allow_once">Allow once</string>
+    <string name="agent_room_turn_unclear">A turn ended without a clear result.</string>
+    <string name="agent_retry">Retry</string>
+    <string name="agent_room_replying">Replying in thread: %1$s</string>
+    <string name="agent_room_message_hint">Message the room</string>
+    <!-- Button: send the message. -->
+    <string name="agent_send">Send</string>
+    <string name="agent_room_rename_title">Rename room</string>
+    <string name="agent_room_disband_title">Disband %1$s?</string>
+    <string name="agent_room_disband_body">The room and its conversation are removed for good, on every device. The bots and their own chats are untouched.</string>
+
+    <!-- ===== Gateways: the registry and the add sheet (FleetSheets) ===== -->
+    <string name="agent_fleet_intro">Every Hermes gateway this phone can reach. Sessions, jobs, bots and the Hub are the active gateway\'s; switching moves the whole workspace.</string>
+    <!-- Pill on the gateway in use. -->
+    <string name="agent_fleet_active">Active</string>
+    <!-- Pill on the fallback gateway. -->
+    <string name="agent_fleet_primary">Primary</string>
+    <string name="agent_fleet_actions">Gateway actions</string>
+    <string name="agent_fleet_switch_to">Switch to</string>
+    <!-- Verb: check whether the gateway answers. -->
+    <string name="agent_fleet_test">Test</string>
+    <string name="agent_fleet_make_primary">Make primary</string>
+    <string name="agent_remove">Remove</string>
+    <string name="agent_fleet_add">Add gateway</string>
+    <string name="agent_fleet_primary_note">Primary is the fallback when the gateway you were on is gone. Make primary never switches the workspace.</string>
+    <string name="agent_fleet_rename_title">Rename gateway</string>
+    <string name="agent_fleet_name_hint">Shown wherever this gateway appears</string>
+    <string name="agent_fleet_remove_title">Remove %1$s?</string>
+    <string name="agent_fleet_remove_body">Its sign-in, read-marks, cached transcripts and archive leave this phone. The gateway itself is not touched — you can add it again any time.</string>
+    <string name="agent_fleet_add_intro">A running hermes dashboard, reachable from this phone — over the LAN, Tailscale or the internet.</string>
+    <!-- Example gateway name in an empty field. -->
+    <string name="agent_fleet_name_example">Homelab</string>
+    <string name="agent_fleet_name_required">Required, unique — shown wherever this gateway appears</string>
+    <string name="agent_fleet_url">Gateway URL</string>
+    <string name="agent_fleet_token">Session token — ungated gateways only</string>
+    <string name="agent_fleet_token_hint">A gated gateway signs in through your browser instead</string>
+    <string name="agent_fleet_could_not_connect">Could not connect</string>
+    <string name="agent_fleet_connect">Connect</string>
+    <string name="agent_fleet_switch_gateway">Switch gateway</string>
+    <string name="agent_fleet_manage">Manage gateways…</string>
+
+    <!-- ===== A helper (subagent) the agent delegated to (SubagentSessionSheet) ===== -->
+    <string name="agent_sub_delegated_task">Delegated task</string>
+    <!-- Which of several delegated tasks this is, e.g. task 2 of 3. -->
+    <string name="agent_sub_task_n_of_m">task %1$d of %2$d</string>
+    <!-- Elapsed time in seconds, abbreviated. -->
+    <string name="agent_sub_seconds">%1$ds</string>
+    <string name="agent_sub_running">running</string>
+    <!-- Thousands of tokens used, abbreviated (k = thousand). -->
+    <string name="agent_sub_ktok">%1$dk tok</string>
+    <!-- Counts of files the helper read / wrote. -->
+    <string name="agent_sub_files_read">%1$d read</string>
+    <string name="agent_sub_files_written">%1$d written</string>
+    <string name="agent_sub_failed">failed</string>
+    <string name="agent_sub_interrupted">interrupted</string>
+    <!-- Placeholder in the box for nudging a running helper; the arg is the helper's role (e.g. researcher) or "this helper". -->
+    <string name="agent_sub_steer_hint">A word in %1$s\'s ear…</string>
+    <string name="agent_sub_this_helper">this helper</string>
+    <!-- Used inside notices, e.g. "Stopped the helper". -->
+    <string name="agent_sub_the_helper">the helper</string>
+    <string name="agent_sub_stop_title">Stop %1$s?</string>
+    <string name="agent_sub_stop_body">Only this helper stops. The turn that sent it keeps going and reads whatever it had so far.</string>
+    <string name="agent_sub_stop_it">Stop it</string>
+    <string name="agent_sub_keep_going">Keep going</string>
+    <string name="agent_sub_no_session_id">This gateway didn\'t send a session id</string>
+    <string name="agent_sub_opening">Opening the subagent\'s session…</string>
+    <string name="agent_sub_no_transcript_seen">The gateway stored no transcript for this subagent — this is what it was seen doing.</string>
+    <string name="agent_sub_no_transcript">The gateway has no stored transcript for this subagent.</string>
+    <string name="agent_sub_open_failed">Couldn\'t open it — %1$s</string>
+    <string name="agent_unknown_error">unknown error</string>
+    <string name="agent_sub_before_opened">Before you opened this</string>
+    <string name="agent_sub_before_opened_tap">Before you opened this · tap to read</string>
+    <!-- Heading over the helper's live reasoning (still going). -->
+    <string name="agent_sub_thinking">Thinking</string>
+    <!-- Heading over the helper's reasoning once it has finished. -->
+    <string name="agent_sub_thought">Thought</string>
+    <!-- Heading over the tools the helper used. Past tense of "do". -->
+    <string name="agent_sub_did">Did</string>
+    <!-- Heading over what the helper wrote. Past tense of "say". -->
+    <string name="agent_sub_said_heading">Said</string>
+    <string name="agent_sub_missed">+ %1$d before the window opened</string>
+    <string name="agent_sub_nothing_yet">It hasn\'t reported anything yet.</string>
+    <string name="agent_sub_nothing_recorded">Nothing was recorded for this subagent.</string>
+    <!-- Lower-case labels over a transcript turn: what the helper said / what it was asked. -->
+    <string name="agent_sub_said">said</string>
+    <string name="agent_sub_was_asked">was asked</string>
+    <string name="agent_open_in_chat">Open in chat</string>
+    <string name="agent_sub_opening_session">Opening the session…</string>
+    <string name="agent_sub_nothing_written">Nothing written yet — it fills in as the worker goes.</string>
+    <string name="agent_sub_no_session_transcript">The gateway has no stored transcript for this session.</string>
+
+    <!-- ===== Gateway actions: notices and errors (HubDelegate) ===== -->
+    <string name="agent_link_off">Hermes Link is off — enable it in Settings</string>
+    <string name="agent_link_off_short">Hermes Link is off</string>
+    <string name="agent_unavailable">unavailable</string>
+    <string name="agent_job_pinned">%1$s pinned to the top of your sessions</string>
+    <string name="agent_job_unpinned">%1$s unpinned</string>
+    <string name="agent_run_pinned">Pinned — kept on the gateway</string>
+    <string name="agent_run_unpinned">Unpinned</string>
+    <string name="agent_pin_refused">Pin refused: %1$s</string>
+    <string name="agent_unpin_refused">Unpin refused: %1$s</string>
+    <!-- The arg is the gateway's own (English) note on when the change takes effect, e.g. next turn. -->
+    <string name="agent_saved_applies">Saved — applies %1$s</string>
+    <string name="agent_change_refused">Change refused: %1$s</string>
+    <!-- The arg is a reasoning level (e.g. high). -->
+    <string name="agent_reasoning_set">Reasoning → %1$s (next session)</string>
+    <!-- "Brain" = the model the gateway runs; a swap loads a different one. -->
+    <string name="agent_swap_started">Swap started — watch the active brain</string>
+    <string name="agent_swap_refused">Swap refused: %1$s</string>
+    <string name="agent_no_skills">This gateway lists no skills</string>
+    <string name="agent_skill_on">%1$s on — new sessions load it</string>
+    <string name="agent_skill_off">%1$s off — new sessions skip it</string>
+    <string name="agent_skill_change_failed">Couldn\'t change %1$s: %2$s</string>
+    <string name="agent_skill_switch_unsupported">This gateway can\'t switch skills from here.</string>
+    <plurals name="agent_pruned">
+        <item quantity="one">Pruned %d session</item>
+        <item quantity="other">Pruned %d sessions</item>
+    </plurals>
+    <string name="agent_prune_failed">Prune failed: %1$s</string>
+    <string name="agent_save_failed">save failed</string>
+    <string name="agent_skill_created">created — index refreshes for new sessions</string>
+    <string name="agent_create_failed">create failed</string>
+    <string name="agent_skill_trashed">Moved “%1$s” to trash — restore it from Skills ▸ Trash</string>
+    <string name="agent_moved_to_trash">moved to trash</string>
+    <string name="agent_delete_refused">Delete refused: %1$s</string>
+    <string name="agent_delete_failed_short">delete failed</string>
+    <string name="agent_restored">Restored “%1$s”</string>
+    <string name="agent_restore_failed">Restore failed: %1$s</string>
+    <string name="agent_purged">Purged “%1$s” for good</string>
+    <string name="agent_purge_failed">Purge failed: %1$s</string>
+    <!-- The arg is the backup's file name. -->
+    <string name="agent_saved_backup">Saved. Backup: %1$s</string>
+    <string name="agent_saved">Saved.</string>
+    <string name="agent_toolset_failed">Toolset change failed: %1$s</string>
+    <string name="agent_job_running_now">Running now</string>
+    <string name="agent_job_paused">Paused</string>
+    <string name="agent_job_resumed">Resumed</string>
+    <string name="agent_done">Done</string>
+    <string name="agent_job_run_failed">Couldn\'t run the job: %1$s</string>
+    <string name="agent_job_pause_failed">Couldn\'t pause the job: %1$s</string>
+    <string name="agent_job_resume_failed">Couldn\'t resume the job: %1$s</string>
+    <string name="agent_job_action_failed">Job change failed: %1$s</string>
+    <string name="agent_job_deleted">Job deleted</string>
+    <string name="agent_delete_failed">Delete failed: %1$s</string>
+    <string name="agent_job_scheduled">Job scheduled</string>
+    <string name="agent_schedule_failed">Schedule failed: %1$s</string>
+    <string name="agent_rename_failed">Rename failed: %1$s</string>
+    <string name="agent_session_deleted">Session deleted</string>
+    <string name="agent_forked">Forked — transcript carried forward</string>
+    <string name="agent_fork_failed">Fork failed: %1$s</string>
+    <string name="agent_job_updated">Job updated</string>
+    <string name="agent_update_failed">Update failed: %1$s</string>
+
+    <!-- ===== Gateway switching, testing and sign-in (FleetDelegate) ===== -->
+    <string name="agent_fleet_switch_first">Switch to another gateway first</string>
+    <string name="agent_fleet_not_on_fleet">Not on the fleet</string>
+    <string name="agent_fleet_unreachable">Unreachable: %1$s</string>
+    <string name="agent_fleet_no_answer">no answer</string>
+    <!-- Test result. The arg is empty or " · hermes <version>" (keep it attached, no space before). -->
+    <string name="agent_fleet_reachable">Reachable%1$s</string>
+    <string name="agent_fleet_reachable_not_signed_in">Reachable%1$s — not signed in yet</string>
+    <string name="agent_fleet_reachable_refused">Reachable%1$s, but the sign-in was refused: %2$s</string>
+    <string name="agent_fleet_address_changed">The address changed after the scan. Scan the pairing code again.</string>
+    <string name="agent_fleet_link_not_paired">Signed in. Hermes Link didn\'t pair: %1$s</string>
+    <string name="agent_fleet_gateway_unreachable">Gateway unreachable</string>
+    <string name="agent_fleet_needs_token">This gateway doesn\'t sign in through the browser. Enter its session token, then Connect.</string>
+    <string name="agent_fleet_browser_failed">Browser sign-in failed</string>
+    <string name="agent_fleet_no_matrix">This transport has no Matrix login</string>
+    <string name="agent_fleet_logged_in">Logged in</string>
+    <string name="agent_fleet_login_failed">Login failed. Check URL or credentials.</string>
+
+    <!-- ===== Bots, memory and agent-page actions (BotsDelegate, MemoryDelegate, AgentDelegate) ===== -->
+    <string name="agent_roster_unavailable">roster unavailable</string>
+    <string name="agent_bot_open_failed">Couldn\'t open %1$s: %2$s</string>
+    <string name="agent_bot_retire_failed">Couldn\'t retire %1$s\'s chat: %2$s</string>
+    <string name="agent_not_connected">not connected to a gateway</string>
+    <string name="agent_not_direct">not on the direct door</string>
+    <string name="agent_couldnt_save">couldn\'t save</string>
+    <!-- %1$s = bot name, %2$s = the error. -->
+    <string name="agent_bot_error">%1$s: %2$s</string>
+    <string name="agent_bot_name_slug">Name must be a slug: lowercase letters, digits, - or _</string>
+    <string name="agent_bot_create_failed">couldn\'t create the profile</string>
+    <string name="agent_mem_door_not_open">The gateway door isn\'t open yet — try Refresh in a moment.</string>
+    <string name="agent_mem_door_closed">The gateway door is closed.</string>
+    <string name="agent_mem_cant_open_entry">This gateway can\'t open one entry.</string>
+    <string name="agent_mem_saved">Saved. Sessions already running keep the copy they started with.</string>
+    <string name="agent_mem_forgotten">Forgotten. Sessions already running keep the copy they started with.</string>
+    <string name="agent_mem_cant_change">This gateway can\'t change memory from here.</string>
+    <string name="agent_mcp_on">%1$s on — from the next session</string>
+    <string name="agent_mcp_off">%1$s off — from the next session</string>
+    <string name="agent_mcp_switch_unsupported">This gateway can\'t switch MCP servers from here.</string>
+    <string name="agent_soul_saved">Soul saved — new sessions start with it</string>
+    <string name="agent_couldnt_save_reason">Couldn\'t save: %1$s</string>
+    <string name="agent_soul_edit_unsupported">This gateway can\'t edit the soul from here.</string>
+
+    <!-- ===== Background run notification and profile writes (AgentRunService, ProfileOps) ===== -->
+    <!-- Notification text while a run winds down. -->
+    <string name="agent_run_finishing">Finishing…</string>
+    <string name="agent_profile_meta_refused">the gateway refused the bot\'s metadata</string>
+    <string name="agent_profile_meta_conflict">the gateway refused the bot\'s metadata (edited elsewhere — try again)</string>
+</resources>

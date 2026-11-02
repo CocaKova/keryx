@@ -278,5 +278,11 @@ internal fun money(usd: Double): String = when {
 
 /** "2026-11-02" → "Nov 2", in the phone's language. */
 private fun shortDay(iso: String): String = runCatching {
-    LocalDate.parse(iso).format(java.time.format.DateTimeFormatter.ofPattern("MMM d", java.util.Locale.getDefault()))
+    LocalDate.parse(iso).format(
+        java.time.format.DateTimeFormatter.ofPattern(
+            android.text.format.DateFormat.getBestDateTimePattern(java.util.Locale.getDefault(), "MMMd"),
+            java.util.Locale.getDefault(),
+        ),
+    )
+
 }.getOrDefault(iso)

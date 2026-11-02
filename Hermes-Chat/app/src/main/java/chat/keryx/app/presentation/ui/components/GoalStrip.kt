@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -51,8 +53,8 @@ fun GoalStrip(control: SessionControl, onAction: (String) -> Unit) {
     val bad = MaterialTheme.colorScheme.error
     val goal = control.goal
     val line = goal?.let(SessionControls::headline) ?: buildList {
-        control.loop?.let { add("↻ loop · ${it.ticksFired}${it.maxTicks?.let { m -> "/$m" } ?: ""} · ${it.status}") }
-        control.heartbeat?.let { add("♥ heartbeat · ${it.fireCount} · ${it.status}") }
+        control.loop?.let { add(stringResource(R.string.chat_goal_loop, "${it.ticksFired}${it.maxTicks?.let { m -> "/$m" } ?: ""}", it.status)) }
+        control.heartbeat?.let { add(stringResource(R.string.chat_goal_heartbeat, it.fireCount, it.status)) }
     }.joinToString("  ")
 
     Column(
@@ -67,7 +69,7 @@ fun GoalStrip(control: SessionControl, onAction: (String) -> Unit) {
                     strokeWidth = 1.dp.toPx(),
                 )
             }
-            .clickable(enabled = goal != null, onClickLabel = if (open) "Close the goal" else "Open the goal") { open = !open }
+            .clickable(enabled = goal != null, onClickLabel = if (open) stringResource(R.string.chat_goal_close) else stringResource(R.string.chat_goal_open)) { open = !open }
             .padding(horizontal = 16.dp, vertical = 6.dp)
             .animateContentSize(),
     ) {
@@ -132,7 +134,7 @@ private fun GoalDetail(
                     modifier = Modifier.weight(1f),
                 )
                 gate.lastExitCode?.let {
-                    Text("exit $it", color = if (it == 0) good else bad, fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace)
+                    Text(stringResource(R.string.chat_goal_exit, it), color = if (it == 0) good else bad, fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace)
                 }
             }
         }

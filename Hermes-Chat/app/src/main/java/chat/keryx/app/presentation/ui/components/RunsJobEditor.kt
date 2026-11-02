@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -98,7 +100,7 @@ internal fun JobEditorSheet(viewModel: ChatViewModel, job: HubJob?, onDismiss: (
     // "This room" is a Matrix delivery (`matrix:<room>`); a gateway session id in that slot is a
     // job whose output goes nowhere, so the direct door offers the gateway's own list instead.
     val roomOption = currentRoom?.takeIf { !viewModel.transportIsDirect }?.let { r ->
-        DeliveryOption("matrix:${r.id}", "This room · ${r.name}", "Each run's report posts into the open chat")
+        DeliveryOption("matrix:${r.id}", stringResource(R.string.work_job_this_room, r.name), stringResource(R.string.work_job_this_room_detail))
     }
 
     var name by remember { mutableStateOf(original?.name.orEmpty()) }
@@ -120,7 +122,7 @@ internal fun JobEditorSheet(viewModel: ChatViewModel, job: HubJob?, onDismiss: (
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     KeryxSheet(
         onDismiss = onDismiss,
-        title = blueprint?.title ?: if (job == null) "New job" else "Edit job",
+        title = blueprint?.title ?: if (job == null) stringResource(R.string.work_job_new) else stringResource(R.string.work_job_edit),
         sheetState = sheetState,
     ) {
         val bp = blueprint
@@ -147,22 +149,22 @@ internal fun JobEditorSheet(viewModel: ChatViewModel, job: HubJob?, onDismiss: (
                 // Starting points: only for a new job, only where the gateway serves a catalog.
                 val catalog = extras.blueprints.orEmpty()
                 if (job == null && catalog.isNotEmpty()) {
-                    EditorLabel("Start from a blueprint")
+                    EditorLabel(stringResource(R.string.work_job_from_blueprint))
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(bottom = 12.dp),
                     ) {
                         catalog.forEach { b -> BlueprintTile(b) { blueprint = b } }
                     }
-                    EditorLabel("Or write your own")
+                    EditorLabel(stringResource(R.string.work_job_write_own))
                 }
                 OutlinedTextField(
                     value = name, onValueChange = { name = it },
-                    modifier = Modifier.fillMaxWidth(), label = { Text("Name") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.work_job_name)) }, singleLine = true,
                     shape = RoundedCornerShape(KeryxRadius.field),
                     supportingText = if (original != null && name.trim() != original.name) ({
                         // Runs are grouped by the name they were written under; say so before it bites.
-                        Text("Past runs keep the old name", fontSize = KeryxType.micro)
+                        Text(stringResource(R.string.work_job_rename_note), fontSize = KeryxType.micro)
                     }) else null,
                 )
                 Spacer(Modifier.height(8.dp))
@@ -170,16 +172,16 @@ internal fun JobEditorSheet(viewModel: ChatViewModel, job: HubJob?, onDismiss: (
                     value = prompt, onValueChange = { prompt = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = {
-                        Text(if (job?.scriptOnly == true) "Prompt (optional — this job runs a script)" else "What the agent does each run")
+                        Text(if (job?.scriptOnly == true) stringResource(R.string.work_job_prompt_script) else stringResource(R.string.work_job_prompt))
                     },
                     minLines = 4, maxLines = 10,
                     shape = RoundedCornerShape(KeryxRadius.field),
                 )
                 Spacer(Modifier.height(16.dp))
-                EditorLabel("When")
+                EditorLabel(stringResource(R.string.work_job_when))
                 SchedulePicker(schedule) { schedule = it }
                 Spacer(Modifier.height(16.dp))
-                EditorLabel("Where the report goes")
+                EditorLabel(stringResource(R.string.work_job_where))
                 DeliveryPicker(
                     options = CronDelivery.options(extras.targets, deliver, roomOption, roomName),
                     value = deliver,
@@ -190,7 +192,7 @@ internal fun JobEditorSheet(viewModel: ChatViewModel, job: HubJob?, onDismiss: (
                 // Hermes Link's job PATCH has no model field.
                 if (extras.dashboard) {
                     Spacer(Modifier.height(16.dp))
-                    EditorLabel("Model")
+                    EditorLabel(stringResource(R.string.work_job_model))
                     ModelPicker(viewModel, model, provider) { m, p -> model = m; provider = p }
                 }
                 Spacer(Modifier.height(18.dp))
@@ -200,14 +202,14 @@ internal fun JobEditorSheet(viewModel: ChatViewModel, job: HubJob?, onDismiss: (
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.mk_cancel)) }
                     TextButton(
                         enabled = problem == null && changed && !saving,
                         onClick = {
                             saving = true
                             editor.save(job, draft) { ok -> saving = false; if (ok) onDismiss() }
                         },
-                    ) { Text(if (job == null) "Schedule" else "Save") }
+                    ) { Text(if (job == null) stringResource(R.string.work_job_schedule_verb) else stringResource(R.string.work_save)) }
                 }
             }
         }
@@ -243,20 +245,23 @@ internal fun EditorChip(label: String, selected: Boolean, enabled: Boolean = tru
 }
 
 private val KIND_LABELS = listOf(
-    ScheduleKind.INTERVAL to "Every…",
-    ScheduleKind.DAILY to "Daily",
-    ScheduleKind.WEEKDAYS to "Weekdays",
-    ScheduleKind.WEEKLY to "Weekly",
-    ScheduleKind.MONTHLY to "Monthly",
-    ScheduleKind.CUSTOM to "Custom",
+    ScheduleKind.INTERVAL to R.string.work_job_kind_interval,
+    ScheduleKind.DAILY to R.string.work_job_kind_daily,
+    ScheduleKind.WEEKDAYS to R.string.work_job_kind_weekdays,
+    ScheduleKind.WEEKLY to R.string.work_job_kind_weekly,
+    ScheduleKind.MONTHLY to R.string.work_job_kind_monthly,
+    ScheduleKind.CUSTOM to R.string.work_job_kind_custom,
 )
 
 /** Interval presets, in minutes, with the words a person uses for them. */
-private val INTERVALS = listOf(15 to "15 min", 30 to "30 min", 60 to "1 h", 120 to "2 h", 360 to "6 h", 720 to "12 h")
+private val INTERVALS = listOf(15, 30, 60, 120, 360, 720)
 
 /** Cron day numbers in week order, Sunday first, as the gateway counts them. */
-private val DAYS = listOf(0 to "S", 1 to "M", 2 to "T", 3 to "W", 4 to "T", 5 to "F", 6 to "S")
-private val DAY_NAMES = listOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+private val DAYS = (0..6).toList()
+
+/** Cron day [n] (0 = Sunday) in the phone's language: one letter, or the full name. */
+private fun dayName(n: Int, style: java.time.format.TextStyle): String =
+    java.time.DayOfWeek.of(if (n == 0) 7 else n).getDisplayName(style, java.util.Locale.getDefault())
 
 /**
  * The schedule picker: a kind, then only that kind's controls, then the result in words with
@@ -269,7 +274,7 @@ private fun SchedulePicker(draft: ScheduleDraft, onChange: (ScheduleDraft) -> Un
     var clockOpen by remember { mutableStateOf(false) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         KIND_LABELS.forEach { (kind, label) ->
-            EditorChip(label, selected = draft.kind == kind) {
+            EditorChip(stringResource(label), selected = draft.kind == kind) {
                 // Into Custom with the current line already typed, so it is an edit, not a blank.
                 onChange(
                     if (kind == ScheduleKind.CUSTOM && draft.raw.isBlank()) draft.copy(kind = kind, raw = CronScheduleForm.build(draft))
@@ -282,7 +287,9 @@ private fun SchedulePicker(draft: ScheduleDraft, onChange: (ScheduleDraft) -> Un
     when (draft.kind) {
         ScheduleKind.INTERVAL -> {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                INTERVALS.forEach { (mins, label) ->
+                INTERVALS.forEach { mins ->
+                    val label = if (mins < 60) stringResource(R.string.work_job_minutes_short, mins)
+                    else stringResource(R.string.work_job_hours_short, mins / 60)
                     EditorChip(label, selected = draft.everyMinutes == mins) { onChange(draft.copy(everyMinutes = mins)) }
                 }
             }
@@ -299,7 +306,7 @@ private fun SchedulePicker(draft: ScheduleDraft, onChange: (ScheduleDraft) -> Un
                     text = v.filter { it.isDigit() }.take(6)
                     onChange(draft.copy(everyMinutes = text.toIntOrNull() ?: 0))
                 },
-                label = { Text("Minutes between runs") },
+                label = { Text(stringResource(R.string.work_job_minutes_between)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 shape = RoundedCornerShape(KeryxRadius.field),
@@ -310,8 +317,8 @@ private fun SchedulePicker(draft: ScheduleDraft, onChange: (ScheduleDraft) -> Un
             value = draft.raw,
             onValueChange = { onChange(draft.copy(raw = it)) },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Schedule") },
-            supportingText = { Text("cron (0 9 * * 1-5), every 2h, in 30m, or 2026-10-03T09:00", fontSize = KeryxType.micro) },
+            label = { Text(stringResource(R.string.work_job_schedule)) },
+            supportingText = { Text(stringResource(R.string.work_job_schedule_help), fontSize = KeryxType.micro) },
             singleLine = true,
             textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = KeryxType.body),
             shape = RoundedCornerShape(KeryxRadius.field),
@@ -319,7 +326,12 @@ private fun SchedulePicker(draft: ScheduleDraft, onChange: (ScheduleDraft) -> Un
         else -> {
             if (draft.kind == ScheduleKind.WEEKLY) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    DAYS.forEach { (n, letter) ->
+                    DAYS.forEach { n ->
+                        val letter = dayName(n, java.time.format.TextStyle.NARROW)
+                        val dayLabel = stringResource(
+                            if (n in draft.days) R.string.work_job_day_on else R.string.work_job_day_off,
+                            dayName(n, java.time.format.TextStyle.FULL),
+                        )
                         val on = n in draft.days
                         val accent = MaterialTheme.colorScheme.primary
                         Box(
@@ -329,7 +341,7 @@ private fun SchedulePicker(draft: ScheduleDraft, onChange: (ScheduleDraft) -> Un
                                 .clip(CircleShape)
                                 .background(if (on) accent else accent.copy(alpha = 0.10f))
                                 .clickable { onChange(draft.copy(days = if (on) draft.days - n else draft.days + n)) }
-                                .semanticsLabel(DAY_NAMES[n] + if (on) ", on" else ", off"),
+                                .semanticsLabel(dayLabel),
                         ) {
                             Text(
                                 letter, fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold,
@@ -349,7 +361,7 @@ private fun SchedulePicker(draft: ScheduleDraft, onChange: (ScheduleDraft) -> Un
                             dayText = v.filter { it.isDigit() }.take(2)
                             onChange(draft.copy(dayOfMonth = dayText.toIntOrNull() ?: 0))
                         },
-                        label = { Text("Day of month") },
+                        label = { Text(stringResource(R.string.work_job_day_of_month)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         shape = RoundedCornerShape(KeryxRadius.field),
@@ -357,7 +369,7 @@ private fun SchedulePicker(draft: ScheduleDraft, onChange: (ScheduleDraft) -> Un
                     )
                     Spacer(Modifier.width(12.dp))
                 }
-                Text("at", fontSize = KeryxType.body, color = quiet)
+                Text(stringResource(R.string.work_job_at), fontSize = KeryxType.body, color = quiet)
                 Spacer(Modifier.width(8.dp))
                 EditorChip(CronScheduleForm.clockText(draft.hour, draft.minute), selected = false) { clockOpen = true }
             }
@@ -396,8 +408,8 @@ private fun ClockDialog(hour: Int, minute: Int, onPick: (Int, Int) -> Unit, onDi
                 TimePicker(state = state)
                 Row(Modifier.fillMaxWidth()) {
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
-                    TextButton(onClick = { onPick(state.hour, state.minute) }) { Text("Set") }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.mk_cancel)) }
+                    TextButton(onClick = { onPick(state.hour, state.minute) }) { Text(stringResource(R.string.work_job_set)) }
                 }
             }
         }
@@ -457,7 +469,7 @@ private fun DeliveryPicker(options: List<DeliveryOption>, value: String, label: 
                 )
             }
             DropdownMenuItem(
-                text = { Text("Other target…", fontSize = KeryxType.body) },
+                text = { Text(stringResource(R.string.work_job_other_target), fontSize = KeryxType.body) },
                 onClick = { open = false; typing = true },
             )
         }
@@ -468,8 +480,8 @@ private fun DeliveryPicker(options: List<DeliveryOption>, value: String, label: 
             value = value,
             onValueChange = onPick,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Target") },
-            supportingText = { Text("local, a platform (matrix), platform:chat_id, or a comma list", fontSize = KeryxType.micro) },
+            label = { Text(stringResource(R.string.work_job_target)) },
+            supportingText = { Text(stringResource(R.string.work_job_target_help), fontSize = KeryxType.micro) },
             singleLine = true,
             textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = KeryxType.caption),
             shape = RoundedCornerShape(KeryxRadius.field),
@@ -496,15 +508,15 @@ private fun ModelPicker(viewModel: ChatViewModel, model: String, provider: Strin
     }
     Box {
         PickerRow(
-            label = model.ifBlank { "Gateway default" },
-            detail = if (model.isBlank()) "Whatever the gateway's agent runs" else provider.ifBlank { null },
+            label = model.ifBlank { stringResource(R.string.work_job_gateway_default) },
+            detail = if (model.isBlank()) stringResource(R.string.work_job_gateway_default_detail) else provider.ifBlank { null },
             warning = false,
         ) {
             open = true
             viewModel.models.refresh()
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            DropdownMenuItem(text = { Text("Gateway default", fontSize = KeryxType.body) }, onClick = { open = false; onPick("", "") })
+            DropdownMenuItem(text = { Text(stringResource(R.string.work_job_gateway_default), fontSize = KeryxType.body) }, onClick = { open = false; onPick("", "") })
             if (model.isNotBlank() && choices.none { it.first.name == model }) {
                 DropdownMenuItem(
                     text = { Text(model, fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold) },
@@ -513,7 +525,7 @@ private fun ModelPicker(viewModel: ChatViewModel, model: String, provider: Strin
             }
             if (choices.isEmpty()) {
                 DropdownMenuItem(
-                    text = { Text("Reading the gateway's models…", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    text = { Text(stringResource(R.string.work_job_reading_models), fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     onClick = {},
                     enabled = false,
                 )
@@ -590,7 +602,7 @@ private fun BlueprintForm(
             EditorLabel(f.label.ifBlank { f.name })
             val v = values[f.name].orEmpty()
             when {
-                f.type == "time" -> EditorChip(v.ifBlank { "Pick a time" }, selected = false) { clockFor = f.name }
+                f.type == "time" -> EditorChip(v.ifBlank { stringResource(R.string.work_job_pick_time) }, selected = false) { clockFor = f.name }
                 f.options.isNotEmpty() -> FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -598,7 +610,7 @@ private fun BlueprintForm(
                     f.options.forEach { o ->
                         // From the dashboard, "origin" has no chat behind it: it lands in the
                         // configured home channel, and the label says that instead.
-                        val text = if (f.name == "deliver") (if (o == CronDelivery.ORIGIN) "Home channel" else deliverLabel(o)) else o
+                        val text = if (f.name == "deliver") (if (o == CronDelivery.ORIGIN) stringResource(R.string.work_job_home_channel) else deliverLabel(o)) else o
                         EditorChip(text, selected = v == o) { values = values + (f.name to o) }
                     }
                 }
@@ -620,9 +632,9 @@ private fun BlueprintForm(
             Spacer(Modifier.height(6.dp))
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onBack) { Text("Back") }
+            TextButton(onClick = onBack) { Text(stringResource(R.string.work_back)) }
             Spacer(Modifier.weight(1f))
-            TextButton(enabled = problem == null && !saving, onClick = { onCreate(values) }) { Text("Schedule it") }
+            TextButton(enabled = problem == null && !saving, onClick = { onCreate(values) }) { Text(stringResource(R.string.work_job_schedule_it)) }
         }
     }
     clockFor?.let { field ->
@@ -654,11 +666,11 @@ internal fun JobHistorySection(viewModel: ChatViewModel, jobId: String, onOpen: 
     if (loaded && runs == null) return
     val quiet = MaterialTheme.colorScheme.onSurfaceVariant
     Spacer(Modifier.height(12.dp))
-    KeryxSectionHeader("History", count = runs?.size, color = quiet)
+    KeryxSectionHeader(stringResource(R.string.work_job_history), count = runs?.size, color = quiet)
     Spacer(Modifier.height(4.dp))
     when {
         !loaded -> KeryxSkeleton(rows = 2)
-        runs.isNullOrEmpty() -> Text("No runs yet.", fontSize = KeryxType.caption, color = quiet.copy(alpha = 0.7f))
+        runs.isNullOrEmpty() -> Text(stringResource(R.string.work_job_no_runs), fontSize = KeryxType.caption, color = quiet.copy(alpha = 0.7f))
         else -> runs.forEach { run -> HistoryRow(run, onOpen) }
     }
 }
@@ -683,7 +695,7 @@ private fun HistoryRow(run: CronHistoryRun, onOpen: (CronHistoryRun) -> Unit) {
             Text(glyph, fontSize = KeryxType.micro, color = tint, modifier = Modifier.width(16.dp))
             Text(
                 // Session runs are titled "<job> · <when>": the job is the sheet's own title.
-                if (run.scriptOutput) run.title.ifBlank { "Script run" } else run.title.substringAfter(" · ", run.title),
+                if (run.scriptOutput) run.title.ifBlank { stringResource(R.string.work_job_script_run) } else run.title.substringAfter(" · ", run.title),
                 fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                 maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
             )
@@ -702,13 +714,14 @@ private fun HistoryRow(run: CronHistoryRun, onOpen: (CronHistoryRun) -> Unit) {
 }
 
 /** "4h ago" for a history row — the same clock the run rows use. */
+@Composable
 private fun historyWhen(ms: Long): String {
     if (ms <= 0L) return ""
-    val mins = ((System.currentTimeMillis() - ms) / 60_000L).coerceAtLeast(0)
+    val mins = ((System.currentTimeMillis() - ms) / 60_000L).coerceAtLeast(0).toInt()
     return when {
-        mins < 1 -> "now"
-        mins < 60 -> "${mins}m ago"
-        mins < 60 * 24 -> "${mins / 60}h ago"
-        else -> "${mins / (60 * 24)}d ago"
+        mins < 1 -> stringResource(R.string.work_ago_now)
+        mins < 60 -> stringResource(R.string.work_ago_m, mins)
+        mins < 60 * 24 -> stringResource(R.string.work_ago_h, mins / 60)
+        else -> stringResource(R.string.work_ago_d, mins / (60 * 24))
     }
 }

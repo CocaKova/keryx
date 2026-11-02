@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -83,10 +86,10 @@ fun PetPickerSheet(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Choose a pet", fontSize = KeryxType.headline, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.chat_pet_choose), fontSize = KeryxType.headline, fontWeight = FontWeight.Bold)
                     Text(
                         text = gallery?.pets?.firstOrNull { it.slug == gallery?.active }?.displayName
-                            ?.let { "$it rides along in the drawer" } ?: "Pets live on the gateway — every surface shows the same one",
+                            ?.let { stringResource(R.string.chat_pet_rides, it) } ?: stringResource(R.string.chat_pet_gateway),
                         fontSize = KeryxType.caption,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -108,7 +111,7 @@ fun PetPickerSheet(
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Search ${gallery?.pets?.size ?: 0} pets…") },
+                placeholder = { (gallery?.pets?.size ?: 0).let { n -> Text(pluralStringResource(R.plurals.chat_pet_search, n, n)) } },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true,
                 shape = RoundedCornerShape(KeryxRadius.field),
@@ -142,13 +145,13 @@ fun PetPickerSheet(
 
             LazyColumn(modifier = Modifier.weight(1f).padding(top = 8.dp)) {
                 if (installedPets.isNotEmpty()) {
-                    item(key = "hdr-installed") { PetSectionHeader("Installed") }
+                    item(key = "hdr-installed") { PetSectionHeader(stringResource(R.string.chat_pet_installed_header)) }
                     items(installedPets, key = { "i-${it.slug}" }) { pet ->
                         PetRow(pet, gallery?.active == pet.slug, selecting, thumbs[pet.slug]?.asImageBitmap(), viewModel)
                     }
                 }
                 if (catalogPets.isNotEmpty()) {
-                    item(key = "hdr-catalog") { PetSectionHeader("Petdex catalog") }
+                    item(key = "hdr-catalog") { PetSectionHeader(stringResource(R.string.chat_pet_catalog_header)) }
                     items(catalogPets, key = { "c-${it.slug}" }) { pet ->
                         PetRow(pet, active = false, selecting, thumbs[pet.slug]?.asImageBitmap(), viewModel)
                     }
@@ -156,7 +159,7 @@ fun PetPickerSheet(
                 if (!loading && installedPets.isEmpty() && catalogPets.isEmpty()) {
                     item(key = "empty") {
                         Text(
-                            text = if (query.isBlank()) "No pets available — is Hermes Link configured?" else "No pets match \"$query\"",
+                            text = if (query.isBlank()) stringResource(R.string.chat_pet_none) else stringResource(R.string.chat_pet_no_match, query),
                             fontSize = KeryxType.body,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 24.dp),
@@ -233,10 +236,10 @@ private fun PetRow(
                 overflow = TextOverflow.Ellipsis,
             )
             val badge = when {
-                active -> "active"
-                pet.generated -> "hatched locally"
-                pet.curated -> "curated"
-                pet.installed -> "installed"
+                active -> stringResource(R.string.chat_pet_badge_active)
+                pet.generated -> stringResource(R.string.chat_pet_badge_hatched)
+                pet.curated -> stringResource(R.string.chat_pet_badge_curated)
+                pet.installed -> stringResource(R.string.chat_pet_badge_installed)
                 else -> ""
             }
             if (badge.isNotEmpty()) {
@@ -249,7 +252,7 @@ private fun PetRow(
             )
             active -> Icon(
                 Icons.Default.Check,
-                contentDescription = "Active",
+                contentDescription = stringResource(R.string.chat_pet_active),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(18.dp),
             )

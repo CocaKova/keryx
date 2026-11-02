@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui
 
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -92,21 +94,23 @@ internal data class SlashCommand(
     val aliases: List<String> = emptyList(),
     /** A skill, not a console command: the row says so (2.19.1). */
     val isSkill: Boolean = false,
+    /** The preset's translated description; 0 = use [desc] (the gateway's own words). */
+    @androidx.annotation.StringRes val descRes: Int = 0,
 )
 
 /** Offline fallback: the palette before the gateway's live registry has been fetched. */
 internal val PRESET_COMMANDS = listOf(
-    SlashCommand("/new", "Start a fresh conversation", false),
-    SlashCommand("/compress", "Compress / summarize this thread", false),
-    SlashCommand("/handoff", "Hand off context to a new session", false),
-    SlashCommand("/steer", "Steer the agent mid-task", true),
-    SlashCommand("/think", "Ask for deeper reasoning", true),
-    SlashCommand("/model", "Switch the active model", true),
-    SlashCommand("/reset", "Reset the agent's working state", false),
-    SlashCommand("/help", "List what this agent can do", false),
-    SlashCommand("/status", "Show agent + system status", false),
-    SlashCommand("/memory", "Recall or edit long-term memory", true),
-    SlashCommand("/tools", "List available tools", false),
+    SlashCommand("/new", "Start a fresh conversation", false, descRes = R.string.chat_cmd_new),
+    SlashCommand("/compress", "Compress / summarize this thread", false, descRes = R.string.chat_cmd_compress),
+    SlashCommand("/handoff", "Hand off context to a new session", false, descRes = R.string.chat_cmd_handoff),
+    SlashCommand("/steer", "Steer the agent mid-task", true, descRes = R.string.chat_cmd_steer),
+    SlashCommand("/think", "Ask for deeper reasoning", true, descRes = R.string.chat_cmd_think),
+    SlashCommand("/model", "Switch the active model", true, descRes = R.string.chat_cmd_model),
+    SlashCommand("/reset", "Reset the agent's working state", false, descRes = R.string.chat_cmd_reset),
+    SlashCommand("/help", "List what this agent can do", false, descRes = R.string.chat_cmd_help),
+    SlashCommand("/status", "Show agent + system status", false, descRes = R.string.chat_cmd_status),
+    SlashCommand("/memory", "Recall or edit long-term memory", true, descRes = R.string.chat_cmd_memory),
+    SlashCommand("/tools", "List available tools", false, descRes = R.string.chat_cmd_tools),
 )
 
 @Composable
@@ -166,13 +170,13 @@ fun CommandPaletteMenu(
                         }
                         // Skill descriptions run long; two lines say enough to choose by.
                         Text(
-                            sc.desc, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = KeryxType.caption,
+                            if (sc.descRes != 0) stringResource(sc.descRes) else sc.desc, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = KeryxType.caption,
                             maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                         )
                     }
                     when {
-                        isRecent -> Text("recent", color = chat.keryx.app.theme.quietInk(alpha = 0.6f), fontSize = KeryxType.micro)
-                        sc.isSkill -> Text("skill", color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f), fontSize = KeryxType.micro)
+                        isRecent -> Text(stringResource(R.string.chat_cmd_recent), color = chat.keryx.app.theme.quietInk(alpha = 0.6f), fontSize = KeryxType.micro)
+                        sc.isSkill -> Text(stringResource(R.string.chat_cmd_skill), color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f), fontSize = KeryxType.micro)
                     }
                 }
             }

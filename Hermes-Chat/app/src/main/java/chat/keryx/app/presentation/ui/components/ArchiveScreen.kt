@@ -1,5 +1,8 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -102,7 +105,7 @@ fun ArchiveScreen(
     }
 
     KeryxSpace(
-        title = "Archive",
+        title = stringResource(R.string.chat_archive_title),
         onClose = onDismissRequest,
         standalone = false,
         liveSlot = {
@@ -112,22 +115,22 @@ fun ArchiveScreen(
                     p == null -> {
                         KeryxBreathingDot(KeryxStatus.idle, alive = false)
                         Spacer(Modifier.width(6.dp))
-                        StatusLine("waking the index…")
+                        StatusLine(stringResource(R.string.chat_archive_waking))
                     }
                     p.running -> {
                         KeryxBreathingDot(KeryxStatus.good, alive = true)
                         Spacer(Modifier.width(6.dp))
-                        StatusLine("${"%,d".format(p.indexed)} remembered · reaching back…")
+                        StatusLine(pluralStringResource(R.plurals.chat_archive_reaching, p.indexed, "%,d".format(p.indexed)))
                     }
                     p.error != null -> {
                         KeryxBreathingDot(KeryxStatus.warn, alive = false)
                         Spacer(Modifier.width(6.dp))
-                        StatusLine("${"%,d".format(p.indexed)} remembered · ${p.error}")
+                        StatusLine(pluralStringResource(R.plurals.chat_archive_error, p.indexed, "%,d".format(p.indexed), p.error.orEmpty()))
                     }
                     else -> {
                         KeryxBreathingDot(KeryxStatus.good, alive = false)
                         Spacer(Modifier.width(6.dp))
-                        StatusLine("${"%,d".format(p.indexed)} messages remembered")
+                        StatusLine(pluralStringResource(R.plurals.chat_archive_done, p.indexed, "%,d".format(p.indexed)))
                     }
                 }
             }
@@ -136,7 +139,7 @@ fun ArchiveScreen(
             IconButton(onClick = { showDatePicker = true }) {
                 Icon(
                     Icons.Default.CalendarMonth,
-                    contentDescription = "Jump to date",
+                    contentDescription = stringResource(R.string.chat_archive_jump_date),
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
@@ -168,7 +171,7 @@ fun ArchiveScreen(
                         .padding(horizontal = 16.dp, vertical = 7.dp),
                 ) {
                     Text(
-                        t.label,
+                        stringResource(t.label),
                         fontSize = KeryxType.caption,
                         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (selected) keryxAccentInk(accent)
@@ -192,6 +195,7 @@ fun ArchiveScreen(
 
     if (showDatePicker) {
         val dateState = rememberDatePickerState()
+        val nothingThatDay = stringResource(R.string.chat_archive_nothing_that_day)
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
@@ -200,11 +204,11 @@ fun ArchiveScreen(
                     showDatePicker = false
                     if (utc != null) scope.launch {
                         viewModel.archive.eventForDate(utcDayToLocalStart(utc))?.let { contextAnchor = it to roomId }
-                            ?: viewModel.toast("Nothing indexed yet for that day")
+                            ?: viewModel.toast(nothingThatDay)
                     }
-                }) { Text("Open") }
+                }) { Text(stringResource(R.string.chat_open)) }
             },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.chat_cancel)) } },
         ) {
             DatePicker(state = dateState, showModeToggle = false)
         }
@@ -215,7 +219,9 @@ fun ArchiveScreen(
     }
 }
 
-private enum class ArchiveTab(val label: String) { SEARCH("Search"), SAVED("Saved"), MEDIA("Media") }
+private enum class ArchiveTab(@androidx.annotation.StringRes val label: Int) {
+    SEARCH(R.string.chat_archive_tab_search), SAVED(R.string.chat_archive_tab_saved), MEDIA(R.string.chat_archive_tab_media),
+}
 
 @Composable
 private fun StatusLine(text: String) {
@@ -253,7 +259,7 @@ private fun SearchTab(
         value = query,
         onValueChange = { query = it },
         singleLine = true,
-        placeholder = { Text("Search everything ever said…") },
+        placeholder = { Text(stringResource(R.string.chat_archive_search_hint)) },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
         shape = RoundedCornerShape(KeryxRadius.field),
         modifier = Modifier
@@ -272,7 +278,7 @@ private fun SearchTab(
         ) {
             item(key = "recent-label") {
                 Text(
-                    "RECENTLY REMEMBERED",
+                    stringResource(R.string.chat_archive_recent),
                     fontSize = KeryxType.micro, fontWeight = FontWeight.Bold, letterSpacing = 2.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -291,20 +297,20 @@ private fun SearchTab(
             }
         }
         query.isBlank() && indexedCount == 0 -> KeryxEmptyState(
-            title = "Nothing remembered yet",
-            body = "The index fills as sessions are swept. Then every message the app has seen is one search away.",
+            title = stringResource(R.string.chat_archive_empty_title),
+            body = stringResource(R.string.chat_archive_empty_body),
             illustration = { ArchiveScrollIllustration() },
         )
         query.isBlank() -> Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
-                "Every message the app has ever seen, one search away.",
+                stringResource(R.string.chat_archive_search_idle),
                 fontSize = KeryxType.body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         searched && hits.isEmpty() -> Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
-                "Nothing yet for \"${query.trim()}\"",
+                stringResource(R.string.chat_archive_no_hits, query.trim()),
                 fontSize = KeryxType.body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -398,7 +404,7 @@ private fun SavedTab(
     if (!loaded) {
         Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
-                "Opening the archive…",
+                stringResource(R.string.chat_archive_opening),
                 fontSize = KeryxType.body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -407,8 +413,8 @@ private fun SavedTab(
     }
     if (entries.isEmpty()) {
         KeryxEmptyState(
-            title = "Nothing kept yet",
-            body = "Long-press a message and tap the bookmark to keep it here.",
+            title = stringResource(R.string.chat_archive_saved_empty_title),
+            body = stringResource(R.string.chat_archive_saved_empty_body),
             illustration = { ArchiveBookmarkIllustration() },
         )
         return
@@ -454,7 +460,7 @@ private fun SavedTab(
                     }) {
                         Icon(
                             Icons.Default.BookmarkRemove,
-                            contentDescription = "Remove from Saved",
+                            contentDescription = stringResource(R.string.chat_action_unsave),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -484,7 +490,7 @@ private fun MediaTab(
     if (!loaded) {
         Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
-                "Looking through what's indexed…",
+                stringResource(R.string.chat_archive_looking),
                 fontSize = KeryxType.body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -493,8 +499,8 @@ private fun MediaTab(
     }
     if (entries.isEmpty()) {
         KeryxEmptyState(
-            title = "No photos or files yet",
-            body = "Pictures and files from your chats gather here as the index fills.",
+            title = stringResource(R.string.chat_archive_media_empty_title),
+            body = stringResource(R.string.chat_archive_media_empty_body),
             illustration = { ArchiveMediaIllustration() },
         )
         return
@@ -538,7 +544,7 @@ private fun MediaCell(e: ArchiveStore.Entry, viewModel: ChatViewModel, onOpen: (
             if (bmp != null) {
                 Image(
                     bitmap = bmp,
-                    contentDescription = e.fileName.ifBlank { "image" },
+                    contentDescription = e.fileName.ifBlank { stringResource(R.string.chat_image) },
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -588,7 +594,7 @@ private val LocalArchiveRooms = androidx.compose.runtime.staticCompositionLocalO
 private fun EntryHeader(e: ArchiveStore.Entry, myId: String?, roomName: String? = null) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-            text = senderLabel(e.sender, myId) + (roomName?.let { " · $it" } ?: ""),
+            text = senderLabel(e.sender, myId, stringResource(R.string.chat_you)) + (roomName?.let { " · $it" } ?: ""),
             fontSize = KeryxType.micro,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,
@@ -618,7 +624,7 @@ private fun MediaLine(e: ArchiveStore.Entry) {
         )
         Spacer(Modifier.width(5.dp))
         Text(
-            e.fileName.ifBlank { e.mediaKind?.lowercase() ?: "attachment" },
+            e.fileName.ifBlank { e.mediaKind?.lowercase() ?: stringResource(R.string.chat_reply_attachment) },
             fontSize = KeryxType.caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
@@ -627,11 +633,11 @@ private fun MediaLine(e: ArchiveStore.Entry) {
     }
 }
 
-internal fun senderLabel(sender: String, myId: String?): String =
-    if (sender == myId) "You" else sender.removePrefix("@").substringBefore(':')
+internal fun senderLabel(sender: String, myId: String?, you: String = "You"): String =
+    if (sender == myId) you else sender.removePrefix("@").substringBefore(':')
 
 private fun archiveDate(ts: Long): String =
-    java.text.SimpleDateFormat("MMM d, yyyy · HH:mm", java.util.Locale.getDefault())
+    java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT, java.util.Locale.getDefault())
         .format(java.util.Date(ts))
 
 /** The M3 date picker hands back UTC midnight; the archive thinks in local days. */
@@ -677,8 +683,8 @@ fun ArchiveContextViewer(
     }
 
     val title = items.firstOrNull { it.id == anchorId }
-        ?.let { java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.getDefault()).format(java.util.Date(it.timestamp)) }
-        ?: "Context"
+        ?.let { java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM, java.util.Locale.getDefault()).format(java.util.Date(it.timestamp)) }
+        ?: stringResource(R.string.chat_archive_context)
 
     KeryxSpace(title = title, onClose = onDismiss) {
         if (loading) {
@@ -690,7 +696,7 @@ fun ArchiveContextViewer(
         if (items.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
                 Text(
-                    "That moment couldn't be loaded (it may predate this login's keys).",
+                    stringResource(R.string.chat_archive_context_failed),
                     fontSize = KeryxType.body,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -703,7 +709,7 @@ fun ArchiveContextViewer(
             modifier = Modifier.fillMaxSize(),
         ) {
             item(key = "earlier") {
-                ReachButton("Reach earlier", extending) {
+                ReachButton(stringResource(R.string.chat_archive_reach_earlier), extending) {
                     val first = items.firstOrNull() ?: return@ReachButton
                     scope.launch {
                         extending = true
@@ -722,7 +728,7 @@ fun ArchiveContextViewer(
                 }
             }
             item(key = "later") {
-                ReachButton("Reach later", extending) {
+                ReachButton(stringResource(R.string.chat_archive_reach_later), extending) {
                     val last = items.lastOrNull() ?: return@ReachButton
                     scope.launch {
                         extending = true
@@ -796,7 +802,7 @@ private fun ContextRow(m: Message, anchor: Boolean, viewModel: ChatViewModel) {
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    if (isMe) "You" else senderLabel(m.senderName.ifBlank { m.senderId }, null),
+                    if (isMe) stringResource(R.string.chat_you) else senderLabel(m.senderName.ifBlank { m.senderId }, null),
                     fontSize = KeryxType.micro,
                     fontWeight = FontWeight.SemiBold,
                     color = if (anchor) accent else MaterialTheme.colorScheme.onSurfaceVariant,

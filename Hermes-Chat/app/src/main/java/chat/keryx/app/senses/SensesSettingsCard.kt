@@ -27,6 +27,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import chat.keryx.app.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -74,22 +76,22 @@ fun SensesSettingsCard(modifier: Modifier = Modifier) {
 
     SensesCard(modifier) {
         SettingsSwitchRow(
-            title = "Battery",
-            subtitle = "Charge level and whether you're plugged in",
+            title = stringResource(R.string.settings_senses_battery),
+            subtitle = stringResource(R.string.settings_senses_battery_sub),
             checked = batteryOn,
             onCheckedChange = { batteryOn = it; prefs.batteryEnabled = it },
         )
         Spacer(Modifier.height(8.dp))
         SettingsSwitchRow(
-            title = "Local time",
-            subtitle = "The clock and time zone you're actually standing in",
+            title = stringResource(R.string.settings_senses_time),
+            subtitle = stringResource(R.string.settings_senses_time_sub),
             checked = timeOn,
             onCheckedChange = { timeOn = it; prefs.timeEnabled = it },
         )
         Spacer(Modifier.height(8.dp))
         SettingsSwitchRow(
-            title = "Coarse place",
-            subtitle = "Town-level only, rounded to about a kilometre",
+            title = stringResource(R.string.settings_senses_place),
+            subtitle = stringResource(R.string.settings_senses_place_sub),
             checked = placeOn,
             onCheckedChange = { wanted ->
                 if (!wanted) {
@@ -112,7 +114,7 @@ fun SensesSettingsCard(modifier: Modifier = Modifier) {
 
         Spacer(Modifier.height(12.dp))
         Text(
-            text = "Last sent: " + KeryxSenses.lastSentLabel(System.currentTimeMillis(), lastSent),
+            text = stringResource(R.string.settings_senses_last_sent, KeryxSenses.lastSentLabel(System.currentTimeMillis(), lastSent)),
             fontSize = KeryxType.caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -125,13 +127,12 @@ fun SensesSettingsCard(modifier: Modifier = Modifier) {
                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
                 modifier = Modifier.height(28.dp),
             ) {
-                Text("Send with my next message", fontSize = KeryxType.caption)
+                Text(stringResource(R.string.settings_senses_send_next), fontSize = KeryxType.caption)
             }
         }
         Spacer(Modifier.height(6.dp))
         Text(
-            text = "Rides inside your own messages, end-to-end encrypted. " +
-                "Nothing leaves the phone until you send.",
+            text = stringResource(R.string.settings_senses_note),
             fontSize = KeryxType.micro,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
         )
@@ -147,7 +148,7 @@ fun SensesSettingsCard(modifier: Modifier = Modifier) {
 private fun SensesCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Column(modifier = modifier.fillMaxWidth()) {
         KeryxSectionHeader(
-            "Senses",
+            stringResource(R.string.settings_row_privacy_senses),
             modifier = Modifier.padding(start = 4.dp, top = 18.dp, bottom = 8.dp),
         )
         Surface(

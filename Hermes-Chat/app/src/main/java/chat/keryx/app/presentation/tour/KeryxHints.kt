@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.tour
 
+import chat.keryx.app.KeryxText
+import chat.keryx.app.R
 import chat.keryx.app.presentation.ui.nav.KeryxDest
 import chat.keryx.core.tour.TourStep
 
@@ -22,37 +24,14 @@ object KeryxHints {
     const val TAP_IN = "hint-tapin"
     const val ARTIFACT = "hint-artifact"
 
-    private val HINTS: Map<String, TourStep> = mapOf(
-        MISSIONS to TourStep(
-            MISSIONS, "Missions",
-            "Longer jobs live here as cards. Your agents pick them up and work through them, and a card that " +
-                "needs you moves to the top. Tap + to hand one out.",
-        ),
-        RUNS to TourStep(
-            RUNS, "Runs",
-            "Jobs on a schedule, like a morning brief or a nightly check. Each run's result lands here. " +
-                "Ask your agent and it can set one up for you.",
-        ),
-        BOTS to TourStep(
-            BOTS, "Bots",
-            "Each bot is a profile of your Hermes, with its own memory, skills and chats. Open one to talk " +
-                "to it, or put a few in a group chat.",
-        ),
-        GATEWAY to TourStep(
-            GATEWAY, "Your gateway",
-            "How the Hermes you're connected to is doing, and what's behind it: its model and settings, " +
-                "jobs, skills, memory and tools.",
-        ),
-        TAP_IN to TourStep(
-            TAP_IN, "Tap-In",
-            "Your agent at work, full screen: what it's thinking, the tools it runs and the helpers it sends " +
-                "out. You can steer it from here too.",
-        ),
-        ARTIFACT to TourStep(
-            ARTIFACT, "A page your agent made",
-            "Reports, mock-ups and pages your agent writes open here, on the phone. Save one or share it " +
-                "with the buttons up top.",
-        ),
+    /** Each hint's title and text (res/values/strings_app.xml). */
+    private val HINTS: Map<String, Pair<Int, Int>> = mapOf(
+        MISSIONS to (R.string.app_hint_missions_title to R.string.app_hint_missions_text),
+        RUNS to (R.string.app_hint_runs_title to R.string.app_hint_runs_text),
+        BOTS to (R.string.app_hint_bots_title to R.string.app_hint_bots_text),
+        GATEWAY to (R.string.app_hint_gateway_title to R.string.app_hint_gateway_text),
+        TAP_IN to (R.string.app_hint_tapin_title to R.string.app_hint_tapin_text),
+        ARTIFACT to (R.string.app_hint_artifact_title to R.string.app_hint_artifact_text),
     )
 
     /** Every hint id, for the check that each is worn. */
@@ -69,9 +48,12 @@ object KeryxHints {
         else -> null
     }
 
-    /** The hint [dest] should show now, given the ones already [seen]; null = nothing to say. */
-    fun due(dest: KeryxDest?, seen: Set<String>): TourStep? {
+    /** The hint [dest] should show now, given the ones already [seen]; null = nothing to say.
+     *  [words] reads its strings: the app's language at run time, English in the JVM tests. */
+    fun due(dest: KeryxDest?, seen: Set<String>, words: (Int) -> String = { KeryxText.get(it) }): TourStep? {
         val id = dest?.let(::idFor) ?: return null
-        return HINTS[id]?.takeIf { id !in seen }
+        if (id in seen) return null
+        val (title, text) = HINTS[id] ?: return null
+        return TourStep(id, words(title), words(text))
     }
 }
