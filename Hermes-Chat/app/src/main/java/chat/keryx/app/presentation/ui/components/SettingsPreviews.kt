@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui.components
 
+import chat.keryx.app.R
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,17 +16,27 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 
@@ -142,6 +154,115 @@ internal fun LoadingStylePicker(options: List<Pair<String, String>>, selected: S
         PreviewCard(picked = selected == key, label = label, onClick = { onSelect(key) }, modifier = mod) {
             Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.CenterStart) {
                 HermesThinkingAnimation(style = key, label = "")
+            }
+        }
+    }
+}
+
+/**
+ * The room transition, playing (makeover): two little rooms crossing back and forth in the
+ * chosen style at the chosen speed. Not a lookalike: the four drawn styles go through the same
+ * [roomCrossing] the transcript wears (the room on screen is photographed, as the drawer does
+ * before a real switch), and Dissolve plays ChatScreen's own blur-and-rise. Under Battery Saver
+ * it holds still, as the chat does.
+ */
+@Composable
+internal fun RoomTransitionPreview(style: RoomTransition, speed: RoomTransitionSpeed, modifier: Modifier = Modifier) {
+    val reduced by rememberReducedMotion()
+    val crossing = rememberRoomCrossing()
+    val dissolve = remember { androidx.compose.animation.core.Animatable(1f) }
+    var room by remember { mutableIntStateOf(0) }
+    LaunchedEffect(crossing, style, speed, reduced) {
+        crossing.pending = false
+        crossing.progress.snapTo(1f)
+        crossing.release()
+        dissolve.snapTo(1f)
+        if (reduced) return@LaunchedEffect
+        val ms = speed.scaled(durationOf(style))
+        while (true) {
+            kotlinx.coroutines.delay(PREVIEW_REST_MS)
+            if (style == RoomTransition.DISSOLVE) {
+                room = 1 - room
+                dissolve.snapTo(0f)
+                dissolve.animateTo(1f, androidx.compose.animation.core.tween(ms, easing = androidx.compose.animation.core.LinearOutSlowInEasing))
+                continue
+            }
+            if (crossing.live.size == IntSize.Zero) continue
+            val photo = runCatching { crossing.live.toImageBitmap() }.getOrNull() ?: continue
+            crossing.oldFrame = photo
+            crossing.oldFrameKey = room.toString()
+            crossing.style = style
+            crossing.origin = null
+            // Drawn as progress 0 from the frame the new room composes in, never one frame of 1.
+            crossing.pending = true
+            room = 1 - room
+            crossing.progress.snapTo(0f)
+            crossing.pending = false
+            crossing.progress.animateTo(1f, androidx.compose.animation.core.tween(ms, easing = androidx.compose.animation.core.LinearEasing))
+            crossing.release()
+        }
+    }
+    val shape = RoundedCornerShape(KeryxRadius.sheet)
+    val described = stringResource(R.string.mk_transition_preview, style.label, speed.label)
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(132.dp)
+            .clip(shape)
+            .background(duskBrush())
+            .border(0.75.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.22f), shape)
+            .semantics { contentDescription = described },
+    ) {
+        val stage = if (style == RoomTransition.DISSOLVE) {
+            Modifier
+                .graphicsLayer {
+                    val d = dissolve.value
+                    alpha = 0.12f + 0.88f * d
+                    translationY = (1f - d) * 12.dp.toPx()
+                    val sc = 0.985f + 0.015f * d
+                    scaleX = sc; scaleY = sc
+                }
+                .let { if (dissolve.value < 1f) it.blur(((1f - dissolve.value) * 8f).dp) else it }
+        } else {
+            Modifier.roomCrossing(
+                crossing, style,
+                amber = MaterialTheme.colorScheme.primary,
+                violet = MaterialTheme.colorScheme.tertiary,
+            )
+        }
+        Box(Modifier.fillMaxWidth().height(132.dp).then(stage)) { MiniRoom(room) }
+    }
+}
+
+/** How long each little room stays put between crossings. */
+private const val PREVIEW_REST_MS = 1_100L
+
+/** A room in miniature: its light, a title, three bubbles. The two rooms differ in every line,
+ *  so the crossing has something to carry. */
+@Composable
+private fun MiniRoom(which: Int) {
+    val light = if (which == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+    val ink = MaterialTheme.colorScheme.onSurface
+    val lines = if (which == 0) listOf(false to 0.62f, true to 0.44f, false to 0.70f)
+    else listOf(true to 0.52f, false to 0.66f, true to 0.34f)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(7.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(8.dp).clip(CircleShape).background(light))
+            Spacer(Modifier.width(7.dp))
+            Box(
+                Modifier.fillMaxWidth(if (which == 0) 0.32f else 0.46f).height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)).background(ink.copy(alpha = 0.22f)),
+            )
+        }
+        lines.forEach { (mine, w) ->
+            Box(Modifier.fillMaxWidth(), contentAlignment = if (mine) Alignment.CenterEnd else Alignment.CenterStart) {
+                Box(
+                    Modifier.fillMaxWidth(w).height(17.dp).clip(RoundedCornerShape(9.dp))
+                        .background(if (mine) light.copy(alpha = 0.55f) else ink.copy(alpha = 0.10f)),
+                )
             }
         }
     }

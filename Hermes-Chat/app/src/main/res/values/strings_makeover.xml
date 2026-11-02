@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The 3.0 makeover's own words. Keys are mk_-prefixed so the set can be handed to translators whole. -->
+
+    <!-- Settings › Appearance: the room-transition preview (TalkBack reads it). -->
+    <string name="mk_transition_preview">Preview: the %1$s room transition at %2$s speed</string>
+</resources>

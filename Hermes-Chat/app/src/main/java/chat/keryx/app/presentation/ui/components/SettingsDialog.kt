@@ -1005,6 +1005,10 @@ fun SettingsScreen(
                                 selected = speed.key,
                                 onSelect = { viewModel.prefs.setRoomTransitionSpeed(RoomTransitionSpeed.of(it)) },
                             )
+                            // Makeover: the crossing itself, playing at the speed above — the
+                            // same draw the transcript uses, between two little rooms.
+                            Spacer(Modifier.height(12.dp))
+                            RoomTransitionPreview(style = transition, speed = speed)
                         }
                     }
 
