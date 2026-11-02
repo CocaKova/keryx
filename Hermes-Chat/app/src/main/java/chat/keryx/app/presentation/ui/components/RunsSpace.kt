@@ -29,6 +29,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
@@ -53,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentDescription
@@ -300,13 +303,15 @@ fun RunsSpace(
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 10.dp),
+                    // Makeover: a section's rows sit flush in one grouped card, so the gaps are
+                    // each item's own (a card or a shelf keeps its 10dp under it).
+                    verticalArrangement = Arrangement.spacedBy(0.dp),
                 ) {
                     // What you chose to keep, above what merely arrived: a pin is a decision the
                     // user already made, and the screen should honour it before asking for another.
                     if (!narrowing && board.pinned.isNotEmpty()) {
                         item(key = "pinned-shelf") {
-                            PinnedShelf(board = board, viewModel = viewModel, verbs = verbs)
+                            Box(Modifier.padding(bottom = ITEM_GAP)) { PinnedShelf(board = board, viewModel = viewModel, verbs = verbs) }
                         }
                     }
                     // What came in while you weren't looking, before anything else on the screen.
@@ -315,17 +320,19 @@ fun RunsSpace(
                     if (!narrowing && board.unread.any) {
                         if (railFolded) {
                             item(key = "new-summary") {
-                                RailSummary(
-                                    board = board,
-                                    open = railOpen,
-                                    onToggle = { railOpen = !railOpen },
-                                    onMarkAll = { viewModel.hub.cronMarkAllSeen() },
-                                )
+                                Box(Modifier.padding(bottom = ITEM_GAP)) {
+                                    RailSummary(
+                                        board = board,
+                                        open = railOpen,
+                                        onToggle = { railOpen = !railOpen },
+                                        onMarkAll = { viewModel.hub.cronMarkAllSeen() },
+                                    )
+                                }
                             }
                         }
                         if (!railFolded || railOpen) {
                             item(key = "new-rail") {
-                                NewArrivals(board = board, viewModel = viewModel, verbs = verbs)
+                                Box(Modifier.padding(bottom = ITEM_GAP)) { NewArrivals(board = board, viewModel = viewModel, verbs = verbs) }
                             }
                         }
                     }
@@ -365,26 +372,31 @@ fun RunsSpace(
                             )
                         }
                         if (open) {
-                            items(block.rows, key = { "job-${it.name}" }) { row ->
+                            itemsIndexed(block.rows, key = { _, it -> "job-${it.name}" }) { i, row ->
                                 // A script has no reports to headline, so a card would be a
                                 // tall box saying "no runs yet": scripts are always rows.
                                 if (compact || section == CronSection.SCRIPTS) {
+                                    // Rows of one section are one grouped card (makeover).
                                     CompactRunRow(
                                         row = row,
                                         unreadIds = unreadIds,
                                         nowMs = nowMs,
                                         viewModel = viewModel,
                                         verbs = verbs,
+                                        first = i == 0,
+                                        last = i == block.rows.lastIndex,
                                     )
                                 } else {
-                                    RunCard(
-                                        card = row.card,
-                                        job = board.jobsByName[row.name],
-                                        unreadCount = row.unread,
-                                        isNew = { board.unread.isNew(it) },
-                                        viewModel = viewModel,
-                                        verbs = verbs,
-                                    )
+                                    Box(Modifier.padding(bottom = ITEM_GAP)) {
+                                        RunCard(
+                                            card = row.card,
+                                            job = board.jobsByName[row.name],
+                                            unreadCount = row.unread,
+                                            isNew = { board.unread.isNew(it) },
+                                            viewModel = viewModel,
+                                            verbs = verbs,
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -406,6 +418,16 @@ private const val DENSITY_LIST = "list"
 
 /** With no saved choice, more jobs than this opens in List mode. */
 private const val COMPACT_AUTO_AT = 12
+
+/** The gap under a card or a shelf; a grouped section's rows have none between them. */
+private val ITEM_GAP = 10.dp
+
+/** The makeover's card ground — [KeryxHubGroup]'s fill — so Runs reads as the same app. */
+@Composable
+private fun groupGround(): Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+
+@Composable
+private fun groupEdge(): Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
 
 /** The app's job rows → :core's facts. By name, like every other pairing on this page. */
 private fun factsOf(jobs: Map<String, HubJob>): Map<String, CronJobFacts> =
@@ -461,12 +483,13 @@ private fun PinnedShelf(
     var showAll by rememberSaveable("runs-pinned-all") { mutableStateOf(false) }
     var folded by rememberSaveable("runs-pinned-folded") { mutableStateOf(false) }
     val shown = if (showAll || folded) board.pinned else board.pinned.take(PINNED_SHOWN)
+    val foldSource = remember { MutableInteractionSource() }
     Column(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(KeryxRadius.card))
-            .background(onSurface.copy(alpha = 0.035f))
-            .border(1.dp, onSurface.copy(alpha = 0.14f), RoundedCornerShape(KeryxRadius.card))
+            .clip(RoundedCornerShape(KeryxRadius.sheet))
+            .background(groupGround())
+            .border(0.5.dp, groupEdge(), RoundedCornerShape(KeryxRadius.sheet))
             .animateContentSize()
             .padding(horizontal = 12.dp, vertical = 12.dp),
     ) {
@@ -474,8 +497,9 @@ private fun PinnedShelf(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
+                .keryxPressScale(foldSource, scale = GROUPED_PRESS_SCALE)
                 .clip(RoundedCornerShape(KeryxRadius.chip))
-                .clickable { folded = !folded }
+                .clickable(interactionSource = foldSource, indication = androidx.compose.material3.ripple()) { folded = !folded }
                 .padding(vertical = 2.dp),
         ) {
             Icon(
@@ -548,9 +572,9 @@ private fun NewArrivals(
     Column(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(KeryxRadius.card))
-            .background(accent.copy(alpha = 0.05f))
-            .border(1.dp, accent.copy(alpha = 0.22f), RoundedCornerShape(KeryxRadius.card))
+            .clip(RoundedCornerShape(KeryxRadius.sheet))
+            .background(accent.copy(alpha = 0.05f).compositeOver(groupGround()))
+            .border(0.5.dp, accent.copy(alpha = 0.30f), RoundedCornerShape(KeryxRadius.sheet))
             .padding(horizontal = 12.dp, vertical = 12.dp),
     ) {
         KeryxSectionHeader("New since you looked", count = board.unread.total, color = accent)
@@ -623,21 +647,26 @@ private fun RunHeadlineRow(
     val tint = RUN_TINTS[CronHumanize.tintIndex(jobName, RUN_TINTS.size)]
     var menuOpen by remember { mutableStateOf(false) }
     // Headline per row, once per run id — the delegate caches, so a settled row costs
-    // nothing on re-composition or poll.
-    val digest by produceState<chat.keryx.core.model.CronDigest?>(null, run.id) {
-        value = viewModel.hub.cronDigest(run.id)
+    // nothing on re-composition or poll. (read, digest): read says the answer is in.
+    val headline by produceState<Pair<Boolean, chat.keryx.core.model.CronDigest?>>(false to null, run.id) {
+        value = true to viewModel.hub.cronDigest(run.id)
     }
+    val digest = headline.second
     // "+3" beside the clock: the arrival's news in one glyph, before its headline is read.
     val delta by produceState<chat.keryx.core.model.CronDelta?>(null, run.id, previous?.id) {
         value = previous?.let { viewModel.hub.cronDelta(run.id, it.id) }
     }
+    val source = remember { MutableInteractionSource() }
     Box {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp)
+                .keryxPressScale(source, scale = GROUPED_PRESS_SCALE)
                 .clip(RoundedCornerShape(KeryxRadius.field))
                 .combinedClickable(
+                    interactionSource = source,
+                    indication = androidx.compose.material3.ripple(),
                     onClick = { verbs.open(run) },
                     onLongClick = { haptics.press(); menuOpen = true },
                 )
@@ -680,8 +709,11 @@ private fun RunHeadlineRow(
                     }
                 }
                 val d = digest
-                Text(
-                    d?.title ?: "reading…",
+                // Makeover: the headline's shape while it is read, not the word "reading…".
+                if (!headline.first) KeryxSkeletonLine(fraction = 0.7f, modifier = Modifier.padding(top = 4.dp, bottom = 2.dp))
+                else Text(
+                    // A report with no headline of its own keeps the run's name, dimmed.
+                    d?.title ?: run.title.substringAfter(" · ", run.title),
                     color = onSurface.copy(alpha = if (d?.title != null) titleAlpha else 0.35f),
                     fontSize = KeryxType.caption, lineHeight = 15.5.sp,
                     maxLines = 2, overflow = TextOverflow.Ellipsis,
@@ -803,15 +835,20 @@ private fun RunCard(
         value = if (latest != null && previous != null) viewModel.hub.cronDelta(latest.id, previous.id) else null
     }
 
+    val source = remember { MutableInteractionSource() }
     Box {
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(KeryxRadius.card))
-            .background(onSurface.copy(alpha = 0.04f))
+            .keryxPressScale(source)
+            .clip(RoundedCornerShape(KeryxRadius.sheet))
+            .background(groupGround())
+            .border(0.5.dp, groupEdge(), RoundedCornerShape(KeryxRadius.sheet))
             // Tap opens the card; a long press is about the JOB — pin it to the top of the
             // session list, where its newest output then waits every morning.
             .combinedClickable(
+                interactionSource = source,
+                indication = androidx.compose.material3.ripple(),
                 onClick = { open = !open },
                 onLongClick = { haptics.press(); jobMenu = true },
             )
@@ -1044,13 +1081,17 @@ private fun RunList(
     val haptics = LocalKeryxHaptics.current
     card.runs.take(20).forEach { run ->
         var menuOpen by remember(run.id) { mutableStateOf(false) }
+        val source = remember(run.id) { MutableInteractionSource() }
         Box {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .keryxPressScale(source, scale = GROUPED_PRESS_SCALE)
                     .clip(RoundedCornerShape(8.dp))
                     .combinedClickable(
+                        interactionSource = source,
+                        indication = androidx.compose.material3.ripple(),
                         onClick = { verbs.open(run) },
                         onLongClick = { haptics.press(); menuOpen = true },
                     )
@@ -1251,12 +1292,14 @@ private fun SheetAction(
     tint: Color = MaterialTheme.colorScheme.onSurface,
     onClick: () -> Unit,
 ) {
+    val source = remember { MutableInteractionSource() }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
+            .keryxPressScale(source, scale = GROUPED_PRESS_SCALE)
             .clip(RoundedCornerShape(KeryxRadius.field))
-            .clickable(onClick = onClick)
+            .clickable(interactionSource = source, indication = androidx.compose.material3.ripple(), onClick = onClick)
             .padding(vertical = 10.dp, horizontal = 4.dp),
     ) {
         Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
@@ -1290,13 +1333,15 @@ private fun FailureActions(card: CronJobCard, job: HubJob?, viewModel: ChatViewM
 @Composable
 private fun FailureChip(icon: androidx.compose.ui.graphics.vector.ImageVector?, label: String, onClick: () -> Unit) {
     val accent = MaterialTheme.colorScheme.primary
+    val source = remember { MutableInteractionSource() }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .height(30.dp)
+            .keryxPressScale(source)
             .clip(RoundedCornerShape(KeryxRadius.chip))
             .border(1.dp, accent.copy(alpha = 0.45f), RoundedCornerShape(KeryxRadius.chip))
-            .clickable(onClick = onClick)
+            .clickable(interactionSource = source, indication = androidx.compose.material3.ripple(), onClick = onClick)
             .padding(horizontal = 10.dp),
     ) {
         if (icon != null) {
@@ -1503,13 +1548,20 @@ private fun SectionHead(
         CronSection.SCRIPTS, CronSection.QUIET -> KeryxStatus.idle
     }
     val quiet = MaterialTheme.colorScheme.onSurfaceVariant
+    val source = remember { MutableInteractionSource() }
+    // Makeover: a section heads its grouped card the way a KeryxHubGroup's label does.
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
+            .padding(top = 6.dp)
+            .keryxPressScale(source, scale = GROUPED_PRESS_SCALE)
             .clip(RoundedCornerShape(KeryxRadius.chip))
-            .let { if (onToggle != null) it.clickable(onClick = onToggle) else it }
-            .padding(top = 6.dp, bottom = 2.dp, start = 2.dp, end = 4.dp),
+            .let {
+                if (onToggle != null) it.clickable(interactionSource = source, indication = androidx.compose.material3.ripple(), onClick = onToggle)
+                else it
+            }
+            .padding(top = 4.dp, bottom = 8.dp, start = 6.dp, end = 4.dp),
     ) {
         KeryxSectionHeader(
             section.label,
@@ -1542,14 +1594,16 @@ private fun RailSummary(
 ) {
     val accent = MaterialTheme.colorScheme.primary
     val quiet = MaterialTheme.colorScheme.onSurfaceVariant
+    val source = remember { MutableInteractionSource() }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(KeryxRadius.card))
-            .background(accent.copy(alpha = 0.05f))
-            .border(1.dp, accent.copy(alpha = 0.22f), RoundedCornerShape(KeryxRadius.card))
-            .clickable(onClick = onToggle)
+            .keryxPressScale(source)
+            .clip(RoundedCornerShape(KeryxRadius.sheet))
+            .background(accent.copy(alpha = 0.05f).compositeOver(groupGround()))
+            .border(0.5.dp, accent.copy(alpha = 0.30f), RoundedCornerShape(KeryxRadius.sheet))
+            .clickable(interactionSource = source, indication = androidx.compose.material3.ripple(), onClick = onToggle)
             .padding(start = 12.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
     ) {
         Box(Modifier.size(7.dp).clip(CircleShape).background(accent))
@@ -1585,6 +1639,9 @@ private fun CompactRunRow(
     nowMs: Long,
     viewModel: ChatViewModel,
     verbs: RunVerbs,
+    /** Where the row sits in its section's grouped card: the ends round, the middle lies flat. */
+    first: Boolean = true,
+    last: Boolean = true,
 ) {
     val card = row.card
     val facts = row.facts
@@ -1625,15 +1682,23 @@ private fun CompactRunRow(
         if (!card.scheduled) add("job no longer scheduled")
     }
 
+    val source = remember { MutableInteractionSource() }
+    val top = if (first) KeryxRadius.sheet else 0.dp
+    val bottom = if (last) KeryxRadius.sheet else 0.dp
+    val shape = RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom)
+    val ground = groupGround()
     Box {
         Row(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(KeryxRadius.field))
+                .clip(shape)
                 // A failing row carries a breath of its verdict, so the shelf reads as red
                 // from across the room, not only its dots.
-                .background(if (failed) KeryxStatus.bad.copy(alpha = 0.06f) else onSurface.copy(alpha = 0.04f))
+                .background(if (failed) KeryxStatus.bad.copy(alpha = 0.06f).compositeOver(ground) else ground)
+                .keryxPressScale(source, scale = GROUPED_PRESS_SCALE)
                 .combinedClickable(
+                    interactionSource = source,
+                    indication = androidx.compose.material3.ripple(),
                     onClick = { open = !open },
                     onLongClick = { haptics.press(); jobMenu = true },
                 )
@@ -1643,6 +1708,12 @@ private fun CompactRunRow(
             // The job's identity bar, thinner than the card's: here the status dot is the loud one.
             Box(Modifier.width(2.dp).fillMaxHeight().background(tint.copy(alpha = 0.6f)))
             Column(Modifier.weight(1f)) {
+                // The group's hairline, inset to start under the names.
+                if (!first) androidx.compose.material3.HorizontalDivider(
+                    thickness = 0.5.dp,
+                    color = onSurface.copy(alpha = 0.08f),
+                    modifier = Modifier.padding(start = 28.dp, end = 10.dp),
+                )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier

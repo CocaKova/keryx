@@ -943,7 +943,7 @@ fun KeryxHubRow(
 }
 
 /** A row inside a group is part of a larger surface, so it sinks less than a lone tile. */
-private const val GROUPED_PRESS_SCALE = 0.985f
+internal const val GROUPED_PRESS_SCALE = 0.985f
 
 /** True inside a [KeryxHubGroup]: rows lie flat in the group's card instead of wearing their own. */
 internal val LocalHubGroup = staticCompositionLocalOf { false }
@@ -1197,6 +1197,22 @@ fun KeryxSkeleton(rows: Int = 4, modifier: Modifier = Modifier) {
             }
         }
     }
+}
+
+/** One breathing bar for a single line still on its way (a headline being read), where a full
+ *  [KeryxSkeleton] would be taller than the line it stands in for. */
+@Composable
+fun KeryxSkeletonLine(fraction: Float = 0.6f, height: Dp = 10.dp, modifier: Modifier = Modifier) {
+    val breath = breathingAlphaState(active = true, low = 0.45f, periodMillis = 1100)
+    val ink = MaterialTheme.colorScheme.onSurface
+    Box(
+        modifier
+            .fillMaxWidth(fraction)
+            .height(height)
+            .clip(RoundedCornerShape(height / 2))
+            .drawBehind { drawRect(ink.copy(alpha = 0.10f * breath.value)) }
+            .keryxLoadingSemantics(),
+    )
 }
 
 private fun Modifier.keryxLoadingSemantics(): Modifier =

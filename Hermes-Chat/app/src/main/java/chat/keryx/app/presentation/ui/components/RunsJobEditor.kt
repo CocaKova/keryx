@@ -657,7 +657,7 @@ internal fun JobHistorySection(viewModel: ChatViewModel, jobId: String, onOpen: 
     KeryxSectionHeader("History", count = runs?.size, color = quiet)
     Spacer(Modifier.height(4.dp))
     when {
-        !loaded -> Text("Reading…", fontSize = KeryxType.caption, color = quiet.copy(alpha = 0.7f))
+        !loaded -> KeryxSkeleton(rows = 2)
         runs.isNullOrEmpty() -> Text("No runs yet.", fontSize = KeryxType.caption, color = quiet.copy(alpha = 0.7f))
         else -> runs.forEach { run -> HistoryRow(run, onOpen) }
     }
