@@ -68,7 +68,7 @@ import androidx.compose.ui.res.stringResource
 // every room of it in labelled cards with a count each — the Hermes Mobile bot page, in Keryx's
 // own voice. The landing is a place you read at a glance; the details are one tap down.
 
-/** The agent's own name: the SOUL's first heading ("# SILAS"), else the profile, else the gateway. */
+/** The agent's own name: the SOUL's first heading ("# Ada"), else the profile, else the gateway. */
 @Composable
 internal fun agentDisplayName(viewModel: ChatViewModel): String {
     val soul by viewModel.agent.soul.collectAsState()

@@ -53,10 +53,10 @@ class AgentRoutesTest {
 
     @Test
     fun `soul reads content and whether the file exists`() {
-        val s = AgentParser.soul("default", obj("""{"content":"# SILAS\n\nYou are SILAS.","exists":true}"""))!!
+        val s = AgentParser.soul("default", obj("""{"content":"# Ada\n\nYou are Ada.","exists":true}"""))!!
         assertTrue(s.exists)
-        assertEquals("SILAS", soulHeading(s.content))
-        assertEquals("You are SILAS.", soulGist(s.content))
+        assertEquals("Ada", soulHeading(s.content))
+        assertEquals("You are Ada.", soulGist(s.content))
         val none = AgentParser.soul("default", obj("""{"content":"","exists":false}"""))!!
         assertFalse(none.exists)
         assertNull(soulHeading(none.content))
