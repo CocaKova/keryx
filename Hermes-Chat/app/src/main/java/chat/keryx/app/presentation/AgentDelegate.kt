@@ -5,6 +5,8 @@ import chat.keryx.app.transport.direct.McpCatalogEntry
 import chat.keryx.app.transport.direct.McpProbe
 import chat.keryx.app.transport.direct.McpServer
 import chat.keryx.app.transport.direct.SoulText
+import chat.keryx.app.transport.direct.UsageReport
+import chat.keryx.app.transport.direct.usage
 import chat.keryx.app.transport.direct.currentProfile
 import chat.keryx.app.transport.direct.mcpCatalog
 import chat.keryx.app.transport.direct.mcpInstall
@@ -151,6 +153,40 @@ class AgentDelegate(
                 Routed.Missing -> ProbeState.Failed("")
             }
             _probes.value = _probes.value + (name to state)
+        }
+    }
+
+    // --- Usage (makeover) -------------------------------------------------------------------
+
+    private val _usage = MutableStateFlow(HubDelegate.PanelState<UsageReport>())
+    val usage: StateFlow<HubDelegate.PanelState<UsageReport>> = _usage.asStateFlow()
+    private val _usageAvailable = MutableStateFlow<Boolean?>(null)
+    val usageAvailable: StateFlow<Boolean?> = _usageAvailable.asStateFlow()
+    /** The window the page reads: 7, 30 or 90 days, the dashboard's own presets. */
+    private val _usageDays = MutableStateFlow(30)
+    val usageDays: StateFlow<Int> = _usageDays.asStateFlow()
+    private var usageJob: Job? = null
+
+    fun setUsageDays(days: Int) {
+        if (days == _usageDays.value) return
+        _usageDays.value = days
+        usageJob?.cancel()
+        // The old window's numbers would read as the new one's: clear them while it loads.
+        _usage.value = HubDelegate.PanelState()
+        refreshUsage()
+    }
+
+    fun refreshUsage() {
+        val r = rest() ?: return
+        if (usageJob?.isActive == true) return
+        _usage.value = _usage.value.copy(refreshing = true)
+        val days = _usageDays.value
+        usageJob = scope.launch {
+            when (val got = r.usage(days)) {
+                is Routed.Ok -> { _usageAvailable.value = true; _usage.value = HubDelegate.PanelState(data = got.value) }
+                is Routed.Failed -> { _usageAvailable.value = true; _usage.value = _usage.value.copy(error = got.message, refreshing = false) }
+                Routed.Missing -> { _usageAvailable.value = false; _usage.value = HubDelegate.PanelState() }
+            }
         }
     }
 

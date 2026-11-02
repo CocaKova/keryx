@@ -9,7 +9,9 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.longOrNull
 
 /**
  * The dashboard routes behind the agent page (makeover): the MCP servers the agent can reach
@@ -71,6 +73,34 @@ data class McpProbe(
     val prompts: Int,
     val resources: Int,
 )
+
+/**
+ * `GET /api/analytics/usage?days=N` — the dashboard's Analytics page: what the agent spent over
+ * the window. Costs are USD; [actualCost] is what a provider reported, [estimatedCost] Hermes'
+ * own pricing (0 for a local model).
+ */
+data class UsageReport(
+    val days: Int,
+    val totals: UsageNumbers,
+    /** One row per local calendar day that had a session, oldest first. */
+    val daily: List<Pair<String, UsageNumbers>>,
+    /** Biggest token user first. */
+    val byModel: List<Pair<String, UsageNumbers>>,
+)
+
+data class UsageNumbers(
+    val input: Long,
+    val output: Long,
+    val estimatedCost: Double,
+    val actualCost: Double,
+    val sessions: Long,
+    val apiCalls: Long,
+) {
+    val tokens: Long get() = input + output
+    /** The reported figure when there is one, else the estimate. */
+    val cost: Double get() = if (actualCost > 0.0) actualCost else estimatedCost
+    val costIsEstimate: Boolean get() = actualCost <= 0.0
+}
 
 /** The profile's SOUL.md: [exists] false is a profile that never wrote one (the stock default). */
 data class SoulText(val profile: String, val content: String, val exists: Boolean)
@@ -142,6 +172,35 @@ object AgentParser {
     fun mcpInstallBackground(root: JsonElement): Boolean =
         ((root as? JsonObject)?.get("background") as? JsonPrimitive)?.booleanOrNull ?: false
 
+    // SQL SUMs over an empty window come back null: a missing number is zero, not unreadable.
+    private fun JsonObject.long(k: String): Long =
+        (this[k] as? JsonPrimitive)?.let { it.longOrNull ?: it.doubleOrNull?.toLong() } ?: 0L
+    private fun JsonObject.dbl(k: String): Double = (this[k] as? JsonPrimitive)?.doubleOrNull ?: 0.0
+
+    private fun usageRow(o: JsonObject, prefix: String = ""): UsageNumbers = UsageNumbers(
+        input = o.long(prefix + "input" + if (prefix.isEmpty()) "_tokens" else ""),
+        output = o.long(prefix + "output" + if (prefix.isEmpty()) "_tokens" else ""),
+        estimatedCost = o.dbl(prefix + "estimated_cost"),
+        actualCost = o.dbl(prefix + "actual_cost"),
+        sessions = o.long(prefix + "sessions"),
+        apiCalls = o.long(prefix + "api_calls"),
+    )
+
+    fun usage(root: JsonElement): UsageReport? {
+        val o = root as? JsonObject ?: return null
+        val totals = o["totals"] as? JsonObject ?: return null
+        fun rows(key: String, name: String) = (o[key] as? JsonArray)?.mapNotNull { el ->
+            val r = el as? JsonObject ?: return@mapNotNull null
+            (r.str(name) ?: return@mapNotNull null) to usageRow(r)
+        }.orEmpty()
+        return UsageReport(
+            days = (o["period_days"] as? JsonPrimitive)?.intOrNull ?: 30,
+            totals = usageRow(totals, prefix = "total_"),
+            daily = rows("daily", "day").sortedBy { it.first },
+            byModel = rows("by_model", "model").sortedByDescending { it.second.tokens },
+        )
+    }
+
     /** `GET /api/profiles/active` → the profile this dashboard is scoped to. */
     fun currentProfile(root: JsonElement): String? {
         val o = root as? JsonObject ?: return null
@@ -190,6 +249,10 @@ internal suspend fun GatewayRest.mcpInstall(name: String, env: Map<String, Strin
 /** `POST /api/mcp/servers/{name}/test` — a probe that failed to connect is still an answer ([McpProbe.ok] false). */
 internal suspend fun GatewayRest.mcpTest(name: String): Routed<McpProbe> =
     routed("POST", "/api/mcp/servers/" + enc(name) + "/test", "{}").map { parse(it)?.let(AgentParser::mcpProbe) }
+
+/** `GET /api/analytics/usage?days=` — the server clamps [days] to 1–365. */
+internal suspend fun GatewayRest.usage(days: Int): Routed<UsageReport> =
+    routed("GET", "/api/analytics/usage?days=$days").map { parse(it)?.let(AgentParser::usage) }
 
 internal suspend fun GatewayRest.currentProfile(): Routed<String> =
     routed("GET", "/api/profiles/active").map { parse(it)?.let(AgentParser::currentProfile) }

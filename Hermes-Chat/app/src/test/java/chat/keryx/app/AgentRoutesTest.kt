@@ -115,4 +115,41 @@ class AgentRoutesTest {
         assertTrue(AgentParser.mcpInstallBackground(obj("""{"ok":true,"name":"x","background":true,"action":"a"}""")))
         assertFalse(AgentParser.mcpInstallBackground(obj("""{"ok":true,"name":"x","background":false}""")))
     }
+
+    @Test
+    fun `usage reads the analytics totals, days and models, nulls as zero`() {
+        val r = AgentParser.usage(obj("""
+            {"daily":[
+               {"day":"2026-11-02","input_tokens":1200,"output_tokens":300,"cache_read_tokens":0,
+                "reasoning_tokens":0,"estimated_cost":0.012,"actual_cost":0,"sessions":2,"api_calls":9},
+               {"day":"2026-10-30","input_tokens":500,"output_tokens":null,"estimated_cost":0,"actual_cost":0,
+                "sessions":1,"api_calls":3}],
+             "by_model":[
+               {"model":"small","input_tokens":100,"output_tokens":10,"estimated_cost":0,"sessions":1,"api_calls":1},
+               {"model":"big","input_tokens":1600,"output_tokens":290,"estimated_cost":0.012,"sessions":2,"api_calls":11}],
+             "by_task":[],
+             "totals":{"total_input":1700,"total_output":300,"total_cache_read":0,"total_reasoning":null,
+               "total_estimated_cost":0.012,"total_actual_cost":0,"total_sessions":3,"total_api_calls":12},
+             "period_days":7,"skills":{},"tools":[]}
+        """))!!
+        assertEquals(7, r.days)
+        assertEquals(2000L, r.totals.tokens)
+        assertEquals(3L, r.totals.sessions)
+        assertEquals(12L, r.totals.apiCalls)
+        assertTrue(r.totals.costIsEstimate)
+        assertEquals(0.012, r.totals.cost, 1e-9)
+        assertEquals(listOf("2026-10-30", "2026-11-02"), r.daily.map { it.first })
+        assertEquals(500L, r.daily[0].second.tokens)
+        assertEquals(listOf("big", "small"), r.byModel.map { it.first })
+        assertNull(AgentParser.usage(obj("""{"daily":[]}""")))
+    }
+
+    @Test
+    fun `usage numbers read at a glance`() {
+        assertEquals("950", chat.keryx.app.presentation.ui.components.usageCount(950))
+        assertEquals("12.4K", chat.keryx.app.presentation.ui.components.usageCount(12_400))
+        assertEquals("3M", chat.keryx.app.presentation.ui.components.usageCount(3_000_000))
+        assertEquals("<$0.01", chat.keryx.app.presentation.ui.components.money(0.004))
+        assertEquals("$1.25", chat.keryx.app.presentation.ui.components.money(1.25))
+    }
 }

@@ -43,4 +43,34 @@
     <string name="mk_mcp_building_toast">%1$s is building on the gateway — it shows up here when it\'s done</string>
     <string name="mk_mcp_install_refused">Couldn\'t install %1$s: %2$s</string>
     <string name="mk_mcp_install_unsupported">This gateway can\'t install MCP servers from here.</string>
+    <!-- The agent page › Usage: the dashboard's Analytics (GET /api/analytics/usage). -->
+    <string name="mk_usage">Usage</string>
+    <string name="mk_usage_subtitle">Tokens, cost and sessions</string>
+    <string name="mk_usage_subtitle_read">%1$s tokens · %2$s · last %3$d days</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d session</item>
+        <item quantity="other">%d sessions</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">session</item>
+        <item quantity="other">sessions</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s API call</item>
+        <item quantity="other">%1$s API calls</item>
+    </plurals>
+    <string name="mk_usage_tokens">tokens</string>
+    <string name="mk_usage_in_out">%1$s in · %2$s out</string>
+    <string name="mk_usage_cost">cost</string>
+    <string name="mk_usage_cost_estimated">cost, estimated</string>
+    <string name="mk_usage_none">Nothing used in the last %1$d days.</string>
+    <string name="mk_usage_by_day">By day</string>
+    <string name="mk_usage_peak">Busiest: %1$s on %2$s</string>
+    <string name="mk_usage_by_model">By model</string>
+    <string name="mk_usage_note_estimate">Cost is Hermes\' own estimate from its price list; a local model costs nothing. The gateway\'s dashboard reads the same numbers.</string>
+    <string name="mk_usage_note_reported">Cost is what the provider reported, where it did. The gateway\'s dashboard reads the same numbers.</string>
 </resources>

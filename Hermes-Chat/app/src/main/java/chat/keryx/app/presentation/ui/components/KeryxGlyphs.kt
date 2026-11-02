@@ -94,6 +94,14 @@ object KeryxGlyphs {
         )
     }
 
+    /** Usage (makeover) — three bars on a baseline, what the work cost. */
+    val Bars: ImageVector by lazy {
+        draw(
+            "bars",
+            listOf("M4,19.5 h16", "M7,16.5 V11", "M12,16.5 V5.5", "M17,16.5 V8.5"),
+        )
+    }
+
     /** Models — a stack of planes. */
     val Stack: ImageVector by lazy {
         draw(

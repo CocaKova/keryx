@@ -30,7 +30,8 @@ class HubRegistryTest {
             // Makeover (11-01): the agent page adds MCP and Soul (stock dashboard routes) and
             // moves the old landing's health rows into a Status spoke. The landing now reads
             // them by group, so this order is the order inside each card.
-            listOf("Controls", "Update", "Jobs", "Sessions", "Skills", "Memory", "Tools", "MCP servers", "Soul", "Status"),
+            // Usage (makeover, later) sits with the work it measures.
+            listOf("Controls", "Update", "Jobs", "Sessions", "Usage", "Skills", "Memory", "Tools", "MCP servers", "Soul", "Status"),
             GATEWAY_SPOKES.map { it.label },
         )
     }

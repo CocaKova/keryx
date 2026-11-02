@@ -89,7 +89,14 @@ data class HubPanel(
     val group: String = "Machine",
     /** A short count or value at the row's end ("12", "9 of 12"); null for none. */
     val trailing: @Composable (ChatViewModel) -> String? = { null },
+    /** The label as the screen shows it, from strings (makeover spokes, ready for translation);
+     *  null shows [label]. [label] stays the registry's stable English name either way. */
+    @androidx.annotation.StringRes val labelRes: Int? = null,
 )
+
+/** What the landing row and the spoke's title read. */
+@Composable
+internal fun HubPanel.shownLabel(): String = labelRes?.let { androidx.compose.ui.res.stringResource(it) } ?: label
 
 /** The landing's cards, in order: what the agent thinks with, reaches, does, and is. */
 val AGENT_GROUPS = listOf("Mind", "Reach", "Work", "Self", "Machine")
@@ -151,6 +158,23 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
             val sessions by vm.hub.sessions.collectAsState()
             sessions.data?.size?.toString()
         },
+    ),
+    // Makeover: what the work cost — the dashboard's Analytics, on the agent's page.
+    HubPanel(
+        id = "usage",
+        label = "Usage",
+        labelRes = chat.keryx.app.R.string.mk_usage,
+        icon = KeryxGlyphs.Bars,
+        refresh = { vm -> vm.agent.refreshUsage() },
+        subtitle = { vm -> usageSubtitle(vm) },
+        content = { UsageTab(it.viewModel) },
+        shown = { vm ->
+            // Only once the gateway has answered: no door (Matrix, the demo) means no row at all.
+            val available by vm.agent.usageAvailable.collectAsState()
+            vm.transportIsDirect && available == true
+        },
+        group = "Work",
+        trailing = { vm -> usageTrailing(vm) },
     ),
     HubPanel(
         id = "skills",
@@ -282,7 +306,7 @@ fun GatewaySpace(viewModel: ChatViewModel, health: LinkHealth, onDismiss: () -> 
     }
 
     KeryxSpace(
-        title = spoke?.label ?: "Gateway",
+        title = spoke?.shownLabel() ?: "Gateway",
         hint = if (spoke == null) chat.keryx.app.presentation.tour.KeryxHints.GATEWAY else null,
         onClose = onDismiss,
         onBack = if (spoke != null) ({ spokeId = null }) else null,
@@ -373,7 +397,7 @@ private fun AgentLanding(
                     rows.forEachIndexed { i, p ->
                         if (i > 0) KeryxHubDivider()
                         KeryxHubRow(
-                            icon = p.icon, title = p.label, subtitle = p.subtitle(viewModel),
+                            icon = p.icon, title = p.shownLabel(), subtitle = p.subtitle(viewModel),
                             trailing = p.trailing(viewModel), onClick = { open(p.id) },
                         )
                     }
