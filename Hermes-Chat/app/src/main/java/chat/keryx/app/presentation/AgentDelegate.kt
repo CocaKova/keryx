@@ -10,6 +10,7 @@ import chat.keryx.app.transport.direct.SoulText
 import chat.keryx.app.transport.direct.UsageReport
 import chat.keryx.app.transport.direct.usage
 import chat.keryx.app.transport.direct.currentProfile
+import chat.keryx.app.transport.direct.profileDisplayName
 import chat.keryx.app.transport.direct.mcpCatalog
 import chat.keryx.app.transport.direct.mcpInstall
 import chat.keryx.app.transport.direct.mcpServers
@@ -49,6 +50,10 @@ class AgentDelegate(
     /** The profile this gateway's dashboard speaks for — the agent's name on the page. */
     private val _profile = MutableStateFlow<String?>(null)
     val profile: StateFlow<String?> = _profile.asStateFlow()
+
+    /** The profile's display name, when someone set one (stock Hermes: `hermes profile rename`). */
+    private val _profileName = MutableStateFlow<String?>(null)
+    val profileName: StateFlow<String?> = _profileName.asStateFlow()
 
     private var mcpJob: Job? = null
     private var soulJob: Job? = null
@@ -203,6 +208,7 @@ class AgentDelegate(
                 else -> "default"
             }
             _profile.value = name
+            (r.profileDisplayName(name) as? Routed.Ok)?.let { _profileName.value = it.value }
             when (val got = r.soul(name)) {
                 is Routed.Ok -> { _soulAvailable.value = true; _soul.value = HubDelegate.PanelState(data = got.value) }
                 is Routed.Failed -> { _soulAvailable.value = true; _soul.value = _soul.value.copy(error = got.message, refreshing = false) }

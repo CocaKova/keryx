@@ -68,21 +68,22 @@ import androidx.compose.ui.res.stringResource
 // every room of it in labelled cards with a count each — the Hermes Mobile bot page, in Keryx's
 // own voice. The landing is a place you read at a glance; the details are one tap down.
 
-/** The agent's own name: the SOUL's first heading ("# Ada"), else the profile, else the gateway. */
+/**
+ * The agent's name: the profile's display name (`hermes profile rename`), else the Hermes profile
+ * it runs as ("research-buddy" → "Research-buddy"), else the
+ * name this gateway has in Keryx, else "Your agent". Not the SOUL: a stock SOUL has no heading,
+ * and a written one is often a title ("Juno — True North"), not a name.
+ */
 @Composable
 internal fun agentDisplayName(viewModel: ChatViewModel): String {
-    val soul by viewModel.agent.soul.collectAsState()
     val profile by viewModel.agent.profile.collectAsState()
+    val shown by viewModel.agent.profileName.collectAsState()
     val fleet by viewModel.doors.fleet.collectAsState()
-    return soulHeading(soul.data?.content)
+    return shown
         ?: profile?.takeIf { it.isNotBlank() && it != "default" }?.replaceFirstChar { it.uppercase() }
         ?: fleet.active?.name?.takeIf { it.isNotBlank() }
         ?: stringResource(R.string.agent_your_agent)
 }
-
-internal fun soulHeading(content: String?): String? =
-    content?.lineSequence()?.map { it.trim() }?.firstOrNull { it.startsWith("# ") }
-        ?.removePrefix("# ")?.trim()?.takeIf { it.isNotEmpty() && it.length <= 32 }
 
 /** The SOUL's first line of prose — the Soul row's subtitle. */
 internal fun soulGist(content: String?): String? =
@@ -773,9 +774,9 @@ internal fun SoulTab(viewModel: ChatViewModel) {
 internal fun AgentDoorCard(viewModel: ChatViewModel, onOpen: () -> Unit) {
     val health by viewModel.linkHealth.collectAsState()
     val caps by viewModel.hub.reasoningCaps.collectAsState()
-    val soul by viewModel.agent.soul.collectAsState()
-    // The name lives in the SOUL; one read the first time the drawer shows this card.
-    LaunchedEffect(Unit) { if (soul.data == null) viewModel.agent.refreshSoul() }
+    val profile by viewModel.agent.profile.collectAsState()
+    // The profile comes with the SOUL read; one read the first time the drawer shows this card.
+    LaunchedEffect(Unit) { if (profile == null) viewModel.agent.refreshSoul() }
     val name = agentDisplayName(viewModel)
     val accent = MaterialTheme.colorScheme.primary
     val accent2 = MaterialTheme.colorScheme.tertiary

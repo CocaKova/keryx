@@ -201,6 +201,14 @@ object AgentParser {
         )
     }
 
+    /** `GET /api/profiles` → the name a person gave [profile] (`hermes profile rename`), if any. */
+    fun profileDisplayName(root: JsonElement, profile: String): String? {
+        val list = ((root as? JsonObject)?.get("profiles") as? kotlinx.serialization.json.JsonArray) ?: return null
+        return list.asSequence().mapNotNull { it as? JsonObject }
+            .firstOrNull { it.str("name") == profile }
+            ?.str("display_name")?.trim()?.takeIf { it.isNotEmpty() }
+    }
+
     /** `GET /api/profiles/active` → the profile this dashboard is scoped to. */
     fun currentProfile(root: JsonElement): String? {
         val o = root as? JsonObject ?: return null
@@ -256,6 +264,9 @@ internal suspend fun GatewayRest.usage(days: Int): Routed<UsageReport> =
 
 internal suspend fun GatewayRest.currentProfile(): Routed<String> =
     routed("GET", "/api/profiles/active").map { parse(it)?.let(AgentParser::currentProfile) }
+
+internal suspend fun GatewayRest.profileDisplayName(profile: String): Routed<String> =
+    routed("GET", "/api/profiles").map { parse(it)?.let { root -> AgentParser.profileDisplayName(root, profile) } }
 
 internal suspend fun GatewayRest.soul(profile: String): Routed<SoulText> =
     routed("GET", "/api/profiles/" + enc(profile) + "/soul").map { body -> parse(body)?.let { AgentParser.soul(profile, it) } }

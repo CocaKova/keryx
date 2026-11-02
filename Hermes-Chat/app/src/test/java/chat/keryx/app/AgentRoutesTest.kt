@@ -2,7 +2,6 @@ package chat.keryx.app
 
 import chat.keryx.app.presentation.ui.components.middleEllipsis
 import chat.keryx.app.presentation.ui.components.soulGist
-import chat.keryx.app.presentation.ui.components.soulHeading
 import chat.keryx.app.transport.direct.AgentParser
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -52,14 +51,20 @@ class AgentRoutesTest {
     }
 
     @Test
+    fun `a profile's display name comes from the profile list`() {
+        val root = obj("""{"profiles":[{"name":"default","display_name":"Ada"},{"name":"juno","display_name":""}]}""")
+        assertEquals("Ada", AgentParser.profileDisplayName(root, "default"))
+        assertNull(AgentParser.profileDisplayName(root, "juno"))
+        assertNull(AgentParser.profileDisplayName(root, "missing"))
+    }
+
+    @Test
     fun `soul reads content and whether the file exists`() {
         val s = AgentParser.soul("default", obj("""{"content":"# Ada\n\nYou are Ada.","exists":true}"""))!!
         assertTrue(s.exists)
-        assertEquals("Ada", soulHeading(s.content))
         assertEquals("You are Ada.", soulGist(s.content))
         val none = AgentParser.soul("default", obj("""{"content":"","exists":false}"""))!!
         assertFalse(none.exists)
-        assertNull(soulHeading(none.content))
     }
 
     @Test
