@@ -5,6 +5,41 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 3.0.0 · beta 4, versionCode 143 (pre-release)
+
+Keryx speaks 31 languages, and the agent gets a page of its own.
+
+**Languages**
+- Settings › App › Language: follow the phone, or pick one of 31 languages, each listed in its own
+  name. On Android 13 and newer it is the same switch as the system's per-app language.
+- English, Arabic, Bengali, Chinese (Simplified and Traditional), Czech, Danish, Dutch, Finnish,
+  French, German, Greek, Hebrew, Hindi, Hungarian, Indonesian, Italian, Japanese, Korean, Norwegian
+  Bokmål, Polish, Portuguese (Brazil and Portugal), Romanian, Russian, Spanish, Swedish, Thai,
+  Turkish, Ukrainian and Vietnamese.
+- The translations were written by AI and have not yet been read by native speakers. The picker
+  says so and links to the issue tracker; corrections are welcome.
+- Dates, file sizes and weekday names follow your language. Arabic and Hebrew lay out right to
+  left: pages slide in from the left, and chevrons and the reply arrow point the other way.
+- Still English for now: the per-tool lines in run notices ("Reading file.txt"), the home-screen
+  widget, the Tap-In headline, the demo conversation, and messages the gateway itself sends.
+
+**The agent's page** (the Gateway space, redesigned)
+- One page for the agent: its name and face, a strip of context, turns and jobs, then grouped
+  cards for Mind, Reach, Work, Self and Machine. The drawer's first card opens it.
+- MCP: every server with a Test button (tools it offers, or why it could not connect), and the
+  stock Hermes catalog to browse and install from, with a field for each key a server needs.
+- Skills read A to Z with a switch each; Soul shows the agent's SOUL file.
+- Usage: tokens in and out, cost and sessions over 7, 30 or 90 days, a bar per day and a list by
+  model, from Hermes' own analytics.
+
+**Settings and feel**
+- Settings sits in labelled groups, and its pages slide in and out on springs.
+- Appearance: accent palettes before the colour wheel, and live previews of bubble styles, loading
+  animations and the room transition, at the speed you chose.
+- Runs wears the new look: grouped cards, rows that give when pressed, skeletons while loading.
+- The context ring shows its last reading at once when a chat opens, instead of waiting for the
+  gateway to recount.
+
 ## 3.0.0 · beta 3, versionCode 142 (pre-release)
 
 The herald release. A stranger can try Keryx before owning a gateway, pair one with a QR code,

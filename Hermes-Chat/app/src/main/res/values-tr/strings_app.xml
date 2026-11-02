@@ -251,7 +251,7 @@
     <string name="app_whatsnew_cards_title">Sade dilde kartlar</string>
     <string name="app_whatsnew_cards_text">Bir görev kartı artık neler olduğu ve sıradaki tek adımla açılıyor. Teknik ayrıntılar hâlâ Ayrıntılar altında.</string>
     <string name="app_whatsnew_look_title">Görünüm ve güncellemeler</string>
-    <string name="app_whatsnew_look_text_direct">Ayarlar › Görünüm\'de yeni düşünme stilleri ve sohbetler arasında geçmenin beş yolu var. Yeni bir keryx-stream ile Ağ Geçidi\'nin Güncelleme panelinden Kararlı sürümleri veya Uç sürümleri seçebilirsin. Başka bir Hermes eklemek için onda hermes keryx pair komutunu çalıştır ve kodu tara.</string>
+    <string name="app_whatsnew_look_text_direct">Ayarlar › Görünüm\'de yeni düşünme stilleri ve sohbetler arasında geçmenin beş yolu var. Yeni bir keryx-stream ile Ağ Geçidi\'nin Güncelleme panelinden Stable sürümleri veya Edge sürümlerini seçebilirsin. Başka bir Hermes eklemek için onda hermes keryx pair komutunu çalıştır ve kodu tara.</string>
     <string name="app_whatsnew_look_text">Ayarlar › Görünüm\'de yeni düşünme stilleri ve sohbetler arasında geçmenin beş yolu var. Tur ve alan ipuçları Ayarlar › Hakkında\'da.</string>
 
     <string name="app_hint_missions_title">Görevler</string>

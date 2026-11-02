@@ -264,8 +264,8 @@
     <string name="settings_update_not_now">Şimdi değil</string>
     <string name="settings_update_updates">Güncellemeler</string>
     <string name="settings_update_managed_outside">Bu kurulumun güncellemeleri Hermes dışında yönetiliyor.</string>
-    <string name="settings_update_stable">Kararlı</string>
-    <string name="settings_update_edge">Uç</string>
+    <string name="settings_update_stable">Stable</string>
+    <string name="settings_update_edge">Edge</string>
     <string name="settings_update_follow">%1$s güncellemelerini izle</string>
     <string name="settings_update_switching">Geçiliyor…</string>
     <string name="settings_update_last_release">son sürüm</string>

@@ -5,7 +5,6 @@
     <string name="p2_language_follow_phone_now">当前为%1$s</string>
     <string name="p2_language_selected">已选择</string>
     <string name="p2_language_ai_note">由 AI 翻译，尚未经过母语人士审校。发现哪句话别扭？请在 GitHub 上告诉我们。</string>
-
     <plurals name="p2_story_min_ago">
         <item quantity="other">%d 分钟前</item>
     </plurals>
@@ -54,7 +53,6 @@
     <string name="p2_story_ev_assigned">已交接</string>
     <string name="p2_story_ev_commented">已添加备注</string>
     <string name="p2_story_ev_edited">已编辑</string>
-
     <string name="p2_core_notice_photo">🖼 照片</string>
     <string name="p2_core_shade_unlock_to_see">解锁后查看。</string>
     <string name="p2_core_shade_this_session">本会话</string>
@@ -124,6 +122,23 @@
     <string name="p2_core_ctx_before_summary">%1$s / %2$s，之后进行总结</string>
     <string name="p2_core_ctx_before_summary_window">%1$s / %2$s，之后进行总结 · 窗口 %3$s</string>
     <string name="p2_core_ctx_model_holds">%1$s / %2$s（模型可容纳）</string>
+    <string name="p2_core_roster_this_week">本周</string>
+    <string name="p2_core_roster_older">更早</string>
+    <string name="p2_core_roster_undated">无日期</string>
+    <string name="p2_core_find_no_match">无匹配</string>
+    <string name="p2_core_find_position">%1$d / %2$d</string>
+    <string name="p2_core_goal_turn">回合 %1$d/%2$d</string>
+    <string name="p2_core_goal_gates">关卡 %1$d/%2$d</string>
+    <string name="p2_core_goal_done">✓ 完成</string>
+    <string name="p2_core_goal_paused">已暂停</string>
+    <string name="p2_core_goal_waiting">等待中</string>
+    <string name="p2_core_goal_blocked">受阻</string>
+    <string name="p2_core_goal_pause">暂停</string>
+    <string name="p2_core_goal_resume">恢复</string>
+    <string name="p2_core_goal_stop_waiting">停止等待</string>
+    <string name="p2_core_update_unreachable">无法连接更新源</string>
+    <string name="p2_core_update_behind_unknown">落后的提交数未知</string>
+    <string name="p2_core_update_up_to_date">已是最新</string>
     <string name="p2_core_effort_minimal">最低</string>
     <string name="p2_core_effort_low">低</string>
     <string name="p2_core_effort_medium">中</string>
@@ -154,7 +169,43 @@
     <plurals name="p2_core_ctx_room_before_full">
         <item quantity="other">聊天填满前还能容纳约 %1$d 条回复。</item>
     </plurals>
+    <plurals name="p2_core_update_commits_behind">
+        <item quantity="other">落后 %1$d 个提交</item>
+    </plurals>
     <plurals name="p2_core_ctx_room_then">
         <item quantity="other">还能容纳约 %1$d 条回复。%2$s</item>
     </plurals>
+    <string name="p2_room_untitled_session">会话</string>
+    <string name="p2_room_untitled_branch">分支</string>
+    <string name="p2_sudo_prompt">主机上的一条命令需要你的 sudo 密码。</string>
+    <string name="p2_archive_sweep_failed">扫描失败</string>
+    <string name="p2_archive_no_timeline">还没有时间线</string>
+    <string name="p2_archive_resume_failed">历史回填续传失败 — 将重新开始</string>
+    <string name="p2_archive_not_connected">网关未连接</string>
+    <string name="p2_gateway_no_answer">网关没有响应。</string>
+    <string name="p2_update_receipt_unreadable">返回的更新记录无法读取。</string>
+    <string name="p2_pair_no_token">Hermes Link 的响应中没有令牌。</string>
+    <string name="p2_pair_plugin_old">网关的 keryx-stream 还不支持配对。请将它更新到 0.6 并重启网关。</string>
+    <string name="p2_pair_http">Hermes Link 返回了 HTTP %1$d。</string>
+    <string name="p2_pair_no_answer">Hermes Link 在 %1$s 没有响应。</string>
+    <string name="p2_update_link_no_answer">Hermes Link 没有响应。</string>
+    <string name="p2_update_check_refused">检查被拒绝：%1$s</string>
+    <string name="p2_update_check_missing">此网关不支持从手机检查更新。</string>
+    <string name="p2_update_following_edge">跟随每一次更改（Edge）</string>
+    <string name="p2_update_following_stable">跟随稳定版</string>
+    <string name="p2_update_switch_failed">无法切换：%1$s</string>
+    <string name="p2_update_switch_missing">此网关的 keryx-stream 无法切换更新渠道。</string>
+    <string name="p2_update_checked">已检查：%1$s</string>
+    <string name="p2_update_refused">Hermes 拒绝了更新。</string>
+    <string name="p2_update_missing_dashboard">此网关不支持从手机更新。</string>
+    <string name="p2_update_missing_plugin">此网关的插件无法运行更新。</string>
+    <string name="p2_update_check_failed">检查失败：%1$s</string>
+    <string name="p2_move_handed">已交给 %1$s</string>
+    <string name="p2_move_handed_status">已交给 %1$s — %2$s</string>
+    <string name="p2_move_nobody">无人</string>
+    <string name="p2_move_marked_done">已标记为完成</string>
+    <string name="p2_move_paused">已暂停 — 等你处理</string>
+    <string name="p2_move_now">%1$s — 现在为%2$s</string>
+    <string name="p2_move_moving">移动中</string>
+    <string name="p2_senses_never">从未</string>
 </resources>

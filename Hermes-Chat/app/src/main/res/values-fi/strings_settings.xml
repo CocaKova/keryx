@@ -264,7 +264,7 @@
     <string name="settings_update_not_now">Ei nyt</string>
     <string name="settings_update_updates">Päivitykset</string>
     <string name="settings_update_managed_outside">Tämän asennuksen päivityksiä hallitaan Hermesin ulkopuolella.</string>
-    <string name="settings_update_stable">Vakaa</string>
+    <string name="settings_update_stable">Stable</string>
     <string name="settings_update_edge">Edge</string>
     <string name="settings_update_follow">Seuraa päivityskanavaa %1$s</string>
     <string name="settings_update_switching">Vaihdetaan…</string>

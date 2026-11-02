@@ -30,8 +30,8 @@ android {
         // not cover.
         minSdk = 26
         targetSdk = 36
-        versionCode = 142
-        versionName = "3.0.0-beta.3"
+        versionCode = 143
+        versionName = "3.0.0-beta.4"
         // The on-device canary (app/src/androidTest) runs on this; without it `connectedCheck`
         // finds no instrumentation and reports green having run nothing.
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

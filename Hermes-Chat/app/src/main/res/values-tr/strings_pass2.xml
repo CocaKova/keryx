@@ -200,7 +200,7 @@
     <string name="p2_update_link_no_answer">Hermes Link yanıt vermedi.</string>
     <string name="p2_update_check_refused">Kontrol reddedildi: %1$s</string>
     <string name="p2_update_check_missing">Bu ağ geçidi güncellemeleri telefondan kontrol edemiyor.</string>
-    <string name="p2_update_following_edge">Her değişiklik izleniyor (Uç)</string>
+    <string name="p2_update_following_edge">Her değişiklik izleniyor (Edge)</string>
     <string name="p2_update_following_stable">Kararlı sürümler izleniyor</string>
     <string name="p2_update_switch_failed">Geçilemedi: %1$s</string>
     <string name="p2_update_switch_missing">Bu ağ geçidinin keryx-stream\'i güncelleme kanalı değiştiremiyor.</string>
