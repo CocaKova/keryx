@@ -98,6 +98,13 @@ android {
     // from the values-<locale> folders; res/resources.properties names English as the default.
     androidResources {
         generateLocaleConfig = true
+        // Only the languages Keryx speaks: libraries ship ~80 more, which cost space and would
+        // leave their dialogs translated where ours are not. Keep in step with KeryxLocale.SUPPORTED.
+        localeFilters += listOf(
+            "en", "es", "fr", "de", "it", "pt-rBR", "pt-rPT", "nl", "pl", "ru", "uk", "tr",
+            "ar", "he", "iw", "hi", "bn", "id", "in", "vi", "th", "ja", "ko", "zh-rCN", "zh-rTW",
+            "sv", "da", "nb", "fi", "cs", "el", "ro", "hu",
+        )
     }
 
     buildFeatures {
