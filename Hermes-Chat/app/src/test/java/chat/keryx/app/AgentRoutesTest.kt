@@ -71,4 +71,48 @@ class AgentRoutesTest {
         assertTrue(short.endsWith("aseprite-mcp.sh"))
         assertEquals("short", middleEllipsis("short", 30))
     }
+
+    @Test
+    fun `the mcp catalog reads what an entry would run and what it asks for`() {
+        val entries = AgentParser.mcpCatalog(obj("""
+            {"entries":[
+              {"name":"linear","description":"Issues","connector_slug":null,"source":"optional-mcps",
+               "transport":"http","auth_type":"oauth","required_env":[],"command":null,"args":[],
+               "url":"https://mcp.linear.app/mcp","install_url":null,"install_ref":null,"bootstrap":[],
+               "default_enabled":null,"post_install":"","suggest":null,"needs_install":false,
+               "installed":true,"enabled":true},
+              {"name":"Brave","description":"Search","transport":"stdio","auth_type":"env",
+               "required_env":[{"name":"BRAVE_API_KEY","prompt":"Brave API key","required":true}],
+               "command":"npx","args":["-y","brave-mcp"],"url":null,"install_url":"https://g/x.git",
+               "bootstrap":["npm ci"],"needs_install":true,"installed":false,"enabled":false}
+            ],"diagnostics":[]}
+        """))!!
+        // A to Z, case-blind.
+        assertEquals(listOf("Brave", "linear"), entries.map { it.name })
+        val brave = entries[0]
+        assertEquals("npx -y brave-mcp", brave.target)
+        assertEquals("BRAVE_API_KEY", brave.requiredEnv.single().name)
+        assertEquals("Brave API key", brave.requiredEnv.single().prompt)
+        assertTrue(brave.needsInstall)
+        assertFalse(brave.installed)
+        assertEquals("oauth", entries[1].authType)
+        assertTrue(entries[1].installed)
+        assertNull(AgentParser.mcpCatalog(obj("""{"detail":"x"}""")))
+    }
+
+    @Test
+    fun `an mcp test answers tools or the reason it could not connect`() {
+        val ok = AgentParser.mcpProbe(obj("""
+            {"ok":true,"tools":[{"name":"search","description":"Find","schema_chars":120},{"name":"fetch","description":""}],
+             "prompts":2,"resources":0}
+        """))!!
+        assertTrue(ok.ok)
+        assertEquals(listOf("search", "fetch"), ok.tools.map { it.first })
+        assertEquals(2, ok.prompts)
+        val failed = AgentParser.mcpProbe(obj("""{"ok":false,"error":"Connection refused","tools":[]}"""))!!
+        assertFalse(failed.ok)
+        assertEquals("Connection refused", failed.error)
+        assertTrue(AgentParser.mcpInstallBackground(obj("""{"ok":true,"name":"x","background":true,"action":"a"}""")))
+        assertFalse(AgentParser.mcpInstallBackground(obj("""{"ok":true,"name":"x","background":false}""")))
+    }
 }

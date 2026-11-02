@@ -1,10 +1,15 @@
 package chat.keryx.app.presentation
 
 import chat.keryx.app.transport.direct.GatewayRest
+import chat.keryx.app.transport.direct.McpCatalogEntry
+import chat.keryx.app.transport.direct.McpProbe
 import chat.keryx.app.transport.direct.McpServer
 import chat.keryx.app.transport.direct.SoulText
 import chat.keryx.app.transport.direct.currentProfile
+import chat.keryx.app.transport.direct.mcpCatalog
+import chat.keryx.app.transport.direct.mcpInstall
 import chat.keryx.app.transport.direct.mcpServers
+import chat.keryx.app.transport.direct.mcpTest
 import chat.keryx.app.transport.direct.mcpSetEnabled
 import chat.keryx.app.transport.direct.saveSoul
 import chat.keryx.app.transport.direct.soul
@@ -74,6 +79,81 @@ class AgentDelegate(
         }
     }
 
+    // --- The catalog, and a server's test (makeover) -------------------------------------------
+
+    private val _catalog = MutableStateFlow(HubDelegate.PanelState<List<McpCatalogEntry>>())
+    val catalog: StateFlow<HubDelegate.PanelState<List<McpCatalogEntry>>> = _catalog.asStateFlow()
+    /** Null until asked; false on a dashboard without the catalog route, which hides the card. */
+    private val _catalogAvailable = MutableStateFlow<Boolean?>(null)
+    val catalogAvailable: StateFlow<Boolean?> = _catalogAvailable.asStateFlow()
+    private var catalogJob: Job? = null
+
+    fun refreshMcpCatalog() {
+        val r = rest() ?: return
+        if (catalogJob?.isActive == true) return
+        _catalog.value = _catalog.value.copy(refreshing = true)
+        catalogJob = scope.launch {
+            when (val got = r.mcpCatalog()) {
+                is Routed.Ok -> { _catalogAvailable.value = true; _catalog.value = HubDelegate.PanelState(data = got.value) }
+                is Routed.Failed -> { _catalogAvailable.value = true; _catalog.value = _catalog.value.copy(error = got.message, refreshing = false) }
+                Routed.Missing -> { _catalogAvailable.value = false; _catalog.value = HubDelegate.PanelState() }
+            }
+        }
+    }
+
+    /** How an install went. The words are the screen's (they are translated); this only says which. */
+    sealed interface InstallOutcome {
+        data object Installed : InstallOutcome
+        /** A git build: the gateway carries on after answering; the catalog is re-read shortly. */
+        data object Building : InstallOutcome
+        data class Refused(val message: String) : InstallOutcome
+        data object Unsupported : InstallOutcome
+    }
+
+    fun installMcp(entry: McpCatalogEntry, env: Map<String, String>, onDone: (InstallOutcome) -> Unit) {
+        val r = rest() ?: run { onDone(InstallOutcome.Unsupported); return }
+        scope.launch {
+            when (val res = r.mcpInstall(entry.name, env.filterValues { it.isNotBlank() })) {
+                is Routed.Ok -> {
+                    onDone(if (res.value) InstallOutcome.Building else InstallOutcome.Installed)
+                    refreshMcp(); refreshMcpCatalog()
+                    if (res.value) {
+                        // A clone and a build take a while; look again once, without polling.
+                        kotlinx.coroutines.delay(BUILD_RECHECK_MS)
+                        refreshMcp(); refreshMcpCatalog()
+                    }
+                }
+                is Routed.Failed -> onDone(InstallOutcome.Refused(res.message))
+                Routed.Missing -> onDone(InstallOutcome.Unsupported)
+            }
+        }
+    }
+
+    /** One server's last test, by name: [Testing] while the gateway connects to it. */
+    sealed interface ProbeState {
+        data object Testing : ProbeState
+        data class Done(val probe: McpProbe) : ProbeState
+        data class Failed(val message: String) : ProbeState
+    }
+
+    private val _probes = MutableStateFlow<Map<String, ProbeState>>(emptyMap())
+    val probes: StateFlow<Map<String, ProbeState>> = _probes.asStateFlow()
+
+    /** Ask the gateway to connect to [name], list its tools and let go — the dashboard's Test. */
+    fun testMcp(name: String) {
+        val r = rest() ?: return
+        if (_probes.value[name] == ProbeState.Testing) return
+        _probes.value = _probes.value + (name to ProbeState.Testing)
+        scope.launch {
+            val state = when (val res = r.mcpTest(name)) {
+                is Routed.Ok -> ProbeState.Done(res.value)
+                is Routed.Failed -> ProbeState.Failed(res.message)
+                Routed.Missing -> ProbeState.Failed("")
+            }
+            _probes.value = _probes.value + (name to state)
+        }
+    }
+
     fun refreshSoul() {
         val r = rest() ?: return
         if (soulJob?.isActive == true) return
@@ -107,5 +187,9 @@ class AgentDelegate(
                 Routed.Missing -> { toast("This gateway can't edit the soul from here."); onDone(false) }
             }
         }
+    }
+
+    private companion object {
+        const val BUILD_RECHECK_MS = 20_000L
     }
 }

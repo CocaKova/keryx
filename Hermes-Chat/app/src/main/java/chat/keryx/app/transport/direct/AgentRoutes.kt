@@ -9,10 +9,11 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
 
 /**
- * The dashboard routes behind the agent page (makeover): the MCP servers the agent can reach,
- * and the SOUL.md it wakes up with. Stock `hermes dashboard` routes, the same ones the Desktop
+ * The dashboard routes behind the agent page (makeover): the MCP servers the agent can reach
+ * (and the catalog of ones it could), and the SOUL.md it wakes up with. Stock `hermes dashboard` routes, the same ones the Desktop
  * and Hermes Mobile read — nothing here needs keryx-stream.
  */
 
@@ -34,6 +35,42 @@ data class McpServer(
     /** What it runs or where it lives, for the row's second line. */
     val target: String get() = url ?: listOfNotNull(command).plus(args).joinToString(" ")
 }
+
+/** One credential a catalog entry asks for before it can run — its name and the prompt to show. */
+data class McpEnvSpec(val name: String, val prompt: String, val required: Boolean)
+
+/**
+ * One entry of the dashboard's MCP catalog (`GET /api/mcp/catalog`): the Nous-approved
+ * manifests, each with what it would run, so the user can read that before installing.
+ */
+data class McpCatalogEntry(
+    val name: String,
+    val description: String,
+    val transport: String,
+    /** "none", "oauth", "env", … — oauth needs a browser sign-in on the dashboard after install. */
+    val authType: String,
+    val requiredEnv: List<McpEnvSpec>,
+    val command: String?,
+    val args: List<String>,
+    val url: String?,
+    /** A git clone + build step runs first; the gateway does it in the background. */
+    val needsInstall: Boolean,
+    val installUrl: String?,
+    val installed: Boolean,
+    val enabled: Boolean,
+) {
+    val target: String get() = url ?: listOfNotNull(command).plus(args).joinToString(" ")
+}
+
+/** `POST /api/mcp/servers/{name}/test`: connect, list the tools, disconnect. */
+data class McpProbe(
+    val ok: Boolean,
+    val error: String?,
+    /** (name, description) */
+    val tools: List<Pair<String, String>>,
+    val prompts: Int,
+    val resources: Int,
+)
 
 /** The profile's SOUL.md: [exists] false is a profile that never wrote one (the stock default). */
 data class SoulText(val profile: String, val content: String, val exists: Boolean)
@@ -59,6 +96,51 @@ object AgentParser {
             )
         }
     }
+
+    fun mcpCatalog(root: JsonElement): List<McpCatalogEntry>? {
+        val arr = (root as? JsonObject)?.get("entries") as? JsonArray ?: return null
+        return arr.mapNotNull { el ->
+            val o = el as? JsonObject ?: return@mapNotNull null
+            val name = o.str("name") ?: return@mapNotNull null
+            McpCatalogEntry(
+                name = name,
+                description = o.str("description").orEmpty(),
+                transport = o.str("transport") ?: "unknown",
+                authType = o.str("auth_type") ?: "none",
+                requiredEnv = (o["required_env"] as? JsonArray)?.mapNotNull { e ->
+                    val eo = e as? JsonObject ?: return@mapNotNull null
+                    val key = eo.str("name") ?: return@mapNotNull null
+                    McpEnvSpec(key, eo.str("prompt") ?: key, (eo["required"] as? JsonPrimitive)?.booleanOrNull ?: true)
+                }.orEmpty(),
+                command = o.str("command"),
+                args = (o["args"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.orEmpty(),
+                url = o.str("url"),
+                needsInstall = (o["needs_install"] as? JsonPrimitive)?.booleanOrNull ?: false,
+                installUrl = o.str("install_url"),
+                installed = (o["installed"] as? JsonPrimitive)?.booleanOrNull ?: false,
+                enabled = (o["enabled"] as? JsonPrimitive)?.booleanOrNull ?: false,
+            )
+        }.sortedBy { it.name.lowercase() }
+    }
+
+    fun mcpProbe(root: JsonElement): McpProbe? {
+        val o = root as? JsonObject ?: return null
+        val ok = (o["ok"] as? JsonPrimitive)?.booleanOrNull ?: return null
+        return McpProbe(
+            ok = ok,
+            error = o.str("error"),
+            tools = (o["tools"] as? JsonArray)?.mapNotNull { t ->
+                val to = t as? JsonObject ?: return@mapNotNull null
+                (to.str("name") ?: return@mapNotNull null) to to.str("description").orEmpty()
+            }.orEmpty(),
+            prompts = (o["prompts"] as? JsonPrimitive)?.intOrNull ?: 0,
+            resources = (o["resources"] as? JsonPrimitive)?.intOrNull ?: 0,
+        )
+    }
+
+    /** `POST /api/mcp/catalog/install` → true when the gateway runs it in the background (a git build). */
+    fun mcpInstallBackground(root: JsonElement): Boolean =
+        ((root as? JsonObject)?.get("background") as? JsonPrimitive)?.booleanOrNull ?: false
 
     /** `GET /api/profiles/active` → the profile this dashboard is scoped to. */
     fun currentProfile(root: JsonElement): String? {
@@ -86,6 +168,28 @@ internal suspend fun GatewayRest.mcpSetEnabled(name: String, enabled: Boolean): 
         "PUT", "/api/mcp/servers/" + enc(name) + "/enabled",
         buildJsonObject { put("enabled", JsonPrimitive(enabled)) }.toString(),
     ).map { }
+
+/** `GET /api/mcp/catalog` — what can be installed, each marked installed/enabled. */
+internal suspend fun GatewayRest.mcpCatalog(): Routed<List<McpCatalogEntry>> =
+    routed("GET", "/api/mcp/catalog").map { parse(it)?.let(AgentParser::mcpCatalog) }
+
+/**
+ * `POST /api/mcp/catalog/install {name, env, enable}` — the entry's declared env vars only (the
+ * route refuses any other). Answers whether the install went to the background.
+ */
+internal suspend fun GatewayRest.mcpInstall(name: String, env: Map<String, String>): Routed<Boolean> =
+    routed(
+        "POST", "/api/mcp/catalog/install",
+        buildJsonObject {
+            put("name", JsonPrimitive(name))
+            put("env", buildJsonObject { env.forEach { (k, v) -> put(k, JsonPrimitive(v)) } })
+            put("enable", JsonPrimitive(true))
+        }.toString(),
+    ).map { body -> parse(body)?.let(AgentParser::mcpInstallBackground) ?: false }
+
+/** `POST /api/mcp/servers/{name}/test` — a probe that failed to connect is still an answer ([McpProbe.ok] false). */
+internal suspend fun GatewayRest.mcpTest(name: String): Routed<McpProbe> =
+    routed("POST", "/api/mcp/servers/" + enc(name) + "/test", "{}").map { parse(it)?.let(AgentParser::mcpProbe) }
 
 internal suspend fun GatewayRest.currentProfile(): Routed<String> =
     routed("GET", "/api/profiles/active").map { parse(it)?.let(AgentParser::currentProfile) }

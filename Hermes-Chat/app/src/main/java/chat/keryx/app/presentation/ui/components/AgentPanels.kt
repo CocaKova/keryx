@@ -56,7 +56,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.keryx.app.presentation.ChatViewModel
 import chat.keryx.app.presentation.LinkHealth
+import chat.keryx.app.R
+import chat.keryx.app.presentation.AgentDelegate
+import chat.keryx.app.transport.direct.McpCatalogEntry
 import chat.keryx.app.transport.direct.McpServer
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 
 // The agent page (makeover): who the agent is up top, what it is doing in three numbers, then
 // every room of it in labelled cards with a count each — the Hermes Mobile bot page, in Keryx's
@@ -311,24 +317,38 @@ internal fun AgentQuickActions(viewModel: ChatViewModel, onDismiss: () -> Unit) 
 @Composable
 internal fun McpTab(viewModel: ChatViewModel) {
     val panel by viewModel.agent.mcp.collectAsState()
+    val catalog by viewModel.agent.catalog.collectAsState()
+    val catalogAvailable by viewModel.agent.catalogAvailable.collectAsState()
+    val probes by viewModel.agent.probes.collectAsState()
+    // The catalog is read when the spoke opens, not with the landing: it is a browse, not a count.
+    LaunchedEffect(Unit) { viewModel.agent.refreshMcpCatalog() }
+    var installing by remember { mutableStateOf<McpCatalogEntry?>(null) }
     Column(Modifier.fillMaxSize()) {
         PanelErrorLine(panel.error)
         val servers = panel.data
-        when {
-            servers == null -> if (panel.error == null) PanelLoading()
-            servers.isEmpty() -> Text(
-                "No MCP servers yet. Add one on the gateway with `hermes mcp add`, and it shows up here.",
-                fontSize = KeryxType.body,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
-            )
-            else -> LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp)) {
+        if (servers == null) {
+            if (panel.error == null) PanelLoading()
+            return@Column
+        }
+        LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp)) {
+            if (servers.isEmpty()) item(key = "mcp-empty") {
+                Text(
+                    "No MCP servers yet. Add one on the gateway with `hermes mcp add`, and it shows up here.",
+                    fontSize = KeryxType.body,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 20.dp),
+                )
+            } else {
                 item(key = "mcp-group") {
                     val on = servers.count { it.enabled }
                     KeryxHubGroup("Servers · $on of ${servers.size} on", modifier = Modifier.animateContentSize(KeryxMotion.settleSize)) {
                         servers.forEachIndexed { i, s ->
                             if (i > 0) KeryxHubDivider()
-                            McpRow(s) { viewModel.agent.setMcpEnabled(s.name, it) }
+                            McpRow(
+                                s,
+                                probe = probes[s.name],
+                                onTest = { viewModel.agent.testMcp(s.name) },
+                            ) { viewModel.agent.setMcpEnabled(s.name, it) }
                         }
                     }
                 }
@@ -341,53 +361,296 @@ internal fun McpTab(viewModel: ChatViewModel) {
                     )
                 }
             }
+            // Makeover: the dashboard's catalog — the approved servers, each showing what it
+            // would run before it is installed. Hidden on a dashboard without the route.
+            if (catalogAvailable == true) item(key = "mcp-catalog") {
+                val entries = catalog.data
+                when {
+                    entries == null -> if (catalog.error == null) {
+                        KeryxSkeleton(rows = 3, modifier = Modifier.padding(horizontal = 8.dp, vertical = 16.dp))
+                    } else PanelErrorLine(catalog.error)
+                    entries.isNotEmpty() -> KeryxHubGroup(
+                        stringResource(R.string.mk_mcp_catalog, entries.count { !it.installed }),
+                        modifier = Modifier.animateContentSize(KeryxMotion.settleSize),
+                    ) {
+                        entries.forEachIndexed { i, e ->
+                            if (i > 0) KeryxHubDivider()
+                            McpCatalogRow(e) { installing = e }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    installing?.let { entry -> McpInstallDialog(entry, viewModel) { installing = null } }
+}
+
+@Composable
+private fun McpRow(
+    s: McpServer,
+    probe: AgentDelegate.ProbeState?,
+    onTest: () -> Unit,
+    onToggle: (Boolean) -> Unit,
+) {
+    val dim by androidx.compose.animation.core.animateFloatAsState(
+        if (s.enabled) 1f else 0.55f, KeryxMotion.glide, label = "mcpDim",
+    )
+    Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.weight(1f).graphicsLayer { alpha = dim }) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        s.name, fontSize = KeryxType.title, fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    TransportBadge(s.transport)
+                }
+                if (s.target.isNotBlank()) Text(
+                    middleEllipsis(s.target, 44),
+                    fontSize = KeryxType.caption,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+                val extras = listOfNotNull(
+                    s.envCount.takeIf { it > 0 }?.let { if (it == 1) "1 env var" else "$it env vars" },
+                    s.auth?.let { "auth: $it" },
+                    s.plugin?.let { "from plugin $it" },
+                )
+                if (extras.isNotEmpty()) Text(
+                    extras.joinToString(" · "),
+                    fontSize = KeryxType.micro,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+            Spacer(Modifier.width(10.dp))
+            McpTestPill(testing = probe == AgentDelegate.ProbeState.Testing, onClick = onTest)
+            Spacer(Modifier.width(8.dp))
+            Switch(checked = s.enabled, onCheckedChange = onToggle, enabled = s.plugin == null)
+        }
+        AnimatedVisibility(probe != null && probe != AgentDelegate.ProbeState.Testing, enter = keryxReveal(), exit = keryxConceal()) {
+            if (probe != null) McpProbeResult(probe)
+        }
+    }
+}
+
+/** The dashboard's Test, as a small pill: connect, list the tools, let go. */
+@Composable
+private fun McpTestPill(testing: Boolean, onClick: () -> Unit) {
+    val source = remember { MutableInteractionSource() }
+    val accent = MaterialTheme.colorScheme.primary
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .keryxPressScale(source)
+            .clip(CircleShape)
+            .border(1.dp, accent.copy(alpha = 0.45f), CircleShape)
+            .clickable(enabled = !testing, interactionSource = source, indication = androidx.compose.material3.ripple(), onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+    ) {
+        if (testing) {
+            KeryxBreathingDot(color = accent, alive = true, size = 6.dp)
+            Spacer(Modifier.width(5.dp))
+        }
+        Text(
+            stringResource(if (testing) R.string.mk_mcp_testing else R.string.mk_mcp_test),
+            fontSize = KeryxType.micro,
+            fontWeight = FontWeight.SemiBold,
+            color = keryxAccentInk(accent),
+        )
+    }
+}
+
+/** A test's answer under its row: what the server offers, or why it couldn't be reached. */
+@Composable
+private fun McpProbeResult(state: AgentDelegate.ProbeState) {
+    Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        when (state) {
+            AgentDelegate.ProbeState.Testing -> Unit
+            is AgentDelegate.ProbeState.Done -> {
+                val p = state.probe
+                if (p.ok) {
+                    val extras = listOfNotNull(
+                        p.prompts.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.mk_mcp_prompts, it, it) },
+                        p.resources.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.mk_mcp_resources, it, it) },
+                    )
+                    Text(
+                        (listOf("✓ " + pluralStringResource(R.plurals.mk_mcp_test_ok, p.tools.size, p.tools.size)) + extras)
+                            .joinToString(" · "),
+                        fontSize = KeryxType.caption,
+                        fontWeight = FontWeight.SemiBold,
+                        color = KeryxStatus.good,
+                    )
+                    if (p.tools.isNotEmpty()) Text(
+                        p.tools.joinToString(", ") { it.first },
+                        fontSize = KeryxType.micro,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                } else McpProbeError(p.error.orEmpty())
+            }
+            is AgentDelegate.ProbeState.Failed -> McpProbeError(state.message)
         }
     }
 }
 
 @Composable
-private fun McpRow(s: McpServer, onToggle: (Boolean) -> Unit) {
-    val dim by androidx.compose.animation.core.animateFloatAsState(
-        if (s.enabled) 1f else 0.55f, KeryxMotion.glide, label = "mcpDim",
+private fun McpProbeError(message: String) {
+    Text(
+        if (message.isBlank()) stringResource(R.string.mk_mcp_test_unsupported)
+        else "✕ " + stringResource(R.string.mk_mcp_test_failed, chat.keryx.core.model.FriendlyError.of(message)),
+        fontSize = KeryxType.caption,
+        color = KeryxStatus.bad,
+        maxLines = 4, overflow = TextOverflow.Ellipsis,
     )
+}
+
+@Composable
+private fun McpCatalogRow(e: McpCatalogEntry, onInstall: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
-        Column(Modifier.weight(1f).graphicsLayer { alpha = dim }) {
+        Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    s.name, fontSize = KeryxType.title, fontWeight = FontWeight.SemiBold,
+                    e.name, fontSize = KeryxType.title, fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false),
                 )
                 Spacer(Modifier.width(8.dp))
-                TransportBadge(s.transport)
+                TransportBadge(e.transport)
             }
-            if (s.target.isNotBlank()) Text(
-                middleEllipsis(s.target, 44),
+            if (e.description.isNotBlank()) Text(
+                e.description,
                 fontSize = KeryxType.caption,
-                fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
+                maxLines = 2, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 2.dp),
             )
-            val extras = listOfNotNull(
-                s.envCount.takeIf { it > 0 }?.let { if (it == 1) "1 env var" else "$it env vars" },
-                s.auth?.let { "auth: $it" },
-                s.plugin?.let { "from plugin $it" },
+            val notes = listOfNotNull(
+                e.requiredEnv.size.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.mk_mcp_catalog_keys, it, it) },
+                if (e.needsInstall) stringResource(R.string.mk_mcp_catalog_builds) else null,
+                if (e.authType == "oauth") stringResource(R.string.mk_mcp_catalog_oauth) else null,
             )
-            if (extras.isNotEmpty()) Text(
-                extras.joinToString(" · "),
+            if (notes.isNotEmpty()) Text(
+                notes.joinToString(" · "),
                 fontSize = KeryxType.micro,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp),
             )
         }
         Spacer(Modifier.width(10.dp))
-        Switch(checked = s.enabled, onCheckedChange = onToggle, enabled = s.plugin == null)
+        if (e.installed) Text(
+            stringResource(R.string.mk_mcp_installed),
+            fontSize = KeryxType.micro,
+            fontWeight = FontWeight.SemiBold,
+            color = KeryxStatus.good,
+        ) else OutlinedButton(onClick = onInstall) {
+            Text(stringResource(R.string.mk_mcp_install), fontSize = KeryxType.body)
+        }
     }
+}
+
+/**
+ * Before an install: what it is, what it will run (the catalog's trust model is that you read
+ * this first), the build step and sign-in it needs, and a field for each credential it declares.
+ */
+@Composable
+private fun McpInstallDialog(entry: McpCatalogEntry, viewModel: ChatViewModel, onDismiss: () -> Unit) {
+    val values = remember(entry.name) { mutableStateMapOf<String, String>() }
+    var busy by remember { mutableStateOf(false) }
+    val ready = entry.requiredEnv.all { !it.required || values[it.name].orEmpty().isNotBlank() }
+    // Hoisted: the outcome lands in a callback, where stringResource can't be called.
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val installedText = stringResource(R.string.mk_mcp_installed_toast, entry.name)
+    val buildingText = stringResource(R.string.mk_mcp_building_toast, entry.name)
+    val unsupportedText = stringResource(R.string.mk_mcp_install_unsupported)
+    androidx.compose.material3.AlertDialog(
+        shape = RoundedCornerShape(KeryxRadius.sheet),
+        onDismissRequest = { if (!busy) onDismiss() },
+        title = { Text(stringResource(R.string.mk_mcp_install_title, entry.name), fontSize = KeryxType.titleLarge) },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+            ) {
+                if (entry.description.isNotBlank()) Text(entry.description, fontSize = KeryxType.body)
+                if (entry.target.isNotBlank()) {
+                    Text(stringResource(R.string.mk_mcp_install_runs), fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        entry.target,
+                        fontSize = KeryxType.caption,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(KeryxRadius.field))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                            .padding(10.dp),
+                    )
+                }
+                if (entry.needsInstall) Text(
+                    stringResource(R.string.mk_mcp_install_builds, entry.installUrl ?: entry.name),
+                    fontSize = KeryxType.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (entry.authType == "oauth") Text(
+                    stringResource(R.string.mk_mcp_install_oauth),
+                    fontSize = KeryxType.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                entry.requiredEnv.forEach { spec ->
+                    val secretish = Regex("KEY|TOKEN|SECRET|PASSWORD", RegexOption.IGNORE_CASE).containsMatchIn(spec.name)
+                    OutlinedTextField(
+                        value = values[spec.name].orEmpty(),
+                        onValueChange = { values[spec.name] = it },
+                        label = { Text(spec.prompt, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        supportingText = { Text(spec.name, fontFamily = FontFamily.Monospace) },
+                        singleLine = true,
+                        enabled = !busy,
+                        visualTransformation = if (secretish) androidx.compose.ui.text.input.PasswordVisualTransformation()
+                        else androidx.compose.ui.text.input.VisualTransformation.None,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                if (entry.requiredEnv.isNotEmpty()) Text(
+                    stringResource(R.string.mk_mcp_install_env_note),
+                    fontSize = KeryxType.micro,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = ready && !busy,
+                onClick = {
+                    busy = true
+                    viewModel.agent.installMcp(entry, values.toMap()) { outcome ->
+                        busy = false
+                        when (outcome) {
+                            AgentDelegate.InstallOutcome.Installed -> { viewModel.toast(installedText); onDismiss() }
+                            AgentDelegate.InstallOutcome.Building -> { viewModel.toast(buildingText); onDismiss() }
+                            AgentDelegate.InstallOutcome.Unsupported -> { viewModel.toast(unsupportedText); onDismiss() }
+                            is AgentDelegate.InstallOutcome.Refused -> viewModel.toast(
+                                context.getString(R.string.mk_mcp_install_refused, entry.name, outcome.message.take(120)),
+                            )
+                        }
+                    }
+                },
+            ) { Text(stringResource(if (busy) R.string.mk_mcp_installing else R.string.mk_mcp_install)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !busy) { Text(stringResource(R.string.mk_cancel)) }
+        },
+    )
 }
 
 @Composable

@@ -4,4 +4,43 @@
 
     <!-- Settings › Appearance: the room-transition preview (TalkBack reads it). -->
     <string name="mk_transition_preview">Preview: the %1$s room transition at %2$s speed</string>
+    <!-- Shared verbs. -->
+    <string name="mk_cancel">Cancel</string>
+
+    <!-- The agent page › MCP servers: a server's test, and the dashboard's catalog. -->
+    <string name="mk_mcp_test">Test</string>
+    <string name="mk_mcp_testing">Testing</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Reached it · %d tool</item>
+        <item quantity="other">Reached it · %d tools</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d prompt</item>
+        <item quantity="other">%d prompts</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d resource</item>
+        <item quantity="other">%d resources</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Couldn\'t reach it: %1$s</string>
+    <string name="mk_mcp_test_unsupported">This gateway can\'t test servers from here.</string>
+    <string name="mk_mcp_catalog">Catalog · %1$d to add</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">asks for %d key</item>
+        <item quantity="other">asks for %d keys</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">builds from source</string>
+    <string name="mk_mcp_catalog_oauth">signs in with OAuth</string>
+    <string name="mk_mcp_installed">Installed</string>
+    <string name="mk_mcp_install">Install</string>
+    <string name="mk_mcp_installing">Installing…</string>
+    <string name="mk_mcp_install_title">Install %1$s?</string>
+    <string name="mk_mcp_install_runs">It will run</string>
+    <string name="mk_mcp_install_builds">The gateway first clones and builds it from %1$s, in the background.</string>
+    <string name="mk_mcp_install_oauth">It signs in with OAuth: finish that on the gateway\'s dashboard once it\'s installed.</string>
+    <string name="mk_mcp_install_env_note">Kept on the gateway: secrets in its .env, the rest in its config.</string>
+    <string name="mk_mcp_installed_toast">%1$s installed — on from the next session</string>
+    <string name="mk_mcp_building_toast">%1$s is building on the gateway — it shows up here when it\'s done</string>
+    <string name="mk_mcp_install_refused">Couldn\'t install %1$s: %2$s</string>
+    <string name="mk_mcp_install_unsupported">This gateway can\'t install MCP servers from here.</string>
 </resources>
