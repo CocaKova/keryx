@@ -1,5 +1,8 @@
 package chat.keryx.core.model
 
+import chat.keryx.core.i18n.CoreWords
+import chat.keryx.core.i18n.Phrase
+
 /**
  * A transport error in words a person can act on (2.19.1). Panels showed what the HTTP stack
  * said ("HTTP 404", "Unable to resolve host … No address associated with hostname"), which
@@ -8,19 +11,19 @@ package chat.keryx.core.model
 object FriendlyError {
     fun of(raw: String?): String {
         val text = raw?.trim().orEmpty()
-        if (text.isEmpty()) return "Something went wrong talking to the gateway."
+        if (text.isEmpty()) return CoreWords.t(Phrase.ERR_GENERIC)
         val low = text.lowercase()
         val code = Regex("""\bhttp (\d{3})\b""").find(low)?.groupValues?.get(1)?.toIntOrNull()
         return when {
-            code == 404 -> "The gateway doesn't offer this (HTTP 404). It needs the keryx-stream plugin; check it is enabled and your Hermes Link URL points at it."
-            code == 401 || code == 403 -> "The gateway turned the sign-in away (HTTP $code). Sign in again from Settings → Gateways."
-            code != null && code >= 500 -> "The gateway hit an error (HTTP $code). Its log says what happened."
+            code == 404 -> CoreWords.t(Phrase.ERR_404)
+            code == 401 || code == 403 -> CoreWords.t(Phrase.ERR_AUTH, code.toString())
+            code != null && code >= 500 -> CoreWords.t(Phrase.ERR_SERVER, code.toString())
             "unable to resolve host" in low || "no address associated" in low || "unknownhost" in low ->
-                "Can't find the gateway. Check your connection (and Tailscale, if you use it)."
+                CoreWords.t(Phrase.ERR_NO_HOST)
             "failed to connect" in low || "connection refused" in low || "econnrefused" in low ->
-                "The gateway isn't answering. Is Hermes running?"
-            "timeout" in low || "timed out" in low -> "The gateway took too long to answer."
-            "socket" in low || "not connected" in low -> "Not connected to the gateway right now. Keryx retries on its own."
+                CoreWords.t(Phrase.ERR_REFUSED)
+            "timeout" in low || "timed out" in low -> CoreWords.t(Phrase.ERR_TIMEOUT)
+            "socket" in low || "not connected" in low -> CoreWords.t(Phrase.ERR_NOT_CONNECTED)
             else -> text
         }
     }

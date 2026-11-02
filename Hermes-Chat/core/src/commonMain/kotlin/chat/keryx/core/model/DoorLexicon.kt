@@ -1,5 +1,8 @@
 package chat.keryx.core.model
 
+import chat.keryx.core.i18n.CoreWords
+import chat.keryx.core.i18n.Phrase
+
 /**
  * The words a door uses for its own things.
  *
@@ -42,32 +45,34 @@ data class DoorLexicon(
     val nounTitle: String get() = noun.replaceFirstChar { it.uppercase() }
 
     companion object {
-        val MATRIX = DoorLexicon(
-            noun = "room",
-            plural = "rooms",
-            pinnedHeader = "Quick Rooms",
-            listHeader = "Rooms",
-            pinVerb = "Pin to Quick Rooms",
-            unpinVerb = "Unpin from Quick Rooms",
+        // Getters, not stored values (3.0): the words follow the app's language, which can
+        // change while the process lives.
+        val MATRIX: DoorLexicon get() = DoorLexicon(
+            noun = CoreWords.t(Phrase.LEX_ROOM),
+            plural = CoreWords.t(Phrase.LEX_ROOMS),
+            pinnedHeader = CoreWords.t(Phrase.LEX_QUICK_ROOMS),
+            listHeader = CoreWords.t(Phrase.LEX_ROOMS_HEADER),
+            pinVerb = CoreWords.t(Phrase.LEX_PIN_QUICK),
+            unpinVerb = CoreWords.t(Phrase.LEX_UNPIN_QUICK),
             pinHint = "",
-            emptyList = "No rooms yet",
-            emptyChat = "Select a room to begin",
-            shareTitle = "Share to a room",
-            openOneFirst = "Open a room to use quick actions",
+            emptyList = CoreWords.t(Phrase.LEX_NO_ROOMS),
+            emptyChat = CoreWords.t(Phrase.LEX_SELECT_ROOM),
+            shareTitle = CoreWords.t(Phrase.LEX_SHARE_ROOM),
+            openOneFirst = CoreWords.t(Phrase.LEX_OPEN_ROOM_QUICK),
         )
 
-        val DIRECT = DoorLexicon(
-            noun = "session",
-            plural = "sessions",
-            pinnedHeader = "Pinned",
-            listHeader = "Sessions",
-            pinVerb = "Pin",
-            unpinVerb = "Unpin",
-            pinHint = "Kept on the gateway — never auto-archived",
-            emptyList = "No sessions yet",
-            emptyChat = "Open a session to begin",
-            shareTitle = "Share to a session",
-            openOneFirst = "Open a session to use quick actions",
+        val DIRECT: DoorLexicon get() = DoorLexicon(
+            noun = CoreWords.t(Phrase.LEX_SESSION),
+            plural = CoreWords.t(Phrase.LEX_SESSIONS),
+            pinnedHeader = CoreWords.t(Phrase.LEX_PINNED),
+            listHeader = CoreWords.t(Phrase.LEX_SESSIONS_HEADER),
+            pinVerb = CoreWords.t(Phrase.LEX_PIN),
+            unpinVerb = CoreWords.t(Phrase.LEX_UNPIN),
+            pinHint = CoreWords.t(Phrase.LEX_PIN_HINT),
+            emptyList = CoreWords.t(Phrase.LEX_NO_SESSIONS),
+            emptyChat = CoreWords.t(Phrase.LEX_OPEN_SESSION),
+            shareTitle = CoreWords.t(Phrase.LEX_SHARE_SESSION),
+            openOneFirst = CoreWords.t(Phrase.LEX_OPEN_SESSION_QUICK),
         )
 
         fun forDoor(direct: Boolean): DoorLexicon = if (direct) DIRECT else MATRIX

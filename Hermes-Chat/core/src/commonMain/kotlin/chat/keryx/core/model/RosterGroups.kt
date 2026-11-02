@@ -1,5 +1,8 @@
 package chat.keryx.core.model
 
+import chat.keryx.core.i18n.CoreWords
+import chat.keryx.core.i18n.Phrase
+
 /**
  * The drawer's shelves: a roster read by *when*, not just in one long newest-first run.
  *
@@ -10,13 +13,17 @@ package chat.keryx.core.model
  * object has no clock and no zone, and a shelf boundary that moves with the phone's zone is
  * the phone's to decide.
  */
-enum class RosterGroup(val label: String) {
-    TODAY("Today"),
-    YESTERDAY("Yesterday"),
-    THIS_WEEK("This week"),
-    OLDER("Older"),
+enum class RosterGroup(private val phrase: Phrase) {
+    TODAY(Phrase.ROSTER_TODAY),
+    YESTERDAY(Phrase.ROSTER_YESTERDAY),
+    THIS_WEEK(Phrase.ROSTER_THIS_WEEK),
+    OLDER(Phrase.ROSTER_OLDER),
     /** No activity stamp at all — a row the wire has not dated. Sinks below everything. */
-    UNDATED("Undated"),
+    UNDATED(Phrase.ROSTER_UNDATED),
+    ;
+
+    /** The shelf's header, in the app's language. */
+    val label: String get() = CoreWords.t(phrase)
 }
 
 data class RosterSection(val group: RosterGroup, val rows: List<RoomProfile>) {

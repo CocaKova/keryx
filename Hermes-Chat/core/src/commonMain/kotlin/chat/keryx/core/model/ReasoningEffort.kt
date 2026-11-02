@@ -1,5 +1,8 @@
 package chat.keryx.core.model
 
+import chat.keryx.core.i18n.CoreWords
+import chat.keryx.core.i18n.Phrase
+
 /**
  * How hard the model is asked to think — Hermes' reasoning effort, as a selectable scale.
  *
@@ -31,14 +34,14 @@ object ReasoningEffort {
      * fallback list said "X-High" — with a fourth, "Extra high", in the refusal notices.
      */
     private val NAMES = mapOf(
-        "none" to "Off",
-        "minimal" to "Minimal",
-        "low" to "Low",
-        "medium" to "Medium",
-        "high" to "High",
-        "xhigh" to "X-High",
-        "max" to "Max",
-        "ultra" to "Ultra",
+        "none" to Phrase.EFFORT_OFF,
+        "minimal" to Phrase.EFFORT_MINIMAL,
+        "low" to Phrase.EFFORT_LOW,
+        "medium" to Phrase.EFFORT_MEDIUM,
+        "high" to Phrase.EFFORT_HIGH,
+        "xhigh" to Phrase.EFFORT_XHIGH,
+        "max" to Phrase.EFFORT_MAX,
+        "ultra" to Phrase.EFFORT_ULTRA,
     )
 
     /** An empty or unrecognized value means the Hermes default — never a blank pill. */
@@ -62,7 +65,7 @@ object ReasoningEffort {
         if (v.isEmpty()) return ""
         val brains = gatewayLabels[v] ?: gatewayLabels[raw?.trim().orEmpty()]
         brains?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
-        return NAMES[v] ?: v
+        return NAMES[v]?.let { CoreWords.t(it) } ?: v
     }
 
     /** [label]; kept so older call sites read the same one spelling. */

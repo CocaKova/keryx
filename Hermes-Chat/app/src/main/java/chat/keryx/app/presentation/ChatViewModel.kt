@@ -273,8 +273,10 @@ class ChatViewModel(
 
     /** The words this door uses for its rows ("room" / "session") — chosen once, from the
      *  transport, and threaded to every surface that says the noun. */
-    val lexicon: chat.keryx.core.model.DoorLexicon =
-        chat.keryx.core.model.DoorLexicon.forDoor(direct = transport.matrix == null)
+    private val lexiconDirect = transport.matrix == null
+    /** Read fresh each time (3.0): the door is fixed, the language it speaks is not. */
+    val lexicon: chat.keryx.core.model.DoorLexicon
+        get() = chat.keryx.core.model.DoorLexicon.forDoor(direct = lexiconDirect)
 
     /** Direct door: re-pull the session roster (the drawer asks on open — the list is the one
      *  thing another client, a cron run or a compaction can change behind the phone's back). */

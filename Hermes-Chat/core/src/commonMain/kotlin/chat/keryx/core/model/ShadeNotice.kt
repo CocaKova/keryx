@@ -1,5 +1,8 @@
 package chat.keryx.core.model
 
+import chat.keryx.core.i18n.CoreWords
+import chat.keryx.core.i18n.Phrase
+
 /**
  * What a pending request looks like FROM THE NOTIFICATION SHADE — the pure half of G16's
  * "respond without opening the app". The Android layer renders a [ShadeNotice] verbatim;
@@ -30,7 +33,7 @@ data class ShadeNotice(
     val timeoutMs: Long,
     /** What a secure lock screen shows instead of [body]: the request's kind, never its
      *  content (the command line, the question, the variable name). */
-    val lockScreenBody: String = "Unlock to see it.",
+    val lockScreenBody: String = CoreWords.t(Phrase.SHADE_UNLOCK_TO_SEE),
 )
 
 /**
@@ -75,18 +78,18 @@ object ShadeNotices {
      *  a lock-screen shortcut; "session" is a power move better made from the in-app card). */
     fun forApproval(req: ApprovalRequest): ShadeNotice {
         val actions = buildList {
-            if ("once" in req.choices) add(ShadeAction("Approve", "once", requiresUnlock = true))
-            if ("always" in req.choices) add(ShadeAction("Always", "always", requiresUnlock = true))
-            else if ("session" in req.choices) add(ShadeAction("This session", "session", requiresUnlock = true))
-            if ("deny" in req.choices) add(ShadeAction("Deny", "deny"))
+            if ("once" in req.choices) add(ShadeAction(CoreWords.t(Phrase.SHADE_APPROVE), "once", requiresUnlock = true))
+            if ("always" in req.choices) add(ShadeAction(CoreWords.t(Phrase.SHADE_ALWAYS), "always", requiresUnlock = true))
+            else if ("session" in req.choices) add(ShadeAction(CoreWords.t(Phrase.SHADE_THIS_SESSION), "session", requiresUnlock = true))
+            if ("deny" in req.choices) add(ShadeAction(CoreWords.t(Phrase.SHADE_DENY), "deny"))
         }.take(MAX_ACTIONS)
         return ShadeNotice(
-            title = "Approval needed",
-            body = req.description.ifBlank { req.command }.ifBlank { "The agent wants to run a guarded command." },
+            title = CoreWords.t(Phrase.SHADE_APPROVAL_TITLE),
+            body = req.description.ifBlank { req.command }.ifBlank { CoreWords.t(Phrase.SHADE_APPROVAL_BODY) },
             actions = actions,
             freeTextReply = false,
             timeoutMs = APPROVAL_TIMEOUT_MS,
-            lockScreenBody = "The agent wants to run a command. Unlock to see it.",
+            lockScreenBody = CoreWords.t(Phrase.SHADE_APPROVAL_LOCKED),
         )
     }
 
@@ -98,32 +101,35 @@ object ShadeNotices {
                 !req.multiSelect &&
                 req.choices.size <= MAX_ACTIONS
             ShadeNotice(
-                title = "The agent asks",
-                body = req.prompt.ifBlank { "The agent has a question." },
+                title = CoreWords.t(Phrase.SHADE_ASKS_TITLE),
+                body = req.prompt.ifBlank { CoreWords.t(Phrase.SHADE_ASKS_BODY) },
                 actions = if (asButtons) req.choices.map { ShadeAction(it, it) } else emptyList(),
                 // Free text only when the question IS free text; a choice question answered
                 // off-list from the shade is more likely a typo than an intent.
                 freeTextReply = req.choices.isEmpty(),
                 timeoutMs = BLOCKING_TIMEOUT_MS,
-                lockScreenBody = "The agent has a question. Unlock to read it.",
+                lockScreenBody = CoreWords.t(Phrase.SHADE_ASKS_LOCKED),
             )
         }
         BlockingKind.SUDO -> ShadeNotice(
-            title = "Password needed",
-            body = "A command on the host is waiting for your sudo password. Tap to answer.",
+            title = CoreWords.t(Phrase.SHADE_SUDO_TITLE),
+            body = CoreWords.t(Phrase.SHADE_SUDO_BODY),
             actions = emptyList(),
             freeTextReply = false,
             timeoutMs = BLOCKING_TIMEOUT_MS,
-            lockScreenBody = "A command is waiting for a password. Unlock to answer.",
+            lockScreenBody = CoreWords.t(Phrase.SHADE_SUDO_LOCKED),
         )
         BlockingKind.SECRET -> ShadeNotice(
-            title = "Secret needed",
-            body = (if (req.envVar.isNotBlank()) "${req.envVar}: " else "") +
-                req.prompt.ifBlank { "The agent needs a credential." } + " Tap to answer.",
+            title = CoreWords.t(Phrase.SHADE_SECRET_TITLE),
+            body = CoreWords.t(
+                Phrase.SHADE_SECRET_BODY,
+                (if (req.envVar.isNotBlank()) "${req.envVar}: " else "") +
+                    req.prompt.ifBlank { CoreWords.t(Phrase.SHADE_SECRET_FALLBACK) },
+            ),
             actions = emptyList(),
             freeTextReply = false,
             timeoutMs = BLOCKING_TIMEOUT_MS,
-            lockScreenBody = "The agent needs a credential. Unlock to answer.",
+            lockScreenBody = CoreWords.t(Phrase.SHADE_SECRET_LOCKED),
         )
     }
 }

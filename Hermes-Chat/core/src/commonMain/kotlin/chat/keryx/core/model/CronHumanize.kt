@@ -1,5 +1,8 @@
 package chat.keryx.core.model
 
+import chat.keryx.core.i18n.CoreWords
+import chat.keryx.core.i18n.CountPhrase
+import chat.keryx.core.i18n.Phrase
 import kotlinx.datetime.Instant
 
 /**
@@ -12,9 +15,13 @@ import kotlinx.datetime.Instant
 object CronHumanize {
 
     private val DOW = mapOf(
-        "0" to "Sun", "1" to "Mon", "2" to "Tue", "3" to "Wed",
-        "4" to "Thu", "5" to "Fri", "6" to "Sat", "7" to "Sun",
+        "0" to Phrase.CRON_SUN, "1" to Phrase.CRON_MON, "2" to Phrase.CRON_TUE, "3" to Phrase.CRON_WED,
+        "4" to Phrase.CRON_THU, "5" to Phrase.CRON_FRI, "6" to Phrase.CRON_SAT, "7" to Phrase.CRON_SUN,
     )
+
+    /** A count too big for a plural rule is not a schedule anyone wrote; null = say it raw. */
+    private fun everyDays(d: Long): String? = d.takeIf { it <= Int.MAX_VALUE }?.let { CoreWords.n(CountPhrase.CRON_EVERY_DAYS, it.toInt()) }
+    private fun everyHours(h: Long): String? = h.takeIf { it <= Int.MAX_VALUE }?.let { CoreWords.n(CountPhrase.CRON_EVERY_HOURS, it.toInt()) }
 
     /** "0 19 * * 0" → "Sun 19:00" · "15 7 * * 1-5" → "weekdays 07:15" · "every 30m" →
      *  "every 30 min" · unparseable → the raw string (never lie, never hide). */
@@ -34,13 +41,13 @@ object CronHumanize {
             return when {
                 mins % (60 * 24) == 0L -> {
                     val d = mins / (60 * 24)
-                    if (d == 1L) "daily" else "every $d days"
+                    if (d == 1L) CoreWords.t(Phrase.CRON_DAILY) else everyDays(d) ?: s
                 }
                 mins % 60 == 0L -> {
                     val h = mins / 60
-                    if (h == 1L) "hourly" else "every $h h"
+                    if (h == 1L) CoreWords.t(Phrase.CRON_HOURLY) else everyHours(h) ?: s
                 }
-                else -> "every $mins min"
+                else -> CoreWords.t(Phrase.CRON_EVERY_MIN, mins)
             }
         }
 
@@ -53,22 +60,22 @@ object CronHumanize {
 
         // Step forms: "*/30 * * * *", "0 */2 * * *".
         Regex("""^\*/(\d+)$""").find(min)?.let { m ->
-            if (hour == "*" && dom == "*" && dow == "*") return "every ${m.groupValues[1]} min"
+            if (hour == "*" && dom == "*" && dow == "*") return CoreWords.t(Phrase.CRON_EVERY_MIN, m.groupValues[1])
         }
         Regex("""^\*/(\d+)$""").find(hour)?.let { m ->
-            if (dom == "*" && dow == "*") return "every ${m.groupValues[1]} h"
+            if (dom == "*" && dow == "*") return m.groupValues[1].toLongOrNull()?.let(::everyHours) ?: s
         }
 
         val time = clock(hour, min) ?: return s
         return when {
-            dom == "*" && dow == "*" -> "daily $time"
-            dom == "*" && dow == "1-5" -> "weekdays $time"
-            dom == "*" && (dow == "0,6" || dow == "6,0") -> "weekends $time"
+            dom == "*" && dow == "*" -> CoreWords.t(Phrase.CRON_DAILY_AT, time)
+            dom == "*" && dow == "1-5" -> CoreWords.t(Phrase.CRON_WEEKDAYS_AT, time)
+            dom == "*" && (dow == "0,6" || dow == "6,0") -> CoreWords.t(Phrase.CRON_WEEKENDS_AT, time)
             dom == "*" -> {
-                val names = dow.split(",").map { DOW[it] ?: return s }
-                "${names.joinToString("/")} $time"
+                val names = dow.split(",").map { DOW[it]?.let { d -> CoreWords.t(d) } ?: return s }
+                CoreWords.t(Phrase.CRON_DAYS_AT, names.joinToString("/"), time)
             }
-            dow == "*" && dom.toIntOrNull() != null -> "monthly (day $dom) $time"
+            dow == "*" && dom.toIntOrNull() != null -> CoreWords.t(Phrase.CRON_MONTHLY_AT, dom, time)
             else -> s
         }
     }
@@ -86,12 +93,12 @@ object CronHumanize {
         val at = runCatching { Instant.parse(nextRunAtIso.trim()) }.getOrNull() ?: return null
         val deltaMin = (at.toEpochMilliseconds() - nowMs) / 60_000
         if (deltaMin < 0) return null
-        return "next in " + when {
-            deltaMin < 1 -> "<1m"
-            deltaMin < 90 -> "${deltaMin}m"
-            deltaMin < 36 * 60 -> "${deltaMin / 60}h"
-            else -> "${deltaMin / (60 * 24)}d"
-        }
+        return CoreWords.t(Phrase.CRON_NEXT_IN, when {
+            deltaMin < 1 -> CoreWords.t(Phrase.CRON_UNDER_A_MINUTE)
+            deltaMin < 90 -> CoreWords.t(Phrase.CRON_MINUTES_SHORT, deltaMin)
+            deltaMin < 36 * 60 -> CoreWords.t(Phrase.CRON_HOURS_SHORT, deltaMin / 60)
+            else -> CoreWords.t(Phrase.CRON_DAYS_SHORT, deltaMin / (60 * 24))
+        })
     }
 
     /**

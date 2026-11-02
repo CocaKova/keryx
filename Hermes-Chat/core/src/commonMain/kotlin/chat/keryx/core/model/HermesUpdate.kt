@@ -1,5 +1,8 @@
 package chat.keryx.core.model
 
+import chat.keryx.core.i18n.CoreWords
+import chat.keryx.core.i18n.CountPhrase
+import chat.keryx.core.i18n.Phrase
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -378,11 +381,10 @@ object UpdatePlanner {
 
     /** One line for the count. A count nobody could take is never "up to date". */
     fun behindLine(b: BehindReading?): String = when (val n = b?.count) {
-        null -> "Couldn't reach the update source"
-        -1 -> "Behind by an unknown number of commits"
-        0 -> "Up to date"
-        1 -> "1 commit behind"
-        else -> "$n commits behind"
+        null -> CoreWords.t(Phrase.UPDATE_UNREACHABLE)
+        -1 -> CoreWords.t(Phrase.UPDATE_BEHIND_UNKNOWN)
+        0 -> CoreWords.t(Phrase.UPDATE_UP_TO_DATE)
+        else -> CoreWords.n(CountPhrase.UPDATE_COMMITS_BEHIND, n)
     }
 
     /** Whether to offer the button at all: not when the count is a known zero. */

@@ -1,5 +1,7 @@
 package chat.keryx.core.model
 
+import chat.keryx.core.i18n.CoreWords
+import chat.keryx.core.i18n.Phrase
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -132,22 +134,22 @@ object SessionControls {
      */
     fun headline(goal: GoalControl): String = buildList {
         add("◎ ${goal.title}")
-        if (goal.maxTurns > 0) add("turn ${goal.turnsUsed}/${goal.maxTurns}")
-        if (goal.gates.isNotEmpty()) add("gates ${goal.gates.count { it.passed }}/${goal.gates.size}")
+        if (goal.maxTurns > 0) add(CoreWords.t(Phrase.GOAL_TURN, goal.turnsUsed, goal.maxTurns))
+        if (goal.gates.isNotEmpty()) add(CoreWords.t(Phrase.GOAL_GATES, goal.gates.count { it.passed }, goal.gates.size))
         when {
-            goal.done -> add("✓ done")
-            goal.paused -> add("paused")
-            goal.waitReason != null -> add("waiting")
-            goal.lastVerdict == "blocked" -> add("blocked")
+            goal.done -> add(CoreWords.t(Phrase.GOAL_DONE))
+            goal.paused -> add(CoreWords.t(Phrase.GOAL_PAUSED))
+            goal.waitReason != null -> add(CoreWords.t(Phrase.GOAL_WAITING))
+            goal.lastVerdict == "blocked" -> add(CoreWords.t(Phrase.GOAL_BLOCKED))
         }
     }.joinToString(" · ")
 
     /** The actions the strip offers for [goal]'s state: allowlisted `session.control` verbs. */
     fun actions(goal: GoalControl): List<Pair<String, String>> = buildList {
-        if (goal.active) add("goal.pause" to "Pause")
-        if (goal.paused) add("goal.resume" to "Resume")
-        if (goal.waitReason != null) add("goal.unwait" to "Stop waiting")
-        add("goal.clear" to "Clear")
+        if (goal.active) add("goal.pause" to CoreWords.t(Phrase.GOAL_PAUSE))
+        if (goal.paused) add("goal.resume" to CoreWords.t(Phrase.GOAL_RESUME))
+        if (goal.waitReason != null) add("goal.unwait" to CoreWords.t(Phrase.GOAL_STOP_WAITING))
+        add("goal.clear" to CoreWords.t(Phrase.GOAL_CLEAR))
     }
 
     private fun JsonObject.str(key: String): String? =

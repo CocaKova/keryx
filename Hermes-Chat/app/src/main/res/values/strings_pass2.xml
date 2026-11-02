@@ -12,4 +12,150 @@
     <string name="p2_language_selected">Selected</string>
     <!-- Quiet note under the list when the language in use was machine-translated. "GitHub" stays as is. -->
     <string name="p2_language_ai_note">Translated by AI and not yet checked by a native speaker. Spot a clumsy line? Tell us on GitHub.</string>
+
+    <!-- ===== Words built in the core module (CoreWords.kt). Keys are p2_core_<phrase>. ===== -->
+    <!-- Notifications: a new message from the agent. Keep the emoji. -->
+    <string name="p2_core_notice_photo">🖼 Photo</string>
+    <!-- Notifications: a request you can answer from the notification shade. "Approve"/"Always"/"This session"/"Deny" are buttons. -->
+    <string name="p2_core_shade_unlock_to_see">Unlock to see it.</string>
+    <string name="p2_core_shade_this_session">This session</string>
+    <string name="p2_core_shade_approval_body">The agent wants to run a guarded command.</string>
+    <string name="p2_core_shade_approval_locked">The agent wants to run a command. Unlock to see it.</string>
+    <string name="p2_core_shade_asks_title">The agent asks</string>
+    <string name="p2_core_shade_asks_body">The agent has a question.</string>
+    <string name="p2_core_shade_asks_locked">The agent has a question. Unlock to read it.</string>
+    <string name="p2_core_shade_sudo_title">Password needed</string>
+    <string name="p2_core_shade_sudo_body">A command on the host is waiting for your sudo password. Tap to answer.</string>
+    <string name="p2_core_shade_sudo_locked">A command is waiting for a password. Unlock to answer.</string>
+    <string name="p2_core_shade_secret_title">Secret needed</string>
+    <string name="p2_core_shade_secret_fallback">The agent needs a credential.</string>
+    <string name="p2_core_shade_secret_body">%1$s Tap to answer.</string>
+    <string name="p2_core_shade_secret_locked">The agent needs a credential. Unlock to answer.</string>
+    <!-- Notifications: an agent working right now. %1$s = the agent's name or the chat's title. -->
+    <string name="p2_core_run_writing">Writing the reply…</string>
+    <string name="p2_core_run_step">Step %1$d of %2$d · %3$s</string>
+    <string name="p2_core_run_agent_working">%1$s is working</string>
+    <string name="p2_core_run_working_in">Working · %1$s</string>
+    <!-- The chat list on a Matrix server: chats are "rooms". "Quick Rooms" = the pinned shortcuts. -->
+    <string name="p2_core_lex_room">room</string>
+    <string name="p2_core_lex_rooms">rooms</string>
+    <string name="p2_core_lex_quick_rooms">Quick Rooms</string>
+    <string name="p2_core_lex_rooms_header">Rooms</string>
+    <string name="p2_core_lex_pin_quick">Pin to Quick Rooms</string>
+    <string name="p2_core_lex_unpin_quick">Unpin from Quick Rooms</string>
+    <string name="p2_core_lex_no_rooms">No rooms yet</string>
+    <string name="p2_core_lex_select_room">Select a room to begin</string>
+    <string name="p2_core_lex_share_room">Share to a room</string>
+    <string name="p2_core_lex_open_room_quick">Open a room to use quick actions</string>
+    <!-- The chat list on a Hermes gateway: chats are "sessions". -->
+    <string name="p2_core_lex_session">session</string>
+    <string name="p2_core_lex_sessions">sessions</string>
+    <string name="p2_core_lex_pin">Pin</string>
+    <string name="p2_core_lex_unpin">Unpin</string>
+    <string name="p2_core_lex_pin_hint">Kept on the gateway — never auto-archived</string>
+    <string name="p2_core_lex_no_sessions">No sessions yet</string>
+    <string name="p2_core_lex_open_session">Open a session to begin</string>
+    <string name="p2_core_lex_share_session">Share to a session</string>
+    <string name="p2_core_lex_open_session_quick">Open a session to use quick actions</string>
+    <!-- A scheduled job's timing, short (shown on a job card). %1$s = a time like 07:15 or a number. Mon…Sun = short weekday names. m/h/d = minutes/hours/days, as short as possible. -->
+    <string name="p2_core_cron_daily">daily</string>
+    <string name="p2_core_cron_hourly">hourly</string>
+    <string name="p2_core_cron_every_min">every %1$s min</string>
+    <string name="p2_core_cron_daily_at">daily %1$s</string>
+    <string name="p2_core_cron_weekdays_at">weekdays %1$s</string>
+    <string name="p2_core_cron_weekends_at">weekends %1$s</string>
+    <string name="p2_core_cron_days_at">%1$s %2$s</string>
+    <string name="p2_core_cron_monthly_at">monthly (day %1$s) %2$s</string>
+    <string name="p2_core_cron_sun">Sun</string>
+    <string name="p2_core_cron_mon">Mon</string>
+    <string name="p2_core_cron_tue">Tue</string>
+    <string name="p2_core_cron_wed">Wed</string>
+    <string name="p2_core_cron_thu">Thu</string>
+    <string name="p2_core_cron_fri">Fri</string>
+    <string name="p2_core_cron_sat">Sat</string>
+    <string name="p2_core_cron_next_in">next in %1$s</string>
+    <string name="p2_core_cron_under_a_minute">&lt;1m</string>
+    <string name="p2_core_cron_minutes_short">%1$sm</string>
+    <string name="p2_core_cron_hours_short">%1$sh</string>
+    <string name="p2_core_cron_days_short">%1$sd</string>
+    <!-- The context meter: how much more the chat can hold before the agent summarizes older messages. %1$s/%2$s/%3$s = token counts like "84k". -->
+    <string name="p2_core_ctx_summary_next">summary next</string>
+    <string name="p2_core_ctx_filling_up">filling up</string>
+    <string name="p2_core_ctx_left">~%1$d left</string>
+    <string name="p2_core_ctx_the_agent">the agent</string>
+    <string name="p2_core_ctx_then">Then %1$s summarizes the older messages so the chat can keep going.</string>
+    <string name="p2_core_ctx_fills_window">The chat fills up as you talk. This shows how much the model can still hold.</string>
+    <string name="p2_core_ctx_next_summary">The next reply starts a summary of the older messages, so the chat can keep going.</string>
+    <string name="p2_core_ctx_fills_then">The chat fills up as you talk. %1$s</string>
+    <string name="p2_core_ctx_before_summary">%1$s of %2$s before the summary</string>
+    <string name="p2_core_ctx_before_summary_window">%1$s of %2$s before the summary · window %3$s</string>
+    <string name="p2_core_ctx_model_holds">%1$s of %2$s the model can hold</string>
+    <!-- The chat list's shelves, by when the chat was last active. -->
+    <string name="p2_core_roster_this_week">This week</string>
+    <string name="p2_core_roster_older">Older</string>
+    <string name="p2_core_roster_undated">Undated</string>
+    <!-- Find in chat: the counter beside the search field. -->
+    <string name="p2_core_find_no_match">no match</string>
+    <string name="p2_core_find_position">%1$d of %2$d</string>
+    <!-- A session's standing goal, on a strip above the chat: "turn 3/20 · gates 1/2 · paused". Lowercase on purpose. Pause/Resume/Stop waiting/Clear are buttons. -->
+    <string name="p2_core_goal_turn">turn %1$d/%2$d</string>
+    <string name="p2_core_goal_gates">gates %1$d/%2$d</string>
+    <string name="p2_core_goal_done">✓ done</string>
+    <string name="p2_core_goal_paused">paused</string>
+    <string name="p2_core_goal_waiting">waiting</string>
+    <string name="p2_core_goal_blocked">blocked</string>
+    <string name="p2_core_goal_pause">Pause</string>
+    <string name="p2_core_goal_resume">Resume</string>
+    <string name="p2_core_goal_stop_waiting">Stop waiting</string>
+    <!-- Updating Hermes (the agent software on the user's server) from the phone. -->
+    <string name="p2_core_update_unreachable">Couldn\'t reach the update source</string>
+    <string name="p2_core_update_behind_unknown">Behind by an unknown number of commits</string>
+    <string name="p2_core_update_up_to_date">Up to date</string>
+    <!-- How hard the model thinks before answering (a level picker). -->
+    <string name="p2_core_effort_minimal">Minimal</string>
+    <string name="p2_core_effort_low">Low</string>
+    <string name="p2_core_effort_medium">Medium</string>
+    <string name="p2_core_effort_high">High</string>
+    <string name="p2_core_effort_xhigh">X-High</string>
+    <string name="p2_core_effort_max">Max</string>
+    <string name="p2_core_effort_ultra">Ultra</string>
+    <!-- Errors talking to the gateway. Keep HTTP codes, "keryx-stream", "Hermes Link", "Tailscale". -->
+    <string name="p2_core_err_generic">Something went wrong talking to the gateway.</string>
+    <string name="p2_core_err_404">The gateway doesn\'t offer this (HTTP 404). It needs the keryx-stream plugin; check it is enabled and your Hermes Link URL points at it.</string>
+    <string name="p2_core_err_auth">The gateway turned the sign-in away (HTTP %1$d). Sign in again from Settings → Gateways.</string>
+    <string name="p2_core_err_server">The gateway hit an error (HTTP %1$d). Its log says what happened.</string>
+    <string name="p2_core_err_no_host">Can\'t find the gateway. Check your connection (and Tailscale, if you use it).</string>
+    <string name="p2_core_err_refused">The gateway isn\'t answering. Is Hermes running?</string>
+    <string name="p2_core_err_timeout">The gateway took too long to answer.</string>
+    <string name="p2_core_err_not_connected">Not connected to the gateway right now. Keryx retries on its own.</string>
+    <!-- Counted phrases: %1$d = the count. -->
+    <plurals name="p2_core_run_tool_calls">
+        <item quantity="one">%1$d tool call so far</item>
+        <item quantity="other">%1$d tool calls so far</item>
+    </plurals>
+    <plurals name="p2_core_run_agents_working">
+        <item quantity="one">%1$d agent working</item>
+        <item quantity="other">%1$d agents working</item>
+    </plurals>
+    <plurals name="p2_core_cron_every_days">
+        <item quantity="one">every %1$d day</item>
+        <item quantity="other">every %1$d days</item>
+    </plurals>
+    <plurals name="p2_core_cron_every_hours">
+        <item quantity="one">every %1$d h</item>
+        <item quantity="other">every %1$d h</item>
+    </plurals>
+    <plurals name="p2_core_ctx_room_before_full">
+        <item quantity="one">Room for about %1$d more reply before the chat is full.</item>
+        <item quantity="other">Room for about %1$d more replies before the chat is full.</item>
+    </plurals>
+    <!-- How many code changes the user's Hermes is behind the latest. -->
+    <plurals name="p2_core_update_commits_behind">
+        <item quantity="one">%1$d commit behind</item>
+        <item quantity="other">%1$d commits behind</item>
+    </plurals>
+    <plurals name="p2_core_ctx_room_then">
+        <item quantity="one">Room for about %1$d more reply. %2$s</item>
+        <item quantity="other">Room for about %1$d more replies. %2$s</item>
+    </plurals>
 </resources>

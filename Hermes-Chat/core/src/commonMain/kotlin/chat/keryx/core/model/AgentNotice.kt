@@ -1,5 +1,8 @@
 package chat.keryx.core.model
 
+import chat.keryx.core.i18n.CoreWords
+import chat.keryx.core.i18n.Phrase
+
 /**
  * What a notification says when an agent speaks (2.8). The old banner was room-shaped — the
  * session's name up top, a line under it — which reads fine for a human chat and wrong for an
@@ -32,11 +35,11 @@ object AgentNotices {
 
     /** The first readable line of a message body, marker-free, bounded for a banner. */
     fun line(text: String, mediaKind: MediaKind?, fileName: String): String = when {
-        mediaKind == MediaKind.IMAGE -> "🖼 Photo"
-        mediaKind != null -> "📎 " + fileName.ifBlank { "Attachment" }
+        mediaKind == MediaKind.IMAGE -> CoreWords.t(Phrase.NOTICE_PHOTO)
+        mediaKind != null -> "📎 " + fileName.ifBlank { CoreWords.t(Phrase.NOTICE_ATTACHMENT) }
         text.isNotBlank() -> chat.keryx.core.protocol.MessageParser.extractKeryx(text).text
-            .lineSequence().firstOrNull { it.isNotBlank() }?.trim()?.take(LINE_MAX) ?: "New message"
-        else -> "New message"
+            .lineSequence().firstOrNull { it.isNotBlank() }?.trim()?.take(LINE_MAX) ?: CoreWords.t(Phrase.NOTICE_NEW_MESSAGE)
+        else -> CoreWords.t(Phrase.NOTICE_NEW_MESSAGE)
     }
 
     /**
@@ -57,7 +60,7 @@ object AgentNotices {
                 conversation = botLabel ?: conversation,
                 speaker = delivery.sender,
                 speakerKey = "agent:" + delivery.handle.lowercase(),
-                line = line(delivery.body, null, "").ifBlank { "New message" },
+                line = line(delivery.body, null, "").ifBlank { CoreWords.t(Phrase.NOTICE_NEW_MESSAGE) },
                 relayed = true,
             )
         }

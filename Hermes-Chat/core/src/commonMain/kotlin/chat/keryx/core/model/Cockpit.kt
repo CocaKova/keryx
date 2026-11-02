@@ -1,5 +1,9 @@
 package chat.keryx.core.model
 
+import chat.keryx.core.i18n.CoreWords
+import chat.keryx.core.i18n.CountPhrase
+import chat.keryx.core.i18n.Phrase
+
 /** One gateway toolset (`tools.list`): a named family of tools with an enabled flag. */
 data class ToolsetInfo(
     val name: String,
@@ -411,9 +415,9 @@ object ContextOutlook {
     /** The ring's short label: null below [SHOW_LEFT], else "~12 left", "summary next" or "filling up". */
     fun shortLabel(fraction: Float, replies: Int?, left: Long): String? = when {
         fraction < SHOW_LEFT -> null
-        left <= 0L || replies == 0 -> "summary next"
-        replies == null -> "filling up"
-        else -> "~$replies left"
+        left <= 0L || replies == 0 -> CoreWords.t(Phrase.CTX_SUMMARY_NEXT)
+        replies == null -> CoreWords.t(Phrase.CTX_FILLING_UP)
+        else -> CoreWords.t(Phrase.CTX_LEFT, replies)
     }
 
     /**
@@ -421,28 +425,26 @@ object ContextOutlook {
      * = the gateway named its summary point (without it the only line is the model's window).
      */
     fun sentence(replies: Int?, left: Long, agent: String?, hasTrigger: Boolean): String {
-        val who = agent?.takeIf { it.isNotBlank() } ?: "the agent"
-        val then = "Then $who summarizes the older messages so the chat can keep going."
+        val who = agent?.takeIf { it.isNotBlank() } ?: CoreWords.t(Phrase.CTX_THE_AGENT)
+        val then = CoreWords.t(Phrase.CTX_THEN, who)
         if (!hasTrigger) return when {
-            replies != null && replies > 0 -> "Room for about ${replyCount(replies)} before the chat is full."
-            else -> "The chat fills up as you talk. This shows how much the model can still hold."
+            replies != null && replies > 0 -> CoreWords.n(CountPhrase.CTX_ROOM_BEFORE_FULL, replies)
+            else -> CoreWords.t(Phrase.CTX_FILLS_WINDOW)
         }
         return when {
-            left <= 0L || replies == 0 -> "The next reply starts a summary of the older messages, so the chat can keep going."
-            replies == null -> "The chat fills up as you talk. $then"
-            else -> "Room for about ${replyCount(replies)}. $then"
+            left <= 0L || replies == 0 -> CoreWords.t(Phrase.CTX_NEXT_SUMMARY)
+            replies == null -> CoreWords.t(Phrase.CTX_FILLS_THEN, then)
+            else -> CoreWords.n(CountPhrase.CTX_ROOM_THEN, replies, then)
         }
     }
-
-    private fun replyCount(n: Int): String = if (n == 1) "1 more reply" else "$n more replies"
 
     /** The small print: "84k of 300k before the summary · window 524k". */
     fun smallPrint(used: Long, trigger: Long, max: Long): String {
         val t = SessionStatus.tokenCount(used)
         return if (trigger > 0L) {
-            "$t of ${SessionStatus.tokenCount(trigger)} before the summary" +
-                (if (max > trigger) " · window ${SessionStatus.tokenCount(max)}" else "")
-        } else "$t of ${SessionStatus.tokenCount(max)} the model can hold"
+            if (max > trigger) CoreWords.t(Phrase.CTX_BEFORE_SUMMARY_WINDOW, t, SessionStatus.tokenCount(trigger), SessionStatus.tokenCount(max))
+            else CoreWords.t(Phrase.CTX_BEFORE_SUMMARY, t, SessionStatus.tokenCount(trigger))
+        } else CoreWords.t(Phrase.CTX_MODEL_HOLDS, t, SessionStatus.tokenCount(max))
     }
 }
 

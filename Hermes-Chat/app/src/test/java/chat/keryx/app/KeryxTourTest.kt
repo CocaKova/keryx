@@ -153,4 +153,27 @@ internal object EnglishStrings {
         val name = names[id] ?: error("no R.string field for $id")
         return byName[name] ?: error("no English string named $name")
     }
+
+    private val plurals: Map<String, Map<String, String>> by lazy {
+        val dir = listOf(File("src/main/res/values"), File("app/src/main/res/values")).first { it.isDirectory }
+        dir.listFiles { f -> f.name.startsWith("strings") && f.name.endsWith(".xml") }.orEmpty().flatMap { f ->
+            val nodes = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(f).getElementsByTagName("plurals")
+            (0 until nodes.length).map { nodes.item(it) as Element }.map { p ->
+                val items = p.getElementsByTagName("item")
+                p.getAttribute("name") to (0 until items.length).map { items.item(it) as Element }
+                    .associate { it.getAttribute("quantity") to it.textContent.replace("\\'", "'").replace("\\\"", "\"") }
+            }
+        }.toMap()
+    }
+
+    private val pluralNames: Map<Int, String> by lazy {
+        chat.keryx.app.R.plurals::class.java.fields.associate { it.getInt(null) to it.name }
+    }
+
+    /** English plural template for [count]: "one" for 1, "other" for the rest. */
+    fun plural(id: Int, count: Int): String {
+        val name = pluralNames[id] ?: error("no R.plurals field for $id")
+        val forms = plurals[name] ?: error("no English plurals named $name")
+        return (if (count == 1) forms["one"] else null) ?: forms.getValue("other")
+    }
 }

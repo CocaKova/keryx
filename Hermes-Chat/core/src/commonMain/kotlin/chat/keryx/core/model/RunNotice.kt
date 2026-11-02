@@ -1,5 +1,9 @@
 package chat.keryx.core.model
 
+import chat.keryx.core.i18n.CoreWords
+import chat.keryx.core.i18n.CountPhrase
+import chat.keryx.core.i18n.Phrase
+
 /**
  * What an agent is doing right now, as the shade tells it (2.11.6).
  *
@@ -103,8 +107,8 @@ object RunActivities {
                 val verb = ToolGrammar.verbOf(call.name)
                 listOf(verb.glyph, verb.present, call.target).filter { it.isNotBlank() }.joinToString(" ")
             }
-            a.phase == RunActivity.Phase.WRITING -> "Writing the reply…"
-            else -> "Thinking…"
+            a.phase == RunActivity.Phase.WRITING -> CoreWords.t(Phrase.RUN_WRITING)
+            else -> CoreWords.t(Phrase.RUN_THINKING)
         }
     }
 }
@@ -153,10 +157,10 @@ object RunNotices {
         if (ordered.size == 1) {
             val s = ordered.first()
             val plan = s.plan?.takeIf { it.total > 0 && !it.allDone }
-            val step = plan?.active?.let { "Step ${plan.done + 1} of ${plan.total} · ${it.content}".take(LINE_MAX) }
-            val tally = s.activity.toolsDone.takeIf { it > 0 }?.let { if (it == 1) "1 tool call so far" else "$it tool calls so far" }
+            val step = plan?.active?.let { CoreWords.t(Phrase.RUN_STEP, plan.done + 1, plan.total, it.content).take(LINE_MAX) }
+            val tally = s.activity.toolsDone.takeIf { it > 0 }?.let { CoreWords.n(CountPhrase.RUN_TOOL_CALLS, it) }
             return RunNotice(
-                title = if (s.agent.isNotBlank()) "${Heralds.SIGIL} ${s.agent} is working" else "${Heralds.SIGIL} Working · ${s.session}",
+                title = "${Heralds.SIGIL} " + if (s.agent.isNotBlank()) CoreWords.t(Phrase.RUN_AGENT_WORKING, s.agent) else CoreWords.t(Phrase.RUN_WORKING_IN, s.session),
                 subText = s.session.takeIf { s.agent.isNotBlank() && it != s.agent }.orEmpty(),
                 text = RunActivities.line(s.activity).take(LINE_MAX),
                 lines = listOfNotNull(step, tally),
@@ -169,7 +173,7 @@ object RunNotices {
         }
         val lines = ordered.map { "${it.agent.ifBlank { it.session }} — ${RunActivities.line(it.activity)}".take(LINE_MAX) }
         return RunNotice(
-            title = "${Heralds.SIGIL} ${ordered.size} agents working",
+            title = "${Heralds.SIGIL} " + CoreWords.n(CountPhrase.RUN_AGENTS_WORKING, ordered.size),
             text = lines.last(),
             lines = lines,
             sessionId = null,

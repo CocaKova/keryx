@@ -143,6 +143,7 @@ class KeryxApp : Application() {
     override fun onCreate() {
         super.onCreate()
         KeryxText.install(this)
+        chat.keryx.core.i18n.CoreWords.words = KeryxCoreWords
         traced("Keryx:crashLog") { CrashLog.install(applicationContext) }
         traced("Keryx:imageDecoder") { installAnimatedImageDecoder() }
         settingsRepository = traced("Keryx:settings") { SettingsRepositoryImpl(applicationContext) }
@@ -605,4 +606,15 @@ object KeryxText {
 
     fun plural(@androidx.annotation.PluralsRes id: Int, count: Int, vararg args: Any): String =
         context().resources.getQuantityString(id, count, *args)
+
+    /**
+     * [id] in the app's language, or [english] when there is no app to ask (a plain-JVM test
+     * driving transport code). For strings built far from any screen.
+     */
+    fun getOr(@androidx.annotation.StringRes id: Int, english: String): String =
+        if (app == null) english else runCatching { get(id) }.getOrDefault(english)
+
+    /** A plural's raw template for [count] ("%1$d tool calls so far"), blanks unfilled. */
+    fun pluralTemplate(@androidx.annotation.PluralsRes id: Int, count: Int): String =
+        context().resources.getQuantityText(id, count).toString()
 }
