@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -294,6 +295,10 @@ fun SettingsScreen(
                         KeryxHubGroup(stringResource(R.string.settings_group_app)) {
                             KeryxHubRow(Icons.Default.Palette, stringResource(R.string.settings_section_appearance),
                                 stringResource(R.string.settings_hub_appearance, bubbleStyle, animationStyle.removeSuffix(" Drift"))) { section = "Appearance" }
+                            KeryxHubDivider()
+                            // 3.0: the app's own language, apart from the phone's.
+                            KeryxHubRow(Icons.Default.Translate, stringResource(R.string.p2_settings_language),
+                                languageChoiceName(currentLanguageTag())) { section = "Language" }
                             KeryxHubDivider()
                             KeryxHubRow(Icons.Default.Lock, stringResource(R.string.settings_section_privacy),
                                 listOfNotNull(
@@ -1059,6 +1064,10 @@ fun SettingsScreen(
                             Text(stringResource(R.string.settings_prune_button), fontSize = KeryxType.body)
                         }
                         if (pruneOpen) SessionPruneDialog(viewModel = viewModel, onDismiss = { pruneOpen = false })
+                    }
+
+                    if (shown == "Language") SettingsCard(stringResource(R.string.p2_settings_language), anchor = SettingsRow.APP_LANGUAGE) {
+                        LanguageChoices()
                     }
 
                     if (shown == "About") SettingsCard(stringResource(R.string.settings_card_tour), anchor = SettingsRow.ABOUT_TOUR) {

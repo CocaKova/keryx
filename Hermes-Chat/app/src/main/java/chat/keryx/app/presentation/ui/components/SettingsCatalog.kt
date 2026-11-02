@@ -52,6 +52,7 @@ enum class SettingsRow(
     APPEARANCE_HAPTICS(R.string.settings_row_appearance_haptics, "Haptic feedback", listOf("vibrate", "vibration"), "Appearance", "Appearance"),
     APPEARANCE_LOADING(R.string.settings_row_appearance_loading, "Loading animation", listOf("caduceus", "braille", "dots", "wave", "spinner"), "Appearance", "Appearance"),
     APPEARANCE_TRANSITION(R.string.settings_row_appearance_transition, "Room transition", listOf("transition", "animation", "switch", "dissolve", "passage", "weave", "bloom", "rise", "motion", "speed", "slow", "fast"), "Appearance", "Appearance"),
+    APP_LANGUAGE(R.string.p2_settings_language, "Language", listOf("locale", "translate", "translation", "english", "phone language"), "Language", "Language"),
     PRIVACY_LOCK(R.string.settings_row_privacy_lock, "Biometric app lock", listOf("fingerprint", "face", "pin"), "Privacy & Security", "Privacy & Security"),
     PRIVACY_E2EE(R.string.settings_row_privacy_e2ee, "End-to-end encryption", listOf("e2ee", "encrypt", "keys"), null, "Privacy & Security"),
     PRIVACY_SENSES(R.string.settings_row_privacy_senses, "Senses", listOf("battery", "time", "place", "location", "context"), "Privacy & Security", "Privacy & Security"),
@@ -82,6 +83,7 @@ fun settingsSectionLabel(key: String?): Int? = when (key) {
     "Hermes Link" -> R.string.settings_section_hermes_link
     "Voice" -> R.string.settings_section_voice
     "Appearance" -> R.string.settings_section_appearance
+    "Language" -> R.string.p2_settings_language
     "Privacy & Security" -> R.string.settings_section_privacy
     "Sessions" -> R.string.settings_section_sessions
     "About" -> R.string.settings_section_about

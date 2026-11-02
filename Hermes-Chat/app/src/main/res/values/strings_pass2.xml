@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pass 2 of the 3.0 translation: the language picker and what the first extraction left in code. -->
+<resources>
+    <!-- Settings › Language -->
+    <!-- Settings row and page title: the language the app's own text is shown in. -->
+    <string name="p2_settings_language">Language</string>
+    <!-- Choice: use whatever language the phone is set to. -->
+    <string name="p2_language_follow_phone">Follow phone</string>
+    <!-- Under "Follow phone": %1$s = the language that choice gives right now, in its own name. -->
+    <string name="p2_language_follow_phone_now">Now %1$s</string>
+    <!-- Accessibility: the check mark beside the chosen language. -->
+    <string name="p2_language_selected">Selected</string>
+    <!-- Quiet note under the list when the language in use was machine-translated. "GitHub" stays as is. -->
+    <string name="p2_language_ai_note">Translated by AI and not yet checked by a native speaker. Spot a clumsy line? Tell us on GitHub.</string>
+</resources>
