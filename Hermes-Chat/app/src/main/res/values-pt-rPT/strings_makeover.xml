@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Pré-visualização: a transição de sala %1$s à velocidade %2$s</string>
+    <string name="mk_cancel">Cancelar</string>
+
+    <string name="mk_mcp_test">Testar</string>
+    <string name="mk_mcp_testing">A testar</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Alcançado · %d ferramenta</item>
+        <item quantity="other">Alcançado · %d ferramentas</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d prompt</item>
+        <item quantity="other">%d prompts</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d recurso</item>
+        <item quantity="other">%d recursos</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Não foi possível alcançá-lo: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Este gateway não consegue testar servidores a partir daqui.</string>
+    <string name="mk_mcp_catalog">Catálogo · %1$d por adicionar</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">pede %d chave</item>
+        <item quantity="other">pede %d chaves</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">compila a partir do código-fonte</string>
+    <string name="mk_mcp_catalog_oauth">inicia sessão com OAuth</string>
+    <string name="mk_mcp_installed">Instalado</string>
+    <string name="mk_mcp_install">Instalar</string>
+    <string name="mk_mcp_installing">A instalar…</string>
+    <string name="mk_mcp_install_title">Instalar %1$s?</string>
+    <string name="mk_mcp_install_runs">Vai executar</string>
+    <string name="mk_mcp_install_builds">Primeiro, o gateway clona-o e compila-o a partir de %1$s, em segundo plano.</string>
+    <string name="mk_mcp_install_oauth">Inicia sessão com OAuth: conclui isso no painel do gateway depois de instalado.</string>
+    <string name="mk_mcp_install_env_note">Guardado no gateway: os segredos no .env, o resto na configuração.</string>
+    <string name="mk_mcp_installed_toast">%1$s instalado — ativo a partir da próxima sessão</string>
+    <string name="mk_mcp_building_toast">%1$s está a ser compilado no gateway — aparece aqui quando terminar</string>
+    <string name="mk_mcp_install_refused">Não foi possível instalar %1$s: %2$s</string>
+    <string name="mk_mcp_install_unsupported">Este gateway não consegue instalar servidores MCP a partir daqui.</string>
+    <string name="mk_usage">Utilização</string>
+    <string name="mk_usage_subtitle">Tokens, custo e sessões</string>
+    <string name="mk_usage_subtitle_read">%1$s tokens · %2$s · últimos %3$d dias</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d sessão</item>
+        <item quantity="other">%d sessões</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">sessão</item>
+        <item quantity="other">sessões</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d dia</item>
+        <item quantity="other">%d dias</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s chamada à API</item>
+        <item quantity="other">%1$s chamadas à API</item>
+    </plurals>
+    <string name="mk_usage_tokens">tokens</string>
+    <string name="mk_usage_in_out">%1$s entrada · %2$s saída</string>
+    <string name="mk_usage_cost">custo</string>
+    <string name="mk_usage_cost_estimated">custo, estimado</string>
+    <string name="mk_usage_none">Nada utilizado nos últimos %1$d dias.</string>
+    <string name="mk_usage_by_day">Por dia</string>
+    <string name="mk_usage_peak">Mais movimentado: %1$s em %2$s</string>
+    <string name="mk_usage_by_model">Por modelo</string>
+    <string name="mk_usage_note_estimate">O custo é uma estimativa do próprio Hermes, a partir da sua tabela de preços; um modelo local não custa nada. O painel do gateway mostra os mesmos números.</string>
+    <string name="mk_usage_note_reported">O custo é o que o fornecedor indicou, quando o fez. O painel do gateway mostra os mesmos números.</string>
+</resources>

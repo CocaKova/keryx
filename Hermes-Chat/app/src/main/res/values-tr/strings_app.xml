@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_turn_failed">Tur başarısız oldu</string>
+    <string name="app_photo">Fotoğraf</string>
+    <string name="app_attachment">Ek</string>
+    <string name="app_new_message">Yeni mesaj</string>
+
+    <string name="app_approval_expired">Onayın süresi zaten dolmuştu</string>
+    <string name="app_approval_failed">Onay başarısız: %1$s</string>
+    <string name="app_reply_failed">Yanıt başarısız: %1$s</string>
+    <string name="app_link_unreachable_matrix">Hermes Link\'e ulaşılamıyor (%1$s) — Matrix senkronu kullanılıyor</string>
+    <string name="app_send_failed">Gönderilemedi: %1$s</string>
+    <string name="app_room_photo_updated">Oda fotoğrafı güncellendi</string>
+    <string name="app_room_photo_forbidden">Bu odanın fotoğrafını değiştirme iznin yok — odada moderatör yetkisi gerekiyor.</string>
+    <string name="app_room_photo_failed">Fotoğraf ayarlanamadı: %1$s</string>
+    <string name="app_unknown_error">bilinmeyen hata</string>
+    <string name="app_branched">Dallandırıldı — bu konuşmanın tamamının bir kopyası</string>
+    <string name="app_branch_failed">Dallandırma başarısız: %1$s</string>
+    <string name="app_not_sent">Gönderilmedi. %1$s</string>
+    <string name="app_undo_done">Son karşılıklı mesajlar geri alındı</string>
+    <string name="app_undo_nothing">Geri alınacak bir şey yok</string>
+    <string name="app_still_working">Hâlâ çalışıyor — önce turu durdur</string>
+    <string name="app_undo_failed">Geri alınamadı: %1$s</string>
+    <string name="app_retry_nothing">Yeniden denenecek bir şey yok — ağ geçidinde geri alınacak tur yoktu</string>
+    <string name="app_retry_failed">Yeniden denenemedi: %1$s</string>
+    <string name="app_taken_back_edit">Geri alındı — düzenleyip yeniden gönder</string>
+    <string name="app_take_back_failed">Geri alınamadı — mesajın yeniden göndermek için yazma alanında</string>
+    <string name="app_set_gateway_url_first">Önce bir ağ geçidi URL\'si ayarla</string>
+    <string name="app_link_ok">Hermes Link çalışıyor — %1$s</string>
+    <string name="app_link_failed">Hermes Link başarısız: %1$s</string>
+    <string name="app_connection_error">bağlantı hatası</string>
+    <string name="app_link_up_api_down">Hermes Link çalışıyor ama arkasındaki Hermes API sunucusu çalışmıyor; bu yüzden Görevler ve Çalıştırmalar yüklenmez. ~/.hermes/.env dosyasında API_SERVER_ENABLED=true ve bir API_SERVER_KEY ayarla, sonra ağ geçidini yeniden başlat.</string>
+
+    <string name="app_pinned">Sabitlendi</string>
+    <string name="app_pinned_named">Sabitlendi: “%1$s”</string>
+    <string name="app_unpinned">Sabitleme kaldırıldı</string>
+    <string name="app_unpinned_named">Sabitleme kaldırıldı: “%1$s”</string>
+    <string name="app_pin_failed">Sabitlenemedi: %1$s</string>
+    <string name="app_unpin_failed">Sabitleme kaldırılamadı: %1$s</string>
+    <string name="app_marked_unread">Okunmadı olarak işaretlendi</string>
+    <string name="app_mark_read_failed">Okundu olarak işaretlenemedi: %1$s</string>
+    <string name="app_mark_unread_failed">Okunmadı olarak işaretlenemedi: %1$s</string>
+    <string name="app_sticky_no_catalog">Modeller okunamadı — ağ geçidinin varsayılanıyla açıldı</string>
+    <string name="app_sticky_not_served">%1$s şu an sunulmuyor — ağ geçidinin varsayılanıyla açıldı</string>
+    <string name="app_sticky_needs_confirm">%1$s onay gerektiriyor — model seçiciden seç</string>
+    <string name="app_sticky_opened_fallback">Açılan model: %1$s — %2$s şu an sunulmuyor</string>
+    <string name="app_sticky_opened">Açılan model: %1$s — son seçimin (Ayarlar\'daki kalıcı model)</string>
+    <string name="app_sticky_refused">%1$s reddetti — ağ geçidinin varsayılanıyla açıldı</string>
+    <string name="app_create_session_failed">oturum oluşturulamadı</string>
+    <string name="app_rename_failed">Yeniden adlandırma başarısız: %1$s</string>
+    <string name="app_archive_failed">Arşivlenemedi: %1$s</string>
+    <string name="app_archived">Arşivlendi</string>
+    <string name="app_archived_named">Arşivlendi: “%1$s”</string>
+    <string name="app_restore_failed">Geri yüklenemedi: %1$s</string>
+    <string name="app_restored">Geri yüklendi</string>
+    <string name="app_restored_named">Geri yüklendi: “%1$s”</string>
+    <string name="app_archive_read_failed">Arşiv okunamadı: %1$s</string>
+    <string name="app_older_sessions_failed">Eski oturumlar yüklenemedi: %1$s</string>
+    <string name="app_session_deleted">Oturum silindi</string>
+    <string name="app_delete_failed">Silme başarısız: %1$s</string>
+
+    <string name="app_steered">Yönlendirildi — ajan bir sonraki adımında görecek</string>
+    <string name="app_steer_declined_queued">Ajan yönlendirmeyi kabul etmedi — sonraki tur için sıraya alındı</string>
+    <string name="app_queue_failed">Sıraya alınamadı: %1$s</string>
+    <string name="app_steer_failed">Yönlendirme başarısız: %1$s</string>
+    <string name="app_goal_failed">Hedef: %1$s</string>
+    <string name="app_aside_needs_direct">Ara soru için doğrudan ağ geçidi bağlantısı gerekir</string>
+    <string name="app_aside_failed">Ara soru başarısız: %1$s</string>
+    <string name="app_redirected">Yeniden yönlendirildi — yanıt düzeltmenle baştan başlıyor</string>
+    <string name="app_redirect_between_calls">Çağrılar arasında — düzeltmen sırada</string>
+    <string name="app_redirect_finished_queued">Yanıt zaten bitmişti — sonraki tur için sıraya alındı</string>
+    <string name="app_redirect_unsupported">Bu ajan yeniden yönlendirilemiyor — bunun yerine yönlendirme notu gönderildi</string>
+    <string name="app_redirect_failed">Yeniden yönlendirme başarısız: %1$s</string>
+    <string name="app_branched_from_message">Dallandırıldı — bu, o mesajdan açılan yeni bir oturum</string>
+    <string name="app_queued">Sıraya alındı — bu tur bitince gönderilecek</string>
+    <string name="app_stopped">Durduruldu</string>
+    <string name="app_stop_failed">Durdurulamadı: %1$s</string>
+    <string name="app_crew_steered">Yönlendirildi: %1$s — bir sonraki adımında görecek</string>
+    <string name="app_crew_steer_rejected">%1$s bunu almadı — başka bir kapıya bağlı ya da zaten bitirmek üzere</string>
+    <string name="app_crew_stopped">Durduruldu: %1$s</string>
+    <string name="app_crew_already_finished">%1$s zaten bitirmişti</string>
+
+    <string name="app_model_confirm">%1$s Onaylamak için tekrar dokun.</string>
+    <string name="app_model_expensive">Bu model pahalı.</string>
+    <string name="app_model_deferred">%1$s sonraki turda devreye girer — bu oturum</string>
+    <string name="app_model_deferred_global">%1$s sonraki turda devreye girer — tüm oturumlar</string>
+    <string name="app_model_switched">%1$s — bu oturum</string>
+    <string name="app_model_switched_global">%1$s — tüm oturumlar</string>
+    <string name="app_model_switch_refused">Geçiş reddedildi: %1$s</string>
+    <string name="app_reasoning_refused_unknown">Bu beyin o düşünme seviyesini reddetti — daha düşük birini seç.</string>
+    <string name="app_reasoning_refused_floor">Bu beyin “%1$s” düşünme seviyesini reddetti ve denenecek daha düşük seviye yok.</string>
+    <string name="app_reasoning_dropped">Bu beyin “%1$s” düşünme seviyesini reddetti — “%2$s” seviyesine düşürüldü.</string>
+    <string name="app_reasoning_drop_failed">Bu beyin “%1$s” düşünme seviyesini reddetti; “%2$s” seviyesine düşürülemedi.</string>
+    <string name="app_reasoning_set">Akıl yürütme → %1$s — bu oturum</string>
+    <string name="app_reasoning_set_global">Akıl yürütme → %1$s — tüm oturumlar</string>
+    <string name="app_reasoning_refused">Akıl yürütme reddedildi: %1$s</string>
+
+    <string name="app_room_joined">Katılındı — oda sonraki senkronda görünecek</string>
+    <string name="app_join_failed">Katılma başarısız: %1$s</string>
+    <string name="app_invite_declined">Davet reddedildi</string>
+    <string name="app_decline_failed">Reddetme başarısız: %1$s</string>
+    <string name="app_start_chat_failed">sohbet başlatılamadı</string>
+    <string name="app_create_room_failed">oda oluşturulamadı</string>
+    <string name="app_join_failed_short">katılınamadı</string>
+    <string name="app_invite_sent">Davet gönderildi</string>
+    <string name="app_invite_failed">Davet başarısız: %1$s</string>
+    <string name="app_left_room">Odadan ayrıldın</string>
+    <string name="app_leave_failed">Ayrılma başarısız: %1$s</string>
+
+    <string name="app_try_again">tekrar dene</string>
+    <string name="app_group_rooms_unavailable">odalar kullanılamıyor</string>
+    <string name="app_not_connected">bir ağ geçidine bağlı değil</string>
+    <string name="app_group_stop_failed">Oda durdurulamadı: %1$s</string>
+    <string name="app_group_approval_failed">Onaya yanıt verilemedi: %1$s</string>
+    <string name="app_group_rename_failed">Yeniden adlandırılamadı: %1$s</string>
+    <string name="app_group_disband_failed">Dağıtılamadı: %1$s</string>
+
+    <string name="app_no_stt_endpoint">STT uç noktası ayarlanmamış</string>
+    <string name="app_no_tts_endpoint">TTS uç noktası ayarlanmamış</string>
+    <string name="app_no_stt_set">STT uç noktası yok</string>
+    <string name="app_no_tts_set">TTS uç noktası yok</string>
+    <string name="app_voice_unreachable">%1$s ulaşılamıyor: %2$s (%3$s)</string>
+    <string name="app_voice_ears">kulaklar (STT)</string>
+    <string name="app_voice_mouth">ses (TTS)</string>
+
+    <string name="app_console_run_live">Zaten çalışan bir tur var — durdur ya da bitmesini bekle</string>
+    <string name="app_link_off">Hermes Link kapalı — Ayarlar\'dan aç</string>
+    <string name="app_export_needs_gateway">Dışa aktarma için ağ geçidi kapısı gerekir.</string>
+    <string name="app_export_too_old">Bu ağ geçidi oturum dışa aktarmak için çok eski.</string>
+    <string name="app_export_subject">Hermes oturumu</string>
+    <string name="app_export_unreadable">Dışa aktarılan veri okunamadı.</string>
+
+    <string name="app_unsaved">Kaydedilenlerden kaldırıldı</string>
+    <string name="app_saved">Saklandı — Arşiv\'de bulabilirsin</string>
+    <string name="app_pet_adopt_failed">sahiplenilemedi: %1$s</string>
+
+    <string name="app_channel_messages">Mesajlar</string>
+    <string name="app_channel_messages_desc">Hermes ajanlarından ve odalarından gelen yeni mesajlar</string>
+    <string name="app_notify_you">Sen</string>
+    <string name="app_notify_title_failed">%1$s · tur başarısız</string>
+    <string name="app_notify_reply">Yanıtla</string>
+    <string name="app_notify_reply_to">Yanıt: %1$s</string>
+    <string name="app_notify_mark_read">Okundu yap</string>
+    <plurals name="app_notify_conversations">
+        <item quantity="one">%d konuşma</item>
+        <item quantity="other">%d konuşma</item>
+    </plurals>
+    <string name="app_channel_gate">Onaylar ve sorular</string>
+    <string name="app_channel_gate_desc">Bir ajan durdu, yanıtını bekliyor</string>
+    <string name="app_notify_answer">Yanıtla</string>
+    <string name="app_channel_runs">Ajan çalışıyor</string>
+    <string name="app_channel_runs_desc">Ajan çalışırken sessiz bir durum satırı: ne yaptığı ve ne kadar süredir</string>
+    <string name="app_notify_stop">Durdur</string>
+    <string name="app_channel_missions">Görevler</string>
+    <string name="app_channel_missions_desc">Ajanın panosunda tamamlanan, takılan veya vazgeçilen görevler</string>
+
+    <string name="app_push_checking">Mesajlar kontrol ediliyor…</string>
+    <string name="app_notify_sending_text">Gönderiliyor: %1$s</string>
+    <string name="app_notify_answering">Yanıtlanıyor…</string>
+    <string name="app_notify_gate_unreachable">Ağ geçidine ulaşılamadı — yanıtlamak için dokun</string>
+    <string name="app_notify_answered">Yanıtlandı — ajan yeniden çalışıyor</string>
+    <string name="app_notify_request_timed_out">Bu isteğin süresi zaten dolmuştu</string>
+    <string name="app_notify_answer_failed">Yanıtlanamadı — açmak için dokun</string>
+    <string name="app_notify_sending">Gönderiliyor…</string>
+    <string name="app_notify_send_failed">“%1$s” gönderilemedi — açmak için dokun</string>
+
+    <string name="app_push_connecting">Bağlanıyor…</string>
+    <string name="app_push_connected">Bağlandı — yerleşik push</string>
+    <string name="app_push_reconnecting">Yeniden bağlanıyor…</string>
+    <string name="app_channel_push">Push bağlantısı</string>
+    <string name="app_channel_push_desc">Keryx\'in push sunucuna kendi bağlantısı (dağıtıcı uygulama gerekmez)</string>
+    <string name="app_push_title">Keryx push</string>
+
+    <string name="app_scan_pairing_inside">Eşleştirme kodlarını Keryx içinden tara: Ağ geçidini bağla › Eşleştirme kodu tara.</string>
+
+    <string name="app_share_nothing">Paylaşılacak bir şey yok</string>
+    <string name="app_share_foreign_only">Keryx yalnızca başka bir uygulamadan paylaşılan dosyaları gönderebilir</string>
+    <string name="app_share_too_large_mb">Dosya göndermek için çok büyük (%1$d MB)</string>
+    <string name="app_share_too_large">Dosya göndermek için çok büyük</string>
+    <string name="app_share_read_failed">Okunamadı: %1$s</string>
+    <plurals name="app_share_attachments">
+        <item quantity="one">%d ek</item>
+        <item quantity="other">%d ek</item>
+    </plurals>
+    <string name="app_share_note_label">Not ekle (isteğe bağlı)</string>
+    <string name="app_share_note_hint">Bunu özetle / bunu hatırla / …</string>
+
+    <string name="app_hands_cannot">Bu telefonda bunu yapabilecek bir şey yok</string>
+    <string name="app_hands_no_app">“%1$s” adında bir uygulama yok</string>
+    <string name="app_hands_no_handler">Bu telefonda %1$s işlemini yapabilen bir şey yok</string>
+    <string name="app_hands_failed">Yapılamadı: %1$s</string>
+    <string name="app_hands_no_flash">Bu telefonda flaş yok</string>
+
+    <string name="app_crash_log_subject">Keryx çökme kaydı</string>
+    <string name="app_crash_log_share">Çökme kaydını paylaş</string>
+    <string name="app_share">Paylaş</string>
+    <string name="app_share_named">Paylaş: %1$s</string>
+
+    <string name="app_call_hearing_failed">duyma başarısız: %1$s</string>
+    <string name="app_call_turn_failed">ajanın turu başarısız oldu</string>
+    <string name="app_call_voice_failed">ses başarısız: %1$s</string>
+    <string name="app_call_no_reply">ağ geçidinden yanıt yok</string>
+    <string name="app_tts_failed">Seslendirme başarısız: %1$s</string>
+    <string name="app_tts_audio_unavailable">Ses kullanılamıyor</string>
+    <string name="app_tts_no_audio">Ses sunucusu ses göndermedi</string>
+    <string name="app_tts_no_engine">Bu cihazda konuşma motoru yok</string>
+    <string name="app_tts_playback_failed">Seslendirme çalınamadı</string>
+    <string name="app_tts_playback_failed_why">Seslendirme çalınamadı: %1$s</string>
+
+    <string name="app_tour_welcome_title">Keryx\'e hoş geldin</string>
+    <string name="app_tour_welcome_text">Bu bir demo: telefonunda sahte bir ağ geçidi var ve ajanı bir işin ortasında. Kendi ağ geçidini bağlamadan önce hızlıca etrafa bakalım.</string>
+    <string name="app_tour_plan_title">Planı</string>
+    <string name="app_tour_plan_text">Ajanın bir işi adımlara böler ve ilerledikçe işaretler. O çalışırken Keryx işin canlı bildirimini tutar, sen de telefonu bırakabilirsin.</string>
+    <string name="app_tour_approval_title">Önce sorar</string>
+    <string name="app_tour_approval_text">Bir klasörü silmek gibi riskli bir şeyden önce ajanın durur ve sorar. Buradan ya da doğrudan bildirimden yanıtla.</string>
+    <string name="app_tour_approval_text_demo">Bir klasörü silmek gibi riskli bir şeyden önce ajanın durur ve sorar. Buradan ya da doğrudan bildirimden yanıtla. Tur bitince dene ve işi bitirişini izle.</string>
+    <string name="app_tour_composer_title">Ne istersen sor</string>
+    <string name="app_tour_composer_text">Ajanına sade sözcüklerle bir iş ver. Sen ayrılsan da çalışmaya devam eder, bitince Keryx sana haber verir.</string>
+    <string name="app_tour_model_title">Hangi beyin yanıtlıyor</string>
+    <string name="app_tour_model_text">Modeli bu oturum için ya da bundan sonraki tüm oturumlar için değiştir.</string>
+    <string name="app_tour_new_session_title">Temiz bir sayfa</string>
+    <string name="app_tour_new_session_text">Yeni bir oturum başlat. Başlık ya da geçici oturum gibi seçenekler için basılı tut.</string>
+    <string name="app_tour_drawer_title">Geri kalan her şey</string>
+    <string name="app_tour_drawer_text">Oturumların ve Keryx\'in geri kalanı bu düğmenin arkasında.</string>
+    <string name="app_tour_lenses_title">Seni bekleyenler</string>
+    <string name="app_tour_lenses_text">Listeyi seni bekleyen, şu an çalışan ya da okunmamış oturumlarla sınırla.</string>
+    <string name="app_tour_missions_title">Görevler</string>
+    <string name="app_tour_missions_text">Ajanına uzun işleri bir panoda kart olarak ver. Onları sırayla işler ve sana ihtiyaç duyduğunda sorar.</string>
+    <string name="app_tour_runs_title">Çalıştırmalar</string>
+    <string name="app_tour_runs_text">Zamanlanmış işler ve her çalıştırmanın ortaya çıkardıkları.</string>
+    <string name="app_tour_bots_title">Botlar</string>
+    <string name="app_tour_bots_text">Ajanının diğer profilleri. Her birinin kendi belleği, becerileri ve sohbetleri var.</string>
+    <string name="app_tour_archive_title">Arşiv</string>
+    <string name="app_tour_archive_text">Söylenmiş her şey, ağ geçidi kapalıyken bile telefonda aranabilir.</string>
+    <string name="app_tour_gateway_title">Ağ geçidin</string>
+    <string name="app_tour_gateway_text_demo">Kendi Hermes\'inle burada bağlantı, model ve sürüm görünür. Az önce gördüğün her şey gerçek bir ağ geçidinde de aynı çalışır: kendininkini bağla, hemen canlıya geçsin.</string>
+    <string name="app_tour_gateway_text">Bağlantı, model ve Hermes sürümü. Ağ Geçidi için dokun; dişli Ayarlar\'ı açar, bu tur da orada.</string>
+    <string name="app_tour_gateway_text_direct">Bağlantı, model ve Hermes sürümü. Ağ Geçidi için dokun; dişli Ayarlar\'ı açar, bu tur da orada. Birden fazla Hermes mi çalıştırıyorsun? Ekle ve buradan aralarında geçiş yap.</string>
+    <string name="app_tour_cta_connect">Ağ geçidini bağla</string>
+    <string name="app_tour_cta_add_gateway">Ağ geçidi ekle</string>
+
+    <string name="app_whatsnew_title">Keryx 3.0\'daki yenilikler</string>
+    <string name="app_whatsnew_text">Nelerin değiştiğine hızlı bir bakış. İstersen geç: Ayarlar › Hakkında\'da duruyor.</string>
+    <string name="app_whatsnew_point_title">Bir şeyin yerini sor</string>
+    <string name="app_whatsnew_point_text">Ajanına \"zamanlanmış işlerim nerede?\" diye sor, sana yerini burada, telefonda gösterebilir. Ağ geçidinde keryx-stream 0.6 veya daha yenisi gerekir.</string>
+    <string name="app_whatsnew_memory_title">Sohbet belleği</string>
+    <string name="app_whatsnew_memory_text">Modelin yanındaki halka artık bu sohbette kaç yanıtlık yer kaldığını söylüyor, hem de yalnızca önemli olduğunda. Yeri neyin kullandığını görmek için dokun.</string>
+    <string name="app_whatsnew_drawer_title">Yeniden çizilen menü</string>
+    <string name="app_whatsnew_drawer_text_direct">Her sohbetin kendi rengi ve işareti var, bir halka çalışanları gösteriyor, bu filtreler de listeyi seni bekleyenlere daraltıyor.</string>
+    <string name="app_whatsnew_drawer_text">Her sohbetin kendi rengi ve işareti var, bir halka da çalışanları gösteriyor.</string>
+    <string name="app_whatsnew_cards_title">Sade dilde kartlar</string>
+    <string name="app_whatsnew_cards_text">Bir görev kartı artık neler olduğu ve sıradaki tek adımla açılıyor. Teknik ayrıntılar hâlâ Ayrıntılar altında.</string>
+    <string name="app_whatsnew_look_title">Görünüm ve güncellemeler</string>
+    <string name="app_whatsnew_look_text_direct">Ayarlar › Görünüm\'de yeni düşünme stilleri ve sohbetler arasında geçmenin beş yolu var. Yeni bir keryx-stream ile Ağ Geçidi\'nin Güncelleme panelinden Kararlı sürümleri veya Uç sürümleri seçebilirsin. Başka bir Hermes eklemek için onda hermes keryx pair komutunu çalıştır ve kodu tara.</string>
+    <string name="app_whatsnew_look_text">Ayarlar › Görünüm\'de yeni düşünme stilleri ve sohbetler arasında geçmenin beş yolu var. Tur ve alan ipuçları Ayarlar › Hakkında\'da.</string>
+
+    <string name="app_hint_missions_title">Görevler</string>
+    <string name="app_hint_missions_text">Uzun işler burada kart olarak durur. Ajanların onları alıp işler; sana ihtiyaç duyan kart en üste çıkar. Yeni bir tane vermek için + simgesine dokun.</string>
+    <string name="app_hint_runs_title">Çalıştırmalar</string>
+    <string name="app_hint_runs_text">Sabah özeti ya da gece kontrolü gibi zamanlanmış işler. Her çalıştırmanın sonucu buraya düşer. Ajanına sor, senin için bir tane kurabilir.</string>
+    <string name="app_hint_bots_title">Botlar</string>
+    <string name="app_hint_bots_text">Her bot, Hermes\'inin kendi belleği, becerileri ve sohbetleri olan bir profilidir. Konuşmak için birini aç ya da birkaçını bir grup sohbetine koy.</string>
+    <string name="app_hint_gateway_title">Ağ geçidin</string>
+    <string name="app_hint_gateway_text">Bağlı olduğun Hermes nasıl, arkasında ne var: modeli ve ayarları, işleri, becerileri, belleği ve araçları.</string>
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">Ajanın iş başında, tam ekran: ne düşündüğü, çalıştırdığı araçlar ve gönderdiği yardımcılar. Buradan yönlendirebilirsin de.</string>
+    <string name="app_hint_artifact_title">Ajanının yaptığı bir sayfa</string>
+    <string name="app_hint_artifact_text">Ajanının yazdığı raporlar, taslaklar ve sayfalar burada, telefonda açılır. Üstteki düğmelerle kaydet ya da paylaş.</string>
+
+    <string name="app_tour_pane">Tur</string>
+    <string name="app_tour_end">Turu bitir</string>
+    <string name="app_tour_progress">%1$d / %2$d</string>
+    <string name="app_tour_back">Geri</string>
+    <string name="app_tour_done">Bitti</string>
+    <string name="app_tour_got_it">Anladım</string>
+    <string name="app_tour_next">İleri</string>
+</resources>

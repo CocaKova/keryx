@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_turn_failed">Vuoro epäonnistui</string>
+    <string name="app_photo">Kuva</string>
+    <string name="app_attachment">Liite</string>
+    <string name="app_new_message">Uusi viesti</string>
+
+    <string name="app_approval_expired">Hyväksyntä oli jo vanhentunut</string>
+    <string name="app_approval_failed">Hyväksyntä epäonnistui: %1$s</string>
+    <string name="app_reply_failed">Vastaus epäonnistui: %1$s</string>
+    <string name="app_link_unreachable_matrix">Hermes Link ei vastaa (%1$s) – käytetään Matrix-synkronointia</string>
+    <string name="app_send_failed">Lähetys epäonnistui: %1$s</string>
+    <string name="app_room_photo_updated">Huoneen kuva päivitetty</string>
+    <string name="app_room_photo_forbidden">Ei oikeutta asettaa tämän huoneen kuvaa – tarvitset siinä moderaattorin oikeudet.</string>
+    <string name="app_room_photo_failed">Kuvan asettaminen epäonnistui: %1$s</string>
+    <string name="app_unknown_error">tuntematon virhe</string>
+    <string name="app_branched">Haarautettu – kopio koko tästä keskustelusta</string>
+    <string name="app_branch_failed">Haarautus epäonnistui: %1$s</string>
+    <string name="app_not_sent">Ei lähetetty. %1$s</string>
+    <string name="app_undo_done">Viimeisin vaihto peruttu</string>
+    <string name="app_undo_nothing">Ei mitään peruttavaa</string>
+    <string name="app_still_working">Työ on yhä kesken – pysäytä vuoro ensin</string>
+    <string name="app_undo_failed">Peruminen epäonnistui: %1$s</string>
+    <string name="app_retry_nothing">Ei mitään yritettävää uudelleen – yhdyskäytävällä ei ollut peruttavaa vuoroa</string>
+    <string name="app_retry_failed">Uusi yritys epäonnistui: %1$s</string>
+    <string name="app_taken_back_edit">Peruttu – muokkaa ja lähetä uudelleen</string>
+    <string name="app_take_back_failed">Peruminen ei onnistunut – tekstisi on kirjoituskentässä uudelleen lähetettäväksi</string>
+    <string name="app_set_gateway_url_first">Aseta ensin yhdyskäytävän URL</string>
+    <string name="app_link_ok">Hermes Link OK – %1$s</string>
+    <string name="app_link_failed">Hermes Link epäonnistui: %1$s</string>
+    <string name="app_connection_error">yhteysvirhe</string>
+    <string name="app_link_up_api_down">Hermes Link toimii, mutta sen takana oleva Hermesin API-palvelin ei ole käynnissä, joten Tehtävät ja Ajot eivät lataudu. Aseta API_SERVER_ENABLED=true ja API_SERVER_KEY tiedostoon ~/.hermes/.env ja käynnistä yhdyskäytävä uudelleen.</string>
+
+    <string name="app_pinned">Kiinnitetty</string>
+    <string name="app_pinned_named">Kiinnitetty: “%1$s”</string>
+    <string name="app_unpinned">Kiinnitys poistettu</string>
+    <string name="app_unpinned_named">Kiinnitys poistettu: “%1$s”</string>
+    <string name="app_pin_failed">Kiinnitys epäonnistui: %1$s</string>
+    <string name="app_unpin_failed">Kiinnityksen poisto epäonnistui: %1$s</string>
+    <string name="app_marked_unread">Merkitty lukemattomaksi</string>
+    <string name="app_mark_read_failed">Luetuksi merkitseminen epäonnistui: %1$s</string>
+    <string name="app_mark_unread_failed">Lukemattomaksi merkitseminen epäonnistui: %1$s</string>
+    <string name="app_sticky_no_catalog">Malleja ei voitu lukea – avattiin yhdyskäytävän oletusmallilla</string>
+    <string name="app_sticky_not_served">Malli %1$s ei ole nyt saatavilla – avattiin yhdyskäytävän oletusmallilla</string>
+    <string name="app_sticky_needs_confirm">Malli %1$s vaatii vahvistuksen – valitse se mallinvalitsimesta</string>
+    <string name="app_sticky_opened_fallback">Avattiin mallilla %1$s – malli %2$s ei ole nyt saatavilla</string>
+    <string name="app_sticky_opened">Avattiin mallilla %1$s – viimeisin valintasi (pysyvä malli, Asetuksissa)</string>
+    <string name="app_sticky_refused">Malli %1$s hylkäsi – avattiin yhdyskäytävän oletusmallilla</string>
+    <string name="app_create_session_failed">istunnon luominen epäonnistui</string>
+    <string name="app_rename_failed">Nimeäminen epäonnistui: %1$s</string>
+    <string name="app_archive_failed">Arkistointi epäonnistui: %1$s</string>
+    <string name="app_archived">Arkistoitu</string>
+    <string name="app_archived_named">Arkistoitu: “%1$s”</string>
+    <string name="app_restore_failed">Palautus epäonnistui: %1$s</string>
+    <string name="app_restored">Palautettu</string>
+    <string name="app_restored_named">Palautettu: “%1$s”</string>
+    <string name="app_archive_read_failed">Arkiston lukeminen epäonnistui: %1$s</string>
+    <string name="app_older_sessions_failed">Vanhempien istuntojen lataus epäonnistui: %1$s</string>
+    <string name="app_session_deleted">Istunto poistettu</string>
+    <string name="app_delete_failed">Poisto epäonnistui: %1$s</string>
+
+    <string name="app_steered">Ohjattu – agentti näkee sen seuraavassa vaiheessaan</string>
+    <string name="app_steer_declined_queued">Agentti ei ottanut ohjausta vastaan – jonossa seuraavaan vuoroon</string>
+    <string name="app_queue_failed">Jonoon lisääminen epäonnistui: %1$s</string>
+    <string name="app_steer_failed">Ohjaus epäonnistui: %1$s</string>
+    <string name="app_goal_failed">Tavoite: %1$s</string>
+    <string name="app_aside_needs_direct">Sivukysymys vaatii suoran yhdyskäytäväyhteyden</string>
+    <string name="app_aside_failed">Sivukysymys epäonnistui: %1$s</string>
+    <string name="app_redirected">Suunnattu uudelleen – vastaus alkaa alusta korjauksesi kanssa</string>
+    <string name="app_redirect_between_calls">Kutsujen välissä – korjauksesi ajetaan seuraavaksi</string>
+    <string name="app_redirect_finished_queued">Vastaus oli jo valmis – jonossa seuraavaan vuoroon</string>
+    <string name="app_redirect_unsupported">Tämä agentti ei voi suunnata uudelleen – ohjataan sen sijaan</string>
+    <string name="app_redirect_failed">Uudelleensuuntaus epäonnistui: %1$s</string>
+    <string name="app_branched_from_message">Haarautettu – tämä on uusi istunto tuosta viestistä</string>
+    <string name="app_queued">Jonossa – lähtee, kun tämä vuoro päättyy</string>
+    <string name="app_stopped">Pysäytetty</string>
+    <string name="app_stop_failed">Pysäytys epäonnistui: %1$s</string>
+    <string name="app_crew_steered">Ohjattu (%1$s) – se näkee sen seuraavassa vaiheessaan</string>
+    <string name="app_crew_steer_rejected">Apuri %1$s ei ottanut sitä vastaan – se vastaa toiselle ovelle tai on jo lopettelemassa</string>
+    <string name="app_crew_stopped">Pysäytetty: %1$s</string>
+    <string name="app_crew_already_finished">Apuri %1$s oli jo valmis</string>
+
+    <string name="app_model_confirm">%1$s Vahvista napauttamalla uudelleen.</string>
+    <string name="app_model_expensive">Tämä malli on kallis.</string>
+    <string name="app_model_deferred">%1$s ottaa ohjat seuraavalla vuorolla – tämä istunto</string>
+    <string name="app_model_deferred_global">%1$s ottaa ohjat seuraavalla vuorolla – kaikki istunnot</string>
+    <string name="app_model_switched">%1$s – tämä istunto</string>
+    <string name="app_model_switched_global">%1$s – kaikki istunnot</string>
+    <string name="app_model_switch_refused">Vaihto hylättiin: %1$s</string>
+    <string name="app_reasoning_refused_unknown">Nämä aivot hylkäsivät tuon ajattelutason – valitse matalampi.</string>
+    <string name="app_reasoning_refused_floor">Nämä aivot hylkäsivät ajattelutason %1$s, eikä matalampaa ole kokeiltavaksi.</string>
+    <string name="app_reasoning_dropped">Nämä aivot hylkäsivät ajattelutason %1$s – laskettiin tasolle %2$s.</string>
+    <string name="app_reasoning_drop_failed">Nämä aivot hylkäsivät ajattelutason %1$s; laskeminen tasolle %2$s epäonnistui.</string>
+    <string name="app_reasoning_set">Päättely → %1$s – tämä istunto</string>
+    <string name="app_reasoning_set_global">Päättely → %1$s kaikille istunnoille</string>
+    <string name="app_reasoning_refused">Päättely hylättiin: %1$s</string>
+
+    <string name="app_room_joined">Liitytty – huone näkyy seuraavassa synkronoinnissa</string>
+    <string name="app_join_failed">Liittyminen epäonnistui: %1$s</string>
+    <string name="app_invite_declined">Kutsu hylätty</string>
+    <string name="app_decline_failed">Hylkääminen epäonnistui: %1$s</string>
+    <string name="app_start_chat_failed">keskustelun aloittaminen epäonnistui</string>
+    <string name="app_create_room_failed">huoneen luominen epäonnistui</string>
+    <string name="app_join_failed_short">liittyminen epäonnistui</string>
+    <string name="app_invite_sent">Kutsu lähetetty</string>
+    <string name="app_invite_failed">Kutsu epäonnistui: %1$s</string>
+    <string name="app_left_room">Huoneesta poistuttu</string>
+    <string name="app_leave_failed">Poistuminen epäonnistui: %1$s</string>
+
+    <string name="app_try_again">yritä uudelleen</string>
+    <string name="app_group_rooms_unavailable">huoneet eivät saatavilla</string>
+    <string name="app_not_connected">ei yhteyttä yhdyskäytävään</string>
+    <string name="app_group_stop_failed">Huoneen pysäytys epäonnistui: %1$s</string>
+    <string name="app_group_approval_failed">Hyväksyntään vastaaminen epäonnistui: %1$s</string>
+    <string name="app_group_rename_failed">Nimeäminen epäonnistui: %1$s</string>
+    <string name="app_group_disband_failed">Lakkauttaminen epäonnistui: %1$s</string>
+
+    <string name="app_no_stt_endpoint">STT-päätepistettä ei ole määritetty</string>
+    <string name="app_no_tts_endpoint">TTS-päätepistettä ei ole määritetty</string>
+    <string name="app_no_stt_set">STT-päätepistettä ei asetettu</string>
+    <string name="app_no_tts_set">TTS-päätepistettä ei asetettu</string>
+    <string name="app_voice_unreachable">%1$s ei tavoitettavissa – %2$s (%3$s)</string>
+    <string name="app_voice_ears">korvat (STT)</string>
+    <string name="app_voice_mouth">ääni (TTS)</string>
+
+    <string name="app_console_run_live">Ajo on jo käynnissä – pysäytä se tai anna sen päättyä</string>
+    <string name="app_link_off">Hermes Link on pois päältä – ota se käyttöön Asetuksissa</string>
+    <string name="app_export_needs_gateway">Vienti vaatii suoran yhdyskäytäväyhteyden.</string>
+    <string name="app_export_too_old">Tämä yhdyskäytävä on liian vanha istunnon vientiin.</string>
+    <string name="app_export_subject">Hermes-istunto</string>
+    <string name="app_export_unreadable">Vienti palautui lukukelvottomana.</string>
+
+    <string name="app_unsaved">Poistettu tallennetuista</string>
+    <string name="app_saved">Tallennettu – löydät sen Arkistosta</string>
+    <string name="app_pet_adopt_failed">adoptointi epäonnistui: %1$s</string>
+
+    <string name="app_channel_messages">Viestit</string>
+    <string name="app_channel_messages_desc">Uudet viestit Hermes-agenteiltasi ja huoneistasi</string>
+    <string name="app_notify_you">Sinä</string>
+    <string name="app_notify_title_failed">%1$s · vuoro epäonnistui</string>
+    <string name="app_notify_reply">Vastaa</string>
+    <string name="app_notify_reply_to">Vastaus: %1$s</string>
+    <string name="app_notify_mark_read">Merkitse luetuksi</string>
+    <plurals name="app_notify_conversations">
+        <item quantity="one">%d keskustelu</item>
+        <item quantity="other">%d keskustelua</item>
+    </plurals>
+    <string name="app_channel_gate">Hyväksynnät ja kysymykset</string>
+    <string name="app_channel_gate_desc">Agentti on pysähtynyt odottamaan vastaustasi</string>
+    <string name="app_notify_answer">Vastaa</string>
+    <string name="app_channel_runs">Agentti käynnissä</string>
+    <string name="app_channel_runs_desc">Hiljainen tilarivi agentin työskennellessä: mitä se tekee ja kuinka kauan</string>
+    <string name="app_notify_stop">Pysäytä</string>
+    <string name="app_channel_missions">Tehtävät</string>
+    <string name="app_channel_missions_desc">Agentin taulun tehtävät, jotka valmistuvat, jumittuvat tai joista luovutaan</string>
+
+    <string name="app_push_checking">Tarkistetaan viestejä…</string>
+    <string name="app_notify_sending_text">Lähetetään: %1$s</string>
+    <string name="app_notify_answering">Vastataan…</string>
+    <string name="app_notify_gate_unreachable">Yhdyskäytävää ei tavoitettu – vastaa napauttamalla</string>
+    <string name="app_notify_answered">Vastattu – agentti jatkaa työtään</string>
+    <string name="app_notify_request_timed_out">Pyyntö oli jo vanhentunut</string>
+    <string name="app_notify_answer_failed">Vastaaminen epäonnistui – avaa napauttamalla</string>
+    <string name="app_notify_sending">Lähetetään…</string>
+    <string name="app_notify_send_failed">Lähetys epäonnistui: “%1$s” – avaa napauttamalla</string>
+
+    <string name="app_push_connecting">Yhdistetään…</string>
+    <string name="app_push_connected">Yhdistetty – sisäänrakennettu push</string>
+    <string name="app_push_reconnecting">Yhdistetään uudelleen…</string>
+    <string name="app_channel_push">Push-yhteys</string>
+    <string name="app_channel_push_desc">Keryxin oma yhteys push-palvelimeesi (erillistä jakelusovellusta ei tarvita)</string>
+    <string name="app_push_title">Keryx-push</string>
+
+    <string name="app_scan_pairing_inside">Skannaa parituskoodit Keryxissä: Yhdistä yhdyskäytäväsi › Skannaa parituskoodi.</string>
+
+    <string name="app_share_nothing">Ei mitään jaettavaa</string>
+    <string name="app_share_foreign_only">Keryx voi lähettää vain toisesta sovelluksesta jaettuja tiedostoja</string>
+    <string name="app_share_too_large_mb">Tiedosto on liian suuri lähetettäväksi (%1$d Mt)</string>
+    <string name="app_share_too_large">Tiedosto on liian suuri lähetettäväksi</string>
+    <string name="app_share_read_failed">Tiedoston lukeminen epäonnistui: %1$s</string>
+    <plurals name="app_share_attachments">
+        <item quantity="one">%d liite</item>
+        <item quantity="other">%d liitettä</item>
+    </plurals>
+    <string name="app_share_note_label">Lisää viesti (valinnainen)</string>
+    <string name="app_share_note_hint">Tiivistä tämä / muista tämä / …</string>
+
+    <string name="app_hands_cannot">Mikään tässä puhelimessa ei pysty siihen</string>
+    <string name="app_hands_no_app">Ei sovellusta nimeltä “%1$s”</string>
+    <string name="app_hands_no_handler">Mikään tässä puhelimessa ei käsittele toimintoa %1$s</string>
+    <string name="app_hands_failed">Ei onnistunut: %1$s</string>
+    <string name="app_hands_no_flash">Tässä puhelimessa ei ole salamaa</string>
+
+    <string name="app_crash_log_subject">Keryxin kaatumisloki</string>
+    <string name="app_crash_log_share">Jaa kaatumisloki</string>
+    <string name="app_share">Jaa</string>
+    <string name="app_share_named">Jaa: %1$s</string>
+
+    <string name="app_call_hearing_failed">kuuleminen epäonnistui: %1$s</string>
+    <string name="app_call_turn_failed">agentin vuoro epäonnistui</string>
+    <string name="app_call_voice_failed">ääni epäonnistui: %1$s</string>
+    <string name="app_call_no_reply">ei vastausta yhdyskäytävältä</string>
+    <string name="app_tts_failed">Puhe epäonnistui: %1$s</string>
+    <string name="app_tts_audio_unavailable">Ääni ei saatavilla</string>
+    <string name="app_tts_no_audio">Puhepalvelin ei lähettänyt ääntä</string>
+    <string name="app_tts_no_engine">Laitteessa ei ole puhemoottoria</string>
+    <string name="app_tts_playback_failed">Puheen toisto epäonnistui</string>
+    <string name="app_tts_playback_failed_why">Puheen toisto epäonnistui: %1$s</string>
+
+    <string name="app_tour_welcome_title">Tervetuloa Keryxiin</string>
+    <string name="app_tour_welcome_text">Tämä on demo: kuviteltu yhdyskäytävä puhelimessasi, ja sen agentti on kesken työn. Tässä pikainen kierros ennen kuin yhdistät omasi.</string>
+    <string name="app_tour_plan_title">Sen suunnitelma</string>
+    <string name="app_tour_plan_text">Agenttisi pilkkoo työn vaiheisiin ja merkitsee ne tehdyiksi edetessään. Sen työskennellessä Keryx pitää työstä elävää ilmoitusta, joten voit laittaa puhelimen pois.</string>
+    <string name="app_tour_approval_title">Se kysyy ensin</string>
+    <string name="app_tour_approval_text">Ennen mitään riskialtista, kuten kansion poistamista, agenttisi pysähtyy ja kysyy. Vastaa täällä tai suoraan ilmoituksesta.</string>
+    <string name="app_tour_approval_text_demo">Ennen mitään riskialtista, kuten kansion poistamista, agenttisi pysähtyy ja kysyy. Vastaa täällä tai suoraan ilmoituksesta. Kokeile sitä kierroksen jälkeen ja katso, kun se saa työn valmiiksi.</string>
+    <string name="app_tour_composer_title">Pyydä mitä vain</string>
+    <string name="app_tour_composer_text">Anna agentillesi työ omin sanoin. Se jatkaa työtä, vaikka poistuisit, ja Keryx kertoo, kun se on valmis.</string>
+    <string name="app_tour_model_title">Mitkä aivot vastaavat</string>
+    <string name="app_tour_model_text">Vaihda malli tälle istunnolle tai kaikille istunnoille tästä eteenpäin.</string>
+    <string name="app_tour_new_session_title">Puhdas sivu</string>
+    <string name="app_tour_new_session_text">Aloita uusi istunto. Pidä painettuna nähdäksesi valinnat, kuten otsikon tai väliaikaisen istunnon.</string>
+    <string name="app_tour_drawer_title">Kaikki muu</string>
+    <string name="app_tour_drawer_text">Istuntosi ja muu Keryx löytyvät tämän painikkeen takaa.</string>
+    <string name="app_tour_lenses_title">Mikä tarvitsee sinua</string>
+    <string name="app_tour_lenses_text">Rajaa lista istuntoihin, jotka odottavat sinua, ovat käynnissä juuri nyt tai ovat lukemattomia.</string>
+    <string name="app_tour_missions_title">Tehtävät</string>
+    <string name="app_tour_missions_text">Anna agentillesi pidempiä töitä kortteina taululla. Se käy ne läpi ja kysyy, kun tarvitsee sinua.</string>
+    <string name="app_tour_runs_title">Ajot</string>
+    <string name="app_tour_runs_text">Ajastetut työt ja mitä kukin ajo sai selville.</string>
+    <string name="app_tour_bots_title">Botit</string>
+    <string name="app_tour_bots_text">Agenttisi muut profiilit. Kullakin on oma muisti, taidot ja keskustelut.</string>
+    <string name="app_tour_archive_title">Arkisto</string>
+    <string name="app_tour_archive_text">Kaikki koskaan sanottu, haettavissa puhelimessa, vaikka yhdyskäytävä olisi alhaalla.</string>
+    <string name="app_tour_gateway_title">Yhdyskäytäväsi</string>
+    <string name="app_tour_gateway_text_demo">Omalla Hermesilläsi tässä näkyvät yhteys, malli ja versio. Kaikki juuri näkemäsi toimii samoin oikealla yhdyskäytävällä: yhdistä omasi, niin se on käytössä.</string>
+    <string name="app_tour_gateway_text">Yhteys, malli ja Hermesin versio. Napauta avataksesi Yhdyskäytävän; ratas avaa Asetukset, josta löytyy myös tämä kierros.</string>
+    <string name="app_tour_gateway_text_direct">Yhteys, malli ja Hermesin versio. Napauta avataksesi Yhdyskäytävän; ratas avaa Asetukset, josta löytyy myös tämä kierros. Onko sinulla useampi Hermes? Lisää se ja vaihda niiden välillä täällä.</string>
+    <string name="app_tour_cta_connect">Yhdistä yhdyskäytäväsi</string>
+    <string name="app_tour_cta_add_gateway">Lisää yhdyskäytävä</string>
+
+    <string name="app_whatsnew_title">Uutta Keryx 3.0:ssa</string>
+    <string name="app_whatsnew_text">Pikakatsaus muutoksiin. Voit ohittaa sen: se löytyy kohdasta Asetukset › Tietoja.</string>
+    <string name="app_whatsnew_point_title">Kysy, missä jokin on</string>
+    <string name="app_whatsnew_point_text">Kysy agentiltasi \"missä ajastetut työni ovat?\", niin se voi osoittaa paikan suoraan puhelimessa. Yhdyskäytäväsi tarvitsee keryx-stream 0.6:n tai uudemman.</string>
+    <string name="app_whatsnew_memory_title">Keskustelun muisti</string>
+    <string name="app_whatsnew_memory_text">Mallin vieressä oleva rengas kertoo nyt, montako vastausta tähän keskusteluun vielä mahtuu, ja vain silloin kun sillä on väliä. Napauta sitä nähdäksesi, mikä tilaa käyttää.</string>
+    <string name="app_whatsnew_drawer_title">Uudistettu sivuvalikko</string>
+    <string name="app_whatsnew_drawer_text_direct">Jokaisella keskustelulla on oma värinsä ja merkkinsä, rengas näyttää työssä olevat, ja nämä suodattimet rajaavat listan siihen, mikä tarvitsee sinua.</string>
+    <string name="app_whatsnew_drawer_text">Jokaisella keskustelulla on oma värinsä ja merkkinsä, ja rengas näyttää työssä olevat.</string>
+    <string name="app_whatsnew_cards_title">Kortit selkokielellä</string>
+    <string name="app_whatsnew_cards_text">Tehtäväkortti avautuu nyt siihen, mitä on meneillään, ja yhteen seuraavaan asiaan. Tekniset tiedot ovat yhä tallella kohdassa Lisätiedot.</string>
+    <string name="app_whatsnew_look_title">Ulkoasu ja päivitykset</string>
+    <string name="app_whatsnew_look_text_direct">Kohdassa Asetukset › Ulkoasu on uusia ajattelutyylejä ja viisi tapaa siirtyä keskustelujen välillä. Tuoreella keryx-streamilla Yhdyskäytävän päivityspaneelista voi valita Stable- tai Edge-julkaisut. Lisätäksesi toisen Hermesin aja siinä hermes keryx pair ja skannaa koodi.</string>
+    <string name="app_whatsnew_look_text">Kohdassa Asetukset › Ulkoasu on uusia ajattelutyylejä ja viisi tapaa siirtyä keskustelujen välillä. Kierros ja vinkit löytyvät kohdasta Asetukset › Tietoja.</string>
+
+    <string name="app_hint_missions_title">Tehtävät</string>
+    <string name="app_hint_missions_text">Pidemmät työt asuvat täällä kortteina. Agenttisi ottavat ne työn alle, ja sinua tarvitseva kortti nousee ylimmäksi. Jaa uusi napauttamalla +.</string>
+    <string name="app_hint_runs_title">Ajot</string>
+    <string name="app_hint_runs_text">Ajastetut työt, kuten aamukatsaus tai yöllinen tarkistus. Kunkin ajon tulos tulee tänne. Pyydä agenttiasi, niin se voi luoda sellaisen puolestasi.</string>
+    <string name="app_hint_bots_title">Botit</string>
+    <string name="app_hint_bots_text">Jokainen botti on Hermesisi profiili, jolla on oma muisti, taidot ja keskustelut. Avaa yksi jutellaksesi sen kanssa tai laita muutama ryhmäkeskusteluun.</string>
+    <string name="app_hint_gateway_title">Yhdyskäytäväsi</string>
+    <string name="app_hint_gateway_text">Miten yhdistetyllä Hermesilläsi menee ja mitä sen takana on: sen malli ja asetukset, työt, taidot, muisti ja työkalut.</string>
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">Agenttisi työssä koko näytöllä: mitä se ajattelee, mitä työkaluja se ajaa ja mitä apureita se lähettää. Voit myös ohjata sitä täältä.</string>
+    <string name="app_hint_artifact_title">Agenttisi tekemä sivu</string>
+    <string name="app_hint_artifact_text">Agenttisi kirjoittamat raportit, luonnokset ja sivut avautuvat tänne, puhelimeen. Tallenna tai jaa yläreunan painikkeilla.</string>
+
+    <string name="app_tour_pane">Kierros</string>
+    <string name="app_tour_end">Lopeta kierros</string>
+    <string name="app_tour_progress">%1$d / %2$d</string>
+    <string name="app_tour_back">Takaisin</string>
+    <string name="app_tour_done">Valmis</string>
+    <string name="app_tour_got_it">Selvä</string>
+    <string name="app_tour_next">Seuraava</string>
+</resources>

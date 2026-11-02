@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">Nowy czat</string>
+    <string name="shortcut_new_chat_long">Zacznij nowy czat</string>
+    <string name="shortcut_missions">Misje</string>
+    <string name="shortcut_missions_long">Otwórz tablicę misji</string>
+    <string name="shortcut_runs">Uruchomienia</string>
+    <string name="shortcut_runs_long">Zaplanowane uruchomienia i ich raporty</string>
+
+    <!-- The home-screen widget (2.13). -->
+    <string name="widget_description">Agent w skrócie: połączenie, najnowsza sesja, jego ostatnie słowa i trwająca tura.</string>
+
+    <!-- The Quick Settings tile and its note sheet (2.13). Generic "agent" until the roster names one. -->
+    <string name="note_tile_label">Notatka do agenta</string>
+    <string name="note_tile_label_to">Notatka · %1$s</string>
+    <string name="note_tile_live">na żywo</string>
+    <string name="note_tile_offline">offline</string>
+    <string name="note_placeholder">Jedna linijka do agenta…</string>
+    <string name="note_target_prefix">do</string>
+    <string name="note_change_target">Zmień sesję</string>
+    <string name="note_no_sessions">Jeszcze brak sesji</string>
+    <string name="note_send">Wyślij</string>
+    <string name="note_sent_to">Wysłano: %1$s</string>
+    <string name="note_send_failed">Nie udało się wysłać</string>
+    <string name="note_locked">Zablokowane</string>
+    <string name="note_unlock">Odblokuj</string>
+    <string name="note_unlock_title">Odblokuj Keryx</string>
+</resources>

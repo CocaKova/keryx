@@ -1,0 +1,583 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_theme_to_light">Beralih ke terang</string>
+    <string name="chat_theme_follow_system">Ikuti sistem</string>
+    <string name="chat_theme_to_dark">Beralih ke gelap</string>
+    <string name="chat_new_chat">Obrolan baru</string>
+    <string name="chat_drawer_jump_hint">Lompat ke…</string>
+    <string name="chat_lens_needs_you">Menunggumu</string>
+    <string name="chat_lens_running">Berjalan</string>
+    <string name="chat_lens_unread">Belum dibaca</string>
+    <string name="chat_lens_archived">Diarsipkan</string>
+    <string name="chat_drawer_invites">Undangan</string>
+    <string name="chat_place_missions">Misi</string>
+    <string name="chat_place_runs">Eksekusi</string>
+    <string name="chat_place_bots">Bot</string>
+    <string name="chat_place_projects">Proyek</string>
+    <string name="chat_place_shipyard">Galangan</string>
+    <string name="chat_place_archive">Arsip</string>
+    <string name="chat_place_gateway">Gateway</string>
+    <string name="chat_place_settings">Setelan</string>
+    <string name="chat_drawer_places">Tempat</string>
+    <string name="chat_drawer_commands">Perintah</string>
+    <string name="chat_drawer_no_matches">Tidak ada yang cocok</string>
+    <string name="chat_drawer_nothing_archived">Tidak ada yang diarsipkan</string>
+    <string name="chat_drawer_nothing_waiting">Tidak ada yang menunggumu</string>
+    <string name="chat_drawer_nothing_running">Tidak ada yang berjalan</string>
+    <string name="chat_drawer_all_read">Semua sudah dibaca</string>
+    <string name="chat_session_id_copied">ID sesi disalin</string>
+    <string name="chat_moved_to_project">Dipindahkan ke %1$s</string>
+    <string name="chat_drawer_reaching_back">Menelusuri ke belakang…</string>
+    <string name="chat_drawer_show_older">Tampilkan %1$s lama</string>
+    <string name="chat_drawer_in_transcripts">Dalam transkrip</string>
+    <string name="chat_demo_gateway">gateway demo</string>
+    <string name="chat_demo_gateway_page">Halaman gateway-mu ada di sini setelah kamu menghubungkannya.</string>
+    <string name="chat_connect">Hubungkan</string>
+    <string name="chat_open_gateway">Buka Gateway</string>
+    <string name="chat_settings">Setelan</string>
+    <string name="chat_shelf_fold">Ciutkan %1$s</string>
+    <string name="chat_shelf_open">Buka %1$s</string>
+    <string name="chat_room_forked">Dicabangkan dari percakapan lain</string>
+    <string name="chat_room_temporary">Sementara — dihapus saat aplikasi dibuka lagi</string>
+    <string name="chat_room_pinned">Disematkan</string>
+    <string name="chat_mark_unread">Tandai belum dibaca</string>
+    <string name="chat_archive">Arsipkan</string>
+    <string name="chat_archive_hint">Hilang dari daftar, tetap ada di gateway</string>
+    <string name="chat_restore_to_list">Kembalikan ke daftar</string>
+    <string name="chat_export_ellipsis">Ekspor…</string>
+    <string name="chat_copy_session_id">Salin ID sesi</string>
+    <string name="chat_invite_user">Undang pengguna…</string>
+    <string name="chat_rename_ellipsis">Ganti nama…</string>
+    <string name="chat_move_to_project">Pindahkan ke proyek…</string>
+    <string name="chat_leave_room">Keluar dari ruang</string>
+    <string name="chat_delete_session_ellipsis">Hapus sesi…</string>
+    <string name="chat_invite_to">Undang ke %1$s</string>
+    <string name="chat_invite">Undang</string>
+    <string name="chat_cancel">Batal</string>
+    <string name="chat_leave_title">Keluar dari %1$s?</string>
+    <string name="chat_leave_body">Kamu tidak akan menerima pesannya lagi; bergabung kembali butuh undangan baru.</string>
+    <string name="chat_leave">Keluar</string>
+    <string name="chat_rename_session">Ganti nama sesi</string>
+    <string name="chat_rename">Ganti nama</string>
+    <string name="chat_delete_title">Hapus %1$s?</string>
+    <string name="chat_delete_session_body">Menghapus sesi beserta seluruh transkripnya dari gateway. Tindakan ini tidak bisa dibatalkan.</string>
+    <string name="chat_delete">Hapus</string>
+    <string name="chat_invited_to_room">Kamu diundang ke ruang ini</string>
+    <string name="chat_decline">Tolak</string>
+    <string name="chat_accept">Terima</string>
+    <string name="chat_running">Berjalan</string>
+    <string name="chat_age_now">baru saja</string>
+    <string name="chat_age_minutes">%1$dm</string>
+    <string name="chat_age_hours">%1$dj</string>
+    <string name="chat_age_days">%1$dh</string>
+    <string name="chat_age_weeks">%1$dmg</string>
+    <plurals name="chat_door_needs_you">
+        <item quantity="other">%1$s, %2$s menunggumu</item>
+    </plurals>
+    <string name="chat_door_unread">%1$s, %2$s belum dibaca</string>
+
+    <string name="chat_bot_new_title">Mulai baru dengan %1$s?</string>
+    <string name="chat_bot_new_body">Padatkan mempertahankan percakapan ini dan mengosongkan konteks kerja %1$s.\n\nObrolan Bot baru akan memensiunkan yang ini — tetap bisa dibaca di obrolan lama %1$s — lalu memulai yang baru.</string>
+    <string name="chat_bot_new_fresh">Obrolan Bot baru</string>
+    <string name="chat_bot_new_compact">Padatkan</string>
+    <string name="chat_bot_chat_chip">Obrolan Bot</string>
+    <string name="chat_menu">Menu</string>
+    <plurals name="chat_menu_waiting">
+        <item quantity="other">Menu, %d menunggumu</item>
+    </plurals>
+    <plurals name="chat_menu_unread">
+        <item quantity="other">Menu, %d belum dibaca</item>
+    </plurals>
+    <string name="chat_new_session_failed">Tidak bisa memulai sesi. %1$s</string>
+    <string name="chat_new_session_hold">Sesi baru (tahan untuk opsi)</string>
+    <string name="chat_unpin_run">Lepas sematan eksekusi ini</string>
+    <string name="chat_pin_run">Sematkan eksekusi ini</string>
+    <string name="chat_new_session">Sesi baru</string>
+    <string name="chat_new_session_confirm_title">Mulai sesi baru?</string>
+    <string name="chat_new_session_confirm_body">Agen masih bekerja — /new mengakhiri eksekusi saat ini dan hasilnya dibuang.</string>
+    <string name="chat_new_session_confirm">Akhiri &amp; mulai baru</string>
+    <string name="chat_find_in_chat">Cari di obrolan</string>
+    <string name="chat_call_needs_voice">Atur endpoint STT dan TTS di Setelan → Suara dulu</string>
+    <string name="chat_call">Panggil</string>
+    <string name="chat_reasoning_header">PENALARAN</string>
+    <string name="chat_reasoning_sub_default">tingkat tetap berlaku di semua sesi</string>
+    <string name="chat_reasoning_local_brain">otak lokal</string>
+    <string name="chat_reasoning_model">model</string>
+    <string name="chat_reasoning_sub_binary">%1$s · sakelar nyala/mati</string>
+    <string name="chat_reasoning_sub_none">%1$s · tanpa pengatur penalaran</string>
+    <string name="chat_reasoning_sub_session">%1$s · tingkatan sesi ini</string>
+    <string name="chat_reasoning_sub_scale">%1$s · skala tingkat</string>
+    <string name="chat_reasoning_no_dial">Model ini tidak menerima tingkat penalaran — Hermes tidak mengirimkannya.</string>
+    <string name="chat_reasoning_every_session">Semua sesi</string>
+    <string name="chat_reasoning_this_session">Hanya sesi ini</string>
+    <string name="chat_reasoning_show">Tampilkan penalaran</string>
+    <string name="chat_reasoning_hide">Sembunyikan penalaran</string>
+    <string name="chat_reasoning_reset">Reset pengaturan sesi</string>
+    <string name="chat_demo_label">Demo</string>
+    <string name="chat_demo_connect">Hubungkan gateway-mu</string>
+
+    <string name="chat_attach_failed">Tidak bisa melampirkan (tidak terbaca, atau lebih dari 50 MB)</string>
+    <string name="chat_no_camera">Tidak ada aplikasi kamera yang merespons</string>
+    <string name="chat_mic_unavailable">Mikrofon tidak tersedia</string>
+    <string name="chat_transcription_failed">Transkripsi gagal: %1$s</string>
+    <string name="chat_mic_permission">Keryx butuh akses mikrofon untuk dikte</string>
+    <string name="chat_nothing_to_read">Tidak ada yang bisa dibacakan</string>
+    <string name="chat_typing_one">%1$s sedang mengetik…</string>
+    <string name="chat_typing_two">%1$s dan %2$s sedang mengetik…</string>
+    <string name="chat_typing_many">Beberapa orang sedang mengetik…</string>
+    <string name="chat_jump_newest">Lompat ke terbaru</string>
+    <plurals name="chat_jump_newest_count">
+        <item quantity="other">Lompat ke terbaru, %d baru</item>
+    </plurals>
+    <string name="chat_attachments_cant_queue">Lampiran tidak bisa diantrekan — kirim setelah giliran ini selesai</string>
+    <string name="chat_stop_hint">Tulis koreksimu dulu — lalu ketuk untuk mengarahkan giliran, tahan untuk opsi lain</string>
+    <string name="chat_busy_queue">Antrekan untuk giliran berikutnya</string>
+    <string name="chat_busy_aside">Tanya sampingan — dijawab di luar obrolan</string>
+    <string name="chat_busy_redirect">Alihkan — mulai ulang balasan dengan ini</string>
+    <string name="chat_starter_1">Apa yang bisa kamu lakukan di sesi ini?</string>
+    <string name="chat_starter_2">Apa saja agendaku hari ini?</string>
+    <string name="chat_starter_3">Apa yang kita kerjakan belakangan ini?</string>
+    <string name="chat_starter_4">Bantu aku merencanakan sesuatu yang kecil, langkah demi langkah.</string>
+    <string name="chat_fresh_page">Halaman baru</string>
+    <string name="chat_fresh_page_sub">Tanya apa saja, atau mulai dari salah satu ini.</string>
+    <string name="chat_today">Hari ini</string>
+    <string name="chat_yesterday">Kemarin</string>
+
+    <string name="chat_arrival_mark">%1$s · tanpa diminta · %2$s</string>
+    <string name="chat_bubble_hold_label">Balas, beri reaksi, atau salin</string>
+    <string name="chat_copied">Disalin</string>
+    <string name="chat_undo_title">Tarik kembali pertukaran terakhir?</string>
+    <string name="chat_undo_body">Pesanmu dan balasan ini keluar dari riwayat sesi di gateway. Ucapanmu berikutnya melanjutkan dari sebelum keduanya.</string>
+    <string name="chat_undo_confirm">Tarik kembali</string>
+    <string name="chat_keep">Simpan</string>
+    <string name="chat_select_text">Pilih teks</string>
+    <string name="chat_delete_message_title">Hapus pesan?</string>
+    <string name="chat_delete_message_body">Pesan dihapus untuk semua orang — tidak bisa dibatalkan.</string>
+    <string name="chat_sent">Terkirim</string>
+    <string name="chat_stop_speaking">Berhenti membacakan</string>
+    <string name="chat_go_to_quoted">Ke pesan yang dikutip</string>
+    <string name="chat_reaction_take_back">Tarik reaksimu</string>
+    <string name="chat_reaction_add">Tambahkan reaksimu</string>
+    <string name="chat_react">Beri reaksi</string>
+    <string name="chat_action_reply">Balas</string>
+    <string name="chat_action_copy">Salin</string>
+    <string name="chat_action_copy_text">Salin teks</string>
+    <string name="chat_action_saved">Tersimpan</string>
+    <string name="chat_action_save">Simpan</string>
+    <string name="chat_action_unsave">Hapus dari Tersimpan</string>
+    <string name="chat_action_keep_archive">Simpan di Arsip</string>
+    <string name="chat_action_stop">Hentikan</string>
+    <string name="chat_action_read_aloud">Bacakan</string>
+    <string name="chat_action_select">Pilih</string>
+    <string name="chat_action_edit">Edit</string>
+    <string name="chat_action_edit_desc">Edit dan kirim lagi</string>
+    <string name="chat_action_retry">Coba lagi</string>
+    <string name="chat_action_retry_desc">Tarik kembali dan ucapkan lagi</string>
+    <string name="chat_action_branch">Cabangkan</string>
+    <string name="chat_action_branch_desc">Cabangkan sesi baru dari sini</string>
+    <string name="chat_action_undo">Urungkan</string>
+    <string name="chat_action_undo_desc">Tarik kembali pertukaran terakhir</string>
+    <string name="chat_action_delete_desc">Hapus pesan</string>
+    <string name="chat_reply_attachment">lampiran</string>
+    <string name="chat_reply_message">pesan</string>
+
+    <string name="chat_archive_title">Arsip</string>
+    <string name="chat_archive_waking">membangunkan indeks…</string>
+    <plurals name="chat_archive_reaching">
+        <item quantity="other">%1$s diingat · menelusuri ke belakang…</item>
+    </plurals>
+    <plurals name="chat_archive_error">
+        <item quantity="other">%1$s diingat · %2$s</item>
+    </plurals>
+    <plurals name="chat_archive_done">
+        <item quantity="other">%1$s pesan diingat</item>
+    </plurals>
+    <string name="chat_archive_jump_date">Lompat ke tanggal</string>
+    <string name="chat_archive_nothing_that_day">Belum ada yang terindeks untuk hari itu</string>
+    <string name="chat_open">Buka</string>
+    <string name="chat_archive_tab_search">Cari</string>
+    <string name="chat_archive_tab_saved">Tersimpan</string>
+    <string name="chat_archive_tab_media">Media</string>
+    <string name="chat_archive_search_hint">Cari semua yang pernah diucapkan…</string>
+    <string name="chat_archive_recent">BARU DIINGAT</string>
+    <string name="chat_archive_empty_title">Belum ada yang diingat</string>
+    <string name="chat_archive_empty_body">Indeks terisi seiring sesi dipindai. Setelah itu, setiap pesan yang pernah dilihat aplikasi bisa ditemukan dengan sekali cari.</string>
+    <string name="chat_archive_search_idle">Setiap pesan yang pernah dilihat aplikasi, cukup sekali cari.</string>
+    <string name="chat_archive_no_hits">Belum ada hasil untuk “%1$s”</string>
+    <string name="chat_archive_opening">Membuka arsip…</string>
+    <string name="chat_archive_saved_empty_title">Belum ada yang disimpan</string>
+    <string name="chat_archive_saved_empty_body">Tekan lama sebuah pesan dan ketuk penanda untuk menyimpannya di sini.</string>
+    <string name="chat_archive_looking">Menelusuri yang sudah terindeks…</string>
+    <string name="chat_archive_media_empty_title">Belum ada foto atau file</string>
+    <string name="chat_archive_media_empty_body">Gambar dan file dari obrolanmu terkumpul di sini seiring indeks terisi.</string>
+    <string name="chat_image">gambar</string>
+    <string name="chat_you">Kamu</string>
+    <string name="chat_archive_context">Konteks</string>
+    <string name="chat_archive_context_failed">Momen itu tidak bisa dimuat (mungkin lebih lama dari kunci login ini).</string>
+    <string name="chat_archive_reach_earlier">Lebih awal</string>
+    <string name="chat_archive_reach_later">Lebih baru</string>
+
+    <string name="chat_attach">Lampirkan</string>
+    <string name="chat_composer_hint">Pesan…</string>
+    <string name="chat_composer_hint_steer_stop">Ketik untuk mengarahkan giliran ini — ■ menghentikan</string>
+    <string name="chat_composer_hint_steer">Ketik untuk mengarahkan giliran ini</string>
+    <string name="chat_dictate_stop">Hentikan dikte</string>
+    <string name="chat_dictate">Dikte</string>
+    <string name="chat_send_steer">Arahkan giliran yang berjalan</string>
+    <string name="chat_send_queue">Antrekan untuk giliran berikutnya</string>
+    <string name="chat_send_stop">Hentikan giliran</string>
+    <string name="chat_send">Kirim</string>
+    <string name="chat_send_hold_menu">Antrekan, tanya sampingan, atau alihkan</string>
+    <string name="chat_send_hold_queue">Antrekan untuk giliran berikutnya saja</string>
+    <string name="chat_send_hold_stop">Fungsi tombol berhenti</string>
+    <string name="chat_choose_model">Pilih model</string>
+    <string name="chat_model_label">Model: %1$s</string>
+    <string name="chat_reasoning">penalaran</string>
+    <string name="chat_steer_hint">↪ mengarahkan giliran · tahan untuk mengantrekan</string>
+    <string name="chat_replying_to">Membalas %1$s</string>
+    <string name="chat_cancel_reply">Batalkan balasan</string>
+    <string name="chat_image_attached">Gambar terlampir</string>
+    <string name="chat_file_attached">File terlampir</string>
+    <string name="chat_remove_attachment">Hapus lampiran</string>
+    <string name="chat_attach_photo">Foto</string>
+    <string name="chat_attach_file">File</string>
+    <string name="chat_attach_camera">Kamera</string>
+
+    <string name="chat_tool_succeeded">Berhasil</string>
+    <string name="chat_tool_failed">Gagal</string>
+    <string name="chat_tool_no_verdict">Tanpa hasil</string>
+    <string name="chat_duration_seconds">%1$dd</string>
+    <string name="chat_duration_millis">%1$dms</string>
+    <string name="chat_tool_flagged">⚠ Hermes menandai output ini</string>
+    <string name="chat_tool_flagged_with">⚠ Hermes menandai output ini: %1$s</string>
+    <string name="chat_tool_diff">diff</string>
+    <string name="chat_tool_diff_show">Tampilkan diff</string>
+    <string name="chat_tool_diff_hide">Sembunyikan diff</string>
+    <string name="chat_tool_diff_label">Diff</string>
+    <string name="chat_tool_output">output</string>
+    <string name="chat_tool_output_show">Tampilkan output</string>
+    <string name="chat_tool_output_hide">Sembunyikan output</string>
+    <string name="chat_tool_output_label">Output</string>
+    <string name="chat_tool_exit_failed">Kode keluar %1$d, gagal</string>
+    <string name="chat_tool_exit_ok">Kode keluar 0</string>
+    <plurals name="chat_tools_running">
+        <item quantity="other">Menjalankan %d alat…</item>
+    </plurals>
+    <plurals name="chat_tools_ran">
+        <item quantity="other">Menjalankan %d alat</item>
+    </plurals>
+    <plurals name="chat_subagents_running">
+        <item quantity="other">%1$d dari %2$d subagen berjalan</item>
+    </plurals>
+    <string name="chat_subagent_running">Subagen berjalan</string>
+    <plurals name="chat_delegated_tasks">
+        <item quantity="other">Mendelegasikan %d tugas</item>
+    </plurals>
+    <string name="chat_delegated_task">Mendelegasikan satu tugas</string>
+    <string name="chat_working">Bekerja…</string>
+    <plurals name="chat_output_steps">
+        <item quantity="other">%d langkah output</item>
+    </plurals>
+    <plurals name="chat_run_with_failed">
+        <item quantity="other">%1$s · %2$d gagal</item>
+    </plurals>
+    <string name="chat_steps_fold">Ciutkan langkah-langkah</string>
+    <string name="chat_steps_show">Tampilkan langkah-langkah</string>
+    <string name="chat_tap_in_run">Buka eksekusi ini layar penuh</string>
+    <string name="chat_state_open">Terbuka</string>
+    <string name="chat_state_folded">Diciutkan</string>
+
+    <string name="chat_approval_needed">Perlu persetujuan</string>
+    <string name="chat_approval_once">Izinkan sekali</string>
+    <string name="chat_approval_session">Sesi</string>
+    <string name="chat_approval_always">Selalu</string>
+    <string name="chat_approval_deny">Tolak</string>
+    <string name="chat_asking">Hermes bertanya</string>
+    <string name="chat_asking_batch">Hermes bertanya · %1$d dari %2$d</string>
+    <string name="chat_sudo_needed">Perlu kata sandi sudo</string>
+    <string name="chat_credential_needed">Perlu kredensial</string>
+    <string name="chat_stored_as">Disimpan di gateway sebagai %1$s</string>
+    <string name="chat_multi_answers">Boleh beberapa jawaban — ketik di bawah, pisahkan dengan koma.</string>
+    <string name="chat_your_answer">Jawabanmu</string>
+    <string name="chat_password">Kata sandi</string>
+    <string name="chat_value">Nilai</string>
+    <string name="chat_skip">Lewati</string>
+
+    <string name="chat_new_conversation">Percakapan baru</string>
+    <string name="chat_new_session_body">Sesi gateway baru. Beri nama sekarang, atau biarkan pertukaran pertama yang memberi judul.</string>
+    <string name="chat_title_optional">Judul (opsional)</string>
+    <string name="chat_agent">Agen</string>
+    <string name="chat_temporary">Sementara</string>
+    <string name="chat_temporary_body">Dihapus dari gateway saat aplikasi dibuka lagi</string>
+    <string name="chat_create">Buat</string>
+    <string name="chat_error_line">⚠ %1$s</string>
+    <string name="chat_direct_message">Pesan langsung</string>
+    <string name="chat_direct_message_sub">Mengobrol empat mata dengan pengguna</string>
+    <string name="chat_start">Mulai</string>
+    <string name="chat_new_room">Ruang baru</string>
+    <string name="chat_new_room_sub">Ruang bernama; undang orang sekarang atau nanti</string>
+    <string name="chat_room_name">Nama ruang</string>
+    <string name="chat_invite_optional">Undang @user:server (opsional)</string>
+    <string name="chat_join_by_address">Gabung lewat alamat</string>
+    <string name="chat_join">Gabung</string>
+
+    <string name="chat_prune_preview_failed">pratinjau gagal</string>
+    <string name="chat_prune_confirm_title">Konfirmasi pemangkasan sesi</string>
+    <plurals name="chat_prune_confirm_sub">
+        <item quantity="other">Menghapus %d sesi secara permanen</item>
+    </plurals>
+    <string name="chat_prune_title">Pangkas sesi</string>
+    <string name="chat_prune_body">Menghapus sesi yang sudah berakhir dari catatan gateway — permanen, termasuk transkripnya. Sesi aktif tidak pernah disentuh.</string>
+    <string name="chat_prune_older_than">Lebih lama dari</string>
+    <string name="chat_prune_days">%1$dh</string>
+    <string name="chat_prune_max_messages">Hanya sesi dengan ≤ N pesan (opsional)</string>
+    <string name="chat_prune_include_archived">Sertakan sesi yang diarsipkan</string>
+    <string name="chat_prune_nothing">Tidak ada yang cocok dengan filter ini.</string>
+    <plurals name="chat_prune_matched">
+        <item quantity="other">%1$d sesi cocok · terlama %2$s · terbaru %3$s</item>
+    </plurals>
+    <plurals name="chat_prune_sample">
+        <item quantity="other">· %1$s (%2$d pesan)</item>
+    </plurals>
+    <string name="chat_prune_preview">Pratinjau</string>
+    <string name="chat_prune_delete_count">Hapus %1$d…</string>
+    <string name="chat_prune_delete">Hapus…</string>
+    <plurals name="chat_prune_final_title">
+        <item quantity="other">Hapus %d sesi secara permanen?</item>
+    </plurals>
+    <string name="chat_prune_final_body">Baris dan file transkrip dihapus dari gateway. Tidak bisa dibatalkan.</string>
+    <string name="chat_prune_delete_n">Hapus %1$d</string>
+
+    <string name="chat_loading_lower">memuat…</string>
+    <string name="chat_load_attachment_failed">Tidak bisa memuat lampiran</string>
+    <string name="chat_animated_image">gambar animasi</string>
+    <string name="chat_video">video</string>
+    <string name="chat_saved_to">Disimpan ke %1$s</string>
+    <string name="chat_save_failed">Tidak bisa menyimpan</string>
+    <string name="chat_save_to_device">Simpan ke perangkat</string>
+    <string name="chat_share_failed">Tidak bisa membagikan</string>
+    <string name="chat_share">Bagikan</string>
+    <string name="chat_close">Tutup</string>
+    <string name="chat_no_app_for_file">Tidak ada aplikasi yang bisa membuka file ini</string>
+    <string name="chat_open_with">Buka dengan</string>
+
+    <string name="chat_copy_image">Salin gambar</string>
+    <string name="chat_image_copied">Gambar disalin — tempel ke postingan</string>
+    <string name="chat_image_fetch_failed">Tidak bisa mengambil gambar — tautannya disalin sebagai gantinya</string>
+    <string name="chat_copy_link">Salin tautan</string>
+    <string name="chat_link_copied">Tautan disalin</string>
+    <string name="chat_save_to_photos">Simpan ke Foto</string>
+    <string name="chat_save_image_failed">Tidak bisa menyimpan gambar itu</string>
+    <string name="chat_open_in_browser">Buka di browser</string>
+    <string name="chat_no_app_for_link">Tidak ada yang bisa membuka tautan itu</string>
+
+    <string name="chat_gateway_log">Log gateway</string>
+    <string name="chat_details_copied">Detail disalin</string>
+    <string name="chat_copy_details">Salin detail</string>
+
+    <string name="chat_thinking">Berpikir…</string>
+    <string name="chat_thought">Berpikir</string>
+    <string name="chat_thought_briefly">Berpikir sebentar</string>
+    <string name="chat_thought_for">Berpikir selama %1$s</string>
+    <string name="chat_reasoning_show_a11y">Tampilkan penalaran</string>
+    <string name="chat_reasoning_hide_a11y">Sembunyikan penalaran</string>
+    <string name="chat_duration_min_sec">%1$dm %2$dd</string>
+    <string name="chat_newest">terbaru</string>
+
+    <string name="chat_config_unsaved">%1$s · belum disimpan</string>
+    <string name="chat_saving">Menyimpan…</string>
+    <string name="chat_save">Simpan</string>
+    <string name="chat_config_load_failed">Tidak bisa memuat config.yaml. %1$s</string>
+    <string name="chat_loading">Memuat…</string>
+    <string name="chat_config_restart_note">Untuk sebagian besar bagian, perubahan yang disimpan berlaku setelah gateway dimulai ulang.</string>
+    <string name="chat_save_anyway_title">Tetap simpan?</string>
+    <string name="chat_save_anyway">Tetap simpan</string>
+    <string name="chat_discard_title">Buang perubahan?</string>
+    <string name="chat_config_untouched">config.yaml di gateway tidak diubah.</string>
+    <string name="chat_discard">Buang</string>
+    <string name="chat_keep_editing">Lanjut mengedit</string>
+
+    <string name="chat_export_title">Ekspor “%1$s”</string>
+    <string name="chat_this_session">sesi ini</string>
+    <string name="chat_export_markdown_detail">Percakapan seperti yang kamu baca: siapa bilang apa, alat dalam satu baris, output panjang dipangkas.</string>
+    <string name="chat_export_json_detail">Ekspor lengkap dari gateway: setiap baris, termasuk giliran yang diurungkan dan prompt sistem. Bisa diimpor ulang.</string>
+    <string name="chat_export_share_failed">Tidak bisa membuka lembar berbagi.</string>
+    <string name="chat_export_failed">Ekspor gagal.</string>
+    <string name="chat_exporting">Mengekspor…</string>
+
+    <string name="chat_cmd_new">Mulai percakapan baru</string>
+    <string name="chat_cmd_compress">Padatkan / ringkas utas ini</string>
+    <string name="chat_cmd_handoff">Serahkan konteks ke sesi baru</string>
+    <string name="chat_cmd_steer">Arahkan agen di tengah tugas</string>
+    <string name="chat_cmd_think">Minta penalaran lebih dalam</string>
+    <string name="chat_cmd_model">Ganti model aktif</string>
+    <string name="chat_cmd_reset">Reset status kerja agen</string>
+    <string name="chat_cmd_help">Daftar kemampuan agen ini</string>
+    <string name="chat_cmd_status">Tampilkan status agen + sistem</string>
+    <string name="chat_cmd_memory">Ingat atau edit memori jangka panjang</string>
+    <string name="chat_cmd_tools">Daftar alat yang tersedia</string>
+    <string name="chat_cmd_recent">terbaru</string>
+    <string name="chat_cmd_skill">keahlian</string>
+
+    <string name="chat_transition_dissolve">Larut</string>
+    <string name="chat_transition_dissolve_blurb">Ruang terbentuk kembali lewat buram lembut, dengan jejak braille.</string>
+    <string name="chat_transition_passage">Lorong</string>
+    <string name="chat_transition_passage_blurb">Ruang baru meluncur masuk di atas garis bercahaya sementara yang lama mundur.</string>
+    <string name="chat_transition_weave">Anyam</string>
+    <string name="chat_transition_weave_blurb">Pita kuning amber dan ungu bersilangan ke atas dan ruang berganti di belakangnya.</string>
+    <string name="chat_transition_bloom">Mekar</string>
+    <string name="chat_transition_bloom_blurb">Ruang baru terbuka sebagai lingkaran dari baris yang kamu ketuk.</string>
+    <string name="chat_transition_rise">Naik</string>
+    <string name="chat_transition_rise_blurb">Ruang lama miring ke belakang dan tenggelam; yang baru naik ke tempatnya.</string>
+    <string name="chat_speed_slow">Lambat</string>
+    <string name="chat_speed_normal">Normal</string>
+    <string name="chat_speed_fast">Cepat</string>
+
+    <string name="chat_pet_choose">Pilih hewan peliharaan</string>
+    <string name="chat_pet_rides">%1$s ikut menemani di menu samping</string>
+    <string name="chat_pet_gateway">Hewan peliharaan tinggal di gateway — setiap tampilan menunjukkan yang sama</string>
+    <plurals name="chat_pet_search">
+        <item quantity="other">Cari %d hewan peliharaan…</item>
+    </plurals>
+    <string name="chat_pet_installed_header">Terpasang</string>
+    <string name="chat_pet_catalog_header">Katalog Petdex</string>
+    <string name="chat_pet_none">Tidak ada hewan peliharaan — apakah Hermes Link sudah diatur?</string>
+    <string name="chat_pet_no_match">Tidak ada hewan peliharaan yang cocok dengan “%1$s”</string>
+    <string name="chat_pet_badge_active">aktif</string>
+    <string name="chat_pet_badge_hatched">menetas lokal</string>
+    <string name="chat_pet_badge_curated">pilihan</string>
+    <string name="chat_pet_badge_installed">terpasang</string>
+    <string name="chat_pet_active">Aktif</string>
+
+    <string name="chat_back">Kembali</string>
+    <string name="chat_close_named">Tutup %1$s</string>
+    <string name="chat_loading_a11y">Memuat</string>
+
+    <string name="chat_call_header">KERYX · PANGGILAN</string>
+    <string name="chat_call_mic_needed">Keryx butuh mikrofon untuk panggilan.</string>
+    <string name="chat_call_listening">mendengarkan</string>
+    <string name="chat_call_hearing">menangkap suaramu…</string>
+    <string name="chat_call_thinking">berpikir</string>
+    <string name="chat_call_interrupt">ketuk bola untuk menyela</string>
+    <string name="chat_call_muted">dibisukan</string>
+    <string name="chat_call_ended">panggilan berakhir</string>
+    <string name="chat_call_heard">“%1$s”</string>
+    <string name="chat_call_unmute">Bunyikan</string>
+    <string name="chat_call_mute">Bisukan</string>
+    <string name="chat_call_end">Akhiri panggilan</string>
+
+    <string name="chat_sources">Sumber</string>
+    <string name="chat_source">sumber</string>
+    <string name="chat_hand_clipboard">PAPAN KLIP</string>
+    <string name="chat_hand_phone">PONSEL</string>
+    <string name="chat_hand_share">BAGIKAN</string>
+    <string name="chat_hand_app">APLIKASI</string>
+    <string name="chat_hand_opens">MEMBUKA</string>
+    <string name="chat_skill_distilled">Keahlian Tersuling</string>
+    <string name="chat_open_skill_forge">Buka di Bengkel Keahlian →</string>
+
+    <string name="chat_tap_in_turn">Buka giliran ini layar penuh</string>
+    <string name="chat_stream_dropped">Stream terputus — memulihkan lewat sinkronisasi Matrix…</string>
+
+    <string name="chat_context_direct_only">Hanya pintu langsung yang bisa merinci jendela konteks.</string>
+    <string name="chat_context_read_failed">Tidak bisa membaca jendela konteks</string>
+    <string name="chat_context_title">Konteks</string>
+    <string name="chat_context_used">%1$s dari %2$s token</string>
+    <string name="chat_context_no_agent">Gateway belum punya agen aktif untuk sesi ini — kirim sesuatu dulu.</string>
+
+    <string name="chat_chart">Grafik</string>
+    <string name="chat_chart_summary">%1$s. Grafik %2$s.</string>
+    <string name="chat_chart_summary_unit">%1$s. Grafik %2$s, dalam %3$s.</string>
+    <string name="chat_chart_no_value">tanpa nilai</string>
+    <string name="chat_chart_series">Seri %1$d</string>
+    <string name="chat_chart_total">total</string>
+    <string name="chat_show_less">Tampilkan lebih sedikit</string>
+    <plurals name="chat_show_all_lines">
+        <item quantity="other">Tampilkan semua %d baris</item>
+    </plurals>
+
+    <string name="chat_aside_header">SAMPINGAN · bukan bagian obrolan</string>
+    <string name="chat_dismiss">Tutup</string>
+    <string name="chat_aside_answering">…menjawab di samping</string>
+    <string name="chat_aside_failed">Pertanyaan sampingan gagal: %1$s</string>
+    <string name="chat_aside_no_answer">Tidak ada jawaban.</string>
+
+    <string name="chat_action_success">BERHASIL</string>
+    <string name="chat_action_failed">GAGAL</string>
+    <string name="chat_action_tag">AKSI</string>
+    <string name="chat_reasoning_live">Bernalar…</string>
+    <string name="chat_reasoning_title">Penalaran</string>
+    <string name="chat_show_drawing">tampilkan gambar</string>
+    <string name="chat_drawing">Gambar</string>
+
+    <string name="chat_done">Selesai</string>
+
+    <string name="chat_art_mission_board">Papan misi kosong dengan tongkat bentara bersandar padanya</string>
+    <string name="chat_art_winged_clock">Jam bersayap dengan panah melengkung mengelilinginya</string>
+    <string name="chat_art_robot">Kepala robot bermahkota bola bersayap sang bentara, dengan ruang kosong di kedua sisinya</string>
+    <string name="chat_art_folder">Map berisi halaman dengan gambar cabang di atasnya</string>
+    <string name="chat_art_scroll">Gulungan terbuka dengan kaca pembesar di atasnya</string>
+    <string name="chat_art_bookmark">Halaman dengan satu baris ditandai dan pita pembatas buku</string>
+    <string name="chat_art_picture">Gambar berbingkai berisi bukit dan matahari, dengan bingkai kosong di belakangnya</string>
+
+    <string name="chat_memory">Memori obrolan</string>
+    <string name="chat_ring_base">Memori obrolan %1$dk dari %2$dk token, %3$d persen</string>
+    <plurals name="chat_ring_replies">
+        <item quantity="other">%1$s, sekitar %2$d balasan sebelum ringkasan</item>
+    </plurals>
+    <string name="chat_ring_until">%1$s, %2$dk lagi sampai ringkasan</string>
+    <string name="chat_ring_next">%1$s, balasan berikutnya memulai ringkasan</string>
+
+    <string name="chat_folder_hint">Folder di gateway (mis. ~/workspace/keryx)</string>
+    <string name="chat_folder_found">✓ folder ditemukan</string>
+    <string name="chat_folder_missing">belum ada folder di sana</string>
+    <string name="chat_known_workspaces">Ruang kerja yang dikenal</string>
+    <string name="chat_folder_truncated">lebih dari 30 folder di sini — terus ketik untuk mempersempit</string>
+    <string name="chat_folder_more">+%1$d lagi — terus ketik untuk mempersempit</string>
+
+    <string name="chat_console_starting">memulai…</string>
+    <string name="chat_console_streaming">agen sedang bekerja</string>
+    <string name="chat_console_waiting">menunggu persetujuan</string>
+    <string name="chat_console_completed">giliran selesai</string>
+    <string name="chat_console_lost">koneksi terputus</string>
+    <string name="chat_console_lost_why">koneksi terputus — %1$s</string>
+    <string name="chat_console_failed">gagal</string>
+    <string name="chat_console_failed_why">gagal — %1$s</string>
+    <string name="chat_stop">Hentikan</string>
+    <string name="chat_clear">Bersihkan</string>
+
+    <string name="chat_mark_hide">Sembunyikan ucapannya</string>
+    <string name="chat_mark_read">Baca ucapannya</string>
+    <string name="chat_mark_system">Sistem: %1$s</string>
+    <string name="chat_summary_hide">Sembunyikan ringkasan</string>
+    <string name="chat_summary_read">Baca ringkasan</string>
+    <string name="chat_context_compacted">🗜 Konteks dipadatkan · %1$s</string>
+    <string name="chat_this_session_title">Sesi ini</string>
+
+    <string name="chat_goal_loop">↻ putaran · %1$s · %2$s</string>
+    <string name="chat_goal_heartbeat">♥ detak · %1$d · %2$s</string>
+    <string name="chat_goal_close">Tutup tujuan</string>
+    <string name="chat_goal_open">Buka tujuan</string>
+    <string name="chat_goal_exit">keluar %1$d</string>
+
+    <string name="chat_subagent_running_lower">subagen berjalan</string>
+    <plurals name="chat_subagents_count">
+        <item quantity="other">%d subagen</item>
+    </plurals>
+    <string name="chat_subagent">subagen</string>
+    <string name="chat_delegated_task_lower">tugas yang didelegasikan</string>
+    <plurals name="chat_tool_count">
+        <item quantity="other">%d alat</item>
+    </plurals>
+    <string name="chat_tokens_k">%1$dk tok</string>
+    <plurals name="chat_files_written">
+        <item quantity="other">%d ditulis</item>
+    </plurals>
+    <string name="chat_interrupted">terputus</string>
+    <string name="chat_duration_min_sec_compact">%1$dm%2$dd</string>
+
+    <string name="chat_flight_plan">RENCANA PENERBANGAN</string>
+    <string name="chat_flight_all_done">semua langkah mendarat</string>
+    <string name="chat_flight_next">berikutnya: %1$s</string>
+    <string name="chat_join_sub">#alias:server atau !roomid:server</string>
+</resources>

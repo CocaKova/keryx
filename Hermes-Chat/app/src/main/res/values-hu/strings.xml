@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">Új csevegés</string>
+    <string name="shortcut_new_chat_long">Új csevegés indítása</string>
+    <string name="shortcut_missions">Küldetések</string>
+    <string name="shortcut_missions_long">A küldetéstábla megnyitása</string>
+    <string name="shortcut_runs">Futások</string>
+    <string name="shortcut_runs_long">Ütemezett futások és jelentéseik</string>
+
+    <string name="widget_description">Az ügynök egy pillantással: kapcsolat, legújabb munkamenet, amit utoljára mondott, és a folyamatban lévő kör.</string>
+
+    <string name="note_tile_label">Üzenet az ügynöknek</string>
+    <string name="note_tile_label_to">Üzenet neki: %1$s</string>
+    <string name="note_tile_live">élő</string>
+    <string name="note_tile_offline">offline</string>
+    <string name="note_placeholder">Egy sor az ügynöknek…</string>
+    <string name="note_target_prefix">cél:</string>
+    <string name="note_change_target">Munkamenet váltása</string>
+    <string name="note_no_sessions">Még nincs munkamenet</string>
+    <string name="note_send">Küldés</string>
+    <string name="note_sent_to">Elküldve: %1$s</string>
+    <string name="note_send_failed">A küldés nem sikerült</string>
+    <string name="note_locked">Zárolva</string>
+    <string name="note_unlock">Feloldás</string>
+    <string name="note_unlock_title">A Keryx feloldása</string>
+</resources>

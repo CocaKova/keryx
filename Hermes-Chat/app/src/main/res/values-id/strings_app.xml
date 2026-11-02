@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_turn_failed">Giliran gagal</string>
+    <string name="app_photo">Foto</string>
+    <string name="app_attachment">Lampiran</string>
+    <string name="app_new_message">Pesan baru</string>
+
+    <string name="app_approval_expired">Persetujuan sudah kedaluwarsa</string>
+    <string name="app_approval_failed">Persetujuan gagal: %1$s</string>
+    <string name="app_reply_failed">Balasan gagal: %1$s</string>
+    <string name="app_link_unreachable_matrix">Hermes Link tidak terjangkau (%1$s) — memakai sinkronisasi Matrix</string>
+    <string name="app_send_failed">Tidak bisa mengirim: %1$s</string>
+    <string name="app_room_photo_updated">Foto ruang diperbarui</string>
+    <string name="app_room_photo_forbidden">Tidak ada izin untuk mengatur foto ruang ini — kamu perlu hak moderator di sana.</string>
+    <string name="app_room_photo_failed">Tidak bisa mengatur foto: %1$s</string>
+    <string name="app_unknown_error">kesalahan tidak diketahui</string>
+    <string name="app_branched">Dicabangkan — salinan seluruh percakapan ini</string>
+    <string name="app_branch_failed">Gagal mencabangkan: %1$s</string>
+    <string name="app_not_sent">Tidak terkirim. %1$s</string>
+    <string name="app_undo_done">Pertukaran terakhir ditarik kembali</string>
+    <string name="app_undo_nothing">Tidak ada yang bisa ditarik kembali</string>
+    <string name="app_still_working">Masih bekerja — hentikan giliran dulu</string>
+    <string name="app_undo_failed">Tidak bisa membatalkan: %1$s</string>
+    <string name="app_retry_nothing">Tidak ada yang bisa dicoba lagi — gateway tidak punya giliran untuk ditarik</string>
+    <string name="app_retry_failed">Tidak bisa mencoba lagi: %1$s</string>
+    <string name="app_taken_back_edit">Ditarik kembali — edit lalu kirim lagi</string>
+    <string name="app_take_back_failed">Tidak bisa ditarik — kata-katamu ada di kolom tulis untuk dikirim lagi</string>
+    <string name="app_set_gateway_url_first">Atur URL gateway dulu</string>
+    <string name="app_link_ok">Hermes Link OK — %1$s</string>
+    <string name="app_link_failed">Hermes Link gagal: %1$s</string>
+    <string name="app_connection_error">kesalahan koneksi</string>
+    <string name="app_link_up_api_down">Hermes Link aktif, tetapi server API Hermes di belakangnya tidak berjalan, jadi Misi dan Eksekusi tidak akan dimuat. Atur API_SERVER_ENABLED=true dan sebuah API_SERVER_KEY di ~/.hermes/.env, lalu mulai ulang gateway.</string>
+
+    <string name="app_pinned">Disematkan</string>
+    <string name="app_pinned_named">“%1$s” disematkan</string>
+    <string name="app_unpinned">Sematan dilepas</string>
+    <string name="app_unpinned_named">Sematan “%1$s” dilepas</string>
+    <string name="app_pin_failed">Gagal menyematkan: %1$s</string>
+    <string name="app_unpin_failed">Gagal melepas sematan: %1$s</string>
+    <string name="app_marked_unread">Ditandai belum dibaca</string>
+    <string name="app_mark_read_failed">Tidak bisa menandai dibaca: %1$s</string>
+    <string name="app_mark_unread_failed">Tidak bisa menandai belum dibaca: %1$s</string>
+    <string name="app_sticky_no_catalog">Tidak bisa membaca model — dibuka dengan default gateway</string>
+    <string name="app_sticky_not_served">%1$s sedang tidak tersedia — dibuka dengan default gateway</string>
+    <string name="app_sticky_needs_confirm">%1$s perlu dikonfirmasi — pilih di pemilih model</string>
+    <string name="app_sticky_opened_fallback">Dibuka dengan %1$s — %2$s sedang tidak tersedia</string>
+    <string name="app_sticky_opened">Dibuka dengan %1$s — pilihan terakhirmu (model tetap, di Setelan)</string>
+    <string name="app_sticky_refused">%1$s menolak — dibuka dengan default gateway</string>
+    <string name="app_create_session_failed">tidak bisa membuat sesi</string>
+    <string name="app_rename_failed">Gagal mengganti nama: %1$s</string>
+    <string name="app_archive_failed">Tidak bisa mengarsipkan: %1$s</string>
+    <string name="app_archived">Diarsipkan</string>
+    <string name="app_archived_named">“%1$s” diarsipkan</string>
+    <string name="app_restore_failed">Tidak bisa memulihkan: %1$s</string>
+    <string name="app_restored">Dipulihkan</string>
+    <string name="app_restored_named">“%1$s” dipulihkan</string>
+    <string name="app_archive_read_failed">Tidak bisa membaca arsip: %1$s</string>
+    <string name="app_older_sessions_failed">Tidak bisa memuat sesi lama: %1$s</string>
+    <string name="app_session_deleted">Sesi dihapus</string>
+    <string name="app_delete_failed">Gagal menghapus: %1$s</string>
+
+    <string name="app_steered">Diarahkan — agen melihatnya di langkah berikutnya</string>
+    <string name="app_steer_declined_queued">Agen menolak arahan — diantrekan untuk giliran berikutnya</string>
+    <string name="app_queue_failed">Gagal mengantrekan: %1$s</string>
+    <string name="app_steer_failed">Gagal mengarahkan: %1$s</string>
+    <string name="app_goal_failed">Tujuan: %1$s</string>
+    <string name="app_aside_needs_direct">Pertanyaan sampingan butuh gateway langsung</string>
+    <string name="app_aside_failed">Pertanyaan sampingan gagal: %1$s</string>
+    <string name="app_redirected">Dialihkan — balasan dimulai ulang dengan koreksimu</string>
+    <string name="app_redirect_between_calls">Di antara panggilan — koreksimu dijalankan berikutnya</string>
+    <string name="app_redirect_finished_queued">Balasan sudah selesai — diantrekan untuk giliran berikutnya</string>
+    <string name="app_redirect_unsupported">Agen ini tidak bisa dialihkan — diarahkan saja</string>
+    <string name="app_redirect_failed">Gagal mengalihkan: %1$s</string>
+    <string name="app_branched_from_message">Dicabangkan — ini sesi baru dari pesan tersebut</string>
+    <string name="app_queued">Diantrekan — terkirim saat giliran ini selesai</string>
+    <string name="app_stopped">Dihentikan</string>
+    <string name="app_stop_failed">Gagal menghentikan: %1$s</string>
+    <string name="app_crew_steered">%1$s diarahkan — ia melihatnya di langkah berikutnya</string>
+    <string name="app_crew_steer_rejected">%1$s tidak menerimanya — ia terhubung lewat pintu lain, atau sudah hampir selesai</string>
+    <string name="app_crew_stopped">%1$s dihentikan</string>
+    <string name="app_crew_already_finished">%1$s sudah selesai</string>
+
+    <string name="app_model_confirm">%1$s Ketuk lagi untuk konfirmasi.</string>
+    <string name="app_model_expensive">Model ini mahal.</string>
+    <string name="app_model_deferred">%1$s mengambil alih di giliran berikutnya — sesi ini</string>
+    <string name="app_model_deferred_global">%1$s mengambil alih di giliran berikutnya — semua sesi</string>
+    <string name="app_model_switched">%1$s — sesi ini</string>
+    <string name="app_model_switched_global">%1$s — semua sesi</string>
+    <string name="app_model_switch_refused">Pergantian ditolak: %1$s</string>
+    <string name="app_reasoning_refused_unknown">Otak ini menolak tingkat berpikir itu — pilih yang lebih rendah.</string>
+    <string name="app_reasoning_refused_floor">Otak ini menolak tingkat berpikir %1$s, dan tidak ada yang lebih rendah untuk dicoba.</string>
+    <string name="app_reasoning_dropped">Otak ini menolak tingkat berpikir %1$s — diturunkan ke %2$s.</string>
+    <string name="app_reasoning_drop_failed">Otak ini menolak tingkat berpikir %1$s; tidak bisa diturunkan ke %2$s.</string>
+    <string name="app_reasoning_set">Penalaran → %1$s — sesi ini</string>
+    <string name="app_reasoning_set_global">Penalaran → %1$s untuk semua sesi</string>
+    <string name="app_reasoning_refused">Penalaran ditolak: %1$s</string>
+
+    <string name="app_room_joined">Bergabung — ruang muncul di sinkronisasi berikutnya</string>
+    <string name="app_join_failed">Gagal bergabung: %1$s</string>
+    <string name="app_invite_declined">Undangan ditolak</string>
+    <string name="app_decline_failed">Gagal menolak: %1$s</string>
+    <string name="app_start_chat_failed">tidak bisa memulai obrolan</string>
+    <string name="app_create_room_failed">tidak bisa membuat ruang</string>
+    <string name="app_join_failed_short">tidak bisa bergabung</string>
+    <string name="app_invite_sent">Undangan terkirim</string>
+    <string name="app_invite_failed">Undangan gagal: %1$s</string>
+    <string name="app_left_room">Keluar dari ruang</string>
+    <string name="app_leave_failed">Gagal keluar: %1$s</string>
+
+    <string name="app_try_again">coba lagi</string>
+    <string name="app_group_rooms_unavailable">ruang tidak tersedia</string>
+    <string name="app_not_connected">tidak terhubung ke gateway</string>
+    <string name="app_group_stop_failed">Tidak bisa menghentikan ruang: %1$s</string>
+    <string name="app_group_approval_failed">Tidak bisa menjawab persetujuan: %1$s</string>
+    <string name="app_group_rename_failed">Tidak bisa mengganti nama: %1$s</string>
+    <string name="app_group_disband_failed">Tidak bisa membubarkan: %1$s</string>
+
+    <string name="app_no_stt_endpoint">Endpoint STT belum diatur</string>
+    <string name="app_no_tts_endpoint">Endpoint TTS belum diatur</string>
+    <string name="app_no_stt_set">endpoint STT belum diatur</string>
+    <string name="app_no_tts_set">endpoint TTS belum diatur</string>
+    <string name="app_voice_unreachable">%1$s tidak terjangkau di %2$s (%3$s)</string>
+    <string name="app_voice_ears">telinga (STT)</string>
+    <string name="app_voice_mouth">suara (TTS)</string>
+
+    <string name="app_console_run_live">Sebuah eksekusi sedang berjalan — hentikan atau biarkan selesai</string>
+    <string name="app_link_off">Hermes Link mati — aktifkan di Setelan</string>
+    <string name="app_export_needs_gateway">Ekspor butuh pintu gateway.</string>
+    <string name="app_export_too_old">Gateway ini terlalu lama untuk mengekspor sesi.</string>
+    <string name="app_export_subject">Sesi Hermes</string>
+    <string name="app_export_unreadable">Hasil ekspor tidak bisa dibaca.</string>
+
+    <string name="app_unsaved">Dihapus dari Tersimpan</string>
+    <string name="app_saved">Disimpan — cari di Arsip</string>
+    <string name="app_pet_adopt_failed">tidak bisa mengadopsi %1$s</string>
+
+    <string name="app_channel_messages">Pesan</string>
+    <string name="app_channel_messages_desc">Pesan baru dari agen dan ruang Hermes milikmu</string>
+    <string name="app_notify_you">Kamu</string>
+    <string name="app_notify_title_failed">%1$s · giliran gagal</string>
+    <string name="app_notify_reply">Balas</string>
+    <string name="app_notify_reply_to">Balas %1$s</string>
+    <string name="app_notify_mark_read">Tandai dibaca</string>
+    <plurals name="app_notify_conversations">
+        <item quantity="other">%d percakapan</item>
+    </plurals>
+    <string name="app_channel_gate">Persetujuan &amp; pertanyaan</string>
+    <string name="app_channel_gate_desc">Sebuah agen berhenti, menunggu jawabanmu</string>
+    <string name="app_notify_answer">Jawab</string>
+    <string name="app_channel_runs">Agen berjalan</string>
+    <string name="app_channel_runs_desc">Baris status senyap saat agen bekerja: apa yang dikerjakan dan sudah berapa lama</string>
+    <string name="app_notify_stop">Hentikan</string>
+    <string name="app_channel_missions">Misi</string>
+    <string name="app_channel_missions_desc">Misi yang selesai, terhambat, atau menyerah di papan agen</string>
+
+    <string name="app_push_checking">Memeriksa pesan…</string>
+    <string name="app_notify_sending_text">Mengirim: %1$s</string>
+    <string name="app_notify_answering">Menjawab…</string>
+    <string name="app_notify_gate_unreachable">Tidak bisa menjangkau gateway — ketuk untuk menjawab</string>
+    <string name="app_notify_answered">Terjawab — agen berjalan lagi</string>
+    <string name="app_notify_request_timed_out">Permintaan itu sudah kedaluwarsa</string>
+    <string name="app_notify_answer_failed">Tidak bisa menjawab — ketuk untuk membuka</string>
+    <string name="app_notify_sending">Mengirim…</string>
+    <string name="app_notify_send_failed">Tidak bisa mengirim “%1$s” — ketuk untuk membuka</string>
+
+    <string name="app_push_connecting">Menghubungkan…</string>
+    <string name="app_push_connected">Terhubung — push bawaan</string>
+    <string name="app_push_reconnecting">Menghubungkan ulang…</string>
+    <string name="app_channel_push">Koneksi push</string>
+    <string name="app_channel_push_desc">Koneksi Keryx sendiri ke server push-mu (tanpa aplikasi distributor)</string>
+    <string name="app_push_title">Push Keryx</string>
+
+    <string name="app_scan_pairing_inside">Pindai kode pemasangan di dalam Keryx: Hubungkan gateway-mu › Pindai kode pemasangan.</string>
+
+    <string name="app_share_nothing">Tidak ada yang dibagikan</string>
+    <string name="app_share_foreign_only">Keryx hanya bisa mengirim file yang dibagikan dari aplikasi lain</string>
+    <string name="app_share_too_large_mb">File terlalu besar untuk dikirim (%1$d MB)</string>
+    <string name="app_share_too_large">File terlalu besar untuk dikirim</string>
+    <string name="app_share_read_failed">Tidak bisa membaca %1$s</string>
+    <plurals name="app_share_attachments">
+        <item quantity="other">%d lampiran</item>
+    </plurals>
+    <string name="app_share_note_label">Tambahkan catatan (opsional)</string>
+    <string name="app_share_note_hint">Ringkas ini / ingat ini / …</string>
+
+    <string name="app_hands_cannot">Tidak ada apa pun di ponsel ini yang bisa melakukannya</string>
+    <string name="app_hands_no_app">Tidak ada aplikasi bernama “%1$s”</string>
+    <string name="app_hands_no_handler">Tidak ada apa pun di ponsel ini yang menangani %1$s</string>
+    <string name="app_hands_failed">Tidak bisa: %1$s</string>
+    <string name="app_hands_no_flash">Ponsel ini tidak punya lampu kilat</string>
+
+    <string name="app_crash_log_subject">Log crash Keryx</string>
+    <string name="app_crash_log_share">Bagikan log crash</string>
+    <string name="app_share">Bagikan</string>
+    <string name="app_share_named">Bagikan %1$s</string>
+
+    <string name="app_call_hearing_failed">gagal mendengar: %1$s</string>
+    <string name="app_call_turn_failed">giliran agen gagal</string>
+    <string name="app_call_voice_failed">suara gagal: %1$s</string>
+    <string name="app_call_no_reply">tidak ada balasan dari gateway</string>
+    <string name="app_tts_failed">Ucapan gagal: %1$s</string>
+    <string name="app_tts_audio_unavailable">Audio tidak tersedia</string>
+    <string name="app_tts_no_audio">Server ucapan tidak mengirim audio</string>
+    <string name="app_tts_no_engine">Tidak ada mesin ucapan di perangkat ini</string>
+    <string name="app_tts_playback_failed">Pemutaran ucapan gagal</string>
+    <string name="app_tts_playback_failed_why">Pemutaran ucapan gagal: %1$s</string>
+
+    <string name="app_tour_welcome_title">Selamat datang di Keryx</string>
+    <string name="app_tour_welcome_text">Ini demo: gateway pura-pura di ponselmu, dan agennya sedang mengerjakan sesuatu. Mari lihat-lihat sebentar sebelum kamu menghubungkan milikmu sendiri.</string>
+    <string name="app_tour_plan_title">Rencananya</string>
+    <string name="app_tour_plan_text">Agenmu memecah pekerjaan jadi langkah-langkah dan mencentangnya satu per satu. Selama bekerja, Keryx menampilkan notifikasi langsung, jadi ponselmu bisa disimpan.</string>
+    <string name="app_tour_approval_title">Bertanya dulu</string>
+    <string name="app_tour_approval_text">Sebelum melakukan hal berisiko, seperti menghapus folder, agenmu berhenti dan bertanya. Jawab di sini atau langsung dari notifikasi.</string>
+    <string name="app_tour_approval_text_demo">Sebelum melakukan hal berisiko, seperti menghapus folder, agenmu berhenti dan bertanya. Jawab di sini atau langsung dari notifikasi. Coba setelah tur selesai, dan lihat ia menuntaskan pekerjaannya.</string>
+    <string name="app_tour_composer_title">Minta apa saja</string>
+    <string name="app_tour_composer_text">Beri agenmu pekerjaan dengan kata-kata biasa. Ia tetap bekerja meski kamu pergi, dan Keryx memberi tahu saat selesai.</string>
+    <string name="app_tour_model_title">Otak mana yang menjawab</string>
+    <string name="app_tour_model_text">Ganti model untuk sesi ini, atau untuk semua sesi mulai sekarang.</string>
+    <string name="app_tour_new_session_title">Halaman baru</string>
+    <string name="app_tour_new_session_text">Mulai sesi baru. Tahan untuk opsi, seperti judul atau sesi sementara.</string>
+    <string name="app_tour_drawer_title">Semua yang lain</string>
+    <string name="app_tour_drawer_text">Sesi-sesimu dan bagian Keryx lainnya ada di balik tombol ini.</string>
+    <string name="app_tour_lenses_title">Yang menunggumu</string>
+    <string name="app_tour_lenses_text">Persempit daftar ke sesi yang menunggumu, yang sedang berjalan, atau yang belum dibaca.</string>
+    <string name="app_tour_missions_title">Misi</string>
+    <string name="app_tour_missions_text">Serahkan pekerjaan panjang ke agenmu sebagai kartu di papan. Ia mengerjakannya dan bertanya saat membutuhkanmu.</string>
+    <string name="app_tour_runs_title">Eksekusi</string>
+    <string name="app_tour_runs_text">Tugas terjadwal, dan hasil setiap eksekusinya.</string>
+    <string name="app_tour_bots_title">Bot</string>
+    <string name="app_tour_bots_text">Profil lain dari agenmu. Masing-masing punya memori, keahlian, dan obrolan sendiri.</string>
+    <string name="app_tour_archive_title">Arsip</string>
+    <string name="app_tour_archive_text">Semua yang pernah diucapkan, bisa dicari di ponsel, bahkan saat gateway mati.</string>
+    <string name="app_tour_gateway_title">Gateway-mu</string>
+    <string name="app_tour_gateway_text_demo">Dengan Hermes milikmu sendiri, di sini tampil koneksi, model, dan versinya. Semua yang baru kamu lihat bekerja sama persis di gateway sungguhan: hubungkan milikmu dan langsung aktif.</string>
+    <string name="app_tour_gateway_text">Koneksi, model, dan versi Hermes. Ketuk untuk Gateway; ikon roda gigi membuka Setelan, tempat tur ini juga berada.</string>
+    <string name="app_tour_gateway_text_direct">Koneksi, model, dan versi Hermes. Ketuk untuk Gateway; ikon roda gigi membuka Setelan, tempat tur ini juga berada. Punya lebih dari satu Hermes? Tambahkan dan beralih di antaranya di sini.</string>
+    <string name="app_tour_cta_connect">Hubungkan gateway-mu</string>
+    <string name="app_tour_cta_add_gateway">Tambah gateway</string>
+
+    <string name="app_whatsnew_title">Yang baru di Keryx 3.0</string>
+    <string name="app_whatsnew_text">Sekilas tentang yang berubah. Lewati saja kalau mau: tetap ada di Setelan › Tentang.</string>
+    <string name="app_whatsnew_point_title">Tanya letak sesuatu</string>
+    <string name="app_whatsnew_point_text">Tanya agenmu \"di mana tugas terjadwalku?\" dan ia bisa menunjukkan tempatnya, langsung di ponsel. Gateway-mu butuh keryx-stream 0.6 atau yang lebih baru.</string>
+    <string name="app_whatsnew_memory_title">Memori obrolan</string>
+    <string name="app_whatsnew_memory_text">Cincin di samping model kini menunjukkan berapa balasan lagi yang muat di obrolan ini, dan hanya saat itu penting. Ketuk untuk melihat apa yang memakai ruangnya.</string>
+    <string name="app_whatsnew_drawer_title">Menu samping yang digambar ulang</string>
+    <string name="app_whatsnew_drawer_text_direct">Setiap obrolan punya warna dan tanda sendiri, cincin menandai yang sedang bekerja, dan filter ini mempersempit daftar ke yang menunggumu.</string>
+    <string name="app_whatsnew_drawer_text">Setiap obrolan punya warna dan tanda sendiri, dan cincin menandai yang sedang bekerja.</string>
+    <string name="app_whatsnew_cards_title">Kartu dengan bahasa sederhana</string>
+    <string name="app_whatsnew_cards_text">Kartu misi kini terbuka dengan apa yang sedang terjadi dan satu hal yang perlu dilakukan berikutnya. Detail teknisnya tetap ada, di bawah Detail.</string>
+    <string name="app_whatsnew_look_title">Tampilan dan pembaruan</string>
+    <string name="app_whatsnew_look_text_direct">Setelan › Tampilan punya gaya berpikir baru dan lima cara berpindah antarobrolan. Dengan keryx-stream terbaru, panel Pembaruan di Gateway memungkinkanmu memilih rilis Stabil atau Edge. Untuk menambah Hermes lain, jalankan hermes keryx pair di sana lalu pindai kodenya.</string>
+    <string name="app_whatsnew_look_text">Setelan › Tampilan punya gaya berpikir baru dan lima cara berpindah antarobrolan. Tur dan petunjuk ruang ada di Setelan › Tentang.</string>
+
+    <string name="app_hint_missions_title">Misi</string>
+    <string name="app_hint_missions_text">Pekerjaan panjang ada di sini sebagai kartu. Agenmu mengambil dan mengerjakannya, dan kartu yang membutuhkanmu naik ke atas. Ketuk + untuk memberikan satu.</string>
+    <string name="app_hint_runs_title">Eksekusi</string>
+    <string name="app_hint_runs_text">Tugas terjadwal, seperti ringkasan pagi atau pemeriksaan malam. Hasil setiap eksekusi masuk ke sini. Tanya agenmu dan ia bisa membuatkannya.</string>
+    <string name="app_hint_bots_title">Bot</string>
+    <string name="app_hint_bots_text">Setiap bot adalah profil Hermes-mu, dengan memori, keahlian, dan obrolan sendiri. Buka satu untuk bicara dengannya, atau masukkan beberapa ke obrolan grup.</string>
+    <string name="app_hint_gateway_title">Gateway-mu</string>
+    <string name="app_hint_gateway_text">Kondisi Hermes yang terhubung denganmu, dan apa di baliknya: model dan setelannya, tugas, keahlian, memori, dan alat.</string>
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">Agenmu saat bekerja, layar penuh: apa yang dipikirkannya, alat yang dijalankannya, dan pembantu yang dikirimnya. Kamu juga bisa mengarahkannya dari sini.</string>
+    <string name="app_hint_artifact_title">Halaman buatan agenmu</string>
+    <string name="app_hint_artifact_text">Laporan, mock-up, dan halaman yang ditulis agenmu terbuka di sini, di ponsel. Simpan atau bagikan dengan tombol di atas.</string>
+
+    <string name="app_tour_pane">Tur</string>
+    <string name="app_tour_end">Akhiri tur</string>
+    <string name="app_tour_progress">%1$d dari %2$d</string>
+    <string name="app_tour_back">Kembali</string>
+    <string name="app_tour_done">Selesai</string>
+    <string name="app_tour_got_it">Mengerti</string>
+    <string name="app_tour_next">Berikutnya</string>
+</resources>

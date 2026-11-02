@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Voorbeeld: de kamerovergang %1$s op snelheid %2$s</string>
+    <string name="mk_cancel">Annuleren</string>
+    <string name="mk_mcp_test">Testen</string>
+    <string name="mk_mcp_testing">Bezig met testen</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Bereikt · %d tool</item>
+        <item quantity="other">Bereikt · %d tools</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d prompt</item>
+        <item quantity="other">%d prompts</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d bron</item>
+        <item quantity="other">%d bronnen</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Niet bereikbaar: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Deze gateway kan van hieruit geen servers testen.</string>
+    <string name="mk_mcp_catalog">Catalogus · %1$d toe te voegen</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">vraagt om %d sleutel</item>
+        <item quantity="other">vraagt om %d sleutels</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">bouwt vanuit de broncode</string>
+    <string name="mk_mcp_catalog_oauth">meldt aan met OAuth</string>
+    <string name="mk_mcp_installed">Geïnstalleerd</string>
+    <string name="mk_mcp_install">Installeren</string>
+    <string name="mk_mcp_installing">Installeren…</string>
+    <string name="mk_mcp_install_title">%1$s installeren?</string>
+    <string name="mk_mcp_install_runs">Dit wordt uitgevoerd</string>
+    <string name="mk_mcp_install_builds">De gateway kloont en bouwt het eerst vanuit %1$s, op de achtergrond.</string>
+    <string name="mk_mcp_install_oauth">Het meldt aan met OAuth: rond dat af in het dashboard van de gateway zodra het geïnstalleerd is.</string>
+    <string name="mk_mcp_install_env_note">Bewaard op de gateway: geheimen in de .env, de rest in de config.</string>
+    <string name="mk_mcp_installed_toast">%1$s geïnstalleerd — actief vanaf de volgende sessie</string>
+    <string name="mk_mcp_building_toast">%1$s wordt gebouwd op de gateway — het verschijnt hier zodra het klaar is</string>
+    <string name="mk_mcp_install_refused">Kan %1$s niet installeren: %2$s</string>
+    <string name="mk_mcp_install_unsupported">Deze gateway kan van hieruit geen MCP-servers installeren.</string>
+    <string name="mk_usage">Gebruik</string>
+    <string name="mk_usage_subtitle">Tokens, kosten en sessies</string>
+    <string name="mk_usage_subtitle_read">%1$s tokens · %2$s · laatste %3$d dagen</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d sessie</item>
+        <item quantity="other">%d sessies</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">sessie</item>
+        <item quantity="other">sessies</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d dag</item>
+        <item quantity="other">%d dagen</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s API-aanroep</item>
+        <item quantity="other">%1$s API-aanroepen</item>
+    </plurals>
+    <string name="mk_usage_tokens">tokens</string>
+    <string name="mk_usage_in_out">%1$s in · %2$s uit</string>
+    <string name="mk_usage_cost">kosten</string>
+    <string name="mk_usage_cost_estimated">kosten, geschat</string>
+    <string name="mk_usage_none">Niets gebruikt in de laatste %1$d dagen.</string>
+    <string name="mk_usage_by_day">Per dag</string>
+    <string name="mk_usage_peak">Drukste dag: %1$s op %2$s</string>
+    <string name="mk_usage_by_model">Per model</string>
+    <string name="mk_usage_note_estimate">De kosten zijn een schatting van Hermes op basis van zijn prijslijst; een lokaal model kost niets. Het dashboard van de gateway leest dezelfde cijfers.</string>
+    <string name="mk_usage_note_reported">De kosten zijn wat de provider heeft doorgegeven, voor zover dat gebeurde. Het dashboard van de gateway leest dezelfde cijfers.</string>
+</resources>

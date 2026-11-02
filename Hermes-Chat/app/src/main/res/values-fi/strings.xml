@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">Uusi keskustelu</string>
+    <string name="shortcut_new_chat_long">Aloita uusi keskustelu</string>
+    <string name="shortcut_missions">Tehtävät</string>
+    <string name="shortcut_missions_long">Avaa tehtävätaulu</string>
+    <string name="shortcut_runs">Ajot</string>
+    <string name="shortcut_runs_long">Ajastetut ajot ja niiden raportit</string>
+
+    <string name="widget_description">Agentti yhdellä silmäyksellä: yhteys, uusin istunto, mitä se viimeksi sanoi ja käynnissä oleva vuoro.</string>
+
+    <string name="note_tile_label">Viesti agentille</string>
+    <string name="note_tile_label_to">Viesti agentille %1$s</string>
+    <string name="note_tile_live">yhteydessä</string>
+    <string name="note_tile_offline">offline</string>
+    <string name="note_placeholder">Yksi rivi agentille…</string>
+    <string name="note_target_prefix">kohde</string>
+    <string name="note_change_target">Vaihda istunto</string>
+    <string name="note_no_sessions">Ei vielä istuntoa</string>
+    <string name="note_send">Lähetä</string>
+    <string name="note_sent_to">Lähetetty: %1$s</string>
+    <string name="note_send_failed">Lähetys epäonnistui</string>
+    <string name="note_locked">Lukittu</string>
+    <string name="note_unlock">Avaa lukitus</string>
+    <string name="note_unlock_title">Avaa Keryxin lukitus</string>
+</resources>

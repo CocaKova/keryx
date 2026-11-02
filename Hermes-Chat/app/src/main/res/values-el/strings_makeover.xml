@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Προεπισκόπηση: η μετάβαση δωματίου %1$s σε ταχύτητα %2$s</string>
+    <string name="mk_cancel">Ακύρωση</string>
+
+    <string name="mk_mcp_test">Δοκιμή</string>
+    <string name="mk_mcp_testing">Δοκιμή σε εξέλιξη</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Συνδέθηκε · %d εργαλείο</item>
+        <item quantity="other">Συνδέθηκε · %d εργαλεία</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d prompt</item>
+        <item quantity="other">%d prompts</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d πόρος</item>
+        <item quantity="other">%d πόροι</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Δεν ήταν δυνατή η σύνδεση: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Αυτή η πύλη δεν μπορεί να δοκιμάσει διακομιστές από εδώ.</string>
+    <string name="mk_mcp_catalog">Κατάλογος · %1$d για προσθήκη</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">ζητά %d κλειδί</item>
+        <item quantity="other">ζητά %d κλειδιά</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">μεταγλωττίζεται από τον πηγαίο κώδικα</string>
+    <string name="mk_mcp_catalog_oauth">συνδέεται με OAuth</string>
+    <string name="mk_mcp_installed">Εγκατεστημένο</string>
+    <string name="mk_mcp_install">Εγκατάσταση</string>
+    <string name="mk_mcp_installing">Εγκατάσταση…</string>
+    <string name="mk_mcp_install_title">Εγκατάσταση του %1$s;</string>
+    <string name="mk_mcp_install_runs">Θα εκτελέσει</string>
+    <string name="mk_mcp_install_builds">Η πύλη πρώτα το κλωνοποιεί και το μεταγλωττίζει από %1$s, στο παρασκήνιο.</string>
+    <string name="mk_mcp_install_oauth">Συνδέεται με OAuth: ολοκληρώστε τη σύνδεση στον πίνακα ελέγχου της πύλης μετά την εγκατάσταση.</string>
+    <string name="mk_mcp_install_env_note">Φυλάσσονται στην πύλη: τα μυστικά στο .env της, τα υπόλοιπα στο config της.</string>
+    <string name="mk_mcp_installed_toast">Το %1$s εγκαταστάθηκε — ενεργό από την επόμενη συνεδρία</string>
+    <string name="mk_mcp_building_toast">Το %1$s μεταγλωττίζεται στην πύλη — θα εμφανιστεί εδώ όταν ολοκληρωθεί</string>
+    <string name="mk_mcp_install_refused">Δεν ήταν δυνατή η εγκατάσταση του %1$s: %2$s</string>
+    <string name="mk_mcp_install_unsupported">Αυτή η πύλη δεν μπορεί να εγκαταστήσει διακομιστές MCP από εδώ.</string>
+    <string name="mk_usage">Χρήση</string>
+    <string name="mk_usage_subtitle">Tokens, κόστος και συνεδρίες</string>
+    <string name="mk_usage_subtitle_read">%1$s tokens · %2$s · τελευταίες %3$d ημέρες</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d συνεδρία</item>
+        <item quantity="other">%d συνεδρίες</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">συνεδρία</item>
+        <item quantity="other">συνεδρίες</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d ημέρα</item>
+        <item quantity="other">%d ημέρες</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s κλήση API</item>
+        <item quantity="other">%1$s κλήσεις API</item>
+    </plurals>
+    <string name="mk_usage_tokens">tokens</string>
+    <string name="mk_usage_in_out">%1$s εισόδου · %2$s εξόδου</string>
+    <string name="mk_usage_cost">κόστος</string>
+    <string name="mk_usage_cost_estimated">εκτιμώμενο κόστος</string>
+    <string name="mk_usage_none">Καμία χρήση τις τελευταίες %1$d ημέρες.</string>
+    <string name="mk_usage_by_day">Ανά ημέρα</string>
+    <string name="mk_usage_peak">Κορύφωση: %1$s στις %2$s</string>
+    <string name="mk_usage_by_model">Ανά μοντέλο</string>
+    <string name="mk_usage_note_estimate">Το κόστος είναι εκτίμηση του ίδιου του Hermes από τον τιμοκατάλογό του· ένα τοπικό μοντέλο δεν κοστίζει τίποτα. Ο πίνακας ελέγχου της πύλης διαβάζει τους ίδιους αριθμούς.</string>
+    <string name="mk_usage_note_reported">Το κόστος είναι αυτό που ανέφερε ο πάροχος, όπου το ανέφερε. Ο πίνακας ελέγχου της πύλης διαβάζει τους ίδιους αριθμούς.</string>
+</resources>

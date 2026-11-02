@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Förhandsvisning: rumsövergången %1$s i hastigheten %2$s</string>
+    <string name="mk_cancel">Avbryt</string>
+
+    <string name="mk_mcp_test">Testa</string>
+    <string name="mk_mcp_testing">Testar</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Nådd · %d verktyg</item>
+        <item quantity="other">Nådd · %d verktyg</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d prompt</item>
+        <item quantity="other">%d promptar</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d resurs</item>
+        <item quantity="other">%d resurser</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Kunde inte nå den: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Den här gatewayen kan inte testa servrar härifrån.</string>
+    <string name="mk_mcp_catalog">Katalog · %1$d att lägga till</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">kräver %d nyckel</item>
+        <item quantity="other">kräver %d nycklar</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">byggs från källkod</string>
+    <string name="mk_mcp_catalog_oauth">loggar in med OAuth</string>
+    <string name="mk_mcp_installed">Installerad</string>
+    <string name="mk_mcp_install">Installera</string>
+    <string name="mk_mcp_installing">Installerar…</string>
+    <string name="mk_mcp_install_title">Installera %1$s?</string>
+    <string name="mk_mcp_install_runs">Den kör</string>
+    <string name="mk_mcp_install_builds">Gatewayen klonar och bygger den först från %1$s, i bakgrunden.</string>
+    <string name="mk_mcp_install_oauth">Den loggar in med OAuth: slutför det i gatewayens dashboard när den är installerad.</string>
+    <string name="mk_mcp_install_env_note">Sparas på gatewayen: hemligheter i dess .env, resten i dess konfiguration.</string>
+    <string name="mk_mcp_installed_toast">%1$s installerad – aktiv från nästa session</string>
+    <string name="mk_mcp_building_toast">%1$s byggs på gatewayen – den dyker upp här när den är klar</string>
+    <string name="mk_mcp_install_refused">Kunde inte installera %1$s: %2$s</string>
+    <string name="mk_mcp_install_unsupported">Den här gatewayen kan inte installera MCP-servrar härifrån.</string>
+    <string name="mk_usage">Användning</string>
+    <string name="mk_usage_subtitle">Tokens, kostnad och sessioner</string>
+    <string name="mk_usage_subtitle_read">%1$s tokens · %2$s · senaste %3$d dagarna</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d session</item>
+        <item quantity="other">%d sessioner</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">session</item>
+        <item quantity="other">sessioner</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d dag</item>
+        <item quantity="other">%d dagar</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s API-anrop</item>
+        <item quantity="other">%1$s API-anrop</item>
+    </plurals>
+    <string name="mk_usage_tokens">tokens</string>
+    <string name="mk_usage_in_out">%1$s in · %2$s ut</string>
+    <string name="mk_usage_cost">kostnad</string>
+    <string name="mk_usage_cost_estimated">kostnad, uppskattad</string>
+    <string name="mk_usage_none">Inget använt de senaste %1$d dagarna.</string>
+    <string name="mk_usage_by_day">Per dag</string>
+    <string name="mk_usage_peak">Mest: %1$s den %2$s</string>
+    <string name="mk_usage_by_model">Per modell</string>
+    <string name="mk_usage_note_estimate">Kostnaden är Hermes egen uppskattning utifrån dess prislista; en lokal modell kostar ingenting. Gatewayens dashboard visar samma siffror.</string>
+    <string name="mk_usage_note_reported">Kostnaden är vad leverantören rapporterade, där den gjorde det. Gatewayens dashboard visar samma siffror.</string>
+</resources>

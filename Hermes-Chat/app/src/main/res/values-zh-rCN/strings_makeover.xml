@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">预览：%1$s 房间切换效果，%2$s 速度</string>
+    <string name="mk_cancel">取消</string>
+
+    <string name="mk_mcp_test">测试</string>
+    <string name="mk_mcp_testing">测试中</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="other">已连通 · %d 个工具</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="other">%d 个提示词</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="other">%d 个资源</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">无法连通：%1$s</string>
+    <string name="mk_mcp_test_unsupported">此网关不支持从这里测试服务器。</string>
+    <string name="mk_mcp_catalog">目录 · %1$d 个可添加</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="other">需要 %d 个密钥</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">从源码构建</string>
+    <string name="mk_mcp_catalog_oauth">通过 OAuth 登录</string>
+    <string name="mk_mcp_installed">已安装</string>
+    <string name="mk_mcp_install">安装</string>
+    <string name="mk_mcp_installing">正在安装…</string>
+    <string name="mk_mcp_install_title">安装 %1$s？</string>
+    <string name="mk_mcp_install_runs">它将运行</string>
+    <string name="mk_mcp_install_builds">网关会先在后台从 %1$s 克隆并构建它。</string>
+    <string name="mk_mcp_install_oauth">它通过 OAuth 登录：安装后请在网关的控制台上完成登录。</string>
+    <string name="mk_mcp_install_env_note">保存在网关上：密钥在它的 .env 中，其余在它的配置中。</string>
+    <string name="mk_mcp_installed_toast">%1$s 已安装 — 从下一个会话起生效</string>
+    <string name="mk_mcp_building_toast">%1$s 正在网关上构建 — 完成后会显示在这里</string>
+    <string name="mk_mcp_install_refused">无法安装 %1$s：%2$s</string>
+    <string name="mk_mcp_install_unsupported">此网关不支持从这里安装 MCP 服务器。</string>
+    <string name="mk_usage">用量</string>
+    <string name="mk_usage_subtitle">token、费用和会话</string>
+    <string name="mk_usage_subtitle_read">%1$s token · %2$s · 最近 %3$d 天</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="other">%d 个会话</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="other">会话</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="other">%d 天</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="other">%1$s 次 API 调用</item>
+    </plurals>
+    <string name="mk_usage_tokens">token</string>
+    <string name="mk_usage_in_out">输入 %1$s · 输出 %2$s</string>
+    <string name="mk_usage_cost">费用</string>
+    <string name="mk_usage_cost_estimated">费用（估算）</string>
+    <string name="mk_usage_none">最近 %1$d 天没有用量。</string>
+    <string name="mk_usage_by_day">按天</string>
+    <string name="mk_usage_peak">最忙：%2$s，%1$s</string>
+    <string name="mk_usage_by_model">按模型</string>
+    <string name="mk_usage_note_estimate">费用是 Hermes 根据自己的价目表估算的；本地模型不产生费用。网关的控制台显示的是同样的数字。</string>
+    <string name="mk_usage_note_reported">费用是服务商报告的金额（如有报告）。网关的控制台显示的是同样的数字。</string>
+</resources>

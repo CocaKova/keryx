@@ -1,0 +1,583 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_theme_to_light">ライトに切り替え</string>
+    <string name="chat_theme_follow_system">システムに合わせる</string>
+    <string name="chat_theme_to_dark">ダークに切り替え</string>
+    <string name="chat_new_chat">新しいチャット</string>
+    <string name="chat_drawer_jump_hint">移動先を検索…</string>
+    <string name="chat_lens_needs_you">要対応</string>
+    <string name="chat_lens_running">実行中</string>
+    <string name="chat_lens_unread">未読</string>
+    <string name="chat_lens_archived">アーカイブ済み</string>
+    <string name="chat_drawer_invites">招待</string>
+    <string name="chat_place_missions">ミッション</string>
+    <string name="chat_place_runs">実行</string>
+    <string name="chat_place_bots">ボット</string>
+    <string name="chat_place_projects">プロジェクト</string>
+    <string name="chat_place_shipyard">造船所</string>
+    <string name="chat_place_archive">アーカイブ</string>
+    <string name="chat_place_gateway">ゲートウェイ</string>
+    <string name="chat_place_settings">設定</string>
+    <string name="chat_drawer_places">場所</string>
+    <string name="chat_drawer_commands">コマンド</string>
+    <string name="chat_drawer_no_matches">一致するものはありません</string>
+    <string name="chat_drawer_nothing_archived">アーカイブはありません</string>
+    <string name="chat_drawer_nothing_waiting">対応待ちはありません</string>
+    <string name="chat_drawer_nothing_running">実行中のものはありません</string>
+    <string name="chat_drawer_all_read">すべて既読です</string>
+    <string name="chat_session_id_copied">セッション ID をコピーしました</string>
+    <string name="chat_moved_to_project">%1$s に移動しました</string>
+    <string name="chat_drawer_reaching_back">さかのぼっています…</string>
+    <string name="chat_drawer_show_older">以前の%1$sを表示</string>
+    <string name="chat_drawer_in_transcripts">会話ログ内</string>
+    <string name="chat_demo_gateway">デモゲートウェイ</string>
+    <string name="chat_demo_gateway_page">ゲートウェイを接続すると、そのページがここに表示されます。</string>
+    <string name="chat_connect">接続</string>
+    <string name="chat_open_gateway">ゲートウェイを開く</string>
+    <string name="chat_settings">設定</string>
+    <string name="chat_shelf_fold">%1$s を折りたたむ</string>
+    <string name="chat_shelf_open">%1$s を開く</string>
+    <string name="chat_room_forked">別の会話から分岐</string>
+    <string name="chat_room_temporary">一時的 — 次回起動時に削除</string>
+    <string name="chat_room_pinned">固定済み</string>
+    <string name="chat_mark_unread">未読にする</string>
+    <string name="chat_archive">アーカイブ</string>
+    <string name="chat_archive_hint">一覧からは外れ、ゲートウェイには残ります</string>
+    <string name="chat_restore_to_list">一覧に戻す</string>
+    <string name="chat_export_ellipsis">エクスポート…</string>
+    <string name="chat_copy_session_id">セッション ID をコピー</string>
+    <string name="chat_invite_user">ユーザーを招待…</string>
+    <string name="chat_rename_ellipsis">名前を変更…</string>
+    <string name="chat_move_to_project">プロジェクトに移動…</string>
+    <string name="chat_leave_room">ルームから退出</string>
+    <string name="chat_delete_session_ellipsis">セッションを削除…</string>
+    <string name="chat_invite_to">%1$s に招待</string>
+    <string name="chat_invite">招待</string>
+    <string name="chat_cancel">キャンセル</string>
+    <string name="chat_leave_title">%1$s から退出しますか？</string>
+    <string name="chat_leave_body">このルームのメッセージは届かなくなります。再参加には新しい招待が必要です。</string>
+    <string name="chat_leave">退出</string>
+    <string name="chat_rename_session">セッション名を変更</string>
+    <string name="chat_rename">名前を変更</string>
+    <string name="chat_delete_title">%1$s を削除しますか？</string>
+    <string name="chat_delete_session_body">セッションと会話ログ全体をゲートウェイから削除します。元に戻せません。</string>
+    <string name="chat_delete">削除</string>
+    <string name="chat_invited_to_room">このルームに招待されています</string>
+    <string name="chat_decline">辞退</string>
+    <string name="chat_accept">承諾</string>
+    <string name="chat_running">実行中</string>
+    <string name="chat_age_now">今</string>
+    <string name="chat_age_minutes">%1$d分</string>
+    <string name="chat_age_hours">%1$d時間</string>
+    <string name="chat_age_days">%1$d日</string>
+    <string name="chat_age_weeks">%1$d週</string>
+    <plurals name="chat_door_needs_you">
+        <item quantity="other">%1$s、%2$s 件が対応待ち</item>
+    </plurals>
+    <string name="chat_door_unread">%1$s、未読 %2$s 件</string>
+
+    <string name="chat_bot_new_title">%1$s と新しく始めますか？</string>
+    <string name="chat_bot_new_body">「圧縮」はこの会話を残したまま、%1$s の作業コンテキストをクリアします。\n\n「新しいボットチャット」はこの会話を終了し（%1$s の過去のチャットで引き続き読めます）、新しい会話を始めます。</string>
+    <string name="chat_bot_new_fresh">新しいボットチャット</string>
+    <string name="chat_bot_new_compact">圧縮</string>
+    <string name="chat_bot_chat_chip">ボットチャット</string>
+    <string name="chat_menu">メニュー</string>
+    <plurals name="chat_menu_waiting">
+        <item quantity="other">メニュー、対応待ち %d 件</item>
+    </plurals>
+    <plurals name="chat_menu_unread">
+        <item quantity="other">メニュー、未読 %d 件</item>
+    </plurals>
+    <string name="chat_new_session_failed">セッションを開始できませんでした。%1$s</string>
+    <string name="chat_new_session_hold">新しいセッション（長押しでオプション）</string>
+    <string name="chat_unpin_run">この実行の固定を解除</string>
+    <string name="chat_pin_run">この実行を固定</string>
+    <string name="chat_new_session">新しいセッション</string>
+    <string name="chat_new_session_confirm_title">新しいセッションを始めますか？</string>
+    <string name="chat_new_session_confirm_body">エージェントはまだ作業中です。/new で現在の実行が終了し、その結果は破棄されます。</string>
+    <string name="chat_new_session_confirm">終了して新規作成</string>
+    <string name="chat_find_in_chat">チャット内を検索</string>
+    <string name="chat_call_needs_voice">先に 設定 → 音声 で STT と TTS のエンドポイントを設定してください</string>
+    <string name="chat_call">通話</string>
+    <string name="chat_reasoning_header">思考</string>
+    <string name="chat_reasoning_sub_default">思考レベルはセッションをまたいで保持されます</string>
+    <string name="chat_reasoning_local_brain">ローカルの頭脳</string>
+    <string name="chat_reasoning_model">モデル</string>
+    <string name="chat_reasoning_sub_binary">%1$s · オン/オフ切り替え</string>
+    <string name="chat_reasoning_sub_none">%1$s · 思考レベル調整なし</string>
+    <string name="chat_reasoning_sub_session">%1$s · このセッションの段階</string>
+    <string name="chat_reasoning_sub_scale">%1$s · 思考レベルの段階</string>
+    <string name="chat_reasoning_no_dial">このモデルは思考レベルを受け付けません。Hermes は何も送りません。</string>
+    <string name="chat_reasoning_every_session">すべてのセッション</string>
+    <string name="chat_reasoning_this_session">このセッションのみ</string>
+    <string name="chat_reasoning_show">思考を表示</string>
+    <string name="chat_reasoning_hide">思考を非表示</string>
+    <string name="chat_reasoning_reset">セッションの上書きをリセット</string>
+    <string name="chat_demo_label">デモ</string>
+    <string name="chat_demo_connect">ゲートウェイを接続</string>
+
+    <string name="chat_attach_failed">添付できませんでした（読み取れないか、50 MB を超えています）</string>
+    <string name="chat_no_camera">カメラアプリが応答しませんでした</string>
+    <string name="chat_mic_unavailable">マイクを使用できません</string>
+    <string name="chat_transcription_failed">文字起こしに失敗しました：%1$s</string>
+    <string name="chat_mic_permission">音声入力には Keryx にマイクへのアクセスを許可してください</string>
+    <string name="chat_nothing_to_read">読み上げる内容がありません</string>
+    <string name="chat_typing_one">%1$s が入力中…</string>
+    <string name="chat_typing_two">%1$s と %2$s が入力中…</string>
+    <string name="chat_typing_many">複数の人が入力中…</string>
+    <string name="chat_jump_newest">最新へ移動</string>
+    <plurals name="chat_jump_newest_count">
+        <item quantity="other">最新へ移動、新着 %d 件</item>
+    </plurals>
+    <string name="chat_attachments_cant_queue">添付ファイルはキューに入れられません — このターンが終わってから送信してください</string>
+    <string name="chat_stop_hint">先に修正内容を入力してください — タップで軌道修正、長押しでその他</string>
+    <string name="chat_busy_queue">次のターンに回す</string>
+    <string name="chat_busy_aside">横から質問 — チャットの外で回答</string>
+    <string name="chat_busy_redirect">方向転換 — この内容で返信をやり直す</string>
+    <string name="chat_starter_1">このセッションでは何ができますか？</string>
+    <string name="chat_starter_2">今日の予定は何がありますか？</string>
+    <string name="chat_starter_3">最近どんな作業をしましたか？</string>
+    <string name="chat_starter_4">ちょっとしたことの計画を、一歩ずつ手伝ってください。</string>
+    <string name="chat_fresh_page">新しいページ</string>
+    <string name="chat_fresh_page_sub">なんでも聞いてください。または下から選んで始められます。</string>
+    <string name="chat_today">今日</string>
+    <string name="chat_yesterday">昨日</string>
+
+    <string name="chat_arrival_mark">%1$s · 自発的 · %2$s</string>
+    <string name="chat_bubble_hold_label">返信、リアクション、コピー</string>
+    <string name="chat_copied">コピーしました</string>
+    <string name="chat_undo_title">直前のやり取りを取り消しますか？</string>
+    <string name="chat_undo_body">あなたのメッセージとこの返信が、ゲートウェイ上のセッション履歴から消えます。次の発言はその前の時点から続きます。</string>
+    <string name="chat_undo_confirm">取り消す</string>
+    <string name="chat_keep">残す</string>
+    <string name="chat_select_text">テキストを選択</string>
+    <string name="chat_delete_message_title">メッセージを削除しますか？</string>
+    <string name="chat_delete_message_body">全員から削除されます。元に戻せません。</string>
+    <string name="chat_sent">送信済み</string>
+    <string name="chat_stop_speaking">読み上げを停止</string>
+    <string name="chat_go_to_quoted">引用元のメッセージへ移動</string>
+    <string name="chat_reaction_take_back">リアクションを取り消す</string>
+    <string name="chat_reaction_add">リアクションを追加</string>
+    <string name="chat_react">リアクション</string>
+    <string name="chat_action_reply">返信</string>
+    <string name="chat_action_copy">コピー</string>
+    <string name="chat_action_copy_text">テキストをコピー</string>
+    <string name="chat_action_saved">保存済み</string>
+    <string name="chat_action_save">保存</string>
+    <string name="chat_action_unsave">保存済みから削除</string>
+    <string name="chat_action_keep_archive">アーカイブに保存</string>
+    <string name="chat_action_stop">停止</string>
+    <string name="chat_action_read_aloud">読み上げ</string>
+    <string name="chat_action_select">選択</string>
+    <string name="chat_action_edit">編集</string>
+    <string name="chat_action_edit_desc">編集して再送信</string>
+    <string name="chat_action_retry">再試行</string>
+    <string name="chat_action_retry_desc">取り消してもう一度言う</string>
+    <string name="chat_action_branch">分岐</string>
+    <string name="chat_action_branch_desc">ここから新しいセッションに分岐</string>
+    <string name="chat_action_undo">元に戻す</string>
+    <string name="chat_action_undo_desc">直前のやり取りを取り消す</string>
+    <string name="chat_action_delete_desc">メッセージを削除</string>
+    <string name="chat_reply_attachment">添付ファイル</string>
+    <string name="chat_reply_message">メッセージ</string>
+
+    <string name="chat_archive_title">アーカイブ</string>
+    <string name="chat_archive_waking">インデックスを起動中…</string>
+    <plurals name="chat_archive_reaching">
+        <item quantity="other">%1$s 件を記録 · さかのぼっています…</item>
+    </plurals>
+    <plurals name="chat_archive_error">
+        <item quantity="other">%1$s 件を記録 · %2$s</item>
+    </plurals>
+    <plurals name="chat_archive_done">
+        <item quantity="other">%1$s 件のメッセージを記録</item>
+    </plurals>
+    <string name="chat_archive_jump_date">日付へ移動</string>
+    <string name="chat_archive_nothing_that_day">その日はまだインデックスされていません</string>
+    <string name="chat_open">開く</string>
+    <string name="chat_archive_tab_search">検索</string>
+    <string name="chat_archive_tab_saved">保存済み</string>
+    <string name="chat_archive_tab_media">メディア</string>
+    <string name="chat_archive_search_hint">これまでのすべての会話を検索…</string>
+    <string name="chat_archive_recent">最近の記録</string>
+    <string name="chat_archive_empty_title">まだ何も記録されていません</string>
+    <string name="chat_archive_empty_body">セッションを巡回するとインデックスが埋まっていきます。そうすれば、アプリが見たすべてのメッセージを検索ひとつで探せます。</string>
+    <string name="chat_archive_search_idle">アプリが見たすべてのメッセージを、検索ひとつで。</string>
+    <string name="chat_archive_no_hits">「%1$s」はまだ見つかりません</string>
+    <string name="chat_archive_opening">アーカイブを開いています…</string>
+    <string name="chat_archive_saved_empty_title">まだ保存したものはありません</string>
+    <string name="chat_archive_saved_empty_body">メッセージを長押しして、しおりをタップするとここに保存されます。</string>
+    <string name="chat_archive_looking">インデックスを検索中…</string>
+    <string name="chat_archive_media_empty_title">写真やファイルはまだありません</string>
+    <string name="chat_archive_media_empty_body">インデックスが埋まるにつれ、チャットの画像やファイルがここに集まります。</string>
+    <string name="chat_image">画像</string>
+    <string name="chat_you">あなた</string>
+    <string name="chat_archive_context">前後のメッセージ</string>
+    <string name="chat_archive_context_failed">その時点を読み込めませんでした（このログインの鍵より前のものかもしれません）。</string>
+    <string name="chat_archive_reach_earlier">さらに前へ</string>
+    <string name="chat_archive_reach_later">さらに後へ</string>
+
+    <string name="chat_attach">添付</string>
+    <string name="chat_composer_hint">メッセージ…</string>
+    <string name="chat_composer_hint_steer_stop">入力してこのターンを軌道修正 — ■ で停止</string>
+    <string name="chat_composer_hint_steer">入力してこのターンを軌道修正</string>
+    <string name="chat_dictate_stop">音声入力を停止</string>
+    <string name="chat_dictate">音声入力</string>
+    <string name="chat_send_steer">実行中のターンを軌道修正</string>
+    <string name="chat_send_queue">次のターンに回す</string>
+    <string name="chat_send_stop">ターンを停止</string>
+    <string name="chat_send">送信</string>
+    <string name="chat_send_hold_menu">キュー、横から質問、方向転換</string>
+    <string name="chat_send_hold_queue">代わりに次のターンに回す</string>
+    <string name="chat_send_hold_stop">停止ボタンの動作</string>
+    <string name="chat_choose_model">モデルを選択</string>
+    <string name="chat_model_label">モデル：%1$s</string>
+    <string name="chat_reasoning">思考</string>
+    <string name="chat_steer_hint">↪ で軌道修正 · 長押しでキュー</string>
+    <string name="chat_replying_to">%1$s に返信中</string>
+    <string name="chat_cancel_reply">返信をキャンセル</string>
+    <string name="chat_image_attached">画像を添付しました</string>
+    <string name="chat_file_attached">ファイルを添付しました</string>
+    <string name="chat_remove_attachment">添付ファイルを削除</string>
+    <string name="chat_attach_photo">写真</string>
+    <string name="chat_attach_file">ファイル</string>
+    <string name="chat_attach_camera">カメラ</string>
+
+    <string name="chat_tool_succeeded">成功</string>
+    <string name="chat_tool_failed">失敗</string>
+    <string name="chat_tool_no_verdict">判定なし</string>
+    <string name="chat_duration_seconds">%1$d秒</string>
+    <string name="chat_duration_millis">%1$dms</string>
+    <string name="chat_tool_flagged">⚠ Hermes がこの出力に警告を出しました</string>
+    <string name="chat_tool_flagged_with">⚠ Hermes がこの出力に警告を出しました：%1$s</string>
+    <string name="chat_tool_diff">差分</string>
+    <string name="chat_tool_diff_show">差分を表示</string>
+    <string name="chat_tool_diff_hide">差分を非表示</string>
+    <string name="chat_tool_diff_label">差分</string>
+    <string name="chat_tool_output">出力</string>
+    <string name="chat_tool_output_show">出力を表示</string>
+    <string name="chat_tool_output_hide">出力を非表示</string>
+    <string name="chat_tool_output_label">出力</string>
+    <string name="chat_tool_exit_failed">終了コード %1$d、失敗</string>
+    <string name="chat_tool_exit_ok">終了コード 0</string>
+    <plurals name="chat_tools_running">
+        <item quantity="other">ツールを %d 個実行中…</item>
+    </plurals>
+    <plurals name="chat_tools_ran">
+        <item quantity="other">ツールを %d 個実行</item>
+    </plurals>
+    <plurals name="chat_subagents_running">
+        <item quantity="other">サブエージェント %2$d 個中 %1$d 個が実行中</item>
+    </plurals>
+    <string name="chat_subagent_running">サブエージェント実行中</string>
+    <plurals name="chat_delegated_tasks">
+        <item quantity="other">タスクを %d 件委任</item>
+    </plurals>
+    <string name="chat_delegated_task">タスクを委任</string>
+    <string name="chat_working">作業中…</string>
+    <plurals name="chat_output_steps">
+        <item quantity="other">出力ステップ %d 件</item>
+    </plurals>
+    <plurals name="chat_run_with_failed">
+        <item quantity="other">%1$s · %2$d 件失敗</item>
+    </plurals>
+    <string name="chat_steps_fold">ステップを折りたたむ</string>
+    <string name="chat_steps_show">ステップを表示</string>
+    <string name="chat_tap_in_run">この実行を全画面で見る</string>
+    <string name="chat_state_open">展開</string>
+    <string name="chat_state_folded">折りたたみ</string>
+
+    <string name="chat_approval_needed">承認が必要です</string>
+    <string name="chat_approval_once">今回のみ許可</string>
+    <string name="chat_approval_session">セッション中</string>
+    <string name="chat_approval_always">常に許可</string>
+    <string name="chat_approval_deny">拒否</string>
+    <string name="chat_asking">Hermes からの質問</string>
+    <string name="chat_asking_batch">Hermes からの質問 · %1$d / %2$d</string>
+    <string name="chat_sudo_needed">sudo パスワードが必要です</string>
+    <string name="chat_credential_needed">認証情報が必要です</string>
+    <string name="chat_stored_as">ゲートウェイに %1$s として保存されます</string>
+    <string name="chat_multi_answers">複数回答できます — 下にカンマ区切りで入力してください。</string>
+    <string name="chat_your_answer">あなたの回答</string>
+    <string name="chat_password">パスワード</string>
+    <string name="chat_value">値</string>
+    <string name="chat_skip">スキップ</string>
+
+    <string name="chat_new_conversation">新しい会話</string>
+    <string name="chat_new_session_body">新しいゲートウェイセッションです。今すぐ名前を付けるか、最初のやり取りからタイトルを付けさせましょう。</string>
+    <string name="chat_title_optional">タイトル（任意）</string>
+    <string name="chat_agent">エージェント</string>
+    <string name="chat_temporary">一時的</string>
+    <string name="chat_temporary_body">アプリの次回起動時にゲートウェイから削除されます</string>
+    <string name="chat_create">作成</string>
+    <string name="chat_error_line">⚠ %1$s</string>
+    <string name="chat_direct_message">ダイレクトメッセージ</string>
+    <string name="chat_direct_message_sub">ユーザーと 1 対 1 でチャット</string>
+    <string name="chat_start">開始</string>
+    <string name="chat_new_room">新しいルーム</string>
+    <string name="chat_new_room_sub">名前付きのルーム。招待は今でも後でもできます</string>
+    <string name="chat_room_name">ルーム名</string>
+    <string name="chat_invite_optional">招待：@user:server（任意）</string>
+    <string name="chat_join_by_address">アドレスで参加</string>
+    <string name="chat_join">参加</string>
+
+    <string name="chat_prune_preview_failed">プレビューに失敗しました</string>
+    <string name="chat_prune_confirm_title">セッションの整理を確認</string>
+    <plurals name="chat_prune_confirm_sub">
+        <item quantity="other">%d 件のセッションを完全に削除します</item>
+    </plurals>
+    <string name="chat_prune_title">セッションを整理</string>
+    <string name="chat_prune_body">終了したセッションをゲートウェイの記録から削除します。会話ログも含めて完全に削除されます。アクティブなセッションには触れません。</string>
+    <string name="chat_prune_older_than">次より古い</string>
+    <string name="chat_prune_days">%1$d日</string>
+    <string name="chat_prune_max_messages">メッセージ数が N 件以下のセッションのみ（任意）</string>
+    <string name="chat_prune_include_archived">アーカイブ済みのセッションも含める</string>
+    <string name="chat_prune_nothing">この条件に一致するものはありません。</string>
+    <plurals name="chat_prune_matched">
+        <item quantity="other">%1$d 件のセッションが一致 · 最古 %2$s · 最新 %3$s</item>
+    </plurals>
+    <plurals name="chat_prune_sample">
+        <item quantity="other">· %1$s（%2$d 件）</item>
+    </plurals>
+    <string name="chat_prune_preview">プレビュー</string>
+    <string name="chat_prune_delete_count">%1$d 件を削除…</string>
+    <string name="chat_prune_delete">削除…</string>
+    <plurals name="chat_prune_final_title">
+        <item quantity="other">%d 件のセッションを完全に削除しますか？</item>
+    </plurals>
+    <string name="chat_prune_final_body">記録と会話ログのファイルがゲートウェイから削除されます。元に戻せません。</string>
+    <string name="chat_prune_delete_n">%1$d 件を削除</string>
+
+    <string name="chat_loading_lower">読み込み中…</string>
+    <string name="chat_load_attachment_failed">添付ファイルを読み込めませんでした</string>
+    <string name="chat_animated_image">アニメーション画像</string>
+    <string name="chat_video">動画</string>
+    <string name="chat_saved_to">%1$s に保存しました</string>
+    <string name="chat_save_failed">保存できませんでした</string>
+    <string name="chat_save_to_device">デバイスに保存</string>
+    <string name="chat_share_failed">共有できませんでした</string>
+    <string name="chat_share">共有</string>
+    <string name="chat_close">閉じる</string>
+    <string name="chat_no_app_for_file">このファイルを開けるアプリがありません</string>
+    <string name="chat_open_with">アプリで開く</string>
+
+    <string name="chat_copy_image">画像をコピー</string>
+    <string name="chat_image_copied">画像をコピーしました — 投稿に貼り付けられます</string>
+    <string name="chat_image_fetch_failed">画像を取得できませんでした — 代わりにリンクをコピーしました</string>
+    <string name="chat_copy_link">リンクをコピー</string>
+    <string name="chat_link_copied">リンクをコピーしました</string>
+    <string name="chat_save_to_photos">写真に保存</string>
+    <string name="chat_save_image_failed">その画像を保存できませんでした</string>
+    <string name="chat_open_in_browser">ブラウザで開く</string>
+    <string name="chat_no_app_for_link">そのリンクを開けるアプリがありません</string>
+
+    <string name="chat_gateway_log">ゲートウェイのログ</string>
+    <string name="chat_details_copied">詳細をコピーしました</string>
+    <string name="chat_copy_details">詳細をコピー</string>
+
+    <string name="chat_thinking">考え中…</string>
+    <string name="chat_thought">思考</string>
+    <string name="chat_thought_briefly">少し考えました</string>
+    <string name="chat_thought_for">%1$s 考えました</string>
+    <string name="chat_reasoning_show_a11y">思考を表示</string>
+    <string name="chat_reasoning_hide_a11y">思考を非表示</string>
+    <string name="chat_duration_min_sec">%1$d分%2$d秒</string>
+    <string name="chat_newest">最新</string>
+
+    <string name="chat_config_unsaved">%1$s · 未保存</string>
+    <string name="chat_saving">保存中…</string>
+    <string name="chat_save">保存</string>
+    <string name="chat_config_load_failed">config.yaml を読み込めませんでした。%1$s</string>
+    <string name="chat_loading">読み込み中…</string>
+    <string name="chat_config_restart_note">保存した変更は、ほとんどのセクションで次回のゲートウェイ再起動時に反映されます。</string>
+    <string name="chat_save_anyway_title">このまま保存しますか？</string>
+    <string name="chat_save_anyway">このまま保存</string>
+    <string name="chat_discard_title">変更を破棄しますか？</string>
+    <string name="chat_config_untouched">ゲートウェイの config.yaml は変更されません。</string>
+    <string name="chat_discard">破棄</string>
+    <string name="chat_keep_editing">編集を続ける</string>
+
+    <string name="chat_export_title">「%1$s」をエクスポート</string>
+    <string name="chat_this_session">このセッション</string>
+    <string name="chat_export_markdown_detail">読んだままの会話：誰が何を言ったか、ツールは 1 行で、長い出力は省略。</string>
+    <string name="chat_export_json_detail">ゲートウェイの完全なエクスポート：すべての行、取り消したターン、システムプロンプトを含みます。再インポート可能です。</string>
+    <string name="chat_export_share_failed">共有シートを開けませんでした。</string>
+    <string name="chat_export_failed">エクスポートに失敗しました。</string>
+    <string name="chat_exporting">エクスポート中…</string>
+
+    <string name="chat_cmd_new">新しい会話を始める</string>
+    <string name="chat_cmd_compress">このスレッドを圧縮・要約する</string>
+    <string name="chat_cmd_handoff">コンテキストを新しいセッションに引き継ぐ</string>
+    <string name="chat_cmd_steer">作業中のエージェントを軌道修正する</string>
+    <string name="chat_cmd_think">より深く考えてもらう</string>
+    <string name="chat_cmd_model">使用中のモデルを切り替える</string>
+    <string name="chat_cmd_reset">エージェントの作業状態をリセットする</string>
+    <string name="chat_cmd_help">このエージェントにできることを一覧表示</string>
+    <string name="chat_cmd_status">エージェントとシステムの状態を表示</string>
+    <string name="chat_cmd_memory">長期メモリを呼び出す・編集する</string>
+    <string name="chat_cmd_tools">利用可能なツールを一覧表示</string>
+    <string name="chat_cmd_recent">最近</string>
+    <string name="chat_cmd_skill">スキル</string>
+
+    <string name="chat_transition_dissolve">ディゾルブ</string>
+    <string name="chat_transition_dissolve_blurb">柔らかなぼかしと点字の余韻を通して、ルームが組み替わります。</string>
+    <string name="chat_transition_passage">パッセージ</string>
+    <string name="chat_transition_passage_blurb">光る継ぎ目に乗って新しいルームが滑り込み、古いルームは後ろに下がります。</string>
+    <string name="chat_transition_weave">ウィーブ</string>
+    <string name="chat_transition_weave_blurb">琥珀色と紫のリボンが交差しながら上昇し、その向こうでルームが切り替わります。</string>
+    <string name="chat_transition_bloom">ブルーム</string>
+    <string name="chat_transition_bloom_blurb">タップした行から、新しいルームが円形に開きます。</string>
+    <string name="chat_transition_rise">ライズ</string>
+    <string name="chat_transition_rise_blurb">古いルームが後ろに傾いて沈み、新しいルームがせり上がってきます。</string>
+    <string name="chat_speed_slow">遅い</string>
+    <string name="chat_speed_normal">標準</string>
+    <string name="chat_speed_fast">速い</string>
+
+    <string name="chat_pet_choose">ペットを選ぶ</string>
+    <string name="chat_pet_rides">%1$s がドロワーに同乗します</string>
+    <string name="chat_pet_gateway">ペットはゲートウェイに住んでいます — どの画面でも同じペットが表示されます</string>
+    <plurals name="chat_pet_search">
+        <item quantity="other">%d 匹のペットを検索…</item>
+    </plurals>
+    <string name="chat_pet_installed_header">インストール済み</string>
+    <string name="chat_pet_catalog_header">Petdex カタログ</string>
+    <string name="chat_pet_none">利用できるペットがいません — Hermes Link は設定されていますか？</string>
+    <string name="chat_pet_no_match">「%1$s」に一致するペットはいません</string>
+    <string name="chat_pet_badge_active">使用中</string>
+    <string name="chat_pet_badge_hatched">ローカルで孵化</string>
+    <string name="chat_pet_badge_curated">厳選</string>
+    <string name="chat_pet_badge_installed">インストール済み</string>
+    <string name="chat_pet_active">使用中</string>
+
+    <string name="chat_back">戻る</string>
+    <string name="chat_close_named">%1$s を閉じる</string>
+    <string name="chat_loading_a11y">読み込み中</string>
+
+    <string name="chat_call_header">KERYX · 通話</string>
+    <string name="chat_call_mic_needed">通話には Keryx にマイクへのアクセスが必要です。</string>
+    <string name="chat_call_listening">聞いています</string>
+    <string name="chat_call_hearing">聞き取り中…</string>
+    <string name="chat_call_thinking">考え中</string>
+    <string name="chat_call_interrupt">球体をタップして割り込む</string>
+    <string name="chat_call_muted">ミュート中</string>
+    <string name="chat_call_ended">通話終了</string>
+    <string name="chat_call_heard">「%1$s」</string>
+    <string name="chat_call_unmute">ミュート解除</string>
+    <string name="chat_call_mute">ミュート</string>
+    <string name="chat_call_end">通話を終了</string>
+
+    <string name="chat_sources">出典</string>
+    <string name="chat_source">出典</string>
+    <string name="chat_hand_clipboard">クリップボード</string>
+    <string name="chat_hand_phone">電話</string>
+    <string name="chat_hand_share">共有</string>
+    <string name="chat_hand_app">アプリ</string>
+    <string name="chat_hand_opens">開く</string>
+    <string name="chat_skill_distilled">スキルを抽出しました</string>
+    <string name="chat_open_skill_forge">スキル工房で開く →</string>
+
+    <string name="chat_tap_in_turn">このターンを全画面で見る</string>
+    <string name="chat_stream_dropped">ストリームが切断されました — Matrix 同期で復旧中…</string>
+
+    <string name="chat_context_direct_only">コンテキストの内訳は、ゲートウェイ直接接続でのみ表示できます。</string>
+    <string name="chat_context_read_failed">コンテキストを読み取れませんでした</string>
+    <string name="chat_context_title">コンテキスト</string>
+    <string name="chat_context_used">%2$s トークン中 %1$s</string>
+    <string name="chat_context_no_agent">このセッションにはまだゲートウェイ上で動くエージェントがありません — まず何か送信してください。</string>
+
+    <string name="chat_chart">グラフ</string>
+    <string name="chat_chart_summary">%1$s。%2$sグラフ。</string>
+    <string name="chat_chart_summary_unit">%1$s。%2$sグラフ、単位：%3$s。</string>
+    <string name="chat_chart_no_value">値なし</string>
+    <string name="chat_chart_series">系列 %1$d</string>
+    <string name="chat_chart_total">合計</string>
+    <string name="chat_show_less">折りたたむ</string>
+    <plurals name="chat_show_all_lines">
+        <item quantity="other">全 %d 行を表示</item>
+    </plurals>
+
+    <string name="chat_aside_header">横からの質問 · チャットには含まれません</string>
+    <string name="chat_dismiss">閉じる</string>
+    <string name="chat_aside_answering">…横から回答中</string>
+    <string name="chat_aside_failed">横からの質問に失敗しました：%1$s</string>
+    <string name="chat_aside_no_answer">回答が返ってきませんでした。</string>
+
+    <string name="chat_action_success">成功</string>
+    <string name="chat_action_failed">失敗</string>
+    <string name="chat_action_tag">アクション</string>
+    <string name="chat_reasoning_live">思考中…</string>
+    <string name="chat_reasoning_title">思考</string>
+    <string name="chat_show_drawing">図を表示</string>
+    <string name="chat_drawing">図</string>
+
+    <string name="chat_done">完了</string>
+
+    <string name="chat_art_mission_board">伝令の杖が立てかけられた空のミッションボード</string>
+    <string name="chat_art_winged_clock">矢印が周りを回る、翼のある時計</string>
+    <string name="chat_art_robot">伝令の翼のある球を頭に載せたロボット、両側には空いた場所</string>
+    <string name="chat_art_folder">枝分かれの図が描かれたページが入ったフォルダ</string>
+    <string name="chat_art_scroll">広げた巻物と、その上の虫眼鏡</string>
+    <string name="chat_art_bookmark">1 行に印が付き、しおりのリボンがあるページ</string>
+    <string name="chat_art_picture">丘と太陽の額入りの絵と、その後ろの空の額</string>
+
+    <string name="chat_memory">チャットのメモリ</string>
+    <string name="chat_ring_base">チャットのメモリ %2$dk トークン中 %1$dk、%3$d パーセント</string>
+    <plurals name="chat_ring_replies">
+        <item quantity="other">%1$s、要約まであと約 %2$d 回の返信</item>
+    </plurals>
+    <string name="chat_ring_until">%1$s、要約まであと %2$dk</string>
+    <string name="chat_ring_next">%1$s、次の返信で要約が始まります</string>
+
+    <string name="chat_folder_hint">ゲートウェイ上のフォルダ（例：~/workspace/keryx）</string>
+    <string name="chat_folder_found">✓ フォルダが見つかりました</string>
+    <string name="chat_folder_missing">そこにはまだフォルダがありません</string>
+    <string name="chat_known_workspaces">既知のワークスペース</string>
+    <string name="chat_folder_truncated">ここには 30 個以上のフォルダがあります — 続けて入力して絞り込んでください</string>
+    <string name="chat_folder_more">ほか %1$d 件 — 続けて入力して絞り込んでください</string>
+
+    <string name="chat_console_starting">開始中…</string>
+    <string name="chat_console_streaming">エージェントが作業中</string>
+    <string name="chat_console_waiting">承認待ち</string>
+    <string name="chat_console_completed">ターン完了</string>
+    <string name="chat_console_lost">接続が切れました</string>
+    <string name="chat_console_lost_why">接続が切れました — %1$s</string>
+    <string name="chat_console_failed">失敗</string>
+    <string name="chat_console_failed_why">失敗 — %1$s</string>
+    <string name="chat_stop">停止</string>
+    <string name="chat_clear">クリア</string>
+
+    <string name="chat_mark_hide">発言を隠す</string>
+    <string name="chat_mark_read">発言を読む</string>
+    <string name="chat_mark_system">システム：%1$s</string>
+    <string name="chat_summary_hide">要約を隠す</string>
+    <string name="chat_summary_read">要約を読む</string>
+    <string name="chat_context_compacted">🗜 コンテキストを圧縮 · %1$s</string>
+    <string name="chat_this_session_title">このセッション</string>
+
+    <string name="chat_goal_loop">↻ ループ · %1$s · %2$s</string>
+    <string name="chat_goal_heartbeat">♥ ハートビート · %1$d · %2$s</string>
+    <string name="chat_goal_close">ゴールを閉じる</string>
+    <string name="chat_goal_open">ゴールを開く</string>
+    <string name="chat_goal_exit">終了 %1$d</string>
+
+    <string name="chat_subagent_running_lower">サブエージェント実行中</string>
+    <plurals name="chat_subagents_count">
+        <item quantity="other">サブエージェント %d 個</item>
+    </plurals>
+    <string name="chat_subagent">サブエージェント</string>
+    <string name="chat_delegated_task_lower">委任されたタスク</string>
+    <plurals name="chat_tool_count">
+        <item quantity="other">ツール %d 個</item>
+    </plurals>
+    <string name="chat_tokens_k">%1$dk トークン</string>
+    <plurals name="chat_files_written">
+        <item quantity="other">%d 件書き込み</item>
+    </plurals>
+    <string name="chat_interrupted">中断</string>
+    <string name="chat_duration_min_sec_compact">%1$d分%2$d秒</string>
+
+    <string name="chat_flight_plan">飛行計画</string>
+    <string name="chat_flight_all_done">全ステップ着陸</string>
+    <string name="chat_flight_next">次：%1$s</string>
+    <string name="chat_join_sub">#alias:server または !roomid:server</string>
+</resources>

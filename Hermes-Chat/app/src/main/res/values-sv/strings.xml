@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">Ny chatt</string>
+    <string name="shortcut_new_chat_long">Starta en ny chatt</string>
+    <string name="shortcut_missions">Uppdrag</string>
+    <string name="shortcut_missions_long">Öppna uppdragstavlan</string>
+    <string name="shortcut_runs">Körningar</string>
+    <string name="shortcut_runs_long">Schemalagda körningar och deras rapporter</string>
+
+    <string name="widget_description">Agenten i korthet: anslutning, senaste session, vad den sa sist och turen som pågår.</string>
+
+    <string name="note_tile_label">Lapp till agent</string>
+    <string name="note_tile_label_to">Lapp till %1$s</string>
+    <string name="note_tile_live">live</string>
+    <string name="note_tile_offline">offline</string>
+    <string name="note_placeholder">En rad till agenten…</string>
+    <string name="note_target_prefix">till</string>
+    <string name="note_change_target">Byt session</string>
+    <string name="note_no_sessions">Ingen session än</string>
+    <string name="note_send">Skicka</string>
+    <string name="note_sent_to">Skickat till %1$s</string>
+    <string name="note_send_failed">Kunde inte skicka</string>
+    <string name="note_locked">Låst</string>
+    <string name="note_unlock">Lås upp</string>
+    <string name="note_unlock_title">Lås upp Keryx</string>
+</resources>

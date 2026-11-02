@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Előnézet: szobaváltás – %1$s, sebesség: %2$s</string>
+    <string name="mk_cancel">Mégse</string>
+
+    <string name="mk_mcp_test">Teszt</string>
+    <string name="mk_mcp_testing">Tesztelés</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Elérhető · %d eszköz</item>
+        <item quantity="other">Elérhető · %d eszköz</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d prompt</item>
+        <item quantity="other">%d prompt</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d erőforrás</item>
+        <item quantity="other">%d erőforrás</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Nem érhető el: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Ez az átjáró innen nem tud szervereket tesztelni.</string>
+    <string name="mk_mcp_catalog">Katalógus · hozzáadható: %1$d</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">%d kulcsot kér</item>
+        <item quantity="other">%d kulcsot kér</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">forrásból épül</string>
+    <string name="mk_mcp_catalog_oauth">OAuth-tal jelentkezik be</string>
+    <string name="mk_mcp_installed">Telepítve</string>
+    <string name="mk_mcp_install">Telepítés</string>
+    <string name="mk_mcp_installing">Telepítés…</string>
+    <string name="mk_mcp_install_title">%1$s telepítése?</string>
+    <string name="mk_mcp_install_runs">Ezt futtatja</string>
+    <string name="mk_mcp_install_builds">Az átjáró előbb a háttérben klónozza és lefordítja. Forrás: %1$s</string>
+    <string name="mk_mcp_install_oauth">OAuth-tal jelentkezik be: a telepítés után fejezd be ezt az átjáró irányítópultján.</string>
+    <string name="mk_mcp_install_env_note">Az átjárón tárolva: a titkok a .env fájljában, a többi a konfigurációjában.</string>
+    <string name="mk_mcp_installed_toast">%1$s telepítve – a következő munkamenettől aktív</string>
+    <string name="mk_mcp_building_toast">%1$s épül az átjárón – ha kész, itt megjelenik</string>
+    <string name="mk_mcp_install_refused">Nem sikerült telepíteni (%1$s): %2$s</string>
+    <string name="mk_mcp_install_unsupported">Ez az átjáró innen nem tud MCP-szervereket telepíteni.</string>
+    <string name="mk_usage">Használat</string>
+    <string name="mk_usage_subtitle">Tokenek, költség és munkamenetek</string>
+    <string name="mk_usage_subtitle_read">%1$s token · %2$s · utolsó %3$d nap</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d munkamenet</item>
+        <item quantity="other">%d munkamenet</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">munkamenet</item>
+        <item quantity="other">munkamenet</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d nap</item>
+        <item quantity="other">%d nap</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s API-hívás</item>
+        <item quantity="other">%1$s API-hívás</item>
+    </plurals>
+    <string name="mk_usage_tokens">token</string>
+    <string name="mk_usage_in_out">%1$s be · %2$s ki</string>
+    <string name="mk_usage_cost">költség</string>
+    <string name="mk_usage_cost_estimated">költség, becsült</string>
+    <string name="mk_usage_none">Az elmúlt %1$d napban nem volt használat.</string>
+    <string name="mk_usage_by_day">Naponként</string>
+    <string name="mk_usage_peak">Legforgalmasabb: %1$s · %2$s</string>
+    <string name="mk_usage_by_model">Modellenként</string>
+    <string name="mk_usage_note_estimate">A költség a Hermes saját becslése az árlistája alapján; egy helyi modell semmibe sem kerül. Az átjáró irányítópultja ugyanezeket a számokat mutatja.</string>
+    <string name="mk_usage_note_reported">A költség az, amit a szolgáltató jelentett, ahol jelentett. Az átjáró irányítópultja ugyanezeket a számokat mutatja.</string>
+</resources>

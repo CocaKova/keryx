@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">미리보기: %1$s 방 전환, 속도 %2$s</string>
+    <string name="mk_cancel">취소</string>
+
+    <string name="mk_mcp_test">테스트</string>
+    <string name="mk_mcp_testing">테스트 중</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="other">연결됨 · 도구 %d개</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="other">프롬프트 %d개</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="other">리소스 %d개</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">연결하지 못했어요: %1$s</string>
+    <string name="mk_mcp_test_unsupported">이 게이트웨이는 여기서 서버를 테스트할 수 없어요.</string>
+    <string name="mk_mcp_catalog">카탈로그 · 추가 가능 %1$d개</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="other">키 %d개 필요</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">소스에서 빌드</string>
+    <string name="mk_mcp_catalog_oauth">OAuth로 로그인</string>
+    <string name="mk_mcp_installed">설치됨</string>
+    <string name="mk_mcp_install">설치</string>
+    <string name="mk_mcp_installing">설치 중…</string>
+    <string name="mk_mcp_install_title">%1$s을(를) 설치할까요?</string>
+    <string name="mk_mcp_install_runs">실행할 명령</string>
+    <string name="mk_mcp_install_builds">게이트웨이가 먼저 %1$s에서 클론하고 백그라운드에서 빌드해요.</string>
+    <string name="mk_mcp_install_oauth">OAuth로 로그인해요. 설치가 끝나면 게이트웨이 대시보드에서 마무리하세요.</string>
+    <string name="mk_mcp_install_env_note">게이트웨이에 저장돼요: 비밀 값은 .env에, 나머지는 설정 파일에.</string>
+    <string name="mk_mcp_installed_toast">%1$s 설치 완료 — 다음 세션부터 켜져요</string>
+    <string name="mk_mcp_building_toast">게이트웨이에서 %1$s을(를) 빌드 중이에요 — 끝나면 여기에 나타나요</string>
+    <string name="mk_mcp_install_refused">%1$s을(를) 설치하지 못했어요: %2$s</string>
+    <string name="mk_mcp_install_unsupported">이 게이트웨이는 여기서 MCP 서버를 설치할 수 없어요.</string>
+    <string name="mk_usage">사용량</string>
+    <string name="mk_usage_subtitle">토큰, 비용, 세션</string>
+    <string name="mk_usage_subtitle_read">토큰 %1$s · %2$s · 최근 %3$d일</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="other">세션 %d개</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="other">세션</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="other">%d일</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="other">API 호출 %1$s회</item>
+    </plurals>
+    <string name="mk_usage_tokens">토큰</string>
+    <string name="mk_usage_in_out">입력 %1$s · 출력 %2$s</string>
+    <string name="mk_usage_cost">비용</string>
+    <string name="mk_usage_cost_estimated">비용(추정)</string>
+    <string name="mk_usage_none">최근 %1$d일 동안 사용한 내역이 없어요.</string>
+    <string name="mk_usage_by_day">일별</string>
+    <string name="mk_usage_peak">가장 많았던 날: %2$s, %1$s</string>
+    <string name="mk_usage_by_model">모델별</string>
+    <string name="mk_usage_note_estimate">비용은 Hermes가 자체 가격표로 계산한 추정치예요. 로컬 모델은 무료예요. 게이트웨이 대시보드도 같은 숫자를 보여 줘요.</string>
+    <string name="mk_usage_note_reported">비용은 제공업체가 보고한 값이에요(보고한 경우). 게이트웨이 대시보드도 같은 숫자를 보여 줘요.</string>
+</resources>

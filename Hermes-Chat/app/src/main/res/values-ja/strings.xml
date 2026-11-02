@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">新しいチャット</string>
+    <string name="shortcut_new_chat_long">新しいチャットを始める</string>
+    <string name="shortcut_missions">ミッション</string>
+    <string name="shortcut_missions_long">ミッションボードを開く</string>
+    <string name="shortcut_runs">実行</string>
+    <string name="shortcut_runs_long">スケジュール実行とそのレポート</string>
+
+    <string name="widget_description">エージェントの様子をひと目で：接続、最新のセッション、最後の発言、進行中のターン。</string>
+
+    <string name="note_tile_label">エージェントにメモ</string>
+    <string name="note_tile_label_to">%1$sにメモ</string>
+    <string name="note_tile_live">オンライン</string>
+    <string name="note_tile_offline">オフライン</string>
+    <string name="note_placeholder">エージェントにひとこと…</string>
+    <string name="note_target_prefix">宛先</string>
+    <string name="note_change_target">セッションを変更</string>
+    <string name="note_no_sessions">セッションはまだありません</string>
+    <string name="note_send">送信</string>
+    <string name="note_sent_to">%1$sに送信しました</string>
+    <string name="note_send_failed">送信に失敗しました</string>
+    <string name="note_locked">ロック中</string>
+    <string name="note_unlock">ロック解除</string>
+    <string name="note_unlock_title">Keryx のロックを解除</string>
+</resources>

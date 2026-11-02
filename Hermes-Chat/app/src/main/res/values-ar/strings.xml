@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">محادثة جديدة</string>
+    <string name="shortcut_new_chat_long">ابدأ محادثة جديدة</string>
+    <string name="shortcut_missions">المهام</string>
+    <string name="shortcut_missions_long">افتح لوحة المهام</string>
+    <string name="shortcut_runs">التشغيلات</string>
+    <string name="shortcut_runs_long">التشغيلات المجدولة وتقاريرها</string>
+
+    <string name="widget_description">الوكيل في لمحة: الاتصال، وأحدث جلسة، وآخر ما قاله، والدور الجاري.</string>
+
+    <string name="note_tile_label">ملاحظة للوكيل</string>
+    <string name="note_tile_label_to">ملاحظة إلى %1$s</string>
+    <string name="note_tile_live">متصل</string>
+    <string name="note_tile_offline">غير متصل</string>
+    <string name="note_placeholder">سطر واحد للوكيل…</string>
+    <string name="note_target_prefix">إلى</string>
+    <string name="note_change_target">تغيير الجلسة</string>
+    <string name="note_no_sessions">لا توجد جلسة بعد</string>
+    <string name="note_send">إرسال</string>
+    <string name="note_sent_to">أُرسلت إلى %1$s</string>
+    <string name="note_send_failed">تعذّر الإرسال</string>
+    <string name="note_locked">مقفل</string>
+    <string name="note_unlock">فتح القفل</string>
+    <string name="note_unlock_title">فتح قفل Keryx</string>
+</resources>

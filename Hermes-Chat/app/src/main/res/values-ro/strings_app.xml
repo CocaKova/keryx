@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_turn_failed">Tura a eșuat</string>
+    <string name="app_photo">Fotografie</string>
+    <string name="app_attachment">Atașament</string>
+    <string name="app_new_message">Mesaj nou</string>
+
+    <string name="app_approval_expired">Aprobarea expirase deja</string>
+    <string name="app_approval_failed">Aprobare eșuată: %1$s</string>
+    <string name="app_reply_failed">Răspuns eșuat: %1$s</string>
+    <string name="app_link_unreachable_matrix">Hermes Link inaccesibil (%1$s) — se folosește sincronizarea Matrix</string>
+    <string name="app_send_failed">Nu s-a putut trimite: %1$s</string>
+    <string name="app_room_photo_updated">Fotografia camerei a fost actualizată</string>
+    <string name="app_room_photo_forbidden">Nu ai permisiunea să setezi fotografia acestei camere — ai nevoie de drepturi de moderator în ea.</string>
+    <string name="app_room_photo_failed">Nu s-a putut seta fotografia: %1$s</string>
+    <string name="app_unknown_error">eroare necunoscută</string>
+    <string name="app_branched">Ramificat — o copie a întregii conversații</string>
+    <string name="app_branch_failed">Ramificare eșuată: %1$s</string>
+    <string name="app_not_sent">Netrimis. %1$s</string>
+    <string name="app_undo_done">Ultimul schimb a fost retras</string>
+    <string name="app_undo_nothing">Nimic de retras</string>
+    <string name="app_still_working">Încă lucrează — oprește mai întâi tura</string>
+    <string name="app_undo_failed">Nu s-a putut anula: %1$s</string>
+    <string name="app_retry_nothing">Nimic de reîncercat — gateway-ul nu avea nicio tură de retras</string>
+    <string name="app_retry_failed">Nu s-a putut reîncerca: %1$s</string>
+    <string name="app_taken_back_edit">Retras — editează-l și trimite-l din nou</string>
+    <string name="app_take_back_failed">Nu s-a putut retrage — cuvintele tale sunt în editor, gata de retrimis</string>
+    <string name="app_set_gateway_url_first">Setează mai întâi un URL de gateway</string>
+    <string name="app_link_ok">Hermes Link OK — %1$s</string>
+    <string name="app_link_failed">Hermes Link eșuat: %1$s</string>
+    <string name="app_connection_error">eroare de conexiune</string>
+    <string name="app_link_up_api_down">Hermes Link funcționează, dar serverul API Hermes din spatele lui nu rulează, așa că Misiunile și Rulările nu se vor încărca. Setează API_SERVER_ENABLED=true și un API_SERVER_KEY în ~/.hermes/.env, apoi repornește gateway-ul.</string>
+
+    <string name="app_pinned">Fixat</string>
+    <string name="app_pinned_named">„%1$s” fixat</string>
+    <string name="app_unpinned">Anulat fixarea</string>
+    <string name="app_unpinned_named">„%1$s” nu mai e fixat</string>
+    <string name="app_pin_failed">Fixare eșuată: %1$s</string>
+    <string name="app_unpin_failed">Anularea fixării a eșuat: %1$s</string>
+    <string name="app_marked_unread">Marcat ca necitit</string>
+    <string name="app_mark_read_failed">Nu s-a putut marca drept citit: %1$s</string>
+    <string name="app_mark_unread_failed">Nu s-a putut marca drept necitit: %1$s</string>
+    <string name="app_sticky_no_catalog">Modelele nu au putut fi citite — deschis pe modelul implicit al gateway-ului</string>
+    <string name="app_sticky_not_served">%1$s nu e disponibil acum — deschis pe modelul implicit al gateway-ului</string>
+    <string name="app_sticky_needs_confirm">%1$s trebuie confirmat — alege-l din selectorul de modele</string>
+    <string name="app_sticky_opened_fallback">Deschis pe %1$s — %2$s nu e disponibil acum</string>
+    <string name="app_sticky_opened">Deschis pe %1$s — ultima ta alegere (model persistent, în Setări)</string>
+    <string name="app_sticky_refused">%1$s a refuzat — deschis pe modelul implicit al gateway-ului</string>
+    <string name="app_create_session_failed">sesiunea nu a putut fi creată</string>
+    <string name="app_rename_failed">Redenumire eșuată: %1$s</string>
+    <string name="app_archive_failed">Nu s-a putut arhiva: %1$s</string>
+    <string name="app_archived">Arhivat</string>
+    <string name="app_archived_named">„%1$s” arhivat</string>
+    <string name="app_restore_failed">Nu s-a putut restaura: %1$s</string>
+    <string name="app_restored">Restaurat</string>
+    <string name="app_restored_named">„%1$s” restaurat</string>
+    <string name="app_archive_read_failed">Arhiva nu a putut fi citită: %1$s</string>
+    <string name="app_older_sessions_failed">Sesiunile mai vechi nu au putut fi încărcate: %1$s</string>
+    <string name="app_session_deleted">Sesiune ștearsă</string>
+    <string name="app_delete_failed">Ștergere eșuată: %1$s</string>
+
+    <string name="app_steered">Direcționat — agentul vede asta la pasul următor</string>
+    <string name="app_steer_declined_queued">Agentul a refuzat direcționarea — pusă în coadă pentru tura următoare</string>
+    <string name="app_queue_failed">Punere în coadă eșuată: %1$s</string>
+    <string name="app_steer_failed">Direcționare eșuată: %1$s</string>
+    <string name="app_goal_failed">Obiectiv: %1$s</string>
+    <string name="app_aside_needs_direct">Întrebarea pe lângă necesită gateway-ul direct</string>
+    <string name="app_aside_failed">Întrebarea pe lângă a eșuat: %1$s</string>
+    <string name="app_redirected">Redirecționat — răspunsul reîncepe cu corectura ta</string>
+    <string name="app_redirect_between_calls">Între apeluri — corectura ta rulează imediat după</string>
+    <string name="app_redirect_finished_queued">Răspunsul se terminase — pus în coadă pentru tura următoare</string>
+    <string name="app_redirect_unsupported">Acest agent nu poate redirecționa — se direcționează în schimb</string>
+    <string name="app_redirect_failed">Redirecționare eșuată: %1$s</string>
+    <string name="app_branched_from_message">Ramificat — aceasta e o sesiune nouă pornită din acel mesaj</string>
+    <string name="app_queued">În coadă — se trimite când se termină tura asta</string>
+    <string name="app_stopped">Oprit</string>
+    <string name="app_stop_failed">Oprire eșuată: %1$s</string>
+    <string name="app_crew_steered">%1$s direcționat — vede asta la pasul următor</string>
+    <string name="app_crew_steer_rejected">%1$s nu a preluat-o — răspunde altei uși sau deja încheie</string>
+    <string name="app_crew_stopped">%1$s oprit</string>
+    <string name="app_crew_already_finished">%1$s terminase deja</string>
+
+    <string name="app_model_confirm">%1$s Atinge din nou pentru confirmare.</string>
+    <string name="app_model_expensive">Acest model este scump.</string>
+    <string name="app_model_deferred">%1$s preia de la tura următoare — în această sesiune</string>
+    <string name="app_model_deferred_global">%1$s preia de la tura următoare — în toate sesiunile</string>
+    <string name="app_model_switched">%1$s — această sesiune</string>
+    <string name="app_model_switched_global">%1$s — toate sesiunile</string>
+    <string name="app_model_switch_refused">Schimbare refuzată: %1$s</string>
+    <string name="app_reasoning_refused_unknown">Acest creier a refuzat nivelul de gândire — alege unul mai mic.</string>
+    <string name="app_reasoning_refused_floor">Acest creier a refuzat gândirea %1$s și nu există un nivel mai mic de încercat.</string>
+    <string name="app_reasoning_dropped">Acest creier a refuzat gândirea %1$s — coborât la %2$s.</string>
+    <string name="app_reasoning_drop_failed">Acest creier a refuzat gândirea %1$s; nu s-a putut coborî la %2$s.</string>
+    <string name="app_reasoning_set">Raționament → %1$s — această sesiune</string>
+    <string name="app_reasoning_set_global">Raționament → %1$s pentru toate sesiunile</string>
+    <string name="app_reasoning_refused">Raționament refuzat: %1$s</string>
+
+    <string name="app_room_joined">Te-ai alăturat — camera apare la următoarea sincronizare</string>
+    <string name="app_join_failed">Alăturare eșuată: %1$s</string>
+    <string name="app_invite_declined">Invitație refuzată</string>
+    <string name="app_decline_failed">Refuz eșuat: %1$s</string>
+    <string name="app_start_chat_failed">chatul nu a putut fi pornit</string>
+    <string name="app_create_room_failed">camera nu a putut fi creată</string>
+    <string name="app_join_failed_short">alăturare imposibilă</string>
+    <string name="app_invite_sent">Invitație trimisă</string>
+    <string name="app_invite_failed">Invitație eșuată: %1$s</string>
+    <string name="app_left_room">Ai părăsit camera</string>
+    <string name="app_leave_failed">Părăsire eșuată: %1$s</string>
+
+    <string name="app_try_again">încearcă din nou</string>
+    <string name="app_group_rooms_unavailable">camere indisponibile</string>
+    <string name="app_not_connected">neconectat la un gateway</string>
+    <string name="app_group_stop_failed">Camera nu a putut fi oprită: %1$s</string>
+    <string name="app_group_approval_failed">Nu s-a putut răspunde la aprobare: %1$s</string>
+    <string name="app_group_rename_failed">Nu s-a putut redenumi: %1$s</string>
+    <string name="app_group_disband_failed">Nu s-a putut desființa: %1$s</string>
+
+    <string name="app_no_stt_endpoint">Niciun endpoint STT configurat</string>
+    <string name="app_no_tts_endpoint">Niciun endpoint TTS configurat</string>
+    <string name="app_no_stt_set">niciun endpoint STT setat</string>
+    <string name="app_no_tts_set">niciun endpoint TTS setat</string>
+    <string name="app_voice_unreachable">%1$s inaccesibil la %2$s (%3$s)</string>
+    <string name="app_voice_ears">urechi (STT)</string>
+    <string name="app_voice_mouth">voce (TTS)</string>
+
+    <string name="app_console_run_live">O rulare e deja activă — oprește-o sau las-o să se termine</string>
+    <string name="app_link_off">Hermes Link e dezactivat — activează-l în Setări</string>
+    <string name="app_export_needs_gateway">Exportul necesită ușa gateway-ului.</string>
+    <string name="app_export_too_old">Acest gateway e prea vechi pentru a exporta o sesiune.</string>
+    <string name="app_export_subject">Sesiune Hermes</string>
+    <string name="app_export_unreadable">Exportul a sosit ilizibil.</string>
+
+    <string name="app_unsaved">Eliminat din Salvate</string>
+    <string name="app_saved">Păstrat — îl găsești în Arhivă</string>
+    <string name="app_pet_adopt_failed">%1$s nu a putut fi adoptat</string>
+
+    <string name="app_channel_messages">Mesaje</string>
+    <string name="app_channel_messages_desc">Mesaje noi de la agenții și camerele tale Hermes</string>
+    <string name="app_notify_you">Tu</string>
+    <string name="app_notify_title_failed">%1$s · tură eșuată</string>
+    <string name="app_notify_reply">Răspunde</string>
+    <string name="app_notify_reply_to">Răspunde lui %1$s</string>
+    <string name="app_notify_mark_read">Marchează citit</string>
+    <plurals name="app_notify_conversations">
+        <item quantity="one">%d conversație</item>
+        <item quantity="few">%d conversații</item>
+        <item quantity="other">%d de conversații</item>
+    </plurals>
+    <string name="app_channel_gate">Aprobări și întrebări</string>
+    <string name="app_channel_gate_desc">Un agent e oprit și așteaptă răspunsul tău</string>
+    <string name="app_notify_answer">Răspunde</string>
+    <string name="app_channel_runs">Agent în lucru</string>
+    <string name="app_channel_runs_desc">O linie de stare silențioasă cât timp lucrează un agent: ce face și de cât timp</string>
+    <string name="app_notify_stop">Oprește</string>
+    <string name="app_channel_missions">Misiuni</string>
+    <string name="app_channel_missions_desc">Misiuni finalizate, blocate sau abandonate pe panoul agentului</string>
+
+    <string name="app_push_checking">Se verifică mesajele…</string>
+    <string name="app_notify_sending_text">Se trimite: %1$s</string>
+    <string name="app_notify_answering">Se răspunde…</string>
+    <string name="app_notify_gate_unreachable">Gateway-ul nu a putut fi contactat — atinge pentru a răspunde</string>
+    <string name="app_notify_answered">Răspuns trimis — agentul lucrează din nou</string>
+    <string name="app_notify_request_timed_out">Cererea expirase deja</string>
+    <string name="app_notify_answer_failed">Nu s-a putut răspunde — atinge pentru a deschide</string>
+    <string name="app_notify_sending">Se trimite…</string>
+    <string name="app_notify_send_failed">Nu s-a putut trimite „%1$s” — atinge pentru a deschide</string>
+
+    <string name="app_push_connecting">Se conectează…</string>
+    <string name="app_push_connected">Conectat — push integrat</string>
+    <string name="app_push_reconnecting">Se reconectează…</string>
+    <string name="app_channel_push">Conexiune push</string>
+    <string name="app_channel_push_desc">Conexiunea proprie a Keryx la serverul tău push (fără aplicație distribuitor)</string>
+    <string name="app_push_title">Push Keryx</string>
+
+    <string name="app_scan_pairing_inside">Scanează codurile de asociere din Keryx: Conectează-ți gateway-ul › Scanează un cod de asociere.</string>
+
+    <string name="app_share_nothing">Nimic de partajat</string>
+    <string name="app_share_foreign_only">Keryx poate trimite doar fișiere partajate din altă aplicație</string>
+    <string name="app_share_too_large_mb">Fișier prea mare pentru trimitere (%1$d MB)</string>
+    <string name="app_share_too_large">Fișier prea mare pentru trimitere</string>
+    <string name="app_share_read_failed">%1$s nu a putut fi citit</string>
+    <plurals name="app_share_attachments">
+        <item quantity="one">%d atașament</item>
+        <item quantity="few">%d atașamente</item>
+        <item quantity="other">%d de atașamente</item>
+    </plurals>
+    <string name="app_share_note_label">Adaugă o notă (opțional)</string>
+    <string name="app_share_note_hint">Rezumă asta / ține minte asta / …</string>
+
+    <string name="app_hands_cannot">Nimic de pe acest telefon nu poate face asta</string>
+    <string name="app_hands_no_app">Nicio aplicație numită „%1$s”</string>
+    <string name="app_hands_no_handler">Nimic de pe acest telefon nu gestionează %1$s</string>
+    <string name="app_hands_failed">Nu s-a putut: %1$s</string>
+    <string name="app_hands_no_flash">Acest telefon nu are bliț</string>
+
+    <string name="app_crash_log_subject">Jurnal de erori Keryx</string>
+    <string name="app_crash_log_share">Partajează jurnalul de erori</string>
+    <string name="app_share">Partajează</string>
+    <string name="app_share_named">Partajează %1$s</string>
+
+    <string name="app_call_hearing_failed">auzul a eșuat: %1$s</string>
+    <string name="app_call_turn_failed">tura agentului a eșuat</string>
+    <string name="app_call_voice_failed">vocea a eșuat: %1$s</string>
+    <string name="app_call_no_reply">niciun răspuns de la gateway</string>
+    <string name="app_tts_failed">Vorbirea a eșuat: %1$s</string>
+    <string name="app_tts_audio_unavailable">Audio indisponibil</string>
+    <string name="app_tts_no_audio">Serverul de vorbire nu a trimis audio</string>
+    <string name="app_tts_no_engine">Niciun motor de vorbire pe acest dispozitiv</string>
+    <string name="app_tts_playback_failed">Redarea vorbirii a eșuat</string>
+    <string name="app_tts_playback_failed_why">Redarea vorbirii a eșuat: %1$s</string>
+
+    <string name="app_tour_welcome_title">Bun venit în Keryx</string>
+    <string name="app_tour_welcome_text">Acesta e un demo: un gateway simulat pe telefonul tău, iar agentul lui e în mijlocul unei sarcini. Iată un tur rapid înainte să-l conectezi pe al tău.</string>
+    <string name="app_tour_plan_title">Planul lui</string>
+    <string name="app_tour_plan_text">Agentul tău împarte o sarcină în pași și îi bifează pe parcurs. Cât lucrează, Keryx păstrează o notificare live a sarcinii, ca să poți lăsa telefonul deoparte.</string>
+    <string name="app_tour_approval_title">Întreabă mai întâi</string>
+    <string name="app_tour_approval_text">Înainte de orice lucru riscant, cum ar fi ștergerea unui dosar, agentul se oprește și întreabă. Răspunde aici sau direct din notificare.</string>
+    <string name="app_tour_approval_text_demo">Înainte de orice lucru riscant, cum ar fi ștergerea unui dosar, agentul se oprește și întreabă. Răspunde aici sau direct din notificare. Încearcă după ce se termină turul și urmărește-l cum finalizează sarcina.</string>
+    <string name="app_tour_composer_title">Cere orice</string>
+    <string name="app_tour_composer_text">Dă-i agentului o sarcină în cuvinte simple. Continuă să lucreze dacă pleci, iar Keryx te anunță când e gata.</string>
+    <string name="app_tour_model_title">Ce creier răspunde</string>
+    <string name="app_tour_model_text">Schimbă modelul pentru această sesiune sau pentru toate sesiunile de acum înainte.</string>
+    <string name="app_tour_new_session_title">O pagină nouă</string>
+    <string name="app_tour_new_session_text">Începe o sesiune nouă. Ține apăsat pentru opțiuni, cum ar fi un titlu sau o sesiune temporară.</string>
+    <string name="app_tour_drawer_title">Tot restul</string>
+    <string name="app_tour_drawer_text">Sesiunile tale și restul Keryx sunt în spatele acestui buton.</string>
+    <string name="app_tour_lenses_title">Ce te așteaptă</string>
+    <string name="app_tour_lenses_text">Restrânge lista la sesiunile care te așteaptă, care rulează acum sau necitite.</string>
+    <string name="app_tour_missions_title">Misiuni</string>
+    <string name="app_tour_missions_text">Dă-i agentului sarcini mai lungi, sub formă de carduri pe un panou. Le parcurge și te întreabă când are nevoie de tine.</string>
+    <string name="app_tour_runs_title">Rulări</string>
+    <string name="app_tour_runs_text">Sarcini programate și ce a găsit fiecare rulare.</string>
+    <string name="app_tour_bots_title">Boți</string>
+    <string name="app_tour_bots_text">Celelalte profiluri ale agentului tău. Fiecare are propria memorie, abilități și chaturi.</string>
+    <string name="app_tour_archive_title">Arhivă</string>
+    <string name="app_tour_archive_text">Tot ce s-a spus vreodată, căutabil pe telefon, chiar și când gateway-ul e oprit.</string>
+    <string name="app_tour_gateway_title">Gateway-ul tău</string>
+    <string name="app_tour_gateway_text_demo">Cu propriul Hermes, aici apar legătura, modelul și versiunea. Tot ce ai văzut funcționează la fel pe un gateway real: conectează-l pe al tău și e live.</string>
+    <string name="app_tour_gateway_text">Legătura, modelul și versiunea Hermes. Atinge pentru Gateway; rotița deschide Setările, unde se află și acest tur.</string>
+    <string name="app_tour_gateway_text_direct">Legătura, modelul și versiunea Hermes. Atinge pentru Gateway; rotița deschide Setările, unde se află și acest tur. Ai mai multe Hermes? Adaugă-le și comută între ele aici.</string>
+    <string name="app_tour_cta_connect">Conectează-ți gateway-ul</string>
+    <string name="app_tour_cta_add_gateway">Adaugă un gateway</string>
+
+    <string name="app_whatsnew_title">Ce e nou în Keryx 3.0</string>
+    <string name="app_whatsnew_text">O privire rapidă asupra schimbărilor. Poți sări peste: rămâne în Setări › Despre.</string>
+    <string name="app_whatsnew_point_title">Întreabă unde e ceva</string>
+    <string name="app_whatsnew_point_text">Întreabă-ți agentul „unde sunt sarcinile mele programate?” și îți poate arăta locul, direct aici pe telefon. Gateway-ul tău are nevoie de keryx-stream 0.6 sau mai nou.</string>
+    <string name="app_whatsnew_memory_title">Memoria chatului</string>
+    <string name="app_whatsnew_memory_text">Inelul de lângă model arată acum pentru câte răspunsuri mai are loc acest chat, și doar când contează. Atinge-l ca să vezi ce ocupă spațiul.</string>
+    <string name="app_whatsnew_drawer_title">Un meniu lateral redesenat</string>
+    <string name="app_whatsnew_drawer_text_direct">Fiecare chat are propria culoare și marcă, un inel le arată pe cele în lucru, iar aceste filtre restrâng lista la ce te așteaptă.</string>
+    <string name="app_whatsnew_drawer_text">Fiecare chat are propria culoare și marcă, iar un inel le arată pe cele în lucru.</string>
+    <string name="app_whatsnew_cards_title">Carduri pe înțeles</string>
+    <string name="app_whatsnew_cards_text">Un card de misiune se deschide acum cu ce se întâmplă și următorul lucru de făcut. Detaliile tehnice sunt tot acolo, la Detalii.</string>
+    <string name="app_whatsnew_look_title">Aspect și actualizări</string>
+    <string name="app_whatsnew_look_text_direct">Setări › Aspect are stiluri noi de gândire și cinci moduri de a trece între chaturi. Cu un keryx-stream recent, panoul Actualizare al Gateway-ului îți permite să alegi versiunile Stable sau Edge. Ca să adaugi alt Hermes, rulează hermes keryx pair pe el și scanează codul.</string>
+    <string name="app_whatsnew_look_text">Setări › Aspect are stiluri noi de gândire și cinci moduri de a trece între chaturi. Turul și sugestiile locurilor se află în Setări › Despre.</string>
+
+    <string name="app_hint_missions_title">Misiuni</string>
+    <string name="app_hint_missions_text">Sarcinile mai lungi stau aici sub formă de carduri. Agenții tăi le preiau și le parcurg, iar un card care are nevoie de tine urcă sus. Atinge + ca să dai una.</string>
+    <string name="app_hint_runs_title">Rulări</string>
+    <string name="app_hint_runs_text">Sarcini programate, cum ar fi un rezumat de dimineață sau o verificare nocturnă. Rezultatul fiecărei rulări ajunge aici. Cere-i agentului și ți-o poate configura.</string>
+    <string name="app_hint_bots_title">Boți</string>
+    <string name="app_hint_bots_text">Fiecare bot e un profil al Hermes-ului tău, cu propria memorie, abilități și chaturi. Deschide unul ca să vorbești cu el sau pune câțiva într-un chat de grup.</string>
+    <string name="app_hint_gateway_title">Gateway-ul tău</string>
+    <string name="app_hint_gateway_text">Cum se descurcă Hermes-ul la care ești conectat și ce e în spatele lui: modelul și setările, sarcinile, abilitățile, memoria și uneltele.</string>
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">Agentul tău la lucru, pe tot ecranul: ce gândește, uneltele pe care le rulează și ajutoarele pe care le trimite. Îl poți direcționa și de aici.</string>
+    <string name="app_hint_artifact_title">O pagină făcută de agent</string>
+    <string name="app_hint_artifact_text">Rapoartele, machetele și paginile scrise de agent se deschid aici, pe telefon. Salvează sau partajează una cu butoanele de sus.</string>
+
+    <string name="app_tour_pane">Tur</string>
+    <string name="app_tour_end">Încheie turul</string>
+    <string name="app_tour_progress">%1$d din %2$d</string>
+    <string name="app_tour_back">Înapoi</string>
+    <string name="app_tour_done">Gata</string>
+    <string name="app_tour_got_it">Am înțeles</string>
+    <string name="app_tour_next">Înainte</string>
+</resources>

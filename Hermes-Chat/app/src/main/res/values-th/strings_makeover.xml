@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">ตัวอย่าง: การเปลี่ยนห้องแบบ %1$s ที่ความเร็ว %2$s</string>
+    <string name="mk_cancel">ยกเลิก</string>
+
+    <string name="mk_mcp_test">ทดสอบ</string>
+    <string name="mk_mcp_testing">กำลังทดสอบ</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="other">เชื่อมต่อได้ · เครื่องมือ %d รายการ</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="other">พรอมต์ %d รายการ</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="other">ทรัพยากร %d รายการ</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">เชื่อมต่อไม่ได้: %1$s</string>
+    <string name="mk_mcp_test_unsupported">เกตเวย์นี้ทดสอบเซิร์ฟเวอร์จากที่นี่ไม่ได้</string>
+    <string name="mk_mcp_catalog">แคตตาล็อก · เพิ่มได้ %1$d รายการ</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="other">ต้องใช้คีย์ %d รายการ</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">บิลด์จากซอร์ส</string>
+    <string name="mk_mcp_catalog_oauth">ลงชื่อเข้าใช้ด้วย OAuth</string>
+    <string name="mk_mcp_installed">ติดตั้งแล้ว</string>
+    <string name="mk_mcp_install">ติดตั้ง</string>
+    <string name="mk_mcp_installing">กำลังติดตั้ง…</string>
+    <string name="mk_mcp_install_title">ติดตั้ง %1$s ไหม</string>
+    <string name="mk_mcp_install_runs">สิ่งที่จะรัน</string>
+    <string name="mk_mcp_install_builds">เกตเวย์จะโคลนและบิลด์จาก %1$s ก่อน ในเบื้องหลัง</string>
+    <string name="mk_mcp_install_oauth">เซิร์ฟเวอร์นี้ลงชื่อเข้าใช้ด้วย OAuth: ทำให้เสร็จบนแดชบอร์ดของเกตเวย์หลังติดตั้งเสร็จ</string>
+    <string name="mk_mcp_install_env_note">เก็บไว้บนเกตเวย์: ข้อมูลลับอยู่ใน .env ส่วนที่เหลืออยู่ในคอนฟิก</string>
+    <string name="mk_mcp_installed_toast">ติดตั้ง %1$s แล้ว — ใช้งานได้ตั้งแต่เซสชันถัดไป</string>
+    <string name="mk_mcp_building_toast">กำลังบิลด์ %1$s บนเกตเวย์ — จะแสดงที่นี่เมื่อเสร็จ</string>
+    <string name="mk_mcp_install_refused">ติดตั้ง %1$s ไม่ได้: %2$s</string>
+    <string name="mk_mcp_install_unsupported">เกตเวย์นี้ติดตั้งเซิร์ฟเวอร์ MCP จากที่นี่ไม่ได้</string>
+    <string name="mk_usage">การใช้งาน</string>
+    <string name="mk_usage_subtitle">โทเค็น ค่าใช้จ่าย และเซสชัน</string>
+    <string name="mk_usage_subtitle_read">%1$s โทเค็น · %2$s · %3$d วันล่าสุด</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="other">%d เซสชัน</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="other">เซสชัน</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="other">%d วัน</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="other">เรียก API %1$s ครั้ง</item>
+    </plurals>
+    <string name="mk_usage_tokens">โทเค็น</string>
+    <string name="mk_usage_in_out">เข้า %1$s · ออก %2$s</string>
+    <string name="mk_usage_cost">ค่าใช้จ่าย</string>
+    <string name="mk_usage_cost_estimated">ค่าใช้จ่ายโดยประมาณ</string>
+    <string name="mk_usage_none">ไม่มีการใช้งานใน %1$d วันที่ผ่านมา</string>
+    <string name="mk_usage_by_day">รายวัน</string>
+    <string name="mk_usage_peak">ยุ่งที่สุด: %1$s เมื่อ %2$s</string>
+    <string name="mk_usage_by_model">ตามโมเดล</string>
+    <string name="mk_usage_note_estimate">ค่าใช้จ่ายเป็นการประมาณของ Hermes เองจากรายการราคา โมเดลในเครื่องไม่มีค่าใช้จ่าย แดชบอร์ดของเกตเวย์อ่านตัวเลขชุดเดียวกัน</string>
+    <string name="mk_usage_note_reported">ค่าใช้จ่ายคือยอดที่ผู้ให้บริการรายงาน หากมี แดชบอร์ดของเกตเวย์อ่านตัวเลขชุดเดียวกัน</string>
+</resources>

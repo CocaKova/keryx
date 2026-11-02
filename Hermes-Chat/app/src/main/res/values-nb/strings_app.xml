@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_turn_failed">Turen mislyktes</string>
+    <string name="app_photo">Bilde</string>
+    <string name="app_attachment">Vedlegg</string>
+    <string name="app_new_message">Ny melding</string>
+
+    <string name="app_approval_expired">Godkjenningen hadde allerede utløpt</string>
+    <string name="app_approval_failed">Godkjenning mislyktes: %1$s</string>
+    <string name="app_reply_failed">Svar mislyktes: %1$s</string>
+    <string name="app_link_unreachable_matrix">Hermes Link kan ikke nås (%1$s) — bruker Matrix-synk</string>
+    <string name="app_send_failed">Kunne ikke sende: %1$s</string>
+    <string name="app_room_photo_updated">Rombildet er oppdatert</string>
+    <string name="app_room_photo_forbidden">Ingen tillatelse til å endre rombildet — du må være moderator i rommet.</string>
+    <string name="app_room_photo_failed">Kunne ikke angi bilde: %1$s</string>
+    <string name="app_unknown_error">ukjent feil</string>
+    <string name="app_branched">Forgrenet — en kopi av hele samtalen</string>
+    <string name="app_branch_failed">Forgrening mislyktes: %1$s</string>
+    <string name="app_not_sent">Ikke sendt. %1$s</string>
+    <string name="app_undo_done">Siste utveksling er trukket tilbake</string>
+    <string name="app_undo_nothing">Ingenting å trekke tilbake</string>
+    <string name="app_still_working">Jobber fortsatt — stopp turen først</string>
+    <string name="app_undo_failed">Kunne ikke angre: %1$s</string>
+    <string name="app_retry_nothing">Ingenting å prøve igjen — gatewayen hadde ingen tur å trekke tilbake</string>
+    <string name="app_retry_failed">Kunne ikke prøve igjen: %1$s</string>
+    <string name="app_taken_back_edit">Trukket tilbake — rediger den og send igjen</string>
+    <string name="app_take_back_failed">Kunne ikke trekke den tilbake — teksten din ligger i skrivefeltet, klar til å sendes igjen</string>
+    <string name="app_set_gateway_url_first">Angi en gateway-URL først</string>
+    <string name="app_link_ok">Hermes Link OK — %1$s</string>
+    <string name="app_link_failed">Hermes Link mislyktes: %1$s</string>
+    <string name="app_connection_error">tilkoblingsfeil</string>
+    <string name="app_link_up_api_down">Hermes Link er oppe, men Hermes\' API-server bak den kjører ikke, så Oppdrag og Kjøringer kan ikke lastes inn. Sett API_SERVER_ENABLED=true og en API_SERVER_KEY i ~/.hermes/.env, og start gatewayen på nytt.</string>
+
+    <string name="app_pinned">Festet</string>
+    <string name="app_pinned_named">«%1$s» festet</string>
+    <string name="app_unpinned">Løsnet</string>
+    <string name="app_unpinned_named">«%1$s» løsnet</string>
+    <string name="app_pin_failed">Kunne ikke feste: %1$s</string>
+    <string name="app_unpin_failed">Kunne ikke løsne: %1$s</string>
+    <string name="app_marked_unread">Merket som ulest</string>
+    <string name="app_mark_read_failed">Kunne ikke merke som lest: %1$s</string>
+    <string name="app_mark_unread_failed">Kunne ikke merke som ulest: %1$s</string>
+    <string name="app_sticky_no_catalog">Kunne ikke lese modellene — åpnet med gatewayens standard</string>
+    <string name="app_sticky_not_served">%1$s er ikke tilgjengelig nå — åpnet med gatewayens standard</string>
+    <string name="app_sticky_needs_confirm">%1$s må bekreftes — velg den i modellvelgeren</string>
+    <string name="app_sticky_opened_fallback">Åpnet med %1$s — %2$s er ikke tilgjengelig nå</string>
+    <string name="app_sticky_opened">Åpnet med %1$s — ditt siste valg (fast modell, i Innstillinger)</string>
+    <string name="app_sticky_refused">%1$s avvist — åpnet med gatewayens standard</string>
+    <string name="app_create_session_failed">kunne ikke opprette økten</string>
+    <string name="app_rename_failed">Endring av navn mislyktes: %1$s</string>
+    <string name="app_archive_failed">Kunne ikke arkivere: %1$s</string>
+    <string name="app_archived">Arkivert</string>
+    <string name="app_archived_named">«%1$s» arkivert</string>
+    <string name="app_restore_failed">Kunne ikke gjenopprette: %1$s</string>
+    <string name="app_restored">Gjenopprettet</string>
+    <string name="app_restored_named">«%1$s» gjenopprettet</string>
+    <string name="app_archive_read_failed">Kunne ikke lese arkivet: %1$s</string>
+    <string name="app_older_sessions_failed">Kunne ikke laste inn eldre økter: %1$s</string>
+    <string name="app_session_deleted">Økt slettet</string>
+    <string name="app_delete_failed">Sletting mislyktes: %1$s</string>
+
+    <string name="app_steered">Styrt — agenten ser det i neste steg</string>
+    <string name="app_steer_declined_queued">Agenten avviste styringen — satt i kø til neste tur</string>
+    <string name="app_queue_failed">Kunne ikke sette i kø: %1$s</string>
+    <string name="app_steer_failed">Styring mislyktes: %1$s</string>
+    <string name="app_goal_failed">Mål: %1$s</string>
+    <string name="app_aside_needs_direct">Spør på siden krever den direkte gatewayen</string>
+    <string name="app_aside_failed">Spør på siden mislyktes: %1$s</string>
+    <string name="app_redirected">Omdirigert — svaret starter på nytt med rettelsen din</string>
+    <string name="app_redirect_between_calls">Mellom kall — rettelsen din kjører som neste</string>
+    <string name="app_redirect_finished_queued">Svaret var ferdig — satt i kø til neste tur</string>
+    <string name="app_redirect_unsupported">Denne agenten kan ikke omdirigere — styrer i stedet</string>
+    <string name="app_redirect_failed">Omdirigering mislyktes: %1$s</string>
+    <string name="app_branched_from_message">Forgrenet — dette er en ny økt fra den meldingen</string>
+    <string name="app_queued">Satt i kø — sendes når denne turen er ferdig</string>
+    <string name="app_stopped">Stoppet</string>
+    <string name="app_stop_failed">Kunne ikke stoppe: %1$s</string>
+    <string name="app_crew_steered">%1$s styrt — den ser det i neste steg</string>
+    <string name="app_crew_steer_rejected">%1$s tok ikke imot det — den svarer til en annen dør, eller den holder allerede på å avslutte</string>
+    <string name="app_crew_stopped">%1$s stoppet</string>
+    <string name="app_crew_already_finished">%1$s var allerede ferdig</string>
+
+    <string name="app_model_confirm">%1$s Trykk igjen for å bekrefte.</string>
+    <string name="app_model_expensive">Denne modellen er dyr.</string>
+    <string name="app_model_deferred">%1$s tar over ved neste tur — denne økten</string>
+    <string name="app_model_deferred_global">%1$s tar over ved neste tur — alle økter</string>
+    <string name="app_model_switched">%1$s — denne økten</string>
+    <string name="app_model_switched_global">%1$s — alle økter</string>
+    <string name="app_model_switch_refused">Bytte avvist: %1$s</string>
+    <string name="app_reasoning_refused_unknown">Denne hjernen avviste det tenkenivået — velg et lavere.</string>
+    <string name="app_reasoning_refused_floor">Denne hjernen avviste tenkenivået %1$s, og det finnes ikke noe lavere å prøve.</string>
+    <string name="app_reasoning_dropped">Denne hjernen avviste tenkenivået %1$s — senket til %2$s.</string>
+    <string name="app_reasoning_drop_failed">Denne hjernen avviste tenkenivået %1$s; kunne ikke senke til %2$s.</string>
+    <string name="app_reasoning_set">Resonnering → %1$s — denne økten</string>
+    <string name="app_reasoning_set_global">Resonnering → %1$s for alle økter</string>
+    <string name="app_reasoning_refused">Resonnering avvist: %1$s</string>
+
+    <string name="app_room_joined">Blitt med — rommet dukker opp ved neste synk</string>
+    <string name="app_join_failed">Kunne ikke bli med: %1$s</string>
+    <string name="app_invite_declined">Invitasjon avslått</string>
+    <string name="app_decline_failed">Kunne ikke avslå: %1$s</string>
+    <string name="app_start_chat_failed">kunne ikke starte chatten</string>
+    <string name="app_create_room_failed">kunne ikke opprette rommet</string>
+    <string name="app_join_failed_short">kunne ikke bli med</string>
+    <string name="app_invite_sent">Invitasjon sendt</string>
+    <string name="app_invite_failed">Invitasjon mislyktes: %1$s</string>
+    <string name="app_left_room">Forlot rommet</string>
+    <string name="app_leave_failed">Kunne ikke forlate: %1$s</string>
+
+    <string name="app_try_again">prøv igjen</string>
+    <string name="app_group_rooms_unavailable">rom ikke tilgjengelige</string>
+    <string name="app_not_connected">ikke koblet til en gateway</string>
+    <string name="app_group_stop_failed">Kunne ikke stoppe rommet: %1$s</string>
+    <string name="app_group_approval_failed">Kunne ikke svare på godkjenningen: %1$s</string>
+    <string name="app_group_rename_failed">Kunne ikke endre navn: %1$s</string>
+    <string name="app_group_disband_failed">Kunne ikke oppløse: %1$s</string>
+
+    <string name="app_no_stt_endpoint">Ingen STT-endepunkt konfigurert</string>
+    <string name="app_no_tts_endpoint">Ingen TTS-endepunkt konfigurert</string>
+    <string name="app_no_stt_set">ingen STT-endepunkt angitt</string>
+    <string name="app_no_tts_set">ingen TTS-endepunkt angitt</string>
+    <string name="app_voice_unreachable">%1$s kan ikke nås på %2$s (%3$s)</string>
+    <string name="app_voice_ears">ører (STT)</string>
+    <string name="app_voice_mouth">stemme (TTS)</string>
+
+    <string name="app_console_run_live">En kjøring pågår allerede — stopp den eller la den bli ferdig</string>
+    <string name="app_link_off">Hermes Link er av — slå det på i Innstillinger</string>
+    <string name="app_export_needs_gateway">Eksport krever gateway-døren.</string>
+    <string name="app_export_too_old">Denne gatewayen er for gammel til å eksportere en økt.</string>
+    <string name="app_export_subject">Hermes-økt</string>
+    <string name="app_export_unreadable">Eksporten kom tilbake uleselig.</string>
+
+    <string name="app_unsaved">Fjernet fra Lagret</string>
+    <string name="app_saved">Lagret — finn den i Arkivet</string>
+    <string name="app_pet_adopt_failed">kunne ikke adoptere %1$s</string>
+
+    <string name="app_channel_messages">Meldinger</string>
+    <string name="app_channel_messages_desc">Nye meldinger fra Hermes-agentene og rommene dine</string>
+    <string name="app_notify_you">Du</string>
+    <string name="app_notify_title_failed">%1$s · tur mislyktes</string>
+    <string name="app_notify_reply">Svar</string>
+    <string name="app_notify_reply_to">Svar %1$s</string>
+    <string name="app_notify_mark_read">Merk som lest</string>
+    <plurals name="app_notify_conversations">
+        <item quantity="one">%d samtale</item>
+        <item quantity="other">%d samtaler</item>
+    </plurals>
+    <string name="app_channel_gate">Godkjenninger og spørsmål</string>
+    <string name="app_channel_gate_desc">En agent har stoppet og venter på svaret ditt</string>
+    <string name="app_notify_answer">Svar</string>
+    <string name="app_channel_runs">Agent jobber</string>
+    <string name="app_channel_runs_desc">En lydløs statuslinje mens en agent jobber: hva den gjør, og hvor lenge</string>
+    <string name="app_notify_stop">Stopp</string>
+    <string name="app_channel_missions">Oppdrag</string>
+    <string name="app_channel_missions_desc">Oppdrag som fullføres, blokkeres eller gis opp på agentens tavle</string>
+
+    <string name="app_push_checking">Ser etter meldinger…</string>
+    <string name="app_notify_sending_text">Sender: %1$s</string>
+    <string name="app_notify_answering">Svarer…</string>
+    <string name="app_notify_gate_unreachable">Kunne ikke nå gatewayen — trykk for å svare</string>
+    <string name="app_notify_answered">Besvart — agenten kjører igjen</string>
+    <string name="app_notify_request_timed_out">Den forespørselen hadde allerede utløpt</string>
+    <string name="app_notify_answer_failed">Kunne ikke svare — trykk for å åpne</string>
+    <string name="app_notify_sending">Sender…</string>
+    <string name="app_notify_send_failed">Kunne ikke sende «%1$s» — trykk for å åpne</string>
+
+    <string name="app_push_connecting">Kobler til…</string>
+    <string name="app_push_connected">Tilkoblet — innebygd push</string>
+    <string name="app_push_reconnecting">Kobler til på nytt…</string>
+    <string name="app_channel_push">Push-tilkobling</string>
+    <string name="app_channel_push_desc">Keryx\' egen tilkobling til push-serveren din (ingen distributør-app trengs)</string>
+    <string name="app_push_title">Keryx-push</string>
+
+    <string name="app_scan_pairing_inside">Skann paringskoder inne i Keryx: Koble til gatewayen din › Skann en paringskode.</string>
+
+    <string name="app_share_nothing">Ingenting å dele</string>
+    <string name="app_share_foreign_only">Keryx kan bare sende filer som deles fra en annen app</string>
+    <string name="app_share_too_large_mb">Filen er for stor til å sendes (%1$d MB)</string>
+    <string name="app_share_too_large">Filen er for stor til å sendes</string>
+    <string name="app_share_read_failed">Kunne ikke lese %1$s</string>
+    <plurals name="app_share_attachments">
+        <item quantity="one">%d vedlegg</item>
+        <item quantity="other">%d vedlegg</item>
+    </plurals>
+    <string name="app_share_note_label">Legg til et notat (valgfritt)</string>
+    <string name="app_share_note_hint">Oppsummer dette / husk dette / …</string>
+
+    <string name="app_hands_cannot">Ingenting på denne telefonen kan gjøre det</string>
+    <string name="app_hands_no_app">Ingen app som heter «%1$s»</string>
+    <string name="app_hands_no_handler">Ingenting på denne telefonen håndterer %1$s</string>
+    <string name="app_hands_failed">Kunne ikke: %1$s</string>
+    <string name="app_hands_no_flash">Ingen lommelykt på denne telefonen</string>
+
+    <string name="app_crash_log_subject">Keryx-krasjlogg</string>
+    <string name="app_crash_log_share">Del krasjlogg</string>
+    <string name="app_share">Del</string>
+    <string name="app_share_named">Del %1$s</string>
+
+    <string name="app_call_hearing_failed">hørte ikke: %1$s</string>
+    <string name="app_call_turn_failed">agentens tur mislyktes</string>
+    <string name="app_call_voice_failed">stemmen feilet: %1$s</string>
+    <string name="app_call_no_reply">ikke noe svar fra gatewayen</string>
+    <string name="app_tts_failed">Opplesning mislyktes: %1$s</string>
+    <string name="app_tts_audio_unavailable">Lyd ikke tilgjengelig</string>
+    <string name="app_tts_no_audio">Taleserveren sendte ingen lyd</string>
+    <string name="app_tts_no_engine">Ingen talemotor på denne enheten</string>
+    <string name="app_tts_playback_failed">Avspilling av tale mislyktes</string>
+    <string name="app_tts_playback_failed_why">Avspilling av tale mislyktes: %1$s</string>
+
+    <string name="app_tour_welcome_title">Velkommen til Keryx</string>
+    <string name="app_tour_welcome_text">Dette er en demo: en late-som-gateway på telefonen din, og agenten er midt i en jobb. Her er en rask omvisning før du kobler til din egen.</string>
+    <string name="app_tour_plan_title">Planen</string>
+    <string name="app_tour_plan_text">Agenten din deler en jobb opp i steg og krysser dem av underveis. Mens den jobber, viser Keryx et løpende varsel om jobben, så du kan legge bort telefonen.</string>
+    <string name="app_tour_approval_title">Den spør først</string>
+    <string name="app_tour_approval_text">Før noe risikabelt, som å slette en mappe, stopper agenten og spør. Svar her eller rett fra varselet.</string>
+    <string name="app_tour_approval_text_demo">Før noe risikabelt, som å slette en mappe, stopper agenten og spør. Svar her eller rett fra varselet. Prøv det når omvisningen er ferdig, og se den fullføre jobben.</string>
+    <string name="app_tour_composer_title">Spør om hva som helst</string>
+    <string name="app_tour_composer_text">Gi agenten din en jobb med vanlige ord. Den fortsetter å jobbe om du går, og Keryx sier fra når den er ferdig.</string>
+    <string name="app_tour_model_title">Hvilken hjerne som svarer</string>
+    <string name="app_tour_model_text">Bytt modell for denne økten, eller for alle økter fra nå av.</string>
+    <string name="app_tour_new_session_title">En blank side</string>
+    <string name="app_tour_new_session_text">Start en ny økt. Hold inne for flere valg, som en tittel eller en midlertidig økt.</string>
+    <string name="app_tour_drawer_title">Alt det andre</string>
+    <string name="app_tour_drawer_text">Øktene dine og resten av Keryx ligger bak denne knappen.</string>
+    <string name="app_tour_lenses_title">Hva som venter på deg</string>
+    <string name="app_tour_lenses_text">Begrens listen til økter som venter på deg, kjører akkurat nå eller er uleste.</string>
+    <string name="app_tour_missions_title">Oppdrag</string>
+    <string name="app_tour_missions_text">Gi agenten lengre jobber som kort på en tavle. Den jobber seg gjennom dem og spør når den trenger deg.</string>
+    <string name="app_tour_runs_title">Kjøringer</string>
+    <string name="app_tour_runs_text">Planlagte jobber, og hva hver kjøring fant.</string>
+    <string name="app_tour_bots_title">Boter</string>
+    <string name="app_tour_bots_text">Agentens andre profiler. Hver har sitt eget minne, ferdigheter og chatter.</string>
+    <string name="app_tour_archive_title">Arkiv</string>
+    <string name="app_tour_archive_text">Alt som noen gang er sagt, søkbart på telefonen, selv når gatewayen er nede.</string>
+    <string name="app_tour_gateway_title">Gatewayen din</string>
+    <string name="app_tour_gateway_text_demo">Med din egen Hermes viser dette tilkoblingen, modellen og versjonen. Alt du nettopp så, fungerer likt på en ekte gateway: koble til din, så er den live.</string>
+    <string name="app_tour_gateway_text">Tilkoblingen, modellen og Hermes-versjonen. Trykk for Gateway; tannhjulet åpner Innstillinger, der denne omvisningen også bor.</string>
+    <string name="app_tour_gateway_text_direct">Tilkoblingen, modellen og Hermes-versjonen. Trykk for Gateway; tannhjulet åpner Innstillinger, der denne omvisningen også bor. Kjører du mer enn én Hermes? Legg den til og bytt mellom dem her.</string>
+    <string name="app_tour_cta_connect">Koble til gatewayen din</string>
+    <string name="app_tour_cta_add_gateway">Legg til en gateway</string>
+
+    <string name="app_whatsnew_title">Nytt i Keryx 3.0</string>
+    <string name="app_whatsnew_text">En rask titt på hva som er endret. Hopp over om du vil: det ligger også i Innstillinger › Om.</string>
+    <string name="app_whatsnew_point_title">Spør hvor noe er</string>
+    <string name="app_whatsnew_point_text">Spør agenten «hvor er de planlagte jobbene mine?», så kan den peke på stedet, rett her på telefonen. Gatewayen din trenger keryx-stream 0.6 eller nyere.</string>
+    <string name="app_whatsnew_memory_title">Chatminne</string>
+    <string name="app_whatsnew_memory_text">Ringen ved siden av modellen viser nå hvor mange svar denne chatten har plass til, og bare når det betyr noe. Trykk på den for å se hva som bruker plassen.</string>
+    <string name="app_whatsnew_drawer_title">En ny sidemeny</string>
+    <string name="app_whatsnew_drawer_text_direct">Hver chat har sin egen farge og sitt eget merke, en ring viser de som jobber, og disse filtrene begrenser listen til det som venter på deg.</string>
+    <string name="app_whatsnew_drawer_text">Hver chat har sin egen farge og sitt eget merke, og en ring viser de som jobber.</string>
+    <string name="app_whatsnew_cards_title">Kort med vanlige ord</string>
+    <string name="app_whatsnew_cards_text">Et oppdragskort åpner nå med hva som skjer og den ene tingen som skal gjøres nå. De tekniske detaljene er fortsatt der, under Detaljer.</string>
+    <string name="app_whatsnew_look_title">Utseende og oppdateringer</string>
+    <string name="app_whatsnew_look_text_direct">Innstillinger › Utseende har nye tenkestiler og fem måter å bytte mellom chatter på. Med en nyere keryx-stream kan du i Gatewayens Oppdater-panel velge Stabil eller Edge. For å legge til en annen Hermes kjører du hermes keryx pair på den og skanner koden.</string>
+    <string name="app_whatsnew_look_text">Innstillinger › Utseende har nye tenkestiler og fem måter å bytte mellom chatter på. Omvisningen og tipsene for hvert område ligger i Innstillinger › Om.</string>
+
+    <string name="app_hint_missions_title">Oppdrag</string>
+    <string name="app_hint_missions_text">Lengre jobber ligger her som kort. Agentene dine plukker dem opp og jobber seg gjennom dem, og et kort som trenger deg, flyttes til toppen. Trykk + for å dele ut et.</string>
+    <string name="app_hint_runs_title">Kjøringer</string>
+    <string name="app_hint_runs_text">Jobber etter en tidsplan, som en morgenbrief eller en nattlig sjekk. Resultatet av hver kjøring havner her. Spør agenten, så kan den sette opp en for deg.</string>
+    <string name="app_hint_bots_title">Boter</string>
+    <string name="app_hint_bots_text">Hver bot er en profil i Hermes-en din, med eget minne, ferdigheter og chatter. Åpne en for å snakke med den, eller samle noen i en gruppechat.</string>
+    <string name="app_hint_gateway_title">Gatewayen din</string>
+    <string name="app_hint_gateway_text">Hvordan det går med Hermes-en du er koblet til, og hva som ligger bak: modellen og innstillingene, jobber, ferdigheter, minne og verktøy.</string>
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">Agenten din i arbeid, i fullskjerm: hva den tenker, verktøyene den kjører og hjelperne den sender ut. Du kan også styre den herfra.</string>
+    <string name="app_hint_artifact_title">En side agenten din har laget</string>
+    <string name="app_hint_artifact_text">Rapporter, skisser og sider agenten skriver, åpnes her på telefonen. Lagre eller del dem med knappene øverst.</string>
+
+    <string name="app_tour_pane">Omvisning</string>
+    <string name="app_tour_end">Avslutt omvisningen</string>
+    <string name="app_tour_progress">%1$d av %2$d</string>
+    <string name="app_tour_back">Tilbake</string>
+    <string name="app_tour_done">Ferdig</string>
+    <string name="app_tour_got_it">Skjønner</string>
+    <string name="app_tour_next">Neste</string>
+</resources>

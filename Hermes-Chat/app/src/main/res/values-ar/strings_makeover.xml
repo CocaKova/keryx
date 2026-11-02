@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">معاينة: انتقال الغرف %1$s بسرعة %2$s</string>
+    <string name="mk_cancel">إلغاء</string>
+
+    <string name="mk_mcp_test">اختبار</string>
+    <string name="mk_mcp_testing">جارٍ الاختبار</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="zero">تم الوصول · %d أداة</item>
+        <item quantity="one">تم الوصول · %d أداة</item>
+        <item quantity="two">تم الوصول · %d أداتان</item>
+        <item quantity="few">تم الوصول · %d أدوات</item>
+        <item quantity="many">تم الوصول · %d أداة</item>
+        <item quantity="other">تم الوصول · %d أداة</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="zero">%d موجّه</item>
+        <item quantity="one">%d موجّه</item>
+        <item quantity="two">%d موجّهان</item>
+        <item quantity="few">%d موجّهات</item>
+        <item quantity="many">%d موجّهًا</item>
+        <item quantity="other">%d موجّه</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="zero">%d مورد</item>
+        <item quantity="one">%d مورد</item>
+        <item quantity="two">%d موردان</item>
+        <item quantity="few">%d موارد</item>
+        <item quantity="many">%d موردًا</item>
+        <item quantity="other">%d مورد</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">تعذّر الوصول: %1$s</string>
+    <string name="mk_mcp_test_unsupported">لا تستطيع هذه البوابة اختبار الخوادم من هنا.</string>
+    <string name="mk_mcp_catalog">الكتالوج · %1$d للإضافة</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="zero">يطلب %d مفتاح</item>
+        <item quantity="one">يطلب %d مفتاحًا</item>
+        <item quantity="two">يطلب %d مفتاحين</item>
+        <item quantity="few">يطلب %d مفاتيح</item>
+        <item quantity="many">يطلب %d مفتاحًا</item>
+        <item quantity="other">يطلب %d مفتاح</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">يُبنى من المصدر</string>
+    <string name="mk_mcp_catalog_oauth">يسجّل الدخول عبر OAuth</string>
+    <string name="mk_mcp_installed">مثبّت</string>
+    <string name="mk_mcp_install">تثبيت</string>
+    <string name="mk_mcp_installing">جارٍ التثبيت…</string>
+    <string name="mk_mcp_install_title">تثبيت %1$s؟</string>
+    <string name="mk_mcp_install_runs">سيشغّل</string>
+    <string name="mk_mcp_install_builds">ستنسخه البوابة أولًا وتبنيه من %1$s في الخلفية.</string>
+    <string name="mk_mcp_install_oauth">يسجّل الدخول عبر OAuth: أكمل ذلك في لوحة تحكم البوابة بعد تثبيته.</string>
+    <string name="mk_mcp_install_env_note">يُحفظ على البوابة: الأسرار في ملف .env الخاص بها، والباقي في إعداداتها.</string>
+    <string name="mk_mcp_installed_toast">تم تثبيت %1$s — يعمل من الجلسة التالية</string>
+    <string name="mk_mcp_building_toast">يُبنى %1$s على البوابة — سيظهر هنا عند الانتهاء</string>
+    <string name="mk_mcp_install_refused">تعذّر تثبيت %1$s: %2$s</string>
+    <string name="mk_mcp_install_unsupported">لا تستطيع هذه البوابة تثبيت خوادم MCP من هنا.</string>
+    <string name="mk_usage">الاستخدام</string>
+    <string name="mk_usage_subtitle">الرموز والتكلفة والجلسات</string>
+    <string name="mk_usage_subtitle_read">%1$s رمز · %2$s · آخر %3$d يوم</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="zero">%d جلسة</item>
+        <item quantity="one">%d جلسة</item>
+        <item quantity="two">%d جلستان</item>
+        <item quantity="few">%d جلسات</item>
+        <item quantity="many">%d جلسة</item>
+        <item quantity="other">%d جلسة</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="zero">جلسة</item>
+        <item quantity="one">جلسة</item>
+        <item quantity="two">جلستان</item>
+        <item quantity="few">جلسات</item>
+        <item quantity="many">جلسة</item>
+        <item quantity="other">جلسة</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="zero">%d يوم</item>
+        <item quantity="one">%d يوم</item>
+        <item quantity="two">%d يومان</item>
+        <item quantity="few">%d أيام</item>
+        <item quantity="many">%d يومًا</item>
+        <item quantity="other">%d يوم</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="zero">استدعاءات API: %1$s</item>
+        <item quantity="one">استدعاءات API: %1$s</item>
+        <item quantity="two">استدعاءات API: %1$s</item>
+        <item quantity="few">استدعاءات API: %1$s</item>
+        <item quantity="many">استدعاءات API: %1$s</item>
+        <item quantity="other">استدعاءات API: %1$s</item>
+    </plurals>
+    <string name="mk_usage_tokens">رموز</string>
+    <string name="mk_usage_in_out">%1$s داخل · %2$s خارج</string>
+    <string name="mk_usage_cost">التكلفة</string>
+    <string name="mk_usage_cost_estimated">التكلفة، تقديرية</string>
+    <string name="mk_usage_none">لم يُستخدم شيء في آخر %1$d يوم.</string>
+    <string name="mk_usage_by_day">حسب اليوم</string>
+    <string name="mk_usage_peak">الأكثر نشاطًا: %1$s في %2$s</string>
+    <string name="mk_usage_by_model">حسب النموذج</string>
+    <string name="mk_usage_note_estimate">التكلفة تقدير Hermes نفسه من قائمة أسعاره؛ النموذج المحلي لا يكلّف شيئًا. لوحة تحكم البوابة تعرض الأرقام نفسها.</string>
+    <string name="mk_usage_note_reported">التكلفة هي ما أبلغ عنه المزوّد، حيثما أبلغ. لوحة تحكم البوابة تعرض الأرقام نفسها.</string>
+</resources>

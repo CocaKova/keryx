@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Vorschau: der Raumwechsel „%1$s“ mit Tempo %2$s</string>
+    <string name="mk_cancel">Abbrechen</string>
+
+    <string name="mk_mcp_test">Testen</string>
+    <string name="mk_mcp_testing">Teste</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Erreicht · %d Tool</item>
+        <item quantity="other">Erreicht · %d Tools</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d Prompt</item>
+        <item quantity="other">%d Prompts</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d Ressource</item>
+        <item quantity="other">%d Ressourcen</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Nicht erreichbar: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Dieses Gateway kann Server nicht von hier aus testen.</string>
+    <string name="mk_mcp_catalog">Katalog · %1$d verfügbar</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">braucht %d Schlüssel</item>
+        <item quantity="other">braucht %d Schlüssel</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">wird aus dem Quellcode gebaut</string>
+    <string name="mk_mcp_catalog_oauth">meldet sich per OAuth an</string>
+    <string name="mk_mcp_installed">Installiert</string>
+    <string name="mk_mcp_install">Installieren</string>
+    <string name="mk_mcp_installing">Installiere…</string>
+    <string name="mk_mcp_install_title">%1$s installieren?</string>
+    <string name="mk_mcp_install_runs">Ausgeführt wird</string>
+    <string name="mk_mcp_install_builds">Das Gateway klont und baut es zuerst aus %1$s, im Hintergrund.</string>
+    <string name="mk_mcp_install_oauth">Die Anmeldung läuft über OAuth: Schließ sie nach der Installation im Dashboard des Gateways ab.</string>
+    <string name="mk_mcp_install_env_note">Bleibt auf dem Gateway: Geheimnisse in seiner .env, der Rest in seiner Konfiguration.</string>
+    <string name="mk_mcp_installed_toast">%1$s installiert – aktiv ab der nächsten Sitzung</string>
+    <string name="mk_mcp_building_toast">%1$s wird auf dem Gateway gebaut – erscheint hier, sobald es fertig ist</string>
+    <string name="mk_mcp_install_refused">%1$s konnte nicht installiert werden: %2$s</string>
+    <string name="mk_mcp_install_unsupported">Dieses Gateway kann MCP-Server nicht von hier aus installieren.</string>
+    <string name="mk_usage">Nutzung</string>
+    <string name="mk_usage_subtitle">Tokens, Kosten und Sitzungen</string>
+    <string name="mk_usage_subtitle_read">%1$s Tokens · %2$s · letzte %3$d Tage</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d Sitzung</item>
+        <item quantity="other">%d Sitzungen</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">Sitzung</item>
+        <item quantity="other">Sitzungen</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d Tag</item>
+        <item quantity="other">%d Tage</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s API-Aufruf</item>
+        <item quantity="other">%1$s API-Aufrufe</item>
+    </plurals>
+    <string name="mk_usage_tokens">Tokens</string>
+    <string name="mk_usage_in_out">%1$s rein · %2$s raus</string>
+    <string name="mk_usage_cost">Kosten</string>
+    <string name="mk_usage_cost_estimated">Kosten, geschätzt</string>
+    <string name="mk_usage_none">Keine Nutzung in den letzten %1$d Tagen.</string>
+    <string name="mk_usage_by_day">Nach Tag</string>
+    <string name="mk_usage_peak">Spitze: %1$s am %2$s</string>
+    <string name="mk_usage_by_model">Nach Modell</string>
+    <string name="mk_usage_note_estimate">Die Kosten sind Hermes\' eigene Schätzung anhand seiner Preisliste; ein lokales Modell kostet nichts. Das Dashboard des Gateways zeigt dieselben Zahlen.</string>
+    <string name="mk_usage_note_reported">Die Kosten sind, was der Anbieter gemeldet hat, sofern er es getan hat. Das Dashboard des Gateways zeigt dieselben Zahlen.</string>
+</resources>

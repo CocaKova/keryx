@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">Trò chuyện mới</string>
+    <string name="shortcut_new_chat_long">Bắt đầu cuộc trò chuyện mới</string>
+    <string name="shortcut_missions">Nhiệm vụ</string>
+    <string name="shortcut_missions_long">Mở bảng nhiệm vụ</string>
+    <string name="shortcut_runs">Lượt chạy</string>
+    <string name="shortcut_runs_long">Lượt chạy theo lịch và báo cáo</string>
+
+    <string name="widget_description">Tác tử trong nháy mắt: kết nối, phiên mới nhất, câu nói gần nhất và lượt đang chạy.</string>
+
+    <string name="note_tile_label">Ghi chú cho tác tử</string>
+    <string name="note_tile_label_to">Ghi chú cho %1$s</string>
+    <string name="note_tile_live">trực tiếp</string>
+    <string name="note_tile_offline">ngoại tuyến</string>
+    <string name="note_placeholder">Một dòng gửi tác tử…</string>
+    <string name="note_target_prefix">tới</string>
+    <string name="note_change_target">Đổi phiên</string>
+    <string name="note_no_sessions">Chưa có phiên nào</string>
+    <string name="note_send">Gửi</string>
+    <string name="note_sent_to">Đã gửi tới %1$s</string>
+    <string name="note_send_failed">Gửi thất bại</string>
+    <string name="note_locked">Đã khóa</string>
+    <string name="note_unlock">Mở khóa</string>
+    <string name="note_unlock_title">Mở khóa Keryx</string>
+</resources>

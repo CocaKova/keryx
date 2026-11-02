@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">Ny chat</string>
+    <string name="shortcut_new_chat_long">Start en ny chat</string>
+    <string name="shortcut_missions">Oppdrag</string>
+    <string name="shortcut_missions_long">Åpne oppdragstavlen</string>
+    <string name="shortcut_runs">Kjøringer</string>
+    <string name="shortcut_runs_long">Planlagte kjøringer og rapportene deres</string>
+
+    <string name="widget_description">Agenten på et blikk: tilkobling, nyeste økt, hva den sa sist, og turen som pågår.</string>
+
+    <string name="note_tile_label">Notat til agent</string>
+    <string name="note_tile_label_to">Notat til %1$s</string>
+    <string name="note_tile_live">live</string>
+    <string name="note_tile_offline">frakoblet</string>
+    <string name="note_placeholder">Én linje til agenten…</string>
+    <string name="note_target_prefix">til</string>
+    <string name="note_change_target">Bytt økt</string>
+    <string name="note_no_sessions">Ingen økt ennå</string>
+    <string name="note_send">Send</string>
+    <string name="note_sent_to">Sendt til %1$s</string>
+    <string name="note_send_failed">Kunne ikke sende</string>
+    <string name="note_locked">Låst</string>
+    <string name="note_unlock">Lås opp</string>
+    <string name="note_unlock_title">Lås opp Keryx</string>
+</resources>

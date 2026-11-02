@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">Новый чат</string>
+    <string name="shortcut_new_chat_long">Начать новый чат</string>
+    <string name="shortcut_missions">Миссии</string>
+    <string name="shortcut_missions_long">Открыть доску миссий</string>
+    <string name="shortcut_runs">Запуски</string>
+    <string name="shortcut_runs_long">Запуски по расписанию и их отчёты</string>
+    <string name="widget_description">Агент с первого взгляда: связь, последняя сессия, его последние слова и текущий ход.</string>
+    <string name="note_tile_label">Заметка агенту</string>
+    <string name="note_tile_label_to">Заметка: %1$s</string>
+    <string name="note_tile_live">в сети</string>
+    <string name="note_tile_offline">не в сети</string>
+    <string name="note_placeholder">Одна строка для агента…</string>
+    <string name="note_target_prefix">куда:</string>
+    <string name="note_change_target">Сменить сессию</string>
+    <string name="note_no_sessions">Сессий пока нет</string>
+    <string name="note_send">Отправить</string>
+    <string name="note_sent_to">Отправлено: %1$s</string>
+    <string name="note_send_failed">Не отправлено</string>
+    <string name="note_locked">Заблокировано</string>
+    <string name="note_unlock">Разблокировать</string>
+    <string name="note_unlock_title">Разблокировать Keryx</string>
+</resources>

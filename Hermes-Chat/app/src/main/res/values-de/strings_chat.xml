@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_theme_to_light">Zu hell wechseln</string>
+    <string name="chat_theme_follow_system">Wie System</string>
+    <string name="chat_theme_to_dark">Zu dunkel wechseln</string>
+    <string name="chat_new_chat">Neuer Chat</string>
+    <string name="chat_drawer_jump_hint">Springe zu…</string>
+    <string name="chat_lens_needs_you">Braucht dich</string>
+    <string name="chat_lens_running">Läuft</string>
+    <string name="chat_lens_unread">Ungelesen</string>
+    <string name="chat_lens_archived">Archiviert</string>
+    <string name="chat_drawer_invites">Einladungen</string>
+    <string name="chat_place_missions">Missionen</string>
+    <string name="chat_place_runs">Läufe</string>
+    <string name="chat_place_bots">Bots</string>
+    <string name="chat_place_projects">Projekte</string>
+    <string name="chat_place_shipyard">Werft</string>
+    <string name="chat_place_archive">Archiv</string>
+    <string name="chat_place_gateway">Gateway</string>
+    <string name="chat_place_settings">Einstellungen</string>
+    <string name="chat_drawer_places">Orte</string>
+    <string name="chat_drawer_commands">Befehle</string>
+    <string name="chat_drawer_no_matches">Keine Treffer</string>
+    <string name="chat_drawer_nothing_archived">Nichts archiviert</string>
+    <string name="chat_drawer_nothing_waiting">Nichts wartet auf dich</string>
+    <string name="chat_drawer_nothing_running">Nichts läuft</string>
+    <string name="chat_drawer_all_read">Alles gelesen</string>
+    <string name="chat_session_id_copied">Sitzungs-ID kopiert</string>
+    <string name="chat_moved_to_project">Verschoben nach %1$s</string>
+    <string name="chat_drawer_reaching_back">Lade ältere…</string>
+    <string name="chat_drawer_show_older">Ältere %1$s anzeigen</string>
+    <string name="chat_drawer_in_transcripts">In Verläufen</string>
+    <string name="chat_demo_gateway">Demo-Gateway</string>
+    <string name="chat_demo_gateway_page">Hier steht die Seite deines Gateways, sobald du eins verbindest.</string>
+    <string name="chat_connect">Verbinden</string>
+    <string name="chat_open_gateway">Gateway öffnen</string>
+    <string name="chat_settings">Einstellungen</string>
+    <string name="chat_shelf_fold">%1$s einklappen</string>
+    <string name="chat_shelf_open">%1$s ausklappen</string>
+    <string name="chat_room_forked">Von einem anderen Gespräch abgezweigt</string>
+    <string name="chat_room_temporary">Temporär – wird beim nächsten Start gelöscht</string>
+    <string name="chat_room_pinned">Angeheftet</string>
+    <string name="chat_mark_unread">Als ungelesen markieren</string>
+    <string name="chat_archive">Archivieren</string>
+    <string name="chat_archive_hint">Aus der Liste, aber noch auf dem Gateway</string>
+    <string name="chat_restore_to_list">Zurück in die Liste</string>
+    <string name="chat_export_ellipsis">Exportieren…</string>
+    <string name="chat_copy_session_id">Sitzungs-ID kopieren</string>
+    <string name="chat_invite_user">Nutzer einladen…</string>
+    <string name="chat_rename_ellipsis">Umbenennen…</string>
+    <string name="chat_move_to_project">In Projekt verschieben…</string>
+    <string name="chat_leave_room">Raum verlassen</string>
+    <string name="chat_delete_session_ellipsis">Sitzung löschen…</string>
+    <string name="chat_invite_to">In %1$s einladen</string>
+    <string name="chat_invite">Einladen</string>
+    <string name="chat_cancel">Abbrechen</string>
+    <string name="chat_leave_title">%1$s verlassen?</string>
+    <string name="chat_leave_body">Du bekommst dann keine Nachrichten mehr von dort; zum erneuten Beitreten brauchst du eine neue Einladung.</string>
+    <string name="chat_leave">Verlassen</string>
+    <string name="chat_rename_session">Sitzung umbenennen</string>
+    <string name="chat_rename">Umbenennen</string>
+    <string name="chat_delete_title">%1$s löschen?</string>
+    <string name="chat_delete_session_body">Löscht die Sitzung und ihren ganzen Verlauf vom Gateway. Das lässt sich nicht rückgängig machen.</string>
+    <string name="chat_delete">Löschen</string>
+    <string name="chat_invited_to_room">Du wurdest in diesen Raum eingeladen</string>
+    <string name="chat_decline">Ablehnen</string>
+    <string name="chat_accept">Annehmen</string>
+    <string name="chat_running">Läuft</string>
+    <string name="chat_age_now">jetzt</string>
+    <string name="chat_age_minutes">%1$d Min.</string>
+    <string name="chat_age_hours">%1$d Std.</string>
+    <string name="chat_age_days">%1$d T.</string>
+    <string name="chat_age_weeks">%1$d Wo.</string>
+    <plurals name="chat_door_needs_you">
+        <item quantity="one">%1$s, %2$s braucht dich</item>
+        <item quantity="other">%1$s, %2$s brauchen dich</item>
+    </plurals>
+    <string name="chat_door_unread">%1$s, %2$s ungelesen</string>
+
+    <string name="chat_bot_new_title">Neu anfangen mit %1$s?</string>
+    <string name="chat_bot_new_body">Verdichten behält dieses Gespräch und leert den Arbeitskontext von %1$s.\n\nEin neuer Bot-Chat beendet diesen – er bleibt unter den früheren Chats von %1$s lesbar – und startet einen neuen.</string>
+    <string name="chat_bot_new_fresh">Neuer Bot-Chat</string>
+    <string name="chat_bot_new_compact">Verdichten</string>
+    <string name="chat_bot_chat_chip">Bot-Chat</string>
+    <string name="chat_menu">Menü</string>
+    <plurals name="chat_menu_waiting">
+        <item quantity="one">Menü, %d wartet auf dich</item>
+        <item quantity="other">Menü, %d warten auf dich</item>
+    </plurals>
+    <plurals name="chat_menu_unread">
+        <item quantity="one">Menü, %d ungelesen</item>
+        <item quantity="other">Menü, %d ungelesen</item>
+    </plurals>
+    <string name="chat_new_session_failed">Sitzung konnte nicht gestartet werden. %1$s</string>
+    <string name="chat_new_session_hold">Neue Sitzung (gedrückt halten für Optionen)</string>
+    <string name="chat_unpin_run">Diesen Lauf loslösen</string>
+    <string name="chat_pin_run">Diesen Lauf anheften</string>
+    <string name="chat_new_session">Neue Sitzung</string>
+    <string name="chat_new_session_confirm_title">Neue Sitzung starten?</string>
+    <string name="chat_new_session_confirm_body">Der Agent arbeitet noch – /new beendet den aktuellen Lauf und verwirft sein Ergebnis.</string>
+    <string name="chat_new_session_confirm">Beenden &amp; neu starten</string>
+    <string name="chat_find_in_chat">Im Chat suchen</string>
+    <string name="chat_call_needs_voice">Leg zuerst die STT- und TTS-Endpunkte unter Einstellungen → Sprache fest</string>
+    <string name="chat_call">Anrufen</string>
+    <string name="chat_reasoning_header">DENKEN</string>
+    <string name="chat_reasoning_sub_default">Stufe gilt sitzungsübergreifend</string>
+    <string name="chat_reasoning_local_brain">lokales Gehirn</string>
+    <string name="chat_reasoning_model">Modell</string>
+    <string name="chat_reasoning_sub_binary">%1$s · an/aus</string>
+    <string name="chat_reasoning_sub_none">%1$s · keine Denkstufen</string>
+    <string name="chat_reasoning_sub_session">%1$s · Stufen dieser Sitzung</string>
+    <string name="chat_reasoning_sub_scale">%1$s · Stufenskala</string>
+    <string name="chat_reasoning_no_dial">Dieses Modell kennt keine Denkstufe – Hermes sendet keine.</string>
+    <string name="chat_reasoning_every_session">Alle Sitzungen</string>
+    <string name="chat_reasoning_this_session">Nur diese Sitzung</string>
+    <string name="chat_reasoning_show">Denken anzeigen</string>
+    <string name="chat_reasoning_hide">Denken ausblenden</string>
+    <string name="chat_reasoning_reset">Sitzungswert zurücksetzen</string>
+    <string name="chat_demo_label">Demo</string>
+    <string name="chat_demo_connect">Gateway verbinden</string>
+
+    <string name="chat_attach_failed">Anhängen nicht möglich (unlesbar oder über 50 MB)</string>
+    <string name="chat_no_camera">Keine Kamera-App hat reagiert</string>
+    <string name="chat_mic_unavailable">Mikrofon nicht verfügbar</string>
+    <string name="chat_transcription_failed">Transkription fehlgeschlagen: %1$s</string>
+    <string name="chat_mic_permission">Keryx braucht Mikrofonzugriff zum Diktieren</string>
+    <string name="chat_nothing_to_read">Nichts zum Vorlesen</string>
+    <string name="chat_typing_one">%1$s schreibt…</string>
+    <string name="chat_typing_two">%1$s und %2$s schreiben…</string>
+    <string name="chat_typing_many">Mehrere Leute schreiben…</string>
+    <string name="chat_jump_newest">Zur neuesten springen</string>
+    <plurals name="chat_jump_newest_count">
+        <item quantity="one">Zur neuesten springen, %d neu</item>
+        <item quantity="other">Zur neuesten springen, %d neu</item>
+    </plurals>
+    <string name="chat_attachments_cant_queue">Anhänge lassen sich nicht vormerken – sende sie, wenn diese Runde endet</string>
+    <string name="chat_stop_hint">Tipp zuerst deine Korrektur – dann lenkt Tippen die Runde, Halten zeigt mehr</string>
+    <string name="chat_busy_queue">Für die nächste Runde vormerken</string>
+    <string name="chat_busy_aside">Nebenbei fragen – Antwort außerhalb des Chats</string>
+    <string name="chat_busy_redirect">Umlenken – Antwort damit neu starten</string>
+    <string name="chat_starter_1">Was kannst du in dieser Sitzung tun?</string>
+    <string name="chat_starter_2">Was steht heute bei mir an?</string>
+    <string name="chat_starter_3">Woran haben wir zuletzt gearbeitet?</string>
+    <string name="chat_starter_4">Hilf mir, etwas Kleines Schritt für Schritt zu planen.</string>
+    <string name="chat_fresh_page">Eine neue Seite</string>
+    <string name="chat_fresh_page_sub">Frag irgendwas oder fang mit einem davon an.</string>
+    <string name="chat_today">Heute</string>
+    <string name="chat_yesterday">Gestern</string>
+
+    <string name="chat_arrival_mark">%1$s · ungefragt · %2$s</string>
+    <string name="chat_bubble_hold_label">Antworten, reagieren oder kopieren</string>
+    <string name="chat_copied">Kopiert</string>
+    <string name="chat_undo_title">Letzten Austausch zurücknehmen?</string>
+    <string name="chat_undo_body">Deine Nachricht und diese Antwort verschwinden aus dem Verlauf der Sitzung auf dem Gateway. Was du als Nächstes sagst, knüpft an die Zeit davor an.</string>
+    <string name="chat_undo_confirm">Zurücknehmen</string>
+    <string name="chat_keep">Behalten</string>
+    <string name="chat_select_text">Text auswählen</string>
+    <string name="chat_delete_message_title">Nachricht löschen?</string>
+    <string name="chat_delete_message_body">Sie wird für alle entfernt – das lässt sich nicht rückgängig machen.</string>
+    <string name="chat_sent">Gesendet</string>
+    <string name="chat_stop_speaking">Vorlesen stoppen</string>
+    <string name="chat_go_to_quoted">Zur zitierten Nachricht</string>
+    <string name="chat_reaction_take_back">Deine Reaktion zurücknehmen</string>
+    <string name="chat_reaction_add">Reaktion hinzufügen</string>
+    <string name="chat_react">Reagieren</string>
+    <string name="chat_action_reply">Antworten</string>
+    <string name="chat_action_copy">Kopieren</string>
+    <string name="chat_action_copy_text">Text kopieren</string>
+    <string name="chat_action_saved">Gespeichert</string>
+    <string name="chat_action_save">Speichern</string>
+    <string name="chat_action_unsave">Aus Gespeichert entfernen</string>
+    <string name="chat_action_keep_archive">Im Archiv behalten</string>
+    <string name="chat_action_stop">Stopp</string>
+    <string name="chat_action_read_aloud">Vorlesen</string>
+    <string name="chat_action_select">Auswählen</string>
+    <string name="chat_action_edit">Bearbeiten</string>
+    <string name="chat_action_edit_desc">Bearbeiten und erneut senden</string>
+    <string name="chat_action_retry">Wiederholen</string>
+    <string name="chat_action_retry_desc">Zurücknehmen und noch mal sagen</string>
+    <string name="chat_action_branch">Abzweigen</string>
+    <string name="chat_action_branch_desc">Ab hier eine neue Sitzung abzweigen</string>
+    <string name="chat_action_undo">Rückgängig</string>
+    <string name="chat_action_undo_desc">Letzten Austausch zurücknehmen</string>
+    <string name="chat_action_delete_desc">Nachricht löschen</string>
+    <string name="chat_reply_attachment">Anhang</string>
+    <string name="chat_reply_message">Nachricht</string>
+
+    <string name="chat_archive_title">Archiv</string>
+    <string name="chat_archive_waking">Index wird geweckt…</string>
+    <plurals name="chat_archive_reaching">
+        <item quantity="one">%1$s gemerkt · lade ältere…</item>
+        <item quantity="other">%1$s gemerkt · lade ältere…</item>
+    </plurals>
+    <plurals name="chat_archive_error">
+        <item quantity="one">%1$s gemerkt · %2$s</item>
+        <item quantity="other">%1$s gemerkt · %2$s</item>
+    </plurals>
+    <plurals name="chat_archive_done">
+        <item quantity="one">%1$s Nachricht gemerkt</item>
+        <item quantity="other">%1$s Nachrichten gemerkt</item>
+    </plurals>
+    <string name="chat_archive_jump_date">Zu Datum springen</string>
+    <string name="chat_archive_nothing_that_day">Für diesen Tag noch nichts indexiert</string>
+    <string name="chat_open">Öffnen</string>
+    <string name="chat_archive_tab_search">Suche</string>
+    <string name="chat_archive_tab_saved">Gespeichert</string>
+    <string name="chat_archive_tab_media">Medien</string>
+    <string name="chat_archive_search_hint">Alles je Gesagte durchsuchen…</string>
+    <string name="chat_archive_recent">ZULETZT GEMERKT</string>
+    <string name="chat_archive_empty_title">Noch nichts gemerkt</string>
+    <string name="chat_archive_empty_body">Der Index füllt sich, während Sitzungen durchgegangen werden. Dann ist jede Nachricht, die die App gesehen hat, nur eine Suche entfernt.</string>
+    <string name="chat_archive_search_idle">Jede Nachricht, die die App je gesehen hat, nur eine Suche entfernt.</string>
+    <string name="chat_archive_no_hits">Noch nichts für „%1$s“</string>
+    <string name="chat_archive_opening">Archiv wird geöffnet…</string>
+    <string name="chat_archive_saved_empty_title">Noch nichts behalten</string>
+    <string name="chat_archive_saved_empty_body">Halte eine Nachricht gedrückt und tippe auf das Lesezeichen, um sie hier zu behalten.</string>
+    <string name="chat_archive_looking">Durchsuche den Index…</string>
+    <string name="chat_archive_media_empty_title">Noch keine Fotos oder Dateien</string>
+    <string name="chat_archive_media_empty_body">Bilder und Dateien aus deinen Chats sammeln sich hier, während sich der Index füllt.</string>
+    <string name="chat_image">Bild</string>
+    <string name="chat_you">Du</string>
+    <string name="chat_archive_context">Kontext</string>
+    <string name="chat_archive_context_failed">Dieser Moment ließ sich nicht laden (er ist vielleicht älter als die Schlüssel dieser Anmeldung).</string>
+    <string name="chat_archive_reach_earlier">Früher</string>
+    <string name="chat_archive_reach_later">Später</string>
+
+    <string name="chat_attach">Anhängen</string>
+    <string name="chat_composer_hint">Nachricht…</string>
+    <string name="chat_composer_hint_steer_stop">Tippen, um die Runde zu lenken – ■ stoppt</string>
+    <string name="chat_composer_hint_steer">Tippen, um die Runde zu lenken</string>
+    <string name="chat_dictate_stop">Diktat beenden</string>
+    <string name="chat_dictate">Diktieren</string>
+    <string name="chat_send_steer">Laufende Runde lenken</string>
+    <string name="chat_send_queue">Für nächste Runde vormerken</string>
+    <string name="chat_send_stop">Runde stoppen</string>
+    <string name="chat_send">Senden</string>
+    <string name="chat_send_hold_menu">Vormerken, nebenbei fragen oder umlenken</string>
+    <string name="chat_send_hold_queue">Stattdessen für nächste Runde vormerken</string>
+    <string name="chat_send_hold_stop">Was Stopp tut</string>
+    <string name="chat_choose_model">Modell wählen</string>
+    <string name="chat_model_label">Modell: %1$s</string>
+    <string name="chat_reasoning">Denken</string>
+    <string name="chat_steer_hint">↪ lenkt die Runde · halten zum Vormerken</string>
+    <string name="chat_replying_to">Antwort an %1$s</string>
+    <string name="chat_cancel_reply">Antwort abbrechen</string>
+    <string name="chat_image_attached">Bild angehängt</string>
+    <string name="chat_file_attached">Datei angehängt</string>
+    <string name="chat_remove_attachment">Anhang entfernen</string>
+    <string name="chat_attach_photo">Foto</string>
+    <string name="chat_attach_file">Datei</string>
+    <string name="chat_attach_camera">Kamera</string>
+
+    <string name="chat_tool_succeeded">Erfolgreich</string>
+    <string name="chat_tool_failed">Fehlgeschlagen</string>
+    <string name="chat_tool_no_verdict">Kein Ergebnis</string>
+    <string name="chat_duration_seconds">%1$d s</string>
+    <string name="chat_duration_millis">%1$d ms</string>
+    <string name="chat_tool_flagged">⚠ Hermes hat diese Ausgabe markiert</string>
+    <string name="chat_tool_flagged_with">⚠ Hermes hat diese Ausgabe markiert: %1$s</string>
+    <string name="chat_tool_diff">Diff</string>
+    <string name="chat_tool_diff_show">Diff anzeigen</string>
+    <string name="chat_tool_diff_hide">Diff ausblenden</string>
+    <string name="chat_tool_diff_label">Diff</string>
+    <string name="chat_tool_output">Ausgabe</string>
+    <string name="chat_tool_output_show">Ausgabe anzeigen</string>
+    <string name="chat_tool_output_hide">Ausgabe ausblenden</string>
+    <string name="chat_tool_output_label">Ausgabe</string>
+    <string name="chat_tool_exit_failed">Exit-Code %1$d, fehlgeschlagen</string>
+    <string name="chat_tool_exit_ok">Exit-Code 0</string>
+    <plurals name="chat_tools_running">
+        <item quantity="one">%d Tool läuft…</item>
+        <item quantity="other">%d Tools laufen…</item>
+    </plurals>
+    <plurals name="chat_tools_ran">
+        <item quantity="one">%d Tool ausgeführt</item>
+        <item quantity="other">%d Tools ausgeführt</item>
+    </plurals>
+    <plurals name="chat_subagents_running">
+        <item quantity="one">%1$d von %2$d Subagent läuft</item>
+        <item quantity="other">%1$d von %2$d Subagenten laufen</item>
+    </plurals>
+    <string name="chat_subagent_running">Subagent läuft</string>
+    <plurals name="chat_delegated_tasks">
+        <item quantity="one">%d Aufgabe delegiert</item>
+        <item quantity="other">%d Aufgaben delegiert</item>
+    </plurals>
+    <string name="chat_delegated_task">Eine Aufgabe delegiert</string>
+    <string name="chat_working">Arbeitet…</string>
+    <plurals name="chat_output_steps">
+        <item quantity="one">%d Ausgabeschritt</item>
+        <item quantity="other">%d Ausgabeschritte</item>
+    </plurals>
+    <plurals name="chat_run_with_failed">
+        <item quantity="one">%1$s · %2$d fehlgeschlagen</item>
+        <item quantity="other">%1$s · %2$d fehlgeschlagen</item>
+    </plurals>
+    <string name="chat_steps_fold">Schritte einklappen</string>
+    <string name="chat_steps_show">Schritte anzeigen</string>
+    <string name="chat_tap_in_run">Diesen Lauf im Vollbild öffnen</string>
+    <string name="chat_state_open">Offen</string>
+    <string name="chat_state_folded">Eingeklappt</string>
+
+    <string name="chat_approval_needed">Freigabe nötig</string>
+    <string name="chat_approval_once">Einmal erlauben</string>
+    <string name="chat_approval_session">Sitzung</string>
+    <string name="chat_approval_always">Immer</string>
+    <string name="chat_approval_deny">Ablehnen</string>
+    <string name="chat_asking">Hermes fragt</string>
+    <string name="chat_asking_batch">Hermes fragt · %1$d von %2$d</string>
+    <string name="chat_sudo_needed">Sudo-Passwort nötig</string>
+    <string name="chat_credential_needed">Zugangsdaten nötig</string>
+    <string name="chat_stored_as">Auf dem Gateway gespeichert als %1$s</string>
+    <string name="chat_multi_answers">Mehrere Antworten sind erlaubt – tipp sie unten durch Kommas getrennt ein.</string>
+    <string name="chat_your_answer">Deine Antwort</string>
+    <string name="chat_password">Passwort</string>
+    <string name="chat_value">Wert</string>
+    <string name="chat_skip">Überspringen</string>
+
+    <string name="chat_new_conversation">Neues Gespräch</string>
+    <string name="chat_new_session_body">Eine neue Gateway-Sitzung. Benenn sie jetzt oder lass den ersten Austausch den Titel geben.</string>
+    <string name="chat_title_optional">Titel (optional)</string>
+    <string name="chat_agent">Agent</string>
+    <string name="chat_temporary">Temporär</string>
+    <string name="chat_temporary_body">Wird beim nächsten App-Start vom Gateway gelöscht</string>
+    <string name="chat_create">Erstellen</string>
+    <string name="chat_error_line">⚠ %1$s</string>
+    <string name="chat_direct_message">Direktnachricht</string>
+    <string name="chat_direct_message_sub">Einzelchat mit einem Nutzer</string>
+    <string name="chat_start">Starten</string>
+    <string name="chat_new_room">Neuer Raum</string>
+    <string name="chat_new_room_sub">Ein benannter Raum; lade Leute jetzt oder später ein</string>
+    <string name="chat_room_name">Raumname</string>
+    <string name="chat_invite_optional">\@user:server einladen (optional)</string>
+    <string name="chat_join_by_address">Per Adresse beitreten</string>
+    <string name="chat_join">Beitreten</string>
+
+    <string name="chat_prune_preview_failed">Vorschau fehlgeschlagen</string>
+    <string name="chat_prune_confirm_title">Bereinigen bestätigen</string>
+    <plurals name="chat_prune_confirm_sub">
+        <item quantity="one">Löscht %d Sitzung endgültig</item>
+        <item quantity="other">Löscht %d Sitzungen endgültig</item>
+    </plurals>
+    <string name="chat_prune_title">Sitzungen bereinigen</string>
+    <string name="chat_prune_body">Löscht beendete Sitzungen aus den Daten des Gateways – endgültig, samt Verläufen. Aktive Sitzungen bleiben immer unberührt.</string>
+    <string name="chat_prune_older_than">Älter als</string>
+    <string name="chat_prune_days">%1$d T.</string>
+    <string name="chat_prune_max_messages">Nur Sitzungen mit ≤ N Nachrichten (optional)</string>
+    <string name="chat_prune_include_archived">Archivierte Sitzungen einbeziehen</string>
+    <string name="chat_prune_nothing">Nichts passt zu diesen Filtern.</string>
+    <plurals name="chat_prune_matched">
+        <item quantity="one">%1$d Sitzung passt · älteste %2$s · neueste %3$s</item>
+        <item quantity="other">%1$d Sitzungen passen · älteste %2$s · neueste %3$s</item>
+    </plurals>
+    <plurals name="chat_prune_sample">
+        <item quantity="one">· %1$s (%2$d Nachr.)</item>
+        <item quantity="other">· %1$s (%2$d Nachr.)</item>
+    </plurals>
+    <string name="chat_prune_preview">Vorschau</string>
+    <string name="chat_prune_delete_count">%1$d löschen…</string>
+    <string name="chat_prune_delete">Löschen…</string>
+    <plurals name="chat_prune_final_title">
+        <item quantity="one">%d Sitzung endgültig löschen?</item>
+        <item quantity="other">%d Sitzungen endgültig löschen?</item>
+    </plurals>
+    <string name="chat_prune_final_body">Einträge und Verlaufsdateien werden vom Gateway entfernt. Das lässt sich nicht rückgängig machen.</string>
+    <string name="chat_prune_delete_n">%1$d löschen</string>
+
+    <string name="chat_loading_lower">lädt…</string>
+    <string name="chat_load_attachment_failed">Anhang konnte nicht geladen werden</string>
+    <string name="chat_animated_image">animiertes Bild</string>
+    <string name="chat_video">Video</string>
+    <string name="chat_saved_to">Gespeichert in %1$s</string>
+    <string name="chat_save_failed">Speichern fehlgeschlagen</string>
+    <string name="chat_save_to_device">Auf Gerät speichern</string>
+    <string name="chat_share_failed">Teilen fehlgeschlagen</string>
+    <string name="chat_share">Teilen</string>
+    <string name="chat_close">Schließen</string>
+    <string name="chat_no_app_for_file">Keine App kann diese Datei öffnen</string>
+    <string name="chat_open_with">Öffnen mit</string>
+
+    <string name="chat_copy_image">Bild kopieren</string>
+    <string name="chat_image_copied">Bild kopiert – füg es in einen Beitrag ein</string>
+    <string name="chat_image_fetch_failed">Bild nicht abrufbar – stattdessen Link kopiert</string>
+    <string name="chat_copy_link">Link kopieren</string>
+    <string name="chat_link_copied">Link kopiert</string>
+    <string name="chat_save_to_photos">In Fotos speichern</string>
+    <string name="chat_save_image_failed">Bild konnte nicht gespeichert werden</string>
+    <string name="chat_open_in_browser">Im Browser öffnen</string>
+    <string name="chat_no_app_for_link">Nichts hier kann diesen Link öffnen</string>
+
+    <string name="chat_gateway_log">Gateway-Log</string>
+    <string name="chat_details_copied">Details kopiert</string>
+    <string name="chat_copy_details">Details kopieren</string>
+
+    <string name="chat_thinking">Denkt nach…</string>
+    <string name="chat_thought">Nachgedacht</string>
+    <string name="chat_thought_briefly">Kurz nachgedacht</string>
+    <string name="chat_thought_for">%1$s nachgedacht</string>
+    <string name="chat_reasoning_show_a11y">Denken anzeigen</string>
+    <string name="chat_reasoning_hide_a11y">Denken ausblenden</string>
+    <string name="chat_duration_min_sec">%1$d min %2$d s</string>
+    <string name="chat_newest">neueste</string>
+
+    <string name="chat_config_unsaved">%1$s · nicht gespeichert</string>
+    <string name="chat_saving">Speichere…</string>
+    <string name="chat_save">Speichern</string>
+    <string name="chat_config_load_failed">config.yaml konnte nicht geladen werden. %1$s</string>
+    <string name="chat_loading">Lädt…</string>
+    <string name="chat_config_restart_note">Gespeicherte Änderungen greifen bei den meisten Abschnitten nach dem nächsten Neustart des Gateways.</string>
+    <string name="chat_save_anyway_title">Trotzdem speichern?</string>
+    <string name="chat_save_anyway">Trotzdem speichern</string>
+    <string name="chat_discard_title">Änderungen verwerfen?</string>
+    <string name="chat_config_untouched">config.yaml auf dem Gateway bleibt unverändert.</string>
+    <string name="chat_discard">Verwerfen</string>
+    <string name="chat_keep_editing">Weiter bearbeiten</string>
+
+    <string name="chat_export_title">„%1$s“ exportieren</string>
+    <string name="chat_this_session">diese Sitzung</string>
+    <string name="chat_export_markdown_detail">Das Gespräch so, wie du es liest: wer was gesagt hat, Tools in einer Zeile, lange Ausgaben gekürzt.</string>
+    <string name="chat_export_json_detail">Der vollständige Export des Gateways: jeder Eintrag, samt zurückgenommener Runden und Systemprompt. Wieder importierbar.</string>
+    <string name="chat_export_share_failed">Teilen-Menü konnte nicht geöffnet werden.</string>
+    <string name="chat_export_failed">Der Export ist fehlgeschlagen.</string>
+    <string name="chat_exporting">Exportiere…</string>
+
+    <string name="chat_cmd_new">Ein neues Gespräch beginnen</string>
+    <string name="chat_cmd_compress">Diesen Verlauf verdichten / zusammenfassen</string>
+    <string name="chat_cmd_handoff">Kontext an eine neue Sitzung übergeben</string>
+    <string name="chat_cmd_steer">Den Agenten mitten in der Aufgabe lenken</string>
+    <string name="chat_cmd_think">Um gründlicheres Denken bitten</string>
+    <string name="chat_cmd_model">Das aktive Modell wechseln</string>
+    <string name="chat_cmd_reset">Arbeitszustand des Agenten zurücksetzen</string>
+    <string name="chat_cmd_help">Auflisten, was dieser Agent kann</string>
+    <string name="chat_cmd_status">Agenten- und Systemstatus zeigen</string>
+    <string name="chat_cmd_memory">Langzeitgedächtnis abrufen oder bearbeiten</string>
+    <string name="chat_cmd_tools">Verfügbare Tools auflisten</string>
+    <string name="chat_cmd_recent">zuletzt</string>
+    <string name="chat_cmd_skill">Skill</string>
+
+    <string name="chat_transition_dissolve">Auflösen</string>
+    <string name="chat_transition_dissolve_blurb">Der Raum formt sich durch eine weiche Unschärfe neu, mit der Braille-Spur.</string>
+    <string name="chat_transition_passage">Passage</string>
+    <string name="chat_transition_passage_blurb">Der neue Raum gleitet an einer leuchtenden Naht herein, während der alte zurücktritt.</string>
+    <string name="chat_transition_weave">Weben</string>
+    <string name="chat_transition_weave_blurb">Bernsteinfarbene und violette Bänder kreuzen sich nach oben, dahinter wechselt der Raum.</string>
+    <string name="chat_transition_bloom">Blüte</string>
+    <string name="chat_transition_bloom_blurb">Der neue Raum öffnet sich als Kreis aus der angetippten Zeile.</string>
+    <string name="chat_transition_rise">Aufstieg</string>
+    <string name="chat_transition_rise_blurb">Der alte Raum kippt nach hinten und sinkt; der neue steigt an seinen Platz.</string>
+    <string name="chat_speed_slow">Langsam</string>
+    <string name="chat_speed_normal">Normal</string>
+    <string name="chat_speed_fast">Schnell</string>
+
+    <string name="chat_pet_choose">Haustier wählen</string>
+    <string name="chat_pet_rides">%1$s fährt im Seitenmenü mit</string>
+    <string name="chat_pet_gateway">Haustiere leben auf dem Gateway – überall erscheint dasselbe</string>
+    <plurals name="chat_pet_search">
+        <item quantity="one">%d Haustier durchsuchen…</item>
+        <item quantity="other">%d Haustiere durchsuchen…</item>
+    </plurals>
+    <string name="chat_pet_installed_header">Installiert</string>
+    <string name="chat_pet_catalog_header">Petdex-Katalog</string>
+    <string name="chat_pet_none">Keine Haustiere verfügbar – ist Hermes Link eingerichtet?</string>
+    <string name="chat_pet_no_match">Keine Haustiere passen zu „%1$s“</string>
+    <string name="chat_pet_badge_active">aktiv</string>
+    <string name="chat_pet_badge_hatched">lokal geschlüpft</string>
+    <string name="chat_pet_badge_curated">kuratiert</string>
+    <string name="chat_pet_badge_installed">installiert</string>
+    <string name="chat_pet_active">Aktiv</string>
+
+    <string name="chat_back">Zurück</string>
+    <string name="chat_close_named">%1$s schließen</string>
+    <string name="chat_loading_a11y">Lädt</string>
+
+    <string name="chat_call_header">KERYX · ANRUF</string>
+    <string name="chat_call_mic_needed">Keryx braucht für einen Anruf das Mikrofon.</string>
+    <string name="chat_call_listening">hört zu</string>
+    <string name="chat_call_hearing">verstehe dich…</string>
+    <string name="chat_call_thinking">denkt nach</string>
+    <string name="chat_call_interrupt">tipp auf die Kugel zum Unterbrechen</string>
+    <string name="chat_call_muted">stumm</string>
+    <string name="chat_call_ended">Anruf beendet</string>
+    <string name="chat_call_heard">„%1$s“</string>
+    <string name="chat_call_unmute">Ton an</string>
+    <string name="chat_call_mute">Stumm</string>
+    <string name="chat_call_end">Auflegen</string>
+
+    <string name="chat_sources">Quellen</string>
+    <string name="chat_source">Quelle</string>
+    <string name="chat_hand_clipboard">ZWISCHENABLAGE</string>
+    <string name="chat_hand_phone">HANDY</string>
+    <string name="chat_hand_share">TEILEN</string>
+    <string name="chat_hand_app">APP</string>
+    <string name="chat_hand_opens">ÖFFNET</string>
+    <string name="chat_skill_distilled">Skill destilliert</string>
+    <string name="chat_open_skill_forge">In Skill Forge öffnen →</string>
+
+    <string name="chat_tap_in_turn">Runde im Vollbild öffnen</string>
+    <string name="chat_stream_dropped">Stream abgebrochen – Wiederherstellung über Matrix-Sync…</string>
+
+    <string name="chat_context_direct_only">Nur der direkte Zugang kann das Kontextfenster aufschlüsseln.</string>
+    <string name="chat_context_read_failed">Kontextfenster nicht lesbar</string>
+    <string name="chat_context_title">Kontext</string>
+    <string name="chat_context_used">%1$s von %2$s Tokens</string>
+    <string name="chat_context_no_agent">Das Gateway hat für diese Sitzung noch keinen aktiven Agenten – schick zuerst etwas.</string>
+
+    <string name="chat_chart">Diagramm</string>
+    <string name="chat_chart_summary">%1$s. %2$s-Diagramm.</string>
+    <string name="chat_chart_summary_unit">%1$s. %2$s-Diagramm, in %3$s.</string>
+    <string name="chat_chart_no_value">kein Wert</string>
+    <string name="chat_chart_series">Reihe %1$d</string>
+    <string name="chat_chart_total">gesamt</string>
+    <string name="chat_show_less">Weniger anzeigen</string>
+    <plurals name="chat_show_all_lines">
+        <item quantity="one">%d Zeile anzeigen</item>
+        <item quantity="other">Alle %d Zeilen anzeigen</item>
+    </plurals>
+
+    <string name="chat_aside_header">NEBENBEI · nicht Teil des Chats</string>
+    <string name="chat_dismiss">Schließen</string>
+    <string name="chat_aside_answering">…antwortet nebenbei</string>
+    <string name="chat_aside_failed">Nebenbei-Frage fehlgeschlagen: %1$s</string>
+    <string name="chat_aside_no_answer">Keine Antwort erhalten.</string>
+
+    <string name="chat_action_success">ERFOLG</string>
+    <string name="chat_action_failed">FEHLER</string>
+    <string name="chat_action_tag">AKTION</string>
+    <string name="chat_reasoning_live">Denkt…</string>
+    <string name="chat_reasoning_title">Denken</string>
+    <string name="chat_show_drawing">Zeichnung zeigen</string>
+    <string name="chat_drawing">Zeichnung</string>
+
+    <string name="chat_done">Fertig</string>
+
+    <string name="chat_art_mission_board">Ein leeres Missionsboard, an dem der Heroldsstab lehnt</string>
+    <string name="chat_art_winged_clock">Eine geflügelte Uhr mit einem Pfeil, der sich um sie biegt</string>
+    <string name="chat_art_robot">Ein Roboterkopf mit der geflügelten Kugel des Herolds, links und rechts ein leerer Platz</string>
+    <string name="chat_art_folder">Ein Ordner mit einer Seite, auf die ein Zweig gezeichnet ist</string>
+    <string name="chat_art_scroll">Eine entrollte Schriftrolle mit einer Lupe darüber</string>
+    <string name="chat_art_bookmark">Eine Seite mit einer markierten Zeile und einem Lesezeichenband</string>
+    <string name="chat_art_picture">Ein gerahmtes Bild mit Hügel und Sonne, dahinter ein leerer Rahmen</string>
+
+    <string name="chat_memory">Chat-Gedächtnis</string>
+    <string name="chat_ring_base">Chat-Gedächtnis %1$dk von %2$dk Tokens, %3$d Prozent</string>
+    <plurals name="chat_ring_replies">
+        <item quantity="one">%1$s, etwa %2$d Antwort bis zur Zusammenfassung</item>
+        <item quantity="other">%1$s, etwa %2$d Antworten bis zur Zusammenfassung</item>
+    </plurals>
+    <string name="chat_ring_until">%1$s, %2$dk bis zur Zusammenfassung</string>
+    <string name="chat_ring_next">%1$s, die nächste Antwort startet eine Zusammenfassung</string>
+
+    <string name="chat_folder_hint">Ordner auf dem Gateway (z. B. ~/workspace/keryx)</string>
+    <string name="chat_folder_found">✓ Ordner gefunden</string>
+    <string name="chat_folder_missing">dort noch kein Ordner</string>
+    <string name="chat_known_workspaces">Bekannte Arbeitsbereiche</string>
+    <string name="chat_folder_truncated">mehr als 30 Ordner hier – weitertippen zum Eingrenzen</string>
+    <string name="chat_folder_more">+%1$d weitere – weitertippen zum Eingrenzen</string>
+
+    <string name="chat_console_starting">startet…</string>
+    <string name="chat_console_streaming">Agent arbeitet</string>
+    <string name="chat_console_waiting">wartet auf Freigabe</string>
+    <string name="chat_console_completed">Runde fertig</string>
+    <string name="chat_console_lost">Verbindung verloren</string>
+    <string name="chat_console_lost_why">Verbindung verloren – %1$s</string>
+    <string name="chat_console_failed">fehlgeschlagen</string>
+    <string name="chat_console_failed_why">fehlgeschlagen – %1$s</string>
+    <string name="chat_stop">Stopp</string>
+    <string name="chat_clear">Leeren</string>
+
+    <string name="chat_mark_hide">Ausblenden, was gesagt wurde</string>
+    <string name="chat_mark_read">Lesen, was gesagt wurde</string>
+    <string name="chat_mark_system">System: %1$s</string>
+    <string name="chat_summary_hide">Zusammenfassung ausblenden</string>
+    <string name="chat_summary_read">Zusammenfassung lesen</string>
+    <string name="chat_context_compacted">🗜 Kontext verdichtet · %1$s</string>
+    <string name="chat_this_session_title">Diese Sitzung</string>
+
+    <string name="chat_goal_loop">↻ Schleife · %1$s · %2$s</string>
+    <string name="chat_goal_heartbeat">♥ Herzschlag · %1$d · %2$s</string>
+    <string name="chat_goal_close">Ziel schließen</string>
+    <string name="chat_goal_open">Ziel öffnen</string>
+    <string name="chat_goal_exit">Exit %1$d</string>
+
+    <string name="chat_subagent_running_lower">Subagent läuft</string>
+    <plurals name="chat_subagents_count">
+        <item quantity="one">%d Subagent</item>
+        <item quantity="other">%d Subagenten</item>
+    </plurals>
+    <string name="chat_subagent">Subagent</string>
+    <string name="chat_delegated_task_lower">delegierte Aufgabe</string>
+    <plurals name="chat_tool_count">
+        <item quantity="one">%d Tool</item>
+        <item quantity="other">%d Tools</item>
+    </plurals>
+    <string name="chat_tokens_k">%1$dk Tok.</string>
+    <plurals name="chat_files_written">
+        <item quantity="one">%d geschrieben</item>
+        <item quantity="other">%d geschrieben</item>
+    </plurals>
+    <string name="chat_interrupted">unterbrochen</string>
+    <string name="chat_duration_min_sec_compact">%1$dm%2$ds</string>
+
+    <string name="chat_flight_plan">FLUGPLAN</string>
+    <string name="chat_flight_all_done">alle Schritte gelandet</string>
+    <string name="chat_flight_next">als Nächstes: %1$s</string>
+    <string name="chat_join_sub">#alias:server oder !roomid:server</string>
+</resources>

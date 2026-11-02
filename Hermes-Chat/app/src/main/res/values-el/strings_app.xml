@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_turn_failed">Ο γύρος απέτυχε</string>
+    <string name="app_photo">Φωτογραφία</string>
+    <string name="app_attachment">Συνημμένο</string>
+    <string name="app_new_message">Νέο μήνυμα</string>
+
+    <string name="app_approval_expired">Η έγκριση είχε ήδη λήξει</string>
+    <string name="app_approval_failed">Η έγκριση απέτυχε: %1$s</string>
+    <string name="app_reply_failed">Η απάντηση απέτυχε: %1$s</string>
+    <string name="app_link_unreachable_matrix">Το Hermes Link δεν είναι προσβάσιμο (%1$s) — χρησιμοποιείται συγχρονισμός Matrix</string>
+    <string name="app_send_failed">Δεν ήταν δυνατή η αποστολή: %1$s</string>
+    <string name="app_room_photo_updated">Η φωτογραφία του δωματίου ενημερώθηκε</string>
+    <string name="app_room_photo_forbidden">Δεν έχετε άδεια να ορίσετε τη φωτογραφία αυτού του δωματίου — χρειάζεστε δικαιώματα συντονιστή.</string>
+    <string name="app_room_photo_failed">Δεν ήταν δυνατός ο ορισμός φωτογραφίας: %1$s</string>
+    <string name="app_unknown_error">άγνωστο σφάλμα</string>
+    <string name="app_branched">Διακλαδώθηκε — αντίγραφο ολόκληρης της συνομιλίας</string>
+    <string name="app_branch_failed">Η διακλάδωση απέτυχε: %1$s</string>
+    <string name="app_not_sent">Δεν στάλθηκε. %1$s</string>
+    <string name="app_undo_done">Η τελευταία ανταλλαγή αναιρέθηκε</string>
+    <string name="app_undo_nothing">Τίποτα για αναίρεση</string>
+    <string name="app_still_working">Ακόμη δουλεύει — σταματήστε πρώτα τον γύρο</string>
+    <string name="app_undo_failed">Δεν ήταν δυνατή η αναίρεση: %1$s</string>
+    <string name="app_retry_nothing">Τίποτα για επανάληψη — η πύλη δεν είχε γύρο να αναιρέσει</string>
+    <string name="app_retry_failed">Δεν ήταν δυνατή η επανάληψη: %1$s</string>
+    <string name="app_taken_back_edit">Αναιρέθηκε — επεξεργαστείτε το και στείλτε το ξανά</string>
+    <string name="app_take_back_failed">Δεν ήταν δυνατή η αναίρεση — τα λόγια σας είναι στο πεδίο σύνταξης για να τα ξαναστείλετε</string>
+    <string name="app_set_gateway_url_first">Ορίστε πρώτα ένα URL πύλης</string>
+    <string name="app_link_ok">Hermes Link OK — %1$s</string>
+    <string name="app_link_failed">Το Hermes Link απέτυχε: %1$s</string>
+    <string name="app_connection_error">σφάλμα σύνδεσης</string>
+    <string name="app_link_up_api_down">Το Hermes Link λειτουργεί, αλλά ο διακομιστής API του Hermes πίσω του δεν τρέχει, οπότε οι Αποστολές και οι Εκτελέσεις δεν θα φορτώσουν. Ορίστε API_SERVER_ENABLED=true και ένα API_SERVER_KEY στο ~/.hermes/.env και μετά επανεκκινήστε την πύλη.</string>
+
+    <string name="app_pinned">Καρφιτσώθηκε</string>
+    <string name="app_pinned_named">Καρφιτσώθηκε «%1$s»</string>
+    <string name="app_unpinned">Ξεκαρφιτσώθηκε</string>
+    <string name="app_unpinned_named">Ξεκαρφιτσώθηκε «%1$s»</string>
+    <string name="app_pin_failed">Το καρφίτσωμα απέτυχε: %1$s</string>
+    <string name="app_unpin_failed">Το ξεκαρφίτσωμα απέτυχε: %1$s</string>
+    <string name="app_marked_unread">Σημειώθηκε ως μη αναγνωσμένο</string>
+    <string name="app_mark_read_failed">Δεν ήταν δυνατή η σήμανση ως αναγνωσμένο: %1$s</string>
+    <string name="app_mark_unread_failed">Δεν ήταν δυνατή η σήμανση ως μη αναγνωσμένο: %1$s</string>
+    <string name="app_sticky_no_catalog">Δεν ήταν δυνατή η ανάγνωση των μοντέλων — άνοιξε με το προεπιλεγμένο της πύλης</string>
+    <string name="app_sticky_not_served">Το %1$s δεν διατίθεται τώρα — άνοιξε με το προεπιλεγμένο της πύλης</string>
+    <string name="app_sticky_needs_confirm">Το %1$s θέλει επιβεβαίωση — επιλέξτε το στον επιλογέα μοντέλων</string>
+    <string name="app_sticky_opened_fallback">Άνοιξε με %1$s — το %2$s δεν διατίθεται τώρα</string>
+    <string name="app_sticky_opened">Άνοιξε με %1$s — η τελευταία σας επιλογή (σταθερό μοντέλο, στις Ρυθμίσεις)</string>
+    <string name="app_sticky_refused">Το %1$s αρνήθηκε — άνοιξε με το προεπιλεγμένο της πύλης</string>
+    <string name="app_create_session_failed">δεν ήταν δυνατή η δημιουργία της συνεδρίας</string>
+    <string name="app_rename_failed">Η μετονομασία απέτυχε: %1$s</string>
+    <string name="app_archive_failed">Δεν ήταν δυνατή η αρχειοθέτηση: %1$s</string>
+    <string name="app_archived">Αρχειοθετήθηκε</string>
+    <string name="app_archived_named">Αρχειοθετήθηκε «%1$s»</string>
+    <string name="app_restore_failed">Δεν ήταν δυνατή η επαναφορά: %1$s</string>
+    <string name="app_restored">Επαναφέρθηκε</string>
+    <string name="app_restored_named">Επαναφέρθηκε «%1$s»</string>
+    <string name="app_archive_read_failed">Δεν ήταν δυνατή η ανάγνωση του αρχείου: %1$s</string>
+    <string name="app_older_sessions_failed">Δεν ήταν δυνατή η φόρτωση παλαιότερων συνεδριών: %1$s</string>
+    <string name="app_session_deleted">Η συνεδρία διαγράφηκε</string>
+    <string name="app_delete_failed">Η διαγραφή απέτυχε: %1$s</string>
+
+    <string name="app_steered">Καθοδηγήθηκε — ο πράκτορας θα το δει στο επόμενο βήμα του</string>
+    <string name="app_steer_declined_queued">Ο πράκτορας απέρριψε την καθοδήγηση — μπήκε στην ουρά για τον επόμενο γύρο</string>
+    <string name="app_queue_failed">Η προσθήκη στην ουρά απέτυχε: %1$s</string>
+    <string name="app_steer_failed">Η καθοδήγηση απέτυχε: %1$s</string>
+    <string name="app_goal_failed">Στόχος: %1$s</string>
+    <string name="app_aside_needs_direct">Η παράπλευρη ερώτηση χρειάζεται την άμεση πύλη</string>
+    <string name="app_aside_failed">Η παράπλευρη ερώτηση απέτυχε: %1$s</string>
+    <string name="app_redirected">Ανακατευθύνθηκε — η απάντηση ξεκινά ξανά με τη διόρθωσή σας</string>
+    <string name="app_redirect_between_calls">Ανάμεσα σε κλήσεις — η διόρθωσή σας εκτελείται αμέσως μετά</string>
+    <string name="app_redirect_finished_queued">Η απάντηση είχε ολοκληρωθεί — μπήκε στην ουρά για τον επόμενο γύρο</string>
+    <string name="app_redirect_unsupported">Αυτός ο πράκτορας δεν υποστηρίζει ανακατεύθυνση — γίνεται καθοδήγηση αντ\' αυτής</string>
+    <string name="app_redirect_failed">Η ανακατεύθυνση απέτυχε: %1$s</string>
+    <string name="app_branched_from_message">Διακλαδώθηκε — αυτή είναι νέα συνεδρία από εκείνο το μήνυμα</string>
+    <string name="app_queued">Στην ουρά — θα σταλεί όταν τελειώσει αυτός ο γύρος</string>
+    <string name="app_stopped">Σταμάτησε</string>
+    <string name="app_stop_failed">Η διακοπή απέτυχε: %1$s</string>
+    <string name="app_crew_steered">%1$s · καθοδηγήθηκε — θα το δει στο επόμενο βήμα</string>
+    <string name="app_crew_steer_rejected">%1$s · δεν το δέχτηκε — απαντά σε άλλη πόρτα ή ήδη ολοκληρώνει</string>
+    <string name="app_crew_stopped">%1$s · σταμάτησε</string>
+    <string name="app_crew_already_finished">%1$s · είχε ήδη τελειώσει</string>
+
+    <string name="app_model_confirm">%1$s Πατήστε ξανά για επιβεβαίωση.</string>
+    <string name="app_model_expensive">Αυτό το μοντέλο είναι ακριβό.</string>
+    <string name="app_model_deferred">Το %1$s αναλαμβάνει από τον επόμενο γύρο — αυτή η συνεδρία</string>
+    <string name="app_model_deferred_global">Το %1$s αναλαμβάνει από τον επόμενο γύρο — όλες οι συνεδρίες</string>
+    <string name="app_model_switched">%1$s — αυτή η συνεδρία</string>
+    <string name="app_model_switched_global">%1$s — όλες οι συνεδρίες</string>
+    <string name="app_model_switch_refused">Η αλλαγή απορρίφθηκε: %1$s</string>
+    <string name="app_reasoning_refused_unknown">Αυτός ο εγκέφαλος απέρριψε το επίπεδο σκέψης — επιλέξτε χαμηλότερο.</string>
+    <string name="app_reasoning_refused_floor">Αυτός ο εγκέφαλος απέρριψε τη σκέψη %1$s και δεν υπάρχει χαμηλότερο επίπεδο να δοκιμαστεί.</string>
+    <string name="app_reasoning_dropped">Αυτός ο εγκέφαλος απέρριψε τη σκέψη %1$s — μειώθηκε σε %2$s.</string>
+    <string name="app_reasoning_drop_failed">Αυτός ο εγκέφαλος απέρριψε τη σκέψη %1$s· δεν ήταν δυνατή η μείωση σε %2$s.</string>
+    <string name="app_reasoning_set">Συλλογισμός → %1$s — αυτή η συνεδρία</string>
+    <string name="app_reasoning_set_global">Συλλογισμός → %1$s για όλες τις συνεδρίες</string>
+    <string name="app_reasoning_refused">Ο συλλογισμός απορρίφθηκε: %1$s</string>
+
+    <string name="app_room_joined">Συμμετοχή — το δωμάτιο εμφανίζεται στον επόμενο συγχρονισμό</string>
+    <string name="app_join_failed">Η συμμετοχή απέτυχε: %1$s</string>
+    <string name="app_invite_declined">Η πρόσκληση απορρίφθηκε</string>
+    <string name="app_decline_failed">Η απόρριψη απέτυχε: %1$s</string>
+    <string name="app_start_chat_failed">δεν ήταν δυνατή η έναρξη της συνομιλίας</string>
+    <string name="app_create_room_failed">δεν ήταν δυνατή η δημιουργία του δωματίου</string>
+    <string name="app_join_failed_short">δεν ήταν δυνατή η συμμετοχή</string>
+    <string name="app_invite_sent">Η πρόσκληση στάλθηκε</string>
+    <string name="app_invite_failed">Η πρόσκληση απέτυχε: %1$s</string>
+    <string name="app_left_room">Αποχωρήσατε από το δωμάτιο</string>
+    <string name="app_leave_failed">Η αποχώρηση απέτυχε: %1$s</string>
+
+    <string name="app_try_again">δοκιμάστε ξανά</string>
+    <string name="app_group_rooms_unavailable">μη διαθέσιμα δωμάτια</string>
+    <string name="app_not_connected">δεν υπάρχει σύνδεση με πύλη</string>
+    <string name="app_group_stop_failed">Δεν ήταν δυνατή η διακοπή του δωματίου: %1$s</string>
+    <string name="app_group_approval_failed">Δεν ήταν δυνατή η απάντηση στην έγκριση: %1$s</string>
+    <string name="app_group_rename_failed">Δεν ήταν δυνατή η μετονομασία: %1$s</string>
+    <string name="app_group_disband_failed">Δεν ήταν δυνατή η διάλυση: %1$s</string>
+
+    <string name="app_no_stt_endpoint">Δεν έχει ρυθμιστεί endpoint STT</string>
+    <string name="app_no_tts_endpoint">Δεν έχει ρυθμιστεί endpoint TTS</string>
+    <string name="app_no_stt_set">δεν έχει οριστεί endpoint STT</string>
+    <string name="app_no_tts_set">δεν έχει οριστεί endpoint TTS</string>
+    <string name="app_voice_unreachable">%1$s μη προσβάσιμο στο %2$s (%3$s)</string>
+    <string name="app_voice_ears">αυτιά (STT)</string>
+    <string name="app_voice_mouth">φωνή (TTS)</string>
+
+    <string name="app_console_run_live">Μια εκτέλεση είναι ήδη ενεργή — σταματήστε την ή αφήστε την να τελειώσει</string>
+    <string name="app_link_off">Το Hermes Link είναι ανενεργό — ενεργοποιήστε το στις Ρυθμίσεις</string>
+    <string name="app_export_needs_gateway">Η εξαγωγή χρειάζεται την πόρτα της πύλης.</string>
+    <string name="app_export_too_old">Αυτή η πύλη είναι πολύ παλιά για εξαγωγή συνεδρίας.</string>
+    <string name="app_export_subject">Συνεδρία Hermes</string>
+    <string name="app_export_unreadable">Η εξαγωγή επέστρεψε μη αναγνώσιμη.</string>
+
+    <string name="app_unsaved">Αφαιρέθηκε από τα Αποθηκευμένα</string>
+    <string name="app_saved">Κρατήθηκε — θα το βρείτε στο Αρχείο</string>
+    <string name="app_pet_adopt_failed">δεν ήταν δυνατή η υιοθεσία του %1$s</string>
+
+    <string name="app_channel_messages">Μηνύματα</string>
+    <string name="app_channel_messages_desc">Νέα μηνύματα από τους πράκτορες και τα δωμάτιά σας στο Hermes</string>
+    <string name="app_notify_you">Εσείς</string>
+    <string name="app_notify_title_failed">%1$s · ο γύρος απέτυχε</string>
+    <string name="app_notify_reply">Απάντηση</string>
+    <string name="app_notify_reply_to">Απάντηση σε %1$s</string>
+    <string name="app_notify_mark_read">Σήμανση ως αναγνωσμένο</string>
+    <plurals name="app_notify_conversations">
+        <item quantity="one">%d συνομιλία</item>
+        <item quantity="other">%d συνομιλίες</item>
+    </plurals>
+    <string name="app_channel_gate">Εγκρίσεις και ερωτήσεις</string>
+    <string name="app_channel_gate_desc">Ένας πράκτορας έχει σταματήσει και περιμένει την απάντησή σας</string>
+    <string name="app_notify_answer">Απάντηση</string>
+    <string name="app_channel_runs">Πράκτορας σε λειτουργία</string>
+    <string name="app_channel_runs_desc">Μια αθόρυβη γραμμή κατάστασης όσο δουλεύει ένας πράκτορας: τι κάνει και για πόση ώρα</string>
+    <string name="app_notify_stop">Διακοπή</string>
+    <string name="app_channel_missions">Αποστολές</string>
+    <string name="app_channel_missions_desc">Αποστολές που ολοκληρώνονται, μπλοκάρουν ή εγκαταλείπονται στον πίνακα του πράκτορα</string>
+
+    <string name="app_push_checking">Έλεγχος για μηνύματα…</string>
+    <string name="app_notify_sending_text">Αποστολή: %1$s</string>
+    <string name="app_notify_answering">Απάντηση…</string>
+    <string name="app_notify_gate_unreachable">Η πύλη δεν είναι προσβάσιμη — πατήστε για απάντηση</string>
+    <string name="app_notify_answered">Απαντήθηκε — ο πράκτορας δουλεύει ξανά</string>
+    <string name="app_notify_request_timed_out">Το αίτημα είχε ήδη λήξει</string>
+    <string name="app_notify_answer_failed">Δεν ήταν δυνατή η απάντηση — πατήστε για άνοιγμα</string>
+    <string name="app_notify_sending">Αποστολή…</string>
+    <string name="app_notify_send_failed">Δεν ήταν δυνατή η αποστολή του «%1$s» — πατήστε για άνοιγμα</string>
+
+    <string name="app_push_connecting">Σύνδεση…</string>
+    <string name="app_push_connected">Συνδέθηκε — ενσωματωμένο push</string>
+    <string name="app_push_reconnecting">Επανασύνδεση…</string>
+    <string name="app_channel_push">Σύνδεση push</string>
+    <string name="app_channel_push_desc">Η δική σύνδεση του Keryx με τον διακομιστή push σας (χωρίς εφαρμογή διανομέα)</string>
+    <string name="app_push_title">Push του Keryx</string>
+
+    <string name="app_scan_pairing_inside">Σαρώστε κωδικούς σύζευξης μέσα από το Keryx: Συνδέστε την πύλη σας › Σάρωση κωδικού σύζευξης.</string>
+
+    <string name="app_share_nothing">Τίποτα για κοινοποίηση</string>
+    <string name="app_share_foreign_only">Το Keryx μπορεί να στείλει μόνο αρχεία που κοινοποιούνται από άλλη εφαρμογή</string>
+    <string name="app_share_too_large_mb">Το αρχείο είναι πολύ μεγάλο για αποστολή (%1$d MB)</string>
+    <string name="app_share_too_large">Το αρχείο είναι πολύ μεγάλο για αποστολή</string>
+    <string name="app_share_read_failed">Δεν ήταν δυνατή η ανάγνωση του %1$s</string>
+    <plurals name="app_share_attachments">
+        <item quantity="one">%d συνημμένο</item>
+        <item quantity="other">%d συνημμένα</item>
+    </plurals>
+    <string name="app_share_note_label">Προσθήκη σημείωσης (προαιρετικό)</string>
+    <string name="app_share_note_hint">Σύνοψέ το / θυμήσου το / …</string>
+
+    <string name="app_hands_cannot">Τίποτα σε αυτό το τηλέφωνο δεν μπορεί να το κάνει</string>
+    <string name="app_hands_no_app">Δεν υπάρχει εφαρμογή με όνομα «%1$s»</string>
+    <string name="app_hands_no_handler">Τίποτα σε αυτό το τηλέφωνο δεν χειρίζεται το %1$s</string>
+    <string name="app_hands_failed">Δεν ήταν δυνατό: %1$s</string>
+    <string name="app_hands_no_flash">Αυτό το τηλέφωνο δεν έχει φλας</string>
+
+    <string name="app_crash_log_subject">Αρχείο σφαλμάτων Keryx</string>
+    <string name="app_crash_log_share">Κοινοποίηση αρχείου σφαλμάτων</string>
+    <string name="app_share">Κοινοποίηση</string>
+    <string name="app_share_named">Κοινοποίηση %1$s</string>
+
+    <string name="app_call_hearing_failed">η ακρόαση απέτυχε: %1$s</string>
+    <string name="app_call_turn_failed">ο γύρος του πράκτορα απέτυχε</string>
+    <string name="app_call_voice_failed">η φωνή απέτυχε: %1$s</string>
+    <string name="app_call_no_reply">καμία απάντηση από την πύλη</string>
+    <string name="app_tts_failed">Η ομιλία απέτυχε: %1$s</string>
+    <string name="app_tts_audio_unavailable">Ο ήχος δεν είναι διαθέσιμος</string>
+    <string name="app_tts_no_audio">Ο διακομιστής ομιλίας δεν έστειλε ήχο</string>
+    <string name="app_tts_no_engine">Δεν υπάρχει μηχανή ομιλίας σε αυτή τη συσκευή</string>
+    <string name="app_tts_playback_failed">Η αναπαραγωγή ομιλίας απέτυχε</string>
+    <string name="app_tts_playback_failed_why">Η αναπαραγωγή ομιλίας απέτυχε: %1$s</string>
+
+    <string name="app_tour_welcome_title">Καλώς ήρθατε στο Keryx</string>
+    <string name="app_tour_welcome_text">Αυτό είναι μια επίδειξη: μια εικονική πύλη στο τηλέφωνό σας, και ο πράκτοράς της βρίσκεται στη μέση μιας δουλειάς. Ορίστε μια γρήγορη ματιά πριν συνδέσετε τη δική σας.</string>
+    <string name="app_tour_plan_title">Το σχέδιό του</string>
+    <string name="app_tour_plan_text">Ο πράκτοράς σας χωρίζει μια δουλειά σε βήματα και τα τσεκάρει καθώς προχωρά. Όσο δουλεύει, το Keryx κρατά μια ζωντανή ειδοποίηση για τη δουλειά, ώστε να μπορείτε να αφήσετε το τηλέφωνο.</string>
+    <string name="app_tour_approval_title">Ρωτά πρώτα</string>
+    <string name="app_tour_approval_text">Πριν από οτιδήποτε ριψοκίνδυνο, όπως η διαγραφή ενός φακέλου, ο πράκτοράς σας σταματά και ρωτά. Απαντήστε εδώ ή απευθείας από την ειδοποίηση.</string>
+    <string name="app_tour_approval_text_demo">Πριν από οτιδήποτε ριψοκίνδυνο, όπως η διαγραφή ενός φακέλου, ο πράκτοράς σας σταματά και ρωτά. Απαντήστε εδώ ή απευθείας από την ειδοποίηση. Δοκιμάστε το όταν τελειώσει η περιήγηση και δείτε τον να ολοκληρώνει τη δουλειά.</string>
+    <string name="app_tour_composer_title">Ζητήστε οτιδήποτε</string>
+    <string name="app_tour_composer_text">Δώστε στον πράκτορά σας μια δουλειά με απλά λόγια. Συνεχίζει να δουλεύει αν φύγετε, και το Keryx σας ενημερώνει όταν τελειώσει.</string>
+    <string name="app_tour_model_title">Ποιος εγκέφαλος απαντά</string>
+    <string name="app_tour_model_text">Αλλάξτε το μοντέλο για αυτή τη συνεδρία ή για όλες τις συνεδρίες από εδώ και πέρα.</string>
+    <string name="app_tour_new_session_title">Μια καθαρή σελίδα</string>
+    <string name="app_tour_new_session_text">Ξεκινήστε νέα συνεδρία. Πατήστε παρατεταμένα για επιλογές, όπως τίτλο ή προσωρινή συνεδρία.</string>
+    <string name="app_tour_drawer_title">Όλα τα υπόλοιπα</string>
+    <string name="app_tour_drawer_text">Οι συνεδρίες σας και το υπόλοιπο Keryx βρίσκονται πίσω από αυτό το κουμπί.</string>
+    <string name="app_tour_lenses_title">Τι σας χρειάζεται</string>
+    <string name="app_tour_lenses_text">Περιορίστε τη λίστα σε συνεδρίες που σας περιμένουν, που τρέχουν τώρα ή μη αναγνωσμένες.</string>
+    <string name="app_tour_missions_title">Αποστολές</string>
+    <string name="app_tour_missions_text">Αναθέστε στον πράκτορά σας μεγαλύτερες δουλειές ως κάρτες σε έναν πίνακα. Τις διεκπεραιώνει και ρωτά όταν σας χρειάζεται.</string>
+    <string name="app_tour_runs_title">Εκτελέσεις</string>
+    <string name="app_tour_runs_text">Προγραμματισμένες δουλειές και τι βρήκε κάθε εκτέλεση.</string>
+    <string name="app_tour_bots_title">Bots</string>
+    <string name="app_tour_bots_text">Τα άλλα προφίλ του πράκτορά σας. Το καθένα έχει τη δική του μνήμη, δεξιότητες και συνομιλίες.</string>
+    <string name="app_tour_archive_title">Αρχείο</string>
+    <string name="app_tour_archive_text">Ό,τι ειπώθηκε ποτέ, με αναζήτηση στο τηλέφωνο, ακόμη και όταν η πύλη είναι εκτός λειτουργίας.</string>
+    <string name="app_tour_gateway_title">Η πύλη σας</string>
+    <string name="app_tour_gateway_text_demo">Με το δικό σας Hermes, εδώ φαίνονται η σύνδεση, το μοντέλο και η έκδοση. Ό,τι μόλις είδατε λειτουργεί το ίδιο σε μια πραγματική πύλη: συνδέστε τη δική σας και είναι ζωντανή.</string>
+    <string name="app_tour_gateway_text">Η σύνδεση, το μοντέλο και η έκδοση του Hermes. Πατήστε το για την Πύλη· το γρανάζι ανοίγει τις Ρυθμίσεις, όπου βρίσκεται και αυτή η περιήγηση.</string>
+    <string name="app_tour_gateway_text_direct">Η σύνδεση, το μοντέλο και η έκδοση του Hermes. Πατήστε το για την Πύλη· το γρανάζι ανοίγει τις Ρυθμίσεις, όπου βρίσκεται και αυτή η περιήγηση. Έχετε περισσότερα από ένα Hermes; Προσθέστε τα και αλλάξτε μεταξύ τους εδώ.</string>
+    <string name="app_tour_cta_connect">Συνδέστε την πύλη σας</string>
+    <string name="app_tour_cta_add_gateway">Προσθήκη πύλης</string>
+
+    <string name="app_whatsnew_title">Τι νέο υπάρχει στο Keryx 3.0</string>
+    <string name="app_whatsnew_text">Μια γρήγορη ματιά στις αλλαγές. Παραλείψτε την αν θέλετε: μένει στις Ρυθμίσεις › Σχετικά.</string>
+    <string name="app_whatsnew_point_title">Ρωτήστε πού είναι κάτι</string>
+    <string name="app_whatsnew_point_text">Ρωτήστε τον πράκτορά σας «πού είναι οι προγραμματισμένες δουλειές μου;» και μπορεί να σας δείξει το σημείο, εδώ στο τηλέφωνο. Η πύλη σας χρειάζεται keryx-stream 0.6 ή νεότερο.</string>
+    <string name="app_whatsnew_memory_title">Μνήμη συνομιλίας</string>
+    <string name="app_whatsnew_memory_text">Ο δακτύλιος δίπλα στο μοντέλο δείχνει τώρα για πόσες απαντήσεις έχει χώρο αυτή η συνομιλία, και μόνο όταν έχει σημασία. Πατήστε τον για να δείτε τι πιάνει χώρο.</string>
+    <string name="app_whatsnew_drawer_title">Ανανεωμένο πλαϊνό μενού</string>
+    <string name="app_whatsnew_drawer_text_direct">Κάθε συνομιλία έχει το δικό της χρώμα και σήμα, ένας δακτύλιος δείχνει όσες δουλεύουν, και αυτά τα φίλτρα περιορίζουν τη λίστα σε ό,τι σας χρειάζεται.</string>
+    <string name="app_whatsnew_drawer_text">Κάθε συνομιλία έχει το δικό της χρώμα και σήμα, και ένας δακτύλιος δείχνει όσες δουλεύουν.</string>
+    <string name="app_whatsnew_cards_title">Κάρτες σε απλά λόγια</string>
+    <string name="app_whatsnew_cards_text">Μια κάρτα αποστολής ανοίγει τώρα με το τι συμβαίνει και το ένα πράγμα που πρέπει να γίνει μετά. Οι τεχνικές λεπτομέρειες είναι ακόμη εκεί, κάτω από τις Λεπτομέρειες.</string>
+    <string name="app_whatsnew_look_title">Εμφάνιση και ενημερώσεις</string>
+    <string name="app_whatsnew_look_text_direct">Οι Ρυθμίσεις › Εμφάνιση έχουν νέα στυλ σκέψης και πέντε τρόπους μετάβασης ανάμεσα στις συνομιλίες. Με ένα πρόσφατο keryx-stream, ο πίνακας Ενημέρωσης της Πύλης σάς αφήνει να επιλέξετε εκδόσεις Stable ή Edge. Για να προσθέσετε άλλο Hermes, εκτελέστε hermes keryx pair σε αυτό και σαρώστε τον κωδικό.</string>
+    <string name="app_whatsnew_look_text">Οι Ρυθμίσεις › Εμφάνιση έχουν νέα στυλ σκέψης και πέντε τρόπους μετάβασης ανάμεσα στις συνομιλίες. Η περιήγηση και οι υποδείξεις χώρων βρίσκονται στις Ρυθμίσεις › Σχετικά.</string>
+
+    <string name="app_hint_missions_title">Αποστολές</string>
+    <string name="app_hint_missions_text">Οι μεγαλύτερες δουλειές ζουν εδώ ως κάρτες. Οι πράκτορές σας τις αναλαμβάνουν και τις διεκπεραιώνουν, και μια κάρτα που σας χρειάζεται ανεβαίνει στην κορυφή. Πατήστε + για να αναθέσετε μία.</string>
+    <string name="app_hint_runs_title">Εκτελέσεις</string>
+    <string name="app_hint_runs_text">Δουλειές με πρόγραμμα, όπως μια πρωινή ενημέρωση ή ένας νυχτερινός έλεγχος. Το αποτέλεσμα κάθε εκτέλεσης καταλήγει εδώ. Ζητήστε το από τον πράκτορά σας και μπορεί να τη ρυθμίσει.</string>
+    <string name="app_hint_bots_title">Bots</string>
+    <string name="app_hint_bots_text">Κάθε bot είναι ένα προφίλ του Hermes σας, με δική του μνήμη, δεξιότητες και συνομιλίες. Ανοίξτε ένα για να του μιλήσετε ή βάλτε μερικά σε ομαδική συνομιλία.</string>
+    <string name="app_hint_gateway_title">Η πύλη σας</string>
+    <string name="app_hint_gateway_text">Πώς τα πάει το Hermes με το οποίο είστε συνδεδεμένοι και τι υπάρχει πίσω του: το μοντέλο και οι ρυθμίσεις του, δουλειές, δεξιότητες, μνήμη και εργαλεία.</string>
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">Ο πράκτοράς σας στη δουλειά, σε πλήρη οθόνη: τι σκέφτεται, τα εργαλεία που τρέχει και τους βοηθούς που στέλνει. Μπορείτε να τον καθοδηγήσετε και από εδώ.</string>
+    <string name="app_hint_artifact_title">Μια σελίδα από τον πράκτορά σας</string>
+    <string name="app_hint_artifact_text">Αναφορές, μακέτες και σελίδες που γράφει ο πράκτοράς σας ανοίγουν εδώ, στο τηλέφωνο. Αποθηκεύστε ή κοινοποιήστε μία με τα κουμπιά επάνω.</string>
+
+    <string name="app_tour_pane">Περιήγηση</string>
+    <string name="app_tour_end">Τέλος περιήγησης</string>
+    <string name="app_tour_progress">%1$d από %2$d</string>
+    <string name="app_tour_back">Πίσω</string>
+    <string name="app_tour_done">Τέλος</string>
+    <string name="app_tour_got_it">Κατάλαβα</string>
+    <string name="app_tour_next">Επόμενο</string>
+</resources>

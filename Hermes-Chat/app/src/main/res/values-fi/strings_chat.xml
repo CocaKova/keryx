@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_theme_to_light">Vaihda vaaleaan</string>
+    <string name="chat_theme_follow_system">Seuraa järjestelmää</string>
+    <string name="chat_theme_to_dark">Vaihda tummaan</string>
+    <string name="chat_new_chat">Uusi keskustelu</string>
+    <string name="chat_drawer_jump_hint">Siirry…</string>
+    <string name="chat_lens_needs_you">Tarvitsee sinua</string>
+    <string name="chat_lens_running">Käynnissä</string>
+    <string name="chat_lens_unread">Lukemattomat</string>
+    <string name="chat_lens_archived">Arkistoidut</string>
+    <string name="chat_drawer_invites">Kutsut</string>
+    <string name="chat_place_missions">Tehtävät</string>
+    <string name="chat_place_runs">Ajot</string>
+    <string name="chat_place_bots">Botit</string>
+    <string name="chat_place_projects">Projektit</string>
+    <string name="chat_place_shipyard">Telakka</string>
+    <string name="chat_place_archive">Arkisto</string>
+    <string name="chat_place_gateway">Yhdyskäytävä</string>
+    <string name="chat_place_settings">Asetukset</string>
+    <string name="chat_drawer_places">Paikat</string>
+    <string name="chat_drawer_commands">Komennot</string>
+    <string name="chat_drawer_no_matches">Ei osumia</string>
+    <string name="chat_drawer_nothing_archived">Ei arkistoituja</string>
+    <string name="chat_drawer_nothing_waiting">Mikään ei odota sinua</string>
+    <string name="chat_drawer_nothing_running">Mikään ei ole käynnissä</string>
+    <string name="chat_drawer_all_read">Kaikki luettu</string>
+    <string name="chat_session_id_copied">Istunnon tunnus kopioitu</string>
+    <string name="chat_moved_to_project">Siirretty: %1$s</string>
+    <string name="chat_drawer_reaching_back">Haetaan vanhempia…</string>
+    <string name="chat_drawer_show_older">Näytä vanhempia (%1$s)</string>
+    <string name="chat_drawer_in_transcripts">Keskustelulokeissa</string>
+    <string name="chat_demo_gateway">demoyhdyskäytävä</string>
+    <string name="chat_demo_gateway_page">Yhdyskäytäväsi sivu on täällä, kun yhdistät sellaisen.</string>
+    <string name="chat_connect">Yhdistä</string>
+    <string name="chat_open_gateway">Avaa Yhdyskäytävä</string>
+    <string name="chat_settings">Asetukset</string>
+    <string name="chat_shelf_fold">Tiivistä: %1$s</string>
+    <string name="chat_shelf_open">Avaa: %1$s</string>
+    <string name="chat_room_forked">Haarautettu toisesta keskustelusta</string>
+    <string name="chat_room_temporary">Väliaikainen – poistetaan seuraavalla käynnistyksellä</string>
+    <string name="chat_room_pinned">Kiinnitetty</string>
+    <string name="chat_mark_unread">Merkitse lukemattomaksi</string>
+    <string name="chat_archive">Arkistoi</string>
+    <string name="chat_archive_hint">Pois listalta, yhä yhdyskäytävällä</string>
+    <string name="chat_restore_to_list">Palauta listalle</string>
+    <string name="chat_export_ellipsis">Vie…</string>
+    <string name="chat_copy_session_id">Kopioi istunnon tunnus</string>
+    <string name="chat_invite_user">Kutsu käyttäjä…</string>
+    <string name="chat_rename_ellipsis">Nimeä uudelleen…</string>
+    <string name="chat_move_to_project">Siirrä projektiin…</string>
+    <string name="chat_leave_room">Poistu huoneesta</string>
+    <string name="chat_delete_session_ellipsis">Poista istunto…</string>
+    <string name="chat_invite_to">Kutsu huoneeseen: %1$s</string>
+    <string name="chat_invite">Kutsu</string>
+    <string name="chat_cancel">Peruuta</string>
+    <string name="chat_leave_title">Poistutaanko: %1$s?</string>
+    <string name="chat_leave_body">Et enää saa sen viestejä; uudelleen liittyminen vaatii uuden kutsun.</string>
+    <string name="chat_leave">Poistu</string>
+    <string name="chat_rename_session">Nimeä istunto uudelleen</string>
+    <string name="chat_rename">Nimeä uudelleen</string>
+    <string name="chat_delete_title">Poistetaanko %1$s?</string>
+    <string name="chat_delete_session_body">Poistaa istunnon ja sen koko keskustelulokin yhdyskäytävältä. Tätä ei voi kumota.</string>
+    <string name="chat_delete">Poista</string>
+    <string name="chat_invited_to_room">Sinut on kutsuttu tähän huoneeseen</string>
+    <string name="chat_decline">Hylkää</string>
+    <string name="chat_accept">Hyväksy</string>
+    <string name="chat_running">Käynnissä</string>
+    <string name="chat_age_now">nyt</string>
+    <string name="chat_age_minutes">%1$d min</string>
+    <string name="chat_age_hours">%1$d h</string>
+    <string name="chat_age_days">%1$d pv</string>
+    <string name="chat_age_weeks">%1$d vk</string>
+    <plurals name="chat_door_needs_you">
+        <item quantity="one">%1$s, %2$s tarvitsee sinua</item>
+        <item quantity="other">%1$s, %2$s tarvitsee sinua</item>
+    </plurals>
+    <string name="chat_door_unread">%1$s, %2$s lukematta</string>
+
+    <string name="chat_bot_new_title">Aloitetaanko alusta: %1$s?</string>
+    <string name="chat_bot_new_body">Tiivistä säilyttää tämän keskustelun ja tyhjentää botin %1$s työkontekstin.\n\nUusi bottikeskustelu jättää tämän eläkkeelle – se pysyy luettavana botin %1$s aiemmissa keskusteluissa – ja aloittaa uuden.</string>
+    <string name="chat_bot_new_fresh">Uusi bottikeskustelu</string>
+    <string name="chat_bot_new_compact">Tiivistä</string>
+    <string name="chat_bot_chat_chip">Bottikeskustelu</string>
+    <string name="chat_menu">Valikko</string>
+    <plurals name="chat_menu_waiting">
+        <item quantity="one">Valikko, %d odottaa sinua</item>
+        <item quantity="other">Valikko, %d odottaa sinua</item>
+    </plurals>
+    <plurals name="chat_menu_unread">
+        <item quantity="one">Valikko, %d lukematta</item>
+        <item quantity="other">Valikko, %d lukematta</item>
+    </plurals>
+    <string name="chat_new_session_failed">Istunnon aloitus epäonnistui. %1$s</string>
+    <string name="chat_new_session_hold">Uusi istunto (pidä painettuna valinnoille)</string>
+    <string name="chat_unpin_run">Poista tämän ajon kiinnitys</string>
+    <string name="chat_pin_run">Kiinnitä tämä ajo</string>
+    <string name="chat_new_session">Uusi istunto</string>
+    <string name="chat_new_session_confirm_title">Aloitetaanko uusi istunto?</string>
+    <string name="chat_new_session_confirm_body">Agentti työskentelee yhä – /new lopettaa nykyisen ajon, ja sen tulos hylätään.</string>
+    <string name="chat_new_session_confirm">Lopeta ajo ja aloita uusi</string>
+    <string name="chat_find_in_chat">Etsi keskustelusta</string>
+    <string name="chat_call_needs_voice">Aseta ensin STT- ja TTS-päätepisteet kohdassa Asetukset → Ääni</string>
+    <string name="chat_call">Soita</string>
+    <string name="chat_reasoning_header">PÄÄTTELY</string>
+    <string name="chat_reasoning_sub_default">taso säilyy istunnosta toiseen</string>
+    <string name="chat_reasoning_local_brain">paikalliset aivot</string>
+    <string name="chat_reasoning_model">malli</string>
+    <string name="chat_reasoning_sub_binary">%1$s · päälle/pois-kytkin</string>
+    <string name="chat_reasoning_sub_none">%1$s · ei päättelysäädintä</string>
+    <string name="chat_reasoning_sub_session">%1$s · tämän istunnon tasot</string>
+    <string name="chat_reasoning_sub_scale">%1$s · vaivannäön asteikko</string>
+    <string name="chat_reasoning_no_dial">Tämä malli ei ota vastaan päättelytasoa – Hermes ei lähetä sitä.</string>
+    <string name="chat_reasoning_every_session">Kaikki istunnot</string>
+    <string name="chat_reasoning_this_session">Vain tämä istunto</string>
+    <string name="chat_reasoning_show">Näytä päättely</string>
+    <string name="chat_reasoning_hide">Piilota päättely</string>
+    <string name="chat_reasoning_reset">Nollaa istunnon ohitus</string>
+    <string name="chat_demo_label">Demo</string>
+    <string name="chat_demo_connect">Yhdistä yhdyskäytäväsi</string>
+
+    <string name="chat_attach_failed">Liittäminen epäonnistui (lukukelvoton tai yli 50 Mt)</string>
+    <string name="chat_no_camera">Mikään kamerasovellus ei vastannut</string>
+    <string name="chat_mic_unavailable">Mikrofoni ei saatavilla</string>
+    <string name="chat_transcription_failed">Litterointi epäonnistui: %1$s</string>
+    <string name="chat_mic_permission">Keryx tarvitsee mikrofonin käyttöoikeuden sanelua varten</string>
+    <string name="chat_nothing_to_read">Ei mitään luettavaa ääneen</string>
+    <string name="chat_typing_one">%1$s kirjoittaa…</string>
+    <string name="chat_typing_two">%1$s ja %2$s kirjoittavat…</string>
+    <string name="chat_typing_many">Useampi kirjoittaa…</string>
+    <string name="chat_jump_newest">Siirry uusimpaan</string>
+    <plurals name="chat_jump_newest_count">
+        <item quantity="one">Siirry uusimpaan, %d uusi</item>
+        <item quantity="other">Siirry uusimpaan, %d uutta</item>
+    </plurals>
+    <string name="chat_attachments_cant_queue">Liitteitä ei voi lisätä jonoon – lähetä, kun tämä vuoro päättyy</string>
+    <string name="chat_stop_hint">Kirjoita ensin korjauksesi – napautus ohjaa vuoroa, pitkä painallus näyttää lisää</string>
+    <string name="chat_busy_queue">Jonoon seuraavaa vuoroa varten</string>
+    <string name="chat_busy_aside">Sivukysymys – vastataan keskustelun ulkopuolella</string>
+    <string name="chat_busy_redirect">Suuntaa uudelleen – aloita vastaus alusta tällä</string>
+    <string name="chat_starter_1">Mitä voit tehdä tässä istunnossa?</string>
+    <string name="chat_starter_2">Mitä minulla on tänään tehtävänä?</string>
+    <string name="chat_starter_3">Mitä olemme viime aikoina tehneet?</string>
+    <string name="chat_starter_4">Auta minua suunnittelemaan jotain pientä, vaihe vaiheelta.</string>
+    <string name="chat_fresh_page">Puhdas sivu</string>
+    <string name="chat_fresh_page_sub">Kysy mitä vain tai aloita jostain näistä.</string>
+    <string name="chat_today">Tänään</string>
+    <string name="chat_yesterday">Eilen</string>
+
+    <string name="chat_arrival_mark">%1$s · pyytämättä · %2$s</string>
+    <string name="chat_bubble_hold_label">Vastaa, reagoi tai kopioi</string>
+    <string name="chat_copied">Kopioitu</string>
+    <string name="chat_undo_title">Perutaanko viimeisin vaihto?</string>
+    <string name="chat_undo_body">Viestisi ja tämä vastaus poistuvat istunnon historiasta yhdyskäytävällä. Seuraava viestisi jatkaa niitä edeltävästä kohdasta.</string>
+    <string name="chat_undo_confirm">Peru</string>
+    <string name="chat_keep">Säilytä</string>
+    <string name="chat_select_text">Valitse tekstiä</string>
+    <string name="chat_delete_message_title">Poistetaanko viesti?</string>
+    <string name="chat_delete_message_body">Se poistetaan kaikilta – tätä ei voi kumota.</string>
+    <string name="chat_sent">Lähetetty</string>
+    <string name="chat_stop_speaking">Lopeta puhuminen</string>
+    <string name="chat_go_to_quoted">Siirry lainattuun viestiin</string>
+    <string name="chat_reaction_take_back">Peru reaktiosi</string>
+    <string name="chat_reaction_add">Lisää reaktiosi</string>
+    <string name="chat_react">Reagoi</string>
+    <string name="chat_action_reply">Vastaa</string>
+    <string name="chat_action_copy">Kopioi</string>
+    <string name="chat_action_copy_text">Kopioi teksti</string>
+    <string name="chat_action_saved">Tallennettu</string>
+    <string name="chat_action_save">Tallenna</string>
+    <string name="chat_action_unsave">Poista tallennetuista</string>
+    <string name="chat_action_keep_archive">Säilytä Arkistossa</string>
+    <string name="chat_action_stop">Pysäytä</string>
+    <string name="chat_action_read_aloud">Lue ääneen</string>
+    <string name="chat_action_select">Valitse</string>
+    <string name="chat_action_edit">Muokkaa</string>
+    <string name="chat_action_edit_desc">Muokkaa ja lähetä uudelleen</string>
+    <string name="chat_action_retry">Yritä uudelleen</string>
+    <string name="chat_action_retry_desc">Peru ja sano uudelleen</string>
+    <string name="chat_action_branch">Haarauta</string>
+    <string name="chat_action_branch_desc">Haarauta uusi istunto tästä kohdasta</string>
+    <string name="chat_action_undo">Kumoa</string>
+    <string name="chat_action_undo_desc">Peru viimeisin vaihto</string>
+    <string name="chat_action_delete_desc">Poista viesti</string>
+    <string name="chat_reply_attachment">liite</string>
+    <string name="chat_reply_message">viesti</string>
+
+    <string name="chat_archive_title">Arkisto</string>
+    <string name="chat_archive_waking">herätetään hakemistoa…</string>
+    <plurals name="chat_archive_reaching">
+        <item quantity="one">%1$s muistettu · haetaan vanhempia…</item>
+        <item quantity="other">%1$s muistettu · haetaan vanhempia…</item>
+    </plurals>
+    <plurals name="chat_archive_error">
+        <item quantity="one">%1$s muistettu · %2$s</item>
+        <item quantity="other">%1$s muistettu · %2$s</item>
+    </plurals>
+    <plurals name="chat_archive_done">
+        <item quantity="one">%1$s viesti muistettu</item>
+        <item quantity="other">%1$s viestiä muistettu</item>
+    </plurals>
+    <string name="chat_archive_jump_date">Siirry päivään</string>
+    <string name="chat_archive_nothing_that_day">Tälle päivälle ei ole vielä mitään hakemistossa</string>
+    <string name="chat_open">Avaa</string>
+    <string name="chat_archive_tab_search">Haku</string>
+    <string name="chat_archive_tab_saved">Tallennetut</string>
+    <string name="chat_archive_tab_media">Media</string>
+    <string name="chat_archive_search_hint">Hae kaikesta koskaan sanotusta…</string>
+    <string name="chat_archive_recent">ÄSKETTÄIN MUISTETUT</string>
+    <string name="chat_archive_empty_title">Mitään ei vielä muisteta</string>
+    <string name="chat_archive_empty_body">Hakemisto täyttyy, kun istunnot käydään läpi. Sitten jokainen sovelluksen näkemä viesti on yhden haun päässä.</string>
+    <string name="chat_archive_search_idle">Jokainen sovelluksen koskaan näkemä viesti, yhden haun päässä.</string>
+    <string name="chat_archive_no_hits">Ei vielä tuloksia haulle “%1$s”</string>
+    <string name="chat_archive_opening">Avataan arkistoa…</string>
+    <string name="chat_archive_saved_empty_title">Mitään ei ole vielä tallennettu</string>
+    <string name="chat_archive_saved_empty_body">Paina viestiä pitkään ja napauta kirjanmerkkiä säilyttääksesi sen täällä.</string>
+    <string name="chat_archive_looking">Käydään läpi hakemistoa…</string>
+    <string name="chat_archive_media_empty_title">Ei vielä kuvia tai tiedostoja</string>
+    <string name="chat_archive_media_empty_body">Keskustelujesi kuvat ja tiedostot kertyvät tänne hakemiston täyttyessä.</string>
+    <string name="chat_image">kuva</string>
+    <string name="chat_you">Sinä</string>
+    <string name="chat_archive_context">Konteksti</string>
+    <string name="chat_archive_context_failed">Tätä hetkeä ei voitu ladata (se voi olla vanhempi kuin tämän kirjautumisen avaimet).</string>
+    <string name="chat_archive_reach_earlier">Hae aiempia</string>
+    <string name="chat_archive_reach_later">Hae myöhempiä</string>
+
+    <string name="chat_attach">Liitä</string>
+    <string name="chat_composer_hint">Viesti…</string>
+    <string name="chat_composer_hint_steer_stop">Kirjoita ohjataksesi vuoroa – ■ pysäyttää</string>
+    <string name="chat_composer_hint_steer">Kirjoita ohjataksesi vuoroa</string>
+    <string name="chat_dictate_stop">Lopeta sanelu</string>
+    <string name="chat_dictate">Sanele</string>
+    <string name="chat_send_steer">Ohjaa käynnissä olevaa vuoroa</string>
+    <string name="chat_send_queue">Jonoon seuraavaa vuoroa varten</string>
+    <string name="chat_send_stop">Pysäytä vuoro</string>
+    <string name="chat_send">Lähetä</string>
+    <string name="chat_send_hold_menu">Jonoon, sivukysymys tai uudelleensuuntaus</string>
+    <string name="chat_send_hold_queue">Lisää sen sijaan jonoon seuraavaa vuoroa varten</string>
+    <string name="chat_send_hold_stop">Mitä pysäytys tekee</string>
+    <string name="chat_choose_model">Valitse malli</string>
+    <string name="chat_model_label">Malli: %1$s</string>
+    <string name="chat_reasoning">päättely</string>
+    <string name="chat_steer_hint">↪ ohjaa vuoroa · pidä painettuna lisätäksesi jonoon</string>
+    <string name="chat_replying_to">Vastaus: %1$s</string>
+    <string name="chat_cancel_reply">Peru vastaus</string>
+    <string name="chat_image_attached">Kuva liitetty</string>
+    <string name="chat_file_attached">Tiedosto liitetty</string>
+    <string name="chat_remove_attachment">Poista liite</string>
+    <string name="chat_attach_photo">Kuva</string>
+    <string name="chat_attach_file">Tiedosto</string>
+    <string name="chat_attach_camera">Kamera</string>
+
+    <string name="chat_tool_succeeded">Onnistui</string>
+    <string name="chat_tool_failed">Epäonnistui</string>
+    <string name="chat_tool_no_verdict">Ei tulosta</string>
+    <string name="chat_duration_seconds">%1$d s</string>
+    <string name="chat_duration_millis">%1$d ms</string>
+    <string name="chat_tool_flagged">⚠ Hermes merkitsi tämän tulosteen</string>
+    <string name="chat_tool_flagged_with">⚠ Hermes merkitsi tämän tulosteen: %1$s</string>
+    <string name="chat_tool_diff">muutokset</string>
+    <string name="chat_tool_diff_show">Näytä muutokset</string>
+    <string name="chat_tool_diff_hide">Piilota muutokset</string>
+    <string name="chat_tool_diff_label">Muutokset</string>
+    <string name="chat_tool_output">tuloste</string>
+    <string name="chat_tool_output_show">Näytä tuloste</string>
+    <string name="chat_tool_output_hide">Piilota tuloste</string>
+    <string name="chat_tool_output_label">Tuloste</string>
+    <string name="chat_tool_exit_failed">Paluukoodi %1$d, epäonnistui</string>
+    <string name="chat_tool_exit_ok">Paluukoodi 0</string>
+    <plurals name="chat_tools_running">
+        <item quantity="one">Ajetaan %d työkalu…</item>
+        <item quantity="other">Ajetaan %d työkalua…</item>
+    </plurals>
+    <plurals name="chat_tools_ran">
+        <item quantity="one">Ajettu %d työkalu</item>
+        <item quantity="other">Ajettu %d työkalua</item>
+    </plurals>
+    <plurals name="chat_subagents_running">
+        <item quantity="one">%1$d / %2$d aliagentti käynnissä</item>
+        <item quantity="other">%1$d / %2$d aliagenttia käynnissä</item>
+    </plurals>
+    <string name="chat_subagent_running">Aliagentti käynnissä</string>
+    <plurals name="chat_delegated_tasks">
+        <item quantity="one">Delegoitu %d tehtävä</item>
+        <item quantity="other">Delegoitu %d tehtävää</item>
+    </plurals>
+    <string name="chat_delegated_task">Delegoi tehtävän</string>
+    <string name="chat_working">Työskentelee…</string>
+    <plurals name="chat_output_steps">
+        <item quantity="one">%d tulostevaihe</item>
+        <item quantity="other">%d tulostevaihetta</item>
+    </plurals>
+    <plurals name="chat_run_with_failed">
+        <item quantity="one">%1$s · %2$d epäonnistui</item>
+        <item quantity="other">%1$s · %2$d epäonnistui</item>
+    </plurals>
+    <string name="chat_steps_fold">Piilota vaiheet</string>
+    <string name="chat_steps_show">Näytä vaiheet</string>
+    <string name="chat_tap_in_run">Avaa tämä ajo koko näytölle</string>
+    <string name="chat_state_open">Auki</string>
+    <string name="chat_state_folded">Kiinni</string>
+
+    <string name="chat_approval_needed">Hyväksyntä tarvitaan</string>
+    <string name="chat_approval_once">Salli kerran</string>
+    <string name="chat_approval_session">Istunto</string>
+    <string name="chat_approval_always">Aina</string>
+    <string name="chat_approval_deny">Estä</string>
+    <string name="chat_asking">Hermes kysyy</string>
+    <string name="chat_asking_batch">Hermes kysyy · %1$d / %2$d</string>
+    <string name="chat_sudo_needed">Sudo-salasana tarvitaan</string>
+    <string name="chat_credential_needed">Tunnistetieto tarvitaan</string>
+    <string name="chat_stored_as">Tallennetaan yhdyskäytävälle nimellä %1$s</string>
+    <string name="chat_multi_answers">Useampi vastaus sallitaan – kirjoita ne alle pilkuilla erotettuina.</string>
+    <string name="chat_your_answer">Vastauksesi</string>
+    <string name="chat_password">Salasana</string>
+    <string name="chat_value">Arvo</string>
+    <string name="chat_skip">Ohita</string>
+
+    <string name="chat_new_conversation">Uusi keskustelu</string>
+    <string name="chat_new_session_body">Uusi yhdyskäytäväistunto. Nimeä se nyt tai anna ensimmäisen vaihdon antaa sille otsikko.</string>
+    <string name="chat_title_optional">Otsikko (valinnainen)</string>
+    <string name="chat_agent">Agentti</string>
+    <string name="chat_temporary">Väliaikainen</string>
+    <string name="chat_temporary_body">Poistetaan yhdyskäytävältä sovelluksen seuraavalla käynnistyksellä</string>
+    <string name="chat_create">Luo</string>
+    <string name="chat_error_line">⚠ %1$s</string>
+    <string name="chat_direct_message">Yksityisviesti</string>
+    <string name="chat_direct_message_sub">Keskustele kahden kesken käyttäjän kanssa</string>
+    <string name="chat_start">Aloita</string>
+    <string name="chat_new_room">Uusi huone</string>
+    <string name="chat_new_room_sub">Nimetty huone; kutsu ihmisiä nyt tai myöhemmin</string>
+    <string name="chat_room_name">Huoneen nimi</string>
+    <string name="chat_invite_optional">Kutsu @user:server (valinnainen)</string>
+    <string name="chat_join_by_address">Liity osoitteella</string>
+    <string name="chat_join">Liity</string>
+
+    <string name="chat_prune_preview_failed">esikatselu epäonnistui</string>
+    <string name="chat_prune_confirm_title">Vahvista istuntojen karsinta</string>
+    <plurals name="chat_prune_confirm_sub">
+        <item quantity="one">Poistaa pysyvästi %d istunnon</item>
+        <item quantity="other">Poistaa pysyvästi %d istuntoa</item>
+    </plurals>
+    <string name="chat_prune_title">Karsi istuntoja</string>
+    <string name="chat_prune_body">Poistaa päättyneet istunnot yhdyskäytävän tiedoista – pysyvästi, keskustelulokit mukaan lukien. Aktiivisiin istuntoihin ei koskaan kosketa.</string>
+    <string name="chat_prune_older_than">Vanhemmat kuin</string>
+    <string name="chat_prune_days">%1$d pv</string>
+    <string name="chat_prune_max_messages">Vain istunnot, joissa ≤ N viestiä (valinnainen)</string>
+    <string name="chat_prune_include_archived">Sisällytä arkistoidut istunnot</string>
+    <string name="chat_prune_nothing">Mikään ei vastaa näitä suodattimia.</string>
+    <plurals name="chat_prune_matched">
+        <item quantity="one">%1$d istunto vastaa · vanhin %2$s · uusin %3$s</item>
+        <item quantity="other">%1$d istuntoa vastaa · vanhin %2$s · uusin %3$s</item>
+    </plurals>
+    <plurals name="chat_prune_sample">
+        <item quantity="one">· %1$s (%2$d viesti)</item>
+        <item quantity="other">· %1$s (%2$d viestiä)</item>
+    </plurals>
+    <string name="chat_prune_preview">Esikatsele</string>
+    <string name="chat_prune_delete_count">Poista %1$d…</string>
+    <string name="chat_prune_delete">Poista…</string>
+    <plurals name="chat_prune_final_title">
+        <item quantity="one">Poistetaanko %d istunto pysyvästi?</item>
+        <item quantity="other">Poistetaanko %d istuntoa pysyvästi?</item>
+    </plurals>
+    <string name="chat_prune_final_body">Rivit ja keskustelulokitiedostot poistetaan yhdyskäytävältä. Kumoaminen ei ole mahdollista.</string>
+    <string name="chat_prune_delete_n">Poista %1$d</string>
+
+    <string name="chat_loading_lower">ladataan…</string>
+    <string name="chat_load_attachment_failed">Liitteen lataus epäonnistui</string>
+    <string name="chat_animated_image">animoitu kuva</string>
+    <string name="chat_video">video</string>
+    <string name="chat_saved_to">Tallennettu: %1$s</string>
+    <string name="chat_save_failed">Tallennus epäonnistui</string>
+    <string name="chat_save_to_device">Tallenna laitteelle</string>
+    <string name="chat_share_failed">Jakaminen epäonnistui</string>
+    <string name="chat_share">Jaa</string>
+    <string name="chat_close">Sulje</string>
+    <string name="chat_no_app_for_file">Mikään sovellus ei voi avata tätä tiedostoa</string>
+    <string name="chat_open_with">Avaa sovelluksella</string>
+
+    <string name="chat_copy_image">Kopioi kuva</string>
+    <string name="chat_image_copied">Kuva kopioitu – liitä se julkaisuun</string>
+    <string name="chat_image_fetch_failed">Kuvan haku epäonnistui – linkki kopioitiin sen sijaan</string>
+    <string name="chat_copy_link">Kopioi linkki</string>
+    <string name="chat_link_copied">Linkki kopioitu</string>
+    <string name="chat_save_to_photos">Tallenna kuviin</string>
+    <string name="chat_save_image_failed">Kuvan tallennus epäonnistui</string>
+    <string name="chat_open_in_browser">Avaa selaimessa</string>
+    <string name="chat_no_app_for_link">Mikään täällä ei avaa tuota linkkiä</string>
+
+    <string name="chat_gateway_log">Yhdyskäytävän loki</string>
+    <string name="chat_details_copied">Tiedot kopioitu</string>
+    <string name="chat_copy_details">Kopioi tiedot</string>
+
+    <string name="chat_thinking">Ajattelee…</string>
+    <string name="chat_thought">Ajatteli</string>
+    <string name="chat_thought_briefly">Ajatteli hetken</string>
+    <string name="chat_thought_for">Ajatteli: %1$s</string>
+    <string name="chat_reasoning_show_a11y">Näytä päättely</string>
+    <string name="chat_reasoning_hide_a11y">Piilota päättely</string>
+    <string name="chat_duration_min_sec">%1$d min %2$d s</string>
+    <string name="chat_newest">uusin</string>
+
+    <string name="chat_config_unsaved">%1$s · tallentamaton</string>
+    <string name="chat_saving">Tallennetaan…</string>
+    <string name="chat_save">Tallenna</string>
+    <string name="chat_config_load_failed">Tiedoston config.yaml lataus epäonnistui. %1$s</string>
+    <string name="chat_loading">Ladataan…</string>
+    <string name="chat_config_restart_note">Useimmissa osioissa tallennetut muutokset tulevat voimaan yhdyskäytävän seuraavassa uudelleenkäynnistyksessä.</string>
+    <string name="chat_save_anyway_title">Tallennetaanko silti?</string>
+    <string name="chat_save_anyway">Tallenna silti</string>
+    <string name="chat_discard_title">Hylätäänkö muutokset?</string>
+    <string name="chat_config_untouched">Yhdyskäytävän config.yaml on koskematon.</string>
+    <string name="chat_discard">Hylkää</string>
+    <string name="chat_keep_editing">Jatka muokkausta</string>
+
+    <string name="chat_export_title">Vie: “%1$s”</string>
+    <string name="chat_this_session">tämä istunto</string>
+    <string name="chat_export_markdown_detail">Keskustelu niin kuin sen luet: kuka sanoi mitä, työkalut yhdellä rivillä, pitkät tulosteet lyhennettyinä.</string>
+    <string name="chat_export_json_detail">Yhdyskäytävän täydellinen vienti: jokainen rivi, perutut vuorot ja järjestelmäkehote mukaan lukien. Voidaan tuoda uudelleen.</string>
+    <string name="chat_export_share_failed">Jakovalikon avaaminen epäonnistui.</string>
+    <string name="chat_export_failed">Vienti epäonnistui.</string>
+    <string name="chat_exporting">Viedään…</string>
+
+    <string name="chat_cmd_new">Aloita uusi keskustelu</string>
+    <string name="chat_cmd_compress">Tiivistä tämä ketju</string>
+    <string name="chat_cmd_handoff">Siirrä konteksti uuteen istuntoon</string>
+    <string name="chat_cmd_steer">Ohjaa agenttia kesken työn</string>
+    <string name="chat_cmd_think">Pyydä syvempää päättelyä</string>
+    <string name="chat_cmd_model">Vaihda aktiivinen malli</string>
+    <string name="chat_cmd_reset">Nollaa agentin työtila</string>
+    <string name="chat_cmd_help">Listaa, mitä tämä agentti osaa</string>
+    <string name="chat_cmd_status">Näytä agentin ja järjestelmän tila</string>
+    <string name="chat_cmd_memory">Palauta mieleen tai muokkaa pitkäkestoista muistia</string>
+    <string name="chat_cmd_tools">Listaa käytettävissä olevat työkalut</string>
+    <string name="chat_cmd_recent">viimeaikainen</string>
+    <string name="chat_cmd_skill">taito</string>
+
+    <string name="chat_transition_dissolve">Häivytys</string>
+    <string name="chat_transition_dissolve_blurb">Huone muotoutuu uudelleen pehmeän sumennuksen läpi, pistekirjoitusvanan saattelemana.</string>
+    <string name="chat_transition_passage">Käytävä</string>
+    <string name="chat_transition_passage_blurb">Uusi huone liukuu sisään valaistua saumaa pitkin, kun vanha väistyy taaksepäin.</string>
+    <string name="chat_transition_weave">Punos</string>
+    <string name="chat_transition_weave_blurb">Meripihkan- ja violetinväriset nauhat risteävät ylöspäin, ja huone vaihtuu niiden takana.</string>
+    <string name="chat_transition_bloom">Kukinta</string>
+    <string name="chat_transition_bloom_blurb">Uusi huone avautuu ympyränä napauttamastasi rivistä.</string>
+    <string name="chat_transition_rise">Nousu</string>
+    <string name="chat_transition_rise_blurb">Vanha huone kallistuu taakse ja vajoaa; uusi nousee paikalleen.</string>
+    <string name="chat_speed_slow">Hidas</string>
+    <string name="chat_speed_normal">Normaali</string>
+    <string name="chat_speed_fast">Nopea</string>
+
+    <string name="chat_pet_choose">Valitse lemmikki</string>
+    <string name="chat_pet_rides">%1$s kulkee mukana sivuvalikossa</string>
+    <string name="chat_pet_gateway">Lemmikit asuvat yhdyskäytävällä – jokainen näkymä näyttää saman</string>
+    <plurals name="chat_pet_search">
+        <item quantity="one">Hae %d lemmikistä…</item>
+        <item quantity="other">Hae %d lemmikistä…</item>
+    </plurals>
+    <string name="chat_pet_installed_header">Asennetut</string>
+    <string name="chat_pet_catalog_header">Petdex-luettelo</string>
+    <string name="chat_pet_none">Lemmikkejä ei saatavilla – onko Hermes Link määritetty?</string>
+    <string name="chat_pet_no_match">Mikään lemmikki ei vastaa hakua “%1$s”</string>
+    <string name="chat_pet_badge_active">aktiivinen</string>
+    <string name="chat_pet_badge_hatched">kuoriutunut paikallisesti</string>
+    <string name="chat_pet_badge_curated">valikoitu</string>
+    <string name="chat_pet_badge_installed">asennettu</string>
+    <string name="chat_pet_active">Aktiivinen</string>
+
+    <string name="chat_back">Takaisin</string>
+    <string name="chat_close_named">Sulje: %1$s</string>
+    <string name="chat_loading_a11y">Ladataan</string>
+
+    <string name="chat_call_header">KERYX · PUHELU</string>
+    <string name="chat_call_mic_needed">Keryx tarvitsee mikrofonia puhelua varten.</string>
+    <string name="chat_call_listening">kuuntelee</string>
+    <string name="chat_call_hearing">kuulee sinua…</string>
+    <string name="chat_call_thinking">ajattelee</string>
+    <string name="chat_call_interrupt">keskeytä napauttamalla palloa</string>
+    <string name="chat_call_muted">mykistetty</string>
+    <string name="chat_call_ended">puhelu päättyi</string>
+    <string name="chat_call_heard">”%1$s”</string>
+    <string name="chat_call_unmute">Poista mykistys</string>
+    <string name="chat_call_mute">Mykistä</string>
+    <string name="chat_call_end">Lopeta puhelu</string>
+
+    <string name="chat_sources">Lähteet</string>
+    <string name="chat_source">lähde</string>
+    <string name="chat_hand_clipboard">LEIKEPÖYTÄ</string>
+    <string name="chat_hand_phone">PUHELIN</string>
+    <string name="chat_hand_share">JAA</string>
+    <string name="chat_hand_app">SOVELLUS</string>
+    <string name="chat_hand_opens">AVAA</string>
+    <string name="chat_skill_distilled">Taito tislattu</string>
+    <string name="chat_open_skill_forge">Avaa Taitopajassa →</string>
+
+    <string name="chat_tap_in_turn">Avaa vuoro koko näytölle</string>
+    <string name="chat_stream_dropped">Suoratoisto katkesi – palautetaan Matrix-synkronoinnin kautta…</string>
+
+    <string name="chat_context_direct_only">Vain suora yhteys pystyy erittelemään ikkunan.</string>
+    <string name="chat_context_read_failed">Ikkunan lukeminen epäonnistui</string>
+    <string name="chat_context_title">Konteksti</string>
+    <string name="chat_context_used">%1$s / %2$s tokenia</string>
+    <string name="chat_context_no_agent">Yhdyskäytävällä ei ole vielä aktiivista agenttia tälle istunnolle – lähetä ensin jotain.</string>
+
+    <string name="chat_chart">Kaavio</string>
+    <string name="chat_chart_summary">%1$s. Kaavion tyyppi: %2$s.</string>
+    <string name="chat_chart_summary_unit">%1$s. Kaavion tyyppi: %2$s, yksikkö: %3$s.</string>
+    <string name="chat_chart_no_value">ei arvoa</string>
+    <string name="chat_chart_series">Sarja %1$d</string>
+    <string name="chat_chart_total">yhteensä</string>
+    <string name="chat_show_less">Näytä vähemmän</string>
+    <plurals name="chat_show_all_lines">
+        <item quantity="one">Näytä kaikki %d rivi</item>
+        <item quantity="other">Näytä kaikki %d riviä</item>
+    </plurals>
+
+    <string name="chat_aside_header">SIVUKYSYMYS · ei osa keskustelua</string>
+    <string name="chat_dismiss">Ohita</string>
+    <string name="chat_aside_answering">…vastataan sivussa</string>
+    <string name="chat_aside_failed">Sivukysymys epäonnistui: %1$s</string>
+    <string name="chat_aside_no_answer">Vastausta ei tullut.</string>
+
+    <string name="chat_action_success">ONNISTUI</string>
+    <string name="chat_action_failed">EPÄONNISTUI</string>
+    <string name="chat_action_tag">TOIMINTO</string>
+    <string name="chat_reasoning_live">Päätellään…</string>
+    <string name="chat_reasoning_title">Päättely</string>
+    <string name="chat_show_drawing">näytä piirros</string>
+    <string name="chat_drawing">Piirros</string>
+
+    <string name="chat_done">Valmis</string>
+
+    <string name="chat_art_mission_board">Tyhjä tehtävätaulu, jota vasten nojaa airuen sauva</string>
+    <string name="chat_art_winged_clock">Siivekäs kello, jonka ympäri kaartuu nuoli</string>
+    <string name="chat_art_robot">Robotin pää, jonka päällä on airuen siivekäs pallo, kummallakin puolella tyhjä paikka</string>
+    <string name="chat_art_folder">Kansio, jossa on sivu, johon on piirretty haara</string>
+    <string name="chat_art_scroll">Avattu kirjakäärö, jonka päällä on suurennuslasi</string>
+    <string name="chat_art_bookmark">Sivu, jolla yksi rivi on merkitty, ja kirjanmerkkinauha</string>
+    <string name="chat_art_picture">Kehystetty kuva mäestä ja auringosta, takana tyhjä kehys</string>
+
+    <string name="chat_memory">Keskustelun muisti</string>
+    <string name="chat_ring_base">Keskustelun muisti %1$dk / %2$dk tokenia, %3$d prosenttia</string>
+    <plurals name="chat_ring_replies">
+        <item quantity="one">%1$s, noin %2$d vastaus ennen tiivistelmää</item>
+        <item quantity="other">%1$s, noin %2$d vastausta ennen tiivistelmää</item>
+    </plurals>
+    <string name="chat_ring_until">%1$s, %2$dk tiivistelmään</string>
+    <string name="chat_ring_next">%1$s, seuraava vastaus aloittaa tiivistelmän</string>
+
+    <string name="chat_folder_hint">Kansio yhdyskäytävällä (esim. ~/workspace/keryx)</string>
+    <string name="chat_folder_found">✓ kansio löytyi</string>
+    <string name="chat_folder_missing">kansiota ei vielä ole</string>
+    <string name="chat_known_workspaces">Tunnetut työtilat</string>
+    <string name="chat_folder_truncated">yli 30 kansiota – rajaa jatkamalla kirjoittamista</string>
+    <string name="chat_folder_more">+%1$d lisää – rajaa jatkamalla kirjoittamista</string>
+
+    <string name="chat_console_starting">aloitetaan…</string>
+    <string name="chat_console_streaming">agentti työskentelee</string>
+    <string name="chat_console_waiting">odottaa hyväksyntää</string>
+    <string name="chat_console_completed">vuoro valmis</string>
+    <string name="chat_console_lost">yhteys katkesi</string>
+    <string name="chat_console_lost_why">yhteys katkesi – %1$s</string>
+    <string name="chat_console_failed">epäonnistui</string>
+    <string name="chat_console_failed_why">epäonnistui – %1$s</string>
+    <string name="chat_stop">Pysäytä</string>
+    <string name="chat_clear">Tyhjennä</string>
+
+    <string name="chat_mark_hide">Piilota, mitä se sanoi</string>
+    <string name="chat_mark_read">Lue, mitä se sanoi</string>
+    <string name="chat_mark_system">Järjestelmä: %1$s</string>
+    <string name="chat_summary_hide">Piilota tiivistelmä</string>
+    <string name="chat_summary_read">Lue tiivistelmä</string>
+    <string name="chat_context_compacted">🗜 Konteksti tiivistetty · %1$s</string>
+    <string name="chat_this_session_title">Tämä istunto</string>
+
+    <string name="chat_goal_loop">↻ silmukka · %1$s · %2$s</string>
+    <string name="chat_goal_heartbeat">♥ sydämenlyönti · %1$d · %2$s</string>
+    <string name="chat_goal_close">Sulje tavoite</string>
+    <string name="chat_goal_open">Avaa tavoite</string>
+    <string name="chat_goal_exit">paluukoodi %1$d</string>
+
+    <string name="chat_subagent_running_lower">aliagentti käynnissä</string>
+    <plurals name="chat_subagents_count">
+        <item quantity="one">%d aliagentti</item>
+        <item quantity="other">%d aliagenttia</item>
+    </plurals>
+    <string name="chat_subagent">aliagentti</string>
+    <string name="chat_delegated_task_lower">delegoitu tehtävä</string>
+    <plurals name="chat_tool_count">
+        <item quantity="one">%d työkalu</item>
+        <item quantity="other">%d työkalua</item>
+    </plurals>
+    <string name="chat_tokens_k">%1$dk tok</string>
+    <plurals name="chat_files_written">
+        <item quantity="one">%d kirjoitettu</item>
+        <item quantity="other">%d kirjoitettu</item>
+    </plurals>
+    <string name="chat_interrupted">keskeytetty</string>
+    <string name="chat_duration_min_sec_compact">%1$dmin%2$ds</string>
+
+    <string name="chat_flight_plan">LENTOSUUNNITELMA</string>
+    <string name="chat_flight_all_done">kaikki vaiheet laskeutuneet</string>
+    <string name="chat_flight_next">seuraavaksi: %1$s</string>
+    <string name="chat_join_sub">#alias:server tai !roomid:server</string>
+</resources>

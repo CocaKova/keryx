@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Forhåndsvisning: romovergangen %1$s med hastigheten %2$s</string>
+    <string name="mk_cancel">Avbryt</string>
+
+    <string name="mk_mcp_test">Test</string>
+    <string name="mk_mcp_testing">Tester</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Nådd · %d verktøy</item>
+        <item quantity="other">Nådd · %d verktøy</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d prompt</item>
+        <item quantity="other">%d prompter</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d ressurs</item>
+        <item quantity="other">%d ressurser</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Kunne ikke nå den: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Denne gatewayen kan ikke teste servere herfra.</string>
+    <string name="mk_mcp_catalog">Katalog · %1$d å legge til</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">krever %d nøkkel</item>
+        <item quantity="other">krever %d nøkler</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">bygges fra kildekode</string>
+    <string name="mk_mcp_catalog_oauth">logger inn med OAuth</string>
+    <string name="mk_mcp_installed">Installert</string>
+    <string name="mk_mcp_install">Installer</string>
+    <string name="mk_mcp_installing">Installerer…</string>
+    <string name="mk_mcp_install_title">Installere %1$s?</string>
+    <string name="mk_mcp_install_runs">Den kjører</string>
+    <string name="mk_mcp_install_builds">Gatewayen kloner og bygger den først fra %1$s, i bakgrunnen.</string>
+    <string name="mk_mcp_install_oauth">Den logger inn med OAuth: fullfør det på gatewayens dashbord når den er installert.</string>
+    <string name="mk_mcp_install_env_note">Lagres på gatewayen: hemmeligheter i .env, resten i konfigurasjonen.</string>
+    <string name="mk_mcp_installed_toast">%1$s installert — aktiv fra neste økt</string>
+    <string name="mk_mcp_building_toast">%1$s bygges på gatewayen — den dukker opp her når den er ferdig</string>
+    <string name="mk_mcp_install_refused">Kunne ikke installere %1$s: %2$s</string>
+    <string name="mk_mcp_install_unsupported">Denne gatewayen kan ikke installere MCP-servere herfra.</string>
+    <string name="mk_usage">Forbruk</string>
+    <string name="mk_usage_subtitle">Tokens, kostnad og økter</string>
+    <string name="mk_usage_subtitle_read">%1$s tokens · %2$s · siste %3$d dager</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d økt</item>
+        <item quantity="other">%d økter</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">økt</item>
+        <item quantity="other">økter</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d dag</item>
+        <item quantity="other">%d dager</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s API-kall</item>
+        <item quantity="other">%1$s API-kall</item>
+    </plurals>
+    <string name="mk_usage_tokens">tokens</string>
+    <string name="mk_usage_in_out">%1$s inn · %2$s ut</string>
+    <string name="mk_usage_cost">kostnad</string>
+    <string name="mk_usage_cost_estimated">kostnad, anslått</string>
+    <string name="mk_usage_none">Ingenting brukt de siste %1$d dagene.</string>
+    <string name="mk_usage_by_day">Per dag</string>
+    <string name="mk_usage_peak">Travlest: %1$s den %2$s</string>
+    <string name="mk_usage_by_model">Per modell</string>
+    <string name="mk_usage_note_estimate">Kostnaden er Hermes\' eget anslag fra prislisten; en lokal modell koster ingenting. Gatewayens dashbord viser de samme tallene.</string>
+    <string name="mk_usage_note_reported">Kostnaden er det leverandøren har rapportert, der den har gjort det. Gatewayens dashbord viser de samme tallene.</string>
+</resources>

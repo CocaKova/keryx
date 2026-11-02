@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_theme_to_light">Φωτεινό θέμα</string>
+    <string name="chat_theme_follow_system">Όπως το σύστημα</string>
+    <string name="chat_theme_to_dark">Σκούρο θέμα</string>
+    <string name="chat_new_chat">Νέα συνομιλία</string>
+    <string name="chat_drawer_jump_hint">Μετάβαση σε…</string>
+    <string name="chat_lens_needs_you">Σας χρειάζεται</string>
+    <string name="chat_lens_running">Σε εξέλιξη</string>
+    <string name="chat_lens_unread">Μη αναγνωσμένα</string>
+    <string name="chat_lens_archived">Αρχειοθετημένα</string>
+    <string name="chat_drawer_invites">Προσκλήσεις</string>
+    <string name="chat_place_missions">Αποστολές</string>
+    <string name="chat_place_runs">Εκτελέσεις</string>
+    <string name="chat_place_bots">Bots</string>
+    <string name="chat_place_projects">Έργα</string>
+    <string name="chat_place_shipyard">Ναυπηγείο</string>
+    <string name="chat_place_archive">Αρχείο</string>
+    <string name="chat_place_gateway">Πύλη</string>
+    <string name="chat_place_settings">Ρυθμίσεις</string>
+    <string name="chat_drawer_places">Χώροι</string>
+    <string name="chat_drawer_commands">Εντολές</string>
+    <string name="chat_drawer_no_matches">Κανένα αποτέλεσμα</string>
+    <string name="chat_drawer_nothing_archived">Τίποτα αρχειοθετημένο</string>
+    <string name="chat_drawer_nothing_waiting">Τίποτα δεν σας περιμένει</string>
+    <string name="chat_drawer_nothing_running">Τίποτα σε εξέλιξη</string>
+    <string name="chat_drawer_all_read">Όλα αναγνωσμένα</string>
+    <string name="chat_session_id_copied">Το αναγνωριστικό συνεδρίας αντιγράφηκε</string>
+    <string name="chat_moved_to_project">Μετακινήθηκε στο %1$s</string>
+    <string name="chat_drawer_reaching_back">Αναζήτηση πιο πίσω…</string>
+    <string name="chat_drawer_show_older">Εμφάνιση παλαιότερων: %1$s</string>
+    <string name="chat_drawer_in_transcripts">Στις καταγραφές</string>
+    <string name="chat_demo_gateway">πύλη επίδειξης</string>
+    <string name="chat_demo_gateway_page">Η σελίδα της πύλης σας εμφανίζεται εδώ μόλις συνδέσετε μία.</string>
+    <string name="chat_connect">Σύνδεση</string>
+    <string name="chat_open_gateway">Άνοιγμα Πύλης</string>
+    <string name="chat_settings">Ρυθμίσεις</string>
+    <string name="chat_shelf_fold">Σύμπτυξη %1$s</string>
+    <string name="chat_shelf_open">Άνοιγμα %1$s</string>
+    <string name="chat_room_forked">Διακλάδωση από άλλη συνομιλία</string>
+    <string name="chat_room_temporary">Προσωρινή — διαγράφεται στην επόμενη εκκίνηση</string>
+    <string name="chat_room_pinned">Καρφιτσωμένη</string>
+    <string name="chat_mark_unread">Σήμανση ως μη αναγνωσμένη</string>
+    <string name="chat_archive">Αρχειοθέτηση</string>
+    <string name="chat_archive_hint">Εκτός λίστας, αλλά παραμένει στην πύλη</string>
+    <string name="chat_restore_to_list">Επαναφορά στη λίστα</string>
+    <string name="chat_export_ellipsis">Εξαγωγή…</string>
+    <string name="chat_copy_session_id">Αντιγραφή αναγνωριστικού συνεδρίας</string>
+    <string name="chat_invite_user">Πρόσκληση χρήστη…</string>
+    <string name="chat_rename_ellipsis">Μετονομασία…</string>
+    <string name="chat_move_to_project">Μετακίνηση σε έργο…</string>
+    <string name="chat_leave_room">Αποχώρηση από το δωμάτιο</string>
+    <string name="chat_delete_session_ellipsis">Διαγραφή συνεδρίας…</string>
+    <string name="chat_invite_to">Πρόσκληση στο %1$s</string>
+    <string name="chat_invite">Πρόσκληση</string>
+    <string name="chat_cancel">Ακύρωση</string>
+    <string name="chat_leave_title">Αποχώρηση από το %1$s;</string>
+    <string name="chat_leave_body">Δεν θα λαμβάνετε πλέον τα μηνύματά του· για να επιστρέψετε χρειάζεστε νέα πρόσκληση.</string>
+    <string name="chat_leave">Αποχώρηση</string>
+    <string name="chat_rename_session">Μετονομασία συνεδρίας</string>
+    <string name="chat_rename">Μετονομασία</string>
+    <string name="chat_delete_title">Διαγραφή του %1$s;</string>
+    <string name="chat_delete_session_body">Διαγράφει τη συνεδρία και ολόκληρη την καταγραφή της από την πύλη. Δεν μπορεί να αναιρεθεί.</string>
+    <string name="chat_delete">Διαγραφή</string>
+    <string name="chat_invited_to_room">Έχετε προσκληθεί σε αυτό το δωμάτιο</string>
+    <string name="chat_decline">Απόρριψη</string>
+    <string name="chat_accept">Αποδοχή</string>
+    <string name="chat_running">Σε εξέλιξη</string>
+    <string name="chat_age_now">τώρα</string>
+    <string name="chat_age_minutes">%1$d λ.</string>
+    <string name="chat_age_hours">%1$d ώ.</string>
+    <string name="chat_age_days">%1$d ημ.</string>
+    <string name="chat_age_weeks">%1$d εβδ.</string>
+    <plurals name="chat_door_needs_you">
+        <item quantity="one">%1$s, %2$s σας χρειάζεται</item>
+        <item quantity="other">%1$s, %2$s σας χρειάζονται</item>
+    </plurals>
+    <string name="chat_door_unread">%1$s, %2$s μη αναγνωσμένα</string>
+
+    <string name="chat_bot_new_title">Νέα αρχή με %1$s;</string>
+    <string name="chat_bot_new_body">Η Συμπύκνωση κρατά αυτή τη συνομιλία και καθαρίζει το πλαίσιο εργασίας του %1$s.\n\nΈνα νέο Bot Chat αποσύρει το τρέχον — παραμένει αναγνώσιμο στις παλιές συνομιλίες του %1$s — και ξεκινά ένα καινούργιο.</string>
+    <string name="chat_bot_new_fresh">Νέο Bot Chat</string>
+    <string name="chat_bot_new_compact">Συμπύκνωση</string>
+    <string name="chat_bot_chat_chip">Bot Chat</string>
+    <string name="chat_menu">Μενού</string>
+    <plurals name="chat_menu_waiting">
+        <item quantity="one">Μενού, %d σας περιμένει</item>
+        <item quantity="other">Μενού, %d σας περιμένουν</item>
+    </plurals>
+    <plurals name="chat_menu_unread">
+        <item quantity="one">Μενού, %d μη αναγνωσμένο</item>
+        <item quantity="other">Μενού, %d μη αναγνωσμένα</item>
+    </plurals>
+    <string name="chat_new_session_failed">Δεν ήταν δυνατή η έναρξη συνεδρίας. %1$s</string>
+    <string name="chat_new_session_hold">Νέα συνεδρία (παρατεταμένο πάτημα για επιλογές)</string>
+    <string name="chat_unpin_run">Ξεκαρφίτσωμα αυτής της εκτέλεσης</string>
+    <string name="chat_pin_run">Καρφίτσωμα αυτής της εκτέλεσης</string>
+    <string name="chat_new_session">Νέα συνεδρία</string>
+    <string name="chat_new_session_confirm_title">Έναρξη νέας συνεδρίας;</string>
+    <string name="chat_new_session_confirm_body">Ο πράκτορας ακόμη δουλεύει — το /new τερματίζει την τρέχουσα εκτέλεση και το αποτέλεσμά της χάνεται.</string>
+    <string name="chat_new_session_confirm">Τερματισμός και νέα</string>
+    <string name="chat_find_in_chat">Εύρεση στη συνομιλία</string>
+    <string name="chat_call_needs_voice">Ορίστε πρώτα τα endpoints STT και TTS στις Ρυθμίσεις → Φωνή</string>
+    <string name="chat_call">Κλήση</string>
+    <string name="chat_reasoning_header">ΣΥΛΛΟΓΙΣΜΟΣ</string>
+    <string name="chat_reasoning_sub_default">η ένταση διατηρείται μεταξύ συνεδριών</string>
+    <string name="chat_reasoning_local_brain">τοπικός εγκέφαλος</string>
+    <string name="chat_reasoning_model">μοντέλο</string>
+    <string name="chat_reasoning_sub_binary">%1$s · διακόπτης on/off</string>
+    <string name="chat_reasoning_sub_none">%1$s · χωρίς ρύθμιση συλλογισμού</string>
+    <string name="chat_reasoning_sub_session">%1$s · κλίμακα αυτής της συνεδρίας</string>
+    <string name="chat_reasoning_sub_scale">%1$s · κλίμακα έντασης</string>
+    <string name="chat_reasoning_no_dial">Αυτό το μοντέλο δεν δέχεται επίπεδο έντασης — το Hermes δεν στέλνει κανένα.</string>
+    <string name="chat_reasoning_every_session">Όλες οι συνεδρίες</string>
+    <string name="chat_reasoning_this_session">Μόνο αυτή η συνεδρία</string>
+    <string name="chat_reasoning_show">Εμφάνιση συλλογισμού</string>
+    <string name="chat_reasoning_hide">Απόκρυψη συλλογισμού</string>
+    <string name="chat_reasoning_reset">Επαναφορά ρύθμισης συνεδρίας</string>
+    <string name="chat_demo_label">Επίδειξη</string>
+    <string name="chat_demo_connect">Συνδέστε την πύλη σας</string>
+
+    <string name="chat_attach_failed">Δεν ήταν δυνατή η επισύναψη (μη αναγνώσιμο ή πάνω από 50 MB)</string>
+    <string name="chat_no_camera">Καμία εφαρμογή κάμερας δεν απάντησε</string>
+    <string name="chat_mic_unavailable">Το μικρόφωνο δεν είναι διαθέσιμο</string>
+    <string name="chat_transcription_failed">Η μεταγραφή απέτυχε: %1$s</string>
+    <string name="chat_mic_permission">Το Keryx χρειάζεται πρόσβαση στο μικρόφωνο για υπαγόρευση</string>
+    <string name="chat_nothing_to_read">Τίποτα για ανάγνωση φωναχτά</string>
+    <string name="chat_typing_one">Ο/Η %1$s πληκτρολογεί…</string>
+    <string name="chat_typing_two">%1$s και %2$s πληκτρολογούν…</string>
+    <string name="chat_typing_many">Αρκετοί πληκτρολογούν…</string>
+    <string name="chat_jump_newest">Μετάβαση στα νεότερα</string>
+    <plurals name="chat_jump_newest_count">
+        <item quantity="one">Μετάβαση στα νεότερα, %d νέο</item>
+        <item quantity="other">Μετάβαση στα νεότερα, %d νέα</item>
+    </plurals>
+    <string name="chat_attachments_cant_queue">Τα συνημμένα δεν μπαίνουν σε ουρά — στείλτε τα όταν τελειώσει ο γύρος</string>
+    <string name="chat_stop_hint">Γράψτε πρώτα τη διόρθωσή σας — μετά ένα πάτημα καθοδηγεί τον γύρο, παρατεταμένο για περισσότερα</string>
+    <string name="chat_busy_queue">Στην ουρά για τον επόμενο γύρο</string>
+    <string name="chat_busy_aside">Παράπλευρη ερώτηση — απαντιέται εκτός συνομιλίας</string>
+    <string name="chat_busy_redirect">Ανακατεύθυνση — η απάντηση ξεκινά ξανά με αυτό</string>
+    <string name="chat_starter_1">Τι μπορείς να κάνεις σε αυτή τη συνεδρία;</string>
+    <string name="chat_starter_2">Τι έχω να κάνω σήμερα;</string>
+    <string name="chat_starter_3">Σε τι δουλέψαμε πρόσφατα;</string>
+    <string name="chat_starter_4">Βοήθησέ με να σχεδιάσω κάτι μικρό, βήμα βήμα.</string>
+    <string name="chat_fresh_page">Μια καθαρή σελίδα</string>
+    <string name="chat_fresh_page_sub">Ρωτήστε οτιδήποτε ή ξεκινήστε από κάποιο από αυτά.</string>
+    <string name="chat_today">Σήμερα</string>
+    <string name="chat_yesterday">Χθες</string>
+
+    <string name="chat_arrival_mark">%1$s · αυθόρμητα · %2$s</string>
+    <string name="chat_bubble_hold_label">Απάντηση, αντίδραση ή αντιγραφή</string>
+    <string name="chat_copied">Αντιγράφηκε</string>
+    <string name="chat_undo_title">Αναίρεση της τελευταίας ανταλλαγής;</string>
+    <string name="chat_undo_body">Το μήνυμά σας και αυτή η απάντηση αφαιρούνται από το ιστορικό της συνεδρίας στην πύλη. Ό,τι πείτε μετά συνεχίζει από πριν από αυτά.</string>
+    <string name="chat_undo_confirm">Αναίρεση</string>
+    <string name="chat_keep">Διατήρηση</string>
+    <string name="chat_select_text">Επιλογή κειμένου</string>
+    <string name="chat_delete_message_title">Διαγραφή μηνύματος;</string>
+    <string name="chat_delete_message_body">Αφαιρείται για όλους — δεν μπορεί να αναιρεθεί.</string>
+    <string name="chat_sent">Στάλθηκε</string>
+    <string name="chat_stop_speaking">Διακοπή ομιλίας</string>
+    <string name="chat_go_to_quoted">Μετάβαση στο μήνυμα που παρατίθεται</string>
+    <string name="chat_reaction_take_back">Αναίρεση της αντίδρασής σας</string>
+    <string name="chat_reaction_add">Προσθήκη αντίδρασης</string>
+    <string name="chat_react">Αντίδραση</string>
+    <string name="chat_action_reply">Απάντηση</string>
+    <string name="chat_action_copy">Αντιγραφή</string>
+    <string name="chat_action_copy_text">Αντιγραφή κειμένου</string>
+    <string name="chat_action_saved">Αποθηκευμένο</string>
+    <string name="chat_action_save">Αποθήκευση</string>
+    <string name="chat_action_unsave">Αφαίρεση από τα Αποθηκευμένα</string>
+    <string name="chat_action_keep_archive">Διατήρηση στο Αρχείο</string>
+    <string name="chat_action_stop">Διακοπή</string>
+    <string name="chat_action_read_aloud">Ανάγνωση φωναχτά</string>
+    <string name="chat_action_select">Επιλογή</string>
+    <string name="chat_action_edit">Επεξεργασία</string>
+    <string name="chat_action_edit_desc">Επεξεργασία και νέα αποστολή</string>
+    <string name="chat_action_retry">Επανάληψη</string>
+    <string name="chat_action_retry_desc">Αναίρεση και νέα διατύπωση</string>
+    <string name="chat_action_branch">Διακλάδωση</string>
+    <string name="chat_action_branch_desc">Νέα συνεδρία από αυτό το σημείο</string>
+    <string name="chat_action_undo">Αναίρεση</string>
+    <string name="chat_action_undo_desc">Αναίρεση της τελευταίας ανταλλαγής</string>
+    <string name="chat_action_delete_desc">Διαγραφή μηνύματος</string>
+    <string name="chat_reply_attachment">συνημμένο</string>
+    <string name="chat_reply_message">μήνυμα</string>
+
+    <string name="chat_archive_title">Αρχείο</string>
+    <string name="chat_archive_waking">το ευρετήριο ξυπνά…</string>
+    <plurals name="chat_archive_reaching">
+        <item quantity="one">%1$s στη μνήμη · αναζήτηση πιο πίσω…</item>
+        <item quantity="other">%1$s στη μνήμη · αναζήτηση πιο πίσω…</item>
+    </plurals>
+    <plurals name="chat_archive_error">
+        <item quantity="one">%1$s στη μνήμη · %2$s</item>
+        <item quantity="other">%1$s στη μνήμη · %2$s</item>
+    </plurals>
+    <plurals name="chat_archive_done">
+        <item quantity="one">%1$s μήνυμα στη μνήμη</item>
+        <item quantity="other">%1$s μηνύματα στη μνήμη</item>
+    </plurals>
+    <string name="chat_archive_jump_date">Μετάβαση σε ημερομηνία</string>
+    <string name="chat_archive_nothing_that_day">Τίποτα ευρετηριασμένο ακόμη για εκείνη την ημέρα</string>
+    <string name="chat_open">Άνοιγμα</string>
+    <string name="chat_archive_tab_search">Αναζήτηση</string>
+    <string name="chat_archive_tab_saved">Αποθηκευμένα</string>
+    <string name="chat_archive_tab_media">Πολυμέσα</string>
+    <string name="chat_archive_search_hint">Αναζήτηση σε ό,τι ειπώθηκε ποτέ…</string>
+    <string name="chat_archive_recent">ΠΡΟΣΦΑΤΑ ΣΤΗ ΜΝΗΜΗ</string>
+    <string name="chat_archive_empty_title">Τίποτα στη μνήμη ακόμη</string>
+    <string name="chat_archive_empty_body">Το ευρετήριο γεμίζει καθώς σαρώνονται οι συνεδρίες. Μετά, κάθε μήνυμα που έχει δει η εφαρμογή απέχει μία αναζήτηση.</string>
+    <string name="chat_archive_search_idle">Κάθε μήνυμα που έχει δει ποτέ η εφαρμογή, μία αναζήτηση μακριά.</string>
+    <string name="chat_archive_no_hits">Τίποτα ακόμη για «%1$s»</string>
+    <string name="chat_archive_opening">Άνοιγμα αρχείου…</string>
+    <string name="chat_archive_saved_empty_title">Τίποτα κρατημένο ακόμη</string>
+    <string name="chat_archive_saved_empty_body">Πατήστε παρατεταμένα ένα μήνυμα και μετά τον σελιδοδείκτη για να το κρατήσετε εδώ.</string>
+    <string name="chat_archive_looking">Αναζήτηση στα ευρετηριασμένα…</string>
+    <string name="chat_archive_media_empty_title">Καμία φωτογραφία ή αρχείο ακόμη</string>
+    <string name="chat_archive_media_empty_body">Οι εικόνες και τα αρχεία από τις συνομιλίες σας συγκεντρώνονται εδώ καθώς γεμίζει το ευρετήριο.</string>
+    <string name="chat_image">εικόνα</string>
+    <string name="chat_you">Εσείς</string>
+    <string name="chat_archive_context">Πλαίσιο</string>
+    <string name="chat_archive_context_failed">Εκείνη η στιγμή δεν φόρτωσε (ίσως είναι πριν από τα κλειδιά αυτής της σύνδεσης).</string>
+    <string name="chat_archive_reach_earlier">Παλαιότερα</string>
+    <string name="chat_archive_reach_later">Νεότερα</string>
+
+    <string name="chat_attach">Επισύναψη</string>
+    <string name="chat_composer_hint">Μήνυμα…</string>
+    <string name="chat_composer_hint_steer_stop">Γράψτε για να καθοδηγήσετε τον γύρο — το ■ σταματά</string>
+    <string name="chat_composer_hint_steer">Γράψτε για να καθοδηγήσετε τον γύρο</string>
+    <string name="chat_dictate_stop">Διακοπή υπαγόρευσης</string>
+    <string name="chat_dictate">Υπαγόρευση</string>
+    <string name="chat_send_steer">Καθοδήγηση του τρέχοντος γύρου</string>
+    <string name="chat_send_queue">Στην ουρά για τον επόμενο γύρο</string>
+    <string name="chat_send_stop">Διακοπή του γύρου</string>
+    <string name="chat_send">Αποστολή</string>
+    <string name="chat_send_hold_menu">Ουρά, παράπλευρη ερώτηση ή ανακατεύθυνση</string>
+    <string name="chat_send_hold_queue">Στην ουρά για τον επόμενο γύρο αντί γι\' αυτό</string>
+    <string name="chat_send_hold_stop">Τι κάνει η διακοπή</string>
+    <string name="chat_choose_model">Επιλογή μοντέλου</string>
+    <string name="chat_model_label">Μοντέλο: %1$s</string>
+    <string name="chat_reasoning">συλλογισμός</string>
+    <string name="chat_steer_hint">↪ καθοδηγεί τον γύρο · παρατεταμένο για ουρά</string>
+    <string name="chat_replying_to">Απάντηση σε %1$s</string>
+    <string name="chat_cancel_reply">Ακύρωση απάντησης</string>
+    <string name="chat_image_attached">Η εικόνα επισυνάφθηκε</string>
+    <string name="chat_file_attached">Το αρχείο επισυνάφθηκε</string>
+    <string name="chat_remove_attachment">Αφαίρεση συνημμένου</string>
+    <string name="chat_attach_photo">Φωτογραφία</string>
+    <string name="chat_attach_file">Αρχείο</string>
+    <string name="chat_attach_camera">Κάμερα</string>
+
+    <string name="chat_tool_succeeded">Επιτυχία</string>
+    <string name="chat_tool_failed">Αποτυχία</string>
+    <string name="chat_tool_no_verdict">Χωρίς ετυμηγορία</string>
+    <string name="chat_duration_seconds">%1$d δ.</string>
+    <string name="chat_duration_millis">%1$d ms</string>
+    <string name="chat_tool_flagged">⚠ Το Hermes επισήμανε αυτή την έξοδο</string>
+    <string name="chat_tool_flagged_with">⚠ Το Hermes επισήμανε αυτή την έξοδο: %1$s</string>
+    <string name="chat_tool_diff">diff</string>
+    <string name="chat_tool_diff_show">Εμφάνιση του diff</string>
+    <string name="chat_tool_diff_hide">Απόκρυψη του diff</string>
+    <string name="chat_tool_diff_label">Diff</string>
+    <string name="chat_tool_output">έξοδος</string>
+    <string name="chat_tool_output_show">Εμφάνιση εξόδου</string>
+    <string name="chat_tool_output_hide">Απόκρυψη εξόδου</string>
+    <string name="chat_tool_output_label">Έξοδος</string>
+    <string name="chat_tool_exit_failed">Κωδικός εξόδου %1$d, αποτυχία</string>
+    <string name="chat_tool_exit_ok">Κωδικός εξόδου 0</string>
+    <plurals name="chat_tools_running">
+        <item quantity="one">Εκτελείται %d εργαλείο…</item>
+        <item quantity="other">Εκτελούνται %d εργαλεία…</item>
+    </plurals>
+    <plurals name="chat_tools_ran">
+        <item quantity="one">Εκτελέστηκε %d εργαλείο</item>
+        <item quantity="other">Εκτελέστηκαν %d εργαλεία</item>
+    </plurals>
+    <plurals name="chat_subagents_running">
+        <item quantity="one">%1$d από %2$d υποπράκτορα σε εξέλιξη</item>
+        <item quantity="other">%1$d από %2$d υποπράκτορες σε εξέλιξη</item>
+    </plurals>
+    <string name="chat_subagent_running">Υποπράκτορας σε εξέλιξη</string>
+    <plurals name="chat_delegated_tasks">
+        <item quantity="one">Ανατέθηκε %d εργασία</item>
+        <item quantity="other">Ανατέθηκαν %d εργασίες</item>
+    </plurals>
+    <string name="chat_delegated_task">Ανατέθηκε μια εργασία</string>
+    <string name="chat_working">Δουλεύει…</string>
+    <plurals name="chat_output_steps">
+        <item quantity="one">%d βήμα εξόδου</item>
+        <item quantity="other">%d βήματα εξόδου</item>
+    </plurals>
+    <plurals name="chat_run_with_failed">
+        <item quantity="one">%1$s · %2$d απέτυχε</item>
+        <item quantity="other">%1$s · %2$d απέτυχαν</item>
+    </plurals>
+    <string name="chat_steps_fold">Σύμπτυξη βημάτων</string>
+    <string name="chat_steps_show">Εμφάνιση βημάτων</string>
+    <string name="chat_tap_in_run">Είσοδος σε αυτή την εκτέλεση</string>
+    <string name="chat_state_open">Ανοιχτό</string>
+    <string name="chat_state_folded">Συμπτυγμένο</string>
+
+    <string name="chat_approval_needed">Απαιτείται έγκριση</string>
+    <string name="chat_approval_once">Μία φορά</string>
+    <string name="chat_approval_session">Συνεδρία</string>
+    <string name="chat_approval_always">Πάντα</string>
+    <string name="chat_approval_deny">Άρνηση</string>
+    <string name="chat_asking">Το Hermes ρωτά</string>
+    <string name="chat_asking_batch">Το Hermes ρωτά · %1$d από %2$d</string>
+    <string name="chat_sudo_needed">Απαιτείται κωδικός sudo</string>
+    <string name="chat_credential_needed">Απαιτούνται διαπιστευτήρια</string>
+    <string name="chat_stored_as">Αποθηκεύεται στην πύλη ως %1$s</string>
+    <string name="chat_multi_answers">Επιτρέπονται πολλές απαντήσεις — γράψτε τις παρακάτω χωρισμένες με κόμμα.</string>
+    <string name="chat_your_answer">Η απάντησή σας</string>
+    <string name="chat_password">Κωδικός πρόσβασης</string>
+    <string name="chat_value">Τιμή</string>
+    <string name="chat_skip">Παράλειψη</string>
+
+    <string name="chat_new_conversation">Νέα συνομιλία</string>
+    <string name="chat_new_session_body">Μια νέα συνεδρία στην πύλη. Δώστε της όνομα τώρα ή αφήστε την πρώτη ανταλλαγή να της δώσει τίτλο.</string>
+    <string name="chat_title_optional">Τίτλος (προαιρετικό)</string>
+    <string name="chat_agent">Πράκτορας</string>
+    <string name="chat_temporary">Προσωρινή</string>
+    <string name="chat_temporary_body">Διαγράφεται από την πύλη στην επόμενη εκκίνηση της εφαρμογής</string>
+    <string name="chat_create">Δημιουργία</string>
+    <string name="chat_error_line">⚠ %1$s</string>
+    <string name="chat_direct_message">Άμεσο μήνυμα</string>
+    <string name="chat_direct_message_sub">Ιδιωτική συνομιλία με έναν χρήστη</string>
+    <string name="chat_start">Έναρξη</string>
+    <string name="chat_new_room">Νέο δωμάτιο</string>
+    <string name="chat_new_room_sub">Ένα δωμάτιο με όνομα· προσκαλέστε άτομα τώρα ή αργότερα</string>
+    <string name="chat_room_name">Όνομα δωματίου</string>
+    <string name="chat_invite_optional">Πρόσκληση @user:server (προαιρετικό)</string>
+    <string name="chat_join_by_address">Συμμετοχή μέσω διεύθυνσης</string>
+    <string name="chat_join">Συμμετοχή</string>
+
+    <string name="chat_prune_preview_failed">η προεπισκόπηση απέτυχε</string>
+    <string name="chat_prune_confirm_title">Επιβεβαίωση εκκαθάρισης συνεδριών</string>
+    <plurals name="chat_prune_confirm_sub">
+        <item quantity="one">Διαγράφει οριστικά %d συνεδρία</item>
+        <item quantity="other">Διαγράφει οριστικά %d συνεδρίες</item>
+    </plurals>
+    <string name="chat_prune_title">Εκκαθάριση συνεδριών</string>
+    <string name="chat_prune_body">Διαγράφει τις τερματισμένες συνεδρίες από το μητρώο της πύλης — οριστικά, μαζί με τις καταγραφές. Οι ενεργές συνεδρίες δεν αγγίζονται ποτέ.</string>
+    <string name="chat_prune_older_than">Παλαιότερες από</string>
+    <string name="chat_prune_days">%1$d ημ.</string>
+    <string name="chat_prune_max_messages">Μόνο συνεδρίες με ≤ N μηνύματα (προαιρετικό)</string>
+    <string name="chat_prune_include_archived">Συμπερίληψη αρχειοθετημένων συνεδριών</string>
+    <string name="chat_prune_nothing">Τίποτα δεν ταιριάζει σε αυτά τα φίλτρα.</string>
+    <plurals name="chat_prune_matched">
+        <item quantity="one">%1$d συνεδρία ταιριάζει · παλαιότερη %2$s · νεότερη %3$s</item>
+        <item quantity="other">%1$d συνεδρίες ταιριάζουν · παλαιότερη %2$s · νεότερη %3$s</item>
+    </plurals>
+    <plurals name="chat_prune_sample">
+        <item quantity="one">· %1$s (%2$d μήνυμα)</item>
+        <item quantity="other">· %1$s (%2$d μηνύματα)</item>
+    </plurals>
+    <string name="chat_prune_preview">Προεπισκόπηση</string>
+    <string name="chat_prune_delete_count">Διαγραφή %1$d…</string>
+    <string name="chat_prune_delete">Διαγραφή…</string>
+    <plurals name="chat_prune_final_title">
+        <item quantity="one">Οριστική διαγραφή %d συνεδρίας;</item>
+        <item quantity="other">Οριστική διαγραφή %d συνεδριών;</item>
+    </plurals>
+    <string name="chat_prune_final_body">Οι εγγραφές και τα αρχεία καταγραφής αφαιρούνται από την πύλη. Δεν υπάρχει αναίρεση.</string>
+    <string name="chat_prune_delete_n">Διαγραφή %1$d</string>
+
+    <string name="chat_loading_lower">φόρτωση…</string>
+    <string name="chat_load_attachment_failed">Δεν ήταν δυνατή η φόρτωση του συνημμένου</string>
+    <string name="chat_animated_image">κινούμενη εικόνα</string>
+    <string name="chat_video">βίντεο</string>
+    <string name="chat_saved_to">Αποθηκεύτηκε στο %1$s</string>
+    <string name="chat_save_failed">Δεν ήταν δυνατή η αποθήκευση</string>
+    <string name="chat_save_to_device">Αποθήκευση στη συσκευή</string>
+    <string name="chat_share_failed">Δεν ήταν δυνατή η κοινοποίηση</string>
+    <string name="chat_share">Κοινοποίηση</string>
+    <string name="chat_close">Κλείσιμο</string>
+    <string name="chat_no_app_for_file">Καμία εφαρμογή δεν μπορεί να ανοίξει αυτό το αρχείο</string>
+    <string name="chat_open_with">Άνοιγμα με</string>
+
+    <string name="chat_copy_image">Αντιγραφή εικόνας</string>
+    <string name="chat_image_copied">Η εικόνα αντιγράφηκε — επικολλήστε τη σε μια ανάρτηση</string>
+    <string name="chat_image_fetch_failed">Δεν ήταν δυνατή η λήψη της εικόνας — αντιγράφηκε ο σύνδεσμος</string>
+    <string name="chat_copy_link">Αντιγραφή συνδέσμου</string>
+    <string name="chat_link_copied">Ο σύνδεσμος αντιγράφηκε</string>
+    <string name="chat_save_to_photos">Αποθήκευση στις Φωτογραφίες</string>
+    <string name="chat_save_image_failed">Δεν ήταν δυνατή η αποθήκευση της εικόνας</string>
+    <string name="chat_open_in_browser">Άνοιγμα σε πρόγραμμα περιήγησης</string>
+    <string name="chat_no_app_for_link">Τίποτα εδώ δεν ανοίγει αυτόν τον σύνδεσμο</string>
+
+    <string name="chat_gateway_log">Αρχείο καταγραφής πύλης</string>
+    <string name="chat_details_copied">Οι λεπτομέρειες αντιγράφηκαν</string>
+    <string name="chat_copy_details">Αντιγραφή λεπτομερειών</string>
+
+    <string name="chat_thinking">Σκέφτεται…</string>
+    <string name="chat_thought">Σκέφτηκε</string>
+    <string name="chat_thought_briefly">Σκέφτηκε για λίγο</string>
+    <string name="chat_thought_for">Σκέφτηκε για %1$s</string>
+    <string name="chat_reasoning_show_a11y">Εμφάνιση του συλλογισμού</string>
+    <string name="chat_reasoning_hide_a11y">Απόκρυψη του συλλογισμού</string>
+    <string name="chat_duration_min_sec">%1$d λ. %2$d δ.</string>
+    <string name="chat_newest">νεότερα</string>
+
+    <string name="chat_config_unsaved">%1$s · μη αποθηκευμένο</string>
+    <string name="chat_saving">Αποθήκευση…</string>
+    <string name="chat_save">Αποθήκευση</string>
+    <string name="chat_config_load_failed">Δεν ήταν δυνατή η φόρτωση του config.yaml. %1$s</string>
+    <string name="chat_loading">Φόρτωση…</string>
+    <string name="chat_config_restart_note">Για τις περισσότερες ενότητες, οι αποθηκευμένες αλλαγές ισχύουν στην επόμενη επανεκκίνηση της πύλης.</string>
+    <string name="chat_save_anyway_title">Αποθήκευση ούτως ή άλλως;</string>
+    <string name="chat_save_anyway">Αποθήκευση ούτως ή άλλως</string>
+    <string name="chat_discard_title">Απόρριψη αλλαγών;</string>
+    <string name="chat_config_untouched">Το config.yaml στην πύλη έμεινε ανέγγιχτο.</string>
+    <string name="chat_discard">Απόρριψη</string>
+    <string name="chat_keep_editing">Συνέχεια επεξεργασίας</string>
+
+    <string name="chat_export_title">Εξαγωγή «%1$s»</string>
+    <string name="chat_this_session">αυτή η συνεδρία</string>
+    <string name="chat_export_markdown_detail">Η συνομιλία όπως τη διαβάζετε: ποιος είπε τι, τα εργαλεία σε μία γραμμή, οι μεγάλες έξοδοι περικομμένες.</string>
+    <string name="chat_export_json_detail">Η πλήρης εξαγωγή της πύλης: κάθε εγγραφή, μαζί με τους αναιρεμένους γύρους και το system prompt. Μπορεί να εισαχθεί ξανά.</string>
+    <string name="chat_export_share_failed">Δεν ήταν δυνατό το άνοιγμα του μενού κοινοποίησης.</string>
+    <string name="chat_export_failed">Η εξαγωγή απέτυχε.</string>
+    <string name="chat_exporting">Εξαγωγή…</string>
+
+    <string name="chat_cmd_new">Έναρξη νέας συνομιλίας</string>
+    <string name="chat_cmd_compress">Συμπίεση / σύνοψη αυτού του νήματος</string>
+    <string name="chat_cmd_handoff">Μεταφορά πλαισίου σε νέα συνεδρία</string>
+    <string name="chat_cmd_steer">Καθοδήγηση του πράκτορα εν ώρα εργασίας</string>
+    <string name="chat_cmd_think">Αίτημα για βαθύτερο συλλογισμό</string>
+    <string name="chat_cmd_model">Αλλαγή ενεργού μοντέλου</string>
+    <string name="chat_cmd_reset">Επαναφορά της κατάστασης εργασίας του πράκτορα</string>
+    <string name="chat_cmd_help">Τι μπορεί να κάνει αυτός ο πράκτορας</string>
+    <string name="chat_cmd_status">Κατάσταση πράκτορα και συστήματος</string>
+    <string name="chat_cmd_memory">Ανάκληση ή επεξεργασία μακροπρόθεσμης μνήμης</string>
+    <string name="chat_cmd_tools">Λίστα διαθέσιμων εργαλείων</string>
+    <string name="chat_cmd_recent">πρόσφατο</string>
+    <string name="chat_cmd_skill">δεξιότητα</string>
+
+    <string name="chat_transition_dissolve">Διάλυση</string>
+    <string name="chat_transition_dissolve_blurb">Το δωμάτιο ξαναπαίρνει μορφή μέσα από ένα απαλό θάμπωμα, με το ίχνος braille.</string>
+    <string name="chat_transition_passage">Πέρασμα</string>
+    <string name="chat_transition_passage_blurb">Το νέο δωμάτιο γλιστρά μέσα σε μια φωτεινή ραφή ενώ το παλιό κάνει πίσω.</string>
+    <string name="chat_transition_weave">Ύφανση</string>
+    <string name="chat_transition_weave_blurb">Κεχριμπαρένιες και βιολετί κορδέλες διασταυρώνονται προς τα πάνω και το δωμάτιο αλλάζει πίσω τους.</string>
+    <string name="chat_transition_bloom">Άνθιση</string>
+    <string name="chat_transition_bloom_blurb">Το νέο δωμάτιο ανοίγει σαν κύκλος από τη γραμμή που πατήσατε.</string>
+    <string name="chat_transition_rise">Ανάδυση</string>
+    <string name="chat_transition_rise_blurb">Το παλιό δωμάτιο γέρνει πίσω και βυθίζεται· το νέο ανεβαίνει στη θέση του.</string>
+    <string name="chat_speed_slow">Αργή</string>
+    <string name="chat_speed_normal">Κανονική</string>
+    <string name="chat_speed_fast">Γρήγορη</string>
+
+    <string name="chat_pet_choose">Επιλογή κατοικιδίου</string>
+    <string name="chat_pet_rides">Το %1$s σας συντροφεύει στο πλαϊνό μενού</string>
+    <string name="chat_pet_gateway">Τα κατοικίδια ζουν στην πύλη — κάθε οθόνη δείχνει το ίδιο</string>
+    <plurals name="chat_pet_search">
+        <item quantity="one">Αναζήτηση σε %d κατοικίδιο…</item>
+        <item quantity="other">Αναζήτηση σε %d κατοικίδια…</item>
+    </plurals>
+    <string name="chat_pet_installed_header">Εγκατεστημένα</string>
+    <string name="chat_pet_catalog_header">Κατάλογος Petdex</string>
+    <string name="chat_pet_none">Κανένα διαθέσιμο κατοικίδιο — έχει ρυθμιστεί το Hermes Link;</string>
+    <string name="chat_pet_no_match">Κανένα κατοικίδιο για «%1$s»</string>
+    <string name="chat_pet_badge_active">ενεργό</string>
+    <string name="chat_pet_badge_hatched">εκκολάφθηκε τοπικά</string>
+    <string name="chat_pet_badge_curated">επιλεγμένο</string>
+    <string name="chat_pet_badge_installed">εγκατεστημένο</string>
+    <string name="chat_pet_active">Ενεργό</string>
+
+    <string name="chat_back">Πίσω</string>
+    <string name="chat_close_named">Κλείσιμο %1$s</string>
+    <string name="chat_loading_a11y">Φόρτωση</string>
+
+    <string name="chat_call_header">KERYX · ΚΛΗΣΗ</string>
+    <string name="chat_call_mic_needed">Το Keryx χρειάζεται το μικρόφωνο για κλήση.</string>
+    <string name="chat_call_listening">ακούει</string>
+    <string name="chat_call_hearing">σας ακούει…</string>
+    <string name="chat_call_thinking">σκέφτεται</string>
+    <string name="chat_call_interrupt">πατήστε τη σφαίρα για διακοπή</string>
+    <string name="chat_call_muted">σε σίγαση</string>
+    <string name="chat_call_ended">η κλήση τερματίστηκε</string>
+    <string name="chat_call_heard">«%1$s»</string>
+    <string name="chat_call_unmute">Κατάργηση σίγασης</string>
+    <string name="chat_call_mute">Σίγαση</string>
+    <string name="chat_call_end">Τερματισμός κλήσης</string>
+
+    <string name="chat_sources">Πηγές</string>
+    <string name="chat_source">πηγή</string>
+    <string name="chat_hand_clipboard">ΠΡΟΧΕΙΡΟ</string>
+    <string name="chat_hand_phone">ΤΗΛΕΦΩΝΟ</string>
+    <string name="chat_hand_share">ΚΟΙΝΟΠΟΙΗΣΗ</string>
+    <string name="chat_hand_app">ΕΦΑΡΜΟΓΗ</string>
+    <string name="chat_hand_opens">ΑΝΟΙΓΕΙ</string>
+    <string name="chat_skill_distilled">Νέα δεξιότητα</string>
+    <string name="chat_open_skill_forge">Άνοιγμα στο Skill Forge →</string>
+
+    <string name="chat_tap_in_turn">Είσοδος στον γύρο</string>
+    <string name="chat_stream_dropped">Η ροή διακόπηκε — ανάκτηση μέσω συγχρονισμού Matrix…</string>
+
+    <string name="chat_context_direct_only">Μόνο η άμεση πόρτα μπορεί να αναλύσει το παράθυρο.</string>
+    <string name="chat_context_read_failed">Δεν ήταν δυνατή η ανάγνωση του παραθύρου</string>
+    <string name="chat_context_title">Πλαίσιο</string>
+    <string name="chat_context_used">%1$s από %2$s tokens</string>
+    <string name="chat_context_no_agent">Η πύλη δεν έχει ακόμη ενεργό πράκτορα για αυτή τη συνεδρία — στείλτε πρώτα κάτι.</string>
+
+    <string name="chat_chart">Γράφημα</string>
+    <string name="chat_chart_summary">%1$s. Γράφημα %2$s.</string>
+    <string name="chat_chart_summary_unit">%1$s. Γράφημα %2$s, σε %3$s.</string>
+    <string name="chat_chart_no_value">χωρίς τιμή</string>
+    <string name="chat_chart_series">Σειρά %1$d</string>
+    <string name="chat_chart_total">σύνολο</string>
+    <string name="chat_show_less">Λιγότερα</string>
+    <plurals name="chat_show_all_lines">
+        <item quantity="one">Εμφάνιση %d γραμμής</item>
+        <item quantity="other">Εμφάνιση και των %d γραμμών</item>
+    </plurals>
+
+    <string name="chat_aside_header">ΠΑΡΑΠΛΕΥΡΑ · εκτός συνομιλίας</string>
+    <string name="chat_dismiss">Παράβλεψη</string>
+    <string name="chat_aside_answering">…απάντηση παράπλευρα</string>
+    <string name="chat_aside_failed">Η παράπλευρη ερώτηση απέτυχε: %1$s</string>
+    <string name="chat_aside_no_answer">Δεν ήρθε απάντηση.</string>
+
+    <string name="chat_action_success">ΕΠΙΤΥΧΙΑ</string>
+    <string name="chat_action_failed">ΑΠΟΤΥΧΙΑ</string>
+    <string name="chat_action_tag">ΕΝΕΡΓΕΙΑ</string>
+    <string name="chat_reasoning_live">Συλλογίζεται…</string>
+    <string name="chat_reasoning_title">Συλλογισμός</string>
+    <string name="chat_show_drawing">εμφάνιση σχεδίου</string>
+    <string name="chat_drawing">Σχέδιο</string>
+
+    <string name="chat_done">Τέλος</string>
+
+    <string name="chat_art_mission_board">Ένας άδειος πίνακας αποστολών με το ραβδί του κήρυκα ακουμπισμένο πάνω του</string>
+    <string name="chat_art_winged_clock">Ένα φτερωτό ρολόι με ένα βέλος να κάνει καμπύλη γύρω του</string>
+    <string name="chat_art_robot">Ένα κεφάλι ρομπότ με τη φτερωτή σφαίρα του κήρυκα από πάνω, με μια άδεια θέση σε κάθε πλευρά</string>
+    <string name="chat_art_folder">Ένας φάκελος με μια σελίδα, πάνω στην οποία είναι σχεδιασμένη μια διακλάδωση</string>
+    <string name="chat_art_scroll">Ένας ξετυλιγμένος πάπυρος με έναν μεγεθυντικό φακό από πάνω</string>
+    <string name="chat_art_bookmark">Μια σελίδα με μία γραμμή επισημασμένη και μια κορδέλα σελιδοδείκτη</string>
+    <string name="chat_art_picture">Μια κορνιζαρισμένη εικόνα με λόφο και ήλιο, με μια άδεια κορνίζα πίσω της</string>
+
+    <string name="chat_memory">Μνήμη συνομιλίας</string>
+    <string name="chat_ring_base">Μνήμη συνομιλίας %1$dk από %2$dk tokens, %3$d τοις εκατό</string>
+    <plurals name="chat_ring_replies">
+        <item quantity="one">%1$s, περίπου %2$d απάντηση πριν από τη σύνοψη</item>
+        <item quantity="other">%1$s, περίπου %2$d απαντήσεις πριν από τη σύνοψη</item>
+    </plurals>
+    <string name="chat_ring_until">%1$s, %2$dk μέχρι τη σύνοψη</string>
+    <string name="chat_ring_next">%1$s, η επόμενη απάντηση ξεκινά σύνοψη</string>
+
+    <string name="chat_folder_hint">Φάκελος στην πύλη (π.χ. ~/workspace/keryx)</string>
+    <string name="chat_folder_found">✓ ο φάκελος βρέθηκε</string>
+    <string name="chat_folder_missing">δεν υπάρχει ακόμη φάκελος εκεί</string>
+    <string name="chat_known_workspaces">Γνωστοί χώροι εργασίας</string>
+    <string name="chat_folder_truncated">πάνω από 30 φάκελοι εδώ — συνεχίστε να πληκτρολογείτε για περιορισμό</string>
+    <string name="chat_folder_more">+%1$d ακόμη — συνεχίστε να πληκτρολογείτε για περιορισμό</string>
+
+    <string name="chat_console_starting">ξεκινά…</string>
+    <string name="chat_console_streaming">ο πράκτορας δουλεύει</string>
+    <string name="chat_console_waiting">αναμονή έγκρισης</string>
+    <string name="chat_console_completed">ο γύρος ολοκληρώθηκε</string>
+    <string name="chat_console_lost">η σύνδεση χάθηκε</string>
+    <string name="chat_console_lost_why">η σύνδεση χάθηκε — %1$s</string>
+    <string name="chat_console_failed">απέτυχε</string>
+    <string name="chat_console_failed_why">απέτυχε — %1$s</string>
+    <string name="chat_stop">Διακοπή</string>
+    <string name="chat_clear">Εκκαθάριση</string>
+
+    <string name="chat_mark_hide">Απόκρυψη όσων είπε</string>
+    <string name="chat_mark_read">Ανάγνωση όσων είπε</string>
+    <string name="chat_mark_system">Σύστημα: %1$s</string>
+    <string name="chat_summary_hide">Απόκρυψη σύνοψης</string>
+    <string name="chat_summary_read">Ανάγνωση σύνοψης</string>
+    <string name="chat_context_compacted">🗜 Το πλαίσιο συμπυκνώθηκε · %1$s</string>
+    <string name="chat_this_session_title">Αυτή η συνεδρία</string>
+
+    <string name="chat_goal_loop">↻ βρόχος · %1$s · %2$s</string>
+    <string name="chat_goal_heartbeat">♥ παλμός · %1$d · %2$s</string>
+    <string name="chat_goal_close">Κλείσιμο στόχου</string>
+    <string name="chat_goal_open">Άνοιγμα στόχου</string>
+    <string name="chat_goal_exit">έξοδος %1$d</string>
+
+    <string name="chat_subagent_running_lower">υποπράκτορας σε εξέλιξη</string>
+    <plurals name="chat_subagents_count">
+        <item quantity="one">%d υποπράκτορας</item>
+        <item quantity="other">%d υποπράκτορες</item>
+    </plurals>
+    <string name="chat_subagent">υποπράκτορας</string>
+    <string name="chat_delegated_task_lower">ανατεθειμένη εργασία</string>
+    <plurals name="chat_tool_count">
+        <item quantity="one">%d εργαλείο</item>
+        <item quantity="other">%d εργαλεία</item>
+    </plurals>
+    <string name="chat_tokens_k">%1$dk tok</string>
+    <plurals name="chat_files_written">
+        <item quantity="one">%d γράφτηκε</item>
+        <item quantity="other">%d γράφτηκαν</item>
+    </plurals>
+    <string name="chat_interrupted">διακόπηκε</string>
+    <string name="chat_duration_min_sec_compact">%1$dλ%2$dδ</string>
+
+    <string name="chat_flight_plan">ΣΧΕΔΙΟ ΠΤΗΣΗΣ</string>
+    <string name="chat_flight_all_done">όλα τα βήματα προσγειώθηκαν</string>
+    <string name="chat_flight_next">επόμενο: %1$s</string>
+    <string name="chat_join_sub">#alias:server ή !roomid:server</string>
+</resources>

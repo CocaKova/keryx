@@ -364,12 +364,13 @@ fun GatewaySpace(viewModel: ChatViewModel, health: LinkHealth, onDismiss: () -> 
         val scope = remember(viewModel, health, onDismiss) { HubPanelScope(viewModel, health, onDismiss) }
         // Stepping into a spoke and back is a page turn, not a pager — the same settle/leave
         // pair every other place uses.
+        val rtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
         AnimatedContent(
             targetState = spoke,
             // Deeper slides in from the right, home slides back — the Settings move (makeover).
             transitionSpec = {
                 val deeper = targetState != null
-                val sign = if (deeper) 1 else -1
+                val sign = (if (deeper) 1 else -1) * (if (rtl) -1 else 1)
                 (androidx.compose.animation.slideInHorizontally(KeryxMotion.settleInt) { w -> sign * w / 5 } +
                     androidx.compose.animation.fadeIn(KeryxMotion.settle))
                     .togetherWith(

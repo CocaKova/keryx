@@ -176,9 +176,10 @@ fun SettingsScreen(
                 // from the right going deeper, back out to the right coming home, on the app's
                 // own springs. Each page keeps its own scroll, so coming back lands where you left.
                 val reduced by rememberReducedMotion()
+                val rtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
                 androidx.compose.animation.AnimatedContent(
                     targetState = section,
-                    transitionSpec = { settingsPageTransition(deeper = targetState != null, reduced = reduced) },
+                    transitionSpec = { settingsPageTransition(deeper = targetState != null, reduced = reduced, rtl = rtl) },
                     label = "settingsPage",
                 ) { shown ->
                 val scrollState = rememberScrollState()
@@ -1176,12 +1177,13 @@ fun SettingsScreen(
  * while the hub drifts left and fades; coming home is the mirror. Short distances on the app's
  * springs — the Hermes Mobile feel is speed with a soft landing, not a long swipe.
  */
-private fun settingsPageTransition(deeper: Boolean, reduced: Boolean): androidx.compose.animation.ContentTransform {
+private fun settingsPageTransition(deeper: Boolean, reduced: Boolean, rtl: Boolean = false): androidx.compose.animation.ContentTransform {
     if (reduced) return androidx.compose.animation.ContentTransform(
         androidx.compose.animation.fadeIn(KeryxMotion.leave),
         androidx.compose.animation.fadeOut(KeryxMotion.leave),
     )
-    val sign = if (deeper) 1 else -1
+    // "Deeper" comes from the reading direction's far side: the right in English, the left in Arabic.
+    val sign = (if (deeper) 1 else -1) * (if (rtl) -1 else 1)
     val enter = androidx.compose.animation.slideInHorizontally(KeryxMotion.settleInt) { w -> sign * w / 5 } +
         androidx.compose.animation.fadeIn(KeryxMotion.settle)
     val exit = androidx.compose.animation.slideOutHorizontally(KeryxMotion.leaveInt) { w -> -sign * w / 8 } +

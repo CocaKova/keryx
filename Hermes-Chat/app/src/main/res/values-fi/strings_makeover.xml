@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Esikatselu: huonesiirtymä %1$s, nopeus %2$s</string>
+    <string name="mk_cancel">Peruuta</string>
+
+    <string name="mk_mcp_test">Testaa</string>
+    <string name="mk_mcp_testing">Testataan</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Yhteys toimii · %d työkalu</item>
+        <item quantity="other">Yhteys toimii · %d työkalua</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d kehote</item>
+        <item quantity="other">%d kehotetta</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d resurssi</item>
+        <item quantity="other">%d resurssia</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Yhteys ei onnistunut: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Tämä yhdyskäytävä ei voi testata palvelimia täältä.</string>
+    <string name="mk_mcp_catalog">Luettelo · lisättävissä %1$d</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">vaatii %d avaimen</item>
+        <item quantity="other">vaatii %d avainta</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">käännetään lähdekoodista</string>
+    <string name="mk_mcp_catalog_oauth">kirjautuu OAuthilla</string>
+    <string name="mk_mcp_installed">Asennettu</string>
+    <string name="mk_mcp_install">Asenna</string>
+    <string name="mk_mcp_installing">Asennetaan…</string>
+    <string name="mk_mcp_install_title">Asennetaanko %1$s?</string>
+    <string name="mk_mcp_install_runs">Se suorittaa</string>
+    <string name="mk_mcp_install_builds">Yhdyskäytävä kloonaa ja kääntää sen ensin taustalla. Lähde: %1$s</string>
+    <string name="mk_mcp_install_oauth">Se kirjautuu OAuthilla: viimeistele kirjautuminen yhdyskäytävän hallintapaneelissa asennuksen jälkeen.</string>
+    <string name="mk_mcp_install_env_note">Tallennetaan yhdyskäytävälle: salaisuudet sen .env-tiedostoon, muut sen asetuksiin.</string>
+    <string name="mk_mcp_installed_toast">%1$s asennettu – käytössä seuraavasta istunnosta alkaen</string>
+    <string name="mk_mcp_building_toast">%1$s käännetään yhdyskäytävällä – se näkyy täällä, kun se on valmis</string>
+    <string name="mk_mcp_install_refused">Asennus epäonnistui (%1$s): %2$s</string>
+    <string name="mk_mcp_install_unsupported">Tämä yhdyskäytävä ei voi asentaa MCP-palvelimia täältä.</string>
+    <string name="mk_usage">Käyttö</string>
+    <string name="mk_usage_subtitle">Tokenit, kulut ja istunnot</string>
+    <string name="mk_usage_subtitle_read">%1$s tokenia · %2$s · viim. %3$d päivää</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d istunto</item>
+        <item quantity="other">%d istuntoa</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">istunto</item>
+        <item quantity="other">istuntoa</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d päivä</item>
+        <item quantity="other">%d päivää</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s API-kutsu</item>
+        <item quantity="other">%1$s API-kutsua</item>
+    </plurals>
+    <string name="mk_usage_tokens">tokenia</string>
+    <string name="mk_usage_in_out">sisään %1$s · ulos %2$s</string>
+    <string name="mk_usage_cost">kulut</string>
+    <string name="mk_usage_cost_estimated">kulut, arvio</string>
+    <string name="mk_usage_none">Ei käyttöä viimeisten %1$d päivän aikana.</string>
+    <string name="mk_usage_by_day">Päivittäin</string>
+    <string name="mk_usage_peak">Vilkkain: %1$s · %2$s</string>
+    <string name="mk_usage_by_model">Malleittain</string>
+    <string name="mk_usage_note_estimate">Kulut ovat Hermesin oma arvio sen hinnaston perusteella; paikallinen malli ei maksa mitään. Yhdyskäytävän hallintapaneeli näyttää samat luvut.</string>
+    <string name="mk_usage_note_reported">Kulut ovat palveluntarjoajan ilmoittamat, jos se ilmoitti ne. Yhdyskäytävän hallintapaneeli näyttää samat luvut.</string>
+</resources>

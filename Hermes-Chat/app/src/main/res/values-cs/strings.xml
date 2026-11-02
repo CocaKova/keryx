@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">Nový chat</string>
+    <string name="shortcut_new_chat_long">Začít nový chat</string>
+    <string name="shortcut_missions">Mise</string>
+    <string name="shortcut_missions_long">Otevřít nástěnku misí</string>
+    <string name="shortcut_runs">Běhy</string>
+    <string name="shortcut_runs_long">Naplánované běhy a jejich zprávy</string>
+
+    <!-- The home-screen widget (2.13). -->
+    <string name="widget_description">Agent v kostce: spojení, nejnovější relace, co naposledy řekl a probíhající tah.</string>
+
+    <!-- The Quick Settings tile and its note sheet (2.13). Generic "agent" until the roster names one. -->
+    <string name="note_tile_label">Poznámka agentovi</string>
+    <string name="note_tile_label_to">Poznámka · %1$s</string>
+    <string name="note_tile_live">živě</string>
+    <string name="note_tile_offline">offline</string>
+    <string name="note_placeholder">Jeden řádek pro agenta…</string>
+    <string name="note_target_prefix">pro</string>
+    <string name="note_change_target">Změnit relaci</string>
+    <string name="note_no_sessions">Zatím žádná relace</string>
+    <string name="note_send">Odeslat</string>
+    <string name="note_sent_to">Odesláno: %1$s</string>
+    <string name="note_send_failed">Odeslání se nezdařilo</string>
+    <string name="note_locked">Zamčeno</string>
+    <string name="note_unlock">Odemknout</string>
+    <string name="note_unlock_title">Odemknout Keryx</string>
+</resources>

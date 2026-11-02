@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_turn_failed">ターンが失敗しました</string>
+    <string name="app_photo">写真</string>
+    <string name="app_attachment">添付ファイル</string>
+    <string name="app_new_message">新しいメッセージ</string>
+
+    <string name="app_approval_expired">承認はすでに期限切れでした</string>
+    <string name="app_approval_failed">承認に失敗しました：%1$s</string>
+    <string name="app_reply_failed">返信に失敗しました：%1$s</string>
+    <string name="app_link_unreachable_matrix">Hermes Link に接続できません（%1$s）— Matrix 同期を使用中</string>
+    <string name="app_send_failed">送信できませんでした：%1$s</string>
+    <string name="app_room_photo_updated">ルームの写真を更新しました</string>
+    <string name="app_room_photo_forbidden">このルームの写真を設定する権限がありません。モデレーター権限が必要です。</string>
+    <string name="app_room_photo_failed">写真を設定できませんでした：%1$s</string>
+    <string name="app_unknown_error">不明なエラー</string>
+    <string name="app_branched">分岐しました — この会話全体のコピーです</string>
+    <string name="app_branch_failed">分岐に失敗しました：%1$s</string>
+    <string name="app_not_sent">送信されていません。%1$s</string>
+    <string name="app_undo_done">直前のやり取りを取り消しました</string>
+    <string name="app_undo_nothing">取り消すものはありません</string>
+    <string name="app_still_working">まだ作業中です — 先にターンを止めてください</string>
+    <string name="app_undo_failed">元に戻せませんでした：%1$s</string>
+    <string name="app_retry_nothing">再試行するものはありません — ゲートウェイに取り消せるターンがありませんでした</string>
+    <string name="app_retry_failed">再試行できませんでした：%1$s</string>
+    <string name="app_taken_back_edit">取り消しました — 編集してもう一度送信できます</string>
+    <string name="app_take_back_failed">取り消せませんでした — 入力欄に文章を戻したので、もう一度送信できます</string>
+    <string name="app_set_gateway_url_first">先にゲートウェイ URL を設定してください</string>
+    <string name="app_link_ok">Hermes Link OK — %1$s</string>
+    <string name="app_link_failed">Hermes Link が失敗しました：%1$s</string>
+    <string name="app_connection_error">接続エラー</string>
+    <string name="app_link_up_api_down">Hermes Link は動いていますが、その裏の Hermes の API サーバーが起動していないため、ミッションと実行を読み込めません。~/.hermes/.env に API_SERVER_ENABLED=true と API_SERVER_KEY を設定して、ゲートウェイを再起動してください。</string>
+
+    <string name="app_pinned">固定しました</string>
+    <string name="app_pinned_named">「%1$s」を固定しました</string>
+    <string name="app_unpinned">固定を解除しました</string>
+    <string name="app_unpinned_named">「%1$s」の固定を解除しました</string>
+    <string name="app_pin_failed">固定に失敗しました：%1$s</string>
+    <string name="app_unpin_failed">固定の解除に失敗しました：%1$s</string>
+    <string name="app_marked_unread">未読にしました</string>
+    <string name="app_mark_read_failed">既読にできませんでした：%1$s</string>
+    <string name="app_mark_unread_failed">未読にできませんでした：%1$s</string>
+    <string name="app_sticky_no_catalog">モデル一覧を読み込めませんでした — ゲートウェイのデフォルトで開きました</string>
+    <string name="app_sticky_not_served">%1$s は現在提供されていません — ゲートウェイのデフォルトで開きました</string>
+    <string name="app_sticky_needs_confirm">%1$s は確認が必要です — モデル選択から選んでください</string>
+    <string name="app_sticky_opened_fallback">%1$s で開きました — %2$s は現在提供されていません</string>
+    <string name="app_sticky_opened">%1$s で開きました — 前回の選択です（設定の「モデルを固定」）</string>
+    <string name="app_sticky_refused">%1$s が拒否されました — ゲートウェイのデフォルトで開きました</string>
+    <string name="app_create_session_failed">セッションを作成できませんでした</string>
+    <string name="app_rename_failed">名前の変更に失敗しました：%1$s</string>
+    <string name="app_archive_failed">アーカイブできませんでした：%1$s</string>
+    <string name="app_archived">アーカイブしました</string>
+    <string name="app_archived_named">「%1$s」をアーカイブしました</string>
+    <string name="app_restore_failed">復元できませんでした：%1$s</string>
+    <string name="app_restored">復元しました</string>
+    <string name="app_restored_named">「%1$s」を復元しました</string>
+    <string name="app_archive_read_failed">アーカイブを読み込めませんでした：%1$s</string>
+    <string name="app_older_sessions_failed">以前のセッションを読み込めませんでした：%1$s</string>
+    <string name="app_session_deleted">セッションを削除しました</string>
+    <string name="app_delete_failed">削除に失敗しました：%1$s</string>
+
+    <string name="app_steered">軌道修正しました — エージェントは次のステップで確認します</string>
+    <string name="app_steer_declined_queued">エージェントが軌道修正を受け付けませんでした — 次のターンに回しました</string>
+    <string name="app_queue_failed">キューに追加できませんでした：%1$s</string>
+    <string name="app_steer_failed">軌道修正に失敗しました：%1$s</string>
+    <string name="app_goal_failed">ゴール：%1$s</string>
+    <string name="app_aside_needs_direct">横から質問するには直接のゲートウェイ接続が必要です</string>
+    <string name="app_aside_failed">横からの質問に失敗しました：%1$s</string>
+    <string name="app_redirected">方向転換しました — 修正を反映して返信をやり直します</string>
+    <string name="app_redirect_between_calls">呼び出しの合間です — 次に修正が実行されます</string>
+    <string name="app_redirect_finished_queued">返信はもう終わっていました — 次のターンに回しました</string>
+    <string name="app_redirect_unsupported">このエージェントは方向転換できません — 代わりに軌道修正します</string>
+    <string name="app_redirect_failed">方向転換に失敗しました：%1$s</string>
+    <string name="app_branched_from_message">分岐しました — そのメッセージから始まる新しいセッションです</string>
+    <string name="app_queued">キューに追加しました — このターンが終わると送信されます</string>
+    <string name="app_stopped">停止しました</string>
+    <string name="app_stop_failed">停止に失敗しました：%1$s</string>
+    <string name="app_crew_steered">%1$s を軌道修正しました — 次のステップで確認します</string>
+    <string name="app_crew_steer_rejected">%1$s は受け付けませんでした — 別の接続口の担当か、すでに作業を終えようとしています</string>
+    <string name="app_crew_stopped">%1$s を停止しました</string>
+    <string name="app_crew_already_finished">%1$s はすでに終了していました</string>
+
+    <string name="app_model_confirm">%1$s もう一度タップして確定してください。</string>
+    <string name="app_model_expensive">このモデルは高価です。</string>
+    <string name="app_model_deferred">次のターンから %1$s に切り替わります — このセッション</string>
+    <string name="app_model_deferred_global">次のターンから %1$s に切り替わります — すべてのセッション</string>
+    <string name="app_model_switched">%1$s — このセッション</string>
+    <string name="app_model_switched_global">%1$s — すべてのセッション</string>
+    <string name="app_model_switch_refused">切り替えが拒否されました：%1$s</string>
+    <string name="app_reasoning_refused_unknown">この頭脳はその思考レベルを拒否しました — 低いレベルを選んでください。</string>
+    <string name="app_reasoning_refused_floor">この頭脳は思考レベル %1$s を拒否しました。これより低いレベルはありません。</string>
+    <string name="app_reasoning_dropped">この頭脳は思考レベル %1$s を拒否しました — %2$s に下げました。</string>
+    <string name="app_reasoning_drop_failed">この頭脳は思考レベル %1$s を拒否しました。%2$s に下げられませんでした。</string>
+    <string name="app_reasoning_set">思考 → %1$s — このセッション</string>
+    <string name="app_reasoning_set_global">思考 → %1$s（すべてのセッション）</string>
+    <string name="app_reasoning_refused">思考レベルが拒否されました：%1$s</string>
+
+    <string name="app_room_joined">参加しました — 次の同期でルームが表示されます</string>
+    <string name="app_join_failed">参加に失敗しました：%1$s</string>
+    <string name="app_invite_declined">招待を辞退しました</string>
+    <string name="app_decline_failed">辞退に失敗しました：%1$s</string>
+    <string name="app_start_chat_failed">チャットを開始できませんでした</string>
+    <string name="app_create_room_failed">ルームを作成できませんでした</string>
+    <string name="app_join_failed_short">参加できませんでした</string>
+    <string name="app_invite_sent">招待を送信しました</string>
+    <string name="app_invite_failed">招待に失敗しました：%1$s</string>
+    <string name="app_left_room">ルームから退出しました</string>
+    <string name="app_leave_failed">退出に失敗しました：%1$s</string>
+
+    <string name="app_try_again">もう一度お試しください</string>
+    <string name="app_group_rooms_unavailable">ルームを取得できません</string>
+    <string name="app_not_connected">ゲートウェイに接続されていません</string>
+    <string name="app_group_stop_failed">ルームを停止できませんでした：%1$s</string>
+    <string name="app_group_approval_failed">承認に応答できませんでした：%1$s</string>
+    <string name="app_group_rename_failed">名前を変更できませんでした：%1$s</string>
+    <string name="app_group_disband_failed">解散できませんでした：%1$s</string>
+
+    <string name="app_no_stt_endpoint">STT エンドポイントが設定されていません</string>
+    <string name="app_no_tts_endpoint">TTS エンドポイントが設定されていません</string>
+    <string name="app_no_stt_set">STT エンドポイント未設定</string>
+    <string name="app_no_tts_set">TTS エンドポイント未設定</string>
+    <string name="app_voice_unreachable">%1$s に接続できません：%2$s（%3$s）</string>
+    <string name="app_voice_ears">耳（STT）</string>
+    <string name="app_voice_mouth">声（TTS）</string>
+
+    <string name="app_console_run_live">すでに実行中です — 停止するか終わるのを待ってください</string>
+    <string name="app_link_off">Hermes Link がオフです — 設定で有効にしてください</string>
+    <string name="app_export_needs_gateway">エクスポートにはゲートウェイ直接接続が必要です。</string>
+    <string name="app_export_too_old">このゲートウェイは古いため、セッションをエクスポートできません。</string>
+    <string name="app_export_subject">Hermes セッション</string>
+    <string name="app_export_unreadable">エクスポート結果を読み取れませんでした。</string>
+
+    <string name="app_unsaved">保存済みから削除しました</string>
+    <string name="app_saved">保存しました — アーカイブで見られます</string>
+    <string name="app_pet_adopt_failed">%1$s を迎えられませんでした</string>
+
+    <string name="app_channel_messages">メッセージ</string>
+    <string name="app_channel_messages_desc">Hermes エージェントとルームからの新しいメッセージ</string>
+    <string name="app_notify_you">あなた</string>
+    <string name="app_notify_title_failed">%1$s · ターン失敗</string>
+    <string name="app_notify_reply">返信</string>
+    <string name="app_notify_reply_to">%1$s に返信</string>
+    <string name="app_notify_mark_read">既読にする</string>
+    <plurals name="app_notify_conversations">
+        <item quantity="other">%d 件の会話</item>
+    </plurals>
+    <string name="app_channel_gate">承認と質問</string>
+    <string name="app_channel_gate_desc">エージェントが停止して、あなたの回答を待っています</string>
+    <string name="app_notify_answer">回答</string>
+    <string name="app_channel_runs">エージェント実行中</string>
+    <string name="app_channel_runs_desc">エージェントの作業中に表示される通知音なしのステータス：何をしていて、どれくらい経ったか</string>
+    <string name="app_notify_stop">停止</string>
+    <string name="app_channel_missions">ミッション</string>
+    <string name="app_channel_missions_desc">エージェントのボード上のミッションの完了、ブロック、断念</string>
+
+    <string name="app_push_checking">メッセージを確認中…</string>
+    <string name="app_notify_sending_text">送信中：%1$s</string>
+    <string name="app_notify_answering">回答中…</string>
+    <string name="app_notify_gate_unreachable">ゲートウェイに接続できませんでした — タップして回答</string>
+    <string name="app_notify_answered">回答しました — エージェントが再開しました</string>
+    <string name="app_notify_request_timed_out">そのリクエストはすでにタイムアウトしていました</string>
+    <string name="app_notify_answer_failed">回答できませんでした — タップして開く</string>
+    <string name="app_notify_sending">送信中…</string>
+    <string name="app_notify_send_failed">「%1$s」を送信できませんでした — タップして開く</string>
+
+    <string name="app_push_connecting">接続中…</string>
+    <string name="app_push_connected">接続済み — 内蔵プッシュ</string>
+    <string name="app_push_reconnecting">再接続中…</string>
+    <string name="app_channel_push">プッシュ接続</string>
+    <string name="app_channel_push_desc">Keryx 自身によるプッシュサーバーへの接続（ディストリビューターアプリ不要）</string>
+    <string name="app_push_title">Keryx プッシュ</string>
+
+    <string name="app_scan_pairing_inside">ペアリングコードは Keryx 内でスキャンしてください：ゲートウェイを接続 › ペアリングコードをスキャン</string>
+
+    <string name="app_share_nothing">共有するものがありません</string>
+    <string name="app_share_foreign_only">Keryx が送信できるのは、他のアプリから共有されたファイルだけです</string>
+    <string name="app_share_too_large_mb">ファイルが大きすぎて送信できません（%1$d MB）</string>
+    <string name="app_share_too_large">ファイルが大きすぎて送信できません</string>
+    <string name="app_share_read_failed">%1$s を読み込めませんでした</string>
+    <plurals name="app_share_attachments">
+        <item quantity="other">添付ファイル %d 件</item>
+    </plurals>
+    <string name="app_share_note_label">メモを追加（任意）</string>
+    <string name="app_share_note_hint">これを要約して / これを覚えて / …</string>
+
+    <string name="app_hands_cannot">このスマートフォンではそれを実行できません</string>
+    <string name="app_hands_no_app">「%1$s」というアプリはありません</string>
+    <string name="app_hands_no_handler">このスマートフォンには %1$s に対応するものがありません</string>
+    <string name="app_hands_failed">実行できませんでした：%1$s</string>
+    <string name="app_hands_no_flash">このスマートフォンにはライトがありません</string>
+
+    <string name="app_crash_log_subject">Keryx クラッシュログ</string>
+    <string name="app_crash_log_share">クラッシュログを共有</string>
+    <string name="app_share">共有</string>
+    <string name="app_share_named">%1$s を共有</string>
+
+    <string name="app_call_hearing_failed">聞き取りに失敗：%1$s</string>
+    <string name="app_call_turn_failed">エージェントのターンが失敗しました</string>
+    <string name="app_call_voice_failed">音声に失敗：%1$s</string>
+    <string name="app_call_no_reply">ゲートウェイから応答がありません</string>
+    <string name="app_tts_failed">読み上げに失敗しました：%1$s</string>
+    <string name="app_tts_audio_unavailable">音声を利用できません</string>
+    <string name="app_tts_no_audio">音声サーバーから音声が届きませんでした</string>
+    <string name="app_tts_no_engine">このデバイスには音声エンジンがありません</string>
+    <string name="app_tts_playback_failed">読み上げの再生に失敗しました</string>
+    <string name="app_tts_playback_failed_why">読み上げの再生に失敗しました：%1$s</string>
+
+    <string name="app_tour_welcome_title">Keryx へようこそ</string>
+    <string name="app_tour_welcome_text">これはデモです。スマートフォン上の仮のゲートウェイで、エージェントが作業の真っ最中です。自分のゲートウェイを接続する前に、ざっと見て回りましょう。</string>
+    <string name="app_tour_plan_title">エージェントの計画</string>
+    <string name="app_tour_plan_text">エージェントは作業をステップに分け、進むたびにチェックしていきます。作業中は Keryx が進行状況を通知に表示し続けるので、スマートフォンをしまっておけます。</string>
+    <string name="app_tour_approval_title">まず確認します</string>
+    <string name="app_tour_approval_text">フォルダの削除など危険な操作の前には、エージェントが止まって確認します。ここか通知から直接回答できます。</string>
+    <string name="app_tour_approval_text_demo">フォルダの削除など危険な操作の前には、エージェントが止まって確認します。ここか通知から直接回答できます。ツアーが終わったら試してみて、作業が完了するのを見てください。</string>
+    <string name="app_tour_composer_title">なんでも頼めます</string>
+    <string name="app_tour_composer_text">ふだんの言葉でエージェントに仕事を頼みましょう。アプリを離れても作業は続き、終わると Keryx が知らせます。</string>
+    <string name="app_tour_model_title">答える頭脳を選ぶ</string>
+    <string name="app_tour_model_text">このセッションのモデル、またはこれ以降のすべてのセッションのモデルを切り替えます。</string>
+    <string name="app_tour_new_session_title">新しいページ</string>
+    <string name="app_tour_new_session_text">新しいセッションを始めます。長押しすると、タイトルや一時セッションなどのオプションが出ます。</string>
+    <string name="app_tour_drawer_title">その他すべて</string>
+    <string name="app_tour_drawer_text">セッションや Keryx のその他の機能は、このボタンの奥にあります。</string>
+    <string name="app_tour_lenses_title">対応が必要なもの</string>
+    <string name="app_tour_lenses_text">あなたを待っているセッション、実行中のセッション、未読のセッションに絞り込めます。</string>
+    <string name="app_tour_missions_title">ミッション</string>
+    <string name="app_tour_missions_text">長めの仕事はボード上のカードとしてエージェントに渡せます。順に片づけ、あなたが必要なときは確認してきます。</string>
+    <string name="app_tour_runs_title">実行</string>
+    <string name="app_tour_runs_text">スケジュールされた仕事と、各実行の結果。</string>
+    <string name="app_tour_bots_title">ボット</string>
+    <string name="app_tour_bots_text">エージェントの別プロフィールです。それぞれが独自のメモリ、スキル、チャットを持っています。</string>
+    <string name="app_tour_archive_title">アーカイブ</string>
+    <string name="app_tour_archive_text">これまでのすべての会話を、ゲートウェイが停止中でもスマートフォン上で検索できます。</string>
+    <string name="app_tour_gateway_title">あなたのゲートウェイ</string>
+    <string name="app_tour_gateway_text_demo">自分の Hermes なら、ここに接続、モデル、バージョンが表示されます。今見たものはすべて実際のゲートウェイでも同じように動きます。接続すればすぐに使えます。</string>
+    <string name="app_tour_gateway_text">接続、モデル、Hermes のバージョン。タップするとゲートウェイ画面へ。歯車で設定が開き、このツアーもそこにあります。</string>
+    <string name="app_tour_gateway_text_direct">接続、モデル、Hermes のバージョン。タップするとゲートウェイ画面へ。歯車で設定が開き、このツアーもそこにあります。Hermes を複数動かしていますか？追加すればここで切り替えられます。</string>
+    <string name="app_tour_cta_connect">ゲートウェイを接続</string>
+    <string name="app_tour_cta_add_gateway">ゲートウェイを追加</string>
+
+    <string name="app_whatsnew_title">Keryx 3.0 の新機能</string>
+    <string name="app_whatsnew_text">変更点をざっと紹介します。スキップしても、設定 › アプリについて からいつでも見られます。</string>
+    <string name="app_whatsnew_point_title">場所を聞いてみる</string>
+    <string name="app_whatsnew_point_text">エージェントに「スケジュールした仕事はどこ？」と聞くと、スマートフォン上でその場所を指し示してくれます。ゲートウェイに keryx-stream 0.6 以降が必要です。</string>
+    <string name="app_whatsnew_memory_title">チャットのメモリ</string>
+    <string name="app_whatsnew_memory_text">モデルの横のリングが、このチャットにあと何回分の返信の余裕があるかを、必要なときだけ表示します。タップすると何が容量を使っているかを確認できます。</string>
+    <string name="app_whatsnew_drawer_title">新しくなったドロワー</string>
+    <string name="app_whatsnew_drawer_text_direct">チャットごとに色とマークが付き、作業中のものにはリングが表示されます。フィルターで対応が必要なものに絞り込めます。</string>
+    <string name="app_whatsnew_drawer_text">チャットごとに色とマークが付き、作業中のものにはリングが表示されます。</string>
+    <string name="app_whatsnew_cards_title">わかりやすいカード</string>
+    <string name="app_whatsnew_cards_text">ミッションカードを開くと、今の状況と次にやるべきことがまず表示されます。技術的な情報は「詳細」に残っています。</string>
+    <string name="app_whatsnew_look_title">見た目とアップデート</string>
+    <string name="app_whatsnew_look_text_direct">設定 › 外観 に新しい思考表示スタイルと、チャット間を移動する 5 つの切り替え方が加わりました。最近の keryx-stream なら、ゲートウェイの「アップデート」パネルで Stable と Edge を選べます。別の Hermes を追加するには、そこで hermes keryx pair を実行してコードをスキャンします。</string>
+    <string name="app_whatsnew_look_text">設定 › 外観 に新しい思考表示スタイルと、チャット間を移動する 5 つの切り替え方が加わりました。ツアーと画面ごとのヒントは 設定 › アプリについて にあります。</string>
+
+    <string name="app_hint_missions_title">ミッション</string>
+    <string name="app_hint_missions_text">長めの仕事はここにカードとして置かれます。エージェントが引き受けて進め、あなたが必要なカードは一番上に移動します。+ をタップして仕事を渡しましょう。</string>
+    <string name="app_hint_runs_title">実行</string>
+    <string name="app_hint_runs_text">朝のブリーフィングや夜間チェックなど、スケジュールされた仕事です。各実行の結果がここに届きます。エージェントに頼めば設定してくれます。</string>
+    <string name="app_hint_bots_title">ボット</string>
+    <string name="app_hint_bots_text">各ボットは Hermes のプロフィールで、独自のメモリ、スキル、チャットを持っています。開いて話しかけるか、いくつかをグループチャットに入れましょう。</string>
+    <string name="app_hint_gateway_title">あなたのゲートウェイ</string>
+    <string name="app_hint_gateway_text">接続中の Hermes の状態と、その裏にあるもの：モデルと設定、仕事、スキル、メモリ、ツール。</string>
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">作業中のエージェントを全画面で：考えていること、実行中のツール、送り出したヘルパー。ここから軌道修正もできます。</string>
+    <string name="app_hint_artifact_title">エージェントが作ったページ</string>
+    <string name="app_hint_artifact_text">エージェントが書いたレポート、モックアップ、ページはここでスマートフォン上に開きます。上のボタンで保存や共有ができます。</string>
+
+    <string name="app_tour_pane">ツアー</string>
+    <string name="app_tour_end">ツアーを終了</string>
+    <string name="app_tour_progress">%1$d / %2$d</string>
+    <string name="app_tour_back">戻る</string>
+    <string name="app_tour_done">完了</string>
+    <string name="app_tour_got_it">OK</string>
+    <string name="app_tour_next">次へ</string>
+</resources>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">নতুন চ্যাট</string>
+    <string name="shortcut_new_chat_long">নতুন চ্যাট শুরু করুন</string>
+    <string name="shortcut_missions">মিশন</string>
+    <string name="shortcut_missions_long">মিশন বোর্ড খুলুন</string>
+    <string name="shortcut_runs">রান</string>
+    <string name="shortcut_runs_long">নির্ধারিত রান ও তাদের রিপোর্ট</string>
+    <string name="widget_description">এক নজরে এজেন্ট: সংযোগ, সবচেয়ে নতুন সেশন, শেষে কী বলেছে, আর চলমান টার্ন।</string>
+    <string name="note_tile_label">এজেন্টকে নোট</string>
+    <string name="note_tile_label_to">%1$s-কে নোট</string>
+    <string name="note_tile_live">লাইভ</string>
+    <string name="note_tile_offline">অফলাইন</string>
+    <string name="note_placeholder">এজেন্টকে এক লাইন…</string>
+    <string name="note_target_prefix">প্রতি</string>
+    <string name="note_change_target">সেশন বদলান</string>
+    <string name="note_no_sessions">এখনও কোনো সেশন নেই</string>
+    <string name="note_send">পাঠান</string>
+    <string name="note_sent_to">%1$s-কে পাঠানো হয়েছে</string>
+    <string name="note_send_failed">পাঠানো যায়নি</string>
+    <string name="note_locked">লক করা</string>
+    <string name="note_unlock">আনলক করুন</string>
+    <string name="note_unlock_title">Keryx আনলক করুন</string>
+</resources>

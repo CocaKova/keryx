@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">새 채팅</string>
+    <string name="shortcut_new_chat_long">새 채팅 시작</string>
+    <string name="shortcut_missions">미션</string>
+    <string name="shortcut_missions_long">미션 보드 열기</string>
+    <string name="shortcut_runs">실행</string>
+    <string name="shortcut_runs_long">예약 실행과 보고서</string>
+
+    <string name="widget_description">에이전트 상태를 한눈에: 연결, 최신 세션, 마지막 말, 진행 중인 턴.</string>
+
+    <string name="note_tile_label">에이전트에게 메모</string>
+    <string name="note_tile_label_to">%1$s에게 메모</string>
+    <string name="note_tile_live">온라인</string>
+    <string name="note_tile_offline">오프라인</string>
+    <string name="note_placeholder">에이전트에게 한마디…</string>
+    <string name="note_target_prefix">받는 곳</string>
+    <string name="note_change_target">세션 변경</string>
+    <string name="note_no_sessions">아직 세션이 없어요</string>
+    <string name="note_send">보내기</string>
+    <string name="note_sent_to">%1$s에 보냈어요</string>
+    <string name="note_send_failed">보내지 못했어요</string>
+    <string name="note_locked">잠김</string>
+    <string name="note_unlock">잠금 해제</string>
+    <string name="note_unlock_title">Keryx 잠금 해제</string>
+</resources>

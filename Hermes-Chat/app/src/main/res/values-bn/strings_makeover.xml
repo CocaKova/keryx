@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">প্রিভিউ: %2$s গতিতে %1$s রুম ট্রানজিশন</string>
+    <string name="mk_cancel">বাতিল</string>
+    <string name="mk_mcp_test">টেস্ট</string>
+    <string name="mk_mcp_testing">টেস্ট হচ্ছে</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">পৌঁছানো গেছে · %dটি টুল</item>
+        <item quantity="other">পৌঁছানো গেছে · %dটি টুল</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%dটি প্রম্পট</item>
+        <item quantity="other">%dটি প্রম্পট</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%dটি রিসোর্স</item>
+        <item quantity="other">%dটি রিসোর্স</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">পৌঁছানো যায়নি: %1$s</string>
+    <string name="mk_mcp_test_unsupported">এই গেটওয়ে এখান থেকে সার্ভার টেস্ট করতে পারে না।</string>
+    <string name="mk_mcp_catalog">ক্যাটালগ · যোগ করার জন্য %1$dটি</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">%dটি কী লাগবে</item>
+        <item quantity="other">%dটি কী লাগবে</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">সোর্স থেকে বিল্ড হয়</string>
+    <string name="mk_mcp_catalog_oauth">OAuth দিয়ে সাইন ইন করে</string>
+    <string name="mk_mcp_installed">ইনস্টল করা</string>
+    <string name="mk_mcp_install">ইনস্টল করুন</string>
+    <string name="mk_mcp_installing">ইনস্টল হচ্ছে…</string>
+    <string name="mk_mcp_install_title">%1$s ইনস্টল করবেন?</string>
+    <string name="mk_mcp_install_runs">এটি চালাবে</string>
+    <string name="mk_mcp_install_builds">গেটওয়ে প্রথমে ব্যাকগ্রাউন্ডে %1$s থেকে এটি ক্লোন করে বিল্ড করে।</string>
+    <string name="mk_mcp_install_oauth">এটি OAuth দিয়ে সাইন ইন করে: ইনস্টল হয়ে গেলে গেটওয়ের ড্যাশবোর্ডে সেটি শেষ করুন।</string>
+    <string name="mk_mcp_install_env_note">গেটওয়েতে রাখা হয়: সিক্রেট তার .env-এ, বাকিটা তার কনফিগে।</string>
+    <string name="mk_mcp_installed_toast">%1$s ইনস্টল হয়েছে — পরের সেশন থেকে চালু</string>
+    <string name="mk_mcp_building_toast">%1$s গেটওয়েতে বিল্ড হচ্ছে — শেষ হলে এখানে দেখা যাবে</string>
+    <string name="mk_mcp_install_refused">%1$s ইনস্টল করা যায়নি: %2$s</string>
+    <string name="mk_mcp_install_unsupported">এই গেটওয়ে এখান থেকে MCP সার্ভার ইনস্টল করতে পারে না।</string>
+    <string name="mk_usage">ব্যবহার</string>
+    <string name="mk_usage_subtitle">টোকেন, খরচ ও সেশন</string>
+    <string name="mk_usage_subtitle_read">%1$s টোকেন · %2$s · গত %3$d দিন</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%dটি সেশন</item>
+        <item quantity="other">%dটি সেশন</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">সেশন</item>
+        <item quantity="other">সেশন</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d দিন</item>
+        <item quantity="other">%d দিন</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s API কল</item>
+        <item quantity="other">%1$s API কল</item>
+    </plurals>
+    <string name="mk_usage_tokens">টোকেন</string>
+    <string name="mk_usage_in_out">%1$s ইনপুট · %2$s আউটপুট</string>
+    <string name="mk_usage_cost">খরচ</string>
+    <string name="mk_usage_cost_estimated">খরচ, আনুমানিক</string>
+    <string name="mk_usage_none">গত %1$d দিনে কিছুই ব্যবহার হয়নি।</string>
+    <string name="mk_usage_by_day">দিন অনুযায়ী</string>
+    <string name="mk_usage_peak">সবচেয়ে ব্যস্ত: %2$s, %1$s</string>
+    <string name="mk_usage_by_model">মডেল অনুযায়ী</string>
+    <string name="mk_usage_note_estimate">খরচ হলো Hermes-এর নিজের দামের তালিকা থেকে করা অনুমান; লোকাল মডেলে কোনো খরচ নেই। গেটওয়ের ড্যাশবোর্ডও একই সংখ্যা দেখায়।</string>
+    <string name="mk_usage_note_reported">খরচ হলো প্রোভাইডার যা জানিয়েছে, যেখানে জানিয়েছে। গেটওয়ের ড্যাশবোর্ডও একই সংখ্যা দেখায়।</string>
+</resources>

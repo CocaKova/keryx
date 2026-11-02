@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">תצוגה מקדימה: מעבר החדרים %1$s במהירות %2$s</string>
+    <string name="mk_cancel">ביטול</string>
+
+    <string name="mk_mcp_test">בדיקה</string>
+    <string name="mk_mcp_testing">בודק</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">יש חיבור · כלי %d</item>
+        <item quantity="two">יש חיבור · %d כלים</item>
+        <item quantity="other">יש חיבור · %d כלים</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">הנחיה %d</item>
+        <item quantity="two">%d הנחיות</item>
+        <item quantity="other">%d הנחיות</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">משאב %d</item>
+        <item quantity="two">%d משאבים</item>
+        <item quantity="other">%d משאבים</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">אין חיבור: %1$s</string>
+    <string name="mk_mcp_test_unsupported">השער הזה לא יכול לבדוק שרתים מכאן.</string>
+    <string name="mk_mcp_catalog">קטלוג · %1$d להוספה</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">מבקש מפתח %d</item>
+        <item quantity="two">מבקש %d מפתחות</item>
+        <item quantity="other">מבקש %d מפתחות</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">נבנה מקוד המקור</string>
+    <string name="mk_mcp_catalog_oauth">נכנס עם OAuth</string>
+    <string name="mk_mcp_installed">מותקן</string>
+    <string name="mk_mcp_install">התקנה</string>
+    <string name="mk_mcp_installing">מתקין…</string>
+    <string name="mk_mcp_install_title">להתקין את %1$s?</string>
+    <string name="mk_mcp_install_runs">הוא יריץ</string>
+    <string name="mk_mcp_install_builds">השער ישכפל ויבנה אותו קודם מ־%1$s, ברקע.</string>
+    <string name="mk_mcp_install_oauth">הוא נכנס עם OAuth: אחרי ההתקנה יש להשלים את זה בלוח הבקרה של השער.</string>
+    <string name="mk_mcp_install_env_note">נשמר בשער: סודות בקובץ ה־.env שלו, וכל השאר בהגדרות שלו.</string>
+    <string name="mk_mcp_installed_toast">%1$s הותקן — פעיל מהסשן הבא</string>
+    <string name="mk_mcp_building_toast">%1$s נבנה בשער — יופיע כאן כשיסתיים</string>
+    <string name="mk_mcp_install_refused">לא ניתן להתקין את %1$s: %2$s</string>
+    <string name="mk_mcp_install_unsupported">השער הזה לא יכול להתקין שרתי MCP מכאן.</string>
+    <string name="mk_usage">שימוש</string>
+    <string name="mk_usage_subtitle">טוקנים, עלות וסשנים</string>
+    <string name="mk_usage_subtitle_read">%1$s טוקנים · %2$s · %3$d הימים האחרונים</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">סשן %d</item>
+        <item quantity="two">%d סשנים</item>
+        <item quantity="other">%d סשנים</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">סשן</item>
+        <item quantity="two">סשנים</item>
+        <item quantity="other">סשנים</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">יום %d</item>
+        <item quantity="two">%d ימים</item>
+        <item quantity="other">%d ימים</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">קריאת API %1$s</item>
+        <item quantity="two">%1$s קריאות API</item>
+        <item quantity="other">%1$s קריאות API</item>
+    </plurals>
+    <string name="mk_usage_tokens">טוקנים</string>
+    <string name="mk_usage_in_out">%1$s נכנס · %2$s יוצא</string>
+    <string name="mk_usage_cost">עלות</string>
+    <string name="mk_usage_cost_estimated">עלות, הערכה</string>
+    <string name="mk_usage_none">לא היה שימוש ב־%1$d הימים האחרונים.</string>
+    <string name="mk_usage_by_day">לפי יום</string>
+    <string name="mk_usage_peak">העמוס ביותר: %1$s ב־%2$s</string>
+    <string name="mk_usage_by_model">לפי מודל</string>
+    <string name="mk_usage_note_estimate">העלות היא הערכה של Hermes עצמו לפי מחירון; מודל מקומי לא עולה כלום. לוח הבקרה של השער מציג את אותם מספרים.</string>
+    <string name="mk_usage_note_reported">העלות היא מה שהספק דיווח, במקומות שבהם דיווח. לוח הבקרה של השער מציג את אותם מספרים.</string>
+</resources>

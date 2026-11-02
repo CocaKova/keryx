@@ -1,0 +1,583 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_theme_to_light">切换到浅色</string>
+    <string name="chat_theme_follow_system">跟随系统</string>
+    <string name="chat_theme_to_dark">切换到深色</string>
+    <string name="chat_new_chat">新聊天</string>
+    <string name="chat_drawer_jump_hint">跳转到…</string>
+    <string name="chat_lens_needs_you">等你处理</string>
+    <string name="chat_lens_running">运行中</string>
+    <string name="chat_lens_unread">未读</string>
+    <string name="chat_lens_archived">已归档</string>
+    <string name="chat_drawer_invites">邀请</string>
+    <string name="chat_place_missions">任务</string>
+    <string name="chat_place_runs">运行</string>
+    <string name="chat_place_bots">机器人</string>
+    <string name="chat_place_projects">项目</string>
+    <string name="chat_place_shipyard">船坞</string>
+    <string name="chat_place_archive">归档</string>
+    <string name="chat_place_gateway">网关</string>
+    <string name="chat_place_settings">设置</string>
+    <string name="chat_drawer_places">位置</string>
+    <string name="chat_drawer_commands">命令</string>
+    <string name="chat_drawer_no_matches">无匹配结果</string>
+    <string name="chat_drawer_nothing_archived">没有已归档的内容</string>
+    <string name="chat_drawer_nothing_waiting">没有等你处理的内容</string>
+    <string name="chat_drawer_nothing_running">没有正在运行的内容</string>
+    <string name="chat_drawer_all_read">全部已读</string>
+    <string name="chat_session_id_copied">会话 ID 已复制</string>
+    <string name="chat_moved_to_project">已移至 %1$s</string>
+    <string name="chat_drawer_reaching_back">正在加载更早的内容…</string>
+    <string name="chat_drawer_show_older">显示更早的%1$s</string>
+    <string name="chat_drawer_in_transcripts">对话记录中</string>
+    <string name="chat_demo_gateway">演示网关</string>
+    <string name="chat_demo_gateway_page">连接网关后，它的页面会显示在这里。</string>
+    <string name="chat_connect">连接</string>
+    <string name="chat_open_gateway">打开网关</string>
+    <string name="chat_settings">设置</string>
+    <string name="chat_shelf_fold">收起%1$s</string>
+    <string name="chat_shelf_open">展开%1$s</string>
+    <string name="chat_room_forked">从另一个对话分叉而来</string>
+    <string name="chat_room_temporary">临时 — 下次启动时删除</string>
+    <string name="chat_room_pinned">已置顶</string>
+    <string name="chat_mark_unread">标为未读</string>
+    <string name="chat_archive">归档</string>
+    <string name="chat_archive_hint">从列表移除，仍保留在网关上</string>
+    <string name="chat_restore_to_list">恢复到列表</string>
+    <string name="chat_export_ellipsis">导出…</string>
+    <string name="chat_copy_session_id">复制会话 ID</string>
+    <string name="chat_invite_user">邀请用户…</string>
+    <string name="chat_rename_ellipsis">重命名…</string>
+    <string name="chat_move_to_project">移至项目…</string>
+    <string name="chat_leave_room">退出房间</string>
+    <string name="chat_delete_session_ellipsis">删除会话…</string>
+    <string name="chat_invite_to">邀请加入 %1$s</string>
+    <string name="chat_invite">邀请</string>
+    <string name="chat_cancel">取消</string>
+    <string name="chat_leave_title">退出 %1$s？</string>
+    <string name="chat_leave_body">你将不再收到它的消息；重新加入需要新的邀请。</string>
+    <string name="chat_leave">退出</string>
+    <string name="chat_rename_session">重命名会话</string>
+    <string name="chat_rename">重命名</string>
+    <string name="chat_delete_title">删除 %1$s？</string>
+    <string name="chat_delete_session_body">从网关上删除此会话及其全部对话记录。此操作无法撤销。</string>
+    <string name="chat_delete">删除</string>
+    <string name="chat_invited_to_room">你被邀请加入此房间</string>
+    <string name="chat_decline">拒绝</string>
+    <string name="chat_accept">接受</string>
+    <string name="chat_running">运行中</string>
+    <string name="chat_age_now">刚刚</string>
+    <string name="chat_age_minutes">%1$d分</string>
+    <string name="chat_age_hours">%1$d时</string>
+    <string name="chat_age_days">%1$d天</string>
+    <string name="chat_age_weeks">%1$d周</string>
+    <plurals name="chat_door_needs_you">
+        <item quantity="other">%1$s，%2$s 项等你处理</item>
+    </plurals>
+    <string name="chat_door_unread">%1$s，%2$s 条未读</string>
+
+    <string name="chat_bot_new_title">与 %1$s 重新开始？</string>
+    <string name="chat_bot_new_body">“压缩”会保留此对话，并清空 %1$s 的工作上下文。\n\n新的机器人聊天会让当前聊天退役（仍可在 %1$s 的历史聊天中查看），并开始一个新的聊天。</string>
+    <string name="chat_bot_new_fresh">新的机器人聊天</string>
+    <string name="chat_bot_new_compact">压缩</string>
+    <string name="chat_bot_chat_chip">机器人聊天</string>
+    <string name="chat_menu">菜单</string>
+    <plurals name="chat_menu_waiting">
+        <item quantity="other">菜单，%d 项等你处理</item>
+    </plurals>
+    <plurals name="chat_menu_unread">
+        <item quantity="other">菜单，%d 条未读</item>
+    </plurals>
+    <string name="chat_new_session_failed">无法开始会话。%1$s</string>
+    <string name="chat_new_session_hold">新会话（长按查看选项）</string>
+    <string name="chat_unpin_run">取消固定此运行</string>
+    <string name="chat_pin_run">固定此运行</string>
+    <string name="chat_new_session">新会话</string>
+    <string name="chat_new_session_confirm_title">开始新会话？</string>
+    <string name="chat_new_session_confirm_body">智能体仍在工作 — /new 会结束当前运行并丢弃其结果。</string>
+    <string name="chat_new_session_confirm">结束运行并新建</string>
+    <string name="chat_find_in_chat">在聊天中查找</string>
+    <string name="chat_call_needs_voice">请先在 设置 → 语音 中设置 STT 和 TTS 端点</string>
+    <string name="chat_call">通话</string>
+    <string name="chat_reasoning_header">推理</string>
+    <string name="chat_reasoning_sub_default">推理强度在所有会话中保持</string>
+    <string name="chat_reasoning_local_brain">本地模型</string>
+    <string name="chat_reasoning_model">模型</string>
+    <string name="chat_reasoning_sub_binary">%1$s · 开/关</string>
+    <string name="chat_reasoning_sub_none">%1$s · 无推理调节</string>
+    <string name="chat_reasoning_sub_session">%1$s · 此会话的等级</string>
+    <string name="chat_reasoning_sub_scale">%1$s · 强度等级</string>
+    <string name="chat_reasoning_no_dial">此模型不接受推理强度 — Hermes 不会发送。</string>
+    <string name="chat_reasoning_every_session">所有会话</string>
+    <string name="chat_reasoning_this_session">仅此会话</string>
+    <string name="chat_reasoning_show">显示推理</string>
+    <string name="chat_reasoning_hide">隐藏推理</string>
+    <string name="chat_reasoning_reset">重置会话设置</string>
+    <string name="chat_demo_label">演示</string>
+    <string name="chat_demo_connect">连接你的网关</string>
+
+    <string name="chat_attach_failed">无法添加附件（无法读取或超过 50 MB）</string>
+    <string name="chat_no_camera">没有相机应用响应</string>
+    <string name="chat_mic_unavailable">麦克风不可用</string>
+    <string name="chat_transcription_failed">转写失败：%1$s</string>
+    <string name="chat_mic_permission">Keryx 需要麦克风权限才能听写</string>
+    <string name="chat_nothing_to_read">没有可朗读的内容</string>
+    <string name="chat_typing_one">%1$s 正在输入…</string>
+    <string name="chat_typing_two">%1$s 和 %2$s 正在输入…</string>
+    <string name="chat_typing_many">多人正在输入…</string>
+    <string name="chat_jump_newest">跳到最新</string>
+    <plurals name="chat_jump_newest_count">
+        <item quantity="other">跳到最新，%d 条新消息</item>
+    </plurals>
+    <string name="chat_attachments_cant_queue">附件无法排队 — 请在本回合结束后发送</string>
+    <string name="chat_stop_hint">先输入你的更正 — 然后点按引导本回合，长按查看更多</string>
+    <string name="chat_busy_queue">排到下一回合</string>
+    <string name="chat_busy_aside">旁问 — 在聊天之外回答</string>
+    <string name="chat_busy_redirect">转向 — 用这条重新开始回复</string>
+    <string name="chat_starter_1">你在这个会话里能做什么？</string>
+    <string name="chat_starter_2">我今天有哪些事要做？</string>
+    <string name="chat_starter_3">我们最近在做什么？</string>
+    <string name="chat_starter_4">帮我一步一步规划一件小事。</string>
+    <string name="chat_fresh_page">新的一页</string>
+    <string name="chat_fresh_page_sub">随便问，或者从下面选一个开始。</string>
+    <string name="chat_today">今天</string>
+    <string name="chat_yesterday">昨天</string>
+
+    <string name="chat_arrival_mark">%1$s · 主动发言 · %2$s</string>
+    <string name="chat_bubble_hold_label">回复、回应或复制</string>
+    <string name="chat_copied">已复制</string>
+    <string name="chat_undo_title">撤回上一轮对话？</string>
+    <string name="chat_undo_body">你的消息和这条回复将从网关上的会话历史中移除。你接下来说的话会从它们之前继续。</string>
+    <string name="chat_undo_confirm">撤回</string>
+    <string name="chat_keep">保留</string>
+    <string name="chat_select_text">选择文本</string>
+    <string name="chat_delete_message_title">删除消息？</string>
+    <string name="chat_delete_message_body">所有人都将看不到这条消息 — 此操作无法撤销。</string>
+    <string name="chat_sent">已发送</string>
+    <string name="chat_stop_speaking">停止朗读</string>
+    <string name="chat_go_to_quoted">转到被引用的消息</string>
+    <string name="chat_reaction_take_back">撤回你的回应</string>
+    <string name="chat_reaction_add">添加你的回应</string>
+    <string name="chat_react">回应</string>
+    <string name="chat_action_reply">回复</string>
+    <string name="chat_action_copy">复制</string>
+    <string name="chat_action_copy_text">复制文本</string>
+    <string name="chat_action_saved">已收藏</string>
+    <string name="chat_action_save">收藏</string>
+    <string name="chat_action_unsave">从收藏中移除</string>
+    <string name="chat_action_keep_archive">保存到归档</string>
+    <string name="chat_action_stop">停止</string>
+    <string name="chat_action_read_aloud">朗读</string>
+    <string name="chat_action_select">选择</string>
+    <string name="chat_action_edit">编辑</string>
+    <string name="chat_action_edit_desc">编辑后重新发送</string>
+    <string name="chat_action_retry">重试</string>
+    <string name="chat_action_retry_desc">撤回后重新说一遍</string>
+    <string name="chat_action_branch">分支</string>
+    <string name="chat_action_branch_desc">从这里分出一个新会话</string>
+    <string name="chat_action_undo">撤销</string>
+    <string name="chat_action_undo_desc">撤回上一轮对话</string>
+    <string name="chat_action_delete_desc">删除消息</string>
+    <string name="chat_reply_attachment">附件</string>
+    <string name="chat_reply_message">消息</string>
+
+    <string name="chat_archive_title">归档</string>
+    <string name="chat_archive_waking">正在唤醒索引…</string>
+    <plurals name="chat_archive_reaching">
+        <item quantity="other">已记住 %1$s 条 · 正在往前查找…</item>
+    </plurals>
+    <plurals name="chat_archive_error">
+        <item quantity="other">已记住 %1$s 条 · %2$s</item>
+    </plurals>
+    <plurals name="chat_archive_done">
+        <item quantity="other">已记住 %1$s 条消息</item>
+    </plurals>
+    <string name="chat_archive_jump_date">跳转到日期</string>
+    <string name="chat_archive_nothing_that_day">那天还没有已索引的内容</string>
+    <string name="chat_open">打开</string>
+    <string name="chat_archive_tab_search">搜索</string>
+    <string name="chat_archive_tab_saved">收藏</string>
+    <string name="chat_archive_tab_media">媒体</string>
+    <string name="chat_archive_search_hint">搜索说过的一切…</string>
+    <string name="chat_archive_recent">最近记住的</string>
+    <string name="chat_archive_empty_title">还没有记住任何内容</string>
+    <string name="chat_archive_empty_body">索引会在扫描会话时逐渐填充。之后，应用见过的每条消息都能一搜即得。</string>
+    <string name="chat_archive_search_idle">应用见过的每条消息，一搜即得。</string>
+    <string name="chat_archive_no_hits">还没有“%1$s”的结果</string>
+    <string name="chat_archive_opening">正在打开归档…</string>
+    <string name="chat_archive_saved_empty_title">还没有收藏任何内容</string>
+    <string name="chat_archive_saved_empty_body">长按一条消息并点按书签，即可收藏到这里。</string>
+    <string name="chat_archive_looking">正在查找已索引的内容…</string>
+    <string name="chat_archive_media_empty_title">还没有照片或文件</string>
+    <string name="chat_archive_media_empty_body">随着索引填充，聊天中的图片和文件会汇集到这里。</string>
+    <string name="chat_image">图片</string>
+    <string name="chat_you">你</string>
+    <string name="chat_archive_context">上下文</string>
+    <string name="chat_archive_context_failed">无法加载那一刻的内容（可能早于此次登录的密钥）。</string>
+    <string name="chat_archive_reach_earlier">加载更早</string>
+    <string name="chat_archive_reach_later">加载更晚</string>
+
+    <string name="chat_attach">附件</string>
+    <string name="chat_composer_hint">消息…</string>
+    <string name="chat_composer_hint_steer_stop">输入以引导本回合 — ■ 停止</string>
+    <string name="chat_composer_hint_steer">输入以引导本回合</string>
+    <string name="chat_dictate_stop">停止听写</string>
+    <string name="chat_dictate">听写</string>
+    <string name="chat_send_steer">引导正在进行的回合</string>
+    <string name="chat_send_queue">排到下一回合</string>
+    <string name="chat_send_stop">停止回合</string>
+    <string name="chat_send">发送</string>
+    <string name="chat_send_hold_menu">排队、旁问或转向</string>
+    <string name="chat_send_hold_queue">改为排到下一回合</string>
+    <string name="chat_send_hold_stop">停止会做什么</string>
+    <string name="chat_choose_model">选择模型</string>
+    <string name="chat_model_label">模型：%1$s</string>
+    <string name="chat_reasoning">推理</string>
+    <string name="chat_steer_hint">↪ 引导本回合 · 长按排队</string>
+    <string name="chat_replying_to">正在回复 %1$s</string>
+    <string name="chat_cancel_reply">取消回复</string>
+    <string name="chat_image_attached">已附加图片</string>
+    <string name="chat_file_attached">已附加文件</string>
+    <string name="chat_remove_attachment">移除附件</string>
+    <string name="chat_attach_photo">照片</string>
+    <string name="chat_attach_file">文件</string>
+    <string name="chat_attach_camera">相机</string>
+
+    <string name="chat_tool_succeeded">成功</string>
+    <string name="chat_tool_failed">失败</string>
+    <string name="chat_tool_no_verdict">无结论</string>
+    <string name="chat_duration_seconds">%1$d秒</string>
+    <string name="chat_duration_millis">%1$d毫秒</string>
+    <string name="chat_tool_flagged">⚠ Hermes 标记了此输出</string>
+    <string name="chat_tool_flagged_with">⚠ Hermes 标记了此输出：%1$s</string>
+    <string name="chat_tool_diff">差异</string>
+    <string name="chat_tool_diff_show">显示差异</string>
+    <string name="chat_tool_diff_hide">隐藏差异</string>
+    <string name="chat_tool_diff_label">差异</string>
+    <string name="chat_tool_output">输出</string>
+    <string name="chat_tool_output_show">显示输出</string>
+    <string name="chat_tool_output_hide">隐藏输出</string>
+    <string name="chat_tool_output_label">输出</string>
+    <string name="chat_tool_exit_failed">退出码 %1$d，失败</string>
+    <string name="chat_tool_exit_ok">退出码 0</string>
+    <plurals name="chat_tools_running">
+        <item quantity="other">正在运行 %d 个工具…</item>
+    </plurals>
+    <plurals name="chat_tools_ran">
+        <item quantity="other">运行了 %d 个工具</item>
+    </plurals>
+    <plurals name="chat_subagents_running">
+        <item quantity="other">%2$d 个子智能体中有 %1$d 个在运行</item>
+    </plurals>
+    <string name="chat_subagent_running">子智能体运行中</string>
+    <plurals name="chat_delegated_tasks">
+        <item quantity="other">委派了 %d 项任务</item>
+    </plurals>
+    <string name="chat_delegated_task">委派了一项任务</string>
+    <string name="chat_working">工作中…</string>
+    <plurals name="chat_output_steps">
+        <item quantity="other">%d 个输出步骤</item>
+    </plurals>
+    <plurals name="chat_run_with_failed">
+        <item quantity="other">%1$s · %2$d 个失败</item>
+    </plurals>
+    <string name="chat_steps_fold">收起步骤</string>
+    <string name="chat_steps_show">显示步骤</string>
+    <string name="chat_tap_in_run">全屏查看此运行</string>
+    <string name="chat_state_open">已展开</string>
+    <string name="chat_state_folded">已收起</string>
+
+    <string name="chat_approval_needed">需要审批</string>
+    <string name="chat_approval_once">允许一次</string>
+    <string name="chat_approval_session">本会话</string>
+    <string name="chat_approval_always">始终</string>
+    <string name="chat_approval_deny">拒绝</string>
+    <string name="chat_asking">Hermes 在提问</string>
+    <string name="chat_asking_batch">Hermes 在提问 · 第 %1$d / %2$d 个</string>
+    <string name="chat_sudo_needed">需要 sudo 密码</string>
+    <string name="chat_credential_needed">需要凭据</string>
+    <string name="chat_stored_as">以 %1$s 保存在网关上</string>
+    <string name="chat_multi_answers">可以给出多个答案 — 在下方用逗号分隔输入。</string>
+    <string name="chat_your_answer">你的回答</string>
+    <string name="chat_password">密码</string>
+    <string name="chat_value">值</string>
+    <string name="chat_skip">跳过</string>
+
+    <string name="chat_new_conversation">新对话</string>
+    <string name="chat_new_session_body">一个全新的网关会话。现在命名，或让第一轮对话自动生成标题。</string>
+    <string name="chat_title_optional">标题（可选）</string>
+    <string name="chat_agent">智能体</string>
+    <string name="chat_temporary">临时</string>
+    <string name="chat_temporary_body">应用下次启动时从网关删除</string>
+    <string name="chat_create">创建</string>
+    <string name="chat_error_line">⚠ %1$s</string>
+    <string name="chat_direct_message">私信</string>
+    <string name="chat_direct_message_sub">与一位用户一对一聊天</string>
+    <string name="chat_start">开始</string>
+    <string name="chat_new_room">新房间</string>
+    <string name="chat_new_room_sub">一个有名称的房间；现在或以后邀请成员</string>
+    <string name="chat_room_name">房间名称</string>
+    <string name="chat_invite_optional">邀请 @user:server（可选）</string>
+    <string name="chat_join_by_address">通过地址加入</string>
+    <string name="chat_join">加入</string>
+
+    <string name="chat_prune_preview_failed">预览失败</string>
+    <string name="chat_prune_confirm_title">确认清理会话</string>
+    <plurals name="chat_prune_confirm_sub">
+        <item quantity="other">将永久删除 %d 个会话</item>
+    </plurals>
+    <string name="chat_prune_title">清理会话</string>
+    <string name="chat_prune_body">从网关的记录中永久删除已结束的会话，包括对话记录。进行中的会话不会受影响。</string>
+    <string name="chat_prune_older_than">早于</string>
+    <string name="chat_prune_days">%1$d天</string>
+    <string name="chat_prune_max_messages">仅限消息数 ≤ N 的会话（可选）</string>
+    <string name="chat_prune_include_archived">包括已归档的会话</string>
+    <string name="chat_prune_nothing">没有符合这些条件的会话。</string>
+    <plurals name="chat_prune_matched">
+        <item quantity="other">%1$d 个会话匹配 · 最早 %2$s · 最新 %3$s</item>
+    </plurals>
+    <plurals name="chat_prune_sample">
+        <item quantity="other">· %1$s（%2$d 条消息）</item>
+    </plurals>
+    <string name="chat_prune_preview">预览</string>
+    <string name="chat_prune_delete_count">删除 %1$d 个…</string>
+    <string name="chat_prune_delete">删除…</string>
+    <plurals name="chat_prune_final_title">
+        <item quantity="other">永久删除 %d 个会话？</item>
+    </plurals>
+    <string name="chat_prune_final_body">数据行和对话记录文件将从网关上移除。无法撤销。</string>
+    <string name="chat_prune_delete_n">删除 %1$d 个</string>
+
+    <string name="chat_loading_lower">加载中…</string>
+    <string name="chat_load_attachment_failed">无法加载附件</string>
+    <string name="chat_animated_image">动图</string>
+    <string name="chat_video">视频</string>
+    <string name="chat_saved_to">已保存到 %1$s</string>
+    <string name="chat_save_failed">无法保存</string>
+    <string name="chat_save_to_device">保存到设备</string>
+    <string name="chat_share_failed">无法分享</string>
+    <string name="chat_share">分享</string>
+    <string name="chat_close">关闭</string>
+    <string name="chat_no_app_for_file">没有应用能打开此文件</string>
+    <string name="chat_open_with">打开方式</string>
+
+    <string name="chat_copy_image">复制图片</string>
+    <string name="chat_image_copied">图片已复制 — 可粘贴到帖子中</string>
+    <string name="chat_image_fetch_failed">无法获取图片 — 已改为复制链接</string>
+    <string name="chat_copy_link">复制链接</string>
+    <string name="chat_link_copied">链接已复制</string>
+    <string name="chat_save_to_photos">保存到相册</string>
+    <string name="chat_save_image_failed">无法保存该图片</string>
+    <string name="chat_open_in_browser">在浏览器中打开</string>
+    <string name="chat_no_app_for_link">没有应用能打开该链接</string>
+
+    <string name="chat_gateway_log">网关日志</string>
+    <string name="chat_details_copied">详情已复制</string>
+    <string name="chat_copy_details">复制详情</string>
+
+    <string name="chat_thinking">思考中…</string>
+    <string name="chat_thought">已思考</string>
+    <string name="chat_thought_briefly">简短思考</string>
+    <string name="chat_thought_for">思考了 %1$s</string>
+    <string name="chat_reasoning_show_a11y">显示推理过程</string>
+    <string name="chat_reasoning_hide_a11y">隐藏推理过程</string>
+    <string name="chat_duration_min_sec">%1$d分%2$d秒</string>
+    <string name="chat_newest">最新</string>
+
+    <string name="chat_config_unsaved">%1$s · 未保存</string>
+    <string name="chat_saving">正在保存…</string>
+    <string name="chat_save">保存</string>
+    <string name="chat_config_load_failed">无法加载 config.yaml。%1$s</string>
+    <string name="chat_loading">加载中…</string>
+    <string name="chat_config_restart_note">对大多数部分而言，保存的更改会在网关下次重启时生效。</string>
+    <string name="chat_save_anyway_title">仍要保存？</string>
+    <string name="chat_save_anyway">仍然保存</string>
+    <string name="chat_discard_title">放弃更改？</string>
+    <string name="chat_config_untouched">网关上的 config.yaml 不会被修改。</string>
+    <string name="chat_discard">放弃</string>
+    <string name="chat_keep_editing">继续编辑</string>
+
+    <string name="chat_export_title">导出“%1$s”</string>
+    <string name="chat_this_session">此会话</string>
+    <string name="chat_export_markdown_detail">你看到的对话内容：谁说了什么，工具调用各占一行，长输出会被截短。</string>
+    <string name="chat_export_json_detail">网关的完整导出：所有数据行，包括已撤销的回合和系统提示词。可重新导入。</string>
+    <string name="chat_export_share_failed">无法打开分享面板。</string>
+    <string name="chat_export_failed">导出失败。</string>
+    <string name="chat_exporting">正在导出…</string>
+
+    <string name="chat_cmd_new">开始新对话</string>
+    <string name="chat_cmd_compress">压缩 / 总结此对话</string>
+    <string name="chat_cmd_handoff">将上下文移交给新会话</string>
+    <string name="chat_cmd_steer">在任务中途引导智能体</string>
+    <string name="chat_cmd_think">要求更深入的推理</string>
+    <string name="chat_cmd_model">切换当前模型</string>
+    <string name="chat_cmd_reset">重置智能体的工作状态</string>
+    <string name="chat_cmd_help">列出此智能体能做的事</string>
+    <string name="chat_cmd_status">显示智能体和系统状态</string>
+    <string name="chat_cmd_memory">回忆或编辑长期记忆</string>
+    <string name="chat_cmd_tools">列出可用工具</string>
+    <string name="chat_cmd_recent">最近</string>
+    <string name="chat_cmd_skill">技能</string>
+
+    <string name="chat_transition_dissolve">溶解</string>
+    <string name="chat_transition_dissolve_blurb">房间透过柔和的模糊重新成形，伴随盲文波纹。</string>
+    <string name="chat_transition_passage">通道</string>
+    <string name="chat_transition_passage_blurb">新房间沿着一道亮缝滑入，旧房间向后退去。</string>
+    <string name="chat_transition_weave">编织</string>
+    <string name="chat_transition_weave_blurb">琥珀色和紫色的丝带交错上升，房间在其后切换。</string>
+    <string name="chat_transition_bloom">绽放</string>
+    <string name="chat_transition_bloom_blurb">新房间从你点按的那一行以圆形展开。</string>
+    <string name="chat_transition_rise">升起</string>
+    <string name="chat_transition_rise_blurb">旧房间向后倾倒下沉；新房间升起就位。</string>
+    <string name="chat_speed_slow">慢</string>
+    <string name="chat_speed_normal">正常</string>
+    <string name="chat_speed_fast">快</string>
+
+    <string name="chat_pet_choose">选择宠物</string>
+    <string name="chat_pet_rides">%1$s 会在侧边栏里陪着你</string>
+    <string name="chat_pet_gateway">宠物保存在网关上 — 所有界面显示的都是同一只</string>
+    <plurals name="chat_pet_search">
+        <item quantity="other">搜索 %d 只宠物…</item>
+    </plurals>
+    <string name="chat_pet_installed_header">已安装</string>
+    <string name="chat_pet_catalog_header">Petdex 目录</string>
+    <string name="chat_pet_none">没有可用的宠物 — Hermes Link 配置好了吗？</string>
+    <string name="chat_pet_no_match">没有与“%1$s”匹配的宠物</string>
+    <string name="chat_pet_badge_active">使用中</string>
+    <string name="chat_pet_badge_hatched">本地孵化</string>
+    <string name="chat_pet_badge_curated">精选</string>
+    <string name="chat_pet_badge_installed">已安装</string>
+    <string name="chat_pet_active">使用中</string>
+
+    <string name="chat_back">返回</string>
+    <string name="chat_close_named">关闭%1$s</string>
+    <string name="chat_loading_a11y">加载中</string>
+
+    <string name="chat_call_header">KERYX · 通话</string>
+    <string name="chat_call_mic_needed">Keryx 需要麦克风权限才能通话。</string>
+    <string name="chat_call_listening">正在聆听</string>
+    <string name="chat_call_hearing">正在识别…</string>
+    <string name="chat_call_thinking">思考中</string>
+    <string name="chat_call_interrupt">点按光球即可打断</string>
+    <string name="chat_call_muted">已静音</string>
+    <string name="chat_call_ended">通话已结束</string>
+    <string name="chat_call_heard">“%1$s”</string>
+    <string name="chat_call_unmute">取消静音</string>
+    <string name="chat_call_mute">静音</string>
+    <string name="chat_call_end">结束通话</string>
+
+    <string name="chat_sources">来源</string>
+    <string name="chat_source">来源</string>
+    <string name="chat_hand_clipboard">剪贴板</string>
+    <string name="chat_hand_phone">手机</string>
+    <string name="chat_hand_share">分享</string>
+    <string name="chat_hand_app">应用</string>
+    <string name="chat_hand_opens">打开</string>
+    <string name="chat_skill_distilled">已提炼技能</string>
+    <string name="chat_open_skill_forge">在技能工坊中打开 →</string>
+
+    <string name="chat_tap_in_turn">全屏查看本回合</string>
+    <string name="chat_stream_dropped">数据流中断 — 正在通过 Matrix 同步恢复…</string>
+
+    <string name="chat_context_direct_only">只有直连方式才能列出上下文窗口的明细。</string>
+    <string name="chat_context_read_failed">无法读取上下文窗口</string>
+    <string name="chat_context_title">上下文</string>
+    <string name="chat_context_used">%1$s / %2$s token</string>
+    <string name="chat_context_no_agent">网关上还没有此会话的活动智能体 — 请先发送一条消息。</string>
+
+    <string name="chat_chart">图表</string>
+    <string name="chat_chart_summary">%1$s。%2$s图。</string>
+    <string name="chat_chart_summary_unit">%1$s。%2$s图，单位：%3$s。</string>
+    <string name="chat_chart_no_value">无数值</string>
+    <string name="chat_chart_series">系列 %1$d</string>
+    <string name="chat_chart_total">总计</string>
+    <string name="chat_show_less">收起</string>
+    <plurals name="chat_show_all_lines">
+        <item quantity="other">显示全部 %d 行</item>
+    </plurals>
+
+    <string name="chat_aside_header">旁问 · 不属于聊天内容</string>
+    <string name="chat_dismiss">关闭</string>
+    <string name="chat_aside_answering">…正在旁答</string>
+    <string name="chat_aside_failed">旁问失败：%1$s</string>
+    <string name="chat_aside_no_answer">没有收到回答。</string>
+
+    <string name="chat_action_success">成功</string>
+    <string name="chat_action_failed">失败</string>
+    <string name="chat_action_tag">操作</string>
+    <string name="chat_reasoning_live">推理中…</string>
+    <string name="chat_reasoning_title">推理</string>
+    <string name="chat_show_drawing">显示图画</string>
+    <string name="chat_drawing">图画</string>
+
+    <string name="chat_done">完成</string>
+
+    <string name="chat_art_mission_board">一块空的任务看板，旁边倚着传令官的权杖</string>
+    <string name="chat_art_winged_clock">一个带翅膀的时钟，一支箭头绕着它弯曲</string>
+    <string name="chat_art_robot">一个机器人头像，头顶是传令官的带翼光球，两侧各有一个空位</string>
+    <string name="chat_art_folder">一个装着一页纸的文件夹，纸上画着一条分支</string>
+    <string name="chat_art_scroll">一卷展开的卷轴，上面放着放大镜</string>
+    <string name="chat_art_bookmark">一页纸，其中一行被标记，附有一条书签丝带</string>
+    <string name="chat_art_picture">一幅画着山丘和太阳的装框图画，后面是一个空画框</string>
+
+    <string name="chat_memory">聊天记忆</string>
+    <string name="chat_ring_base">聊天记忆 %1$dk / %2$dk token，%3$d%%</string>
+    <plurals name="chat_ring_replies">
+        <item quantity="other">%1$s，约 %2$d 条回复后进行总结</item>
+    </plurals>
+    <string name="chat_ring_until">%1$s，还剩 %2$dk 开始总结</string>
+    <string name="chat_ring_next">%1$s，下一条回复将开始总结</string>
+
+    <string name="chat_folder_hint">网关上的文件夹（例如 ~/workspace/keryx）</string>
+    <string name="chat_folder_found">✓ 找到文件夹</string>
+    <string name="chat_folder_missing">那里还没有文件夹</string>
+    <string name="chat_known_workspaces">已知工作区</string>
+    <string name="chat_folder_truncated">这里有 30 多个文件夹 — 继续输入以缩小范围</string>
+    <string name="chat_folder_more">还有 %1$d 个 — 继续输入以缩小范围</string>
+
+    <string name="chat_console_starting">正在启动…</string>
+    <string name="chat_console_streaming">智能体正在工作</string>
+    <string name="chat_console_waiting">等待审批</string>
+    <string name="chat_console_completed">回合完成</string>
+    <string name="chat_console_lost">连接中断</string>
+    <string name="chat_console_lost_why">连接中断 — %1$s</string>
+    <string name="chat_console_failed">失败</string>
+    <string name="chat_console_failed_why">失败 — %1$s</string>
+    <string name="chat_stop">停止</string>
+    <string name="chat_clear">清除</string>
+
+    <string name="chat_mark_hide">隐藏它说的内容</string>
+    <string name="chat_mark_read">查看它说的内容</string>
+    <string name="chat_mark_system">系统：%1$s</string>
+    <string name="chat_summary_hide">隐藏总结</string>
+    <string name="chat_summary_read">查看总结</string>
+    <string name="chat_context_compacted">🗜 上下文已压缩 · %1$s</string>
+    <string name="chat_this_session_title">此会话</string>
+
+    <string name="chat_goal_loop">↻ 循环 · %1$s · %2$s</string>
+    <string name="chat_goal_heartbeat">♥ 心跳 · %1$d · %2$s</string>
+    <string name="chat_goal_close">关闭目标</string>
+    <string name="chat_goal_open">打开目标</string>
+    <string name="chat_goal_exit">退出码 %1$d</string>
+
+    <string name="chat_subagent_running_lower">子智能体运行中</string>
+    <plurals name="chat_subagents_count">
+        <item quantity="other">%d 个子智能体</item>
+    </plurals>
+    <string name="chat_subagent">子智能体</string>
+    <string name="chat_delegated_task_lower">委派的任务</string>
+    <plurals name="chat_tool_count">
+        <item quantity="other">%d 个工具</item>
+    </plurals>
+    <string name="chat_tokens_k">%1$dk token</string>
+    <plurals name="chat_files_written">
+        <item quantity="other">已写入 %d 个</item>
+    </plurals>
+    <string name="chat_interrupted">已中断</string>
+    <string name="chat_duration_min_sec_compact">%1$d分%2$d秒</string>
+
+    <string name="chat_flight_plan">飞行计划</string>
+    <string name="chat_flight_all_done">所有步骤均已完成</string>
+    <string name="chat_flight_next">下一步：%1$s</string>
+    <string name="chat_join_sub">#alias:server 或 !roomid:server</string>
+</resources>

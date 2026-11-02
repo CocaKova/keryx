@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_theme_to_light">Byt till ljust</string>
+    <string name="chat_theme_follow_system">Följ systemet</string>
+    <string name="chat_theme_to_dark">Byt till mörkt</string>
+    <string name="chat_new_chat">Ny chatt</string>
+    <string name="chat_drawer_jump_hint">Hoppa till…</string>
+    <string name="chat_lens_needs_you">Behöver dig</string>
+    <string name="chat_lens_running">Körs</string>
+    <string name="chat_lens_unread">Olästa</string>
+    <string name="chat_lens_archived">Arkiverade</string>
+    <string name="chat_drawer_invites">Inbjudningar</string>
+    <string name="chat_place_missions">Uppdrag</string>
+    <string name="chat_place_runs">Körningar</string>
+    <string name="chat_place_bots">Bottar</string>
+    <string name="chat_place_projects">Projekt</string>
+    <string name="chat_place_shipyard">Varvet</string>
+    <string name="chat_place_archive">Arkiv</string>
+    <string name="chat_place_gateway">Gateway</string>
+    <string name="chat_place_settings">Inställningar</string>
+    <string name="chat_drawer_places">Platser</string>
+    <string name="chat_drawer_commands">Kommandon</string>
+    <string name="chat_drawer_no_matches">Inga träffar</string>
+    <string name="chat_drawer_nothing_archived">Inget arkiverat</string>
+    <string name="chat_drawer_nothing_waiting">Inget väntar på dig</string>
+    <string name="chat_drawer_nothing_running">Inget körs</string>
+    <string name="chat_drawer_all_read">Allt läst</string>
+    <string name="chat_session_id_copied">Sessions-id kopierat</string>
+    <string name="chat_moved_to_project">Flyttad till %1$s</string>
+    <string name="chat_drawer_reaching_back">Hämtar äldre…</string>
+    <string name="chat_drawer_show_older">Visa äldre %1$s</string>
+    <string name="chat_drawer_in_transcripts">I transkript</string>
+    <string name="chat_demo_gateway">demogateway</string>
+    <string name="chat_demo_gateway_page">Din gateways sida finns här när du har anslutit en.</string>
+    <string name="chat_connect">Anslut</string>
+    <string name="chat_open_gateway">Öppna Gateway</string>
+    <string name="chat_settings">Inställningar</string>
+    <string name="chat_shelf_fold">Fäll ihop %1$s</string>
+    <string name="chat_shelf_open">Öppna %1$s</string>
+    <string name="chat_room_forked">Förgrenad från en annan konversation</string>
+    <string name="chat_room_temporary">Tillfällig – tas bort vid nästa start</string>
+    <string name="chat_room_pinned">Fäst</string>
+    <string name="chat_mark_unread">Markera som oläst</string>
+    <string name="chat_archive">Arkivera</string>
+    <string name="chat_archive_hint">Borta från listan, kvar på gatewayen</string>
+    <string name="chat_restore_to_list">Återställ till listan</string>
+    <string name="chat_export_ellipsis">Exportera…</string>
+    <string name="chat_copy_session_id">Kopiera sessions-id</string>
+    <string name="chat_invite_user">Bjud in användare…</string>
+    <string name="chat_rename_ellipsis">Byt namn…</string>
+    <string name="chat_move_to_project">Flytta till projekt…</string>
+    <string name="chat_leave_room">Lämna rummet</string>
+    <string name="chat_delete_session_ellipsis">Ta bort session…</string>
+    <string name="chat_invite_to">Bjud in till %1$s</string>
+    <string name="chat_invite">Bjud in</string>
+    <string name="chat_cancel">Avbryt</string>
+    <string name="chat_leave_title">Lämna %1$s?</string>
+    <string name="chat_leave_body">Du slutar få dess meddelanden; för att gå med igen krävs en ny inbjudan.</string>
+    <string name="chat_leave">Lämna</string>
+    <string name="chat_rename_session">Byt namn på session</string>
+    <string name="chat_rename">Byt namn</string>
+    <string name="chat_delete_title">Ta bort %1$s?</string>
+    <string name="chat_delete_session_body">Tar bort sessionen och hela dess transkript från gatewayen. Det går inte att ångra.</string>
+    <string name="chat_delete">Ta bort</string>
+    <string name="chat_invited_to_room">Du har bjudits in till det här rummet</string>
+    <string name="chat_decline">Avböj</string>
+    <string name="chat_accept">Acceptera</string>
+    <string name="chat_running">Körs</string>
+    <string name="chat_age_now">nu</string>
+    <string name="chat_age_minutes">%1$d min</string>
+    <string name="chat_age_hours">%1$d tim</string>
+    <string name="chat_age_days">%1$d d</string>
+    <string name="chat_age_weeks">%1$d v</string>
+    <plurals name="chat_door_needs_you">
+        <item quantity="one">%1$s, %2$s behöver dig</item>
+        <item quantity="other">%1$s, %2$s behöver dig</item>
+    </plurals>
+    <string name="chat_door_unread">%1$s, %2$s olästa</string>
+
+    <string name="chat_bot_new_title">Börja om med %1$s?</string>
+    <string name="chat_bot_new_body">Komprimera behåller den här konversationen och rensar arbetskontexten för %1$s.\n\nEn ny Bottchatt pensionerar den här – den går fortfarande att läsa under tidigare chattar för %1$s – och startar en ny.</string>
+    <string name="chat_bot_new_fresh">Ny Bottchatt</string>
+    <string name="chat_bot_new_compact">Komprimera</string>
+    <string name="chat_bot_chat_chip">Bottchatt</string>
+    <string name="chat_menu">Meny</string>
+    <plurals name="chat_menu_waiting">
+        <item quantity="one">Meny, %d väntar på dig</item>
+        <item quantity="other">Meny, %d väntar på dig</item>
+    </plurals>
+    <plurals name="chat_menu_unread">
+        <item quantity="one">Meny, %d oläst</item>
+        <item quantity="other">Meny, %d olästa</item>
+    </plurals>
+    <string name="chat_new_session_failed">Kunde inte starta en session. %1$s</string>
+    <string name="chat_new_session_hold">Ny session (håll in för alternativ)</string>
+    <string name="chat_unpin_run">Lossa den här körningen</string>
+    <string name="chat_pin_run">Fäst den här körningen</string>
+    <string name="chat_new_session">Ny session</string>
+    <string name="chat_new_session_confirm_title">Starta en ny session?</string>
+    <string name="chat_new_session_confirm_body">Agenten arbetar fortfarande – /new avslutar den aktuella körningen och dess resultat kastas.</string>
+    <string name="chat_new_session_confirm">Avsluta &amp; starta ny</string>
+    <string name="chat_find_in_chat">Sök i chatten</string>
+    <string name="chat_call_needs_voice">Ange först STT- och TTS-slutpunkterna under Inställningar → Röst</string>
+    <string name="chat_call">Ring</string>
+    <string name="chat_reasoning_header">RESONEMANG</string>
+    <string name="chat_reasoning_sub_default">nivån gäller över sessioner</string>
+    <string name="chat_reasoning_local_brain">lokal hjärna</string>
+    <string name="chat_reasoning_model">modell</string>
+    <string name="chat_reasoning_sub_binary">%1$s · på/av</string>
+    <string name="chat_reasoning_sub_none">%1$s · ingen resonemangsnivå</string>
+    <string name="chat_reasoning_sub_session">%1$s · sessionens nivåer</string>
+    <string name="chat_reasoning_sub_scale">%1$s · nivåskala</string>
+    <string name="chat_reasoning_no_dial">Den här modellen tar ingen nivå – Hermes skickar ingen.</string>
+    <string name="chat_reasoning_every_session">Alla sessioner</string>
+    <string name="chat_reasoning_this_session">Bara den här sessionen</string>
+    <string name="chat_reasoning_show">Visa resonemang</string>
+    <string name="chat_reasoning_hide">Dölj resonemang</string>
+    <string name="chat_reasoning_reset">Återställ sessionens val</string>
+    <string name="chat_demo_label">Demo</string>
+    <string name="chat_demo_connect">Anslut din gateway</string>
+
+    <string name="chat_attach_failed">Kunde inte bifoga (oläsbar eller över 50 MB)</string>
+    <string name="chat_no_camera">Ingen kameraapp svarade</string>
+    <string name="chat_mic_unavailable">Mikrofonen är inte tillgänglig</string>
+    <string name="chat_transcription_failed">Transkriberingen misslyckades: %1$s</string>
+    <string name="chat_mic_permission">Keryx behöver mikrofonåtkomst för att diktera</string>
+    <string name="chat_nothing_to_read">Inget att läsa upp</string>
+    <string name="chat_typing_one">%1$s skriver…</string>
+    <string name="chat_typing_two">%1$s och %2$s skriver…</string>
+    <string name="chat_typing_many">Flera personer skriver…</string>
+    <string name="chat_jump_newest">Hoppa till senaste</string>
+    <plurals name="chat_jump_newest_count">
+        <item quantity="one">Hoppa till senaste, %d nytt</item>
+        <item quantity="other">Hoppa till senaste, %d nya</item>
+    </plurals>
+    <string name="chat_attachments_cant_queue">Bilagor kan inte köas – skicka när den här turen är klar</string>
+    <string name="chat_stop_hint">Skriv din rättelse först – sedan styr ett tryck turen, håll in för mer</string>
+    <string name="chat_busy_queue">Köa till nästa tur</string>
+    <string name="chat_busy_aside">Fråga vid sidan – besvaras utanför chatten</string>
+    <string name="chat_busy_redirect">Omdirigera – börja om svaret med det här</string>
+    <string name="chat_starter_1">Vad kan du göra i den här sessionen?</string>
+    <string name="chat_starter_2">Vad har jag på gång i dag?</string>
+    <string name="chat_starter_3">Vad har vi jobbat med nyligen?</string>
+    <string name="chat_starter_4">Hjälp mig planera något litet, steg för steg.</string>
+    <string name="chat_fresh_page">En ny sida</string>
+    <string name="chat_fresh_page_sub">Fråga vad som helst, eller börja med något av de här.</string>
+    <string name="chat_today">I dag</string>
+    <string name="chat_yesterday">I går</string>
+
+    <string name="chat_arrival_mark">%1$s · på eget initiativ · %2$s</string>
+    <string name="chat_bubble_hold_label">Svara, reagera eller kopiera</string>
+    <string name="chat_copied">Kopierat</string>
+    <string name="chat_undo_title">Ta tillbaka senaste utbytet?</string>
+    <string name="chat_undo_body">Ditt meddelande och det här svaret försvinner ur sessionens historik på gatewayen. Det du säger härnäst fortsätter från före dem.</string>
+    <string name="chat_undo_confirm">Ta tillbaka</string>
+    <string name="chat_keep">Behåll</string>
+    <string name="chat_select_text">Markera text</string>
+    <string name="chat_delete_message_title">Ta bort meddelandet?</string>
+    <string name="chat_delete_message_body">Det tas bort för alla – det går inte att ångra.</string>
+    <string name="chat_sent">Skickat</string>
+    <string name="chat_stop_speaking">Sluta läsa upp</string>
+    <string name="chat_go_to_quoted">Gå till det citerade meddelandet</string>
+    <string name="chat_reaction_take_back">Ta tillbaka din reaktion</string>
+    <string name="chat_reaction_add">Lägg till din reaktion</string>
+    <string name="chat_react">Reagera</string>
+    <string name="chat_action_reply">Svara</string>
+    <string name="chat_action_copy">Kopiera</string>
+    <string name="chat_action_copy_text">Kopiera text</string>
+    <string name="chat_action_saved">Sparat</string>
+    <string name="chat_action_save">Spara</string>
+    <string name="chat_action_unsave">Ta bort från Sparade</string>
+    <string name="chat_action_keep_archive">Spara i Arkivet</string>
+    <string name="chat_action_stop">Stoppa</string>
+    <string name="chat_action_read_aloud">Läs upp</string>
+    <string name="chat_action_select">Markera</string>
+    <string name="chat_action_edit">Redigera</string>
+    <string name="chat_action_edit_desc">Redigera och skicka igen</string>
+    <string name="chat_action_retry">Försök igen</string>
+    <string name="chat_action_retry_desc">Ta tillbaka och säg det igen</string>
+    <string name="chat_action_branch">Förgrena</string>
+    <string name="chat_action_branch_desc">Förgrena en ny session härifrån</string>
+    <string name="chat_action_undo">Ångra</string>
+    <string name="chat_action_undo_desc">Ta tillbaka senaste utbytet</string>
+    <string name="chat_action_delete_desc">Ta bort meddelande</string>
+    <string name="chat_reply_attachment">bilaga</string>
+    <string name="chat_reply_message">meddelande</string>
+
+    <string name="chat_archive_title">Arkiv</string>
+    <string name="chat_archive_waking">väcker indexet…</string>
+    <plurals name="chat_archive_reaching">
+        <item quantity="one">%1$s ihågkommet · hämtar äldre…</item>
+        <item quantity="other">%1$s ihågkomna · hämtar äldre…</item>
+    </plurals>
+    <plurals name="chat_archive_error">
+        <item quantity="one">%1$s ihågkommet · %2$s</item>
+        <item quantity="other">%1$s ihågkomna · %2$s</item>
+    </plurals>
+    <plurals name="chat_archive_done">
+        <item quantity="one">%1$s meddelande ihågkommet</item>
+        <item quantity="other">%1$s meddelanden ihågkomna</item>
+    </plurals>
+    <string name="chat_archive_jump_date">Hoppa till datum</string>
+    <string name="chat_archive_nothing_that_day">Inget indexerat för den dagen än</string>
+    <string name="chat_open">Öppna</string>
+    <string name="chat_archive_tab_search">Sök</string>
+    <string name="chat_archive_tab_saved">Sparade</string>
+    <string name="chat_archive_tab_media">Media</string>
+    <string name="chat_archive_search_hint">Sök i allt som någonsin sagts…</string>
+    <string name="chat_archive_recent">NYLIGEN IHÅGKOMMET</string>
+    <string name="chat_archive_empty_title">Inget ihågkommet än</string>
+    <string name="chat_archive_empty_body">Indexet fylls i takt med att sessioner gås igenom. Sedan är varje meddelande appen sett bara en sökning bort.</string>
+    <string name="chat_archive_search_idle">Varje meddelande appen någonsin sett, bara en sökning bort.</string>
+    <string name="chat_archive_no_hits">Inget än för ”%1$s”</string>
+    <string name="chat_archive_opening">Öppnar arkivet…</string>
+    <string name="chat_archive_saved_empty_title">Inget sparat än</string>
+    <string name="chat_archive_saved_empty_body">Håll in ett meddelande och tryck på bokmärket för att spara det här.</string>
+    <string name="chat_archive_looking">Letar igenom det som indexerats…</string>
+    <string name="chat_archive_media_empty_title">Inga foton eller filer än</string>
+    <string name="chat_archive_media_empty_body">Bilder och filer från dina chattar samlas här när indexet fylls.</string>
+    <string name="chat_image">bild</string>
+    <string name="chat_you">Du</string>
+    <string name="chat_archive_context">Sammanhang</string>
+    <string name="chat_archive_context_failed">Det ögonblicket gick inte att ladda (det kan vara äldre än den här inloggningens nycklar).</string>
+    <string name="chat_archive_reach_earlier">Tidigare</string>
+    <string name="chat_archive_reach_later">Senare</string>
+
+    <string name="chat_attach">Bifoga</string>
+    <string name="chat_composer_hint">Meddelande…</string>
+    <string name="chat_composer_hint_steer_stop">Skriv för att styra turen – ■ stoppar</string>
+    <string name="chat_composer_hint_steer">Skriv för att styra turen</string>
+    <string name="chat_dictate_stop">Sluta diktera</string>
+    <string name="chat_dictate">Diktera</string>
+    <string name="chat_send_steer">Styr den pågående turen</string>
+    <string name="chat_send_queue">Köa till nästa tur</string>
+    <string name="chat_send_stop">Stoppa turen</string>
+    <string name="chat_send">Skicka</string>
+    <string name="chat_send_hold_menu">Köa, fråga vid sidan eller omdirigera</string>
+    <string name="chat_send_hold_queue">Köa till nästa tur i stället</string>
+    <string name="chat_send_hold_stop">Vad stopp gör</string>
+    <string name="chat_choose_model">Välj en modell</string>
+    <string name="chat_model_label">Modell: %1$s</string>
+    <string name="chat_reasoning">resonemang</string>
+    <string name="chat_steer_hint">↪ styr turen · håll in för att köa</string>
+    <string name="chat_replying_to">Svarar %1$s</string>
+    <string name="chat_cancel_reply">Avbryt svar</string>
+    <string name="chat_image_attached">Bild bifogad</string>
+    <string name="chat_file_attached">Fil bifogad</string>
+    <string name="chat_remove_attachment">Ta bort bilaga</string>
+    <string name="chat_attach_photo">Foto</string>
+    <string name="chat_attach_file">Fil</string>
+    <string name="chat_attach_camera">Kamera</string>
+
+    <string name="chat_tool_succeeded">Lyckades</string>
+    <string name="chat_tool_failed">Misslyckades</string>
+    <string name="chat_tool_no_verdict">Inget utslag</string>
+    <string name="chat_duration_seconds">%1$d s</string>
+    <string name="chat_duration_millis">%1$d ms</string>
+    <string name="chat_tool_flagged">⚠ Hermes flaggade den här utdatan</string>
+    <string name="chat_tool_flagged_with">⚠ Hermes flaggade den här utdatan: %1$s</string>
+    <string name="chat_tool_diff">diff</string>
+    <string name="chat_tool_diff_show">Visa diffen</string>
+    <string name="chat_tool_diff_hide">Dölj diffen</string>
+    <string name="chat_tool_diff_label">Diff</string>
+    <string name="chat_tool_output">utdata</string>
+    <string name="chat_tool_output_show">Visa utdatan</string>
+    <string name="chat_tool_output_hide">Dölj utdatan</string>
+    <string name="chat_tool_output_label">Utdata</string>
+    <string name="chat_tool_exit_failed">Slutkod %1$d, misslyckades</string>
+    <string name="chat_tool_exit_ok">Slutkod 0</string>
+    <plurals name="chat_tools_running">
+        <item quantity="one">Kör %d verktyg…</item>
+        <item quantity="other">Kör %d verktyg…</item>
+    </plurals>
+    <plurals name="chat_tools_ran">
+        <item quantity="one">Körde %d verktyg</item>
+        <item quantity="other">Körde %d verktyg</item>
+    </plurals>
+    <plurals name="chat_subagents_running">
+        <item quantity="one">%1$d av %2$d underagent körs</item>
+        <item quantity="other">%1$d av %2$d underagenter körs</item>
+    </plurals>
+    <string name="chat_subagent_running">Underagent körs</string>
+    <plurals name="chat_delegated_tasks">
+        <item quantity="one">Delegerade %d uppgift</item>
+        <item quantity="other">Delegerade %d uppgifter</item>
+    </plurals>
+    <string name="chat_delegated_task">Delegerade en uppgift</string>
+    <string name="chat_working">Arbetar…</string>
+    <plurals name="chat_output_steps">
+        <item quantity="one">%d utdatasteg</item>
+        <item quantity="other">%d utdatasteg</item>
+    </plurals>
+    <plurals name="chat_run_with_failed">
+        <item quantity="one">%1$s · %2$d misslyckades</item>
+        <item quantity="other">%1$s · %2$d misslyckades</item>
+    </plurals>
+    <string name="chat_steps_fold">Fäll ihop stegen</string>
+    <string name="chat_steps_show">Visa stegen</string>
+    <string name="chat_tap_in_run">Öppna den här körningen i helskärm</string>
+    <string name="chat_state_open">Öppen</string>
+    <string name="chat_state_folded">Hopfälld</string>
+
+    <string name="chat_approval_needed">Godkännande krävs</string>
+    <string name="chat_approval_once">Tillåt en gång</string>
+    <string name="chat_approval_session">Session</string>
+    <string name="chat_approval_always">Alltid</string>
+    <string name="chat_approval_deny">Neka</string>
+    <string name="chat_asking">Hermes frågar</string>
+    <string name="chat_asking_batch">Hermes frågar · %1$d av %2$d</string>
+    <string name="chat_sudo_needed">Sudo-lösenord krävs</string>
+    <string name="chat_credential_needed">Inloggningsuppgift krävs</string>
+    <string name="chat_stored_as">Sparas på gatewayen som %1$s</string>
+    <string name="chat_multi_answers">Flera svar tillåts – skriv dem kommaseparerade nedan.</string>
+    <string name="chat_your_answer">Ditt svar</string>
+    <string name="chat_password">Lösenord</string>
+    <string name="chat_value">Värde</string>
+    <string name="chat_skip">Hoppa över</string>
+
+    <string name="chat_new_conversation">Ny konversation</string>
+    <string name="chat_new_session_body">En ny gatewaysession. Namnge den nu, eller låt första utbytet ge den en titel.</string>
+    <string name="chat_title_optional">Titel (valfritt)</string>
+    <string name="chat_agent">Agent</string>
+    <string name="chat_temporary">Tillfällig</string>
+    <string name="chat_temporary_body">Tas bort från gatewayen nästa gång appen startar</string>
+    <string name="chat_create">Skapa</string>
+    <string name="chat_error_line">⚠ %1$s</string>
+    <string name="chat_direct_message">Direktmeddelande</string>
+    <string name="chat_direct_message_sub">Chatta på tu man hand med en användare</string>
+    <string name="chat_start">Starta</string>
+    <string name="chat_new_room">Nytt rum</string>
+    <string name="chat_new_room_sub">Ett namngivet rum; bjud in folk nu eller senare</string>
+    <string name="chat_room_name">Rummets namn</string>
+    <string name="chat_invite_optional">Bjud in \@user:server (valfritt)</string>
+    <string name="chat_join_by_address">Gå med via adress</string>
+    <string name="chat_join">Gå med</string>
+
+    <string name="chat_prune_preview_failed">förhandsvisningen misslyckades</string>
+    <string name="chat_prune_confirm_title">Bekräfta rensning av sessioner</string>
+    <plurals name="chat_prune_confirm_sub">
+        <item quantity="one">Tar bort %d session permanent</item>
+        <item quantity="other">Tar bort %d sessioner permanent</item>
+    </plurals>
+    <string name="chat_prune_title">Rensa sessioner</string>
+    <string name="chat_prune_body">Tar bort avslutade sessioner från gatewayens register – permanent, transkript inräknade. Aktiva sessioner rörs aldrig.</string>
+    <string name="chat_prune_older_than">Äldre än</string>
+    <string name="chat_prune_days">%1$d d</string>
+    <string name="chat_prune_max_messages">Bara sessioner med ≤ N meddelanden (valfritt)</string>
+    <string name="chat_prune_include_archived">Ta med arkiverade sessioner</string>
+    <string name="chat_prune_nothing">Inget matchar de här filtren.</string>
+    <plurals name="chat_prune_matched">
+        <item quantity="one">%1$d session matchar · äldsta %2$s · nyaste %3$s</item>
+        <item quantity="other">%1$d sessioner matchar · äldsta %2$s · nyaste %3$s</item>
+    </plurals>
+    <plurals name="chat_prune_sample">
+        <item quantity="one">· %1$s (%2$d medd.)</item>
+        <item quantity="other">· %1$s (%2$d medd.)</item>
+    </plurals>
+    <string name="chat_prune_preview">Förhandsvisa</string>
+    <string name="chat_prune_delete_count">Ta bort %1$d…</string>
+    <string name="chat_prune_delete">Ta bort…</string>
+    <plurals name="chat_prune_final_title">
+        <item quantity="one">Ta bort %d session permanent?</item>
+        <item quantity="other">Ta bort %d sessioner permanent?</item>
+    </plurals>
+    <string name="chat_prune_final_body">Rader och transkriptfiler tas bort från gatewayen. Det går inte att ångra.</string>
+    <string name="chat_prune_delete_n">Ta bort %1$d</string>
+
+    <string name="chat_loading_lower">laddar…</string>
+    <string name="chat_load_attachment_failed">Kunde inte ladda bilagan</string>
+    <string name="chat_animated_image">animerad bild</string>
+    <string name="chat_video">video</string>
+    <string name="chat_saved_to">Sparad i %1$s</string>
+    <string name="chat_save_failed">Kunde inte spara</string>
+    <string name="chat_save_to_device">Spara på enheten</string>
+    <string name="chat_share_failed">Kunde inte dela</string>
+    <string name="chat_share">Dela</string>
+    <string name="chat_close">Stäng</string>
+    <string name="chat_no_app_for_file">Ingen app kan öppna den här filen</string>
+    <string name="chat_open_with">Öppna med</string>
+
+    <string name="chat_copy_image">Kopiera bild</string>
+    <string name="chat_image_copied">Bild kopierad – klistra in den i ett inlägg</string>
+    <string name="chat_image_fetch_failed">Kunde inte hämta bilden – länken kopierades i stället</string>
+    <string name="chat_copy_link">Kopiera länk</string>
+    <string name="chat_link_copied">Länk kopierad</string>
+    <string name="chat_save_to_photos">Spara i Foton</string>
+    <string name="chat_save_image_failed">Kunde inte spara bilden</string>
+    <string name="chat_open_in_browser">Öppna i webbläsare</string>
+    <string name="chat_no_app_for_link">Inget här kan öppna den länken</string>
+
+    <string name="chat_gateway_log">Gatewaylogg</string>
+    <string name="chat_details_copied">Detaljer kopierade</string>
+    <string name="chat_copy_details">Kopiera detaljer</string>
+
+    <string name="chat_thinking">Tänker…</string>
+    <string name="chat_thought">Tänkte</string>
+    <string name="chat_thought_briefly">Tänkte kort</string>
+    <string name="chat_thought_for">Tänkte i %1$s</string>
+    <string name="chat_reasoning_show_a11y">Visa resonemanget</string>
+    <string name="chat_reasoning_hide_a11y">Dölj resonemanget</string>
+    <string name="chat_duration_min_sec">%1$d min %2$d s</string>
+    <string name="chat_newest">senaste</string>
+
+    <string name="chat_config_unsaved">%1$s · inte sparad</string>
+    <string name="chat_saving">Sparar…</string>
+    <string name="chat_save">Spara</string>
+    <string name="chat_config_load_failed">Kunde inte ladda config.yaml. %1$s</string>
+    <string name="chat_loading">Laddar…</string>
+    <string name="chat_config_restart_note">Sparade ändringar börjar gälla vid nästa omstart av gatewayen för de flesta avsnitt.</string>
+    <string name="chat_save_anyway_title">Spara ändå?</string>
+    <string name="chat_save_anyway">Spara ändå</string>
+    <string name="chat_discard_title">Släng ändringarna?</string>
+    <string name="chat_config_untouched">config.yaml på gatewayen är orörd.</string>
+    <string name="chat_discard">Släng</string>
+    <string name="chat_keep_editing">Fortsätt redigera</string>
+
+    <string name="chat_export_title">Exportera ”%1$s”</string>
+    <string name="chat_this_session">den här sessionen</string>
+    <string name="chat_export_markdown_detail">Konversationen som du läser den: vem som sa vad, verktyg på en rad, lång utdata kortad.</string>
+    <string name="chat_export_json_detail">Gatewayens fullständiga export: varje rad, inklusive ångrade turer och systemprompten. Kan importeras igen.</string>
+    <string name="chat_export_share_failed">Kunde inte öppna delningsmenyn.</string>
+    <string name="chat_export_failed">Exporten misslyckades.</string>
+    <string name="chat_exporting">Exporterar…</string>
+
+    <string name="chat_cmd_new">Starta en ny konversation</string>
+    <string name="chat_cmd_compress">Komprimera / sammanfatta tråden</string>
+    <string name="chat_cmd_handoff">Lämna över kontexten till en ny session</string>
+    <string name="chat_cmd_steer">Styr agenten mitt i uppgiften</string>
+    <string name="chat_cmd_think">Be om djupare resonemang</string>
+    <string name="chat_cmd_model">Byt aktiv modell</string>
+    <string name="chat_cmd_reset">Återställ agentens arbetsläge</string>
+    <string name="chat_cmd_help">Lista vad den här agenten kan göra</string>
+    <string name="chat_cmd_status">Visa agent- och systemstatus</string>
+    <string name="chat_cmd_memory">Hämta eller redigera långtidsminnet</string>
+    <string name="chat_cmd_tools">Lista tillgängliga verktyg</string>
+    <string name="chat_cmd_recent">senaste</string>
+    <string name="chat_cmd_skill">färdighet</string>
+
+    <string name="chat_transition_dissolve">Upplös</string>
+    <string name="chat_transition_dissolve_blurb">Rummet formas om genom en mjuk oskärpa, med punktskriftsspåret.</string>
+    <string name="chat_transition_passage">Passage</string>
+    <string name="chat_transition_passage_blurb">Det nya rummet glider in på en upplyst söm medan det gamla backar undan.</string>
+    <string name="chat_transition_weave">Väv</string>
+    <string name="chat_transition_weave_blurb">Bärnstensfärgade och violetta band korsar varandra uppåt och rummet byts bakom dem.</string>
+    <string name="chat_transition_bloom">Blom</string>
+    <string name="chat_transition_bloom_blurb">Det nya rummet öppnas som en cirkel från raden du tryckte på.</string>
+    <string name="chat_transition_rise">Stig</string>
+    <string name="chat_transition_rise_blurb">Det gamla rummet tippar bakåt och sjunker; det nya stiger upp på sin plats.</string>
+    <string name="chat_speed_slow">Långsam</string>
+    <string name="chat_speed_normal">Normal</string>
+    <string name="chat_speed_fast">Snabb</string>
+
+    <string name="chat_pet_choose">Välj ett husdjur</string>
+    <string name="chat_pet_rides">%1$s åker med i sidomenyn</string>
+    <string name="chat_pet_gateway">Husdjur bor på gatewayen – alla ytor visar samma</string>
+    <plurals name="chat_pet_search">
+        <item quantity="one">Sök bland %d husdjur…</item>
+        <item quantity="other">Sök bland %d husdjur…</item>
+    </plurals>
+    <string name="chat_pet_installed_header">Installerade</string>
+    <string name="chat_pet_catalog_header">Petdex-katalog</string>
+    <string name="chat_pet_none">Inga husdjur tillgängliga – är Hermes Link konfigurerad?</string>
+    <string name="chat_pet_no_match">Inga husdjur matchar ”%1$s”</string>
+    <string name="chat_pet_badge_active">aktiv</string>
+    <string name="chat_pet_badge_hatched">kläckt lokalt</string>
+    <string name="chat_pet_badge_curated">utvald</string>
+    <string name="chat_pet_badge_installed">installerad</string>
+    <string name="chat_pet_active">Aktiv</string>
+
+    <string name="chat_back">Tillbaka</string>
+    <string name="chat_close_named">Stäng %1$s</string>
+    <string name="chat_loading_a11y">Laddar</string>
+
+    <string name="chat_call_header">KERYX · SAMTAL</string>
+    <string name="chat_call_mic_needed">Keryx behöver mikrofonen för ett samtal.</string>
+    <string name="chat_call_listening">lyssnar</string>
+    <string name="chat_call_hearing">hör dig…</string>
+    <string name="chat_call_thinking">tänker</string>
+    <string name="chat_call_interrupt">tryck på klotet för att avbryta</string>
+    <string name="chat_call_muted">ljud av</string>
+    <string name="chat_call_ended">samtalet avslutat</string>
+    <string name="chat_call_heard">”%1$s”</string>
+    <string name="chat_call_unmute">Slå på ljud</string>
+    <string name="chat_call_mute">Stäng av ljud</string>
+    <string name="chat_call_end">Lägg på</string>
+
+    <string name="chat_sources">Källor</string>
+    <string name="chat_source">källa</string>
+    <string name="chat_hand_clipboard">URKLIPP</string>
+    <string name="chat_hand_phone">TELEFON</string>
+    <string name="chat_hand_share">DELA</string>
+    <string name="chat_hand_app">APP</string>
+    <string name="chat_hand_opens">ÖPPNAR</string>
+    <string name="chat_skill_distilled">Färdighet destillerad</string>
+    <string name="chat_open_skill_forge">Öppna i Skill Forge →</string>
+
+    <string name="chat_tap_in_turn">Öppna turen i helskärm</string>
+    <string name="chat_stream_dropped">Strömmen bröts – återhämtar via Matrix-synk…</string>
+
+    <string name="chat_context_direct_only">Bara den direkta dörren kan specificera fönstret.</string>
+    <string name="chat_context_read_failed">Kunde inte läsa fönstret</string>
+    <string name="chat_context_title">Kontext</string>
+    <string name="chat_context_used">%1$s av %2$s tokens</string>
+    <string name="chat_context_no_agent">Gatewayen har ingen aktiv agent för den här sessionen än – skicka något först.</string>
+
+    <string name="chat_chart">Diagram</string>
+    <string name="chat_chart_summary">%1$s. %2$s-diagram.</string>
+    <string name="chat_chart_summary_unit">%1$s. %2$s-diagram, i %3$s.</string>
+    <string name="chat_chart_no_value">inget värde</string>
+    <string name="chat_chart_series">Serie %1$d</string>
+    <string name="chat_chart_total">totalt</string>
+    <string name="chat_show_less">Visa mindre</string>
+    <plurals name="chat_show_all_lines">
+        <item quantity="one">Visa %d rad</item>
+        <item quantity="other">Visa alla %d rader</item>
+    </plurals>
+
+    <string name="chat_aside_header">VID SIDAN · inte del av chatten</string>
+    <string name="chat_dismiss">Stäng</string>
+    <string name="chat_aside_answering">…svarar vid sidan</string>
+    <string name="chat_aside_failed">Sidofrågan misslyckades: %1$s</string>
+    <string name="chat_aside_no_answer">Inget svar kom tillbaka.</string>
+
+    <string name="chat_action_success">LYCKADES</string>
+    <string name="chat_action_failed">MISSLYCKADES</string>
+    <string name="chat_action_tag">ÅTGÄRD</string>
+    <string name="chat_reasoning_live">Resonerar…</string>
+    <string name="chat_reasoning_title">Resonemang</string>
+    <string name="chat_show_drawing">visa teckningen</string>
+    <string name="chat_drawing">Teckning</string>
+
+    <string name="chat_done">Klar</string>
+
+    <string name="chat_art_mission_board">En tom uppdragstavla med häroldens stav lutad mot den</string>
+    <string name="chat_art_winged_clock">En bevingad klocka med en pil som böjer sig runt den</string>
+    <string name="chat_art_robot">Ett robothuvud med häroldens bevingade klot ovanpå, en tom plats på var sida</string>
+    <string name="chat_art_folder">En mapp med en sida, med en gren ritad på den</string>
+    <string name="chat_art_scroll">En utrullad skriftrulle med ett förstoringsglas över</string>
+    <string name="chat_art_bookmark">En sida med en markerad rad och ett bokmärkesband</string>
+    <string name="chat_art_picture">En inramad bild av en kulle och sol, med en tom ram bakom</string>
+
+    <string name="chat_memory">Chattminne</string>
+    <string name="chat_ring_base">Chattminne %1$dk av %2$dk tokens, %3$d procent</string>
+    <plurals name="chat_ring_replies">
+        <item quantity="one">%1$s, cirka %2$d svar före sammanfattningen</item>
+        <item quantity="other">%1$s, cirka %2$d svar före sammanfattningen</item>
+    </plurals>
+    <string name="chat_ring_until">%1$s, %2$dk kvar till sammanfattningen</string>
+    <string name="chat_ring_next">%1$s, nästa svar startar en sammanfattning</string>
+
+    <string name="chat_folder_hint">Mapp på gatewayen (t.ex. ~/workspace/keryx)</string>
+    <string name="chat_folder_found">✓ mappen hittades</string>
+    <string name="chat_folder_missing">ingen mapp där än</string>
+    <string name="chat_known_workspaces">Kända arbetsytor</string>
+    <string name="chat_folder_truncated">fler än 30 mappar här – fortsätt skriva för att begränsa</string>
+    <string name="chat_folder_more">+%1$d till – fortsätt skriva för att begränsa</string>
+
+    <string name="chat_console_starting">startar…</string>
+    <string name="chat_console_streaming">agenten arbetar</string>
+    <string name="chat_console_waiting">väntar på godkännande</string>
+    <string name="chat_console_completed">turen klar</string>
+    <string name="chat_console_lost">anslutningen bröts</string>
+    <string name="chat_console_lost_why">anslutningen bröts – %1$s</string>
+    <string name="chat_console_failed">misslyckades</string>
+    <string name="chat_console_failed_why">misslyckades – %1$s</string>
+    <string name="chat_stop">Stoppa</string>
+    <string name="chat_clear">Rensa</string>
+
+    <string name="chat_mark_hide">Dölj vad den sa</string>
+    <string name="chat_mark_read">Läs vad den sa</string>
+    <string name="chat_mark_system">System: %1$s</string>
+    <string name="chat_summary_hide">Dölj sammanfattningen</string>
+    <string name="chat_summary_read">Läs sammanfattningen</string>
+    <string name="chat_context_compacted">🗜 Kontext komprimerad · %1$s</string>
+    <string name="chat_this_session_title">Den här sessionen</string>
+
+    <string name="chat_goal_loop">↻ slinga · %1$s · %2$s</string>
+    <string name="chat_goal_heartbeat">♥ hjärtslag · %1$d · %2$s</string>
+    <string name="chat_goal_close">Stäng målet</string>
+    <string name="chat_goal_open">Öppna målet</string>
+    <string name="chat_goal_exit">slutkod %1$d</string>
+
+    <string name="chat_subagent_running_lower">underagent körs</string>
+    <plurals name="chat_subagents_count">
+        <item quantity="one">%d underagent</item>
+        <item quantity="other">%d underagenter</item>
+    </plurals>
+    <string name="chat_subagent">underagent</string>
+    <string name="chat_delegated_task_lower">delegerad uppgift</string>
+    <plurals name="chat_tool_count">
+        <item quantity="one">%d verktyg</item>
+        <item quantity="other">%d verktyg</item>
+    </plurals>
+    <string name="chat_tokens_k">%1$dk tok</string>
+    <plurals name="chat_files_written">
+        <item quantity="one">%d skriven</item>
+        <item quantity="other">%d skrivna</item>
+    </plurals>
+    <string name="chat_interrupted">avbruten</string>
+    <string name="chat_duration_min_sec_compact">%1$dm%2$ds</string>
+
+    <string name="chat_flight_plan">FÄRDPLAN</string>
+    <string name="chat_flight_all_done">alla steg har landat</string>
+    <string name="chat_flight_next">nästa: %1$s</string>
+    <string name="chat_join_sub">#alias:server eller !roomid:server</string>
+</resources>

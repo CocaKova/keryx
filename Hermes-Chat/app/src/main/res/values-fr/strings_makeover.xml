@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Aperçu : la transition de salon %1$s à la vitesse %2$s</string>
+    <string name="mk_cancel">Annuler</string>
+    <string name="mk_mcp_test">Tester</string>
+    <string name="mk_mcp_testing">Test en cours</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Joignable · %d outil</item>
+        <item quantity="many">Joignable · %d outils</item>
+        <item quantity="other">Joignable · %d outils</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d prompt</item>
+        <item quantity="many">%d prompts</item>
+        <item quantity="other">%d prompts</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d ressource</item>
+        <item quantity="many">%d ressources</item>
+        <item quantity="other">%d ressources</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Injoignable : %1$s</string>
+    <string name="mk_mcp_test_unsupported">Cette passerelle ne peut pas tester de serveurs d\'ici.</string>
+    <string name="mk_mcp_catalog">Catalogue · %1$d à ajouter</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">demande %d clé</item>
+        <item quantity="many">demande %d clés</item>
+        <item quantity="other">demande %d clés</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">compilé depuis les sources</string>
+    <string name="mk_mcp_catalog_oauth">connexion via OAuth</string>
+    <string name="mk_mcp_installed">Installé</string>
+    <string name="mk_mcp_install">Installer</string>
+    <string name="mk_mcp_installing">Installation…</string>
+    <string name="mk_mcp_install_title">Installer %1$s ?</string>
+    <string name="mk_mcp_install_runs">Il exécutera</string>
+    <string name="mk_mcp_install_builds">La passerelle le clone et le compile d\'abord depuis %1$s, en arrière-plan.</string>
+    <string name="mk_mcp_install_oauth">Il se connecte via OAuth : terminez cette étape sur le tableau de bord de la passerelle une fois installé.</string>
+    <string name="mk_mcp_install_env_note">Conservé sur la passerelle : les secrets dans son .env, le reste dans sa config.</string>
+    <string name="mk_mcp_installed_toast">%1$s installé — actif dès la prochaine session</string>
+    <string name="mk_mcp_building_toast">%1$s est en cours de compilation sur la passerelle — il apparaîtra ici une fois prêt</string>
+    <string name="mk_mcp_install_refused">Impossible d\'installer %1$s : %2$s</string>
+    <string name="mk_mcp_install_unsupported">Cette passerelle ne peut pas installer de serveurs MCP d\'ici.</string>
+    <string name="mk_usage">Utilisation</string>
+    <string name="mk_usage_subtitle">Tokens, coût et sessions</string>
+    <string name="mk_usage_subtitle_read">%1$s tokens · %2$s · %3$d derniers jours</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d session</item>
+        <item quantity="many">%d sessions</item>
+        <item quantity="other">%d sessions</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">session</item>
+        <item quantity="many">sessions</item>
+        <item quantity="other">sessions</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d jour</item>
+        <item quantity="many">%d jours</item>
+        <item quantity="other">%d jours</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s appel API</item>
+        <item quantity="many">%1$s appels API</item>
+        <item quantity="other">%1$s appels API</item>
+    </plurals>
+    <string name="mk_usage_tokens">tokens</string>
+    <string name="mk_usage_in_out">%1$s entrée · %2$s sortie</string>
+    <string name="mk_usage_cost">coût</string>
+    <string name="mk_usage_cost_estimated">coût estimé</string>
+    <string name="mk_usage_none">Aucune utilisation ces %1$d derniers jours.</string>
+    <string name="mk_usage_by_day">Par jour</string>
+    <string name="mk_usage_peak">Pic : %1$s le %2$s</string>
+    <string name="mk_usage_by_model">Par modèle</string>
+    <string name="mk_usage_note_estimate">Le coût est une estimation de Hermes d\'après sa grille tarifaire ; un modèle local ne coûte rien. Le tableau de bord de la passerelle affiche les mêmes chiffres.</string>
+    <string name="mk_usage_note_reported">Le coût est celui indiqué par le fournisseur, quand il l\'indique. Le tableau de bord de la passerelle affiche les mêmes chiffres.</string>
+</resources>

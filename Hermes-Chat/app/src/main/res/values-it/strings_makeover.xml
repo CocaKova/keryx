@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Anteprima: la transizione tra stanze %1$s a velocità %2$s</string>
+    <string name="mk_cancel">Annulla</string>
+
+    <string name="mk_mcp_test">Prova</string>
+    <string name="mk_mcp_testing">Prova in corso</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Raggiunto · %d strumento</item>
+        <item quantity="other">Raggiunto · %d strumenti</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d prompt</item>
+        <item quantity="other">%d prompt</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d risorsa</item>
+        <item quantity="other">%d risorse</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Impossibile raggiungerlo: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Questo gateway non può provare i server da qui.</string>
+    <string name="mk_mcp_catalog">Catalogo · %1$d da aggiungere</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">richiede %d chiave</item>
+        <item quantity="other">richiede %d chiavi</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">compila dal sorgente</string>
+    <string name="mk_mcp_catalog_oauth">accede con OAuth</string>
+    <string name="mk_mcp_installed">Installato</string>
+    <string name="mk_mcp_install">Installa</string>
+    <string name="mk_mcp_installing">Installazione…</string>
+    <string name="mk_mcp_install_title">Installare %1$s?</string>
+    <string name="mk_mcp_install_runs">Eseguirà</string>
+    <string name="mk_mcp_install_builds">Prima il gateway lo clona e lo compila da %1$s, in background.</string>
+    <string name="mk_mcp_install_oauth">Accede con OAuth: completa l\'accesso nella dashboard del gateway una volta installato.</string>
+    <string name="mk_mcp_install_env_note">Conservato sul gateway: i segreti nel suo .env, il resto nella sua configurazione.</string>
+    <string name="mk_mcp_installed_toast">%1$s installato — attivo dalla prossima sessione</string>
+    <string name="mk_mcp_building_toast">%1$s è in compilazione sul gateway — comparirà qui quando sarà pronto</string>
+    <string name="mk_mcp_install_refused">Impossibile installare %1$s: %2$s</string>
+    <string name="mk_mcp_install_unsupported">Questo gateway non può installare server MCP da qui.</string>
+    <string name="mk_usage">Utilizzo</string>
+    <string name="mk_usage_subtitle">Token, costi e sessioni</string>
+    <string name="mk_usage_subtitle_read">%1$s token · %2$s · ultimi %3$d giorni</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d sessione</item>
+        <item quantity="other">%d sessioni</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">sessione</item>
+        <item quantity="other">sessioni</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d giorno</item>
+        <item quantity="other">%d giorni</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s chiamata API</item>
+        <item quantity="other">%1$s chiamate API</item>
+    </plurals>
+    <string name="mk_usage_tokens">token</string>
+    <string name="mk_usage_in_out">%1$s in entrata · %2$s in uscita</string>
+    <string name="mk_usage_cost">costo</string>
+    <string name="mk_usage_cost_estimated">costo, stimato</string>
+    <string name="mk_usage_none">Nessun utilizzo negli ultimi %1$d giorni.</string>
+    <string name="mk_usage_by_day">Per giorno</string>
+    <string name="mk_usage_peak">Giorno più intenso: %1$s il %2$s</string>
+    <string name="mk_usage_by_model">Per modello</string>
+    <string name="mk_usage_note_estimate">Il costo è una stima di Hermes basata sul suo listino; un modello locale non costa nulla. La dashboard del gateway mostra gli stessi numeri.</string>
+    <string name="mk_usage_note_reported">Il costo è quello comunicato dal provider, dove disponibile. La dashboard del gateway mostra gli stessi numeri.</string>
+</resources>

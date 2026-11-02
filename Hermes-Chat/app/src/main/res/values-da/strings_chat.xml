@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_theme_to_light">Skift til lyst</string>
+    <string name="chat_theme_follow_system">Følg systemet</string>
+    <string name="chat_theme_to_dark">Skift til mørkt</string>
+    <string name="chat_new_chat">Ny chat</string>
+    <string name="chat_drawer_jump_hint">Gå til…</string>
+    <string name="chat_lens_needs_you">Venter på dig</string>
+    <string name="chat_lens_running">Kører</string>
+    <string name="chat_lens_unread">Ulæste</string>
+    <string name="chat_lens_archived">Arkiveret</string>
+    <string name="chat_drawer_invites">Invitationer</string>
+    <string name="chat_place_missions">Missioner</string>
+    <string name="chat_place_runs">Kørsler</string>
+    <string name="chat_place_bots">Bots</string>
+    <string name="chat_place_projects">Projekter</string>
+    <string name="chat_place_shipyard">Shipyard</string>
+    <string name="chat_place_archive">Arkiv</string>
+    <string name="chat_place_gateway">Gateway</string>
+    <string name="chat_place_settings">Indstillinger</string>
+    <string name="chat_drawer_places">Steder</string>
+    <string name="chat_drawer_commands">Kommandoer</string>
+    <string name="chat_drawer_no_matches">Ingen resultater</string>
+    <string name="chat_drawer_nothing_archived">Intet arkiveret</string>
+    <string name="chat_drawer_nothing_waiting">Intet venter på dig</string>
+    <string name="chat_drawer_nothing_running">Intet kører</string>
+    <string name="chat_drawer_all_read">Alt er læst</string>
+    <string name="chat_session_id_copied">Sessions-id kopieret</string>
+    <string name="chat_moved_to_project">Flyttet til %1$s</string>
+    <string name="chat_drawer_reaching_back">Henter ældre…</string>
+    <string name="chat_drawer_show_older">Vis ældre %1$s</string>
+    <string name="chat_drawer_in_transcripts">I transskriptioner</string>
+    <string name="chat_demo_gateway">demo-gateway</string>
+    <string name="chat_demo_gateway_page">Din gateways side ligger her, når du har forbundet en.</string>
+    <string name="chat_connect">Forbind</string>
+    <string name="chat_open_gateway">Åbn Gateway</string>
+    <string name="chat_settings">Indstillinger</string>
+    <string name="chat_shelf_fold">Fold %1$s sammen</string>
+    <string name="chat_shelf_open">Fold %1$s ud</string>
+    <string name="chat_room_forked">Forgrenet fra en anden samtale</string>
+    <string name="chat_room_temporary">Midlertidig — slettes ved næste start</string>
+    <string name="chat_room_pinned">Fastgjort</string>
+    <string name="chat_mark_unread">Markér som ulæst</string>
+    <string name="chat_archive">Arkivér</string>
+    <string name="chat_archive_hint">Væk fra listen, stadig på gatewayen</string>
+    <string name="chat_restore_to_list">Gendan til listen</string>
+    <string name="chat_export_ellipsis">Eksportér…</string>
+    <string name="chat_copy_session_id">Kopiér sessions-id</string>
+    <string name="chat_invite_user">Invitér bruger…</string>
+    <string name="chat_rename_ellipsis">Omdøb…</string>
+    <string name="chat_move_to_project">Flyt til projekt…</string>
+    <string name="chat_leave_room">Forlad rum</string>
+    <string name="chat_delete_session_ellipsis">Slet session…</string>
+    <string name="chat_invite_to">Invitér til %1$s</string>
+    <string name="chat_invite">Invitér</string>
+    <string name="chat_cancel">Annuller</string>
+    <string name="chat_leave_title">Forlad %1$s?</string>
+    <string name="chat_leave_body">Du holder op med at modtage beskeder derfra; for at komme tilbage skal du have en ny invitation.</string>
+    <string name="chat_leave">Forlad</string>
+    <string name="chat_rename_session">Omdøb session</string>
+    <string name="chat_rename">Omdøb</string>
+    <string name="chat_delete_title">Slet %1$s?</string>
+    <string name="chat_delete_session_body">Sletter sessionen og hele dens transskription fra gatewayen. Det kan ikke fortrydes.</string>
+    <string name="chat_delete">Slet</string>
+    <string name="chat_invited_to_room">Du er inviteret til dette rum</string>
+    <string name="chat_decline">Afvis</string>
+    <string name="chat_accept">Acceptér</string>
+    <string name="chat_running">Kører</string>
+    <string name="chat_age_now">nu</string>
+    <string name="chat_age_minutes">%1$dm</string>
+    <string name="chat_age_hours">%1$dt</string>
+    <string name="chat_age_days">%1$dd</string>
+    <string name="chat_age_weeks">%1$du</string>
+    <plurals name="chat_door_needs_you">
+        <item quantity="one">%1$s, %2$s venter på dig</item>
+        <item quantity="other">%1$s, %2$s venter på dig</item>
+    </plurals>
+    <string name="chat_door_unread">%1$s, %2$s ulæste</string>
+
+    <string name="chat_bot_new_title">Start forfra med %1$s?</string>
+    <string name="chat_bot_new_body">Komprimer beholder denne samtale og rydder %1$ss arbejdskontekst.\n\nEn frisk Bot Chat pensionerer denne — den kan stadig læses under %1$ss tidligere chats — og starter en ny.</string>
+    <string name="chat_bot_new_fresh">Frisk Bot Chat</string>
+    <string name="chat_bot_new_compact">Komprimer</string>
+    <string name="chat_bot_chat_chip">Bot Chat</string>
+    <string name="chat_menu">Menu</string>
+    <plurals name="chat_menu_waiting">
+        <item quantity="one">Menu, %d venter på dig</item>
+        <item quantity="other">Menu, %d venter på dig</item>
+    </plurals>
+    <plurals name="chat_menu_unread">
+        <item quantity="one">Menu, %d ulæst</item>
+        <item quantity="other">Menu, %d ulæste</item>
+    </plurals>
+    <string name="chat_new_session_failed">Kunne ikke starte en session. %1$s</string>
+    <string name="chat_new_session_hold">Ny session (hold for flere valg)</string>
+    <string name="chat_unpin_run">Frigør denne kørsel</string>
+    <string name="chat_pin_run">Fastgør denne kørsel</string>
+    <string name="chat_new_session">Ny session</string>
+    <string name="chat_new_session_confirm_title">Start en ny session?</string>
+    <string name="chat_new_session_confirm_body">Agenten arbejder stadig — /new afslutter den nuværende kørsel, og dens resultat kasseres.</string>
+    <string name="chat_new_session_confirm">Afslut kørsel og start ny</string>
+    <string name="chat_find_in_chat">Find i chat</string>
+    <string name="chat_call_needs_voice">Angiv STT- og TTS-endpoints i Indstillinger → Stemme først</string>
+    <string name="chat_call">Ring op</string>
+    <string name="chat_reasoning_header">RÆSONNEMENT</string>
+    <string name="chat_reasoning_sub_default">indsatsen gælder på tværs af sessioner</string>
+    <string name="chat_reasoning_local_brain">lokal hjerne</string>
+    <string name="chat_reasoning_model">model</string>
+    <string name="chat_reasoning_sub_binary">%1$s · tænd/sluk-kontakt</string>
+    <string name="chat_reasoning_sub_none">%1$s · ingen ræsonnementsknap</string>
+    <string name="chat_reasoning_sub_session">%1$s · denne sessions trin</string>
+    <string name="chat_reasoning_sub_scale">%1$s · indsatsskala</string>
+    <string name="chat_reasoning_no_dial">Denne model tager intet indsatsniveau — Hermes sender intet.</string>
+    <string name="chat_reasoning_every_session">Alle sessioner</string>
+    <string name="chat_reasoning_this_session">Kun denne session</string>
+    <string name="chat_reasoning_show">Vis ræsonnement</string>
+    <string name="chat_reasoning_hide">Skjul ræsonnement</string>
+    <string name="chat_reasoning_reset">Nulstil sessionens tilsidesættelse</string>
+    <string name="chat_demo_label">Demo</string>
+    <string name="chat_demo_connect">Forbind din gateway</string>
+
+    <string name="chat_attach_failed">Kunne ikke vedhæfte det (ulæseligt eller over 50 MB)</string>
+    <string name="chat_no_camera">Ingen kamera-app svarede</string>
+    <string name="chat_mic_unavailable">Mikrofon ikke tilgængelig</string>
+    <string name="chat_transcription_failed">Transskription mislykkedes: %1$s</string>
+    <string name="chat_mic_permission">Keryx skal have adgang til mikrofonen for at diktere</string>
+    <string name="chat_nothing_to_read">Intet at læse højt</string>
+    <string name="chat_typing_one">%1$s skriver…</string>
+    <string name="chat_typing_two">%1$s og %2$s skriver…</string>
+    <string name="chat_typing_many">Flere personer skriver…</string>
+    <string name="chat_jump_newest">Gå til nyeste</string>
+    <plurals name="chat_jump_newest_count">
+        <item quantity="one">Gå til nyeste, %d ny</item>
+        <item quantity="other">Gå til nyeste, %d nye</item>
+    </plurals>
+    <string name="chat_attachments_cant_queue">Vedhæftninger kan ikke sættes i kø — send, når denne tur er færdig</string>
+    <string name="chat_stop_hint">Skriv din rettelse først — så styrer et tryk turen, hold for flere valg</string>
+    <string name="chat_busy_queue">Sæt i kø til næste tur</string>
+    <string name="chat_busy_aside">Spørg ved siden af — besvares uden for chatten</string>
+    <string name="chat_busy_redirect">Omdirigér — start svaret forfra med dette</string>
+    <string name="chat_starter_1">Hvad kan du gøre i denne session?</string>
+    <string name="chat_starter_2">Hvad står på min liste i dag?</string>
+    <string name="chat_starter_3">Hvad har vi arbejdet på for nylig?</string>
+    <string name="chat_starter_4">Hjælp mig med at planlægge noget lille, skridt for skridt.</string>
+    <string name="chat_fresh_page">En frisk side</string>
+    <string name="chat_fresh_page_sub">Spørg om hvad som helst, eller start med et af disse.</string>
+    <string name="chat_today">I dag</string>
+    <string name="chat_yesterday">I går</string>
+
+    <string name="chat_arrival_mark">%1$s · uopfordret · %2$s</string>
+    <string name="chat_bubble_hold_label">Svar, reagér eller kopiér</string>
+    <string name="chat_copied">Kopieret</string>
+    <string name="chat_undo_title">Træk den sidste udveksling tilbage?</string>
+    <string name="chat_undo_body">Din besked og dette svar fjernes fra sessionens historik på gatewayen. Det næste, du siger, fortsætter fra før dem.</string>
+    <string name="chat_undo_confirm">Træk tilbage</string>
+    <string name="chat_keep">Behold</string>
+    <string name="chat_select_text">Markér tekst</string>
+    <string name="chat_delete_message_title">Slet besked?</string>
+    <string name="chat_delete_message_body">Den fjernes for alle — det kan ikke fortrydes.</string>
+    <string name="chat_sent">Sendt</string>
+    <string name="chat_stop_speaking">Stop oplæsning</string>
+    <string name="chat_go_to_quoted">Gå til den citerede besked</string>
+    <string name="chat_reaction_take_back">Fjern din reaktion</string>
+    <string name="chat_reaction_add">Tilføj din reaktion</string>
+    <string name="chat_react">Reagér</string>
+    <string name="chat_action_reply">Svar</string>
+    <string name="chat_action_copy">Kopiér</string>
+    <string name="chat_action_copy_text">Kopiér tekst</string>
+    <string name="chat_action_saved">Gemt</string>
+    <string name="chat_action_save">Gem</string>
+    <string name="chat_action_unsave">Fjern fra Gemte</string>
+    <string name="chat_action_keep_archive">Gem i Arkiv</string>
+    <string name="chat_action_stop">Stop</string>
+    <string name="chat_action_read_aloud">Læs højt</string>
+    <string name="chat_action_select">Markér</string>
+    <string name="chat_action_edit">Rediger</string>
+    <string name="chat_action_edit_desc">Rediger og send igen</string>
+    <string name="chat_action_retry">Prøv igen</string>
+    <string name="chat_action_retry_desc">Træk den tilbage og sig den igen</string>
+    <string name="chat_action_branch">Forgren</string>
+    <string name="chat_action_branch_desc">Forgren en ny session herfra</string>
+    <string name="chat_action_undo">Fortryd</string>
+    <string name="chat_action_undo_desc">Træk den sidste udveksling tilbage</string>
+    <string name="chat_action_delete_desc">Slet besked</string>
+    <string name="chat_reply_attachment">vedhæftning</string>
+    <string name="chat_reply_message">besked</string>
+
+    <string name="chat_archive_title">Arkiv</string>
+    <string name="chat_archive_waking">vækker indekset…</string>
+    <plurals name="chat_archive_reaching">
+        <item quantity="one">%1$s husket · henter ældre…</item>
+        <item quantity="other">%1$s husket · henter ældre…</item>
+    </plurals>
+    <plurals name="chat_archive_error">
+        <item quantity="one">%1$s husket · %2$s</item>
+        <item quantity="other">%1$s husket · %2$s</item>
+    </plurals>
+    <plurals name="chat_archive_done">
+        <item quantity="one">%1$s besked husket</item>
+        <item quantity="other">%1$s beskeder husket</item>
+    </plurals>
+    <string name="chat_archive_jump_date">Gå til dato</string>
+    <string name="chat_archive_nothing_that_day">Intet indekseret for den dag endnu</string>
+    <string name="chat_open">Åbn</string>
+    <string name="chat_archive_tab_search">Søg</string>
+    <string name="chat_archive_tab_saved">Gemte</string>
+    <string name="chat_archive_tab_media">Medier</string>
+    <string name="chat_archive_search_hint">Søg i alt, der nogensinde er sagt…</string>
+    <string name="chat_archive_recent">SENEST HUSKET</string>
+    <string name="chat_archive_empty_title">Intet husket endnu</string>
+    <string name="chat_archive_empty_body">Indekset fyldes, efterhånden som sessioner gennemgås. Derefter er hver besked, appen har set, kun én søgning væk.</string>
+    <string name="chat_archive_search_idle">Hver besked, appen nogensinde har set, kun én søgning væk.</string>
+    <string name="chat_archive_no_hits">Intet endnu for »%1$s«</string>
+    <string name="chat_archive_opening">Åbner arkivet…</string>
+    <string name="chat_archive_saved_empty_title">Intet gemt endnu</string>
+    <string name="chat_archive_saved_empty_body">Hold fingeren på en besked, og tryk på bogmærket for at gemme den her.</string>
+    <string name="chat_archive_looking">Kigger i det, der er indekseret…</string>
+    <string name="chat_archive_media_empty_title">Ingen billeder eller filer endnu</string>
+    <string name="chat_archive_media_empty_body">Billeder og filer fra dine chats samles her, efterhånden som indekset fyldes.</string>
+    <string name="chat_image">billede</string>
+    <string name="chat_you">Dig</string>
+    <string name="chat_archive_context">Kontekst</string>
+    <string name="chat_archive_context_failed">Det øjeblik kunne ikke indlæses (det er måske ældre end dette logins nøgler).</string>
+    <string name="chat_archive_reach_earlier">Hent tidligere</string>
+    <string name="chat_archive_reach_later">Hent senere</string>
+
+    <string name="chat_attach">Vedhæft</string>
+    <string name="chat_composer_hint">Besked…</string>
+    <string name="chat_composer_hint_steer_stop">Skriv for at styre turen — ■ stopper</string>
+    <string name="chat_composer_hint_steer">Skriv for at styre turen</string>
+    <string name="chat_dictate_stop">Stop diktering</string>
+    <string name="chat_dictate">Diktér</string>
+    <string name="chat_send_steer">Styr den kørende tur</string>
+    <string name="chat_send_queue">Sæt i kø til næste tur</string>
+    <string name="chat_send_stop">Stop turen</string>
+    <string name="chat_send">Send</string>
+    <string name="chat_send_hold_menu">Sæt i kø, spørg ved siden af eller omdirigér</string>
+    <string name="chat_send_hold_queue">Sæt i kø til næste tur i stedet</string>
+    <string name="chat_send_hold_stop">Hvad stop gør</string>
+    <string name="chat_choose_model">Vælg en model</string>
+    <string name="chat_model_label">Model: %1$s</string>
+    <string name="chat_reasoning">ræsonnement</string>
+    <string name="chat_steer_hint">↪ styrer turen · hold for at sætte i kø</string>
+    <string name="chat_replying_to">Svarer %1$s</string>
+    <string name="chat_cancel_reply">Annuller svar</string>
+    <string name="chat_image_attached">Billede vedhæftet</string>
+    <string name="chat_file_attached">Fil vedhæftet</string>
+    <string name="chat_remove_attachment">Fjern vedhæftning</string>
+    <string name="chat_attach_photo">Foto</string>
+    <string name="chat_attach_file">Fil</string>
+    <string name="chat_attach_camera">Kamera</string>
+
+    <string name="chat_tool_succeeded">Lykkedes</string>
+    <string name="chat_tool_failed">Mislykkedes</string>
+    <string name="chat_tool_no_verdict">Intet resultat</string>
+    <string name="chat_duration_seconds">%1$ds</string>
+    <string name="chat_duration_millis">%1$dms</string>
+    <string name="chat_tool_flagged">⚠ Hermes har markeret dette output</string>
+    <string name="chat_tool_flagged_with">⚠ Hermes har markeret dette output: %1$s</string>
+    <string name="chat_tool_diff">diff</string>
+    <string name="chat_tool_diff_show">Vis diff</string>
+    <string name="chat_tool_diff_hide">Skjul diff</string>
+    <string name="chat_tool_diff_label">Diff</string>
+    <string name="chat_tool_output">output</string>
+    <string name="chat_tool_output_show">Vis output</string>
+    <string name="chat_tool_output_hide">Skjul output</string>
+    <string name="chat_tool_output_label">Output</string>
+    <string name="chat_tool_exit_failed">Exitkode %1$d, mislykkedes</string>
+    <string name="chat_tool_exit_ok">Exitkode 0</string>
+    <plurals name="chat_tools_running">
+        <item quantity="one">Kører %d værktøj…</item>
+        <item quantity="other">Kører %d værktøjer…</item>
+    </plurals>
+    <plurals name="chat_tools_ran">
+        <item quantity="one">Kørte %d værktøj</item>
+        <item quantity="other">Kørte %d værktøjer</item>
+    </plurals>
+    <plurals name="chat_subagents_running">
+        <item quantity="one">%1$d af %2$d underagent kører</item>
+        <item quantity="other">%1$d af %2$d underagenter kører</item>
+    </plurals>
+    <string name="chat_subagent_running">Underagent kører</string>
+    <plurals name="chat_delegated_tasks">
+        <item quantity="one">Uddelegerede %d opgave</item>
+        <item quantity="other">Uddelegerede %d opgaver</item>
+    </plurals>
+    <string name="chat_delegated_task">Uddelegerede en opgave</string>
+    <string name="chat_working">Arbejder…</string>
+    <plurals name="chat_output_steps">
+        <item quantity="one">%d output-skridt</item>
+        <item quantity="other">%d output-skridt</item>
+    </plurals>
+    <plurals name="chat_run_with_failed">
+        <item quantity="one">%1$s · %2$d mislykkedes</item>
+        <item quantity="other">%1$s · %2$d mislykkedes</item>
+    </plurals>
+    <string name="chat_steps_fold">Fold skridtene sammen</string>
+    <string name="chat_steps_show">Vis skridtene</string>
+    <string name="chat_tap_in_run">Tap-In til denne kørsel</string>
+    <string name="chat_state_open">Åben</string>
+    <string name="chat_state_folded">Foldet sammen</string>
+
+    <string name="chat_approval_needed">Godkendelse påkrævet</string>
+    <string name="chat_approval_once">Tillad én gang</string>
+    <string name="chat_approval_session">Session</string>
+    <string name="chat_approval_always">Altid</string>
+    <string name="chat_approval_deny">Afvis</string>
+    <string name="chat_asking">Hermes spørger</string>
+    <string name="chat_asking_batch">Hermes spørger · %1$d af %2$d</string>
+    <string name="chat_sudo_needed">Sudo-adgangskode påkrævet</string>
+    <string name="chat_credential_needed">Loginoplysning påkrævet</string>
+    <string name="chat_stored_as">Gemt på gatewayen som %1$s</string>
+    <string name="chat_multi_answers">Flere svar er tilladt — skriv dem nedenfor, adskilt af kommaer.</string>
+    <string name="chat_your_answer">Dit svar</string>
+    <string name="chat_password">Adgangskode</string>
+    <string name="chat_value">Værdi</string>
+    <string name="chat_skip">Spring over</string>
+
+    <string name="chat_new_conversation">Ny samtale</string>
+    <string name="chat_new_session_body">En frisk gateway-session. Navngiv den nu, eller lad den første udveksling give den en titel.</string>
+    <string name="chat_title_optional">Titel (valgfri)</string>
+    <string name="chat_agent">Agent</string>
+    <string name="chat_temporary">Midlertidig</string>
+    <string name="chat_temporary_body">Slettes fra gatewayen ved appens næste start</string>
+    <string name="chat_create">Opret</string>
+    <string name="chat_error_line">⚠ %1$s</string>
+    <string name="chat_direct_message">Direkte besked</string>
+    <string name="chat_direct_message_sub">Chat på tomandshånd med en bruger</string>
+    <string name="chat_start">Start</string>
+    <string name="chat_new_room">Nyt rum</string>
+    <string name="chat_new_room_sub">Et rum med navn; invitér folk nu eller senere</string>
+    <string name="chat_room_name">Rummets navn</string>
+    <string name="chat_invite_optional">Invitér @user:server (valgfrit)</string>
+    <string name="chat_join_by_address">Deltag via adresse</string>
+    <string name="chat_join">Deltag</string>
+
+    <string name="chat_prune_preview_failed">forhåndsvisning mislykkedes</string>
+    <string name="chat_prune_confirm_title">Bekræft oprydning af sessioner</string>
+    <plurals name="chat_prune_confirm_sub">
+        <item quantity="one">Sletter %d session permanent</item>
+        <item quantity="other">Sletter %d sessioner permanent</item>
+    </plurals>
+    <string name="chat_prune_title">Ryd op i sessioner</string>
+    <string name="chat_prune_body">Sletter afsluttede sessioner fra gatewayens register — permanent, inklusive transskriptioner. Aktive sessioner røres aldrig.</string>
+    <string name="chat_prune_older_than">Ældre end</string>
+    <string name="chat_prune_days">%1$dd</string>
+    <string name="chat_prune_max_messages">Kun sessioner med ≤ N beskeder (valgfrit)</string>
+    <string name="chat_prune_include_archived">Medtag arkiverede sessioner</string>
+    <string name="chat_prune_nothing">Intet matcher disse filtre.</string>
+    <plurals name="chat_prune_matched">
+        <item quantity="one">%1$d session matcher · ældste %2$s · nyeste %3$s</item>
+        <item quantity="other">%1$d sessioner matcher · ældste %2$s · nyeste %3$s</item>
+    </plurals>
+    <plurals name="chat_prune_sample">
+        <item quantity="one">· %1$s (%2$d besked)</item>
+        <item quantity="other">· %1$s (%2$d beskeder)</item>
+    </plurals>
+    <string name="chat_prune_preview">Forhåndsvis</string>
+    <string name="chat_prune_delete_count">Slet %1$d…</string>
+    <string name="chat_prune_delete">Slet…</string>
+    <plurals name="chat_prune_final_title">
+        <item quantity="one">Slet %d session permanent?</item>
+        <item quantity="other">Slet %d sessioner permanent?</item>
+    </plurals>
+    <string name="chat_prune_final_body">Rækker og transskriptionsfiler fjernes fra gatewayen. Det kan ikke fortrydes.</string>
+    <string name="chat_prune_delete_n">Slet %1$d</string>
+
+    <string name="chat_loading_lower">indlæser…</string>
+    <string name="chat_load_attachment_failed">Kunne ikke indlæse vedhæftning</string>
+    <string name="chat_animated_image">animeret billede</string>
+    <string name="chat_video">video</string>
+    <string name="chat_saved_to">Gemt i %1$s</string>
+    <string name="chat_save_failed">Kunne ikke gemme</string>
+    <string name="chat_save_to_device">Gem på enheden</string>
+    <string name="chat_share_failed">Kunne ikke dele</string>
+    <string name="chat_share">Del</string>
+    <string name="chat_close">Luk</string>
+    <string name="chat_no_app_for_file">Ingen app kan åbne denne fil</string>
+    <string name="chat_open_with">Åbn med</string>
+
+    <string name="chat_copy_image">Kopiér billede</string>
+    <string name="chat_image_copied">Billede kopieret — indsæt det i et opslag</string>
+    <string name="chat_image_fetch_failed">Kunne ikke hente billedet — linket er kopieret i stedet</string>
+    <string name="chat_copy_link">Kopiér link</string>
+    <string name="chat_link_copied">Link kopieret</string>
+    <string name="chat_save_to_photos">Gem i Fotos</string>
+    <string name="chat_save_image_failed">Kunne ikke gemme billedet</string>
+    <string name="chat_open_in_browser">Åbn i browser</string>
+    <string name="chat_no_app_for_link">Intet her kan åbne det link</string>
+
+    <string name="chat_gateway_log">Gateway-log</string>
+    <string name="chat_details_copied">Detaljer kopieret</string>
+    <string name="chat_copy_details">Kopiér detaljer</string>
+
+    <string name="chat_thinking">Tænker…</string>
+    <string name="chat_thought">Tænkte</string>
+    <string name="chat_thought_briefly">Tænkte kort</string>
+    <string name="chat_thought_for">Tænkte i %1$s</string>
+    <string name="chat_reasoning_show_a11y">Vis ræsonnementet</string>
+    <string name="chat_reasoning_hide_a11y">Skjul ræsonnementet</string>
+    <string name="chat_duration_min_sec">%1$dm %2$ds</string>
+    <string name="chat_newest">nyeste</string>
+
+    <string name="chat_config_unsaved">%1$s · ikke gemt</string>
+    <string name="chat_saving">Gemmer…</string>
+    <string name="chat_save">Gem</string>
+    <string name="chat_config_load_failed">Kunne ikke indlæse config.yaml. %1$s</string>
+    <string name="chat_loading">Indlæser…</string>
+    <string name="chat_config_restart_note">Gemte ændringer træder for de fleste afsnit i kraft ved næste genstart af gatewayen.</string>
+    <string name="chat_save_anyway_title">Gem alligevel?</string>
+    <string name="chat_save_anyway">Gem alligevel</string>
+    <string name="chat_discard_title">Kassér ændringer?</string>
+    <string name="chat_config_untouched">config.yaml på gatewayen er uændret.</string>
+    <string name="chat_discard">Kassér</string>
+    <string name="chat_keep_editing">Fortsæt redigering</string>
+
+    <string name="chat_export_title">Eksportér »%1$s«</string>
+    <string name="chat_this_session">denne session</string>
+    <string name="chat_export_markdown_detail">Samtalen, som du læser den: hvem der sagde hvad, værktøjer på én linje, langt output forkortet.</string>
+    <string name="chat_export_json_detail">Gatewayens komplette eksport: alle rækker, inklusive fortrudte ture og systemprompten. Kan importeres igen.</string>
+    <string name="chat_export_share_failed">Kunne ikke åbne delingsarket.</string>
+    <string name="chat_export_failed">Eksporten mislykkedes.</string>
+    <string name="chat_exporting">Eksporterer…</string>
+
+    <string name="chat_cmd_new">Start en frisk samtale</string>
+    <string name="chat_cmd_compress">Komprimer / opsummer denne tråd</string>
+    <string name="chat_cmd_handoff">Overdrag konteksten til en ny session</string>
+    <string name="chat_cmd_steer">Styr agenten midt i en opgave</string>
+    <string name="chat_cmd_think">Bed om dybere ræsonnement</string>
+    <string name="chat_cmd_model">Skift den aktive model</string>
+    <string name="chat_cmd_reset">Nulstil agentens arbejdstilstand</string>
+    <string name="chat_cmd_help">Vis, hvad denne agent kan</string>
+    <string name="chat_cmd_status">Vis agent- og systemstatus</string>
+    <string name="chat_cmd_memory">Hent eller rediger langtidshukommelsen</string>
+    <string name="chat_cmd_tools">Vis tilgængelige værktøjer</string>
+    <string name="chat_cmd_recent">seneste</string>
+    <string name="chat_cmd_skill">færdighed</string>
+
+    <string name="chat_transition_dissolve">Opløsning</string>
+    <string name="chat_transition_dissolve_blurb">Rummet tager form igen gennem en blød sløring med braille-sporet.</string>
+    <string name="chat_transition_passage">Passage</string>
+    <string name="chat_transition_passage_blurb">Det nye rum glider ind på en oplyst søm, mens det gamle træder tilbage.</string>
+    <string name="chat_transition_weave">Væv</string>
+    <string name="chat_transition_weave_blurb">Ravgule og violette bånd krydser opad, og rummet skifter bag dem.</string>
+    <string name="chat_transition_bloom">Blomstring</string>
+    <string name="chat_transition_bloom_blurb">Det nye rum åbner sig som en cirkel fra den række, du trykkede på.</string>
+    <string name="chat_transition_rise">Opstigning</string>
+    <string name="chat_transition_rise_blurb">Det gamle rum vipper bagover og synker; det nye stiger op på plads.</string>
+    <string name="chat_speed_slow">Langsom</string>
+    <string name="chat_speed_normal">Normal</string>
+    <string name="chat_speed_fast">Hurtig</string>
+
+    <string name="chat_pet_choose">Vælg et kæledyr</string>
+    <string name="chat_pet_rides">%1$s kører med i sidemenuen</string>
+    <string name="chat_pet_gateway">Kæledyr bor på gatewayen — alle flader viser det samme</string>
+    <plurals name="chat_pet_search">
+        <item quantity="one">Søg i %d kæledyr…</item>
+        <item quantity="other">Søg i %d kæledyr…</item>
+    </plurals>
+    <string name="chat_pet_installed_header">Installeret</string>
+    <string name="chat_pet_catalog_header">Petdex-katalog</string>
+    <string name="chat_pet_none">Ingen kæledyr tilgængelige — er Hermes Link konfigureret?</string>
+    <string name="chat_pet_no_match">Ingen kæledyr matcher »%1$s«</string>
+    <string name="chat_pet_badge_active">aktiv</string>
+    <string name="chat_pet_badge_hatched">udklækket lokalt</string>
+    <string name="chat_pet_badge_curated">udvalgt</string>
+    <string name="chat_pet_badge_installed">installeret</string>
+    <string name="chat_pet_active">Aktiv</string>
+
+    <string name="chat_back">Tilbage</string>
+    <string name="chat_close_named">Luk %1$s</string>
+    <string name="chat_loading_a11y">Indlæser</string>
+
+    <string name="chat_call_header">KERYX · OPKALD</string>
+    <string name="chat_call_mic_needed">Keryx skal bruge mikrofonen til et opkald.</string>
+    <string name="chat_call_listening">lytter</string>
+    <string name="chat_call_hearing">hører dig…</string>
+    <string name="chat_call_thinking">tænker</string>
+    <string name="chat_call_interrupt">tryk på kuglen for at afbryde</string>
+    <string name="chat_call_muted">lydløs</string>
+    <string name="chat_call_ended">opkald afsluttet</string>
+    <string name="chat_call_heard">»%1$s«</string>
+    <string name="chat_call_unmute">Slå lyd til</string>
+    <string name="chat_call_mute">Slå lyd fra</string>
+    <string name="chat_call_end">Afslut opkald</string>
+
+    <string name="chat_sources">Kilder</string>
+    <string name="chat_source">kilde</string>
+    <string name="chat_hand_clipboard">UDKLIPSHOLDER</string>
+    <string name="chat_hand_phone">TELEFON</string>
+    <string name="chat_hand_share">DEL</string>
+    <string name="chat_hand_app">APP</string>
+    <string name="chat_hand_opens">ÅBNER</string>
+    <string name="chat_skill_distilled">Færdighed destilleret</string>
+    <string name="chat_open_skill_forge">Åbn i Skill Forge →</string>
+
+    <string name="chat_tap_in_turn">Tap-In til turen</string>
+    <string name="chat_stream_dropped">Streamen faldt ud — genopretter via Matrix-synk…</string>
+
+    <string name="chat_context_direct_only">Kun den direkte dør kan specificere vinduet.</string>
+    <string name="chat_context_read_failed">Kunne ikke læse vinduet</string>
+    <string name="chat_context_title">Kontekst</string>
+    <string name="chat_context_used">%1$s af %2$s tokens</string>
+    <string name="chat_context_no_agent">Gatewayen har endnu ingen aktiv agent til denne session — send noget først.</string>
+
+    <string name="chat_chart">Diagram</string>
+    <string name="chat_chart_summary">%1$s. %2$s-diagram.</string>
+    <string name="chat_chart_summary_unit">%1$s. %2$s-diagram, i %3$s.</string>
+    <string name="chat_chart_no_value">ingen værdi</string>
+    <string name="chat_chart_series">Serie %1$d</string>
+    <string name="chat_chart_total">i alt</string>
+    <string name="chat_show_less">Vis mindre</string>
+    <plurals name="chat_show_all_lines">
+        <item quantity="one">Vis alle %d linje</item>
+        <item quantity="other">Vis alle %d linjer</item>
+    </plurals>
+
+    <string name="chat_aside_header">VED SIDEN AF · ikke en del af chatten</string>
+    <string name="chat_dismiss">Luk</string>
+    <string name="chat_aside_answering">…svarer ved siden af</string>
+    <string name="chat_aside_failed">Spørgsmålet ved siden af mislykkedes: %1$s</string>
+    <string name="chat_aside_no_answer">Der kom intet svar.</string>
+
+    <string name="chat_action_success">LYKKEDES</string>
+    <string name="chat_action_failed">MISLYKKEDES</string>
+    <string name="chat_action_tag">HANDLING</string>
+    <string name="chat_reasoning_live">Ræsonnerer…</string>
+    <string name="chat_reasoning_title">Ræsonnement</string>
+    <string name="chat_show_drawing">vis tegning</string>
+    <string name="chat_drawing">Tegning</string>
+
+    <string name="chat_done">Færdig</string>
+
+    <string name="chat_art_mission_board">En tom missionstavle med heroldens stav lænet op ad den</string>
+    <string name="chat_art_winged_clock">Et ur med vinger og en pil, der buer rundt om det</string>
+    <string name="chat_art_robot">Et robothoved med heroldens bevingede kugle på toppen og en tom plads på hver side</string>
+    <string name="chat_art_folder">En mappe med en side, hvorpå der er tegnet en forgrening</string>
+    <string name="chat_art_scroll">En udrullet skriftrulle med et forstørrelsesglas over</string>
+    <string name="chat_art_bookmark">En side med én linje markeret og et bogmærkebånd</string>
+    <string name="chat_art_picture">Et indrammet billede af en bakke og en sol, med en tom ramme bagved</string>
+
+    <string name="chat_memory">Chathukommelse</string>
+    <string name="chat_ring_base">Chathukommelse %1$dk af %2$dk tokens, %3$d procent</string>
+    <plurals name="chat_ring_replies">
+        <item quantity="one">%1$s, omkring %2$d svar før opsummeringen</item>
+        <item quantity="other">%1$s, omkring %2$d svar før opsummeringen</item>
+    </plurals>
+    <string name="chat_ring_until">%1$s, %2$dk til opsummeringen</string>
+    <string name="chat_ring_next">%1$s, det næste svar starter en opsummering</string>
+
+    <string name="chat_folder_hint">Mappe på gatewayen (f.eks. ~/workspace/keryx)</string>
+    <string name="chat_folder_found">✓ mappe fundet</string>
+    <string name="chat_folder_missing">ingen mappe der endnu</string>
+    <string name="chat_known_workspaces">Kendte arbejdsområder</string>
+    <string name="chat_folder_truncated">mere end 30 mapper her — skriv videre for at indsnævre</string>
+    <string name="chat_folder_more">+%1$d mere — skriv videre for at indsnævre</string>
+
+    <string name="chat_console_starting">starter…</string>
+    <string name="chat_console_streaming">agenten arbejder</string>
+    <string name="chat_console_waiting">venter på godkendelse</string>
+    <string name="chat_console_completed">tur færdig</string>
+    <string name="chat_console_lost">forbindelsen er tabt</string>
+    <string name="chat_console_lost_why">forbindelsen er tabt — %1$s</string>
+    <string name="chat_console_failed">mislykkedes</string>
+    <string name="chat_console_failed_why">mislykkedes — %1$s</string>
+    <string name="chat_stop">Stop</string>
+    <string name="chat_clear">Ryd</string>
+
+    <string name="chat_mark_hide">Skjul, hvad den sagde</string>
+    <string name="chat_mark_read">Læs, hvad den sagde</string>
+    <string name="chat_mark_system">System: %1$s</string>
+    <string name="chat_summary_hide">Skjul opsummeringen</string>
+    <string name="chat_summary_read">Læs opsummeringen</string>
+    <string name="chat_context_compacted">🗜 Kontekst komprimeret · %1$s</string>
+    <string name="chat_this_session_title">Denne session</string>
+
+    <string name="chat_goal_loop">↻ løkke · %1$s · %2$s</string>
+    <string name="chat_goal_heartbeat">♥ hjerteslag · %1$d · %2$s</string>
+    <string name="chat_goal_close">Luk målet</string>
+    <string name="chat_goal_open">Åbn målet</string>
+    <string name="chat_goal_exit">exit %1$d</string>
+
+    <string name="chat_subagent_running_lower">underagent kører</string>
+    <plurals name="chat_subagents_count">
+        <item quantity="one">%d underagent</item>
+        <item quantity="other">%d underagenter</item>
+    </plurals>
+    <string name="chat_subagent">underagent</string>
+    <string name="chat_delegated_task_lower">uddelegeret opgave</string>
+    <plurals name="chat_tool_count">
+        <item quantity="one">%d værktøj</item>
+        <item quantity="other">%d værktøjer</item>
+    </plurals>
+    <string name="chat_tokens_k">%1$dk tok</string>
+    <plurals name="chat_files_written">
+        <item quantity="one">%d skrevet</item>
+        <item quantity="other">%d skrevet</item>
+    </plurals>
+    <string name="chat_interrupted">afbrudt</string>
+    <string name="chat_duration_min_sec_compact">%1$dm%2$ds</string>
+
+    <string name="chat_flight_plan">FLYVEPLAN</string>
+    <string name="chat_flight_all_done">alle skridt er landet</string>
+    <string name="chat_flight_next">næste: %1$s</string>
+    <string name="chat_join_sub">#alias:server eller !roomid:server</string>
+</resources>

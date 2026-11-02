@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Попередній перегляд: перехід між кімнатами «%1$s», швидкість: %2$s</string>
+    <string name="mk_cancel">Скасувати</string>
+    <string name="mk_mcp_test">Перевірити</string>
+    <string name="mk_mcp_testing">Перевірка</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Доступний · %d інструмент</item>
+        <item quantity="few">Доступний · %d інструменти</item>
+        <item quantity="many">Доступний · %d інструментів</item>
+        <item quantity="other">Доступний · %d інструмента</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d промпт</item>
+        <item quantity="few">%d промпти</item>
+        <item quantity="many">%d промптів</item>
+        <item quantity="other">%d промпту</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d ресурс</item>
+        <item quantity="few">%d ресурси</item>
+        <item quantity="many">%d ресурсів</item>
+        <item quantity="other">%d ресурсу</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Не вдалося під’єднатися: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Цей шлюз не вміє перевіряти сервери звідси.</string>
+    <string name="mk_mcp_catalog">Каталог · можна додати: %1$d</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">потрібен %d ключ</item>
+        <item quantity="few">потрібні %d ключі</item>
+        <item quantity="many">потрібно %d ключів</item>
+        <item quantity="other">потрібно %d ключа</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">збирається з вихідного коду</string>
+    <string name="mk_mcp_catalog_oauth">вхід через OAuth</string>
+    <string name="mk_mcp_installed">Встановлено</string>
+    <string name="mk_mcp_install">Встановити</string>
+    <string name="mk_mcp_installing">Встановлення…</string>
+    <string name="mk_mcp_install_title">Встановити %1$s?</string>
+    <string name="mk_mcp_install_runs">Буде запущено</string>
+    <string name="mk_mcp_install_builds">Спершу шлюз у фоні клонує та збере його з %1$s.</string>
+    <string name="mk_mcp_install_oauth">Вхід через OAuth: завершіть його на панелі шлюзу після встановлення.</string>
+    <string name="mk_mcp_install_env_note">Зберігається на шлюзі: секрети — у його .env, решта — у конфігу.</string>
+    <string name="mk_mcp_installed_toast">%1$s встановлено — запрацює з наступної сесії</string>
+    <string name="mk_mcp_building_toast">%1$s збирається на шлюзі — з’явиться тут, коли буде готовий</string>
+    <string name="mk_mcp_install_refused">Не вдалося встановити %1$s: %2$s</string>
+    <string name="mk_mcp_install_unsupported">Цей шлюз не вміє встановлювати MCP-сервери звідси.</string>
+    <string name="mk_usage">Використання</string>
+    <string name="mk_usage_subtitle">Токени, вартість і сесії</string>
+    <string name="mk_usage_subtitle_read">Токени: %1$s · %2$s · за %3$d дн.</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d сесія</item>
+        <item quantity="few">%d сесії</item>
+        <item quantity="many">%d сесій</item>
+        <item quantity="other">%d сесії</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">сесія</item>
+        <item quantity="few">сесії</item>
+        <item quantity="many">сесій</item>
+        <item quantity="other">сесії</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d день</item>
+        <item quantity="few">%d дні</item>
+        <item quantity="many">%d днів</item>
+        <item quantity="other">%d дня</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s виклик API</item>
+        <item quantity="few">%1$s виклики API</item>
+        <item quantity="many">%1$s викликів API</item>
+        <item quantity="other">%1$s виклику API</item>
+    </plurals>
+    <string name="mk_usage_tokens">токени</string>
+    <string name="mk_usage_in_out">%1$s вхід · %2$s вихід</string>
+    <string name="mk_usage_cost">вартість</string>
+    <string name="mk_usage_cost_estimated">вартість, оцінка</string>
+    <string name="mk_usage_none">За останні %1$d дн. нічого не використано.</string>
+    <string name="mk_usage_by_day">За днями</string>
+    <string name="mk_usage_peak">Пік: %1$s · %2$s</string>
+    <string name="mk_usage_by_model">За моделями</string>
+    <string name="mk_usage_note_estimate">Вартість — власна оцінка Hermes за його прайс-листом; локальна модель безкоштовна. Панель шлюзу показує ті самі цифри.</string>
+    <string name="mk_usage_note_reported">Вартість — те, що повідомив провайдер, якщо повідомив. Панель шлюзу показує ті самі цифри.</string>
+</resources>

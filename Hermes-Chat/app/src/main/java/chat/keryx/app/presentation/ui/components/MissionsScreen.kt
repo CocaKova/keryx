@@ -1341,7 +1341,7 @@ private fun DetailsSection(
         ) {
             Text(stringResource(R.string.work_details), fontSize = KeryxType.body, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.width(6.dp))
-            Text(if (open) "▾" else "›", fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (open) "▾" else forwardChevron(), fontSize = KeryxType.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
             if (!open) Text(
                 listOfNotNull(

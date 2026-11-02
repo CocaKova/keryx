@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_turn_failed">فشل الدور</string>
+    <string name="app_photo">صورة</string>
+    <string name="app_attachment">مرفق</string>
+    <string name="app_new_message">رسالة جديدة</string>
+
+    <string name="app_approval_expired">كانت الموافقة قد انتهت صلاحيتها</string>
+    <string name="app_approval_failed">فشلت الموافقة: %1$s</string>
+    <string name="app_reply_failed">فشل الرد: %1$s</string>
+    <string name="app_link_unreachable_matrix">تعذّر الوصول إلى Hermes Link (%1$s) — يتم استخدام مزامنة Matrix</string>
+    <string name="app_send_failed">تعذّر الإرسال: %1$s</string>
+    <string name="app_room_photo_updated">تم تحديث صورة الغرفة</string>
+    <string name="app_room_photo_forbidden">لا إذن لتعيين صورة هذه الغرفة — تحتاج إلى صلاحيات المشرف فيها.</string>
+    <string name="app_room_photo_failed">تعذّر تعيين الصورة: %1$s</string>
+    <string name="app_unknown_error">خطأ غير معروف</string>
+    <string name="app_branched">تم التفريع — نسخة من هذه المحادثة كاملة</string>
+    <string name="app_branch_failed">فشل التفريع: %1$s</string>
+    <string name="app_not_sent">لم يُرسل. %1$s</string>
+    <string name="app_undo_done">تم التراجع عن آخر تبادل</string>
+    <string name="app_undo_nothing">لا شيء للتراجع عنه</string>
+    <string name="app_still_working">ما زال يعمل — أوقف الدور أولًا</string>
+    <string name="app_undo_failed">تعذّر التراجع: %1$s</string>
+    <string name="app_retry_nothing">لا شيء لإعادة المحاولة — لم يكن لدى البوابة دور للتراجع عنه</string>
+    <string name="app_retry_failed">تعذّرت إعادة المحاولة: %1$s</string>
+    <string name="app_taken_back_edit">تم التراجع — عدّلها وأرسلها مجددًا</string>
+    <string name="app_take_back_failed">تعذّر التراجع — كلماتك في مربع الكتابة لإرسالها مجددًا</string>
+    <string name="app_set_gateway_url_first">عيّن عنوان URL للبوابة أولًا</string>
+    <string name="app_link_ok">Hermes Link يعمل — %1$s</string>
+    <string name="app_link_failed">فشل Hermes Link: %1$s</string>
+    <string name="app_connection_error">خطأ في الاتصال</string>
+    <string name="app_link_up_api_down">Hermes Link يعمل، لكن خادم API الخاص بـ Hermes خلفه لا يعمل، لذا لن تُحمَّل المهام والتشغيلات. عيّن API_SERVER_ENABLED=true ومفتاح API_SERVER_KEY في ~/.hermes/.env، ثم أعد تشغيل البوابة.</string>
+
+    <string name="app_pinned">مثبّتة</string>
+    <string name="app_pinned_named">تم تثبيت “%1$s”</string>
+    <string name="app_unpinned">أُلغي التثبيت</string>
+    <string name="app_unpinned_named">أُلغي تثبيت “%1$s”</string>
+    <string name="app_pin_failed">فشل التثبيت: %1$s</string>
+    <string name="app_unpin_failed">فشل إلغاء التثبيت: %1$s</string>
+    <string name="app_marked_unread">عُلّمت كغير مقروءة</string>
+    <string name="app_mark_read_failed">تعذّر التعليم كمقروءة: %1$s</string>
+    <string name="app_mark_unread_failed">تعذّر التعليم كغير مقروءة: %1$s</string>
+    <string name="app_sticky_no_catalog">تعذّرت قراءة النماذج — فُتحت على النموذج الافتراضي للبوابة</string>
+    <string name="app_sticky_not_served">%1$s غير متاح الآن — فُتحت على النموذج الافتراضي للبوابة</string>
+    <string name="app_sticky_needs_confirm">%1$s يحتاج إلى تأكيد — اختره من منتقي النماذج</string>
+    <string name="app_sticky_opened_fallback">فُتحت على %1$s — %2$s غير متاح الآن</string>
+    <string name="app_sticky_opened">فُتحت على %1$s — آخر اختيار لك (النموذج الثابت، في الإعدادات)</string>
+    <string name="app_sticky_refused">رُفض %1$s — فُتحت على النموذج الافتراضي للبوابة</string>
+    <string name="app_create_session_failed">تعذّر إنشاء الجلسة</string>
+    <string name="app_rename_failed">فشلت إعادة التسمية: %1$s</string>
+    <string name="app_archive_failed">تعذّرت الأرشفة: %1$s</string>
+    <string name="app_archived">مؤرشفة</string>
+    <string name="app_archived_named">تمت أرشفة “%1$s”</string>
+    <string name="app_restore_failed">تعذّرت الاستعادة: %1$s</string>
+    <string name="app_restored">تمت الاستعادة</string>
+    <string name="app_restored_named">تمت استعادة “%1$s”</string>
+    <string name="app_archive_read_failed">تعذّرت قراءة الأرشيف: %1$s</string>
+    <string name="app_older_sessions_failed">تعذّر تحميل الجلسات الأقدم: %1$s</string>
+    <string name="app_session_deleted">حُذفت الجلسة</string>
+    <string name="app_delete_failed">فشل الحذف: %1$s</string>
+
+    <string name="app_steered">تم التوجيه — سيراه الوكيل في خطوته التالية</string>
+    <string name="app_steer_declined_queued">رفض الوكيل التوجيه — أُضيف إلى قائمة الانتظار للدور التالي</string>
+    <string name="app_queue_failed">فشلت الإضافة إلى قائمة الانتظار: %1$s</string>
+    <string name="app_steer_failed">فشل التوجيه: %1$s</string>
+    <string name="app_goal_failed">الهدف: %1$s</string>
+    <string name="app_aside_needs_direct">السؤال الجانبي يحتاج إلى البوابة المباشرة</string>
+    <string name="app_aside_failed">فشل السؤال الجانبي: %1$s</string>
+    <string name="app_redirected">أُعيد التوجيه — يبدأ الرد من جديد مع تصحيحك</string>
+    <string name="app_redirect_between_calls">بين الاستدعاءات — يُنفَّذ تصحيحك بعد ذلك</string>
+    <string name="app_redirect_finished_queued">كان الرد قد انتهى — أُضيف إلى قائمة الانتظار للدور التالي</string>
+    <string name="app_redirect_unsupported">لا يستطيع هذا الوكيل إعادة التوجيه — سيتم التوجيه بدلًا من ذلك</string>
+    <string name="app_redirect_failed">فشلت إعادة التوجيه: %1$s</string>
+    <string name="app_branched_from_message">تم التفريع — هذه جلسة جديدة من تلك الرسالة</string>
+    <string name="app_queued">في قائمة الانتظار — تُرسل عند انتهاء هذا الدور</string>
+    <string name="app_stopped">تم الإيقاف</string>
+    <string name="app_stop_failed">فشل الإيقاف: %1$s</string>
+    <string name="app_crew_steered">تم توجيه %1$s — سيراه في خطوته التالية</string>
+    <string name="app_crew_steer_rejected">لم يقبله %1$s — إنه يتبع بابًا آخر، أو يوشك على الانتهاء</string>
+    <string name="app_crew_stopped">تم إيقاف %1$s</string>
+    <string name="app_crew_already_finished">كان %1$s قد انتهى بالفعل</string>
+
+    <string name="app_model_confirm">%1$s انقر عليه مرة أخرى للتأكيد.</string>
+    <string name="app_model_expensive">هذا النموذج مكلف.</string>
+    <string name="app_model_deferred">يتولى %1$s من الدور التالي — هذه الجلسة</string>
+    <string name="app_model_deferred_global">يتولى %1$s من الدور التالي — كل الجلسات</string>
+    <string name="app_model_switched">%1$s — هذه الجلسة</string>
+    <string name="app_model_switched_global">%1$s — كل الجلسات</string>
+    <string name="app_model_switch_refused">رُفض التبديل: %1$s</string>
+    <string name="app_reasoning_refused_unknown">رفض هذا الدماغ مستوى التفكير هذا — اختر مستوى أقل.</string>
+    <string name="app_reasoning_refused_floor">رفض هذا الدماغ التفكير %1$s، ولا يوجد مستوى أقل للتجربة.</string>
+    <string name="app_reasoning_dropped">رفض هذا الدماغ التفكير %1$s — تم الخفض إلى %2$s.</string>
+    <string name="app_reasoning_drop_failed">رفض هذا الدماغ التفكير %1$s؛ تعذّر الخفض إلى %2$s.</string>
+    <string name="app_reasoning_set">الاستدلال ← %1$s — هذه الجلسة</string>
+    <string name="app_reasoning_set_global">الاستدلال ← %1$s لكل الجلسات</string>
+    <string name="app_reasoning_refused">رُفض الاستدلال: %1$s</string>
+
+    <string name="app_room_joined">تم الانضمام — ستظهر الغرفة في المزامنة التالية</string>
+    <string name="app_join_failed">فشل الانضمام: %1$s</string>
+    <string name="app_invite_declined">رُفضت الدعوة</string>
+    <string name="app_decline_failed">فشل الرفض: %1$s</string>
+    <string name="app_start_chat_failed">تعذّر بدء المحادثة</string>
+    <string name="app_create_room_failed">تعذّر إنشاء الغرفة</string>
+    <string name="app_join_failed_short">تعذّر الانضمام</string>
+    <string name="app_invite_sent">أُرسلت الدعوة</string>
+    <string name="app_invite_failed">فشلت الدعوة: %1$s</string>
+    <string name="app_left_room">غادرت الغرفة</string>
+    <string name="app_leave_failed">فشلت المغادرة: %1$s</string>
+
+    <string name="app_try_again">حاول مجددًا</string>
+    <string name="app_group_rooms_unavailable">الغرف غير متاحة</string>
+    <string name="app_not_connected">غير متصل ببوابة</string>
+    <string name="app_group_stop_failed">تعذّر إيقاف الغرفة: %1$s</string>
+    <string name="app_group_approval_failed">تعذّر الرد على الموافقة: %1$s</string>
+    <string name="app_group_rename_failed">تعذّرت إعادة التسمية: %1$s</string>
+    <string name="app_group_disband_failed">تعذّر الحل: %1$s</string>
+
+    <string name="app_no_stt_endpoint">لم تُضبط نقطة نهاية STT</string>
+    <string name="app_no_tts_endpoint">لم تُضبط نقطة نهاية TTS</string>
+    <string name="app_no_stt_set">لم تُعيَّن نقطة نهاية STT</string>
+    <string name="app_no_tts_set">لم تُعيَّن نقطة نهاية TTS</string>
+    <string name="app_voice_unreachable">تعذّر الوصول إلى %1$s على %2$s (%3$s)</string>
+    <string name="app_voice_ears">الأذنان (STT)</string>
+    <string name="app_voice_mouth">الصوت (TTS)</string>
+
+    <string name="app_console_run_live">هناك تشغيل جارٍ بالفعل — أوقفه أو دعه ينتهي</string>
+    <string name="app_link_off">Hermes Link متوقف — فعّله من الإعدادات</string>
+    <string name="app_export_needs_gateway">التصدير يحتاج إلى باب البوابة.</string>
+    <string name="app_export_too_old">هذه البوابة قديمة جدًا لتصدير جلسة.</string>
+    <string name="app_export_subject">جلسة Hermes</string>
+    <string name="app_export_unreadable">وصل التصدير بصيغة غير مقروءة.</string>
+
+    <string name="app_unsaved">أُزيلت من المحفوظات</string>
+    <string name="app_saved">تم الحفظ — تجدها في الأرشيف</string>
+    <string name="app_pet_adopt_failed">تعذّر تبنّي %1$s</string>
+
+    <string name="app_channel_messages">الرسائل</string>
+    <string name="app_channel_messages_desc">رسائل جديدة من وكلاء Hermes وغرفك</string>
+    <string name="app_notify_you">أنت</string>
+    <string name="app_notify_title_failed">%1$s · فشل الدور</string>
+    <string name="app_notify_reply">رد</string>
+    <string name="app_notify_reply_to">الرد على %1$s</string>
+    <string name="app_notify_mark_read">تعليم كمقروءة</string>
+    <plurals name="app_notify_conversations">
+        <item quantity="zero">%d محادثة</item>
+        <item quantity="one">%d محادثة</item>
+        <item quantity="two">%d محادثتان</item>
+        <item quantity="few">%d محادثات</item>
+        <item quantity="many">%d محادثة</item>
+        <item quantity="other">%d محادثة</item>
+    </plurals>
+    <string name="app_channel_gate">الموافقات والأسئلة</string>
+    <string name="app_channel_gate_desc">وكيل متوقف ينتظر إجابتك</string>
+    <string name="app_notify_answer">إجابة</string>
+    <string name="app_channel_runs">الوكيل يعمل</string>
+    <string name="app_channel_runs_desc">سطر حالة صامت أثناء عمل الوكيل: ماذا يفعل ومنذ متى</string>
+    <string name="app_notify_stop">إيقاف</string>
+    <string name="app_channel_missions">المهام</string>
+    <string name="app_channel_missions_desc">مهام تكتمل أو تتعثر أو يتخلى عنها الوكيل على لوحته</string>
+
+    <string name="app_push_checking">جارٍ التحقق من الرسائل…</string>
+    <string name="app_notify_sending_text">جارٍ الإرسال: %1$s</string>
+    <string name="app_notify_answering">جارٍ الإجابة…</string>
+    <string name="app_notify_gate_unreachable">تعذّر الوصول إلى البوابة — انقر للإجابة</string>
+    <string name="app_notify_answered">تمت الإجابة — الوكيل يعمل مجددًا</string>
+    <string name="app_notify_request_timed_out">كانت مهلة ذلك الطلب قد انتهت</string>
+    <string name="app_notify_answer_failed">تعذّرت الإجابة — انقر للفتح</string>
+    <string name="app_notify_sending">جارٍ الإرسال…</string>
+    <string name="app_notify_send_failed">تعذّر إرسال “%1$s” — انقر للفتح</string>
+
+    <string name="app_push_connecting">جارٍ الاتصال…</string>
+    <string name="app_push_connected">متصل — الإشعارات المدمجة</string>
+    <string name="app_push_reconnecting">جارٍ إعادة الاتصال…</string>
+    <string name="app_channel_push">اتصال الإشعارات</string>
+    <string name="app_channel_push_desc">اتصال Keryx الخاص بخادم الإشعارات لديك (دون الحاجة إلى تطبيق موزّع)</string>
+    <string name="app_push_title">إشعارات Keryx</string>
+
+    <string name="app_scan_pairing_inside">امسح رموز الإقران داخل Keryx: اربط بوابتك › امسح رمز إقران.</string>
+
+    <string name="app_share_nothing">لا شيء للمشاركة</string>
+    <string name="app_share_foreign_only">يستطيع Keryx إرسال الملفات المشاركة من تطبيق آخر فقط</string>
+    <string name="app_share_too_large_mb">الملف أكبر من أن يُرسل (%1$d ميغابايت)</string>
+    <string name="app_share_too_large">الملف أكبر من أن يُرسل</string>
+    <string name="app_share_read_failed">تعذّرت قراءة %1$s</string>
+    <plurals name="app_share_attachments">
+        <item quantity="zero">%d مرفق</item>
+        <item quantity="one">%d مرفق</item>
+        <item quantity="two">%d مرفقان</item>
+        <item quantity="few">%d مرفقات</item>
+        <item quantity="many">%d مرفقًا</item>
+        <item quantity="other">%d مرفق</item>
+    </plurals>
+    <string name="app_share_note_label">أضف ملاحظة (اختياري)</string>
+    <string name="app_share_note_hint">لخّص هذا / تذكّر هذا / …</string>
+
+    <string name="app_hands_cannot">لا شيء على هذا الهاتف يستطيع فعل ذلك</string>
+    <string name="app_hands_no_app">لا يوجد تطبيق باسم “%1$s”</string>
+    <string name="app_hands_no_handler">لا شيء على هذا الهاتف يتعامل مع %1$s</string>
+    <string name="app_hands_failed">تعذّر ذلك: %1$s</string>
+    <string name="app_hands_no_flash">لا يوجد فلاش على هذا الهاتف</string>
+
+    <string name="app_crash_log_subject">سجل أعطال Keryx</string>
+    <string name="app_crash_log_share">مشاركة سجل الأعطال</string>
+    <string name="app_share">مشاركة</string>
+    <string name="app_share_named">مشاركة %1$s</string>
+
+    <string name="app_call_hearing_failed">فشل السماع: %1$s</string>
+    <string name="app_call_turn_failed">فشل دور الوكيل</string>
+    <string name="app_call_voice_failed">فشل الصوت: %1$s</string>
+    <string name="app_call_no_reply">لا رد من البوابة</string>
+    <string name="app_tts_failed">فشل النطق: %1$s</string>
+    <string name="app_tts_audio_unavailable">الصوت غير متاح</string>
+    <string name="app_tts_no_audio">لم يرسل خادم النطق أي صوت</string>
+    <string name="app_tts_no_engine">لا يوجد محرك نطق على هذا الجهاز</string>
+    <string name="app_tts_playback_failed">فشل تشغيل النطق</string>
+    <string name="app_tts_playback_failed_why">فشل تشغيل النطق: %1$s</string>
+
+    <string name="app_tour_welcome_title">مرحبًا بك في Keryx</string>
+    <string name="app_tour_welcome_text">هذا عرض تجريبي: بوابة وهمية على هاتفك، ووكيلها في منتصف مهمة. إليك جولة سريعة قبل أن تربط بوابتك.</string>
+    <string name="app_tour_plan_title">خطته</string>
+    <string name="app_tour_plan_text">يقسّم وكيلك المهمة إلى خطوات ويشطبها أولًا بأول. وأثناء عمله، يُبقي Keryx إشعارًا حيًا بالمهمة، فيمكنك وضع الهاتف جانبًا.</string>
+    <string name="app_tour_approval_title">يسأل أولًا</string>
+    <string name="app_tour_approval_text">قبل أي شيء خطِر، مثل حذف مجلد، يتوقف وكيلك ويسأل. أجب هنا أو مباشرة من الإشعار.</string>
+    <string name="app_tour_approval_text_demo">قبل أي شيء خطِر، مثل حذف مجلد، يتوقف وكيلك ويسأل. أجب هنا أو مباشرة من الإشعار. جرّبه عند انتهاء الجولة، وشاهده يُنهي المهمة.</string>
+    <string name="app_tour_composer_title">اطلب أي شيء</string>
+    <string name="app_tour_composer_text">أعطِ وكيلك مهمة بكلمات بسيطة. يواصل العمل إن غادرت، ويُعلمك Keryx عندما ينتهي.</string>
+    <string name="app_tour_model_title">أي دماغ يجيب</string>
+    <string name="app_tour_model_text">بدّل النموذج لهذه الجلسة، أو لكل الجلسات من الآن فصاعدًا.</string>
+    <string name="app_tour_new_session_title">صفحة جديدة</string>
+    <string name="app_tour_new_session_text">ابدأ جلسة جديدة. اضغط مطولًا للخيارات، مثل عنوان أو جلسة مؤقتة.</string>
+    <string name="app_tour_drawer_title">كل ما تبقى</string>
+    <string name="app_tour_drawer_text">جلساتك وبقية Keryx خلف هذا الزر.</string>
+    <string name="app_tour_lenses_title">ما يحتاج إليك</string>
+    <string name="app_tour_lenses_text">ضيّق القائمة إلى الجلسات التي تنتظرك، أو الجارية الآن، أو غير المقروءة.</string>
+    <string name="app_tour_missions_title">المهام</string>
+    <string name="app_tour_missions_text">سلّم وكيلك مهامًا أطول كبطاقات على لوحة. يعمل عليها ويسألك عندما يحتاج إليك.</string>
+    <string name="app_tour_runs_title">التشغيلات</string>
+    <string name="app_tour_runs_text">مهام مجدولة، وما أسفر عنه كل تشغيل.</string>
+    <string name="app_tour_bots_title">البوتات</string>
+    <string name="app_tour_bots_text">ملفات وكيلك الشخصية الأخرى. لكل منها ذاكرته ومهاراته ومحادثاته.</string>
+    <string name="app_tour_archive_title">الأرشيف</string>
+    <string name="app_tour_archive_text">كل ما قيل على الإطلاق، قابل للبحث على الهاتف، حتى عندما تكون البوابة متوقفة.</string>
+    <string name="app_tour_gateway_title">بوابتك</string>
+    <string name="app_tour_gateway_text_demo">مع Hermes الخاص بك، يعرض هذا الاتصال والنموذج والإصدار. كل ما رأيته للتو يعمل بالطريقة نفسها على بوابة حقيقية: اربط بوابتك وستعمل فورًا.</string>
+    <string name="app_tour_gateway_text">الاتصال والنموذج وإصدار Hermes. انقر عليه لفتح البوابة؛ والترس يفتح الإعدادات، حيث توجد هذه الجولة أيضًا.</string>
+    <string name="app_tour_gateway_text_direct">الاتصال والنموذج وإصدار Hermes. انقر عليه لفتح البوابة؛ والترس يفتح الإعدادات، حيث توجد هذه الجولة أيضًا. تشغّل أكثر من Hermes؟ أضفه وبدّل بينها من هنا.</string>
+    <string name="app_tour_cta_connect">اربط بوابتك</string>
+    <string name="app_tour_cta_add_gateway">إضافة بوابة</string>
+
+    <string name="app_whatsnew_title">ما الجديد في Keryx 3.0</string>
+    <string name="app_whatsnew_text">نظرة سريعة على ما تغيّر. تخطَّها إن شئت: ستبقى في الإعدادات › حول.</string>
+    <string name="app_whatsnew_point_title">اسأل أين يوجد شيء ما</string>
+    <string name="app_whatsnew_point_text">اسأل وكيلك \"أين مهامي المجدولة؟\" ويمكنه أن يشير إلى المكان، هنا على الهاتف. تحتاج بوابتك إلى keryx-stream 0.6 أو أحدث.</string>
+    <string name="app_whatsnew_memory_title">ذاكرة المحادثة</string>
+    <string name="app_whatsnew_memory_text">الحلقة بجانب النموذج تخبرك الآن كم ردًا تتسع له هذه المحادثة، وفقط عندما يهم ذلك. انقر عليها لترى ما يشغل المساحة.</string>
+    <string name="app_whatsnew_drawer_title">درج مُعاد تصميمه</string>
+    <string name="app_whatsnew_drawer_text_direct">لكل محادثة لونها وعلامتها، وحلقة تُظهر التي تعمل، وهذه المرشحات تضيّق القائمة إلى ما يحتاج إليك.</string>
+    <string name="app_whatsnew_drawer_text">لكل محادثة لونها وعلامتها، وحلقة تُظهر التي تعمل.</string>
+    <string name="app_whatsnew_cards_title">بطاقات بكلمات بسيطة</string>
+    <string name="app_whatsnew_cards_text">تُفتح بطاقة المهمة الآن على ما يجري والخطوة التالية الوحيدة. التفاصيل التقنية ما زالت هناك، تحت التفاصيل.</string>
+    <string name="app_whatsnew_look_title">المظهر والتحديثات</string>
+    <string name="app_whatsnew_look_text_direct">في الإعدادات › المظهر أنماط تفكير جديدة وخمس طرق للتنقل بين المحادثات. مع إصدار حديث من keryx-stream، تتيح لوحة التحديث في البوابة اختيار إصدارات Stable أو Edge. لإضافة Hermes آخر، شغّل hermes keryx pair عليه وامسح الرمز.</string>
+    <string name="app_whatsnew_look_text">في الإعدادات › المظهر أنماط تفكير جديدة وخمس طرق للتنقل بين المحادثات. الجولة وتلميحات الأقسام موجودة في الإعدادات › حول.</string>
+
+    <string name="app_hint_missions_title">المهام</string>
+    <string name="app_hint_missions_text">المهام الأطول توجد هنا كبطاقات. يلتقطها وكلاؤك ويعملون عليها، والبطاقة التي تحتاج إليك تنتقل إلى الأعلى. انقر + لتسليم واحدة.</string>
+    <string name="app_hint_runs_title">التشغيلات</string>
+    <string name="app_hint_runs_text">مهام مجدولة، مثل موجز صباحي أو فحص ليلي. تصل نتيجة كل تشغيل إلى هنا. اطلب من وكيلك ويمكنه إعداد واحدة لك.</string>
+    <string name="app_hint_bots_title">البوتات</string>
+    <string name="app_hint_bots_text">كل بوت هو ملف شخصي لـ Hermes الخاص بك، بذاكرته ومهاراته ومحادثاته. افتح واحدًا لتتحدث إليه، أو ضع بضعة منها في محادثة جماعية.</string>
+    <string name="app_hint_gateway_title">بوابتك</string>
+    <string name="app_hint_gateway_text">حال Hermes الذي تتصل به، وما وراءه: نموذجه وإعداداته، ومهامه، ومهاراته، وذاكرته، وأدواته.</string>
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">وكيلك أثناء العمل، بملء الشاشة: بماذا يفكر، والأدوات التي يشغّلها، والمساعدون الذين يرسلهم. يمكنك توجيهه من هنا أيضًا.</string>
+    <string name="app_hint_artifact_title">صفحة صنعها وكيلك</string>
+    <string name="app_hint_artifact_text">التقارير والنماذج الأولية والصفحات التي يكتبها وكيلك تُفتح هنا، على الهاتف. احفظ واحدة أو شاركها بالأزرار في الأعلى.</string>
+
+    <string name="app_tour_pane">الجولة</string>
+    <string name="app_tour_end">إنهاء الجولة</string>
+    <string name="app_tour_progress">%1$d من %2$d</string>
+    <string name="app_tour_back">رجوع</string>
+    <string name="app_tour_done">تم</string>
+    <string name="app_tour_got_it">فهمت</string>
+    <string name="app_tour_next">التالي</string>
+</resources>

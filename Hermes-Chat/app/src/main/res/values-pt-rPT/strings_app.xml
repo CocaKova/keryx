@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_turn_failed">O turno falhou</string>
+    <string name="app_photo">Fotografia</string>
+    <string name="app_attachment">Anexo</string>
+    <string name="app_new_message">Nova mensagem</string>
+
+    <string name="app_approval_expired">A aprovação já tinha expirado</string>
+    <string name="app_approval_failed">Falha na aprovação: %1$s</string>
+    <string name="app_reply_failed">Falha na resposta: %1$s</string>
+    <string name="app_link_unreachable_matrix">Hermes Link inacessível (%1$s) — a usar a sincronização Matrix</string>
+    <string name="app_send_failed">Não foi possível enviar: %1$s</string>
+    <string name="app_room_photo_updated">Fotografia da sala atualizada</string>
+    <string name="app_room_photo_forbidden">Sem permissão para definir a fotografia desta sala — precisas de direitos de moderador.</string>
+    <string name="app_room_photo_failed">Não foi possível definir a fotografia: %1$s</string>
+    <string name="app_unknown_error">erro desconhecido</string>
+    <string name="app_branched">Ramificado — uma cópia de toda esta conversa</string>
+    <string name="app_branch_failed">Falha ao ramificar: %1$s</string>
+    <string name="app_not_sent">Não enviado. %1$s</string>
+    <string name="app_undo_done">Última troca anulada</string>
+    <string name="app_undo_nothing">Nada para anular</string>
+    <string name="app_still_working">Ainda a trabalhar — para o turno primeiro</string>
+    <string name="app_undo_failed">Não foi possível anular: %1$s</string>
+    <string name="app_retry_nothing">Nada para repetir — o gateway não tinha nenhum turno para anular</string>
+    <string name="app_retry_failed">Não foi possível repetir: %1$s</string>
+    <string name="app_taken_back_edit">Retirado — edita e envia de novo</string>
+    <string name="app_take_back_failed">Não foi possível retirar — o teu texto está no campo de escrita para enviares de novo</string>
+    <string name="app_set_gateway_url_first">Define primeiro um URL do gateway</string>
+    <string name="app_link_ok">Hermes Link OK — %1$s</string>
+    <string name="app_link_failed">Falha no Hermes Link: %1$s</string>
+    <string name="app_connection_error">erro de ligação</string>
+    <string name="app_link_up_api_down">O Hermes Link está ativo, mas o servidor API do Hermes por trás dele não está a correr, por isso Missões e Execuções não carregam. Define API_SERVER_ENABLED=true e uma API_SERVER_KEY em ~/.hermes/.env e reinicia o gateway.</string>
+
+    <string name="app_pinned">Fixada</string>
+    <string name="app_pinned_named">“%1$s” fixada</string>
+    <string name="app_unpinned">Desafixada</string>
+    <string name="app_unpinned_named">“%1$s” desafixada</string>
+    <string name="app_pin_failed">Falha ao fixar: %1$s</string>
+    <string name="app_unpin_failed">Falha ao desafixar: %1$s</string>
+    <string name="app_marked_unread">Marcada como não lida</string>
+    <string name="app_mark_read_failed">Não foi possível marcar como lida: %1$s</string>
+    <string name="app_mark_unread_failed">Não foi possível marcar como não lida: %1$s</string>
+    <string name="app_sticky_no_catalog">Não foi possível ler os modelos — aberta no modelo predefinido do gateway</string>
+    <string name="app_sticky_not_served">%1$s não está disponível agora — aberta no modelo predefinido do gateway</string>
+    <string name="app_sticky_needs_confirm">%1$s precisa de confirmação — escolhe-o no seletor de modelos</string>
+    <string name="app_sticky_opened_fallback">Aberta em %1$s — %2$s não está disponível agora</string>
+    <string name="app_sticky_opened">Aberta em %1$s — a tua última escolha (modelo fixo, nas Definições)</string>
+    <string name="app_sticky_refused">%1$s recusou — aberta no modelo predefinido do gateway</string>
+    <string name="app_create_session_failed">não foi possível criar a sessão</string>
+    <string name="app_rename_failed">Falha ao mudar o nome: %1$s</string>
+    <string name="app_archive_failed">Não foi possível arquivar: %1$s</string>
+    <string name="app_archived">Arquivada</string>
+    <string name="app_archived_named">“%1$s” arquivada</string>
+    <string name="app_restore_failed">Não foi possível restaurar: %1$s</string>
+    <string name="app_restored">Restaurada</string>
+    <string name="app_restored_named">“%1$s” restaurada</string>
+    <string name="app_archive_read_failed">Não foi possível ler o arquivo: %1$s</string>
+    <string name="app_older_sessions_failed">Não foi possível carregar sessões anteriores: %1$s</string>
+    <string name="app_session_deleted">Sessão eliminada</string>
+    <string name="app_delete_failed">Falha ao eliminar: %1$s</string>
+
+    <string name="app_steered">Orientado — o agente vê isto no próximo passo</string>
+    <string name="app_steer_declined_queued">O agente recusou a orientação — em fila para o próximo turno</string>
+    <string name="app_queue_failed">Falha ao pôr em fila: %1$s</string>
+    <string name="app_steer_failed">Falha ao orientar: %1$s</string>
+    <string name="app_goal_failed">Objetivo: %1$s</string>
+    <string name="app_aside_needs_direct">Perguntar à parte requer o gateway direto</string>
+    <string name="app_aside_failed">Falha ao perguntar à parte: %1$s</string>
+    <string name="app_redirected">Redirecionado — a resposta recomeça com a tua correção</string>
+    <string name="app_redirect_between_calls">Entre chamadas — a tua correção é a próxima</string>
+    <string name="app_redirect_finished_queued">A resposta já tinha terminado — em fila para o próximo turno</string>
+    <string name="app_redirect_unsupported">Este agente não consegue redirecionar — a orientar em vez disso</string>
+    <string name="app_redirect_failed">Falha ao redirecionar: %1$s</string>
+    <string name="app_branched_from_message">Ramificado — esta é uma nova sessão a partir dessa mensagem</string>
+    <string name="app_queued">Em fila — é enviada quando este turno terminar</string>
+    <string name="app_stopped">Parado</string>
+    <string name="app_stop_failed">Falha ao parar: %1$s</string>
+    <string name="app_crew_steered">%1$s orientado — vê isto no próximo passo</string>
+    <string name="app_crew_steer_rejected">%1$s não aceitou — responde a outra porta ou já está a terminar</string>
+    <string name="app_crew_stopped">%1$s parado</string>
+    <string name="app_crew_already_finished">%1$s já tinha terminado</string>
+
+    <string name="app_model_confirm">%1$s Toca de novo para confirmar.</string>
+    <string name="app_model_expensive">Este modelo é caro.</string>
+    <string name="app_model_deferred">%1$s assume no próximo turno — esta sessão</string>
+    <string name="app_model_deferred_global">%1$s assume no próximo turno — todas as sessões</string>
+    <string name="app_model_switched">%1$s — esta sessão</string>
+    <string name="app_model_switched_global">%1$s — todas as sessões</string>
+    <string name="app_model_switch_refused">Mudança recusada: %1$s</string>
+    <string name="app_reasoning_refused_unknown">Este cérebro recusou esse nível de raciocínio — escolhe um mais baixo.</string>
+    <string name="app_reasoning_refused_floor">Este cérebro recusou o raciocínio %1$s e não há nada mais baixo para tentar.</string>
+    <string name="app_reasoning_dropped">Este cérebro recusou o raciocínio %1$s — baixou para %2$s.</string>
+    <string name="app_reasoning_drop_failed">Este cérebro recusou o raciocínio %1$s; não foi possível baixar para %2$s.</string>
+    <string name="app_reasoning_set">Raciocínio → %1$s — esta sessão</string>
+    <string name="app_reasoning_set_global">Raciocínio → %1$s em todas as sessões</string>
+    <string name="app_reasoning_refused">Raciocínio recusado: %1$s</string>
+
+    <string name="app_room_joined">Entraste — a sala aparece na próxima sincronização</string>
+    <string name="app_join_failed">Falha ao entrar: %1$s</string>
+    <string name="app_invite_declined">Convite recusado</string>
+    <string name="app_decline_failed">Falha ao recusar: %1$s</string>
+    <string name="app_start_chat_failed">não foi possível iniciar a conversa</string>
+    <string name="app_create_room_failed">não foi possível criar a sala</string>
+    <string name="app_join_failed_short">não foi possível entrar</string>
+    <string name="app_invite_sent">Convite enviado</string>
+    <string name="app_invite_failed">Falha no convite: %1$s</string>
+    <string name="app_left_room">Saíste da sala</string>
+    <string name="app_leave_failed">Falha ao sair: %1$s</string>
+
+    <string name="app_try_again">tenta de novo</string>
+    <string name="app_group_rooms_unavailable">salas indisponíveis</string>
+    <string name="app_not_connected">sem ligação a um gateway</string>
+    <string name="app_group_stop_failed">Não foi possível parar a sala: %1$s</string>
+    <string name="app_group_approval_failed">Não foi possível responder à aprovação: %1$s</string>
+    <string name="app_group_rename_failed">Não foi possível mudar o nome: %1$s</string>
+    <string name="app_group_disband_failed">Não foi possível dissolver: %1$s</string>
+
+    <string name="app_no_stt_endpoint">Nenhum endpoint STT configurado</string>
+    <string name="app_no_tts_endpoint">Nenhum endpoint TTS configurado</string>
+    <string name="app_no_stt_set">nenhum endpoint STT definido</string>
+    <string name="app_no_tts_set">nenhum endpoint TTS definido</string>
+    <string name="app_voice_unreachable">%1$s inacessível em %2$s (%3$s)</string>
+    <string name="app_voice_ears">ouvidos (STT)</string>
+    <string name="app_voice_mouth">voz (TTS)</string>
+
+    <string name="app_console_run_live">Já há uma execução ativa — para-a ou deixa-a terminar</string>
+    <string name="app_link_off">O Hermes Link está desligado — ativa-o nas Definições</string>
+    <string name="app_export_needs_gateway">Exportar requer a porta do gateway.</string>
+    <string name="app_export_too_old">Este gateway é demasiado antigo para exportar uma sessão.</string>
+    <string name="app_export_subject">Sessão Hermes</string>
+    <string name="app_export_unreadable">A exportação veio ilegível.</string>
+
+    <string name="app_unsaved">Removida dos Guardados</string>
+    <string name="app_saved">Guardada — encontra-a no Arquivo</string>
+    <string name="app_pet_adopt_failed">não foi possível adotar %1$s</string>
+
+    <string name="app_channel_messages">Mensagens</string>
+    <string name="app_channel_messages_desc">Novas mensagens dos teus agentes Hermes e salas</string>
+    <string name="app_notify_you">Tu</string>
+    <string name="app_notify_title_failed">%1$s · turno falhou</string>
+    <string name="app_notify_reply">Responder</string>
+    <string name="app_notify_reply_to">Responder a %1$s</string>
+    <string name="app_notify_mark_read">Marcar como lida</string>
+    <plurals name="app_notify_conversations">
+        <item quantity="one">%d conversa</item>
+        <item quantity="other">%d conversas</item>
+    </plurals>
+    <string name="app_channel_gate">Aprovações e perguntas</string>
+    <string name="app_channel_gate_desc">Um agente está parado à espera da tua resposta</string>
+    <string name="app_notify_answer">Responder</string>
+    <string name="app_channel_runs">Agente a trabalhar</string>
+    <string name="app_channel_runs_desc">Uma linha de estado silenciosa enquanto um agente trabalha: o que está a fazer e há quanto tempo</string>
+    <string name="app_notify_stop">Parar</string>
+    <string name="app_channel_missions">Missões</string>
+    <string name="app_channel_missions_desc">Missões concluídas, bloqueadas ou abandonadas no quadro do agente</string>
+
+    <string name="app_push_checking">A verificar mensagens…</string>
+    <string name="app_notify_sending_text">A enviar: %1$s</string>
+    <string name="app_notify_answering">A responder…</string>
+    <string name="app_notify_gate_unreachable">Não foi possível contactar o gateway — toca para responder</string>
+    <string name="app_notify_answered">Respondido — o agente voltou a trabalhar</string>
+    <string name="app_notify_request_timed_out">Esse pedido já tinha expirado</string>
+    <string name="app_notify_answer_failed">Não foi possível responder — toca para abrir</string>
+    <string name="app_notify_sending">A enviar…</string>
+    <string name="app_notify_send_failed">Não foi possível enviar “%1$s” — toca para abrir</string>
+
+    <string name="app_push_connecting">A ligar…</string>
+    <string name="app_push_connected">Ligado — push integrado</string>
+    <string name="app_push_reconnecting">A religar…</string>
+    <string name="app_channel_push">Ligação push</string>
+    <string name="app_channel_push_desc">A ligação própria do Keryx ao teu servidor push (sem necessidade de app distribuidora)</string>
+    <string name="app_push_title">Push do Keryx</string>
+
+    <string name="app_scan_pairing_inside">Lê códigos de emparelhamento dentro do Keryx: Ligar o teu gateway › Ler um código de emparelhamento.</string>
+
+    <string name="app_share_nothing">Nada para partilhar</string>
+    <string name="app_share_foreign_only">O Keryx só consegue enviar ficheiros partilhados a partir de outra app</string>
+    <string name="app_share_too_large_mb">Ficheiro demasiado grande para enviar (%1$d MB)</string>
+    <string name="app_share_too_large">Ficheiro demasiado grande para enviar</string>
+    <string name="app_share_read_failed">Não foi possível ler %1$s</string>
+    <plurals name="app_share_attachments">
+        <item quantity="one">%d anexo</item>
+        <item quantity="other">%d anexos</item>
+    </plurals>
+    <string name="app_share_note_label">Adicionar uma nota (opcional)</string>
+    <string name="app_share_note_hint">Resume isto / lembra-te disto / …</string>
+
+    <string name="app_hands_cannot">Nada neste telemóvel consegue fazer isso</string>
+    <string name="app_hands_no_app">Nenhuma app chamada “%1$s”</string>
+    <string name="app_hands_no_handler">Nada neste telemóvel trata de %1$s</string>
+    <string name="app_hands_failed">Não foi possível: %1$s</string>
+    <string name="app_hands_no_flash">Este telemóvel não tem lanterna</string>
+
+    <string name="app_crash_log_subject">Registo de falhas do Keryx</string>
+    <string name="app_crash_log_share">Partilhar registo de falhas</string>
+    <string name="app_share">Partilhar</string>
+    <string name="app_share_named">Partilhar %1$s</string>
+
+    <string name="app_call_hearing_failed">falha ao ouvir: %1$s</string>
+    <string name="app_call_turn_failed">o turno do agente falhou</string>
+    <string name="app_call_voice_failed">falha na voz: %1$s</string>
+    <string name="app_call_no_reply">sem resposta do gateway</string>
+    <string name="app_tts_failed">Falha na fala: %1$s</string>
+    <string name="app_tts_audio_unavailable">Áudio indisponível</string>
+    <string name="app_tts_no_audio">O servidor de fala não enviou áudio</string>
+    <string name="app_tts_no_engine">Nenhum motor de fala neste dispositivo</string>
+    <string name="app_tts_playback_failed">Falha na reprodução da fala</string>
+    <string name="app_tts_playback_failed_why">Falha na reprodução da fala: %1$s</string>
+
+    <string name="app_tour_welcome_title">Bem-vindo ao Keryx</string>
+    <string name="app_tour_welcome_text">Isto é uma demonstração: um gateway fictício no teu telemóvel, com o agente a meio de uma tarefa. Aqui fica uma visita rápida antes de ligares o teu.</string>
+    <string name="app_tour_plan_title">O plano dele</string>
+    <string name="app_tour_plan_text">O teu agente divide uma tarefa em passos e vai assinalando-os. Enquanto trabalha, o Keryx mantém um aviso em direto da tarefa, para poderes guardar o telemóvel.</string>
+    <string name="app_tour_approval_title">Pergunta primeiro</string>
+    <string name="app_tour_approval_text">Antes de algo arriscado, como eliminar uma pasta, o teu agente para e pergunta. Responde aqui ou diretamente na notificação.</string>
+    <string name="app_tour_approval_text_demo">Antes de algo arriscado, como eliminar uma pasta, o teu agente para e pergunta. Responde aqui ou diretamente na notificação. Experimenta quando a visita terminar e vê-o concluir a tarefa.</string>
+    <string name="app_tour_composer_title">Pede o que quiseres</string>
+    <string name="app_tour_composer_text">Dá uma tarefa ao teu agente em palavras simples. Ele continua a trabalhar se saíres, e o Keryx avisa-te quando terminar.</string>
+    <string name="app_tour_model_title">Que cérebro responde</string>
+    <string name="app_tour_model_text">Muda o modelo desta sessão, ou de todas as sessões a partir de agora.</string>
+    <string name="app_tour_new_session_title">Uma página nova</string>
+    <string name="app_tour_new_session_text">Inicia uma nova sessão. Mantém premido para ver opções, como um título ou uma sessão temporária.</string>
+    <string name="app_tour_drawer_title">Tudo o resto</string>
+    <string name="app_tour_drawer_text">As tuas sessões e o resto do Keryx estão atrás deste botão.</string>
+    <string name="app_tour_lenses_title">O que precisa de ti</string>
+    <string name="app_tour_lenses_text">Filtra a lista para sessões à tua espera, a correr agora ou não lidas.</string>
+    <string name="app_tour_missions_title">Missões</string>
+    <string name="app_tour_missions_text">Entrega ao teu agente tarefas mais longas como cartões num quadro. Ele trata delas e pergunta quando precisa de ti.</string>
+    <string name="app_tour_runs_title">Execuções</string>
+    <string name="app_tour_runs_text">Tarefas agendadas e o que cada execução encontrou.</string>
+    <string name="app_tour_bots_title">Bots</string>
+    <string name="app_tour_bots_text">Os outros perfis do teu agente. Cada um tem a sua memória, competências e conversas.</string>
+    <string name="app_tour_archive_title">Arquivo</string>
+    <string name="app_tour_archive_text">Tudo o que alguma vez foi dito, pesquisável no telemóvel, mesmo com o gateway em baixo.</string>
+    <string name="app_tour_gateway_title">O teu gateway</string>
+    <string name="app_tour_gateway_text_demo">Com o teu próprio Hermes, isto mostra a ligação, o modelo e a versão. Tudo o que acabaste de ver funciona igual num gateway real: liga o teu e fica ativo.</string>
+    <string name="app_tour_gateway_text">A ligação, o modelo e a versão do Hermes. Toca para abrir o Gateway; a roda dentada abre as Definições, onde também está esta visita.</string>
+    <string name="app_tour_gateway_text_direct">A ligação, o modelo e a versão do Hermes. Toca para abrir o Gateway; a roda dentada abre as Definições, onde também está esta visita. Tens mais de um Hermes? Adiciona-o e alterna entre eles aqui.</string>
+    <string name="app_tour_cta_connect">Ligar o teu gateway</string>
+    <string name="app_tour_cta_add_gateway">Adicionar um gateway</string>
+
+    <string name="app_whatsnew_title">Novidades no Keryx 3.0</string>
+    <string name="app_whatsnew_text">Uma vista rápida do que mudou. Podes saltar: fica em Definições › Acerca.</string>
+    <string name="app_whatsnew_point_title">Pergunta onde está algo</string>
+    <string name="app_whatsnew_point_text">Pergunta ao teu agente \"onde estão as minhas tarefas agendadas?\" e ele pode apontar o sítio, aqui mesmo no telemóvel. O teu gateway precisa do keryx-stream 0.6 ou mais recente.</string>
+    <string name="app_whatsnew_memory_title">Memória da conversa</string>
+    <string name="app_whatsnew_memory_text">O anel ao lado do modelo diz agora para quantas respostas esta conversa ainda tem espaço, e só quando isso importa. Toca nele para ver o que está a ocupar o espaço.</string>
+    <string name="app_whatsnew_drawer_title">Uma gaveta redesenhada</string>
+    <string name="app_whatsnew_drawer_text_direct">Cada conversa tem a sua cor e marca, um anel mostra as que estão a trabalhar e estes filtros reduzem a lista ao que precisa de ti.</string>
+    <string name="app_whatsnew_drawer_text">Cada conversa tem a sua cor e marca, e um anel mostra as que estão a trabalhar.</string>
+    <string name="app_whatsnew_cards_title">Cartões em palavras simples</string>
+    <string name="app_whatsnew_cards_text">Um cartão de missão abre agora no que se passa e na próxima coisa a fazer. Os detalhes técnicos continuam lá, em Detalhes.</string>
+    <string name="app_whatsnew_look_title">Aspeto e atualizações</string>
+    <string name="app_whatsnew_look_text_direct">Definições › Aspeto tem novos estilos de raciocínio e cinco formas de passar entre conversas. Com um keryx-stream recente, o painel Atualizar do Gateway deixa-te escolher versões Stable ou Edge. Para adicionar outro Hermes, executa hermes keryx pair nele e lê o código.</string>
+    <string name="app_whatsnew_look_text">Definições › Aspeto tem novos estilos de raciocínio e cinco formas de passar entre conversas. A visita e as dicas de cada espaço estão em Definições › Acerca.</string>
+
+    <string name="app_hint_missions_title">Missões</string>
+    <string name="app_hint_missions_text">As tarefas mais longas ficam aqui como cartões. Os teus agentes pegam nelas e tratam delas, e um cartão que precisa de ti sobe para o topo. Toca em + para atribuir uma.</string>
+    <string name="app_hint_runs_title">Execuções</string>
+    <string name="app_hint_runs_text">Tarefas agendadas, como um resumo matinal ou uma verificação noturna. O resultado de cada execução aparece aqui. Pede ao teu agente e ele configura uma por ti.</string>
+    <string name="app_hint_bots_title">Bots</string>
+    <string name="app_hint_bots_text">Cada bot é um perfil do teu Hermes, com a sua memória, competências e conversas. Abre um para falar com ele, ou junta vários numa conversa de grupo.</string>
+    <string name="app_hint_gateway_title">O teu gateway</string>
+    <string name="app_hint_gateway_text">Como está o Hermes a que estás ligado e o que está por trás: o modelo e as definições, tarefas, competências, memória e ferramentas.</string>
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">O teu agente a trabalhar, em ecrã inteiro: o que está a pensar, as ferramentas que executa e os ajudantes que envia. Também o podes orientar daqui.</string>
+    <string name="app_hint_artifact_title">Uma página feita pelo teu agente</string>
+    <string name="app_hint_artifact_text">Relatórios, maquetas e páginas que o teu agente escreve abrem aqui, no telemóvel. Guarda ou partilha com os botões lá em cima.</string>
+
+    <string name="app_tour_pane">Visita</string>
+    <string name="app_tour_end">Terminar a visita</string>
+    <string name="app_tour_progress">%1$d de %2$d</string>
+    <string name="app_tour_back">Anterior</string>
+    <string name="app_tour_done">Concluído</string>
+    <string name="app_tour_got_it">Percebi</string>
+    <string name="app_tour_next">Seguinte</string>
+</resources>

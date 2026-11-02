@@ -1,0 +1,526 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Work: missions, runs, projects, the Shipyard, artifacts. Keys are work_-prefixed. -->
+
+    <!-- Mission card moves (the ⋯ menu and its confirm dialog). -->
+    <string name="work_move_menu_start">Iniciarla</string>
+    <string name="work_move_menu_unblock">Desbloquear</string>
+    <string name="work_move_menu_reassign">Pasar a otro…</string>
+    <string name="work_move_menu_reclaim">Detener esta ejecución…</string>
+    <string name="work_move_menu_pause">Pausar…</string>
+    <string name="work_move_menu_done">Marcar como hecha…</string>
+    <string name="work_move_menu_archive">Archivar…</string>
+    <string name="work_move_start">Iniciarla</string>
+    <string name="work_move_unblock">Desbloquear</string>
+    <!-- Dialog title: give the mission to another agent profile. -->
+    <string name="work_move_reassign">Pasar a</string>
+    <string name="work_move_reclaim">Detener esta ejecución</string>
+    <string name="work_move_pause">Pausar</string>
+    <string name="work_move_done">Marcar como hecha</string>
+    <string name="work_move_archive">Archivar</string>
+    <string name="work_move_start_explain">La pasa a lista — el despachador la toma en su próxima pasada.</string>
+    <string name="work_move_unblock_explain">Vuelve al trabajo tal como está. La próxima ejecución empieza donde se detuvo la anterior.</string>
+    <string name="work_move_reassign_explain">La ejecuta otro perfil. Si la tarjeta está en curso, primero se detiene.</string>
+    <string name="work_move_reclaim_explain">Termina el ejecutor en curso y devuelve la tarjeta a lista, para que la tome una ejecución nueva.</string>
+    <string name="work_move_pause_explain">La deja esperándote. El motivo es lo que leerá la próxima ejecución cuando la desbloquees.</string>
+    <string name="work_move_done_explain">La cierra a mano. La nota pasa a ser su resumen, y las tarjetas que la esperan pueden empezar.</string>
+    <string name="work_move_archive_explain">La quita del tablero. Si hay un ejecutor en curso, se detiene.</string>
+    <string name="work_move_no_profile">No hay otro perfil al que pasarla.</string>
+    <string name="work_move_note_why">Por qué — la próxima ejecución lo leerá</string>
+    <string name="work_move_note_done">Qué se hizo (opcional)</string>
+    <string name="work_move_note_optional">Una nota en la tarjeta (opcional)</string>
+    <!-- Button: confirm handing the mission to the chosen profile. -->
+    <string name="work_move_hand_over">Pasar</string>
+
+    <!-- Shared. -->
+    <string name="work_try_again">Reintentar</string>
+
+    <!-- Artifacts: an HTML page the agent made, opened in the app. -->
+    <string name="work_artifact_opening">Abriendo…</string>
+    <string name="work_artifact_page_tap">Página · toca para abrir</string>
+    <!-- Button: open the page. -->
+    <string name="work_artifact_open">Abrir</string>
+    <!-- Chip under a reply; %1$s is a file name. -->
+    <string name="work_artifact_open_named">Abrir %1$s</string>
+    <!-- Screen title: a web page the agent made. -->
+    <string name="work_artifact_page">Página</string>
+    <string name="work_artifact_saved_to">Guardado en %1$s</string>
+    <string name="work_artifact_save_failed">No se pudo guardar</string>
+    <string name="work_artifact_save">Guardar en el dispositivo</string>
+    <string name="work_artifact_share_failed">No se pudo compartir</string>
+    <string name="work_artifact_share">Compartir</string>
+    <string name="work_artifact_open_with">Abrir con</string>
+    <string name="work_artifact_reload">Recargar</string>
+    <string name="work_artifact_opening_named">Abriendo %1$s…</string>
+    <string name="work_artifact_open_failed">No se pudo abrir %1$s</string>
+    <string name="work_artifact_err_room">El archivo no llegó por la sala.</string>
+    <string name="work_artifact_err_nothing">Nada que abrir.</string>
+    <string name="work_artifact_err_door">Una página por ruta solo se puede leer por la conexión directa a la pasarela.</string>
+    <string name="work_artifact_err_no_answer">La pasarela no respondió.</string>
+    <string name="work_artifact_err_download">La descarga falló.</string>
+
+    <!-- The Shipyard: reviewing and committing git changes on the gateway. "Shipyard" is a feature name. -->
+    <string name="work_shipyard">Astillero</string>
+    <string name="work_dismiss_error">Descartar este error</string>
+    <!-- git: add the file to / remove it from the next commit. -->
+    <string name="work_ship_stage">Preparar</string>
+    <string name="work_ship_unstage">Quitar</string>
+    <string name="work_ship_reading_diff">leyendo el diff…</string>
+    <string name="work_ship_no_diff">Sin diff — el archivo no cambia en este ámbito.</string>
+    <string name="work_ship_clipped">recortado por la pasarela: %1$d de %2$d líneas sin mostrar</string>
+    <string name="work_ship_nothing">Nada que revisar</string>
+    <string name="work_ship_nothing_body">No hay repos que la pasarela deje revisar desde un teléfono. Aquí aparece la carpeta de un proyecto o un repo descubierto bajo el home del usuario de la pasarela.</string>
+    <!-- git: no branch checked out. -->
+    <string name="work_ship_detached">detached</string>
+    <!-- The local branch matches its remote. -->
+    <string name="work_ship_in_step">al día</string>
+    <string name="work_ship_working_tree">Árbol de trabajo</string>
+    <string name="work_ship_branch">Rama</string>
+    <string name="work_ship_refresh">Actualizar</string>
+    <string name="work_ship_reading_tree">leyendo el árbol…</string>
+    <plurals name="work_ship_branch_files">
+        <item quantity="one">%d archivo cambiado en esta rama</item>
+        <item quantity="other">%d archivos cambiados en esta rama</item>
+    </plurals>
+    <string name="work_ship_clean">Limpio — nada que confirmar.</string>
+    <string name="work_ship_summary">%1$d cambiados · %2$d preparados · %3$d sin seguimiento</string>
+    <string name="work_ship_summary_conflicted">%1$d cambiados · %2$d preparados · %3$d sin seguimiento · %4$d en conflicto</string>
+    <string name="work_ship_reading_working_tree">Leyendo el árbol de trabajo…</string>
+    <string name="work_ship_stage_all">Preparar todo</string>
+    <!-- Button opening the commit sheet. -->
+    <string name="work_ship_commit_more">Commit…</string>
+    <string name="work_ship_push">Push</string>
+    <!-- %1$d = commits ahead of the remote. -->
+    <string name="work_ship_push_ahead">Push ↑%1$d</string>
+    <!-- git commit (noun for the sheet title, verb on the button). -->
+    <string name="work_ship_commit">Commit</string>
+    <plurals name="work_ship_staged_files">
+        <item quantity="one">Se confirmará %d archivo preparado.</item>
+        <item quantity="other">Se confirmarán %d archivos preparados.</item>
+    </plurals>
+    <string name="work_ship_nothing_staged">No hay nada preparado — se confirmará todo el árbol de trabajo.</string>
+    <!-- Commit message field. -->
+    <string name="work_ship_message">Mensaje</string>
+    <!-- Header over recent commit subjects. -->
+    <string name="work_ship_recent">RECIENTES</string>
+    <string name="work_ship_push_after">Hacer push tras el commit</string>
+    <string name="work_ship_commit_push">Commit y push</string>
+
+    <string name="work_delete">Eliminar</string>
+    <string name="work_create">Crear</string>
+    <string name="work_creating">Creando…</string>
+
+    <!-- Projects: workspace folders on the gateway that group sessions. -->
+    <string name="work_projects">Proyectos</string>
+    <string name="work_proj_none">Aún no hay proyectos</string>
+    <string name="work_proj_none_body">Un proyecto es una carpeta de trabajo. Las sesiones cuyo trabajo está ahí se agrupan bajo él.</string>
+    <string name="work_proj_new">Nuevo proyecto</string>
+    <string name="work_proj_loading">Cargando proyectos…</string>
+    <!-- Tag on a repo the gateway found by itself (not a project someone made). Short. -->
+    <string name="work_proj_auto">auto</string>
+    <plurals name="work_proj_sessions">
+        <item quantity="one">%d sesión</item>
+        <item quantity="other">%d sesiones</item>
+    </plurals>
+    <string name="work_proj_archive">Archivar proyecto</string>
+    <string name="work_proj_archived">%1$s archivado</string>
+    <string name="work_proj_delete">Eliminar proyecto</string>
+    <string name="work_proj_delete_title">¿Eliminar %1$s?</string>
+    <string name="work_proj_delete_body">Solo se elimina la fila del proyecto. La carpeta en la pasarela y todas sus sesiones se quedan donde están.</string>
+    <string name="work_proj_deleted">%1$s eliminado</string>
+    <string name="work_proj_new_chat_here">Nuevo chat aquí</string>
+    <string name="work_proj_loading_sessions">Cargando sesiones…</string>
+    <string name="work_proj_no_sessions">Aún no hay sesiones en este espacio de trabajo.</string>
+    <!-- Short count of chat messages, in a compact metadata line. -->
+    <plurals name="work_proj_msgs">
+        <item quantity="one">%d msj</item>
+        <item quantity="other">%d msjs</item>
+    </plurals>
+    <string name="work_proj_name">Nombre del proyecto</string>
+    <string name="work_proj_new_body">Las sesiones cuyo trabajo está en esta carpeta pertenecen al proyecto; “Mover a proyecto” lleva una sesión a él. La carpeta ya tiene que existir en la pasarela — créala allí primero.</string>
+
+    <string name="work_save">Guardar</string>
+    <string name="work_back">Atrás</string>
+    <!-- Compact "time ago" for run lists. -->
+    <string name="work_ago_now">ahora</string>
+    <string name="work_ago_m">hace %1$d min</string>
+    <string name="work_ago_h">hace %1$d h</string>
+    <string name="work_ago_d">hace %1$d d</string>
+
+    <!-- Runs: the scheduled-job editor ("job" = a scheduled cron job the agent runs). -->
+    <!-- %1$s = chat room name. -->
+    <string name="work_job_this_room">Esta sala · %1$s</string>
+    <string name="work_job_this_room_detail">El informe de cada ejecución se publica en el chat abierto</string>
+    <string name="work_job_new">Nuevo trabajo</string>
+    <string name="work_job_edit">Editar trabajo</string>
+    <string name="work_job_from_blueprint">Empezar desde una plantilla</string>
+    <string name="work_job_write_own">O escribe el tuyo</string>
+    <string name="work_job_name">Nombre</string>
+    <string name="work_job_rename_note">Las ejecuciones pasadas conservan el nombre anterior</string>
+    <string name="work_job_prompt_script">Prompt (opcional — este trabajo ejecuta un script)</string>
+    <string name="work_job_prompt">Qué hace el agente en cada ejecución</string>
+    <string name="work_job_when">Cuándo</string>
+    <string name="work_job_where">Adónde va el informe</string>
+    <string name="work_job_model">Modelo</string>
+    <!-- Button (verb): create the scheduled job. -->
+    <string name="work_job_schedule_verb">Programar</string>
+    <string name="work_job_kind_interval">Cada…</string>
+    <string name="work_job_kind_daily">A diario</string>
+    <string name="work_job_kind_weekdays">Entre semana</string>
+    <string name="work_job_kind_weekly">Semanal</string>
+    <string name="work_job_kind_monthly">Mensual</string>
+    <string name="work_job_kind_custom">Personalizado</string>
+    <!-- Interval preset chips, short. -->
+    <string name="work_job_minutes_short">%1$d min</string>
+    <string name="work_job_hours_short">%1$d h</string>
+    <string name="work_job_minutes_between">Minutos entre ejecuciones</string>
+    <!-- Field label (noun): the schedule line. -->
+    <string name="work_job_schedule">Programación</string>
+    <!-- Keep the examples as they are: the gateway parses them. -->
+    <string name="work_job_schedule_help">cron (0 9 * * 1-5), every 2h, in 30m o 2026-10-03T09:00</string>
+    <!-- Screen reader, weekday toggle. %1$s = day name. -->
+    <string name="work_job_day_on">%1$s, activado</string>
+    <string name="work_job_day_off">%1$s, desactivado</string>
+    <string name="work_job_day_of_month">Día del mes</string>
+    <!-- Before a clock time: "Daily at 08:00". -->
+    <string name="work_job_at">a las</string>
+    <!-- Button: confirm the picked time. -->
+    <string name="work_job_set">Aceptar</string>
+    <string name="work_job_other_target">Otro destino…</string>
+    <string name="work_job_target">Destino</string>
+    <!-- Keep local, matrix and platform:chat_id as they are: the gateway reads them. -->
+    <string name="work_job_target_help">local, una plataforma (matrix), platform:chat_id o una lista separada por comas</string>
+    <string name="work_job_gateway_default">Predeterminado de la pasarela</string>
+    <string name="work_job_gateway_default_detail">Lo que use el agente de la pasarela</string>
+    <string name="work_job_reading_models">Leyendo los modelos de la pasarela…</string>
+    <string name="work_job_pick_time">Elegir una hora</string>
+    <string name="work_job_home_channel">Canal principal</string>
+    <string name="work_job_schedule_it">Programar</string>
+    <string name="work_job_history">Historial</string>
+    <string name="work_job_no_runs">Aún no hay ejecuciones.</string>
+    <string name="work_job_script_run">Ejecución de script</string>
+
+    <string name="work_keep">Conservar</string>
+    <string name="work_details">Detalles</string>
+    <string name="work_clear_search">Borrar búsqueda</string>
+
+    <!-- Runs: scheduled jobs and the reports each run leaves. "Run" = one firing of a scheduled job. -->
+    <string name="work_runs">Ejecuciones</string>
+    <plurals name="work_runs_jobs">
+        <item quantity="one">%d trabajo</item>
+        <item quantity="other">%d trabajos</item>
+    </plurals>
+    <string name="work_runs_failing">%1$d fallando</string>
+    <string name="work_runs_mark_n_read">Marcar %1$d como leídas</string>
+    <string name="work_runs_empty">Aún no hay nada programado</string>
+    <!-- "cronjob" is the agent's tool name; keep it. -->
+    <string name="work_runs_empty_body">Programa un trabajo aquí o pídeselo a tu agente. Puede configurarlo con su herramienta cronjob.</string>
+    <string name="work_runs_schedule_job">Programar un trabajo</string>
+    <string name="work_runs_no_match">Ningún trabajo coincide con “%1$s”.</string>
+    <!-- %1$s = a filter name such as Failing or Paused. -->
+    <string name="work_runs_no_filtered">Ningún trabajo coincide con el filtro “%1$s”.</string>
+    <string name="work_runs_pinned">Fijadas</string>
+    <string name="work_runs_pinned_sessions">Fijados en sesiones</string>
+    <string name="work_runs_show_fewer">Mostrar menos</string>
+    <string name="work_runs_show_all">Mostrar los %1$d</string>
+    <string name="work_runs_new_since">Nuevo desde tu última visita</string>
+    <string name="work_runs_more_below">y %1$d más abajo</string>
+    <string name="work_runs_unpin">Desfijar</string>
+    <string name="work_runs_pin_keep">Fijar — conservar esta ejecución</string>
+    <string name="work_runs_mark_read">Marcar como leída</string>
+    <!-- Badge: %1$d unread runs. -->
+    <string name="work_runs_n_new">%1$d nuevas</string>
+    <plurals name="work_runs_n_pinned">
+        <item quantity="one">%d fijada</item>
+        <item quantity="other">%d fijadas</item>
+    </plurals>
+    <!-- Job state, lower case, in a compact metadata line. -->
+    <string name="work_runs_paused">en pausa</string>
+    <string name="work_runs_finished">terminado</string>
+    <string name="work_runs_scheduled">programado</string>
+    <string name="work_runs_done">hecho</string>
+    <string name="work_runs_running_now">ejecutándose</string>
+    <string name="work_runs_never_run">nunca ejecutado</string>
+    <!-- %1$s = a time ago, e.g. "3h ago". -->
+    <string name="work_runs_failed_ago">falló %1$s</string>
+    <string name="work_runs_last_ago">última %1$s</string>
+    <string name="work_runs_unscheduled">el trabajo ya no está programado</string>
+    <string name="work_runs_no_runs">aún sin ejecuciones</string>
+    <string name="work_runs_script_no_transcript">script, sin transcripción</string>
+    <!-- %1$s = a short summary of what changed in the report. -->
+    <string name="work_runs_since_last">desde la última ejecución · %1$s</string>
+    <!-- %1$s = a + or − sign, %2$d = how many more lines. -->
+    <string name="work_runs_delta_more">%1$s %2$d más</string>
+    <string name="work_runs_older">%1$d ejecuciones anteriores en Pasarela ▸ Sesiones</string>
+    <string name="work_runs_failed_streak">FALLÓ %1$d EJECUCIONES SEGUIDAS</string>
+    <string name="work_runs_last_failed">LA ÚLTIMA EJECUCIÓN FALLÓ</string>
+    <string name="work_runs_copy_error">Copiar error</string>
+    <string name="work_runs_ask_fix">Pedir al agente que lo arregle</string>
+    <string name="work_runs_ask_fix_detail">Un chat nuevo con el trabajo y su error, listo para enviar</string>
+    <string name="work_runs_run_now">Ejecutar ya</string>
+    <string name="work_runs_run_now_retry">Reintentarlo — el error desaparece si funciona</string>
+    <string name="work_runs_run_now_detail">Lanzarlo una vez, fuera de programación</string>
+    <string name="work_runs_resume">Reanudar</string>
+    <string name="work_runs_resume_detail">Vuelve a su programación</string>
+    <string name="work_runs_pause_detail">Deja de lanzarse hasta que lo reanudes</string>
+    <string name="work_runs_edit_detail">Prompt, programación, adónde va el informe</string>
+    <string name="work_runs_unpin_sessions">Desfijar de sesiones</string>
+    <string name="work_runs_pin_sessions">Fijar arriba en sesiones</string>
+    <string name="work_runs_open_newest">Abrir la ejecución más reciente</string>
+    <string name="work_runs_delete_job">Eliminar trabajo</string>
+    <string name="work_runs_delete_job_detail">Quita la programación; las ejecuciones pasadas se quedan</string>
+    <string name="work_runs_delete_title">¿Eliminar “%1$s”?</string>
+    <string name="work_runs_delete_body">El trabajo se detiene para siempre. Sus ejecuciones pasadas siguen legibles.</string>
+    <string name="work_runs_fix_with_agent">Arreglar con el agente</string>
+    <string name="work_runs_search_hint">Busca un trabajo, un titular, una programación…</string>
+    <!-- View switch: big cards vs a dense list. -->
+    <string name="work_runs_density_cards">Tarjetas</string>
+    <string name="work_runs_density_list">Lista</string>
+    <!-- Folded section toggle. -->
+    <string name="work_runs_show_folded">▸ mostrar</string>
+    <string name="work_runs_no_transcripts">No hay transcripciones en la pasarela para este trabajo.</string>
+    <!-- Screen reader: the strip of recent run outcomes. -->
+    <plurals name="work_runs_strip">
+        <item quantity="one">Última %1$d ejecución</item>
+        <item quantity="other">Últimas %1$d ejecuciones</item>
+    </plurals>
+    <plurals name="work_runs_strip_failed">
+        <item quantity="one">Última %1$d ejecución, %2$d fallida</item>
+        <item quantity="other">Últimas %1$d ejecuciones, %2$d fallidas</item>
+    </plurals>
+    <!-- Filter chips. -->
+    <string name="work_runs_filter_all">Todas</string>
+    <string name="work_runs_filter_unread">Sin leer</string>
+    <string name="work_runs_filter_failing">Con fallos</string>
+    <string name="work_runs_filter_paused">En pausa</string>
+    <string name="work_runs_filter_never_run">Sin ejecutar</string>
+    <!-- Section headers. -->
+    <string name="work_runs_section_attention">Requiere atención</string>
+    <string name="work_runs_section_recent">Recientes</string>
+    <string name="work_runs_section_scripts">Scripts en segundo plano</string>
+    <string name="work_runs_section_quiet">Tranquilos</string>
+
+    <string name="work_clear">Borrar</string>
+    <string name="work_dismiss">Descartar</string>
+    <string name="work_turn_on">Activar</string>
+
+    <!-- Missions: the agent's kanban board. A "mission" is one task card an agent works on. -->
+    <string name="work_missions">Misiones</string>
+    <string name="work_mission_new">Nueva misión</string>
+    <!-- Board lanes (card statuses). -->
+    <string name="work_lane_needs_you">Te necesita</string>
+    <string name="work_lane_running">En curso</string>
+    <string name="work_lane_ready">Lista</string>
+    <!-- Lane for cards parked until someone writes a plan/spec. -->
+    <string name="work_lane_triage">Triaje</string>
+    <string name="work_lane_todo">En espera</string>
+    <string name="work_lane_scheduled">Programada</string>
+    <string name="work_lane_blocked">Bloqueada</string>
+    <!-- Lane: work waiting for the owner to review it. -->
+    <string name="work_lane_review">Revisión</string>
+    <string name="work_lane_done">Hecha</string>
+    <!-- Why a card is held, as a short status pill. -->
+    <string name="work_block_review">espera tu revisión</string>
+    <string name="work_block_needs_input">necesita tu respuesta</string>
+    <string name="work_block_capability">necesita algo que no puede hacer</string>
+    <string name="work_block_dependency">espera una tarjeta padre</string>
+    <string name="work_block_transient">en pausa — se resuelve sola</string>
+    <string name="work_block_blocked">bloqueada</string>
+    <plurals name="work_missions_need_you">
+        <item quantity="one">%d te necesita</item>
+        <item quantity="other">%d te necesitan</item>
+    </plurals>
+    <string name="work_missions_n_running">%1$d en curso</string>
+    <!-- %1$s = the kanban board\'s name. -->
+    <string name="work_missions_board_named">tablero: %1$s</string>
+    <string name="work_missions_board_default">el tablero del agente</string>
+    <string name="work_missions_search">Buscar una misión</string>
+    <!-- Owner filter chip for cards nobody is assigned to. -->
+    <string name="work_missions_nobody">Nadie</string>
+    <string name="work_missions_unreachable">Tablero inaccesible</string>
+    <string name="work_missions_no_match">Sin coincidencias</string>
+    <string name="work_missions_no_match_body">Ninguna tarjeta dice eso. Borra la búsqueda para ver todo el tablero.</string>
+    <string name="work_missions_no_match_owner_body">Ninguna tarjeta de este responsable dice eso. Borra la búsqueda para ver todo el tablero.</string>
+    <string name="work_missions_empty">No hay misiones en el tablero</string>
+    <string name="work_missions_empty_body">Dale una misión a tu agente. Triaje la aparca primero para una especificación; si no, el despachador la toma.</string>
+    <string name="work_missions_unselect_lane">Deseleccionar columna</string>
+    <string name="work_missions_select_all">Seleccionar todo</string>
+    <string name="work_missions_clear_done">Quitar hechas</string>
+    <plurals name="work_missions_clear_title">
+        <item quantity="one">¿Quitar %d misión hecha?</item>
+        <item quantity="other">¿Quitar %d misiones hechas?</item>
+    </plurals>
+    <plurals name="work_missions_archive_title">
+        <item quantity="one">¿Archivar %d misión?</item>
+        <item quantity="other">¿Archivar %d misiones?</item>
+    </plurals>
+    <string name="work_missions_clear_body">Todas las tarjetas de Hecha salen del tablero.</string>
+    <string name="work_missions_archive_body">Salen del tablero.</string>
+    <plurals name="work_missions_archive_running">
+        <item quantity="one">%d de ellas está en curso — su ejecutor se detiene.</item>
+        <item quantity="other">%d de ellas están en curso — sus ejecutores se detienen.</item>
+    </plurals>
+    <string name="work_missions_archive_n">Archivar %1$d</string>
+    <string name="work_missions_cancel_selection">Cancelar selección</string>
+    <string name="work_missions_archiving">Archivando %1$d de %2$d…</string>
+    <string name="work_missions_archiving_failed">Archivando %1$d de %2$d… · %3$d fallaron</string>
+    <string name="work_missions_selected">%1$d seleccionadas</string>
+    <string name="work_alerts_hint">Avísame cuando terminen las misiones</string>
+    <string name="work_alerts_hint_body">Una notificación cuando una misión se completa, se bloquea o se abandona</string>
+    <string name="work_missions_give_mission">Darle una misión</string>
+
+    <string name="work_edit">Editar</string>
+    <string name="work_less">Menos</string>
+    <string name="work_more">Más ›</string>
+    <!-- Used inside sentences when the agent has no name of its own. -->
+    <string name="work_your_agent">tu agente</string>
+    <!-- Compact age of a card: "5m", "3h", "2d". -->
+    <string name="work_age_just_now">ahora mismo</string>
+    <string name="work_age_m">%1$d min</string>
+    <string name="work_age_h">%1$d h</string>
+    <string name="work_age_d">%1$d d</string>
+
+    <!-- A mission card and its sheet. -->
+    <string name="work_mission_alerts_on">Alertas activadas</string>
+    <plurals name="work_mission_fails">
+        <item quantity="one">%d fallo</item>
+        <item quantity="other">%d fallos</item>
+    </plurals>
+    <string name="work_mission_selected">Seleccionada</string>
+    <string name="work_mission_load_failed">No se pudo cargar esta misión: %1$s</string>
+    <!-- Title of a worker session: %1$s = mission title, %2$d = run number. -->
+    <string name="work_mission_run_title">%1$s · ejecución n.º %2$d</string>
+    <!-- %1$s = the agent\'s name, or "your agent". -->
+    <string name="work_mission_note_approve">Una nota para %1$s (opcional para aprobar, necesaria para pedir cambios)</string>
+    <string name="work_mission_note_answer">Tu respuesta. %1$s la leerá a continuación</string>
+    <string name="work_mission_note_next_run">Una nota que %1$s leerá en su próxima ejecución</string>
+    <string name="work_mission_ask_changes">Pedir cambios</string>
+    <string name="work_mission_reply_only">Solo responder</string>
+    <string name="work_mission_send_note">Enviar nota</string>
+    <string name="work_mission_add_note">Añadir una nota</string>
+    <string name="work_mission_approve">Aprobar</string>
+    <string name="work_mission_reply_unblock">Responder y desbloquear</string>
+    <string name="work_mission_reply">Responder</string>
+    <string name="work_mission_watch">Verla trabajar</string>
+    <string name="work_mission_start_now">Iniciar ya</string>
+    <string name="work_mission_what_happened">Qué pasó</string>
+    <plurals name="work_mission_earlier_steps">
+        <item quantity="one">%d paso anterior en Detalles</item>
+        <item quantity="other">%d pasos anteriores en Detalles</item>
+    </plurals>
+
+    <!-- The mission sheet's folded Details: what is under it. -->
+    <string name="work_details_task">tarea</string>
+    <string name="work_details_runs">ejecuciones</string>
+    <string name="work_details_settings">ajustes</string>
+    <string name="work_details_log">registro</string>
+    <string name="work_details_blocked_times">bloqueada %1$d×</string>
+    <!-- Mission dependencies: the cards this one waits for / the cards it lets start. -->
+    <string name="work_details_waits_on">Espera a</string>
+    <string name="work_details_unlocks">Desbloquea</string>
+    <string name="work_details_diagnostics">Diagnóstico</string>
+    <!-- The last summary one agent run left for the next. -->
+    <string name="work_details_latest_handoff">Último traspaso</string>
+    <string name="work_details_result">Resultado</string>
+    <string name="work_details_last_error">Último error: %1$s</string>
+    <string name="work_details_attachments">Adjuntos</string>
+    <string name="work_details_comments">Comentarios</string>
+    <string name="work_details_events">Eventos</string>
+    <!-- "heartbeat" = an agent\'s periodic I-am-alive event. -->
+    <plurals name="work_details_heartbeats">
+        <item quantity="one">%d latido plegado</item>
+        <item quantity="other">%d latidos plegados</item>
+    </plurals>
+    <string name="work_details_event_run">ejecución %1$d</string>
+    <string name="work_alert_tell_me">Avísame cuando termine</string>
+    <string name="work_alert_on">Activado. Recibirás un mensaje cuando termine o te necesite.</string>
+    <string name="work_alert_in_room">Recibirás un mensaje en “%1$s” cuando termine o te necesite.</string>
+    <string name="work_alert_need_room">Abre una sala primero — las alertas llegan a una sala de Matrix</string>
+    <!-- A diagnostic a later run already moved past. -->
+    <string name="work_diag_outlived">superado</string>
+    <string name="work_diag_stale">Una ejecución posterior terminó de otra forma — esto es historial, no el estado actual.</string>
+    <!-- Fallback name for the agent process that ran a mission. -->
+    <string name="work_run_worker">ejecutor</string>
+    <string name="work_run_working">trabajando…</string>
+    <string name="work_run_watch_session">Ver sesión ›</string>
+    <string name="work_run_view_session">Ver sesión ›</string>
+    <!-- Mission brief: the task description, what done looks like. -->
+    <string name="work_mission_brief">Encargo</string>
+    <!-- Per-mission overrides of how the agent runs it. -->
+    <string name="work_steering">Dirección</string>
+    <string name="work_steering_depth">Profundidad de razonamiento</string>
+    <!-- Use the profile\'s own setting. -->
+    <string name="work_steering_inherit">Heredar</string>
+    <string name="work_steering_model_pin">Modelo fijo (vacío = el del perfil)</string>
+    <string name="work_steering_pin">Fijar</string>
+    <string name="work_mission_title">Título</string>
+    <string name="work_mission_brief_hint">Encargo (cómo es el trabajo terminado)</string>
+    <string name="work_mission_assignee">Asignado a</string>
+    <string name="work_mission_goal">Trabajar hasta cumplir el encargo</string>
+    <string name="work_mission_goal_on">Modo objetivo — un juez relee el encargo tras cada turno</string>
+    <string name="work_mission_goal_off">Una ejecución y luego informa</string>
+    <string name="work_mission_triage">Aparcar en triaje</string>
+    <string name="work_mission_triage_on">Primero la especificación — nada se ejecuta hasta promoverla</string>
+    <string name="work_mission_triage_off">El despachador lanza un ejecutor para ella</string>
+    <string name="work_mission_notify">Avísame cuando termine</string>
+    <string name="work_mission_notify_on">Un mensaje real llega a tu sala al completarse</string>
+    <string name="work_mission_priority">Prioridad — las más altas van primero</string>
+    <!-- Priority 0; higher ones show as P1, P2… -->
+    <string name="work_mission_priority_normal">Normal</string>
+    <string name="work_mission_edit">Editar misión</string>
+    <string name="work_mission_owner">Responsable</string>
+
+    <!-- Toasts and errors from the work screens. %1$s after a colon = the gateway\'s own error text. -->
+    <string name="work_link_off">Hermes Link está desactivado — actívalo en Ajustes</string>
+    <string name="work_board_unavailable">tablero no disponible</string>
+    <string name="work_gateway_no_answer">La pasarela no respondió.</string>
+    <string name="work_alerts_armed">Alertas de misiones activadas — el teléfono avisa cuando termina una misión (Ajustes ▸ Alertas de misiones)</string>
+    <string name="work_alert_need_session">Abre una sesión primero — las alertas llegan al último chat que abriste</string>
+    <string name="work_alert_failed">Error en la alerta: %1$s</string>
+    <string name="work_mission_created">Misión creada</string>
+    <string name="work_mission_created_triage">Misión creada (triaje)</string>
+    <string name="work_create_failed">Error al crear: %1$s</string>
+    <string name="work_comment_failed">Error al comentar: %1$s</string>
+    <!-- %1$s = the card\'s new status from the gateway (e.g. ready). -->
+    <string name="work_answered_status">Respondido — vuelve a %1$s</string>
+    <string name="work_answered_back">Respondido — vuelve al trabajo</string>
+    <string name="work_answered_stays">Respondido — la tarjeta se queda donde está (la pasarela aún no puede desbloquear)</string>
+    <string name="work_answered">Respondido</string>
+    <string name="work_reply_failed">Error al responder: %1$s</string>
+    <string name="work_approved">Aprobada — misión hecha</string>
+    <string name="work_changes_requested_status">Cambios pedidos — vuelve a %1$s</string>
+    <string name="work_changes_requested">Cambios pedidos — vuelve a quien la implementa</string>
+    <!-- %1$s = an action name such as Approve. -->
+    <string name="work_verdict_needs_plugin">%1$s necesita el plugin de pasarela 2.14</string>
+    <string name="work_verdict_failed">%1$s falló: %2$s</string>
+    <string name="work_model_pin_failed">Error al fijar el modelo: %1$s</string>
+    <string name="work_depth_pin_failed">Error al fijar la profundidad: %1$s</string>
+    <string name="work_mission_edit_refused">Edición rechazada: %1$s</string>
+    <string name="work_mission_updated">Misión actualizada</string>
+    <!-- %1$s = a short git commit id. -->
+    <string name="work_ship_committed">Commit %1$s hecho</string>
+    <string name="work_ship_committed_pushed">Commit %1$s hecho y enviado</string>
+    <!-- %1$s = git branch name. -->
+    <string name="work_ship_pushed">Push de %1$s hecho</string>
+    <!-- Keep keryx.git.enabled as is: it is a config key. -->
+    <string name="work_ship_off">El Astillero está desactivado en la pasarela (keryx.git.enabled).</string>
+    <string name="work_job_scheduled">Trabajo programado</string>
+    <string name="work_job_updated">Trabajo actualizado</string>
+    <string name="work_job_save_failed">No se pudo guardar: %1$s</string>
+    <!-- %1$s = a blueprint (job template) title. -->
+    <string name="work_job_bp_scheduled">%1$s programado</string>
+    <string name="work_job_schedule_failed">No se pudo programar: %1$s</string>
+    <string name="work_proj_not_gateway">no está en la conexión directa</string>
+    <string name="work_proj_create_failed">no se pudo crear el proyecto</string>
+    <string name="work_proj_full_folder">Indica la carpeta completa — empezando por ~/ o / — para que apunte a un solo lugar en la pasarela.</string>
+    <string name="work_proj_no_folder">No hay ninguna carpeta en %1$s en la pasarela — créala allí primero o elige una abajo.</string>
+    <string name="work_proj_delete_failed">no se pudo eliminar el proyecto</string>
+    <string name="work_proj_archive_failed">no se pudo archivar el proyecto</string>
+    <string name="work_proj_no_anchor">\"%1$s\" no tiene carpeta a la que mover</string>
+    <string name="work_proj_move_busy">La sesión está a mitad de turno — muévela cuando el agente termine</string>
+    <string name="work_proj_move_missing">\"%1$s\" apunta a %2$s, y esa carpeta no existe en la pasarela — corrige o elimina el proyecto.</string>
+    <string name="work_proj_move_failed">error al mover</string>
+    <string name="work_proj_no_folder_here">este proyecto no tiene carpeta</string>
+    <string name="work_proj_session_failed">no se pudo crear la sesión</string>
+
+</resources>

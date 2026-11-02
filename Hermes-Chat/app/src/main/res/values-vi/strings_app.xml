@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_turn_failed">Lượt bị lỗi</string>
+    <string name="app_photo">Ảnh</string>
+    <string name="app_attachment">Tệp đính kèm</string>
+    <string name="app_new_message">Tin nhắn mới</string>
+
+    <string name="app_approval_expired">Yêu cầu phê duyệt đã hết hạn</string>
+    <string name="app_approval_failed">Phê duyệt thất bại: %1$s</string>
+    <string name="app_reply_failed">Trả lời thất bại: %1$s</string>
+    <string name="app_link_unreachable_matrix">Không kết nối được Hermes Link (%1$s) — đang dùng đồng bộ Matrix</string>
+    <string name="app_send_failed">Không gửi được: %1$s</string>
+    <string name="app_room_photo_updated">Đã cập nhật ảnh phòng</string>
+    <string name="app_room_photo_forbidden">Không có quyền đặt ảnh cho phòng này — bạn cần quyền điều hành trong phòng.</string>
+    <string name="app_room_photo_failed">Không đặt được ảnh: %1$s</string>
+    <string name="app_unknown_error">lỗi không xác định</string>
+    <string name="app_branched">Đã tách nhánh — bản sao của toàn bộ cuộc trò chuyện</string>
+    <string name="app_branch_failed">Tách nhánh thất bại: %1$s</string>
+    <string name="app_not_sent">Chưa gửi. %1$s</string>
+    <string name="app_undo_done">Đã rút lại lượt trao đổi cuối</string>
+    <string name="app_undo_nothing">Không có gì để rút lại</string>
+    <string name="app_still_working">Vẫn đang làm — hãy dừng lượt trước</string>
+    <string name="app_undo_failed">Không hoàn tác được: %1$s</string>
+    <string name="app_retry_nothing">Không có gì để thử lại — cổng không có lượt nào để rút lại</string>
+    <string name="app_retry_failed">Không thử lại được: %1$s</string>
+    <string name="app_taken_back_edit">Đã rút lại — sửa rồi gửi lại</string>
+    <string name="app_take_back_failed">Không rút lại được — nội dung của bạn vẫn trong ô soạn để gửi lại</string>
+    <string name="app_set_gateway_url_first">Hãy đặt URL cổng trước</string>
+    <string name="app_link_ok">Hermes Link OK — %1$s</string>
+    <string name="app_link_failed">Hermes Link lỗi: %1$s</string>
+    <string name="app_connection_error">lỗi kết nối</string>
+    <string name="app_link_up_api_down">Hermes Link đang chạy, nhưng máy chủ API của Hermes phía sau thì không, nên Nhiệm vụ và Lượt chạy sẽ không tải được. Đặt API_SERVER_ENABLED=true và một API_SERVER_KEY trong ~/.hermes/.env, rồi khởi động lại cổng.</string>
+
+    <string name="app_pinned">Đã ghim</string>
+    <string name="app_pinned_named">Đã ghim “%1$s”</string>
+    <string name="app_unpinned">Đã bỏ ghim</string>
+    <string name="app_unpinned_named">Đã bỏ ghim “%1$s”</string>
+    <string name="app_pin_failed">Ghim thất bại: %1$s</string>
+    <string name="app_unpin_failed">Bỏ ghim thất bại: %1$s</string>
+    <string name="app_marked_unread">Đã đánh dấu chưa đọc</string>
+    <string name="app_mark_read_failed">Không đánh dấu đã đọc được: %1$s</string>
+    <string name="app_mark_unread_failed">Không đánh dấu chưa đọc được: %1$s</string>
+    <string name="app_sticky_no_catalog">Không đọc được danh sách mô hình — đã mở với mặc định của cổng</string>
+    <string name="app_sticky_not_served">%1$s hiện không được phục vụ — đã mở với mặc định của cổng</string>
+    <string name="app_sticky_needs_confirm">%1$s cần xác nhận — hãy chọn nó trong bộ chọn mô hình</string>
+    <string name="app_sticky_opened_fallback">Đã mở với %1$s — %2$s hiện không được phục vụ</string>
+    <string name="app_sticky_opened">Đã mở với %1$s — lựa chọn gần nhất của bạn (mô hình cố định, trong Cài đặt)</string>
+    <string name="app_sticky_refused">%1$s bị từ chối — đã mở với mặc định của cổng</string>
+    <string name="app_create_session_failed">không tạo được phiên</string>
+    <string name="app_rename_failed">Đổi tên thất bại: %1$s</string>
+    <string name="app_archive_failed">Không lưu trữ được: %1$s</string>
+    <string name="app_archived">Đã lưu trữ</string>
+    <string name="app_archived_named">Đã lưu trữ “%1$s”</string>
+    <string name="app_restore_failed">Không khôi phục được: %1$s</string>
+    <string name="app_restored">Đã khôi phục</string>
+    <string name="app_restored_named">Đã khôi phục “%1$s”</string>
+    <string name="app_archive_read_failed">Không đọc được kho lưu trữ: %1$s</string>
+    <string name="app_older_sessions_failed">Không tải được các phiên cũ hơn: %1$s</string>
+    <string name="app_session_deleted">Đã xóa phiên</string>
+    <string name="app_delete_failed">Xóa thất bại: %1$s</string>
+
+    <string name="app_steered">Đã định hướng — tác tử sẽ thấy ở bước tiếp theo</string>
+    <string name="app_steer_declined_queued">Tác tử từ chối định hướng — đã xếp hàng cho lượt sau</string>
+    <string name="app_queue_failed">Xếp hàng thất bại: %1$s</string>
+    <string name="app_steer_failed">Định hướng thất bại: %1$s</string>
+    <string name="app_goal_failed">Mục tiêu: %1$s</string>
+    <string name="app_aside_needs_direct">Hỏi riêng cần kết nối trực tiếp với cổng</string>
+    <string name="app_aside_failed">Hỏi riêng thất bại: %1$s</string>
+    <string name="app_redirected">Đã chuyển hướng — câu trả lời bắt đầu lại với chỉnh sửa của bạn</string>
+    <string name="app_redirect_between_calls">Giữa các lệnh gọi — chỉnh sửa của bạn chạy tiếp theo</string>
+    <string name="app_redirect_finished_queued">Câu trả lời đã xong — đã xếp hàng cho lượt sau</string>
+    <string name="app_redirect_unsupported">Tác tử này không chuyển hướng được — sẽ định hướng thay thế</string>
+    <string name="app_redirect_failed">Chuyển hướng thất bại: %1$s</string>
+    <string name="app_branched_from_message">Đã tách nhánh — đây là phiên mới từ tin nhắn đó</string>
+    <string name="app_queued">Đã xếp hàng — sẽ gửi khi lượt này xong</string>
+    <string name="app_stopped">Đã dừng</string>
+    <string name="app_stop_failed">Dừng thất bại: %1$s</string>
+    <string name="app_crew_steered">Đã định hướng %1$s — nó sẽ thấy ở bước tiếp theo</string>
+    <string name="app_crew_steer_rejected">%1$s không nhận — nó thuộc cửa khác, hoặc đang sắp xong</string>
+    <string name="app_crew_stopped">Đã dừng %1$s</string>
+    <string name="app_crew_already_finished">%1$s đã xong từ trước</string>
+
+    <string name="app_model_confirm">%1$s Chạm lần nữa để xác nhận.</string>
+    <string name="app_model_expensive">Mô hình này đắt.</string>
+    <string name="app_model_deferred">%1$s sẽ tiếp quản từ lượt sau — phiên này</string>
+    <string name="app_model_deferred_global">%1$s sẽ tiếp quản từ lượt sau — mọi phiên</string>
+    <string name="app_model_switched">%1$s — phiên này</string>
+    <string name="app_model_switched_global">%1$s — mọi phiên</string>
+    <string name="app_model_switch_refused">Đổi bị từ chối: %1$s</string>
+    <string name="app_reasoning_refused_unknown">Bộ não này từ chối mức suy nghĩ đó — hãy chọn mức thấp hơn.</string>
+    <string name="app_reasoning_refused_floor">Bộ não này từ chối mức suy nghĩ %1$s, và không còn mức thấp hơn để thử.</string>
+    <string name="app_reasoning_dropped">Bộ não này từ chối mức suy nghĩ %1$s — đã hạ xuống %2$s.</string>
+    <string name="app_reasoning_drop_failed">Bộ não này từ chối mức suy nghĩ %1$s; không hạ xuống %2$s được.</string>
+    <string name="app_reasoning_set">Suy luận → %1$s — phiên này</string>
+    <string name="app_reasoning_set_global">Suy luận → %1$s cho mọi phiên</string>
+    <string name="app_reasoning_refused">Suy luận bị từ chối: %1$s</string>
+
+    <string name="app_room_joined">Đã tham gia — phòng sẽ hiện ở lần đồng bộ tới</string>
+    <string name="app_join_failed">Tham gia thất bại: %1$s</string>
+    <string name="app_invite_declined">Đã từ chối lời mời</string>
+    <string name="app_decline_failed">Từ chối thất bại: %1$s</string>
+    <string name="app_start_chat_failed">không bắt đầu được cuộc trò chuyện</string>
+    <string name="app_create_room_failed">không tạo được phòng</string>
+    <string name="app_join_failed_short">không tham gia được</string>
+    <string name="app_invite_sent">Đã gửi lời mời</string>
+    <string name="app_invite_failed">Mời thất bại: %1$s</string>
+    <string name="app_left_room">Đã rời phòng</string>
+    <string name="app_leave_failed">Rời phòng thất bại: %1$s</string>
+
+    <string name="app_try_again">thử lại</string>
+    <string name="app_group_rooms_unavailable">không có danh sách phòng</string>
+    <string name="app_not_connected">chưa kết nối với cổng nào</string>
+    <string name="app_group_stop_failed">Không dừng được phòng: %1$s</string>
+    <string name="app_group_approval_failed">Không trả lời được yêu cầu phê duyệt: %1$s</string>
+    <string name="app_group_rename_failed">Không đổi tên được: %1$s</string>
+    <string name="app_group_disband_failed">Không giải tán được: %1$s</string>
+
+    <string name="app_no_stt_endpoint">Chưa cấu hình endpoint STT</string>
+    <string name="app_no_tts_endpoint">Chưa cấu hình endpoint TTS</string>
+    <string name="app_no_stt_set">chưa đặt endpoint STT</string>
+    <string name="app_no_tts_set">chưa đặt endpoint TTS</string>
+    <string name="app_voice_unreachable">Không kết nối được %1$s tại %2$s (%3$s)</string>
+    <string name="app_voice_ears">tai (STT)</string>
+    <string name="app_voice_mouth">giọng nói (TTS)</string>
+
+    <string name="app_console_run_live">Đã có lượt chạy đang diễn ra — hãy dừng hoặc chờ nó xong</string>
+    <string name="app_link_off">Hermes Link đang tắt — bật trong Cài đặt</string>
+    <string name="app_export_needs_gateway">Xuất cần kết nối trực tiếp với cổng.</string>
+    <string name="app_export_too_old">Cổng này quá cũ để xuất phiên.</string>
+    <string name="app_export_subject">Phiên Hermes</string>
+    <string name="app_export_unreadable">Bản xuất trả về không đọc được.</string>
+
+    <string name="app_unsaved">Đã xóa khỏi mục Đã lưu</string>
+    <string name="app_saved">Đã giữ — tìm trong Kho lưu trữ</string>
+    <string name="app_pet_adopt_failed">không nhận nuôi được %1$s</string>
+
+    <string name="app_channel_messages">Tin nhắn</string>
+    <string name="app_channel_messages_desc">Tin nhắn mới từ các tác tử Hermes và phòng của bạn</string>
+    <string name="app_notify_you">Bạn</string>
+    <string name="app_notify_title_failed">%1$s · lượt bị lỗi</string>
+    <string name="app_notify_reply">Trả lời</string>
+    <string name="app_notify_reply_to">Trả lời %1$s</string>
+    <string name="app_notify_mark_read">Đánh dấu đã đọc</string>
+    <plurals name="app_notify_conversations">
+        <item quantity="other">%d cuộc trò chuyện</item>
+    </plurals>
+    <string name="app_channel_gate">Phê duyệt &amp; câu hỏi</string>
+    <string name="app_channel_gate_desc">Một tác tử đang dừng, chờ câu trả lời của bạn</string>
+    <string name="app_notify_answer">Trả lời</string>
+    <string name="app_channel_runs">Tác tử đang chạy</string>
+    <string name="app_channel_runs_desc">Dòng trạng thái im lặng khi tác tử làm việc: đang làm gì và trong bao lâu</string>
+    <string name="app_notify_stop">Dừng</string>
+    <string name="app_channel_missions">Nhiệm vụ</string>
+    <string name="app_channel_missions_desc">Nhiệm vụ hoàn thành, bị chặn hoặc bị bỏ dở trên bảng của tác tử</string>
+
+    <string name="app_push_checking">Đang kiểm tra tin nhắn…</string>
+    <string name="app_notify_sending_text">Đang gửi: %1$s</string>
+    <string name="app_notify_answering">Đang trả lời…</string>
+    <string name="app_notify_gate_unreachable">Không kết nối được cổng — chạm để trả lời</string>
+    <string name="app_notify_answered">Đã trả lời — tác tử đang chạy lại</string>
+    <string name="app_notify_request_timed_out">Yêu cầu đó đã hết thời gian chờ</string>
+    <string name="app_notify_answer_failed">Không trả lời được — chạm để mở</string>
+    <string name="app_notify_sending">Đang gửi…</string>
+    <string name="app_notify_send_failed">Không gửi được “%1$s” — chạm để mở</string>
+
+    <string name="app_push_connecting">Đang kết nối…</string>
+    <string name="app_push_connected">Đã kết nối — push tích hợp</string>
+    <string name="app_push_reconnecting">Đang kết nối lại…</string>
+    <string name="app_channel_push">Kết nối push</string>
+    <string name="app_channel_push_desc">Kết nối riêng của Keryx tới máy chủ push của bạn (không cần ứng dụng phân phối)</string>
+    <string name="app_push_title">Keryx push</string>
+
+    <string name="app_scan_pairing_inside">Quét mã ghép nối trong Keryx: Kết nối cổng của bạn › Quét mã ghép nối.</string>
+
+    <string name="app_share_nothing">Không có gì để chia sẻ</string>
+    <string name="app_share_foreign_only">Keryx chỉ gửi được tệp chia sẻ từ ứng dụng khác</string>
+    <string name="app_share_too_large_mb">Tệp quá lớn để gửi (%1$d MB)</string>
+    <string name="app_share_too_large">Tệp quá lớn để gửi</string>
+    <string name="app_share_read_failed">Không đọc được %1$s</string>
+    <plurals name="app_share_attachments">
+        <item quantity="other">%d tệp đính kèm</item>
+    </plurals>
+    <string name="app_share_note_label">Thêm ghi chú (tùy chọn)</string>
+    <string name="app_share_note_hint">Tóm tắt cái này / ghi nhớ cái này / …</string>
+
+    <string name="app_hands_cannot">Không có gì trên điện thoại này làm được việc đó</string>
+    <string name="app_hands_no_app">Không có ứng dụng nào tên “%1$s”</string>
+    <string name="app_hands_no_handler">Không có gì trên điện thoại này xử lý được %1$s</string>
+    <string name="app_hands_failed">Không thực hiện được: %1$s</string>
+    <string name="app_hands_no_flash">Điện thoại này không có đèn flash</string>
+
+    <string name="app_crash_log_subject">Nhật ký lỗi Keryx</string>
+    <string name="app_crash_log_share">Chia sẻ nhật ký lỗi</string>
+    <string name="app_share">Chia sẻ</string>
+    <string name="app_share_named">Chia sẻ %1$s</string>
+
+    <string name="app_call_hearing_failed">nghe thất bại: %1$s</string>
+    <string name="app_call_turn_failed">lượt của tác tử bị lỗi</string>
+    <string name="app_call_voice_failed">giọng nói thất bại: %1$s</string>
+    <string name="app_call_no_reply">cổng không phản hồi</string>
+    <string name="app_tts_failed">Đọc thất bại: %1$s</string>
+    <string name="app_tts_audio_unavailable">Không có âm thanh</string>
+    <string name="app_tts_no_audio">Máy chủ giọng nói không gửi âm thanh</string>
+    <string name="app_tts_no_engine">Thiết bị này không có công cụ đọc văn bản</string>
+    <string name="app_tts_playback_failed">Phát giọng nói thất bại</string>
+    <string name="app_tts_playback_failed_why">Phát giọng nói thất bại: %1$s</string>
+
+    <string name="app_tour_welcome_title">Chào mừng đến với Keryx</string>
+    <string name="app_tour_welcome_text">Đây là bản demo: một cổng giả lập trên điện thoại, và tác tử của nó đang làm dở một việc. Xem qua một vòng trước khi kết nối cổng của bạn nhé.</string>
+    <string name="app_tour_plan_title">Kế hoạch của nó</string>
+    <string name="app_tour_plan_text">Tác tử chia việc thành từng bước và đánh dấu khi xong. Trong lúc nó làm, Keryx giữ một thông báo trực tiếp về công việc, nên bạn có thể cất điện thoại đi.</string>
+    <string name="app_tour_approval_title">Nó hỏi trước</string>
+    <string name="app_tour_approval_text">Trước khi làm điều gì rủi ro, như xóa một thư mục, tác tử sẽ dừng lại và hỏi. Trả lời ở đây hoặc ngay từ thông báo.</string>
+    <string name="app_tour_approval_text_demo">Trước khi làm điều gì rủi ro, như xóa một thư mục, tác tử sẽ dừng lại và hỏi. Trả lời ở đây hoặc ngay từ thông báo. Hãy thử khi xem xong, và xem nó hoàn tất công việc.</string>
+    <string name="app_tour_composer_title">Hỏi bất cứ điều gì</string>
+    <string name="app_tour_composer_text">Giao việc cho tác tử bằng lời thường. Nó vẫn làm tiếp khi bạn rời đi, và Keryx báo cho bạn khi xong.</string>
+    <string name="app_tour_model_title">Bộ não nào trả lời</string>
+    <string name="app_tour_model_text">Đổi mô hình cho phiên này, hoặc cho mọi phiên từ giờ trở đi.</string>
+    <string name="app_tour_new_session_title">Trang mới</string>
+    <string name="app_tour_new_session_text">Bắt đầu phiên mới. Nhấn giữ để có thêm tùy chọn, như tiêu đề hoặc phiên tạm thời.</string>
+    <string name="app_tour_drawer_title">Mọi thứ khác</string>
+    <string name="app_tour_drawer_text">Các phiên của bạn và phần còn lại của Keryx nằm sau nút này.</string>
+    <string name="app_tour_lenses_title">Việc cần bạn</string>
+    <string name="app_tour_lenses_text">Thu hẹp danh sách còn các phiên đang chờ bạn, đang chạy, hoặc chưa đọc.</string>
+    <string name="app_tour_missions_title">Nhiệm vụ</string>
+    <string name="app_tour_missions_text">Giao cho tác tử những việc dài hơn dưới dạng thẻ trên bảng. Nó làm lần lượt và hỏi khi cần bạn.</string>
+    <string name="app_tour_runs_title">Lượt chạy</string>
+    <string name="app_tour_runs_text">Tác vụ theo lịch, và kết quả của từng lượt chạy.</string>
+    <string name="app_tour_bots_title">Bot</string>
+    <string name="app_tour_bots_text">Các hồ sơ khác của tác tử. Mỗi hồ sơ có bộ nhớ, kỹ năng và cuộc trò chuyện riêng.</string>
+    <string name="app_tour_archive_title">Kho lưu trữ</string>
+    <string name="app_tour_archive_text">Mọi điều từng nói, tìm được ngay trên điện thoại, kể cả khi cổng ngừng hoạt động.</string>
+    <string name="app_tour_gateway_title">Cổng của bạn</string>
+    <string name="app_tour_gateway_text_demo">Với Hermes của riêng bạn, phần này hiện kết nối, mô hình và phiên bản. Mọi thứ bạn vừa thấy đều hoạt động y hệt trên cổng thật: kết nối cổng của bạn là dùng được ngay.</string>
+    <string name="app_tour_gateway_text">Kết nối, mô hình và phiên bản Hermes. Chạm để mở Cổng; biểu tượng bánh răng mở Cài đặt, nơi cũng có phần hướng dẫn này.</string>
+    <string name="app_tour_gateway_text_direct">Kết nối, mô hình và phiên bản Hermes. Chạm để mở Cổng; biểu tượng bánh răng mở Cài đặt, nơi cũng có phần hướng dẫn này. Chạy nhiều Hermes? Thêm vào và chuyển qua lại ở đây.</string>
+    <string name="app_tour_cta_connect">Kết nối cổng của bạn</string>
+    <string name="app_tour_cta_add_gateway">Thêm cổng</string>
+
+    <string name="app_whatsnew_title">Có gì mới trong Keryx 3.0</string>
+    <string name="app_whatsnew_text">Xem nhanh những thay đổi. Bỏ qua cũng được: nó vẫn nằm trong Cài đặt › Giới thiệu.</string>
+    <string name="app_whatsnew_point_title">Hỏi xem thứ gì ở đâu</string>
+    <string name="app_whatsnew_point_text">Hỏi tác tử \"tác vụ theo lịch của tôi ở đâu?\" và nó có thể chỉ ra vị trí, ngay trên điện thoại. Cổng của bạn cần keryx-stream 0.6 trở lên.</string>
+    <string name="app_whatsnew_memory_title">Bộ nhớ trò chuyện</string>
+    <string name="app_whatsnew_memory_text">Vòng tròn cạnh mô hình giờ cho biết cuộc trò chuyện này còn chỗ cho bao nhiêu câu trả lời, và chỉ hiện khi cần. Chạm vào để xem thứ gì đang chiếm chỗ.</string>
+    <string name="app_whatsnew_drawer_title">Ngăn kéo được vẽ lại</string>
+    <string name="app_whatsnew_drawer_text_direct">Mỗi cuộc trò chuyện có màu và ký hiệu riêng, một vòng tròn đánh dấu những cuộc đang làm việc, và các bộ lọc này thu hẹp danh sách còn những gì cần bạn.</string>
+    <string name="app_whatsnew_drawer_text">Mỗi cuộc trò chuyện có màu và ký hiệu riêng, và một vòng tròn đánh dấu những cuộc đang làm việc.</string>
+    <string name="app_whatsnew_cards_title">Thẻ bằng lời thường</string>
+    <string name="app_whatsnew_cards_text">Thẻ nhiệm vụ giờ mở ra với tình hình hiện tại và một việc cần làm tiếp theo. Chi tiết kỹ thuật vẫn còn đó, trong mục Chi tiết.</string>
+    <string name="app_whatsnew_look_title">Giao diện và cập nhật</string>
+    <string name="app_whatsnew_look_text_direct">Cài đặt › Giao diện có thêm kiểu hiển thị suy nghĩ mới và năm cách chuyển giữa các cuộc trò chuyện. Với keryx-stream mới, bảng Cập nhật của Cổng cho phép chọn bản Stable hoặc Edge. Để thêm Hermes khác, chạy hermes keryx pair trên đó và quét mã.</string>
+    <string name="app_whatsnew_look_text">Cài đặt › Giao diện có thêm kiểu hiển thị suy nghĩ mới và năm cách chuyển giữa các cuộc trò chuyện. Phần hướng dẫn và các gợi ý nằm trong Cài đặt › Giới thiệu.</string>
+
+    <string name="app_hint_missions_title">Nhiệm vụ</string>
+    <string name="app_hint_missions_text">Các việc dài hơn nằm ở đây dưới dạng thẻ. Tác tử nhận và làm lần lượt, và thẻ nào cần bạn sẽ lên đầu. Chạm + để giao việc.</string>
+    <string name="app_hint_runs_title">Lượt chạy</string>
+    <string name="app_hint_runs_text">Các việc theo lịch, như bản tin buổi sáng hay kiểm tra hằng đêm. Kết quả mỗi lượt chạy sẽ về đây. Nhờ tác tử và nó có thể thiết lập giúp bạn.</string>
+    <string name="app_hint_bots_title">Bot</string>
+    <string name="app_hint_bots_text">Mỗi bot là một hồ sơ của Hermes, có bộ nhớ, kỹ năng và cuộc trò chuyện riêng. Mở một bot để trò chuyện, hoặc cho vài bot vào nhóm trò chuyện.</string>
+    <string name="app_hint_gateway_title">Cổng của bạn</string>
+    <string name="app_hint_gateway_text">Tình trạng của Hermes bạn đang kết nối và những gì phía sau: mô hình và cài đặt, tác vụ, kỹ năng, bộ nhớ và công cụ.</string>
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">Tác tử làm việc, toàn màn hình: nó đang nghĩ gì, các công cụ nó chạy và các trợ lý phụ nó cử đi. Bạn cũng có thể định hướng nó từ đây.</string>
+    <string name="app_hint_artifact_title">Trang do tác tử tạo</string>
+    <string name="app_hint_artifact_text">Báo cáo, bản phác và các trang tác tử viết sẽ mở ở đây, trên điện thoại. Lưu hoặc chia sẻ bằng các nút phía trên.</string>
+
+    <string name="app_tour_pane">Hướng dẫn</string>
+    <string name="app_tour_end">Kết thúc hướng dẫn</string>
+    <string name="app_tour_progress">%1$d / %2$d</string>
+    <string name="app_tour_back">Quay lại</string>
+    <string name="app_tour_done">Xong</string>
+    <string name="app_tour_got_it">Đã hiểu</string>
+    <string name="app_tour_next">Tiếp</string>
+</resources>

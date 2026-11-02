@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">預覽：%1$s 聊天室轉場效果，%2$s 速度</string>
+    <string name="mk_cancel">取消</string>
+
+    <string name="mk_mcp_test">測試</string>
+    <string name="mk_mcp_testing">測試中</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="other">已連上 · %d 個工具</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="other">%d 個提示詞</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="other">%d 個資源</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">無法連上：%1$s</string>
+    <string name="mk_mcp_test_unsupported">這個閘道不支援從這裡測試伺服器。</string>
+    <string name="mk_mcp_catalog">目錄 · 可新增 %1$d 個</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="other">需要 %d 個金鑰</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">從原始碼建置</string>
+    <string name="mk_mcp_catalog_oauth">透過 OAuth 登入</string>
+    <string name="mk_mcp_installed">已安裝</string>
+    <string name="mk_mcp_install">安裝</string>
+    <string name="mk_mcp_installing">安裝中…</string>
+    <string name="mk_mcp_install_title">要安裝 %1$s 嗎？</string>
+    <string name="mk_mcp_install_runs">它會執行</string>
+    <string name="mk_mcp_install_builds">閘道會先在背景從 %1$s 複製並建置它。</string>
+    <string name="mk_mcp_install_oauth">它透過 OAuth 登入：安裝完成後，請到閘道的儀表板上完成登入。</string>
+    <string name="mk_mcp_install_env_note">保存在閘道上：機密資訊放在它的 .env，其他放在它的組態中。</string>
+    <string name="mk_mcp_installed_toast">%1$s 已安裝 — 從下一個工作階段起生效</string>
+    <string name="mk_mcp_building_toast">%1$s 正在閘道上建置 — 完成後會出現在這裡</string>
+    <string name="mk_mcp_install_refused">無法安裝 %1$s：%2$s</string>
+    <string name="mk_mcp_install_unsupported">這個閘道不支援從這裡安裝 MCP 伺服器。</string>
+    <string name="mk_usage">用量</string>
+    <string name="mk_usage_subtitle">token、費用與工作階段</string>
+    <string name="mk_usage_subtitle_read">%1$s token · %2$s · 最近 %3$d 天</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="other">%d 個工作階段</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="other">工作階段</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="other">%d 天</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="other">%1$s 次 API 呼叫</item>
+    </plurals>
+    <string name="mk_usage_tokens">token</string>
+    <string name="mk_usage_in_out">輸入 %1$s · 輸出 %2$s</string>
+    <string name="mk_usage_cost">費用</string>
+    <string name="mk_usage_cost_estimated">費用（估算）</string>
+    <string name="mk_usage_none">最近 %1$d 天沒有任何用量。</string>
+    <string name="mk_usage_by_day">依日期</string>
+    <string name="mk_usage_peak">最忙碌：%2$s，%1$s</string>
+    <string name="mk_usage_by_model">依模型</string>
+    <string name="mk_usage_note_estimate">費用是 Hermes 依自己的價目表估算的；本機模型不產生費用。閘道的儀表板顯示的是相同的數字。</string>
+    <string name="mk_usage_note_reported">費用是供應商回報的金額（若有回報）。閘道的儀表板顯示的是相同的數字。</string>
+</resources>

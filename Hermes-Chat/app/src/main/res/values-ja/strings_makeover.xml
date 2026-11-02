@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">プレビュー：%1$sのルーム切り替え（速度：%2$s）</string>
+    <string name="mk_cancel">キャンセル</string>
+
+    <string name="mk_mcp_test">テスト</string>
+    <string name="mk_mcp_testing">テスト中</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="other">接続OK · ツール %d 個</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="other">プロンプト %d 個</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="other">リソース %d 個</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">接続できませんでした：%1$s</string>
+    <string name="mk_mcp_test_unsupported">このゲートウェイはここからサーバーをテストできません。</string>
+    <string name="mk_mcp_catalog">カタログ · 追加可能 %1$d 件</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="other">キーが %d 個必要</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">ソースからビルド</string>
+    <string name="mk_mcp_catalog_oauth">OAuth でサインイン</string>
+    <string name="mk_mcp_installed">インストール済み</string>
+    <string name="mk_mcp_install">インストール</string>
+    <string name="mk_mcp_installing">インストール中…</string>
+    <string name="mk_mcp_install_title">%1$s をインストールしますか？</string>
+    <string name="mk_mcp_install_runs">実行されるコマンド</string>
+    <string name="mk_mcp_install_builds">ゲートウェイがまず %1$s からクローンしてビルドします（バックグラウンドで実行）。</string>
+    <string name="mk_mcp_install_oauth">OAuth でサインインします。インストール後、ゲートウェイのダッシュボードで完了してください。</string>
+    <string name="mk_mcp_install_env_note">ゲートウェイに保存されます：シークレットは .env に、それ以外は設定ファイルに。</string>
+    <string name="mk_mcp_installed_toast">%1$s をインストールしました。次のセッションから有効です</string>
+    <string name="mk_mcp_building_toast">%1$s をゲートウェイでビルド中です。完了するとここに表示されます</string>
+    <string name="mk_mcp_install_refused">%1$s をインストールできませんでした：%2$s</string>
+    <string name="mk_mcp_install_unsupported">このゲートウェイはここから MCP サーバーをインストールできません。</string>
+    <string name="mk_usage">使用量</string>
+    <string name="mk_usage_subtitle">トークン、コスト、セッション</string>
+    <string name="mk_usage_subtitle_read">%1$s トークン · %2$s · 過去 %3$d 日間</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="other">%d セッション</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="other">セッション</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="other">%d 日</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="other">API 呼び出し %1$s 回</item>
+    </plurals>
+    <string name="mk_usage_tokens">トークン</string>
+    <string name="mk_usage_in_out">入力 %1$s · 出力 %2$s</string>
+    <string name="mk_usage_cost">コスト</string>
+    <string name="mk_usage_cost_estimated">コスト（推定）</string>
+    <string name="mk_usage_none">過去 %1$d 日間の使用はありません。</string>
+    <string name="mk_usage_by_day">日別</string>
+    <string name="mk_usage_peak">最多：%2$s の %1$s</string>
+    <string name="mk_usage_by_model">モデル別</string>
+    <string name="mk_usage_note_estimate">コストは Hermes が自身の価格表から出した推定値です。ローカルモデルは無料です。ゲートウェイのダッシュボードも同じ数値を使っています。</string>
+    <string name="mk_usage_note_reported">コストはプロバイダーが報告した値です（報告があった場合）。ゲートウェイのダッシュボードも同じ数値を使っています。</string>
+</resources>

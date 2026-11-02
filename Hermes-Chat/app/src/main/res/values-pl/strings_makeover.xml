@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Podgląd: przejście „%1$s”, prędkość: %2$s</string>
+    <string name="mk_cancel">Anuluj</string>
+
+    <string name="mk_mcp_test">Testuj</string>
+    <string name="mk_mcp_testing">Testowanie</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Połączono · %d narzędzie</item>
+        <item quantity="few">Połączono · %d narzędzia</item>
+        <item quantity="many">Połączono · %d narzędzi</item>
+        <item quantity="other">Połączono · %d narzędzia</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d prompt</item>
+        <item quantity="few">%d prompty</item>
+        <item quantity="many">%d promptów</item>
+        <item quantity="other">%d promptu</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d zasób</item>
+        <item quantity="few">%d zasoby</item>
+        <item quantity="many">%d zasobów</item>
+        <item quantity="other">%d zasobu</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Brak połączenia: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Ta bramka nie pozwala stąd testować serwerów.</string>
+    <string name="mk_mcp_catalog">Katalog · do dodania: %1$d</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">wymaga %d klucza</item>
+        <item quantity="few">wymaga %d kluczy</item>
+        <item quantity="many">wymaga %d kluczy</item>
+        <item quantity="other">wymaga %d klucza</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">budowany ze źródeł</string>
+    <string name="mk_mcp_catalog_oauth">logowanie przez OAuth</string>
+    <string name="mk_mcp_installed">Zainstalowany</string>
+    <string name="mk_mcp_install">Zainstaluj</string>
+    <string name="mk_mcp_installing">Instalowanie…</string>
+    <string name="mk_mcp_install_title">Zainstalować %1$s?</string>
+    <string name="mk_mcp_install_runs">Uruchomi</string>
+    <string name="mk_mcp_install_builds">Bramka najpierw sklonuje i zbuduje go z %1$s, w tle.</string>
+    <string name="mk_mcp_install_oauth">Loguje się przez OAuth: dokończ to w panelu bramki po instalacji.</string>
+    <string name="mk_mcp_install_env_note">Przechowywane na bramce: sekrety w jej .env, reszta w jej konfiguracji.</string>
+    <string name="mk_mcp_installed_toast">Zainstalowano %1$s — działa od następnej sesji</string>
+    <string name="mk_mcp_building_toast">Trwa budowanie %1$s na bramce — pojawi się tutaj, gdy będzie gotowe</string>
+    <string name="mk_mcp_install_refused">Nie udało się zainstalować %1$s: %2$s</string>
+    <string name="mk_mcp_install_unsupported">Ta bramka nie pozwala stąd instalować serwerów MCP.</string>
+    <string name="mk_usage">Użycie</string>
+    <string name="mk_usage_subtitle">Tokeny, koszt i sesje</string>
+    <string name="mk_usage_subtitle_read">Tokeny: %1$s · %2$s · ostatnie dni: %3$d</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d sesja</item>
+        <item quantity="few">%d sesje</item>
+        <item quantity="many">%d sesji</item>
+        <item quantity="other">%d sesji</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">sesja</item>
+        <item quantity="few">sesje</item>
+        <item quantity="many">sesji</item>
+        <item quantity="other">sesji</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d dzień</item>
+        <item quantity="few">%d dni</item>
+        <item quantity="many">%d dni</item>
+        <item quantity="other">%d dnia</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s wywołanie API</item>
+        <item quantity="few">%1$s wywołania API</item>
+        <item quantity="many">%1$s wywołań API</item>
+        <item quantity="other">%1$s wywołania API</item>
+    </plurals>
+    <string name="mk_usage_tokens">tokeny</string>
+    <string name="mk_usage_in_out">%1$s wej. · %2$s wyj.</string>
+    <string name="mk_usage_cost">koszt</string>
+    <string name="mk_usage_cost_estimated">koszt, szacunkowy</string>
+    <string name="mk_usage_none">Brak użycia w ostatnich dniach (%1$d).</string>
+    <string name="mk_usage_by_day">Według dni</string>
+    <string name="mk_usage_peak">Najwięcej: %1$s · %2$s</string>
+    <string name="mk_usage_by_model">Według modelu</string>
+    <string name="mk_usage_note_estimate">Koszt to szacunek Hermesa na podstawie jego cennika; model lokalny nic nie kosztuje. Panel bramki pokazuje te same liczby.</string>
+    <string name="mk_usage_note_reported">Koszt to kwota zgłoszona przez dostawcę, jeśli ją podał. Panel bramki pokazuje te same liczby.</string>
+</resources>

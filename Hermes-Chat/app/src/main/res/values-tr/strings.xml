@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">Yeni sohbet</string>
+    <string name="shortcut_new_chat_long">Yeni bir sohbet başlat</string>
+    <string name="shortcut_missions">Görevler</string>
+    <string name="shortcut_missions_long">Görev panosunu aç</string>
+    <string name="shortcut_runs">Çalıştırmalar</string>
+    <string name="shortcut_runs_long">Zamanlanmış çalıştırmalar ve raporları</string>
+
+    <string name="widget_description">Ajan bir bakışta: bağlantı, en yeni oturum, son söylediği ve sürmekte olan tur.</string>
+
+    <string name="note_tile_label">Ajana not</string>
+    <string name="note_tile_label_to">%1$s için not</string>
+    <string name="note_tile_live">canlı</string>
+    <string name="note_tile_offline">çevrimdışı</string>
+    <string name="note_placeholder">Ajana tek satır…</string>
+    <string name="note_target_prefix">alıcı</string>
+    <string name="note_change_target">Oturumu değiştir</string>
+    <string name="note_no_sessions">Henüz oturum yok</string>
+    <string name="note_send">Gönder</string>
+    <string name="note_sent_to">Gönderildi: %1$s</string>
+    <string name="note_send_failed">Gönderilemedi</string>
+    <string name="note_locked">Kilitli</string>
+    <string name="note_unlock">Kilidi aç</string>
+    <string name="note_unlock_title">Keryx kilidini aç</string>
+</resources>

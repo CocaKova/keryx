@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">Chat nou</string>
+    <string name="shortcut_new_chat_long">Începe un chat nou</string>
+    <string name="shortcut_missions">Misiuni</string>
+    <string name="shortcut_missions_long">Deschide panoul de misiuni</string>
+    <string name="shortcut_runs">Rulări</string>
+    <string name="shortcut_runs_long">Rulări programate și rapoartele lor</string>
+
+    <string name="widget_description">Agentul dintr-o privire: legătura, cea mai nouă sesiune, ce a spus ultima dată și tura în desfășurare.</string>
+
+    <string name="note_tile_label">Notă pentru agent</string>
+    <string name="note_tile_label_to">Notă pentru %1$s</string>
+    <string name="note_tile_live">activ</string>
+    <string name="note_tile_offline">offline</string>
+    <string name="note_placeholder">Un rând pentru agent…</string>
+    <string name="note_target_prefix">către</string>
+    <string name="note_change_target">Schimbă sesiunea</string>
+    <string name="note_no_sessions">Nicio sesiune încă</string>
+    <string name="note_send">Trimite</string>
+    <string name="note_sent_to">Trimis către %1$s</string>
+    <string name="note_send_failed">Trimitere eșuată</string>
+    <string name="note_locked">Blocat</string>
+    <string name="note_unlock">Deblochează</string>
+    <string name="note_unlock_title">Deblochează Keryx</string>
+</resources>

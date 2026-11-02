@@ -1,0 +1,576 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The agent page, bots, gateways and helpers. Keys are agent_-prefixed. Keryx and Hermes are product names: keep them as they are. -->
+
+    <!-- ===== The Gateway landing and its spoke rows (HubSpace) ===== -->
+    <!-- Title of the agent/gateway page. -->
+    <string name="agent_gateway_title">Pasarela</string>
+    <string name="agent_spoke_controls">Controles</string>
+    <!-- Spoke for updating the Hermes install. Noun. -->
+    <string name="agent_spoke_update">Actualización</string>
+    <!-- Scheduled jobs (cron). -->
+    <string name="agent_spoke_jobs">Trabajos</string>
+    <string name="agent_spoke_sessions">Sesiones</string>
+    <string name="agent_spoke_skills">Habilidades</string>
+    <string name="agent_spoke_memory">Memoria</string>
+    <string name="agent_spoke_tools">Herramientas</string>
+    <string name="agent_spoke_mcp">Servidores MCP</string>
+    <!-- The agent's persona file (SOUL.md). -->
+    <string name="agent_spoke_soul">Alma</string>
+    <string name="agent_spoke_status">Estado</string>
+    <!-- The landing's card headings: what the agent thinks with, reaches, does, is, and runs on. -->
+    <string name="agent_group_mind">Mente</string>
+    <string name="agent_group_reach">Alcance</string>
+    <string name="agent_group_work">Trabajo</string>
+    <string name="agent_group_self">Identidad</string>
+    <string name="agent_group_machine">Máquina</string>
+    <!-- The arg is the model name. -->
+    <string name="agent_controls_sub_model">Cerebro · %1$s</string>
+    <string name="agent_controls_sub">Cerebro, ajustes, configuración</string>
+    <string name="agent_jobs_sub">Programaciones que mantiene el agente</string>
+    <string name="agent_sessions_sub">Cada transcripción: reanudar o limpiar</string>
+    <string name="agent_skills_sub">Lo que el agente sabe hacer</string>
+    <!-- e.g. 9 of 12 (switched on, of all). -->
+    <string name="agent_n_of_m">%1$d de %2$d</string>
+    <string name="agent_tools_sub">Conjuntos de herramientas que el agente puede usar</string>
+    <string name="agent_mcp_sub">Servicios externos, activados o no</string>
+    <string name="agent_soul_sub_none">Sin escribir — la personalidad de serie</string>
+    <string name="agent_soul_sub">Quién es el agente, en su propio archivo</string>
+    <string name="agent_status_sub">Salud, plataformas, modelos, último turno</string>
+    <string name="agent_refresh">Actualizar</string>
+    <string name="agent_turn_live_row">Turno en curso</string>
+    <string name="agent_link_live">Transmitiendo en vivo</string>
+    <string name="agent_link_ok">Conectado</string>
+    <string name="agent_link_checking">Comprobando…</string>
+    <string name="agent_link_sidechannel_off">Canal lateral desactivado</string>
+    <string name="agent_link_unreachable">Inaccesible</string>
+
+    <!-- ===== The Gateway's spokes (HubPanels) ===== -->
+    <!-- Status: a phone-launched turn streaming right now; the arg is the start of its prompt. -->
+    <string name="agent_turn_live">turno en curso — %1$s</string>
+    <string name="agent_section_brain">Cerebro</string>
+    <string name="agent_row_model">Modelo</string>
+    <string name="agent_row_reasoning">Razonamiento</string>
+    <string name="agent_row_gateway">Pasarela</string>
+    <!-- The gateway's own state word follows (e.g. running). -->
+    <string name="agent_row_state">Estado</string>
+    <string name="agent_row_activity">Actividad</string>
+    <!-- The reasoning level, then what kind of control the model has. -->
+    <string name="agent_reasoning_binary">%1$s (cerebro sí/no)</string>
+    <string name="agent_reasoning_scale">%1$s (escala de esfuerzo)</string>
+    <plurals name="agent_turns_in_flight">
+        <item quantity="one">%d turno de agente en curso</item>
+        <item quantity="other">%d turnos de agente en curso</item>
+    </plurals>
+    <string name="agent_gateway_unreachable_info">Pasarela inaccesible — información no disponible</string>
+    <string name="agent_probing_gateway">Consultando la pasarela…</string>
+    <string name="agent_section_last_turn">Último turno</string>
+    <!-- How full the model's context window was on the last turn. -->
+    <string name="agent_row_context">Contexto</string>
+    <string name="agent_row_latency">Latencia</string>
+    <string name="agent_section_platforms">Plataformas</string>
+    <string name="agent_section_models">Modelos</string>
+    <string name="agent_section_quick_actions">Acciones rápidas</string>
+    <string name="agent_qa_status_title">Estado del sistema</string>
+    <string name="agent_qa_status_desc">Salud del agente, el cerebro y las plataformas</string>
+    <string name="agent_qa_new_title">Sesión nueva</string>
+    <string name="agent_qa_new_desc">Empezar una conversación limpia</string>
+    <string name="agent_qa_compress_title">Comprimir</string>
+    <string name="agent_qa_compress_desc">Resumir este hilo para liberar contexto</string>
+    <string name="agent_qa_handoff_title">Traspaso</string>
+    <string name="agent_qa_handoff_desc">Llevar el contexto a una sesión nueva</string>
+    <string name="agent_test_link">Probar Hermes Link</string>
+    <string name="agent_jobs_intro">Trabajos programados que la pasarela ejecuta por su cuenta</string>
+    <string name="agent_new_job">Nuevo trabajo</string>
+    <string name="agent_jobs_empty">No hay trabajos programados — crea uno y el agente lo ejecutará según el cron que pongas.</string>
+    <string name="agent_delete_job_title">¿Eliminar \"%1$s\"?</string>
+    <string name="agent_delete_job_body">La programación y su historial de ejecuciones se eliminan con él. No se puede deshacer.</string>
+    <string name="agent_delete">Eliminar</string>
+    <!-- Dismisses a delete confirmation without deleting. -->
+    <string name="agent_keep">Conservar</string>
+    <string name="agent_run_now">Ejecutar ya</string>
+    <!-- The status word comes from the gateway (e.g. ok, error). -->
+    <string name="agent_job_last_run">última ejecución %1$s</string>
+    <plurals name="agent_job_runs">
+        <item quantity="one">%d ejecución</item>
+        <item quantity="other">%d ejecuciones</item>
+    </plurals>
+    <string name="agent_paused">en pausa</string>
+    <!-- A scheduled job is overdue to run. -->
+    <string name="agent_next_due">pendiente</string>
+    <string name="agent_next_under_minute">próx. &lt;1 min</string>
+    <!-- Time until the job's next run, abbreviated: m = minutes, h = hours, d = days. -->
+    <string name="agent_next_in_m">próx. en %1$d min</string>
+    <string name="agent_next_in_hm">próx. en %1$d h %2$d min</string>
+    <string name="agent_next_in_d">próx. en %1$d d</string>
+    <string name="agent_sessions_intro">Lo que ha hecho el agente — cada sesión guardada, de la más reciente a la más antigua</string>
+    <string name="agent_prune">Limpiar…</string>
+    <string name="agent_sessions_empty">No hay sesiones registradas.</string>
+    <plurals name="agent_session_msgs">
+        <item quantity="one">%d msj</item>
+        <item quantity="other">%d msjs</item>
+    </plurals>
+    <plurals name="agent_session_tools">
+        <item quantity="one">%d herramienta</item>
+        <item quantity="other">%d herramientas</item>
+    </plurals>
+    <plurals name="agent_session_calls">
+        <item quantity="one">%d llamada</item>
+        <item quantity="other">%d llamadas</item>
+    </plurals>
+    <!-- Token counts read and written, e.g. 12.3K in · 4.1K out. -->
+    <string name="agent_tokens_in_out">%1$s entrada · %2$s salida</string>
+    <string name="agent_rename_session">Renombrar sesión</string>
+    <string name="agent_title_label">Título</string>
+    <string name="agent_rename">Renombrar</string>
+    <string name="agent_delete_session_title">¿Eliminar esta sesión?</string>
+    <plurals name="agent_delete_session_body">
+        <item quantity="one">La transcripción (%d mensaje) se elimina con ella. No se puede deshacer.</item>
+        <item quantity="other">La transcripción (%d mensajes) se elimina con ella. No se puede deshacer.</item>
+    </plurals>
+    <string name="agent_back_to_sessions">Volver a sesiones</string>
+    <!-- Verb: copy a session into a new one. -->
+    <string name="agent_fork">Bifurcar</string>
+    <plurals name="agent_tool_calls">
+        <item quantity="one">→ %d llamada a herramienta</item>
+        <item quantity="other">→ %d llamadas a herramientas</item>
+    </plurals>
+    <string name="agent_continue_session">Continuar esta sesión…</string>
+    <string name="agent_send_into_session">Enviar a esta sesión</string>
+    <string name="agent_just_now">ahora mismo</string>
+    <!-- Abbreviated time ago: m = minutes, h = hours, d = days. -->
+    <string name="agent_ago_m">hace %1$d min</string>
+    <string name="agent_ago_h">hace %1$d h</string>
+    <string name="agent_ago_d">hace %1$d d</string>
+    <plurals name="agent_filter_skills">
+        <item quantity="one">Filtrar %d habilidad…</item>
+        <item quantity="other">Filtrar %d habilidades…</item>
+    </plurals>
+    <string name="agent_new_skill">Nueva habilidad</string>
+    <plurals name="agent_back_to_skills">
+        <item quantity="one">← Volver a %d habilidad</item>
+        <item quantity="other">← Volver a %d habilidades</item>
+    </plurals>
+    <string name="agent_trash_count">Papelera (%1$d)</string>
+    <string name="agent_skills_on">%1$d de %2$d activas · los cambios se aplican a sesiones nuevas</string>
+    <!-- The arg is when the skill was deleted, as the gateway wrote it. -->
+    <string name="agent_deleted_at">eliminada %1$s</string>
+    <string name="agent_restore">Restaurar</string>
+    <string name="agent_skill_name_taken">ya existe otra habilidad con ese nombre</string>
+    <!-- Verb: delete permanently. -->
+    <string name="agent_purge">Purgar</string>
+    <string name="agent_purge_title">¿Purgar “%1$s”?</string>
+    <string name="agent_purge_body">Se borra del disco para siempre. No se puede deshacer.</string>
+    <string name="agent_keep_it">Conservar</string>
+    <string name="agent_name_label">Nombre</string>
+    <string name="agent_creating">Creando…</string>
+    <string name="agent_create">Crear</string>
+    <string name="agent_tools_intro_toggle">Grupos de herramientas para la plataforma de chat del agente — los cambios se guardan</string>
+    <string name="agent_tools_intro_readonly">Grupos de herramientas tal como los ve la plataforma API</string>
+    <string name="agent_needs_keys">necesita claves</string>
+
+    <!-- ===== The agent page: hero, stats, MCP, Soul, drawer door (AgentPanels) ===== -->
+    <string name="agent_your_agent">Tu agente</string>
+    <!-- Stat tile caption under a percentage: how full the context window is. -->
+    <string name="agent_stat_context">contexto</string>
+    <!-- Stat tile value when no turn is running. -->
+    <string name="agent_stat_idle">inactivo</string>
+    <!-- Stat tile caption under a count of agent turns running now (the count is shown above it, larger). -->
+    <plurals name="agent_stat_turns_running">
+        <item quantity="one">turno en curso</item>
+        <item quantity="other">turnos en curso</item>
+    </plurals>
+    <!-- Stat tile caption under "idle". -->
+    <string name="agent_stat_right_now">ahora mismo</string>
+    <!-- Stat tile caption under a count of scheduled jobs. -->
+    <string name="agent_stat_scheduled">programados</string>
+    <string name="agent_in_this_chat">En este chat</string>
+    <string name="agent_mcp_empty">Aún no hay servidores MCP. Añade uno en la pasarela con `hermes mcp add` y aparecerá aquí.</string>
+    <string name="agent_mcp_servers_on">Servidores · %1$d de %2$d activos</string>
+    <string name="agent_mcp_note">Un cambio se aplica desde la próxima sesión del agente. Los servidores siguen en la configuración de la pasarela de todos modos.</string>
+    <plurals name="agent_mcp_env_vars">
+        <item quantity="one">%d variable de entorno</item>
+        <item quantity="other">%d variables de entorno</item>
+    </plurals>
+    <!-- The arg is the auth kind (e.g. bearer, oauth). -->
+    <string name="agent_mcp_auth">auth: %1$s</string>
+    <string name="agent_mcp_from_plugin">del plugin %1$s</string>
+    <plurals name="agent_soul_chars_note">
+        <item quantity="one">%d carácter · las sesiones nuevas empiezan con él</item>
+        <item quantity="other">%d caracteres · las sesiones nuevas empiezan con él</item>
+    </plurals>
+    <string name="agent_saving">Guardando…</string>
+    <string name="agent_save">Guardar</string>
+    <!-- %1$s = profile name, %2$d = length in characters. -->
+    <string name="agent_soul_info">SOUL.md · perfil %1$s · %2$d caracteres</string>
+    <string name="agent_soul_missing">No hay SOUL.md en el perfil %1$s — Hermes usa su personalidad de serie.</string>
+    <string name="agent_edit">Editar</string>
+    <string name="agent_write_one">Escribir uno</string>
+    <string name="agent_open_agent_page">Abrir la página del agente</string>
+
+    <!-- ===== Memory spoke (MemoryPanel) ===== -->
+    <string name="agent_mem_builtin">Memoria integrada: los dos archivos de abajo son todo lo que guarda el agente.</string>
+    <!-- The arg is a memory provider's name. -->
+    <string name="agent_mem_provider_missing">El proveedor configurado “%1$s” no está instalado — el agente usa los archivos integrados de abajo.</string>
+    <!-- %1$s = provider name, %2$s = its status as the gateway reports it. -->
+    <string name="agent_mem_provider">Proveedor: %1$s (%2$s). Su propio almacén está allí; estos son los archivos integrados que el agente también escribe.</string>
+    <string name="agent_mem_no_entries">Esta pasarela muestra sus archivos de memoria pero no puede listar sus entradas — un Hermes más nuevo sí puede.</string>
+    <plurals name="agent_mem_search">
+        <item quantity="one">Buscar en %d recuerdo…</item>
+        <item quantity="other">Buscar en %d recuerdos…</item>
+    </plurals>
+    <string name="agent_mem_empty">Aún no hay nada recordado. El agente escribe aquí con su herramienta de memoria, y puedes pedírselo.</string>
+    <string name="agent_mem_no_match">Nada coincide con “%1$s”.</string>
+    <!-- Shelf headings: the user's profile memory, then the agent's own notes. -->
+    <string name="agent_mem_about_you">Sobre ti</string>
+    <string name="agent_mem_agent_notes">Notas del agente</string>
+    <string name="agent_mem_untitled">(sin título)</string>
+    <string name="agent_mem_all">← Todos los recuerdos</string>
+    <string name="agent_mem_open_failed">No se pudo abrir la entrada para editarla.</string>
+    <string name="agent_mem_rest_loading">…el resto se está cargando</string>
+    <string name="agent_mem_forget_title">¿Olvidar esto?</string>
+    <!-- The arg is a file name (e.g. USER.md). -->
+    <string name="agent_mem_forget_body">La entrada se elimina de %1$s en la pasarela. Las sesiones nuevas empiezan sin ella; no se puede deshacer desde el teléfono.</string>
+    <string name="agent_mem_forget_it">Olvidar</string>
+    <string name="agent_mem_sub">Lo que recuerda el agente</string>
+    <plurals name="agent_mem_count">
+        <item quantity="one">%d recuerdo</item>
+        <item quantity="other">%d recuerdos</item>
+    </plurals>
+    <string name="agent_mem_provider_short">proveedor %1$s</string>
+
+    <!-- ===== Skill Forge: view and edit one skill (SkillForgeSheet) ===== -->
+    <string name="agent_forge_title">Forja de habilidades</string>
+    <string name="agent_forge_read_only">solo lectura</string>
+    <string name="agent_forge_delete_skill">Eliminar habilidad</string>
+    <string name="agent_forge_load_failed">No se pudo cargar la habilidad: %1$s</string>
+    <string name="agent_loading">Cargando…</string>
+    <!-- Extra files that ship beside a skill's SKILL.md. -->
+    <string name="agent_forge_sidecar_files">Archivos complementarios</string>
+    <string name="agent_forge_delete_title">¿Eliminar esta habilidad?</string>
+    <string name="agent_forge_delete_body">“%1$s” va a la papelera y deja de cargarse en el agente. Puedes restaurarla desde Habilidades ▸ Papelera hasta que la purgues.</string>
+    <string name="agent_forge_discard_title">¿Descartar cambios?</string>
+    <string name="agent_forge_discard_body">La edición no se ha guardado en la pasarela.</string>
+    <string name="agent_discard">Descartar</string>
+    <string name="agent_keep_editing">Seguir editando</string>
+
+    <!-- ===== Chat memory sheet: how full the model's context is (ChatMemorySheet) ===== -->
+    <string name="agent_chatmem_title">Memoria del chat</string>
+    <string name="agent_chatmem_line">La línea marca el punto de resumen.</string>
+    <string name="agent_chatmem_after">A partir de ahí el agente trabaja con un resumen de los mensajes anteriores, así que los primeros detalles pueden volver más breves. Un chat largo puede resumirse más de una vez.</string>
+    <!-- Appended to the small print after a middle dot. -->
+    <string name="agent_chatmem_estimate">el número de respuestas es una estimación de este chat</string>
+    <string name="agent_chatmem_whats_using">Qué lo está ocupando</string>
+
+    <!-- ===== The link-health dot's spoken label (LinkHealthDot) ===== -->
+    <string name="agent_dot_live">Hermes Link: transmitiendo en vivo</string>
+    <string name="agent_dot_ok">Hermes Link: conectado</string>
+    <string name="agent_dot_checking">Hermes Link: comprobando</string>
+    <string name="agent_dot_unreachable">Hermes Link: inaccesible</string>
+
+    <!-- ===== Messages between agents, in the transcript (AgentDeliveryNotice) ===== -->
+    <!-- A message that another agent relayed in; the arg is that agent's name. -->
+    <string name="agent_relayed_from">reenviado · %1$s</string>
+    <!-- The arg is the other agent's name. -->
+    <string name="agent_messaging">Escribiendo a %1$s…</string>
+    <string name="agent_messaged">Mensaje enviado a %1$s</string>
+    <string name="agent_message_from">Mensaje de %1$s</string>
+
+    <!-- ===== Bots: the roster of agent profiles (BotsSpace) ===== -->
+    <!-- "Bot" = one agent profile on the gateway. -->
+    <string name="agent_bots_title">Bots</string>
+    <string name="agent_bots_hide_hidden">Ocultar bots ocultos</string>
+    <string name="agent_bots_show_hidden">Mostrar bots ocultos</string>
+    <string name="agent_new_agent">Nuevo agente</string>
+    <string name="agent_bots_empty_title">Aún no hay bots</string>
+    <string name="agent_bots_empty_body">Cada bot es un perfil en tu pasarela, con su propio modelo, memoria y chats.</string>
+    <string name="agent_bots_make_first">Crear el primer bot</string>
+    <string name="agent_bots_search">Buscar bots</string>
+    <string name="agent_group_chats">Chats de grupo</string>
+    <string name="agent_new_group_chat">Nuevo chat de grupo</string>
+    <!-- %1$s = bot name, %2$s = the reason. -->
+    <string name="agent_bots_session_failed">No se pudo iniciar una sesión con %1$s. %2$s</string>
+    <string name="agent_bots_arm_failed">No se pudieron activar todos los bots — %1$s</string>
+    <string name="agent_bots_armed">Mensajería entre bots activada en esta pasarela</string>
+    <!-- "Bot Chat" = a bot's main, ongoing conversation. -->
+    <string name="agent_bots_fresh_title">¿Empezar un Bot Chat nuevo?</string>
+    <string name="agent_bots_fresh_body">El Bot Chat actual de %1$s se retira — se conserva y se puede leer en Sesiones — y un Bot Chat nuevo y vacío ocupa su lugar.</string>
+    <string name="agent_bots_start_fresh">Empezar de nuevo</string>
+    <string name="agent_room_name">Nombre de la sala</string>
+    <!-- %1$d–%2$d = allowed range of members, %3$d = how many are picked so far. -->
+    <string name="agent_group_pick">Elige %1$d–%2$d bots · %3$d elegidos</string>
+    <string name="agent_group_cant_join">no puede unirse a salas: \"_\" en su nombre de perfil</string>
+    <!-- Sheet title: a bot's name, then "sessions". -->
+    <string name="agent_bot_sessions_title">%1$s · sesiones</string>
+    <string name="agent_bot_sessions_failed">No se pudieron cargar las sesiones: %1$s</string>
+    <string name="agent_try_again">inténtalo de nuevo</string>
+    <string name="agent_recent">Recientes</string>
+    <string name="agent_bot_recent_empty">Aún no hay sesiones secundarias ni ejecuciones — el Bot Chat es la única.</string>
+    <string name="agent_past_bot_chats">Bot Chats anteriores</string>
+    <string name="agent_none_retired">Ninguno retirado todavía.</string>
+    <!-- Shown in capitals as a small label. -->
+    <string name="agent_active_now">ACTIVO AHORA</string>
+    <!-- Chip on the default (main) bot. -->
+    <string name="agent_bot_main">principal</string>
+    <string name="agent_pinned">Fijado</string>
+    <plurals name="agent_routines_count">
+        <item quantity="one">%d rutina</item>
+        <item quantity="other">%d rutinas</item>
+    </plurals>
+    <string name="agent_bot_tap_to_start">Toca para iniciar el chat de %1$s</string>
+    <!-- The bot isn't set up for bot-to-bot messaging. -->
+    <string name="agent_bot_not_armed">no activado</string>
+    <string name="agent_open_chat">Abrir chat</string>
+    <string name="agent_new_side_session">Nueva sesión secundaria</string>
+    <string name="agent_start_fresh_bot_chat">Empezar un Bot Chat nuevo</string>
+    <string name="agent_unpin_sessions">Desfijar de sesiones</string>
+    <string name="agent_pin_sessions">Fijar arriba en sesiones</string>
+    <string name="agent_edit_name_role">Editar nombre y rol</string>
+    <string name="agent_routines">Rutinas</string>
+    <string name="agent_routines_n">Rutinas · %1$d</string>
+    <string name="agent_unhide">Mostrar</string>
+    <string name="agent_hide_from_roster">Ocultar de la lista</string>
+    <string name="agent_msg_on">La mensajería entre bots está activada</string>
+    <string name="agent_msg_off">La mensajería entre bots está desactivada</string>
+    <string name="agent_msg_protocol_off">El interruptor agent.bot_mode_protocol de la pasarela está desactivado en config.yaml — actívalo ahí y cada Bot Chat aprenderá el protocolo de equipo.</string>
+    <string name="agent_msg_armed">%1$d de %2$d perfiles llevan el bloque Bot Mode. Sus Bot Chats pueden @mencionarse entre sí con message_agent; la respuesta llega como un mensaje de ese bot.</string>
+    <string name="agent_msg_explain">Actívalo una vez y cada Bot Chat recibe la herramienta message_agent: los bots pueden pasarse trabajo por @nombre, y las respuestas llegan con su autor. Las sesiones normales no cambian.</string>
+    <string name="agent_arming">Activando…</string>
+    <string name="agent_arm_remaining">Activar los %1$d restantes</string>
+    <string name="agent_turn_on_messaging">Activar la mensajería entre bots</string>
+    <string name="agent_edit_named">Editar %1$s</string>
+    <string name="agent_profile_taken">Ya existe un perfil llamado %1$s</string>
+    <string name="agent_profile_slug">Perfil: %1$s</string>
+    <string name="agent_profile_name_hint">El nombre del perfil — minúsculas, se permiten guiones</string>
+    <string name="agent_bot_title_hint">Cómo se llama en la lista (\"Compañero de investigación\") — también su @etiqueta</string>
+    <string name="agent_role_label">Rol</string>
+    <string name="agent_role_hint">Una línea que leen los compañeros antes de elegir a quién escribir</string>
+    <string name="agent_start_from">Empezar desde</string>
+    <string name="agent_fresh_profile">Perfil nuevo</string>
+    <string name="agent_fresh_profile_desc">Habilidades incluidas, memoria limpia.</string>
+    <string name="agent_clone_desc">Copia la configuración, las habilidades y el SOUL de %1$s.</string>
+    <!-- Sheet title: a bot's name, then "routines" (its scheduled jobs). -->
+    <string name="agent_bot_routines_title">%1$s · rutinas</string>
+    <!-- %1$s = bot name, %2$s = the job-name prefix that marks a routine. -->
+    <string name="agent_routines_empty">Aún no hay rutinas. Pídele a %1$s en su chat que programe una — un trabajo llamado \"%2$s …\" aparecerá aquí y se ejecutará en su propio historial de chat.</string>
+    <!-- The arg is when the job runs next, as the gateway wrote it. -->
+    <string name="agent_next_at">próx. %1$s</string>
+    <!-- "Runs" is the name of the app's page of scheduled-job runs. -->
+    <string name="agent_open_runs">Abrir Ejecuciones</string>
+
+    <!-- ===== A group chat of several bots (GroupChatSpace) ===== -->
+    <string name="agent_room_stop">Detener la sala</string>
+    <string name="agent_room_options">Opciones de la sala</string>
+    <!-- Verb: dissolve the group chat for good. -->
+    <string name="agent_room_disband">Disolver</string>
+    <string name="agent_room_intro">Di algo a la sala. Todos lo oyen; @menciona a alguien para preguntarle solo a él.</string>
+    <!-- The arg is the opening words of the thread's first message. -->
+    <string name="agent_room_in_thread">↳ en el hilo: %1$s</string>
+    <string name="agent_room_thinking">La sala está pensando…</string>
+    <string name="agent_room_one_thinking">%1$s está pensando…</string>
+    <!-- The arg is a comma-separated list of bot names. -->
+    <string name="agent_room_many_thinking">%1$s están pensando…</string>
+    <!-- A bot asks permission to run a command; the command's description follows below. -->
+    <string name="agent_room_wants_to_run">%1$s quiere ejecutar</string>
+    <string name="agent_deny">Denegar</string>
+    <string name="agent_allow_once">Permitir una vez</string>
+    <string name="agent_room_turn_unclear">Un turno terminó sin un resultado claro.</string>
+    <string name="agent_retry">Reintentar</string>
+    <string name="agent_room_replying">Respondiendo en el hilo: %1$s</string>
+    <string name="agent_room_message_hint">Escribe a la sala</string>
+    <!-- Button: send the message. -->
+    <string name="agent_send">Enviar</string>
+    <string name="agent_room_rename_title">Renombrar sala</string>
+    <string name="agent_room_disband_title">¿Disolver %1$s?</string>
+    <string name="agent_room_disband_body">La sala y su conversación se eliminan para siempre, en todos los dispositivos. Los bots y sus propios chats no se tocan.</string>
+
+    <!-- ===== Gateways: the registry and the add sheet (FleetSheets) ===== -->
+    <string name="agent_fleet_intro">Cada pasarela Hermes que este teléfono puede alcanzar. Las sesiones, trabajos, bots y el Hub son de la pasarela activa; al cambiar se mueve todo el espacio de trabajo.</string>
+    <!-- Pill on the gateway in use. -->
+    <string name="agent_fleet_active">Activa</string>
+    <!-- Pill on the fallback gateway. -->
+    <string name="agent_fleet_primary">Principal</string>
+    <string name="agent_fleet_actions">Acciones de pasarela</string>
+    <string name="agent_fleet_switch_to">Cambiar a</string>
+    <!-- Verb: check whether the gateway answers. -->
+    <string name="agent_fleet_test">Probar</string>
+    <string name="agent_fleet_make_primary">Hacer principal</string>
+    <string name="agent_remove">Quitar</string>
+    <string name="agent_fleet_add">Añadir pasarela</string>
+    <string name="agent_fleet_primary_note">La principal es la de reserva cuando la pasarela en la que estabas desaparece. Hacer principal nunca cambia el espacio de trabajo.</string>
+    <string name="agent_fleet_rename_title">Renombrar pasarela</string>
+    <string name="agent_fleet_name_hint">Se muestra donde aparezca esta pasarela</string>
+    <string name="agent_fleet_remove_title">¿Quitar %1$s?</string>
+    <string name="agent_fleet_remove_body">Su inicio de sesión, marcas de leído, transcripciones en caché y archivo se borran de este teléfono. La pasarela en sí no se toca — puedes volver a añadirla cuando quieras.</string>
+    <string name="agent_fleet_add_intro">Un hermes dashboard en marcha y accesible desde este teléfono — por la LAN, Tailscale o internet.</string>
+    <!-- Example gateway name in an empty field. -->
+    <string name="agent_fleet_name_example">Laboratorio</string>
+    <string name="agent_fleet_name_required">Obligatorio y único — se muestra donde aparezca esta pasarela</string>
+    <string name="agent_fleet_url">URL de la pasarela</string>
+    <string name="agent_fleet_token">Token de sesión — solo pasarelas sin protección</string>
+    <string name="agent_fleet_token_hint">Una pasarela protegida inicia sesión desde tu navegador</string>
+    <string name="agent_fleet_could_not_connect">No se pudo conectar</string>
+    <string name="agent_fleet_connect">Conectar</string>
+    <string name="agent_fleet_switch_gateway">Cambiar de pasarela</string>
+    <string name="agent_fleet_manage">Gestionar pasarelas…</string>
+
+    <!-- ===== A helper (subagent) the agent delegated to (SubagentSessionSheet) ===== -->
+    <string name="agent_sub_delegated_task">Tarea delegada</string>
+    <!-- Which of several delegated tasks this is, e.g. task 2 of 3. -->
+    <string name="agent_sub_task_n_of_m">tarea %1$d de %2$d</string>
+    <!-- Elapsed time in seconds, abbreviated. -->
+    <string name="agent_sub_seconds">%1$d s</string>
+    <string name="agent_sub_running">en curso</string>
+    <!-- Thousands of tokens used, abbreviated (k = thousand). -->
+    <string name="agent_sub_ktok">%1$dk tok</string>
+    <!-- Counts of files the helper read / wrote. -->
+    <string name="agent_sub_files_read">%1$d leídos</string>
+    <string name="agent_sub_files_written">%1$d escritos</string>
+    <string name="agent_sub_failed">falló</string>
+    <string name="agent_sub_interrupted">interrumpido</string>
+    <!-- Placeholder in the box for nudging a running helper; the arg is the helper's role (e.g. researcher) or "this helper". -->
+    <string name="agent_sub_steer_hint">Unas palabras al oído de %1$s…</string>
+    <string name="agent_sub_this_helper">este ayudante</string>
+    <!-- Used inside notices, e.g. "Stopped the helper". -->
+    <string name="agent_sub_the_helper">el ayudante</string>
+    <string name="agent_sub_stop_title">¿Detener a %1$s?</string>
+    <string name="agent_sub_stop_body">Solo se detiene este ayudante. El turno que lo envió sigue y lee lo que tuviera hasta ahora.</string>
+    <string name="agent_sub_stop_it">Detener</string>
+    <string name="agent_sub_keep_going">Continuar</string>
+    <string name="agent_sub_no_session_id">Esta pasarela no envió un id de sesión</string>
+    <string name="agent_sub_opening">Abriendo la sesión del subagente…</string>
+    <string name="agent_sub_no_transcript_seen">La pasarela no guardó transcripción de este subagente — esto es lo que se le vio hacer.</string>
+    <string name="agent_sub_no_transcript">La pasarela no tiene transcripción guardada de este subagente.</string>
+    <string name="agent_sub_open_failed">No se pudo abrir — %1$s</string>
+    <string name="agent_unknown_error">error desconocido</string>
+    <string name="agent_sub_before_opened">Antes de que abrieras esto</string>
+    <string name="agent_sub_before_opened_tap">Antes de que abrieras esto · toca para leer</string>
+    <!-- Heading over the helper's live reasoning (still going). -->
+    <string name="agent_sub_thinking">Pensando</string>
+    <!-- Heading over the helper's reasoning once it has finished. -->
+    <string name="agent_sub_thought">Pensó</string>
+    <!-- Heading over the tools the helper used. Past tense of "do". -->
+    <string name="agent_sub_did">Hizo</string>
+    <!-- Heading over what the helper wrote. Past tense of "say". -->
+    <string name="agent_sub_said_heading">Dijo</string>
+    <string name="agent_sub_missed">+ %1$d antes de abrir la ventana</string>
+    <string name="agent_sub_nothing_yet">Aún no ha informado de nada.</string>
+    <string name="agent_sub_nothing_recorded">No se registró nada para este subagente.</string>
+    <!-- Lower-case labels over a transcript turn: what the helper said / what it was asked. -->
+    <string name="agent_sub_said">dijo</string>
+    <string name="agent_sub_was_asked">se le pidió</string>
+    <string name="agent_open_in_chat">Abrir en el chat</string>
+    <string name="agent_sub_opening_session">Abriendo la sesión…</string>
+    <string name="agent_sub_nothing_written">Aún no hay nada escrito — se irá llenando mientras trabaja.</string>
+    <string name="agent_sub_no_session_transcript">La pasarela no tiene transcripción guardada de esta sesión.</string>
+
+    <!-- ===== Gateway actions: notices and errors (HubDelegate) ===== -->
+    <string name="agent_link_off">Hermes Link está desactivado — actívalo en Ajustes</string>
+    <string name="agent_link_off_short">Hermes Link está desactivado</string>
+    <string name="agent_unavailable">no disponible</string>
+    <string name="agent_job_pinned">%1$s fijado arriba en tus sesiones</string>
+    <string name="agent_job_unpinned">%1$s desfijado</string>
+    <string name="agent_run_pinned">Fijada — se conserva en la pasarela</string>
+    <string name="agent_run_unpinned">Desfijada</string>
+    <string name="agent_pin_refused">Fijado rechazado: %1$s</string>
+    <string name="agent_unpin_refused">Desfijado rechazado: %1$s</string>
+    <!-- The arg is the gateway's own (English) note on when the change takes effect, e.g. next turn. -->
+    <string name="agent_saved_applies">Guardado — se aplica %1$s</string>
+    <string name="agent_change_refused">Cambio rechazado: %1$s</string>
+    <!-- The arg is a reasoning level (e.g. high). -->
+    <string name="agent_reasoning_set">Razonamiento → %1$s (próxima sesión)</string>
+    <!-- "Brain" = the model the gateway runs; a swap loads a different one. -->
+    <string name="agent_swap_started">Cambio iniciado — observa el cerebro activo</string>
+    <string name="agent_swap_refused">Cambio rechazado: %1$s</string>
+    <string name="agent_no_skills">Esta pasarela no tiene habilidades</string>
+    <string name="agent_skill_on">%1$s activada — las sesiones nuevas la cargan</string>
+    <string name="agent_skill_off">%1$s desactivada — las sesiones nuevas la omiten</string>
+    <string name="agent_skill_change_failed">No se pudo cambiar %1$s: %2$s</string>
+    <string name="agent_skill_switch_unsupported">Esta pasarela no puede cambiar habilidades desde aquí.</string>
+    <plurals name="agent_pruned">
+        <item quantity="one">%d sesión limpiada</item>
+        <item quantity="other">%d sesiones limpiadas</item>
+    </plurals>
+    <string name="agent_prune_failed">Error al limpiar: %1$s</string>
+    <string name="agent_save_failed">error al guardar</string>
+    <string name="agent_skill_created">creada — el índice se actualiza para sesiones nuevas</string>
+    <string name="agent_create_failed">error al crear</string>
+    <string name="agent_skill_trashed">“%1$s” movida a la papelera — restáurala desde Habilidades ▸ Papelera</string>
+    <string name="agent_moved_to_trash">movida a la papelera</string>
+    <string name="agent_delete_refused">Eliminación rechazada: %1$s</string>
+    <string name="agent_delete_failed_short">error al eliminar</string>
+    <string name="agent_restored">“%1$s” restaurada</string>
+    <string name="agent_restore_failed">Error al restaurar: %1$s</string>
+    <string name="agent_purged">“%1$s” purgada para siempre</string>
+    <string name="agent_purge_failed">Error al purgar: %1$s</string>
+    <!-- The arg is the backup's file name. -->
+    <string name="agent_saved_backup">Guardado. Copia: %1$s</string>
+    <string name="agent_saved">Guardado.</string>
+    <string name="agent_toolset_failed">Error al cambiar herramientas: %1$s</string>
+    <string name="agent_job_running_now">Ejecutándose</string>
+    <string name="agent_job_paused">En pausa</string>
+    <string name="agent_job_resumed">Reanudado</string>
+    <string name="agent_done">Listo</string>
+    <string name="agent_job_run_failed">No se pudo ejecutar el trabajo: %1$s</string>
+    <string name="agent_job_pause_failed">No se pudo pausar el trabajo: %1$s</string>
+    <string name="agent_job_resume_failed">No se pudo reanudar el trabajo: %1$s</string>
+    <string name="agent_job_action_failed">Error al cambiar el trabajo: %1$s</string>
+    <string name="agent_job_deleted">Trabajo eliminado</string>
+    <string name="agent_delete_failed">Error al eliminar: %1$s</string>
+    <string name="agent_job_scheduled">Trabajo programado</string>
+    <string name="agent_schedule_failed">Error al programar: %1$s</string>
+    <string name="agent_rename_failed">Error al renombrar: %1$s</string>
+    <string name="agent_session_deleted">Sesión eliminada</string>
+    <string name="agent_forked">Bifurcada — transcripción trasladada</string>
+    <string name="agent_fork_failed">Error al bifurcar: %1$s</string>
+    <string name="agent_job_updated">Trabajo actualizado</string>
+    <string name="agent_update_failed">Error al actualizar: %1$s</string>
+
+    <!-- ===== Gateway switching, testing and sign-in (FleetDelegate) ===== -->
+    <string name="agent_fleet_switch_first">Primero cambia a otra pasarela</string>
+    <string name="agent_fleet_not_on_fleet">No está en la flota</string>
+    <string name="agent_fleet_unreachable">Inaccesible: %1$s</string>
+    <string name="agent_fleet_no_answer">sin respuesta</string>
+    <!-- Test result. The arg is empty or " · hermes <version>" (keep it attached, no space before). -->
+    <string name="agent_fleet_reachable">Accesible%1$s</string>
+    <string name="agent_fleet_reachable_not_signed_in">Accesible%1$s — aún sin iniciar sesión</string>
+    <string name="agent_fleet_reachable_refused">Accesible%1$s, pero se rechazó el inicio de sesión: %2$s</string>
+    <string name="agent_fleet_address_changed">La dirección cambió después del escaneo. Vuelve a escanear el código de emparejamiento.</string>
+    <string name="agent_fleet_link_not_paired">Sesión iniciada. Hermes Link no se emparejó: %1$s</string>
+    <string name="agent_fleet_gateway_unreachable">Pasarela inaccesible</string>
+    <string name="agent_fleet_needs_token">Esta pasarela no inicia sesión desde el navegador. Introduce su token de sesión y pulsa Conectar.</string>
+    <string name="agent_fleet_browser_failed">Error al iniciar sesión en el navegador</string>
+    <string name="agent_fleet_no_matrix">Este transporte no tiene inicio de sesión de Matrix</string>
+    <string name="agent_fleet_logged_in">Sesión iniciada</string>
+    <string name="agent_fleet_login_failed">Error al iniciar sesión. Revisa la URL o las credenciales.</string>
+
+    <!-- ===== Bots, memory and agent-page actions (BotsDelegate, MemoryDelegate, AgentDelegate) ===== -->
+    <string name="agent_roster_unavailable">lista no disponible</string>
+    <string name="agent_bot_open_failed">No se pudo abrir %1$s: %2$s</string>
+    <string name="agent_bot_retire_failed">No se pudo retirar el chat de %1$s: %2$s</string>
+    <string name="agent_not_connected">sin conexión a una pasarela</string>
+    <string name="agent_not_direct">no está en la conexión directa</string>
+    <string name="agent_couldnt_save">no se pudo guardar</string>
+    <!-- %1$s = bot name, %2$s = the error. -->
+    <string name="agent_bot_error">%1$s: %2$s</string>
+    <string name="agent_bot_name_slug">El nombre debe ser un slug: minúsculas, dígitos, - o _</string>
+    <string name="agent_bot_create_failed">no se pudo crear el perfil</string>
+    <string name="agent_mem_door_not_open">La conexión con la pasarela aún no está abierta — prueba Actualizar en un momento.</string>
+    <string name="agent_mem_door_closed">La conexión con la pasarela está cerrada.</string>
+    <string name="agent_mem_cant_open_entry">Esta pasarela no puede abrir una entrada suelta.</string>
+    <string name="agent_mem_saved">Guardado. Las sesiones ya en curso conservan la copia con la que empezaron.</string>
+    <string name="agent_mem_forgotten">Olvidado. Las sesiones ya en curso conservan la copia con la que empezaron.</string>
+    <string name="agent_mem_cant_change">Esta pasarela no puede cambiar la memoria desde aquí.</string>
+    <string name="agent_mcp_on">%1$s activado — desde la próxima sesión</string>
+    <string name="agent_mcp_off">%1$s desactivado — desde la próxima sesión</string>
+    <string name="agent_mcp_switch_unsupported">Esta pasarela no puede cambiar servidores MCP desde aquí.</string>
+    <string name="agent_soul_saved">Alma guardada — las sesiones nuevas empiezan con ella</string>
+    <string name="agent_couldnt_save_reason">No se pudo guardar: %1$s</string>
+    <string name="agent_soul_edit_unsupported">Esta pasarela no puede editar el alma desde aquí.</string>
+
+    <!-- ===== Background run notification and profile writes (AgentRunService, ProfileOps) ===== -->
+    <!-- Notification text while a run winds down. -->
+    <string name="agent_run_finishing">Terminando…</string>
+    <string name="agent_profile_meta_refused">la pasarela rechazó los metadatos del bot</string>
+    <string name="agent_profile_meta_conflict">la pasarela rechazó los metadatos del bot (se editaron en otro lugar — inténtalo de nuevo)</string>
+</resources>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Предпросмотр: переход между комнатами «%1$s», скорость: %2$s</string>
+    <string name="mk_cancel">Отмена</string>
+    <string name="mk_mcp_test">Проверить</string>
+    <string name="mk_mcp_testing">Проверка</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Доступен · %d инструмент</item>
+        <item quantity="few">Доступен · %d инструмента</item>
+        <item quantity="many">Доступен · %d инструментов</item>
+        <item quantity="other">Доступен · %d инструмента</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d промпт</item>
+        <item quantity="few">%d промпта</item>
+        <item quantity="many">%d промптов</item>
+        <item quantity="other">%d промпта</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d ресурс</item>
+        <item quantity="few">%d ресурса</item>
+        <item quantity="many">%d ресурсов</item>
+        <item quantity="other">%d ресурса</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Не удалось подключиться: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Этот шлюз не умеет проверять серверы отсюда.</string>
+    <string name="mk_mcp_catalog">Каталог · можно добавить: %1$d</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">нужен %d ключ</item>
+        <item quantity="few">нужно %d ключа</item>
+        <item quantity="many">нужно %d ключей</item>
+        <item quantity="other">нужно %d ключа</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">собирается из исходников</string>
+    <string name="mk_mcp_catalog_oauth">вход через OAuth</string>
+    <string name="mk_mcp_installed">Установлен</string>
+    <string name="mk_mcp_install">Установить</string>
+    <string name="mk_mcp_installing">Установка…</string>
+    <string name="mk_mcp_install_title">Установить %1$s?</string>
+    <string name="mk_mcp_install_runs">Будет запущено</string>
+    <string name="mk_mcp_install_builds">Сначала шлюз в фоне клонирует и соберёт его из %1$s.</string>
+    <string name="mk_mcp_install_oauth">Вход через OAuth: завершите его на панели шлюза после установки.</string>
+    <string name="mk_mcp_install_env_note">Хранится на шлюзе: секреты — в его .env, остальное — в конфиге.</string>
+    <string name="mk_mcp_installed_toast">%1$s установлен — заработает со следующей сессии</string>
+    <string name="mk_mcp_building_toast">%1$s собирается на шлюзе — появится здесь, когда будет готов</string>
+    <string name="mk_mcp_install_refused">Не удалось установить %1$s: %2$s</string>
+    <string name="mk_mcp_install_unsupported">Этот шлюз не умеет устанавливать MCP-серверы отсюда.</string>
+    <string name="mk_usage">Использование</string>
+    <string name="mk_usage_subtitle">Токены, стоимость и сессии</string>
+    <string name="mk_usage_subtitle_read">Токены: %1$s · %2$s · за %3$d дн.</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d сессия</item>
+        <item quantity="few">%d сессии</item>
+        <item quantity="many">%d сессий</item>
+        <item quantity="other">%d сессии</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">сессия</item>
+        <item quantity="few">сессии</item>
+        <item quantity="many">сессий</item>
+        <item quantity="other">сессии</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d день</item>
+        <item quantity="few">%d дня</item>
+        <item quantity="many">%d дней</item>
+        <item quantity="other">%d дня</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s вызов API</item>
+        <item quantity="few">%1$s вызова API</item>
+        <item quantity="many">%1$s вызовов API</item>
+        <item quantity="other">%1$s вызова API</item>
+    </plurals>
+    <string name="mk_usage_tokens">токены</string>
+    <string name="mk_usage_in_out">%1$s вход · %2$s выход</string>
+    <string name="mk_usage_cost">стоимость</string>
+    <string name="mk_usage_cost_estimated">стоимость, оценка</string>
+    <string name="mk_usage_none">За последние %1$d дн. ничего не использовано.</string>
+    <string name="mk_usage_by_day">По дням</string>
+    <string name="mk_usage_peak">Пик: %1$s · %2$s</string>
+    <string name="mk_usage_by_model">По моделям</string>
+    <string name="mk_usage_note_estimate">Стоимость — оценка самого Hermes по его прайс-листу; локальная модель бесплатна. Панель шлюза показывает те же цифры.</string>
+    <string name="mk_usage_note_reported">Стоимость — то, что сообщил провайдер, если сообщил. Панель шлюза показывает те же цифры.</string>
+</resources>

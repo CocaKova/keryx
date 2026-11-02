@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The 3.0 makeover's own words. Keys are mk_-prefixed so the set can be handed to translators whole. -->
+
+    <!-- Settings › Appearance: the room-transition preview (TalkBack reads it). -->
+    <string name="mk_transition_preview">Vista previa: la transición de sala %1$s a velocidad %2$s</string>
+    <!-- Shared verbs. -->
+    <string name="mk_cancel">Cancelar</string>
+
+    <!-- The agent page › MCP servers: a server's test, and the dashboard's catalog. -->
+    <string name="mk_mcp_test">Probar</string>
+    <string name="mk_mcp_testing">Probando</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Conectado · %d herramienta</item>
+        <item quantity="other">Conectado · %d herramientas</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d prompt</item>
+        <item quantity="other">%d prompts</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d recurso</item>
+        <item quantity="other">%d recursos</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">No se pudo conectar: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Esta pasarela no puede probar servidores desde aquí.</string>
+    <string name="mk_mcp_catalog">Catálogo · %1$d para añadir</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">pide %d clave</item>
+        <item quantity="other">pide %d claves</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">se compila desde el código</string>
+    <string name="mk_mcp_catalog_oauth">inicia sesión con OAuth</string>
+    <string name="mk_mcp_installed">Instalado</string>
+    <string name="mk_mcp_install">Instalar</string>
+    <string name="mk_mcp_installing">Instalando…</string>
+    <string name="mk_mcp_install_title">¿Instalar %1$s?</string>
+    <string name="mk_mcp_install_runs">Ejecutará</string>
+    <string name="mk_mcp_install_builds">La pasarela primero lo clona y lo compila desde %1$s, en segundo plano.</string>
+    <string name="mk_mcp_install_oauth">Inicia sesión con OAuth: termina ese paso en el panel de la pasarela cuando esté instalado.</string>
+    <string name="mk_mcp_install_env_note">Se guarda en la pasarela: los secretos en su .env y el resto en su configuración.</string>
+    <string name="mk_mcp_installed_toast">%1$s instalado — activo desde la próxima sesión</string>
+    <string name="mk_mcp_building_toast">%1$s se está compilando en la pasarela — aparecerá aquí cuando termine</string>
+    <string name="mk_mcp_install_refused">No se pudo instalar %1$s: %2$s</string>
+    <string name="mk_mcp_install_unsupported">Esta pasarela no puede instalar servidores MCP desde aquí.</string>
+    <!-- The agent page › Usage: the dashboard's Analytics (GET /api/analytics/usage). -->
+    <string name="mk_usage">Uso</string>
+    <string name="mk_usage_subtitle">Tokens, coste y sesiones</string>
+    <string name="mk_usage_subtitle_read">%1$s tokens · %2$s · últimos %3$d días</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d sesión</item>
+        <item quantity="other">%d sesiones</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">sesión</item>
+        <item quantity="other">sesiones</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d día</item>
+        <item quantity="other">%d días</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s llamada a la API</item>
+        <item quantity="other">%1$s llamadas a la API</item>
+    </plurals>
+    <string name="mk_usage_tokens">tokens</string>
+    <string name="mk_usage_in_out">%1$s entrada · %2$s salida</string>
+    <string name="mk_usage_cost">coste</string>
+    <string name="mk_usage_cost_estimated">coste estimado</string>
+    <string name="mk_usage_none">Nada usado en los últimos %1$d días.</string>
+    <string name="mk_usage_by_day">Por día</string>
+    <string name="mk_usage_peak">Día más activo: %1$s el %2$s</string>
+    <string name="mk_usage_by_model">Por modelo</string>
+    <string name="mk_usage_note_estimate">El coste es una estimación de Hermes según su lista de precios; un modelo local no cuesta nada. El panel de la pasarela muestra los mismos números.</string>
+    <string name="mk_usage_note_reported">El coste es el que informó el proveedor, cuando lo hizo. El panel de la pasarela muestra los mismos números.</string>
+</resources>

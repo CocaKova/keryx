@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_turn_failed">Tah se nezdařil</string>
+    <string name="app_photo">Fotka</string>
+    <string name="app_attachment">Příloha</string>
+    <string name="app_new_message">Nová zpráva</string>
+
+    <string name="app_approval_expired">Schválení už vypršelo</string>
+    <string name="app_approval_failed">Schválení se nezdařilo: %1$s</string>
+    <string name="app_reply_failed">Odpověď se nezdařila: %1$s</string>
+    <string name="app_link_unreachable_matrix">Hermes Link nedostupný (%1$s) — používám synchronizaci Matrix</string>
+    <string name="app_send_failed">Nelze odeslat: %1$s</string>
+    <string name="app_room_photo_updated">Fotka místnosti aktualizována</string>
+    <string name="app_room_photo_forbidden">Nemáš oprávnění nastavit fotku této místnosti — potřebuješ v ní práva moderátora.</string>
+    <string name="app_room_photo_failed">Fotku nelze nastavit: %1$s</string>
+    <string name="app_unknown_error">neznámá chyba</string>
+    <string name="app_branched">Odbočeno — kopie celé této konverzace</string>
+    <string name="app_branch_failed">Odbočení se nezdařilo: %1$s</string>
+    <string name="app_not_sent">Neodesláno. %1$s</string>
+    <string name="app_undo_done">Poslední výměna vzata zpět</string>
+    <string name="app_undo_nothing">Není co vzít zpět</string>
+    <string name="app_still_working">Agent ještě pracuje — nejdřív zastav tah</string>
+    <string name="app_undo_failed">Nelze vrátit zpět: %1$s</string>
+    <string name="app_retry_nothing">Není co zopakovat — brána neměla žádný tah k vrácení</string>
+    <string name="app_retry_failed">Nelze zopakovat: %1$s</string>
+    <string name="app_taken_back_edit">Vzato zpět — uprav a pošli znovu</string>
+    <string name="app_take_back_failed">Nelze vzít zpět — tvůj text zůstal v poli zprávy</string>
+    <string name="app_set_gateway_url_first">Nejdřív nastav URL brány</string>
+    <string name="app_link_ok">Hermes Link OK — %1$s</string>
+    <string name="app_link_failed">Hermes Link selhal: %1$s</string>
+    <string name="app_connection_error">chyba připojení</string>
+    <string name="app_link_up_api_down">Hermes Link běží, ale API server Hermesu za ním ne, takže Mise a Běhy se nenačtou. Nastav API_SERVER_ENABLED=true a API_SERVER_KEY v ~/.hermes/.env a pak bránu restartuj.</string>
+
+    <string name="app_pinned">Připnuto</string>
+    <string name="app_pinned_named">Připnuto „%1$s“</string>
+    <string name="app_unpinned">Odepnuto</string>
+    <string name="app_unpinned_named">Odepnuto „%1$s“</string>
+    <string name="app_pin_failed">Připnutí se nezdařilo: %1$s</string>
+    <string name="app_unpin_failed">Odepnutí se nezdařilo: %1$s</string>
+    <string name="app_marked_unread">Označeno jako nepřečtené</string>
+    <string name="app_mark_read_failed">Nelze označit jako přečtené: %1$s</string>
+    <string name="app_mark_unread_failed">Nelze označit jako nepřečtené: %1$s</string>
+    <string name="app_sticky_no_catalog">Modely nelze načíst — otevřeno s výchozím modelem brány</string>
+    <string name="app_sticky_not_served">%1$s teď není k dispozici — otevřeno s výchozím modelem brány</string>
+    <string name="app_sticky_needs_confirm">%1$s vyžaduje potvrzení — vyber ho ve výběru modelu</string>
+    <string name="app_sticky_opened_fallback">Otevřeno s modelem %1$s — %2$s teď není k dispozici</string>
+    <string name="app_sticky_opened">Otevřeno s modelem %1$s — tvá poslední volba (zapamatovaný model, v Nastavení)</string>
+    <string name="app_sticky_refused">%1$s odmítl — otevřeno s výchozím modelem brány</string>
+    <string name="app_create_session_failed">relaci nelze vytvořit</string>
+    <string name="app_rename_failed">Přejmenování se nezdařilo: %1$s</string>
+    <string name="app_archive_failed">Nelze archivovat: %1$s</string>
+    <string name="app_archived">Archivováno</string>
+    <string name="app_archived_named">Archivováno „%1$s“</string>
+    <string name="app_restore_failed">Nelze obnovit: %1$s</string>
+    <string name="app_restored">Obnoveno</string>
+    <string name="app_restored_named">Obnoveno „%1$s“</string>
+    <string name="app_archive_read_failed">Archiv nelze načíst: %1$s</string>
+    <string name="app_older_sessions_failed">Starší relace nelze načíst: %1$s</string>
+    <string name="app_session_deleted">Relace smazána</string>
+    <string name="app_delete_failed">Smazání se nezdařilo: %1$s</string>
+
+    <string name="app_steered">Nasměrováno — agent to uvidí v dalším kroku</string>
+    <string name="app_steer_declined_queued">Agent pokyn nepřijal — zařazeno do fronty na další tah</string>
+    <string name="app_queue_failed">Zařazení do fronty se nezdařilo: %1$s</string>
+    <string name="app_steer_failed">Nasměrování se nezdařilo: %1$s</string>
+    <string name="app_goal_failed">Cíl: %1$s</string>
+    <string name="app_aside_needs_direct">Dotaz stranou vyžaduje přímou bránu</string>
+    <string name="app_aside_failed">Dotaz stranou se nezdařil: %1$s</string>
+    <string name="app_redirected">Přesměrováno — odpověď začíná znovu s tvou opravou</string>
+    <string name="app_redirect_between_calls">Mezi voláními — tvá oprava přijde na řadu jako další</string>
+    <string name="app_redirect_finished_queued">Odpověď už byla hotová — zařazeno do fronty na další tah</string>
+    <string name="app_redirect_unsupported">Tento agent neumí přesměrovat — místo toho směruji</string>
+    <string name="app_redirect_failed">Přesměrování se nezdařilo: %1$s</string>
+    <string name="app_branched_from_message">Odbočeno — toto je nová relace od té zprávy</string>
+    <string name="app_queued">Ve frontě — odešle se po skončení tohoto tahu</string>
+    <string name="app_stopped">Zastaveno</string>
+    <string name="app_stop_failed">Zastavení se nezdařilo: %1$s</string>
+    <string name="app_crew_steered">Nasměrováno: %1$s — uvidí to v dalším kroku</string>
+    <string name="app_crew_steer_rejected">%1$s pokyn nepřijal — odpovídá jiným dveřím, nebo už končí</string>
+    <string name="app_crew_stopped">Zastaveno: %1$s</string>
+    <string name="app_crew_already_finished">%1$s už skončil</string>
+
+    <string name="app_model_confirm">%1$s Klepni znovu pro potvrzení.</string>
+    <string name="app_model_expensive">Tento model je drahý.</string>
+    <string name="app_model_deferred">%1$s převezme od dalšího tahu — tato relace</string>
+    <string name="app_model_deferred_global">%1$s převezme od dalšího tahu — všechny relace</string>
+    <string name="app_model_switched">%1$s — tato relace</string>
+    <string name="app_model_switched_global">%1$s — všechny relace</string>
+    <string name="app_model_switch_refused">Přepnutí odmítnuto: %1$s</string>
+    <string name="app_reasoning_refused_unknown">Tento mozek tuto úroveň přemýšlení odmítl — vyber nižší.</string>
+    <string name="app_reasoning_refused_floor">Tento mozek odmítl úroveň přemýšlení %1$s a nižší už není.</string>
+    <string name="app_reasoning_dropped">Tento mozek odmítl úroveň přemýšlení %1$s — sníženo na: %2$s.</string>
+    <string name="app_reasoning_drop_failed">Tento mozek odmítl úroveň přemýšlení %1$s; snížení na %2$s se nezdařilo.</string>
+    <string name="app_reasoning_set">Uvažování → %1$s — tato relace</string>
+    <string name="app_reasoning_set_global">Uvažování → %1$s pro všechny relace</string>
+    <string name="app_reasoning_refused">Uvažování odmítnuto: %1$s</string>
+
+    <string name="app_room_joined">Připojeno — místnost se objeví při další synchronizaci</string>
+    <string name="app_join_failed">Připojení se nezdařilo: %1$s</string>
+    <string name="app_invite_declined">Pozvánka odmítnuta</string>
+    <string name="app_decline_failed">Odmítnutí se nezdařilo: %1$s</string>
+    <string name="app_start_chat_failed">chat nelze zahájit</string>
+    <string name="app_create_room_failed">místnost nelze vytvořit</string>
+    <string name="app_join_failed_short">nelze se připojit</string>
+    <string name="app_invite_sent">Pozvánka odeslána</string>
+    <string name="app_invite_failed">Pozvání se nezdařilo: %1$s</string>
+    <string name="app_left_room">Místnost opuštěna</string>
+    <string name="app_leave_failed">Opuštění se nezdařilo: %1$s</string>
+
+    <string name="app_try_again">zkus to znovu</string>
+    <string name="app_group_rooms_unavailable">místnosti nedostupné</string>
+    <string name="app_not_connected">nepřipojeno k bráně</string>
+    <string name="app_group_stop_failed">Místnost nelze zastavit: %1$s</string>
+    <string name="app_group_approval_failed">Na žádost o schválení nelze odpovědět: %1$s</string>
+    <string name="app_group_rename_failed">Nelze přejmenovat: %1$s</string>
+    <string name="app_group_disband_failed">Nelze rozpustit: %1$s</string>
+
+    <string name="app_no_stt_endpoint">Není nastaven endpoint STT</string>
+    <string name="app_no_tts_endpoint">Není nastaven endpoint TTS</string>
+    <string name="app_no_stt_set">endpoint STT nenastaven</string>
+    <string name="app_no_tts_set">endpoint TTS nenastaven</string>
+    <string name="app_voice_unreachable">%1$s nedostupné na %2$s (%3$s)</string>
+    <string name="app_voice_ears">uši (STT)</string>
+    <string name="app_voice_mouth">hlas (TTS)</string>
+
+    <string name="app_console_run_live">Běh už probíhá — zastav ho, nebo ho nech doběhnout</string>
+    <string name="app_link_off">Hermes Link je vypnutý — zapni ho v Nastavení</string>
+    <string name="app_export_needs_gateway">Export vyžaduje přímé spojení s bránou.</string>
+    <string name="app_export_too_old">Tato brána je na export relace příliš stará.</string>
+    <string name="app_export_subject">Relace Hermes</string>
+    <string name="app_export_unreadable">Export se vrátil nečitelný.</string>
+
+    <string name="app_unsaved">Odebráno z Uložených</string>
+    <string name="app_saved">Uloženo — najdeš to v Archivu</string>
+    <string name="app_pet_adopt_failed">nelze adoptovat: %1$s</string>
+
+    <string name="app_channel_messages">Zprávy</string>
+    <string name="app_channel_messages_desc">Nové zprávy od tvých agentů Hermes a z místností</string>
+    <string name="app_notify_you">Ty</string>
+    <string name="app_notify_title_failed">%1$s · tah se nezdařil</string>
+    <string name="app_notify_reply">Odpovědět</string>
+    <string name="app_notify_reply_to">Odpověď: %1$s</string>
+    <string name="app_notify_mark_read">Přečteno</string>
+    <plurals name="app_notify_conversations">
+        <item quantity="one">%d konverzace</item>
+        <item quantity="few">%d konverzace</item>
+        <item quantity="many">%d konverzace</item>
+        <item quantity="other">%d konverzací</item>
+    </plurals>
+    <string name="app_channel_gate">Schválení a dotazy</string>
+    <string name="app_channel_gate_desc">Agent se zastavil a čeká na tvou odpověď</string>
+    <string name="app_notify_answer">Odpovědět</string>
+    <string name="app_channel_runs">Agent pracuje</string>
+    <string name="app_channel_runs_desc">Tichý stavový řádek, když agent pracuje: co dělá a jak dlouho</string>
+    <string name="app_notify_stop">Zastavit</string>
+    <string name="app_channel_missions">Mise</string>
+    <string name="app_channel_missions_desc">Mise dokončené, zablokované nebo vzdané na nástěnce agenta</string>
+
+    <string name="app_push_checking">Kontrola zpráv…</string>
+    <string name="app_notify_sending_text">Odesílání: %1$s</string>
+    <string name="app_notify_answering">Odpovídání…</string>
+    <string name="app_notify_gate_unreachable">Brána nedostupná — klepni a odpověz</string>
+    <string name="app_notify_answered">Odpovězeno — agent znovu běží</string>
+    <string name="app_notify_request_timed_out">Žádost už vypršela</string>
+    <string name="app_notify_answer_failed">Nelze odpovědět — klepni a otevři</string>
+    <string name="app_notify_sending">Odesílání…</string>
+    <string name="app_notify_send_failed">Nelze odeslat „%1$s“ — klepni a otevři</string>
+
+    <string name="app_push_connecting">Připojování…</string>
+    <string name="app_push_connected">Připojeno — vestavěný push</string>
+    <string name="app_push_reconnecting">Opětovné připojování…</string>
+    <string name="app_channel_push">Spojení push</string>
+    <string name="app_channel_push_desc">Vlastní spojení Keryx s tvým push serverem (není potřeba aplikace distributora)</string>
+    <string name="app_push_title">Push Keryx</string>
+
+    <string name="app_scan_pairing_inside">Párovací kódy skenuj v Keryx: Připojit svou bránu › Naskenovat párovací kód.</string>
+
+    <string name="app_share_nothing">Není co sdílet</string>
+    <string name="app_share_foreign_only">Keryx umí odeslat jen soubory sdílené z jiné aplikace</string>
+    <string name="app_share_too_large_mb">Soubor je na odeslání příliš velký (%1$d MB)</string>
+    <string name="app_share_too_large">Soubor je na odeslání příliš velký</string>
+    <string name="app_share_read_failed">Nelze přečíst: %1$s</string>
+    <plurals name="app_share_attachments">
+        <item quantity="one">%d příloha</item>
+        <item quantity="few">%d přílohy</item>
+        <item quantity="many">%d přílohy</item>
+        <item quantity="other">%d příloh</item>
+    </plurals>
+    <string name="app_share_note_label">Přidat poznámku (volitelné)</string>
+    <string name="app_share_note_hint">Shrň to / zapamatuj si to / …</string>
+
+    <string name="app_hands_cannot">Nic v tomto telefonu to neumí</string>
+    <string name="app_hands_no_app">Žádná aplikace s názvem „%1$s“</string>
+    <string name="app_hands_no_handler">Nic v tomto telefonu neobslouží akci: %1$s</string>
+    <string name="app_hands_failed">Nepovedlo se: %1$s</string>
+    <string name="app_hands_no_flash">Tento telefon nemá svítilnu</string>
+
+    <string name="app_crash_log_subject">Záznam pádů Keryx</string>
+    <string name="app_crash_log_share">Sdílet záznam pádů</string>
+    <string name="app_share">Sdílet</string>
+    <string name="app_share_named">Sdílet: %1$s</string>
+
+    <string name="app_call_hearing_failed">slyšení selhalo: %1$s</string>
+    <string name="app_call_turn_failed">tah agenta se nezdařil</string>
+    <string name="app_call_voice_failed">hlas selhal: %1$s</string>
+    <string name="app_call_no_reply">žádná odpověď z brány</string>
+    <string name="app_tts_failed">Řeč selhala: %1$s</string>
+    <string name="app_tts_audio_unavailable">Zvuk nedostupný</string>
+    <string name="app_tts_no_audio">Řečový server neposlal žádný zvuk</string>
+    <string name="app_tts_no_engine">V tomto zařízení není hlasový modul</string>
+    <string name="app_tts_playback_failed">Přehrání řeči se nezdařilo</string>
+    <string name="app_tts_playback_failed_why">Přehrání řeči se nezdařilo: %1$s</string>
+
+    <string name="app_tour_welcome_title">Vítej v Keryx</string>
+    <string name="app_tour_welcome_text">Tohle je ukázka: předstíraná brána v tvém telefonu a její agent je zrovna uprostřed práce. Rychle se tu rozhlédni, než připojíš vlastní.</string>
+    <string name="app_tour_plan_title">Jeho plán</string>
+    <string name="app_tour_plan_text">Agent rozdělí práci na kroky a průběžně je odškrtává. Během práce Keryx zobrazuje živé oznámení, takže můžeš telefon odložit.</string>
+    <string name="app_tour_approval_title">Nejdřív se zeptá</string>
+    <string name="app_tour_approval_text">Před čímkoli riskantním, třeba smazáním složky, se agent zastaví a zeptá. Odpověz tady nebo rovnou z oznámení.</string>
+    <string name="app_tour_approval_text_demo">Před čímkoli riskantním, třeba smazáním složky, se agent zastaví a zeptá. Odpověz tady nebo rovnou z oznámení. Zkus to po skončení prohlídky a sleduj, jak práci dokončí.</string>
+    <string name="app_tour_composer_title">Požádej o cokoli</string>
+    <string name="app_tour_composer_text">Zadej agentovi práci obyčejnými slovy. Pracuje dál, i když odejdeš, a Keryx ti dá vědět, až bude hotovo.</string>
+    <string name="app_tour_model_title">Který mozek odpovídá</string>
+    <string name="app_tour_model_text">Přepni model pro tuto relaci, nebo pro všechny další.</string>
+    <string name="app_tour_new_session_title">Čistý list</string>
+    <string name="app_tour_new_session_text">Začni novou relaci. Podrž pro možnosti, jako je název nebo dočasná relace.</string>
+    <string name="app_tour_drawer_title">Všechno ostatní</string>
+    <string name="app_tour_drawer_text">Tvé relace a zbytek Keryx najdeš za tímto tlačítkem.</string>
+    <string name="app_tour_lenses_title">Co čeká na tebe</string>
+    <string name="app_tour_lenses_text">Zuž seznam na relace, které čekají na tebe, právě běží nebo jsou nepřečtené.</string>
+    <string name="app_tour_missions_title">Mise</string>
+    <string name="app_tour_missions_text">Svěř agentovi delší práci jako karty na nástěnce. Postupně je zpracuje a zeptá se, když tě bude potřebovat.</string>
+    <string name="app_tour_runs_title">Běhy</string>
+    <string name="app_tour_runs_text">Naplánované úlohy a co který běh přinesl.</string>
+    <string name="app_tour_bots_title">Boti</string>
+    <string name="app_tour_bots_text">Další profily tvého agenta. Každý má vlastní paměť, dovednosti a chaty.</string>
+    <string name="app_tour_archive_title">Archiv</string>
+    <string name="app_tour_archive_text">Všechno, co kdy padlo, prohledatelné v telefonu, i když brána neběží.</string>
+    <string name="app_tour_gateway_title">Tvá brána</string>
+    <string name="app_tour_gateway_text_demo">S vlastním Hermesem tu uvidíš spojení, model a verzi. Všechno, co jsi právě viděl, funguje stejně na skutečné bráně: připoj svou a je to naživo.</string>
+    <string name="app_tour_gateway_text">Spojení, model a verze Hermesu. Klepnutím otevřeš Bránu; ozubené kolo otevře Nastavení, kde najdeš i tuto prohlídku.</string>
+    <string name="app_tour_gateway_text_direct">Spojení, model a verze Hermesu. Klepnutím otevřeš Bránu; ozubené kolo otevře Nastavení, kde najdeš i tuto prohlídku. Máš víc než jeden Hermes? Přidej ho a přepínej mezi nimi tady.</string>
+    <string name="app_tour_cta_connect">Připojit svou bránu</string>
+    <string name="app_tour_cta_add_gateway">Přidat bránu</string>
+
+    <string name="app_whatsnew_title">Co je nového v Keryx 3.0</string>
+    <string name="app_whatsnew_text">Rychlý přehled změn. Klidně přeskoč: zůstane v Nastavení › O aplikaci.</string>
+    <string name="app_whatsnew_point_title">Zeptej se, kde co je</string>
+    <string name="app_whatsnew_point_text">Zeptej se agenta „kde mám naplánované úlohy?“ a ukáže ti to místo přímo tady v telefonu. Tvá brána potřebuje keryx-stream 0.6 nebo novější.</string>
+    <string name="app_whatsnew_memory_title">Paměť chatu</string>
+    <string name="app_whatsnew_memory_text">Kroužek u modelu teď ukazuje, na kolik odpovědí ještě v tomto chatu zbývá místo, a to jen tehdy, když na tom záleží. Klepni a uvidíš, co místo zabírá.</string>
+    <string name="app_whatsnew_drawer_title">Překreslený panel</string>
+    <string name="app_whatsnew_drawer_text_direct">Každý chat má vlastní barvu a značku, kroužek ukazuje ty, které pracují, a filtry zúží seznam na to, co čeká na tebe.</string>
+    <string name="app_whatsnew_drawer_text">Každý chat má vlastní barvu a značku a kroužek ukazuje ty, které pracují.</string>
+    <string name="app_whatsnew_cards_title">Karty srozumitelně</string>
+    <string name="app_whatsnew_cards_text">Karta mise se teď otevře tím, co se děje, a jedinou věcí, kterou je třeba udělat. Technické detaily jsou pořád v sekci Podrobnosti.</string>
+    <string name="app_whatsnew_look_title">Vzhled a aktualizace</string>
+    <string name="app_whatsnew_look_text_direct">Nastavení › Vzhled má nové styly přemýšlení a pět způsobů přechodu mezi chaty. S novějším keryx-stream si v panelu Aktualizace na Bráně vybereš vydání Stable nebo Edge. Chceš přidat další Hermes? Spusť na něm hermes keryx pair a naskenuj kód.</string>
+    <string name="app_whatsnew_look_text">Nastavení › Vzhled má nové styly přemýšlení a pět způsobů přechodu mezi chaty. Prohlídka a nápovědy jsou v Nastavení › O aplikaci.</string>
+
+    <string name="app_hint_missions_title">Mise</string>
+    <string name="app_hint_missions_text">Tady bydlí delší práce jako karty. Tví agenti si je berou a zpracovávají, a karta, která tě potřebuje, se přesune nahoru. Klepni na + a nějakou zadej.</string>
+    <string name="app_hint_runs_title">Běhy</string>
+    <string name="app_hint_runs_text">Úlohy podle plánu, třeba ranní přehled nebo noční kontrola. Výsledek každého běhu přistane tady. Požádej agenta a nastaví ti ji.</string>
+    <string name="app_hint_bots_title">Boti</string>
+    <string name="app_hint_bots_text">Každý bot je profil tvého Hermesu s vlastní pamětí, dovednostmi a chaty. Otevři jednoho a mluv s ním, nebo jich pár dej do skupinového chatu.</string>
+    <string name="app_hint_gateway_title">Tvá brána</string>
+    <string name="app_hint_gateway_text">Jak se daří Hermesu, ke kterému jsi připojený, a co je za ním: model a nastavení, úlohy, dovednosti, paměť a nástroje.</string>
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">Agent při práci na celé obrazovce: co si myslí, jaké nástroje spouští a jaké pomocníky vysílá. I odsud ho můžeš směrovat.</string>
+    <string name="app_hint_artifact_title">Stránka od agenta</string>
+    <string name="app_hint_artifact_text">Zprávy, makety a stránky, které agent napíše, se otevírají tady v telefonu. Ulož nebo sdílej je tlačítky nahoře.</string>
+
+    <string name="app_tour_pane">Prohlídka</string>
+    <string name="app_tour_end">Ukončit prohlídku</string>
+    <string name="app_tour_progress">%1$d z %2$d</string>
+    <string name="app_tour_back">Zpět</string>
+    <string name="app_tour_done">Hotovo</string>
+    <string name="app_tour_got_it">Rozumím</string>
+    <string name="app_tour_next">Další</string>
+</resources>

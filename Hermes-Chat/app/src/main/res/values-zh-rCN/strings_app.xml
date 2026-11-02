@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_turn_failed">回合失败</string>
+    <string name="app_photo">照片</string>
+    <string name="app_attachment">附件</string>
+    <string name="app_new_message">新消息</string>
+
+    <string name="app_approval_expired">审批已过期</string>
+    <string name="app_approval_failed">审批失败：%1$s</string>
+    <string name="app_reply_failed">回复失败：%1$s</string>
+    <string name="app_link_unreachable_matrix">无法连接 Hermes Link（%1$s）— 改用 Matrix 同步</string>
+    <string name="app_send_failed">无法发送：%1$s</string>
+    <string name="app_room_photo_updated">房间照片已更新</string>
+    <string name="app_room_photo_forbidden">没有权限设置此房间的照片 — 你需要该房间的管理员权限。</string>
+    <string name="app_room_photo_failed">无法设置照片：%1$s</string>
+    <string name="app_unknown_error">未知错误</string>
+    <string name="app_branched">已分支 — 这是整段对话的副本</string>
+    <string name="app_branch_failed">分支失败：%1$s</string>
+    <string name="app_not_sent">未发送。%1$s</string>
+    <string name="app_undo_done">已撤回上一轮对话</string>
+    <string name="app_undo_nothing">没有可撤回的内容</string>
+    <string name="app_still_working">仍在运行 — 请先停止回合</string>
+    <string name="app_undo_failed">无法撤销：%1$s</string>
+    <string name="app_retry_nothing">没有可重试的内容 — 网关没有可撤回的回合</string>
+    <string name="app_retry_failed">无法重试：%1$s</string>
+    <string name="app_taken_back_edit">已撤回 — 编辑后再发送</string>
+    <string name="app_take_back_failed">无法撤回 — 你的内容已放回输入框，可再次发送</string>
+    <string name="app_set_gateway_url_first">请先设置网关 URL</string>
+    <string name="app_link_ok">Hermes Link 正常 — %1$s</string>
+    <string name="app_link_failed">Hermes Link 失败：%1$s</string>
+    <string name="app_connection_error">连接错误</string>
+    <string name="app_link_up_api_down">Hermes Link 已连接，但其背后的 Hermes API 服务器没有运行，所以任务和运行无法加载。请在 ~/.hermes/.env 中设置 API_SERVER_ENABLED=true 和 API_SERVER_KEY，然后重启网关。</string>
+
+    <string name="app_pinned">已置顶</string>
+    <string name="app_pinned_named">已置顶“%1$s”</string>
+    <string name="app_unpinned">已取消置顶</string>
+    <string name="app_unpinned_named">已取消置顶“%1$s”</string>
+    <string name="app_pin_failed">置顶失败：%1$s</string>
+    <string name="app_unpin_failed">取消置顶失败：%1$s</string>
+    <string name="app_marked_unread">已标为未读</string>
+    <string name="app_mark_read_failed">无法标为已读：%1$s</string>
+    <string name="app_mark_unread_failed">无法标为未读：%1$s</string>
+    <string name="app_sticky_no_catalog">无法读取模型列表 — 已使用网关的默认模型</string>
+    <string name="app_sticky_not_served">%1$s 当前不可用 — 已使用网关的默认模型</string>
+    <string name="app_sticky_needs_confirm">%1$s 需要确认 — 请在模型选择器中选择它</string>
+    <string name="app_sticky_opened_fallback">已使用 %1$s — %2$s 当前不可用</string>
+    <string name="app_sticky_opened">已使用 %1$s — 你上次的选择（设置中的“上次选择的模型”）</string>
+    <string name="app_sticky_refused">%1$s 被拒绝 — 已使用网关的默认模型</string>
+    <string name="app_create_session_failed">无法创建会话</string>
+    <string name="app_rename_failed">重命名失败：%1$s</string>
+    <string name="app_archive_failed">无法归档：%1$s</string>
+    <string name="app_archived">已归档</string>
+    <string name="app_archived_named">已归档“%1$s”</string>
+    <string name="app_restore_failed">无法恢复：%1$s</string>
+    <string name="app_restored">已恢复</string>
+    <string name="app_restored_named">已恢复“%1$s”</string>
+    <string name="app_archive_read_failed">无法读取归档：%1$s</string>
+    <string name="app_older_sessions_failed">无法加载更早的会话：%1$s</string>
+    <string name="app_session_deleted">会话已删除</string>
+    <string name="app_delete_failed">删除失败：%1$s</string>
+
+    <string name="app_steered">已引导 — 智能体会在下一步看到</string>
+    <string name="app_steer_declined_queued">智能体未接受引导 — 已排到下一回合</string>
+    <string name="app_queue_failed">排队失败：%1$s</string>
+    <string name="app_steer_failed">引导失败：%1$s</string>
+    <string name="app_goal_failed">目标：%1$s</string>
+    <string name="app_aside_needs_direct">旁问需要直连网关</string>
+    <string name="app_aside_failed">旁问失败：%1$s</string>
+    <string name="app_redirected">已转向 — 回复将按你的更正重新开始</string>
+    <string name="app_redirect_between_calls">正处于调用之间 — 接下来执行你的更正</string>
+    <string name="app_redirect_finished_queued">回复已结束 — 已排到下一回合</string>
+    <string name="app_redirect_unsupported">此智能体无法转向 — 改为引导</string>
+    <string name="app_redirect_failed">转向失败：%1$s</string>
+    <string name="app_branched_from_message">已分支 — 这是从那条消息开始的新会话</string>
+    <string name="app_queued">已排队 — 本回合结束后发送</string>
+    <string name="app_stopped">已停止</string>
+    <string name="app_stop_failed">停止失败：%1$s</string>
+    <string name="app_crew_steered">已引导 %1$s — 它会在下一步看到</string>
+    <string name="app_crew_steer_rejected">%1$s 没有接受 — 它从属于另一个入口，或者已经在收尾</string>
+    <string name="app_crew_stopped">已停止 %1$s</string>
+    <string name="app_crew_already_finished">%1$s 已经完成</string>
+
+    <string name="app_model_confirm">%1$s 再点一次以确认。</string>
+    <string name="app_model_expensive">此模型价格较高。</string>
+    <string name="app_model_deferred">%1$s 将从下一回合接手 — 仅此会话</string>
+    <string name="app_model_deferred_global">%1$s 将从下一回合接手 — 所有会话</string>
+    <string name="app_model_switched">%1$s — 仅此会话</string>
+    <string name="app_model_switched_global">%1$s — 所有会话</string>
+    <string name="app_model_switch_refused">切换被拒绝：%1$s</string>
+    <string name="app_reasoning_refused_unknown">此模型拒绝了该思考等级 — 请选低一点的。</string>
+    <string name="app_reasoning_refused_floor">此模型拒绝了 %1$s 思考，已经没有更低的等级可试。</string>
+    <string name="app_reasoning_dropped">此模型拒绝了 %1$s 思考 — 已降为 %2$s。</string>
+    <string name="app_reasoning_drop_failed">此模型拒绝了 %1$s 思考；无法降为 %2$s。</string>
+    <string name="app_reasoning_set">推理 → %1$s — 仅此会话</string>
+    <string name="app_reasoning_set_global">推理 → %1$s，所有会话</string>
+    <string name="app_reasoning_refused">推理设置被拒绝：%1$s</string>
+
+    <string name="app_room_joined">已加入 — 房间将在下次同步时出现</string>
+    <string name="app_join_failed">加入失败：%1$s</string>
+    <string name="app_invite_declined">已拒绝邀请</string>
+    <string name="app_decline_failed">拒绝失败：%1$s</string>
+    <string name="app_start_chat_failed">无法开始聊天</string>
+    <string name="app_create_room_failed">无法创建房间</string>
+    <string name="app_join_failed_short">无法加入</string>
+    <string name="app_invite_sent">邀请已发送</string>
+    <string name="app_invite_failed">邀请失败：%1$s</string>
+    <string name="app_left_room">已退出房间</string>
+    <string name="app_leave_failed">退出失败：%1$s</string>
+
+    <string name="app_try_again">请重试</string>
+    <string name="app_group_rooms_unavailable">房间不可用</string>
+    <string name="app_not_connected">未连接网关</string>
+    <string name="app_group_stop_failed">无法停止房间：%1$s</string>
+    <string name="app_group_approval_failed">无法回复审批：%1$s</string>
+    <string name="app_group_rename_failed">无法重命名：%1$s</string>
+    <string name="app_group_disband_failed">无法解散：%1$s</string>
+
+    <string name="app_no_stt_endpoint">未配置 STT 端点</string>
+    <string name="app_no_tts_endpoint">未配置 TTS 端点</string>
+    <string name="app_no_stt_set">未设置 STT 端点</string>
+    <string name="app_no_tts_set">未设置 TTS 端点</string>
+    <string name="app_voice_unreachable">无法连接%1$s：%2$s（%3$s）</string>
+    <string name="app_voice_ears">耳朵（STT）</string>
+    <string name="app_voice_mouth">声音（TTS）</string>
+
+    <string name="app_console_run_live">已有运行在进行中 — 请停止它或等它结束</string>
+    <string name="app_link_off">Hermes Link 已关闭 — 请在设置中启用</string>
+    <string name="app_export_needs_gateway">导出需要通过网关直连。</string>
+    <string name="app_export_too_old">此网关版本太旧，无法导出会话。</string>
+    <string name="app_export_subject">Hermes 会话</string>
+    <string name="app_export_unreadable">导出的内容无法读取。</string>
+
+    <string name="app_unsaved">已从收藏中移除</string>
+    <string name="app_saved">已收藏 — 可在归档中找到</string>
+    <string name="app_pet_adopt_failed">无法领养 %1$s</string>
+
+    <string name="app_channel_messages">消息</string>
+    <string name="app_channel_messages_desc">来自你的 Hermes 智能体和房间的新消息</string>
+    <string name="app_notify_you">你</string>
+    <string name="app_notify_title_failed">%1$s · 回合失败</string>
+    <string name="app_notify_reply">回复</string>
+    <string name="app_notify_reply_to">回复 %1$s</string>
+    <string name="app_notify_mark_read">标为已读</string>
+    <plurals name="app_notify_conversations">
+        <item quantity="other">%d 个对话</item>
+    </plurals>
+    <string name="app_channel_gate">审批和提问</string>
+    <string name="app_channel_gate_desc">智能体已暂停，正在等你回答</string>
+    <string name="app_notify_answer">回答</string>
+    <string name="app_channel_runs">智能体运行中</string>
+    <string name="app_channel_runs_desc">智能体工作时的静默状态栏：它在做什么、做了多久</string>
+    <string name="app_notify_stop">停止</string>
+    <string name="app_channel_missions">任务</string>
+    <string name="app_channel_missions_desc">智能体看板上的任务完成、受阻或放弃</string>
+
+    <string name="app_push_checking">正在检查消息…</string>
+    <string name="app_notify_sending_text">正在发送：%1$s</string>
+    <string name="app_notify_answering">正在回答…</string>
+    <string name="app_notify_gate_unreachable">无法连接网关 — 点按以回答</string>
+    <string name="app_notify_answered">已回答 — 智能体继续运行</string>
+    <string name="app_notify_request_timed_out">该请求已经超时</string>
+    <string name="app_notify_answer_failed">无法回答 — 点按以打开</string>
+    <string name="app_notify_sending">正在发送…</string>
+    <string name="app_notify_send_failed">无法发送“%1$s” — 点按以打开</string>
+
+    <string name="app_push_connecting">正在连接…</string>
+    <string name="app_push_connected">已连接 — 内置推送</string>
+    <string name="app_push_reconnecting">正在重新连接…</string>
+    <string name="app_channel_push">推送连接</string>
+    <string name="app_channel_push_desc">Keryx 与你的推送服务器的直接连接（无需分发器应用）</string>
+    <string name="app_push_title">Keryx 推送</string>
+
+    <string name="app_scan_pairing_inside">请在 Keryx 内扫描配对码：连接你的网关 › 扫描配对码。</string>
+
+    <string name="app_share_nothing">没有可分享的内容</string>
+    <string name="app_share_foreign_only">Keryx 只能发送从其他应用分享来的文件</string>
+    <string name="app_share_too_large_mb">文件太大，无法发送（%1$d MB）</string>
+    <string name="app_share_too_large">文件太大，无法发送</string>
+    <string name="app_share_read_failed">无法读取 %1$s</string>
+    <plurals name="app_share_attachments">
+        <item quantity="other">%d 个附件</item>
+    </plurals>
+    <string name="app_share_note_label">添加备注（可选）</string>
+    <string name="app_share_note_hint">总结一下 / 记住这个 / …</string>
+
+    <string name="app_hands_cannot">这部手机上没有能做这件事的功能</string>
+    <string name="app_hands_no_app">没有名为“%1$s”的应用</string>
+    <string name="app_hands_no_handler">这部手机上没有能处理 %1$s 的应用</string>
+    <string name="app_hands_failed">无法执行：%1$s</string>
+    <string name="app_hands_no_flash">这部手机没有闪光灯</string>
+
+    <string name="app_crash_log_subject">Keryx 崩溃日志</string>
+    <string name="app_crash_log_share">分享崩溃日志</string>
+    <string name="app_share">分享</string>
+    <string name="app_share_named">分享 %1$s</string>
+
+    <string name="app_call_hearing_failed">听写失败：%1$s</string>
+    <string name="app_call_turn_failed">智能体的回合失败</string>
+    <string name="app_call_voice_failed">语音失败：%1$s</string>
+    <string name="app_call_no_reply">网关没有回复</string>
+    <string name="app_tts_failed">朗读失败：%1$s</string>
+    <string name="app_tts_audio_unavailable">音频不可用</string>
+    <string name="app_tts_no_audio">语音服务器未返回音频</string>
+    <string name="app_tts_no_engine">此设备上没有语音引擎</string>
+    <string name="app_tts_playback_failed">语音播放失败</string>
+    <string name="app_tts_playback_failed_why">语音播放失败：%1$s</string>
+
+    <string name="app_tour_welcome_title">欢迎使用 Keryx</string>
+    <string name="app_tour_welcome_text">这是一个演示：你手机上有一个模拟网关，它的智能体正在执行任务。连接你自己的网关之前，先快速看一圈吧。</string>
+    <string name="app_tour_plan_title">它的计划</string>
+    <string name="app_tour_plan_text">智能体会把一项工作拆成步骤，边做边打勾。它工作时，Keryx 会持续显示进度通知，你可以放下手机。</string>
+    <string name="app_tour_approval_title">先问再做</string>
+    <string name="app_tour_approval_text">在做任何有风险的事（比如删除文件夹）之前，智能体会停下来问你。可以在这里回答，也可以直接在通知里回答。</string>
+    <string name="app_tour_approval_text_demo">在做任何有风险的事（比如删除文件夹）之前，智能体会停下来问你。可以在这里回答，也可以直接在通知里回答。导览结束后试试看，然后看它完成工作。</string>
+    <string name="app_tour_composer_title">尽管开口</string>
+    <string name="app_tour_composer_text">用平常的话给智能体布置工作。你离开后它会继续工作，完成时 Keryx 会通知你。</string>
+    <string name="app_tour_model_title">由哪个模型回答</string>
+    <string name="app_tour_model_text">为此会话切换模型，或从现在起为所有会话切换。</string>
+    <string name="app_tour_new_session_title">新的一页</string>
+    <string name="app_tour_new_session_text">开始新会话。长按可查看更多选项，比如标题或临时会话。</string>
+    <string name="app_tour_drawer_title">其他一切</string>
+    <string name="app_tour_drawer_text">你的会话和 Keryx 的其他功能都在这个按钮后面。</string>
+    <string name="app_tour_lenses_title">需要你处理的</string>
+    <string name="app_tour_lenses_text">把列表筛选为等你处理、正在运行或未读的会话。</string>
+    <string name="app_tour_missions_title">任务</string>
+    <string name="app_tour_missions_text">以看板卡片的形式把较长的工作交给智能体。它会逐一处理，需要你时会来问你。</string>
+    <string name="app_tour_runs_title">运行</string>
+    <string name="app_tour_runs_text">定时作业，以及每次运行的结果。</string>
+    <string name="app_tour_bots_title">机器人</string>
+    <string name="app_tour_bots_text">你的智能体的其他配置档。每个都有自己的记忆、技能和聊天。</string>
+    <string name="app_tour_archive_title">归档</string>
+    <string name="app_tour_archive_text">说过的一切都在这里，可在手机上搜索，网关离线时也可以。</string>
+    <string name="app_tour_gateway_title">你的网关</string>
+    <string name="app_tour_gateway_text_demo">连接你自己的 Hermes 后，这里会显示连接、模型和版本。你刚才看到的一切在真实网关上都一样：连上你的网关就能用。</string>
+    <string name="app_tour_gateway_text">连接、模型和 Hermes 版本。点按进入网关；齿轮打开设置，导览也在那里。</string>
+    <string name="app_tour_gateway_text_direct">连接、模型和 Hermes 版本。点按进入网关；齿轮打开设置，导览也在那里。有不止一个 Hermes？添加后可在这里切换。</string>
+    <string name="app_tour_cta_connect">连接你的网关</string>
+    <string name="app_tour_cta_add_gateway">添加网关</string>
+
+    <string name="app_whatsnew_title">Keryx 3.0 新功能</string>
+    <string name="app_whatsnew_text">快速看看有哪些变化。也可以跳过：它一直在 设置 › 关于 中。</string>
+    <string name="app_whatsnew_point_title">问问东西在哪</string>
+    <string name="app_whatsnew_point_text">问智能体“我的定时作业在哪？”，它就能在手机上直接指给你看。你的网关需要 keryx-stream 0.6 或更新版本。</string>
+    <string name="app_whatsnew_memory_title">聊天记忆</string>
+    <string name="app_whatsnew_memory_text">模型旁边的圆环现在会显示此聊天还能容纳多少条回复，而且只在需要时显示。点按查看是什么在占用空间。</string>
+    <string name="app_whatsnew_drawer_title">重新设计的侧边栏</string>
+    <string name="app_whatsnew_drawer_text_direct">每个聊天都有自己的颜色和标记，圆环标出正在工作的聊天，这些筛选器可以把列表缩小到需要你处理的内容。</string>
+    <string name="app_whatsnew_drawer_text">每个聊天都有自己的颜色和标记，圆环标出正在工作的聊天。</string>
+    <string name="app_whatsnew_cards_title">通俗易懂的卡片</string>
+    <string name="app_whatsnew_cards_text">任务卡片现在一打开就显示进展和下一步要做的事。技术细节仍在“详情”下面。</string>
+    <string name="app_whatsnew_look_title">外观与更新</string>
+    <string name="app_whatsnew_look_text_direct">设置 › 外观 里有新的思考样式，以及五种切换聊天的动画。使用较新的 keryx-stream 时，网关的“更新”面板可以选择 Stable 或 Edge 版本。要添加另一个 Hermes，请在它上面运行 hermes keryx pair 并扫描配对码。</string>
+    <string name="app_whatsnew_look_text">设置 › 外观 里有新的思考样式，以及五种切换聊天的动画。导览和各处提示在 设置 › 关于 中。</string>
+
+    <string name="app_hint_missions_title">任务</string>
+    <string name="app_hint_missions_text">较长的工作以卡片形式放在这里。智能体会领取并逐一处理，需要你的卡片会移到最上面。点按 + 来分配一项。</string>
+    <string name="app_hint_runs_title">运行</string>
+    <string name="app_hint_runs_text">按计划执行的工作，比如晨间简报或夜间检查。每次运行的结果都会出现在这里。告诉智能体，它就能帮你设置一个。</string>
+    <string name="app_hint_bots_title">机器人</string>
+    <string name="app_hint_bots_text">每个机器人都是你的 Hermes 的一个配置档，有自己的记忆、技能和聊天。打开一个与它对话，或把几个放进群聊。</string>
+    <string name="app_hint_gateway_title">你的网关</string>
+    <string name="app_hint_gateway_text">你连接的 Hermes 运行状况如何，以及它背后有什么：模型和设置、工作、技能、记忆和工具。</string>
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">全屏查看智能体工作：它在想什么、运行了哪些工具、派出了哪些助手。你也可以在这里引导它。</string>
+    <string name="app_hint_artifact_title">智能体制作的页面</string>
+    <string name="app_hint_artifact_text">智能体写的报告、草图和页面会在手机上的这里打开。用顶部的按钮保存或分享。</string>
+
+    <string name="app_tour_pane">导览</string>
+    <string name="app_tour_end">结束导览</string>
+    <string name="app_tour_progress">%1$d / %2$d</string>
+    <string name="app_tour_back">上一步</string>
+    <string name="app_tour_done">完成</string>
+    <string name="app_tour_got_it">知道了</string>
+    <string name="app_tour_next">下一步</string>
+</resources>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Previzualizare: tranziția de cameră %1$s la viteza %2$s</string>
+    <string name="mk_cancel">Anulează</string>
+
+    <string name="mk_mcp_test">Testează</string>
+    <string name="mk_mcp_testing">Se testează</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Conectat · %d unealtă</item>
+        <item quantity="few">Conectat · %d unelte</item>
+        <item quantity="other">Conectat · %d de unelte</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d prompt</item>
+        <item quantity="few">%d prompturi</item>
+        <item quantity="other">%d de prompturi</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d resursă</item>
+        <item quantity="few">%d resurse</item>
+        <item quantity="other">%d de resurse</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Nu s-a putut conecta: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Acest gateway nu poate testa servere de aici.</string>
+    <string name="mk_mcp_catalog">Catalog · %1$d de adăugat</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">cere %d cheie</item>
+        <item quantity="few">cere %d chei</item>
+        <item quantity="other">cere %d de chei</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">se compilează din sursă</string>
+    <string name="mk_mcp_catalog_oauth">se conectează cu OAuth</string>
+    <string name="mk_mcp_installed">Instalat</string>
+    <string name="mk_mcp_install">Instalează</string>
+    <string name="mk_mcp_installing">Se instalează…</string>
+    <string name="mk_mcp_install_title">Instalezi %1$s?</string>
+    <string name="mk_mcp_install_runs">Va rula</string>
+    <string name="mk_mcp_install_builds">Gateway-ul îl clonează și îl compilează mai întâi din %1$s, în fundal.</string>
+    <string name="mk_mcp_install_oauth">Se conectează cu OAuth: finalizează asta în panoul gateway-ului după instalare.</string>
+    <string name="mk_mcp_install_env_note">Păstrate pe gateway: secretele în .env, restul în config.</string>
+    <string name="mk_mcp_installed_toast">%1$s instalat — activ din următoarea sesiune</string>
+    <string name="mk_mcp_building_toast">%1$s se compilează pe gateway — apare aici când e gata</string>
+    <string name="mk_mcp_install_refused">Nu s-a putut instala %1$s: %2$s</string>
+    <string name="mk_mcp_install_unsupported">Acest gateway nu poate instala servere MCP de aici.</string>
+    <string name="mk_usage">Utilizare</string>
+    <string name="mk_usage_subtitle">Tokeni, cost și sesiuni</string>
+    <string name="mk_usage_subtitle_read">%1$s tokeni · %2$s · ultimele %3$d zile</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d sesiune</item>
+        <item quantity="few">%d sesiuni</item>
+        <item quantity="other">%d de sesiuni</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">sesiune</item>
+        <item quantity="few">sesiuni</item>
+        <item quantity="other">de sesiuni</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d zi</item>
+        <item quantity="few">%d zile</item>
+        <item quantity="other">%d de zile</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s apel API</item>
+        <item quantity="few">%1$s apeluri API</item>
+        <item quantity="other">%1$s de apeluri API</item>
+    </plurals>
+    <string name="mk_usage_tokens">tokeni</string>
+    <string name="mk_usage_in_out">%1$s intrare · %2$s ieșire</string>
+    <string name="mk_usage_cost">cost</string>
+    <string name="mk_usage_cost_estimated">cost estimat</string>
+    <string name="mk_usage_none">Nimic folosit în ultimele %1$d zile.</string>
+    <string name="mk_usage_by_day">Pe zile</string>
+    <string name="mk_usage_peak">Vârf: %1$s pe %2$s</string>
+    <string name="mk_usage_by_model">Pe model</string>
+    <string name="mk_usage_note_estimate">Costul este estimarea proprie a Hermes, din lista sa de prețuri; un model local nu costă nimic. Panoul gateway-ului citește aceleași cifre.</string>
+    <string name="mk_usage_note_reported">Costul este cel raportat de furnizor, acolo unde l-a raportat. Panoul gateway-ului citește aceleași cifre.</string>
+</resources>

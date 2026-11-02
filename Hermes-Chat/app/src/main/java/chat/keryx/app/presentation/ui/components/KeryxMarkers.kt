@@ -191,7 +191,7 @@ fun QuickActionTiles(options: List<String>, baseColor: Color) {
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("›", color = keryxAccentInk(accent), fontSize = KeryxType.headline, fontWeight = FontWeight.Bold)
+                Text(forwardChevron(), color = keryxAccentInk(accent), fontSize = KeryxType.headline, fontWeight = FontWeight.Bold)
             }
         }
     }

@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_turn_failed">התור נכשל</string>
+    <string name="app_photo">תמונה</string>
+    <string name="app_attachment">קובץ מצורף</string>
+    <string name="app_new_message">הודעה חדשה</string>
+
+    <string name="app_approval_expired">תוקף האישור כבר פג</string>
+    <string name="app_approval_failed">האישור נכשל: %1$s</string>
+    <string name="app_reply_failed">התשובה נכשלה: %1$s</string>
+    <string name="app_link_unreachable_matrix">אין גישה ל־Hermes Link (%1$s) — משתמשים בסנכרון Matrix</string>
+    <string name="app_send_failed">לא ניתן לשלוח: %1$s</string>
+    <string name="app_room_photo_updated">תמונת החדר עודכנה</string>
+    <string name="app_room_photo_forbidden">אין הרשאה לשנות את תמונת החדר — צריך הרשאות מנהל בו.</string>
+    <string name="app_room_photo_failed">לא ניתן להגדיר תמונה: %1$s</string>
+    <string name="app_unknown_error">שגיאה לא ידועה</string>
+    <string name="app_branched">פוצל — עותק של כל השיחה הזו</string>
+    <string name="app_branch_failed">הפיצול נכשל: %1$s</string>
+    <string name="app_not_sent">לא נשלח. %1$s</string>
+    <string name="app_undo_done">חילופי הדברים האחרונים בוטלו</string>
+    <string name="app_undo_nothing">אין מה לבטל</string>
+    <string name="app_still_working">עדיין עובד — קודם צריך לעצור את התור</string>
+    <string name="app_undo_failed">לא ניתן לבטל: %1$s</string>
+    <string name="app_retry_nothing">אין מה לנסות שוב — לשער לא היה תור לבטל</string>
+    <string name="app_retry_failed">לא ניתן לנסות שוב: %1$s</string>
+    <string name="app_taken_back_edit">בוטל — אפשר לערוך ולשלוח שוב</string>
+    <string name="app_take_back_failed">לא ניתן לבטל — המילים שלך בתיבת הכתיבה, מוכנות לשליחה חוזרת</string>
+    <string name="app_set_gateway_url_first">קודם צריך להגדיר כתובת URL לשער</string>
+    <string name="app_link_ok">Hermes Link תקין — %1$s</string>
+    <string name="app_link_failed">Hermes Link נכשל: %1$s</string>
+    <string name="app_connection_error">שגיאת חיבור</string>
+    <string name="app_link_up_api_down">Hermes Link פועל, אבל שרת ה־API של Hermes שמאחוריו לא רץ, ולכן משימות והרצות לא ייטענו. יש להגדיר API_SERVER_ENABLED=true ו־API_SERVER_KEY בקובץ ~/.hermes/.env, ואז להפעיל מחדש את השער.</string>
+
+    <string name="app_pinned">הוצמד</string>
+    <string name="app_pinned_named">„%1$s” הוצמד</string>
+    <string name="app_unpinned">ההצמדה בוטלה</string>
+    <string name="app_unpinned_named">ההצמדה של „%1$s” בוטלה</string>
+    <string name="app_pin_failed">ההצמדה נכשלה: %1$s</string>
+    <string name="app_unpin_failed">ביטול ההצמדה נכשל: %1$s</string>
+    <string name="app_marked_unread">סומן כלא נקרא</string>
+    <string name="app_mark_read_failed">לא ניתן לסמן כנקרא: %1$s</string>
+    <string name="app_mark_unread_failed">לא ניתן לסמן כלא נקרא: %1$s</string>
+    <string name="app_sticky_no_catalog">לא ניתן לקרוא את המודלים — נפתח במודל ברירת המחדל של השער</string>
+    <string name="app_sticky_not_served">%1$s לא זמין כרגע — נפתח במודל ברירת המחדל של השער</string>
+    <string name="app_sticky_needs_confirm">%1$s דורש אישור — צריך לבחור אותו בבורר המודלים</string>
+    <string name="app_sticky_opened_fallback">נפתח ב־%1$s — %2$s לא זמין כרגע</string>
+    <string name="app_sticky_opened">נפתח ב־%1$s — הבחירה האחרונה שלך (מודל קבוע, בהגדרות)</string>
+    <string name="app_sticky_refused">%1$s נדחה — נפתח במודל ברירת המחדל של השער</string>
+    <string name="app_create_session_failed">לא ניתן ליצור את הסשן</string>
+    <string name="app_rename_failed">שינוי השם נכשל: %1$s</string>
+    <string name="app_archive_failed">לא ניתן להעביר לארכיון: %1$s</string>
+    <string name="app_archived">הועבר לארכיון</string>
+    <string name="app_archived_named">„%1$s” הועבר לארכיון</string>
+    <string name="app_restore_failed">לא ניתן לשחזר: %1$s</string>
+    <string name="app_restored">שוחזר</string>
+    <string name="app_restored_named">„%1$s” שוחזר</string>
+    <string name="app_archive_read_failed">לא ניתן לקרוא את הארכיון: %1$s</string>
+    <string name="app_older_sessions_failed">לא ניתן לטעון סשנים ישנים יותר: %1$s</string>
+    <string name="app_session_deleted">הסשן נמחק</string>
+    <string name="app_delete_failed">המחיקה נכשלה: %1$s</string>
+
+    <string name="app_steered">הוכוון — הסוכן יראה את זה בצעד הבא</string>
+    <string name="app_steer_declined_queued">הסוכן דחה את ההכוונה — נוסף לתור הבא</string>
+    <string name="app_queue_failed">ההוספה לתור נכשלה: %1$s</string>
+    <string name="app_steer_failed">ההכוונה נכשלה: %1$s</string>
+    <string name="app_goal_failed">יעד: %1$s</string>
+    <string name="app_aside_needs_direct">שאלה צדדית דורשת את השער הישיר</string>
+    <string name="app_aside_failed">השאלה הצדדית נכשלה: %1$s</string>
+    <string name="app_redirected">הופנה מחדש — התשובה מתחילה מחדש עם התיקון שלך</string>
+    <string name="app_redirect_between_calls">בין קריאות — התיקון שלך ירוץ הבא</string>
+    <string name="app_redirect_finished_queued">התשובה כבר הסתיימה — נוסף לתור הבא</string>
+    <string name="app_redirect_unsupported">הסוכן הזה לא יכול להפנות מחדש — מכוונים במקום זאת</string>
+    <string name="app_redirect_failed">ההפניה מחדש נכשלה: %1$s</string>
+    <string name="app_branched_from_message">פוצל — זה סשן חדש מההודעה ההיא</string>
+    <string name="app_queued">בתור — יישלח כשהתור הזה יסתיים</string>
+    <string name="app_stopped">נעצר</string>
+    <string name="app_stop_failed">העצירה נכשלה: %1$s</string>
+    <string name="app_crew_steered">%1$s הוכוון — יראה את זה בצעד הבא</string>
+    <string name="app_crew_steer_rejected">%1$s לא קיבל את זה — הוא כפוף לדלת אחרת, או שהוא כבר מסיים</string>
+    <string name="app_crew_stopped">%1$s נעצר</string>
+    <string name="app_crew_already_finished">%1$s כבר סיים</string>
+
+    <string name="app_model_confirm">%1$s יש להקיש שוב לאישור.</string>
+    <string name="app_model_expensive">המודל הזה יקר.</string>
+    <string name="app_model_deferred">%1$s ייכנס לפעולה בתור הבא — בסשן הזה</string>
+    <string name="app_model_deferred_global">%1$s ייכנס לפעולה בתור הבא — בכל הסשנים</string>
+    <string name="app_model_switched">%1$s — בסשן הזה</string>
+    <string name="app_model_switched_global">%1$s — בכל הסשנים</string>
+    <string name="app_model_switch_refused">ההחלפה נדחתה: %1$s</string>
+    <string name="app_reasoning_refused_unknown">המוח הזה דחה את רמת החשיבה — כדאי לבחור רמה נמוכה יותר.</string>
+    <string name="app_reasoning_refused_floor">המוח הזה דחה חשיבה ברמת %1$s, ואין רמה נמוכה יותר לנסות.</string>
+    <string name="app_reasoning_dropped">המוח הזה דחה חשיבה ברמת %1$s — ירד לרמת %2$s.</string>
+    <string name="app_reasoning_drop_failed">המוח הזה דחה חשיבה ברמת %1$s; לא ניתן לרדת לרמת %2$s.</string>
+    <string name="app_reasoning_set">חשיבה ← %1$s — בסשן הזה</string>
+    <string name="app_reasoning_set_global">חשיבה ← %1$s בכל הסשנים</string>
+    <string name="app_reasoning_refused">החשיבה נדחתה: %1$s</string>
+
+    <string name="app_room_joined">הצטרפת — החדר יופיע בסנכרון הבא</string>
+    <string name="app_join_failed">ההצטרפות נכשלה: %1$s</string>
+    <string name="app_invite_declined">ההזמנה נדחתה</string>
+    <string name="app_decline_failed">הדחייה נכשלה: %1$s</string>
+    <string name="app_start_chat_failed">לא ניתן להתחיל את השיחה</string>
+    <string name="app_create_room_failed">לא ניתן ליצור את החדר</string>
+    <string name="app_join_failed_short">לא ניתן להצטרף</string>
+    <string name="app_invite_sent">ההזמנה נשלחה</string>
+    <string name="app_invite_failed">ההזמנה נכשלה: %1$s</string>
+    <string name="app_left_room">יצאת מהחדר</string>
+    <string name="app_leave_failed">היציאה נכשלה: %1$s</string>
+
+    <string name="app_try_again">כדאי לנסות שוב</string>
+    <string name="app_group_rooms_unavailable">החדרים לא זמינים</string>
+    <string name="app_not_connected">לא מחובר לשער</string>
+    <string name="app_group_stop_failed">לא ניתן לעצור את החדר: %1$s</string>
+    <string name="app_group_approval_failed">לא ניתן לענות לבקשת האישור: %1$s</string>
+    <string name="app_group_rename_failed">לא ניתן לשנות שם: %1$s</string>
+    <string name="app_group_disband_failed">לא ניתן לפרק: %1$s</string>
+
+    <string name="app_no_stt_endpoint">לא הוגדרה נקודת קצה ל־STT</string>
+    <string name="app_no_tts_endpoint">לא הוגדרה נקודת קצה ל־TTS</string>
+    <string name="app_no_stt_set">לא נקבעה נקודת קצה ל־STT</string>
+    <string name="app_no_tts_set">לא נקבעה נקודת קצה ל־TTS</string>
+    <string name="app_voice_unreachable">אין גישה ל%1$s בכתובת %2$s (%3$s)</string>
+    <string name="app_voice_ears">אוזניים (STT)</string>
+    <string name="app_voice_mouth">קול (TTS)</string>
+
+    <string name="app_console_run_live">כבר יש הרצה פעילה — אפשר לעצור אותה או לחכות שתסתיים</string>
+    <string name="app_link_off">Hermes Link כבוי — אפשר להפעיל אותו בהגדרות</string>
+    <string name="app_export_needs_gateway">הייצוא דורש את דלת השער.</string>
+    <string name="app_export_too_old">השער הזה ישן מדי לייצוא סשן.</string>
+    <string name="app_export_subject">סשן Hermes</string>
+    <string name="app_export_unreadable">הייצוא חזר בפורמט לא קריא.</string>
+
+    <string name="app_unsaved">הוסר מהשמורים</string>
+    <string name="app_saved">נשמר — אפשר למצוא אותו בארכיון</string>
+    <string name="app_pet_adopt_failed">לא ניתן לאמץ את %1$s</string>
+
+    <string name="app_channel_messages">הודעות</string>
+    <string name="app_channel_messages_desc">הודעות חדשות מסוכני Hermes ומהחדרים שלך</string>
+    <string name="app_notify_you">את/ה</string>
+    <string name="app_notify_title_failed">%1$s · התור נכשל</string>
+    <string name="app_notify_reply">תשובה</string>
+    <string name="app_notify_reply_to">תשובה ל־%1$s</string>
+    <string name="app_notify_mark_read">סימון כנקרא</string>
+    <plurals name="app_notify_conversations">
+        <item quantity="one">שיחה %d</item>
+        <item quantity="two">%d שיחות</item>
+        <item quantity="other">%d שיחות</item>
+    </plurals>
+    <string name="app_channel_gate">אישורים ושאלות</string>
+    <string name="app_channel_gate_desc">סוכן עצר ומחכה לתשובה שלך</string>
+    <string name="app_notify_answer">תשובה</string>
+    <string name="app_channel_runs">סוכן עובד</string>
+    <string name="app_channel_runs_desc">שורת מצב שקטה בזמן שסוכן עובד: מה הוא עושה וכמה זמן</string>
+    <string name="app_notify_stop">עצירה</string>
+    <string name="app_channel_missions">משימות</string>
+    <string name="app_channel_missions_desc">משימות שהושלמו, נחסמו או שהסוכן ויתר עליהן בלוח שלו</string>
+
+    <string name="app_push_checking">בודק אם יש הודעות…</string>
+    <string name="app_notify_sending_text">שולח: %1$s</string>
+    <string name="app_notify_answering">עונה…</string>
+    <string name="app_notify_gate_unreachable">אין גישה לשער — יש להקיש כדי לענות</string>
+    <string name="app_notify_answered">נענה — הסוכן עובד שוב</string>
+    <string name="app_notify_request_timed_out">הזמן של הבקשה הזו כבר פג</string>
+    <string name="app_notify_answer_failed">לא ניתן לענות — יש להקיש כדי לפתוח</string>
+    <string name="app_notify_sending">שולח…</string>
+    <string name="app_notify_send_failed">לא ניתן לשלוח את „%1$s” — יש להקיש כדי לפתוח</string>
+
+    <string name="app_push_connecting">מתחבר…</string>
+    <string name="app_push_connected">מחובר — התראות מובנות</string>
+    <string name="app_push_reconnecting">מתחבר מחדש…</string>
+    <string name="app_channel_push">חיבור התראות</string>
+    <string name="app_channel_push_desc">החיבור של Keryx עצמו לשרת ההתראות שלך (לא צריך אפליקציית הפצה)</string>
+    <string name="app_push_title">התראות Keryx</string>
+
+    <string name="app_scan_pairing_inside">סריקת קודי צימוד נעשית בתוך Keryx: חיבור השער שלך › סריקת קוד צימוד.</string>
+
+    <string name="app_share_nothing">אין מה לשתף</string>
+    <string name="app_share_foreign_only">Keryx יכול לשלוח רק קבצים ששותפו מאפליקציה אחרת</string>
+    <string name="app_share_too_large_mb">הקובץ גדול מדי לשליחה (%1$d MB)</string>
+    <string name="app_share_too_large">הקובץ גדול מדי לשליחה</string>
+    <string name="app_share_read_failed">לא ניתן לקרוא את %1$s</string>
+    <plurals name="app_share_attachments">
+        <item quantity="one">קובץ מצורף %d</item>
+        <item quantity="two">%d קבצים מצורפים</item>
+        <item quantity="other">%d קבצים מצורפים</item>
+    </plurals>
+    <string name="app_share_note_label">הוספת הערה (לא חובה)</string>
+    <string name="app_share_note_hint">לסכם את זה / לזכור את זה / …</string>
+
+    <string name="app_hands_cannot">שום דבר בטלפון הזה לא יכול לעשות את זה</string>
+    <string name="app_hands_no_app">אין אפליקציה בשם „%1$s”</string>
+    <string name="app_hands_no_handler">שום דבר בטלפון הזה לא מטפל ב־%1$s</string>
+    <string name="app_hands_failed">לא הצליח: %1$s</string>
+    <string name="app_hands_no_flash">אין פנס בטלפון הזה</string>
+
+    <string name="app_crash_log_subject">יומן קריסות של Keryx</string>
+    <string name="app_crash_log_share">שיתוף יומן הקריסות</string>
+    <string name="app_share">שיתוף</string>
+    <string name="app_share_named">שיתוף %1$s</string>
+
+    <string name="app_call_hearing_failed">השמיעה נכשלה: %1$s</string>
+    <string name="app_call_turn_failed">התור של הסוכן נכשל</string>
+    <string name="app_call_voice_failed">הקול נכשל: %1$s</string>
+    <string name="app_call_no_reply">אין תשובה מהשער</string>
+    <string name="app_tts_failed">ההקראה נכשלה: %1$s</string>
+    <string name="app_tts_audio_unavailable">השמע לא זמין</string>
+    <string name="app_tts_no_audio">שרת ההקראה לא שלח שמע</string>
+    <string name="app_tts_no_engine">אין מנוע הקראה במכשיר הזה</string>
+    <string name="app_tts_playback_failed">השמעת ההקראה נכשלה</string>
+    <string name="app_tts_playback_failed_why">השמעת ההקראה נכשלה: %1$s</string>
+
+    <string name="app_tour_welcome_title">ברוכים הבאים ל־Keryx</string>
+    <string name="app_tour_welcome_text">זו הדגמה: שער מדומה בטלפון שלך, והסוכן שלו באמצע עבודה. הנה סיור קצר לפני שמחברים את השער שלך.</string>
+    <string name="app_tour_plan_title">התוכנית שלו</string>
+    <string name="app_tour_plan_text">הסוכן שלך מפרק עבודה לצעדים ומסמן אותם תוך כדי. בזמן שהוא עובד, Keryx מציג התראה חיה על העבודה, כך שאפשר להניח את הטלפון בצד.</string>
+    <string name="app_tour_approval_title">הוא שואל קודם</string>
+    <string name="app_tour_approval_text">לפני כל דבר מסוכן, כמו מחיקת תיקייה, הסוכן שלך עוצר ושואל. אפשר לענות כאן או ישירות מההתראה.</string>
+    <string name="app_tour_approval_text_demo">לפני כל דבר מסוכן, כמו מחיקת תיקייה, הסוכן שלך עוצר ושואל. אפשר לענות כאן או ישירות מההתראה. כדאי לנסות כשהסיור נגמר, ולראות אותו מסיים את העבודה.</string>
+    <string name="app_tour_composer_title">אפשר לבקש כל דבר</string>
+    <string name="app_tour_composer_text">אפשר לתת לסוכן עבודה במילים פשוטות. הוא ממשיך לעבוד גם אם יוצאים, ו־Keryx מודיע כשהוא מסיים.</string>
+    <string name="app_tour_model_title">איזה מוח עונה</string>
+    <string name="app_tour_model_text">החלפת המודל לסשן הזה, או לכל הסשנים מעכשיו והלאה.</string>
+    <string name="app_tour_new_session_title">דף חדש</string>
+    <string name="app_tour_new_session_text">התחלת סשן חדש. לחיצה ארוכה פותחת אפשרויות, כמו כותרת או סשן זמני.</string>
+    <string name="app_tour_drawer_title">כל השאר</string>
+    <string name="app_tour_drawer_text">הסשנים שלך וכל שאר Keryx נמצאים מאחורי הכפתור הזה.</string>
+    <string name="app_tour_lenses_title">מה מחכה לך</string>
+    <string name="app_tour_lenses_text">צמצום הרשימה לסשנים שמחכים לך, שרצים עכשיו או שלא נקראו.</string>
+    <string name="app_tour_missions_title">משימות</string>
+    <string name="app_tour_missions_text">אפשר למסור לסוכן עבודות ארוכות יותר ככרטיסים על לוח. הוא עובד עליהן ושואל כשהוא צריך אותך.</string>
+    <string name="app_tour_runs_title">הרצות</string>
+    <string name="app_tour_runs_text">עבודות מתוזמנות, ומה שכל הרצה העלתה.</string>
+    <string name="app_tour_bots_title">בוטים</string>
+    <string name="app_tour_bots_text">הפרופילים האחרים של הסוכן שלך. לכל אחד זיכרון, מיומנויות ושיחות משלו.</string>
+    <string name="app_tour_archive_title">ארכיון</string>
+    <string name="app_tour_archive_text">כל מה שנאמר אי פעם, עם חיפוש בטלפון, גם כשהשער למטה.</string>
+    <string name="app_tour_gateway_title">השער שלך</string>
+    <string name="app_tour_gateway_text_demo">עם Hermes משלך, כאן יוצגו החיבור, המודל והגרסה. כל מה שראית עכשיו עובד אותו דבר בשער אמיתי: מחברים את שלך והוא פעיל.</string>
+    <string name="app_tour_gateway_text">החיבור, המודל וגרסת Hermes. הקשה כאן פותחת את השער; גלגל השיניים פותח את ההגדרות, ושם נמצא גם הסיור הזה.</string>
+    <string name="app_tour_gateway_text_direct">החיבור, המודל וגרסת Hermes. הקשה כאן פותחת את השער; גלגל השיניים פותח את ההגדרות, ושם נמצא גם הסיור הזה. יש לך יותר מ־Hermes אחד? אפשר להוסיף אותו ולעבור ביניהם מכאן.</string>
+    <string name="app_tour_cta_connect">חיבור השער שלך</string>
+    <string name="app_tour_cta_add_gateway">הוספת שער</string>
+
+    <string name="app_whatsnew_title">מה חדש ב־Keryx 3.0</string>
+    <string name="app_whatsnew_text">מבט קצר על מה שהשתנה. אפשר לדלג: זה נשאר בהגדרות › מידע.</string>
+    <string name="app_whatsnew_point_title">לשאול איפה משהו נמצא</string>
+    <string name="app_whatsnew_point_text">אפשר לשאול את הסוכן \"איפה העבודות המתוזמנות שלי?\" והוא יכול להצביע על המקום, כאן בטלפון. השער שלך צריך keryx-stream 0.6 ומעלה.</string>
+    <string name="app_whatsnew_memory_title">זיכרון השיחה</string>
+    <string name="app_whatsnew_memory_text">הטבעת שליד המודל מראה עכשיו לכמה תשובות נוספות יש מקום בשיחה, ורק כשזה משנה. הקשה עליה מראה מה תופס את המקום.</string>
+    <string name="app_whatsnew_drawer_title">מגירה מעוצבת מחדש</string>
+    <string name="app_whatsnew_drawer_text_direct">לכל שיחה צבע וסימן משלה, טבעת מראה את אלה שבעבודה, והמסננים האלה מצמצמים את הרשימה למה שמחכה לך.</string>
+    <string name="app_whatsnew_drawer_text">לכל שיחה צבע וסימן משלה, וטבעת מראה את אלה שבעבודה.</string>
+    <string name="app_whatsnew_cards_title">כרטיסים במילים פשוטות</string>
+    <string name="app_whatsnew_cards_text">כרטיס משימה נפתח עכשיו על מה שקורה ועל הדבר האחד שצריך לעשות הלאה. הפרטים הטכניים עדיין שם, תחת פרטים.</string>
+    <string name="app_whatsnew_look_title">מראה ועדכונים</string>
+    <string name="app_whatsnew_look_text_direct">בהגדרות › מראה יש סגנונות חשיבה חדשים וחמש דרכים לעבור בין שיחות. עם keryx-stream עדכני, לוח העדכון של השער מאפשר לבחור גרסאות Stable או Edge. כדי להוסיף Hermes נוסף, מריצים עליו hermes keryx pair וסורקים את הקוד.</string>
+    <string name="app_whatsnew_look_text">בהגדרות › מראה יש סגנונות חשיבה חדשים וחמש דרכים לעבור בין שיחות. הסיור וההסברים על כל אזור נמצאים בהגדרות › מידע.</string>
+
+    <string name="app_hint_missions_title">משימות</string>
+    <string name="app_hint_missions_text">עבודות ארוכות יותר נמצאות כאן ככרטיסים. הסוכנים שלך לוקחים אותן ועובדים עליהן, וכרטיס שצריך אותך עולה לראש. הקשה על + מוסרת משימה.</string>
+    <string name="app_hint_runs_title">הרצות</string>
+    <string name="app_hint_runs_text">עבודות לפי לוח זמנים, כמו תדריך בוקר או בדיקה לילית. התוצאה של כל הרצה מגיעה לכאן. אפשר לבקש מהסוכן והוא יגדיר אחת בשבילך.</string>
+    <string name="app_hint_bots_title">בוטים</string>
+    <string name="app_hint_bots_text">כל בוט הוא פרופיל של Hermes שלך, עם זיכרון, מיומנויות ושיחות משלו. אפשר לפתוח אחד כדי לדבר איתו, או לשים כמה בשיחה קבוצתית.</string>
+    <string name="app_hint_gateway_title">השער שלך</string>
+    <string name="app_hint_gateway_text">מה מצבו של Hermes שאליו התחברת, ומה מאחוריו: המודל וההגדרות, העבודות, המיומנויות, הזיכרון והכלים.</string>
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">הסוכן שלך בעבודה, במסך מלא: על מה הוא חושב, אילו כלים הוא מריץ ואילו עוזרים הוא שולח. אפשר גם להכווין אותו מכאן.</string>
+    <string name="app_hint_artifact_title">דף שהסוכן שלך יצר</string>
+    <string name="app_hint_artifact_text">דוחות, הדמיות ודפים שהסוכן כותב נפתחים כאן, בטלפון. אפשר לשמור או לשתף בעזרת הכפתורים למעלה.</string>
+
+    <string name="app_tour_pane">סיור</string>
+    <string name="app_tour_end">סיום הסיור</string>
+    <string name="app_tour_progress">%1$d מתוך %2$d</string>
+    <string name="app_tour_back">הקודם</string>
+    <string name="app_tour_done">סיום</string>
+    <string name="app_tour_got_it">הבנתי</string>
+    <string name="app_tour_next">הבא</string>
+</resources>

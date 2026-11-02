@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Pratinjau: transisi ruang %1$s dengan kecepatan %2$s</string>
+    <string name="mk_cancel">Batal</string>
+
+    <string name="mk_mcp_test">Uji</string>
+    <string name="mk_mcp_testing">Menguji</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="other">Terjangkau · %d alat</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="other">%d prompt</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="other">%d sumber daya</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Tidak terjangkau: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Gateway ini tidak bisa menguji server dari sini.</string>
+    <string name="mk_mcp_catalog">Katalog · %1$d bisa ditambahkan</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="other">meminta %d kunci</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">dibangun dari sumber</string>
+    <string name="mk_mcp_catalog_oauth">masuk dengan OAuth</string>
+    <string name="mk_mcp_installed">Terpasang</string>
+    <string name="mk_mcp_install">Pasang</string>
+    <string name="mk_mcp_installing">Memasang…</string>
+    <string name="mk_mcp_install_title">Pasang %1$s?</string>
+    <string name="mk_mcp_install_runs">Yang akan dijalankan</string>
+    <string name="mk_mcp_install_builds">Gateway akan mengkloning dan membangunnya dulu dari %1$s, di latar belakang.</string>
+    <string name="mk_mcp_install_oauth">Server ini masuk dengan OAuth: selesaikan di dasbor gateway setelah terpasang.</string>
+    <string name="mk_mcp_install_env_note">Disimpan di gateway: rahasia di .env-nya, sisanya di konfigurasinya.</string>
+    <string name="mk_mcp_installed_toast">%1$s terpasang — aktif mulai sesi berikutnya</string>
+    <string name="mk_mcp_building_toast">%1$s sedang dibangun di gateway — akan muncul di sini setelah selesai</string>
+    <string name="mk_mcp_install_refused">Tidak bisa memasang %1$s: %2$s</string>
+    <string name="mk_mcp_install_unsupported">Gateway ini tidak bisa memasang server MCP dari sini.</string>
+    <string name="mk_usage">Penggunaan</string>
+    <string name="mk_usage_subtitle">Token, biaya, dan sesi</string>
+    <string name="mk_usage_subtitle_read">%1$s token · %2$s · %3$d hari terakhir</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="other">%d sesi</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="other">sesi</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="other">%d hari</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="other">%1$s panggilan API</item>
+    </plurals>
+    <string name="mk_usage_tokens">token</string>
+    <string name="mk_usage_in_out">%1$s masuk · %2$s keluar</string>
+    <string name="mk_usage_cost">biaya</string>
+    <string name="mk_usage_cost_estimated">biaya, perkiraan</string>
+    <string name="mk_usage_none">Tidak ada penggunaan dalam %1$d hari terakhir.</string>
+    <string name="mk_usage_by_day">Per hari</string>
+    <string name="mk_usage_peak">Tersibuk: %1$s pada %2$s</string>
+    <string name="mk_usage_by_model">Per model</string>
+    <string name="mk_usage_note_estimate">Biaya adalah perkiraan Hermes sendiri dari daftar harganya; model lokal tidak berbiaya. Dasbor gateway membaca angka yang sama.</string>
+    <string name="mk_usage_note_reported">Biaya adalah yang dilaporkan penyedia, jika ada. Dasbor gateway membaca angka yang sama.</string>
+</resources>

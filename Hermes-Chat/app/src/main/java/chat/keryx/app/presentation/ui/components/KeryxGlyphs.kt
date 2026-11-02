@@ -25,9 +25,12 @@ object KeryxGlyphs {
         strokes: List<String>,
         fills: List<String> = emptyList(),
         strokeWidth: Float = 1.9f,
+        // Glyphs that point along the reading direction flip in Arabic and Hebrew.
+        autoMirror: Boolean = false,
     ): ImageVector {
         val b = ImageVector.Builder(
             name = "keryx.$name",
+            autoMirror = autoMirror,
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
             viewportWidth = 24f,
@@ -330,6 +333,7 @@ object KeryxGlyphs {
                 "M9.5,6.5 L4.5,11.5 L9.5,16.5",
                 "M4.5,11.5 H12.5 a7,7 0 0 1 7,7 v0.75",
             ),
+            autoMirror = true,
         )
     }
 
@@ -498,7 +502,7 @@ object KeryxGlyphs {
     }
 
     val ChevronRight: ImageVector by lazy {
-        draw("chevronRight", listOf("M9.5,6.5 L15,12 L9.5,17.5"))
+        draw("chevronRight", listOf("M9.5,6.5 L15,12 L9.5,17.5"), autoMirror = true)
     }
 
     val ChevronDown: ImageVector by lazy {

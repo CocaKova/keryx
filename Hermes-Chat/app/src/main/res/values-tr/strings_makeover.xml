@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Önizleme: %1$s oda geçişi, %2$s hızda</string>
+    <string name="mk_cancel">İptal</string>
+
+    <string name="mk_mcp_test">Test et</string>
+    <string name="mk_mcp_testing">Test ediliyor</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">Ulaşıldı · %d araç</item>
+        <item quantity="other">Ulaşıldı · %d araç</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d istem</item>
+        <item quantity="other">%d istem</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d kaynak</item>
+        <item quantity="other">%d kaynak</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Ulaşılamadı: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Bu ağ geçidi sunucuları buradan test edemiyor.</string>
+    <string name="mk_mcp_catalog">Katalog · eklenebilecek %1$d</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">%d anahtar istiyor</item>
+        <item quantity="other">%d anahtar istiyor</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">kaynaktan derlenir</string>
+    <string name="mk_mcp_catalog_oauth">OAuth ile oturum açar</string>
+    <string name="mk_mcp_installed">Kurulu</string>
+    <string name="mk_mcp_install">Kur</string>
+    <string name="mk_mcp_installing">Kuruluyor…</string>
+    <string name="mk_mcp_install_title">%1$s kurulsun mu?</string>
+    <string name="mk_mcp_install_runs">Çalıştıracağı komut</string>
+    <string name="mk_mcp_install_builds">Ağ geçidi önce arka planda kaynağı klonlayıp derler. Kaynak: %1$s</string>
+    <string name="mk_mcp_install_oauth">OAuth ile oturum açar: kurulduktan sonra bunu ağ geçidinin panelinde tamamla.</string>
+    <string name="mk_mcp_install_env_note">Ağ geçidinde saklanır: gizli bilgiler .env dosyasında, gerisi yapılandırmada.</string>
+    <string name="mk_mcp_installed_toast">%1$s kuruldu — sonraki oturumdan itibaren açık</string>
+    <string name="mk_mcp_building_toast">%1$s ağ geçidinde derleniyor — bitince burada görünür</string>
+    <string name="mk_mcp_install_refused">Kurulamadı: %1$s (%2$s)</string>
+    <string name="mk_mcp_install_unsupported">Bu ağ geçidi MCP sunucularını buradan kuramıyor.</string>
+    <string name="mk_usage">Kullanım</string>
+    <string name="mk_usage_subtitle">Token, maliyet ve oturumlar</string>
+    <string name="mk_usage_subtitle_read">%1$s token · %2$s · son %3$d gün</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d oturum</item>
+        <item quantity="other">%d oturum</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">oturum</item>
+        <item quantity="other">oturum</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d gün</item>
+        <item quantity="other">%d gün</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s API çağrısı</item>
+        <item quantity="other">%1$s API çağrısı</item>
+    </plurals>
+    <string name="mk_usage_tokens">token</string>
+    <string name="mk_usage_in_out">%1$s giriş · %2$s çıkış</string>
+    <string name="mk_usage_cost">maliyet</string>
+    <string name="mk_usage_cost_estimated">maliyet, tahmini</string>
+    <string name="mk_usage_none">Son %1$d günde hiç kullanım yok.</string>
+    <string name="mk_usage_by_day">Güne göre</string>
+    <string name="mk_usage_peak">En yoğun: %1$s · %2$s</string>
+    <string name="mk_usage_by_model">Modele göre</string>
+    <string name="mk_usage_note_estimate">Maliyet, Hermes\'in kendi fiyat listesinden yaptığı tahmindir; yerel model ücretsizdir. Ağ geçidinin paneli de aynı rakamları gösterir.</string>
+    <string name="mk_usage_note_reported">Maliyet, sağlayıcının bildirdiği tutardır (bildirdiyse). Ağ geçidinin paneli de aynı rakamları gösterir.</string>
+</resources>

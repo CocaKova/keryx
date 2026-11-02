@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">新聊天</string>
+    <string name="shortcut_new_chat_long">开始新聊天</string>
+    <string name="shortcut_missions">任务</string>
+    <string name="shortcut_missions_long">打开任务看板</string>
+    <string name="shortcut_runs">运行</string>
+    <string name="shortcut_runs_long">定时运行及其报告</string>
+
+    <string name="widget_description">智能体一览：连接、最新会话、它最后说的话，以及正在进行的回合。</string>
+
+    <string name="note_tile_label">给智能体的便条</string>
+    <string name="note_tile_label_to">给 %1$s 的便条</string>
+    <string name="note_tile_live">在线</string>
+    <string name="note_tile_offline">离线</string>
+    <string name="note_placeholder">给智能体写一句话…</string>
+    <string name="note_target_prefix">发给</string>
+    <string name="note_change_target">更换会话</string>
+    <string name="note_no_sessions">还没有会话</string>
+    <string name="note_send">发送</string>
+    <string name="note_sent_to">已发送给 %1$s</string>
+    <string name="note_send_failed">发送失败</string>
+    <string name="note_locked">已锁定</string>
+    <string name="note_unlock">解锁</string>
+    <string name="note_unlock_title">解锁 Keryx</string>
+</resources>

@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">Neuer Chat</string>
+    <string name="shortcut_new_chat_long">Neuen Chat starten</string>
+    <string name="shortcut_missions">Missionen</string>
+    <string name="shortcut_missions_long">Missionsboard öffnen</string>
+    <string name="shortcut_runs">Läufe</string>
+    <string name="shortcut_runs_long">Geplante Läufe und ihre Berichte</string>
+
+    <string name="widget_description">Der Agent auf einen Blick: Verbindung, neueste Sitzung, seine letzte Antwort und die laufende Runde.</string>
+
+    <string name="note_tile_label">Notiz an Agent</string>
+    <string name="note_tile_label_to">Notiz an %1$s</string>
+    <string name="note_tile_live">live</string>
+    <string name="note_tile_offline">offline</string>
+    <string name="note_placeholder">Eine Zeile an den Agenten…</string>
+    <string name="note_target_prefix">an</string>
+    <string name="note_change_target">Sitzung ändern</string>
+    <string name="note_no_sessions">Noch keine Sitzung</string>
+    <string name="note_send">Senden</string>
+    <string name="note_sent_to">Gesendet an %1$s</string>
+    <string name="note_send_failed">Senden fehlgeschlagen</string>
+    <string name="note_locked">Gesperrt</string>
+    <string name="note_unlock">Entsperren</string>
+    <string name="note_unlock_title">Keryx entsperren</string>
+</resources>

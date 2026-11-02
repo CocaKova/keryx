@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_turn_failed">回合失敗</string>
+    <string name="app_photo">相片</string>
+    <string name="app_attachment">附件</string>
+    <string name="app_new_message">新訊息</string>
+
+    <string name="app_approval_expired">核准要求已過期</string>
+    <string name="app_approval_failed">核准失敗：%1$s</string>
+    <string name="app_reply_failed">回覆失敗：%1$s</string>
+    <string name="app_link_unreachable_matrix">無法連線到 Hermes Link（%1$s）— 改用 Matrix 同步</string>
+    <string name="app_send_failed">無法傳送：%1$s</string>
+    <string name="app_room_photo_updated">聊天室相片已更新</string>
+    <string name="app_room_photo_forbidden">沒有權限設定這個聊天室的相片 — 你需要在其中擁有管理員權限。</string>
+    <string name="app_room_photo_failed">無法設定相片：%1$s</string>
+    <string name="app_unknown_error">未知的錯誤</string>
+    <string name="app_branched">已建立分支 — 這是整段對話的副本</string>
+    <string name="app_branch_failed">建立分支失敗：%1$s</string>
+    <string name="app_not_sent">未傳送。%1$s</string>
+    <string name="app_undo_done">已收回上一輪對話</string>
+    <string name="app_undo_nothing">沒有可以收回的內容</string>
+    <string name="app_still_working">仍在執行 — 請先停止回合</string>
+    <string name="app_undo_failed">無法復原：%1$s</string>
+    <string name="app_retry_nothing">沒有可以重試的內容 — 閘道沒有可收回的回合</string>
+    <string name="app_retry_failed">無法重試：%1$s</string>
+    <string name="app_taken_back_edit">已收回 — 編輯後再傳送</string>
+    <string name="app_take_back_failed">無法收回 — 你的內容已放回輸入框，可以再傳送一次</string>
+    <string name="app_set_gateway_url_first">請先設定閘道網址</string>
+    <string name="app_link_ok">Hermes Link 正常 — %1$s</string>
+    <string name="app_link_failed">Hermes Link 失敗：%1$s</string>
+    <string name="app_connection_error">連線錯誤</string>
+    <string name="app_link_up_api_down">Hermes Link 已連線，但它背後的 Hermes API 伺服器沒有在執行，所以無法載入任務和執行。請在 ~/.hermes/.env 中設定 API_SERVER_ENABLED=true 和 API_SERVER_KEY，然後重新啟動閘道。</string>
+
+    <string name="app_pinned">已釘選</string>
+    <string name="app_pinned_named">已釘選「%1$s」</string>
+    <string name="app_unpinned">已取消釘選</string>
+    <string name="app_unpinned_named">已取消釘選「%1$s」</string>
+    <string name="app_pin_failed">釘選失敗：%1$s</string>
+    <string name="app_unpin_failed">取消釘選失敗：%1$s</string>
+    <string name="app_marked_unread">已標示為未讀</string>
+    <string name="app_mark_read_failed">無法標示為已讀：%1$s</string>
+    <string name="app_mark_unread_failed">無法標示為未讀：%1$s</string>
+    <string name="app_sticky_no_catalog">無法讀取模型清單 — 已改用閘道的預設模型</string>
+    <string name="app_sticky_not_served">目前沒有提供 %1$s — 已改用閘道的預設模型</string>
+    <string name="app_sticky_needs_confirm">%1$s 需要確認 — 請在模型選擇器中選取它</string>
+    <string name="app_sticky_opened_fallback">已使用 %1$s — 目前沒有提供 %2$s</string>
+    <string name="app_sticky_opened">已使用 %1$s — 你上次的選擇（設定中的「上次選擇的模型」）</string>
+    <string name="app_sticky_refused">%1$s 遭到拒絕 — 已改用閘道的預設模型</string>
+    <string name="app_create_session_failed">無法建立工作階段</string>
+    <string name="app_rename_failed">重新命名失敗：%1$s</string>
+    <string name="app_archive_failed">無法封存：%1$s</string>
+    <string name="app_archived">已封存</string>
+    <string name="app_archived_named">已封存「%1$s」</string>
+    <string name="app_restore_failed">無法還原：%1$s</string>
+    <string name="app_restored">已還原</string>
+    <string name="app_restored_named">已還原「%1$s」</string>
+    <string name="app_archive_read_failed">無法讀取封存：%1$s</string>
+    <string name="app_older_sessions_failed">無法載入較早的工作階段：%1$s</string>
+    <string name="app_session_deleted">已刪除工作階段</string>
+    <string name="app_delete_failed">刪除失敗：%1$s</string>
+
+    <string name="app_steered">已引導 — 代理會在下一步看到</string>
+    <string name="app_steer_declined_queued">代理沒有接受引導 — 已排到下一回合</string>
+    <string name="app_queue_failed">排入佇列失敗：%1$s</string>
+    <string name="app_steer_failed">引導失敗：%1$s</string>
+    <string name="app_goal_failed">目標：%1$s</string>
+    <string name="app_aside_needs_direct">旁問需要直接連線閘道</string>
+    <string name="app_aside_failed">旁問失敗：%1$s</string>
+    <string name="app_redirected">已轉向 — 回覆會依你的更正重新開始</string>
+    <string name="app_redirect_between_calls">正處於兩次呼叫之間 — 接下來會執行你的更正</string>
+    <string name="app_redirect_finished_queued">回覆已經結束 — 已排到下一回合</string>
+    <string name="app_redirect_unsupported">這個代理無法轉向 — 改為引導</string>
+    <string name="app_redirect_failed">轉向失敗：%1$s</string>
+    <string name="app_branched_from_message">已建立分支 — 這是從那則訊息開始的新工作階段</string>
+    <string name="app_queued">已排入佇列 — 這個回合結束後傳送</string>
+    <string name="app_stopped">已停止</string>
+    <string name="app_stop_failed">停止失敗：%1$s</string>
+    <string name="app_crew_steered">已引導 %1$s — 它會在下一步看到</string>
+    <string name="app_crew_steer_rejected">%1$s 沒有接受 — 它隸屬另一個入口，或已經在收尾了</string>
+    <string name="app_crew_stopped">已停止 %1$s</string>
+    <string name="app_crew_already_finished">%1$s 已經完成</string>
+
+    <string name="app_model_confirm">%1$s 再輕觸一次即可確認。</string>
+    <string name="app_model_expensive">這個模型的費用較高。</string>
+    <string name="app_model_deferred">%1$s 會從下一回合接手 — 僅限這個工作階段</string>
+    <string name="app_model_deferred_global">%1$s 會從下一回合接手 — 所有工作階段</string>
+    <string name="app_model_switched">%1$s — 僅限這個工作階段</string>
+    <string name="app_model_switched_global">%1$s — 所有工作階段</string>
+    <string name="app_model_switch_refused">切換遭拒：%1$s</string>
+    <string name="app_reasoning_refused_unknown">這個模型拒絕了該思考等級 — 請選擇較低的等級。</string>
+    <string name="app_reasoning_refused_floor">這個模型拒絕了 %1$s 思考，已經沒有更低的等級可以嘗試。</string>
+    <string name="app_reasoning_dropped">這個模型拒絕了 %1$s 思考 — 已降為 %2$s。</string>
+    <string name="app_reasoning_drop_failed">這個模型拒絕了 %1$s 思考；無法降為 %2$s。</string>
+    <string name="app_reasoning_set">推理 → %1$s — 僅限這個工作階段</string>
+    <string name="app_reasoning_set_global">推理 → %1$s，套用到所有工作階段</string>
+    <string name="app_reasoning_refused">推理設定遭拒：%1$s</string>
+
+    <string name="app_room_joined">已加入 — 聊天室會在下次同步時出現</string>
+    <string name="app_join_failed">加入失敗：%1$s</string>
+    <string name="app_invite_declined">已拒絕邀請</string>
+    <string name="app_decline_failed">拒絕失敗：%1$s</string>
+    <string name="app_start_chat_failed">無法開始聊天</string>
+    <string name="app_create_room_failed">無法建立聊天室</string>
+    <string name="app_join_failed_short">無法加入</string>
+    <string name="app_invite_sent">已送出邀請</string>
+    <string name="app_invite_failed">邀請失敗：%1$s</string>
+    <string name="app_left_room">已離開聊天室</string>
+    <string name="app_leave_failed">離開失敗：%1$s</string>
+
+    <string name="app_try_again">請再試一次</string>
+    <string name="app_group_rooms_unavailable">無法取得聊天室</string>
+    <string name="app_not_connected">未連線到閘道</string>
+    <string name="app_group_stop_failed">無法停止聊天室：%1$s</string>
+    <string name="app_group_approval_failed">無法回覆核准要求：%1$s</string>
+    <string name="app_group_rename_failed">無法重新命名：%1$s</string>
+    <string name="app_group_disband_failed">無法解散：%1$s</string>
+
+    <string name="app_no_stt_endpoint">尚未設定 STT 端點</string>
+    <string name="app_no_tts_endpoint">尚未設定 TTS 端點</string>
+    <string name="app_no_stt_set">未設定 STT 端點</string>
+    <string name="app_no_tts_set">未設定 TTS 端點</string>
+    <string name="app_voice_unreachable">無法連線到%1$s：%2$s（%3$s）</string>
+    <string name="app_voice_ears">耳朵（STT）</string>
+    <string name="app_voice_mouth">聲音（TTS）</string>
+
+    <string name="app_console_run_live">已經有執行正在進行 — 請停止它或等它結束</string>
+    <string name="app_link_off">Hermes Link 已關閉 — 請到設定中啟用</string>
+    <string name="app_export_needs_gateway">匯出需要直接連線閘道。</string>
+    <string name="app_export_too_old">這個閘道版本太舊，無法匯出工作階段。</string>
+    <string name="app_export_subject">Hermes 工作階段</string>
+    <string name="app_export_unreadable">匯出的內容無法讀取。</string>
+
+    <string name="app_unsaved">已從收藏中移除</string>
+    <string name="app_saved">已收藏 — 可以在封存中找到</string>
+    <string name="app_pet_adopt_failed">無法領養 %1$s</string>
+
+    <string name="app_channel_messages">訊息</string>
+    <string name="app_channel_messages_desc">來自你的 Hermes 代理和聊天室的新訊息</string>
+    <string name="app_notify_you">你</string>
+    <string name="app_notify_title_failed">%1$s · 回合失敗</string>
+    <string name="app_notify_reply">回覆</string>
+    <string name="app_notify_reply_to">回覆 %1$s</string>
+    <string name="app_notify_mark_read">標示為已讀</string>
+    <plurals name="app_notify_conversations">
+        <item quantity="other">%d 段對話</item>
+    </plurals>
+    <string name="app_channel_gate">核准與提問</string>
+    <string name="app_channel_gate_desc">代理已暫停，正在等你回答</string>
+    <string name="app_notify_answer">回答</string>
+    <string name="app_channel_runs">代理執行中</string>
+    <string name="app_channel_runs_desc">代理工作時的靜音狀態列：它在做什麼、做了多久</string>
+    <string name="app_notify_stop">停止</string>
+    <string name="app_channel_missions">任務</string>
+    <string name="app_channel_missions_desc">代理看板上的任務完成、受阻或放棄</string>
+
+    <string name="app_push_checking">正在檢查訊息…</string>
+    <string name="app_notify_sending_text">傳送中：%1$s</string>
+    <string name="app_notify_answering">回答中…</string>
+    <string name="app_notify_gate_unreachable">無法連線到閘道 — 輕觸即可回答</string>
+    <string name="app_notify_answered">已回答 — 代理繼續執行</string>
+    <string name="app_notify_request_timed_out">該要求已經逾時</string>
+    <string name="app_notify_answer_failed">無法回答 — 輕觸即可開啟</string>
+    <string name="app_notify_sending">傳送中…</string>
+    <string name="app_notify_send_failed">無法傳送「%1$s」— 輕觸即可開啟</string>
+
+    <string name="app_push_connecting">連線中…</string>
+    <string name="app_push_connected">已連線 — 內建推播</string>
+    <string name="app_push_reconnecting">重新連線中…</string>
+    <string name="app_channel_push">推播連線</string>
+    <string name="app_channel_push_desc">Keryx 與你的推播伺服器之間的直接連線（不需要發送器應用程式）</string>
+    <string name="app_push_title">Keryx 推播</string>
+
+    <string name="app_scan_pairing_inside">請在 Keryx 中掃描配對碼：連線到你的閘道 › 掃描配對碼。</string>
+
+    <string name="app_share_nothing">沒有可分享的內容</string>
+    <string name="app_share_foreign_only">Keryx 只能傳送從其他應用程式分享過來的檔案</string>
+    <string name="app_share_too_large_mb">檔案太大，無法傳送（%1$d MB）</string>
+    <string name="app_share_too_large">檔案太大，無法傳送</string>
+    <string name="app_share_read_failed">無法讀取 %1$s</string>
+    <plurals name="app_share_attachments">
+        <item quantity="other">%d 個附件</item>
+    </plurals>
+    <string name="app_share_note_label">加上附註（選填）</string>
+    <string name="app_share_note_hint">幫我摘要 / 記住這個 / …</string>
+
+    <string name="app_hands_cannot">這支手機上沒有功能可以做到這件事</string>
+    <string name="app_hands_no_app">沒有名為「%1$s」的應用程式</string>
+    <string name="app_hands_no_handler">這支手機上沒有可以處理 %1$s 的應用程式</string>
+    <string name="app_hands_failed">無法執行：%1$s</string>
+    <string name="app_hands_no_flash">這支手機沒有閃光燈</string>
+
+    <string name="app_crash_log_subject">Keryx 當機記錄</string>
+    <string name="app_crash_log_share">分享當機記錄</string>
+    <string name="app_share">分享</string>
+    <string name="app_share_named">分享 %1$s</string>
+
+    <string name="app_call_hearing_failed">語音辨識失敗：%1$s</string>
+    <string name="app_call_turn_failed">代理的回合失敗</string>
+    <string name="app_call_voice_failed">語音失敗：%1$s</string>
+    <string name="app_call_no_reply">閘道沒有回應</string>
+    <string name="app_tts_failed">朗讀失敗：%1$s</string>
+    <string name="app_tts_audio_unavailable">無法使用音訊</string>
+    <string name="app_tts_no_audio">語音伺服器沒有傳回音訊</string>
+    <string name="app_tts_no_engine">這部裝置上沒有語音引擎</string>
+    <string name="app_tts_playback_failed">語音播放失敗</string>
+    <string name="app_tts_playback_failed_why">語音播放失敗：%1$s</string>
+
+    <string name="app_tour_welcome_title">歡迎使用 Keryx</string>
+    <string name="app_tour_welcome_text">這是示範：你的手機上有一個模擬閘道，它的代理正在進行一項工作。連線你自己的閘道之前，先快速看一圈吧。</string>
+    <string name="app_tour_plan_title">它的計畫</string>
+    <string name="app_tour_plan_text">代理會把一項工作拆成幾個步驟，邊做邊打勾。它工作時，Keryx 會持續顯示進度通知，你可以把手機收起來。</string>
+    <string name="app_tour_approval_title">先問再做</string>
+    <string name="app_tour_approval_text">在做任何有風險的事（例如刪除資料夾）之前，代理會停下來問你。你可以在這裡回答，也可以直接在通知中回答。</string>
+    <string name="app_tour_approval_text_demo">在做任何有風險的事（例如刪除資料夾）之前，代理會停下來問你。你可以在這裡回答，也可以直接在通知中回答。導覽結束後試試看，然後看它把工作完成。</string>
+    <string name="app_tour_composer_title">儘管開口</string>
+    <string name="app_tour_composer_text">用平常說話的方式交代工作給代理。你離開後它會繼續工作，完成時 Keryx 會通知你。</string>
+    <string name="app_tour_model_title">由哪個模型回答</string>
+    <string name="app_tour_model_text">替這個工作階段切換模型，或從現在起替所有工作階段切換。</string>
+    <string name="app_tour_new_session_title">全新的一頁</string>
+    <string name="app_tour_new_session_text">開始新的工作階段。按住可以看到更多選項，例如標題或臨時工作階段。</string>
+    <string name="app_tour_drawer_title">其他所有功能</string>
+    <string name="app_tour_drawer_text">你的工作階段和 Keryx 的其他功能都在這個按鈕後面。</string>
+    <string name="app_tour_lenses_title">需要你處理的</string>
+    <string name="app_tour_lenses_text">把清單篩選成等你處理、正在執行或未讀的工作階段。</string>
+    <string name="app_tour_missions_title">任務</string>
+    <string name="app_tour_missions_text">把較長的工作以看板卡片的形式交給代理。它會一一處理，需要你的時候會來問你。</string>
+    <string name="app_tour_runs_title">執行</string>
+    <string name="app_tour_runs_text">排程工作，以及每次執行的結果。</string>
+    <string name="app_tour_bots_title">機器人</string>
+    <string name="app_tour_bots_text">你的代理的其他設定檔。每個都有自己的記憶、技能和聊天。</string>
+    <string name="app_tour_archive_title">封存</string>
+    <string name="app_tour_archive_text">說過的一切都在這裡，可以在手機上搜尋，即使閘道離線也沒問題。</string>
+    <string name="app_tour_gateway_title">你的閘道</string>
+    <string name="app_tour_gateway_text_demo">連上你自己的 Hermes 後，這裡會顯示連線、模型和版本。你剛才看到的一切在真正的閘道上都一樣：連線你的閘道就能開始使用。</string>
+    <string name="app_tour_gateway_text">連線、模型和 Hermes 版本。輕觸即可前往閘道；齒輪會開啟設定，導覽也在那裡。</string>
+    <string name="app_tour_gateway_text_direct">連線、模型和 Hermes 版本。輕觸即可前往閘道；齒輪會開啟設定，導覽也在那裡。有不只一個 Hermes 嗎？新增後就能在這裡切換。</string>
+    <string name="app_tour_cta_connect">連線到你的閘道</string>
+    <string name="app_tour_cta_add_gateway">新增閘道</string>
+
+    <string name="app_whatsnew_title">Keryx 3.0 新功能</string>
+    <string name="app_whatsnew_text">快速看看有哪些改變。想略過也可以：它一直都在 設定 › 關於 中。</string>
+    <string name="app_whatsnew_point_title">問問東西在哪裡</string>
+    <string name="app_whatsnew_point_text">問代理「我的排程工作在哪裡？」，它就能直接在手機上指給你看。你的閘道需要 keryx-stream 0.6 以上版本。</string>
+    <string name="app_whatsnew_memory_title">聊天記憶</string>
+    <string name="app_whatsnew_memory_text">模型旁邊的圓環現在會顯示這個聊天還能容納幾則回覆，而且只在需要時才顯示。輕觸即可查看是什麼佔用了空間。</string>
+    <string name="app_whatsnew_drawer_title">重新設計的側邊選單</string>
+    <string name="app_whatsnew_drawer_text_direct">每個聊天都有自己的顏色和標記，圓環會標出正在工作的聊天，而這些篩選器可以把清單縮小到需要你處理的項目。</string>
+    <string name="app_whatsnew_drawer_text">每個聊天都有自己的顏色和標記，圓環會標出正在工作的聊天。</string>
+    <string name="app_whatsnew_cards_title">淺顯易懂的卡片</string>
+    <string name="app_whatsnew_cards_text">任務卡片現在一打開就會顯示目前的進展和下一步要做的事。技術細節仍在「詳細資料」底下。</string>
+    <string name="app_whatsnew_look_title">外觀與更新</string>
+    <string name="app_whatsnew_look_text_direct">設定 › 外觀 中有新的思考樣式，以及五種切換聊天的方式。搭配較新的 keryx-stream，閘道的「更新」面板可以選擇 Stable 或 Edge 版本。要新增另一個 Hermes，請在它上面執行 hermes keryx pair 並掃描配對碼。</string>
+    <string name="app_whatsnew_look_text">設定 › 外觀 中有新的思考樣式，以及五種切換聊天的方式。導覽和各頁面的提示都在 設定 › 關於 中。</string>
+
+    <string name="app_hint_missions_title">任務</string>
+    <string name="app_hint_missions_text">較長的工作會以卡片的形式放在這裡。代理會接手並一一處理，需要你的卡片會移到最上方。輕觸 + 即可分派一項。</string>
+    <string name="app_hint_runs_title">執行</string>
+    <string name="app_hint_runs_text">按排程進行的工作，例如晨間簡報或夜間檢查。每次執行的結果都會出現在這裡。跟代理說一聲，它就能幫你設定。</string>
+    <string name="app_hint_bots_title">機器人</string>
+    <string name="app_hint_bots_text">每個機器人都是你的 Hermes 的一個設定檔，有自己的記憶、技能和聊天。開啟一個來跟它對話，或把幾個放進群組聊天。</string>
+    <string name="app_hint_gateway_title">你的閘道</string>
+    <string name="app_hint_gateway_text">你連線的 Hermes 運作狀況如何，以及它背後有什麼：模型與設定、工作、技能、記憶和工具。</string>
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">全螢幕觀看代理工作：它在想什麼、執行了哪些工具、派出了哪些幫手。你也可以在這裡引導它。</string>
+    <string name="app_hint_artifact_title">代理製作的頁面</string>
+    <string name="app_hint_artifact_text">代理撰寫的報告、草圖和頁面都會在手機上的這裡開啟。用上方的按鈕儲存或分享。</string>
+
+    <string name="app_tour_pane">導覽</string>
+    <string name="app_tour_end">結束導覽</string>
+    <string name="app_tour_progress">%1$d / %2$d</string>
+    <string name="app_tour_back">上一步</string>
+    <string name="app_tour_done">完成</string>
+    <string name="app_tour_got_it">我知道了</string>
+    <string name="app_tour_next">下一步</string>
+</resources>

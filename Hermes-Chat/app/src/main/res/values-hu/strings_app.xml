@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_turn_failed">A kör nem sikerült</string>
+    <string name="app_photo">Fénykép</string>
+    <string name="app_attachment">Melléklet</string>
+    <string name="app_new_message">Új üzenet</string>
+
+    <string name="app_approval_expired">A jóváhagyás már lejárt</string>
+    <string name="app_approval_failed">A jóváhagyás nem sikerült: %1$s</string>
+    <string name="app_reply_failed">A válasz nem sikerült: %1$s</string>
+    <string name="app_link_unreachable_matrix">A Hermes Link nem érhető el (%1$s) – Matrix-szinkron használata</string>
+    <string name="app_send_failed">Nem sikerült elküldeni: %1$s</string>
+    <string name="app_room_photo_updated">Szobakép frissítve</string>
+    <string name="app_room_photo_forbidden">Nincs jogod beállítani a szoba képét – moderátori jog kell hozzá.</string>
+    <string name="app_room_photo_failed">Nem sikerült beállítani a képet: %1$s</string>
+    <string name="app_unknown_error">ismeretlen hiba</string>
+    <string name="app_branched">Elágaztatva – a teljes beszélgetés másolata</string>
+    <string name="app_branch_failed">Az elágaztatás nem sikerült: %1$s</string>
+    <string name="app_not_sent">Nincs elküldve. %1$s</string>
+    <string name="app_undo_done">Az utolsó váltás visszavonva</string>
+    <string name="app_undo_nothing">Nincs mit visszavonni</string>
+    <string name="app_still_working">Még dolgozik – előbb állítsd le a kört</string>
+    <string name="app_undo_failed">Nem sikerült visszavonni: %1$s</string>
+    <string name="app_retry_nothing">Nincs mit újrapróbálni – az átjárón nem volt visszavonható kör</string>
+    <string name="app_retry_failed">Nem sikerült újrapróbálni: %1$s</string>
+    <string name="app_taken_back_edit">Visszavonva – szerkeszd és küldd újra</string>
+    <string name="app_take_back_failed">Nem sikerült visszavonni – a szöveged a szerkesztőben van, újraküldhető</string>
+    <string name="app_set_gateway_url_first">Előbb add meg az átjáró URL-jét</string>
+    <string name="app_link_ok">Hermes Link OK – %1$s</string>
+    <string name="app_link_failed">Hermes Link hiba: %1$s</string>
+    <string name="app_connection_error">kapcsolódási hiba</string>
+    <string name="app_link_up_api_down">A Hermes Link működik, de a mögötte lévő Hermes API-szerver nem fut, így a Küldetések és a Futások nem töltődnek be. Állítsd be az API_SERVER_ENABLED=true értéket és egy API_SERVER_KEY kulcsot a ~/.hermes/.env fájlban, majd indítsd újra az átjárót.</string>
+
+    <string name="app_pinned">Rögzítve</string>
+    <string name="app_pinned_named">Rögzítve: „%1$s”</string>
+    <string name="app_unpinned">Rögzítés feloldva</string>
+    <string name="app_unpinned_named">Rögzítés feloldva: „%1$s”</string>
+    <string name="app_pin_failed">A rögzítés nem sikerült: %1$s</string>
+    <string name="app_unpin_failed">A rögzítés feloldása nem sikerült: %1$s</string>
+    <string name="app_marked_unread">Olvasatlannak jelölve</string>
+    <string name="app_mark_read_failed">Nem sikerült olvasottnak jelölni: %1$s</string>
+    <string name="app_mark_unread_failed">Nem sikerült olvasatlannak jelölni: %1$s</string>
+    <string name="app_sticky_no_catalog">Nem sikerült beolvasni a modelleket – az átjáró alapértelmezettjével nyílt meg</string>
+    <string name="app_sticky_not_served">A(z) %1$s modell most nem érhető el – az átjáró alapértelmezettjével nyílt meg</string>
+    <string name="app_sticky_needs_confirm">Megerősítés szükséges (%1$s) – válaszd ki a modellválasztóban</string>
+    <string name="app_sticky_opened_fallback">Megnyitva ezzel: %1$s – a(z) %2$s modell most nem érhető el</string>
+    <string name="app_sticky_opened">Megnyitva ezzel: %1$s – a legutóbbi választásod (megjegyzett modell, a Beállításokban)</string>
+    <string name="app_sticky_refused">Elutasítva (%1$s) – az átjáró alapértelmezettjével nyílt meg</string>
+    <string name="app_create_session_failed">nem sikerült létrehozni a munkamenetet</string>
+    <string name="app_rename_failed">Az átnevezés nem sikerült: %1$s</string>
+    <string name="app_archive_failed">Nem sikerült archiválni: %1$s</string>
+    <string name="app_archived">Archiválva</string>
+    <string name="app_archived_named">Archiválva: „%1$s”</string>
+    <string name="app_restore_failed">Nem sikerült visszaállítani: %1$s</string>
+    <string name="app_restored">Visszaállítva</string>
+    <string name="app_restored_named">Visszaállítva: „%1$s”</string>
+    <string name="app_archive_read_failed">Nem sikerült beolvasni az archívumot: %1$s</string>
+    <string name="app_older_sessions_failed">Nem sikerült betölteni a régebbi munkameneteket: %1$s</string>
+    <string name="app_session_deleted">Munkamenet törölve</string>
+    <string name="app_delete_failed">A törlés nem sikerült: %1$s</string>
+
+    <string name="app_steered">Terelve – az ügynök a következő lépésénél látja</string>
+    <string name="app_steer_declined_queued">Az ügynök elutasította a terelést – sorba állítva a következő körre</string>
+    <string name="app_queue_failed">A sorba állítás nem sikerült: %1$s</string>
+    <string name="app_steer_failed">A terelés nem sikerült: %1$s</string>
+    <string name="app_goal_failed">Cél: %1$s</string>
+    <string name="app_aside_needs_direct">A mellékkérdéshez közvetlen átjárókapcsolat kell</string>
+    <string name="app_aside_failed">A mellékkérdés nem sikerült: %1$s</string>
+    <string name="app_redirected">Átirányítva – a válasz elölről kezdődik a javításoddal</string>
+    <string name="app_redirect_between_calls">Hívások között – a javításod fut következőként</string>
+    <string name="app_redirect_finished_queued">A válasz már elkészült – sorba állítva a következő körre</string>
+    <string name="app_redirect_unsupported">Ez az ügynök nem tud átirányítani – terelés helyette</string>
+    <string name="app_redirect_failed">Az átirányítás nem sikerült: %1$s</string>
+    <string name="app_branched_from_message">Elágaztatva – ez egy új munkamenet abból az üzenetből</string>
+    <string name="app_queued">Sorban – elküldjük, amikor ez a kör véget ér</string>
+    <string name="app_stopped">Leállítva</string>
+    <string name="app_stop_failed">A leállítás nem sikerült: %1$s</string>
+    <string name="app_crew_steered">Terelve (%1$s) – a következő lépésénél látja</string>
+    <string name="app_crew_steer_rejected">Nem fogadta el (%1$s) – másik ajtónak felel, vagy már befejezőben van</string>
+    <string name="app_crew_stopped">Leállítva: %1$s</string>
+    <string name="app_crew_already_finished">Már végzett: %1$s</string>
+
+    <string name="app_model_confirm">%1$s Koppints rá újra a megerősítéshez.</string>
+    <string name="app_model_expensive">Ez a modell drága.</string>
+    <string name="app_model_deferred">%1$s veszi át a következő körtől – ez a munkamenet</string>
+    <string name="app_model_deferred_global">%1$s veszi át a következő körtől – minden munkamenet</string>
+    <string name="app_model_switched">%1$s – ez a munkamenet</string>
+    <string name="app_model_switched_global">%1$s – minden munkamenet</string>
+    <string name="app_model_switch_refused">A váltás elutasítva: %1$s</string>
+    <string name="app_reasoning_refused_unknown">Ez az agy elutasította ezt a gondolkodási szintet – válassz alacsonyabbat.</string>
+    <string name="app_reasoning_refused_floor">Ez az agy elutasította ezt a gondolkodási szintet (%1$s), és nincs alacsonyabb, amit ki lehetne próbálni.</string>
+    <string name="app_reasoning_dropped">Ez az agy elutasította ezt a gondolkodási szintet (%1$s) – visszaléptetve erre: %2$s.</string>
+    <string name="app_reasoning_drop_failed">Ez az agy elutasította ezt a gondolkodási szintet (%1$s); nem sikerült visszalépni erre: %2$s.</string>
+    <string name="app_reasoning_set">Gondolkodás → %1$s – ez a munkamenet</string>
+    <string name="app_reasoning_set_global">Gondolkodás → %1$s minden munkamenetre</string>
+    <string name="app_reasoning_refused">Gondolkodás elutasítva: %1$s</string>
+
+    <string name="app_room_joined">Csatlakozva – a szoba a következő szinkronnál jelenik meg</string>
+    <string name="app_join_failed">A csatlakozás nem sikerült: %1$s</string>
+    <string name="app_invite_declined">Meghívás elutasítva</string>
+    <string name="app_decline_failed">Az elutasítás nem sikerült: %1$s</string>
+    <string name="app_start_chat_failed">nem sikerült elindítani a csevegést</string>
+    <string name="app_create_room_failed">nem sikerült létrehozni a szobát</string>
+    <string name="app_join_failed_short">nem sikerült csatlakozni</string>
+    <string name="app_invite_sent">Meghívás elküldve</string>
+    <string name="app_invite_failed">A meghívás nem sikerült: %1$s</string>
+    <string name="app_left_room">Kiléptél a szobából</string>
+    <string name="app_leave_failed">A kilépés nem sikerült: %1$s</string>
+
+    <string name="app_try_again">próbáld újra</string>
+    <string name="app_group_rooms_unavailable">a szobák nem érhetők el</string>
+    <string name="app_not_connected">nincs kapcsolat átjáróval</string>
+    <string name="app_group_stop_failed">Nem sikerült leállítani a szobát: %1$s</string>
+    <string name="app_group_approval_failed">Nem sikerült válaszolni a jóváhagyásra: %1$s</string>
+    <string name="app_group_rename_failed">Nem sikerült átnevezni: %1$s</string>
+    <string name="app_group_disband_failed">Nem sikerült feloszlatni: %1$s</string>
+
+    <string name="app_no_stt_endpoint">Nincs beállítva STT-végpont</string>
+    <string name="app_no_tts_endpoint">Nincs beállítva TTS-végpont</string>
+    <string name="app_no_stt_set">nincs STT-végpont megadva</string>
+    <string name="app_no_tts_set">nincs TTS-végpont megadva</string>
+    <string name="app_voice_unreachable">Nem érhető el: %1$s – %2$s (%3$s)</string>
+    <string name="app_voice_ears">fül (STT)</string>
+    <string name="app_voice_mouth">hang (TTS)</string>
+
+    <string name="app_console_run_live">Már fut egy futás – állítsd le, vagy hagyd befejeződni</string>
+    <string name="app_link_off">A Hermes Link ki van kapcsolva – kapcsold be a Beállításokban</string>
+    <string name="app_export_needs_gateway">Az exportáláshoz közvetlen átjárókapcsolat kell.</string>
+    <string name="app_export_too_old">Ez az átjáró túl régi a munkamenet exportálásához.</string>
+    <string name="app_export_subject">Hermes-munkamenet</string>
+    <string name="app_export_unreadable">Az export olvashatatlanul érkezett vissza.</string>
+
+    <string name="app_unsaved">Eltávolítva a mentettek közül</string>
+    <string name="app_saved">Megtartva – az Archívumban találod</string>
+    <string name="app_pet_adopt_failed">nem sikerült örökbe fogadni: %1$s</string>
+
+    <string name="app_channel_messages">Üzenetek</string>
+    <string name="app_channel_messages_desc">Új üzenetek a Hermes-ügynökeidtől és szobáidból</string>
+    <string name="app_notify_you">Te</string>
+    <string name="app_notify_title_failed">%1$s · a kör nem sikerült</string>
+    <string name="app_notify_reply">Válasz</string>
+    <string name="app_notify_reply_to">Válasz neki: %1$s</string>
+    <string name="app_notify_mark_read">Olvasottnak jelölés</string>
+    <plurals name="app_notify_conversations">
+        <item quantity="one">%d beszélgetés</item>
+        <item quantity="other">%d beszélgetés</item>
+    </plurals>
+    <string name="app_channel_gate">Jóváhagyások és kérdések</string>
+    <string name="app_channel_gate_desc">Egy ügynök megállt, és a válaszodra vár</string>
+    <string name="app_notify_answer">Válasz</string>
+    <string name="app_channel_runs">Ügynök fut</string>
+    <string name="app_channel_runs_desc">Csendes állapotsor, amíg egy ügynök dolgozik: mit csinál és mióta</string>
+    <string name="app_notify_stop">Leállítás</string>
+    <string name="app_channel_missions">Küldetések</string>
+    <string name="app_channel_missions_desc">Küldetések az ügynök tábláján, amelyek elkészülnek, elakadnak vagy feladják</string>
+
+    <string name="app_push_checking">Üzenetek keresése…</string>
+    <string name="app_notify_sending_text">Küldés: %1$s</string>
+    <string name="app_notify_answering">Válaszolás…</string>
+    <string name="app_notify_gate_unreachable">Az átjáró nem érhető el – koppints a válaszhoz</string>
+    <string name="app_notify_answered">Megválaszolva – az ügynök újra fut</string>
+    <string name="app_notify_request_timed_out">A kérés már lejárt</string>
+    <string name="app_notify_answer_failed">Nem sikerült válaszolni – koppints a megnyitáshoz</string>
+    <string name="app_notify_sending">Küldés…</string>
+    <string name="app_notify_send_failed">Nem sikerült elküldeni: „%1$s” – koppints a megnyitáshoz</string>
+
+    <string name="app_push_connecting">Kapcsolódás…</string>
+    <string name="app_push_connected">Kapcsolódva – beépített push</string>
+    <string name="app_push_reconnecting">Újrakapcsolódás…</string>
+    <string name="app_channel_push">Push-kapcsolat</string>
+    <string name="app_channel_push_desc">A Keryx saját kapcsolata a push-szerveredhez (nem kell külön terjesztőalkalmazás)</string>
+    <string name="app_push_title">Keryx push</string>
+
+    <string name="app_scan_pairing_inside">Párosítókódot a Keryxen belül olvass be: Átjáró csatlakoztatása › Párosítókód beolvasása.</string>
+
+    <string name="app_share_nothing">Nincs mit megosztani</string>
+    <string name="app_share_foreign_only">A Keryx csak más alkalmazásból megosztott fájlokat tud elküldeni</string>
+    <string name="app_share_too_large_mb">A fájl túl nagy a küldéshez (%1$d MB)</string>
+    <string name="app_share_too_large">A fájl túl nagy a küldéshez</string>
+    <string name="app_share_read_failed">Nem sikerült beolvasni: %1$s</string>
+    <plurals name="app_share_attachments">
+        <item quantity="one">%d melléklet</item>
+        <item quantity="other">%d melléklet</item>
+    </plurals>
+    <string name="app_share_note_label">Megjegyzés hozzáadása (nem kötelező)</string>
+    <string name="app_share_note_hint">Foglald össze / jegyezd meg / …</string>
+
+    <string name="app_hands_cannot">Ezen a telefonon semmi sem tudja ezt megtenni</string>
+    <string name="app_hands_no_app">Nincs ilyen nevű alkalmazás: „%1$s”</string>
+    <string name="app_hands_no_handler">Ezen a telefonon semmi sem kezeli ezt: %1$s</string>
+    <string name="app_hands_failed">Nem sikerült: %1$s</string>
+    <string name="app_hands_no_flash">Ezen a telefonon nincs vaku</string>
+
+    <string name="app_crash_log_subject">Keryx összeomlási napló</string>
+    <string name="app_crash_log_share">Összeomlási napló megosztása</string>
+    <string name="app_share">Megosztás</string>
+    <string name="app_share_named">Megosztás: %1$s</string>
+
+    <string name="app_call_hearing_failed">a hallás nem sikerült: %1$s</string>
+    <string name="app_call_turn_failed">az ügynök köre nem sikerült</string>
+    <string name="app_call_voice_failed">a hang nem sikerült: %1$s</string>
+    <string name="app_call_no_reply">nincs válasz az átjárótól</string>
+    <string name="app_tts_failed">A beszéd nem sikerült: %1$s</string>
+    <string name="app_tts_audio_unavailable">A hang nem érhető el</string>
+    <string name="app_tts_no_audio">A beszédszerver nem küldött hangot</string>
+    <string name="app_tts_no_engine">Ezen az eszközön nincs beszédmotor</string>
+    <string name="app_tts_playback_failed">A beszéd lejátszása nem sikerült</string>
+    <string name="app_tts_playback_failed_why">A beszéd lejátszása nem sikerült: %1$s</string>
+
+    <string name="app_tour_welcome_title">Üdv a Keryxben</string>
+    <string name="app_tour_welcome_text">Ez egy bemutató: egy kitalált átjáró a telefonodon, és az ügynöke épp egy feladat közepén tart. Egy gyors körbenézés, mielőtt a sajátodat csatlakoztatod.</string>
+    <string name="app_tour_plan_title">A terve</string>
+    <string name="app_tour_plan_text">Az ügynököd lépésekre bontja a feladatot, és menet közben kipipálja őket. Amíg dolgozik, a Keryx élő értesítést tart a feladatról, így elteheted a telefont.</string>
+    <string name="app_tour_approval_title">Előbb kérdez</string>
+    <string name="app_tour_approval_text">Bármi kockázatos előtt, például egy mappa törlése előtt, az ügynököd megáll és megkérdez. Válaszolj itt vagy közvetlenül az értesítésből.</string>
+    <string name="app_tour_approval_text_demo">Bármi kockázatos előtt, például egy mappa törlése előtt, az ügynököd megáll és megkérdez. Válaszolj itt vagy közvetlenül az értesítésből. Próbáld ki a bemutató után, és nézd, ahogy befejezi a feladatot.</string>
+    <string name="app_tour_composer_title">Kérj bármit</string>
+    <string name="app_tour_composer_text">Adj az ügynöködnek feladatot egyszerű szavakkal. Akkor is dolgozik, ha elmész, és a Keryx szól, ha kész.</string>
+    <string name="app_tour_model_title">Melyik agy válaszol</string>
+    <string name="app_tour_model_text">Válts modellt ehhez a munkamenethez, vagy mostantól minden munkamenethez.</string>
+    <string name="app_tour_new_session_title">Tiszta lap</string>
+    <string name="app_tour_new_session_text">Új munkamenet indítása. Tartsd lenyomva a lehetőségekért, például címhez vagy ideiglenes munkamenethez.</string>
+    <string name="app_tour_drawer_title">Minden más</string>
+    <string name="app_tour_drawer_text">A munkameneteid és a Keryx többi része e gomb mögött van.</string>
+    <string name="app_tour_lenses_title">Ami rád vár</string>
+    <string name="app_tour_lenses_text">Szűkítsd a listát a rád váró, épp futó vagy olvasatlan munkamenetekre.</string>
+    <string name="app_tour_missions_title">Küldetések</string>
+    <string name="app_tour_missions_text">Adj az ügynöködnek hosszabb feladatokat kártyákként egy táblán. Végigdolgozza őket, és szól, ha szüksége van rád.</string>
+    <string name="app_tour_runs_title">Futások</string>
+    <string name="app_tour_runs_text">Ütemezett feladatok, és amit az egyes futások találtak.</string>
+    <string name="app_tour_bots_title">Botok</string>
+    <string name="app_tour_bots_text">Az ügynököd további profiljai. Mindegyiknek saját memóriája, képességei és csevegései vannak.</string>
+    <string name="app_tour_archive_title">Archívum</string>
+    <string name="app_tour_archive_text">Minden, ami valaha elhangzott, kereshetően a telefonon, akkor is, ha az átjáró nem elérhető.</string>
+    <string name="app_tour_gateway_title">Az átjáród</string>
+    <string name="app_tour_gateway_text_demo">A saját Hermeseddel itt a kapcsolat, a modell és a verzió látszik. Minden, amit most láttál, ugyanígy működik egy valódi átjárón: csatlakoztasd a sajátodat, és élesben megy.</string>
+    <string name="app_tour_gateway_text">A kapcsolat, a modell és a Hermes verziója. Koppints rá az Átjáróért; a fogaskerék a Beállításokat nyitja meg, ott is megtalálod ezt a bemutatót.</string>
+    <string name="app_tour_gateway_text_direct">A kapcsolat, a modell és a Hermes verziója. Koppints rá az Átjáróért; a fogaskerék a Beállításokat nyitja meg, ott is megtalálod ezt a bemutatót. Több Hermest futtatsz? Add hozzá, és itt válthatsz köztük.</string>
+    <string name="app_tour_cta_connect">Átjáró csatlakoztatása</string>
+    <string name="app_tour_cta_add_gateway">Átjáró hozzáadása</string>
+
+    <string name="app_whatsnew_title">Újdonságok a Keryx 3.0-ban</string>
+    <string name="app_whatsnew_text">Gyors áttekintés a változásokról. Nyugodtan hagyd ki: megtalálod a Beállítások › Névjegy alatt.</string>
+    <string name="app_whatsnew_point_title">Kérdezd meg, hol van valami</string>
+    <string name="app_whatsnew_point_text">Kérdezd meg az ügynöködtől: \"hol vannak az ütemezett feladataim?\", és meg tudja mutatni a helyet, itt a telefonon. Az átjáródnak keryx-stream 0.6 vagy újabb kell.</string>
+    <string name="app_whatsnew_memory_title">Csevegésmemória</string>
+    <string name="app_whatsnew_memory_text">A modell melletti gyűrű most megmutatja, hány válasznak van még hely ebben a csevegésben, de csak amikor számít. Koppints rá, hogy lásd, mi foglalja a helyet.</string>
+    <string name="app_whatsnew_drawer_title">Megújult oldalsáv</string>
+    <string name="app_whatsnew_drawer_text_direct">Minden csevegésnek saját színe és jele van, egy gyűrű mutatja a dolgozókat, és ezek a szűrők arra szűkítik a listát, ami rád vár.</string>
+    <string name="app_whatsnew_drawer_text">Minden csevegésnek saját színe és jele van, és egy gyűrű mutatja a dolgozókat.</string>
+    <string name="app_whatsnew_cards_title">Kártyák érthető nyelven</string>
+    <string name="app_whatsnew_cards_text">Egy küldetéskártya most azzal nyílik, ami épp zajlik, és azzal az egy dologgal, amit tenni kell. A technikai részletek továbbra is ott vannak, a Részletek alatt.</string>
+    <string name="app_whatsnew_look_title">Megjelenés és frissítések</string>
+    <string name="app_whatsnew_look_text_direct">A Beállítások › Megjelenés alatt új gondolkodási stílusok és öt módja van a csevegések közti váltásnak. Friss keryx-streammel az Átjáró Frissítés paneljén választhatsz Stable kiadások vagy Edge között. Másik Hermes hozzáadásához futtasd rajta a hermes keryx pair parancsot, és olvasd be a kódot.</string>
+    <string name="app_whatsnew_look_text">A Beállítások › Megjelenés alatt új gondolkodási stílusok és öt módja van a csevegések közti váltásnak. A bemutató és a tippek a Beállítások › Névjegy alatt vannak.</string>
+
+    <string name="app_hint_missions_title">Küldetések</string>
+    <string name="app_hint_missions_text">A hosszabb feladatok itt élnek, kártyákként. Az ügynökeid felveszik és végigdolgozzák őket, a rád váró kártya pedig felülre kerül. Koppints a + gombra egy új kiadásához.</string>
+    <string name="app_hint_runs_title">Futások</string>
+    <string name="app_hint_runs_text">Ütemezett feladatok, például reggeli összefoglaló vagy éjszakai ellenőrzés. Minden futás eredménye ide érkezik. Kérd meg az ügynöködet, és beállít neked egyet.</string>
+    <string name="app_hint_bots_title">Botok</string>
+    <string name="app_hint_bots_text">Minden bot a Hermesed egy profilja, saját memóriával, képességekkel és csevegésekkel. Nyiss meg egyet, hogy beszélgess vele, vagy tegyél néhányat egy csoportos csevegésbe.</string>
+    <string name="app_hint_gateway_title">Az átjáród</string>
+    <string name="app_hint_gateway_text">Hogy áll a Hermes, amelyhez kapcsolódsz, és mi van mögötte: a modellje és beállításai, feladatai, képességei, memóriája és eszközei.</string>
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">Az ügynököd munka közben, teljes képernyőn: mit gondol, milyen eszközöket futtat, és milyen segítőket küld ki. Innen terelni is tudod.</string>
+    <string name="app_hint_artifact_title">Az ügynököd által készített oldal</string>
+    <string name="app_hint_artifact_text">Az ügynököd által írt jelentések, makettek és oldalak itt nyílnak meg, a telefonon. Mentsd vagy oszd meg a fenti gombokkal.</string>
+
+    <string name="app_tour_pane">Bemutató</string>
+    <string name="app_tour_end">Bemutató befejezése</string>
+    <string name="app_tour_progress">%1$d / %2$d</string>
+    <string name="app_tour_back">Vissza</string>
+    <string name="app_tour_done">Kész</string>
+    <string name="app_tour_got_it">Értem</string>
+    <string name="app_tour_next">Tovább</string>
+</resources>

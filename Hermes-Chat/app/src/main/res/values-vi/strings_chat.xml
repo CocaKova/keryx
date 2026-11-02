@@ -1,0 +1,583 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_theme_to_light">Chuyển sang sáng</string>
+    <string name="chat_theme_follow_system">Theo hệ thống</string>
+    <string name="chat_theme_to_dark">Chuyển sang tối</string>
+    <string name="chat_new_chat">Trò chuyện mới</string>
+    <string name="chat_drawer_jump_hint">Đi tới…</string>
+    <string name="chat_lens_needs_you">Cần bạn</string>
+    <string name="chat_lens_running">Đang chạy</string>
+    <string name="chat_lens_unread">Chưa đọc</string>
+    <string name="chat_lens_archived">Đã lưu trữ</string>
+    <string name="chat_drawer_invites">Lời mời</string>
+    <string name="chat_place_missions">Nhiệm vụ</string>
+    <string name="chat_place_runs">Lượt chạy</string>
+    <string name="chat_place_bots">Bot</string>
+    <string name="chat_place_projects">Dự án</string>
+    <string name="chat_place_shipyard">Xưởng tàu</string>
+    <string name="chat_place_archive">Kho lưu trữ</string>
+    <string name="chat_place_gateway">Cổng</string>
+    <string name="chat_place_settings">Cài đặt</string>
+    <string name="chat_drawer_places">Địa điểm</string>
+    <string name="chat_drawer_commands">Lệnh</string>
+    <string name="chat_drawer_no_matches">Không có kết quả</string>
+    <string name="chat_drawer_nothing_archived">Chưa lưu trữ gì</string>
+    <string name="chat_drawer_nothing_waiting">Không có gì chờ bạn</string>
+    <string name="chat_drawer_nothing_running">Không có gì đang chạy</string>
+    <string name="chat_drawer_all_read">Đã đọc hết</string>
+    <string name="chat_session_id_copied">Đã sao chép id phiên</string>
+    <string name="chat_moved_to_project">Đã chuyển tới %1$s</string>
+    <string name="chat_drawer_reaching_back">Đang tải thêm…</string>
+    <string name="chat_drawer_show_older">Hiện %1$s cũ hơn</string>
+    <string name="chat_drawer_in_transcripts">Trong bản ghi</string>
+    <string name="chat_demo_gateway">cổng demo</string>
+    <string name="chat_demo_gateway_page">Trang cổng của bạn sẽ ở đây khi bạn kết nối.</string>
+    <string name="chat_connect">Kết nối</string>
+    <string name="chat_open_gateway">Mở Cổng</string>
+    <string name="chat_settings">Cài đặt</string>
+    <string name="chat_shelf_fold">Thu gọn %1$s</string>
+    <string name="chat_shelf_open">Mở %1$s</string>
+    <string name="chat_room_forked">Tách nhánh từ cuộc trò chuyện khác</string>
+    <string name="chat_room_temporary">Tạm thời — xóa ở lần mở tới</string>
+    <string name="chat_room_pinned">Đã ghim</string>
+    <string name="chat_mark_unread">Đánh dấu chưa đọc</string>
+    <string name="chat_archive">Lưu trữ</string>
+    <string name="chat_archive_hint">Khỏi danh sách, vẫn còn trên cổng</string>
+    <string name="chat_restore_to_list">Đưa lại vào danh sách</string>
+    <string name="chat_export_ellipsis">Xuất…</string>
+    <string name="chat_copy_session_id">Sao chép id phiên</string>
+    <string name="chat_invite_user">Mời người dùng…</string>
+    <string name="chat_rename_ellipsis">Đổi tên…</string>
+    <string name="chat_move_to_project">Chuyển vào dự án…</string>
+    <string name="chat_leave_room">Rời phòng</string>
+    <string name="chat_delete_session_ellipsis">Xóa phiên…</string>
+    <string name="chat_invite_to">Mời vào %1$s</string>
+    <string name="chat_invite">Mời</string>
+    <string name="chat_cancel">Hủy</string>
+    <string name="chat_leave_title">Rời %1$s?</string>
+    <string name="chat_leave_body">Bạn sẽ không nhận tin nhắn từ đây nữa; muốn vào lại cần lời mời mới.</string>
+    <string name="chat_leave">Rời</string>
+    <string name="chat_rename_session">Đổi tên phiên</string>
+    <string name="chat_rename">Đổi tên</string>
+    <string name="chat_delete_title">Xóa %1$s?</string>
+    <string name="chat_delete_session_body">Xóa phiên và toàn bộ bản ghi khỏi cổng. Không thể hoàn tác.</string>
+    <string name="chat_delete">Xóa</string>
+    <string name="chat_invited_to_room">Bạn được mời vào phòng này</string>
+    <string name="chat_decline">Từ chối</string>
+    <string name="chat_accept">Chấp nhận</string>
+    <string name="chat_running">Đang chạy</string>
+    <string name="chat_age_now">vừa xong</string>
+    <string name="chat_age_minutes">%1$dph</string>
+    <string name="chat_age_hours">%1$dg</string>
+    <string name="chat_age_days">%1$dn</string>
+    <string name="chat_age_weeks">%1$dt</string>
+    <plurals name="chat_door_needs_you">
+        <item quantity="other">%1$s, %2$s cần bạn</item>
+    </plurals>
+    <string name="chat_door_unread">%1$s, %2$s chưa đọc</string>
+
+    <string name="chat_bot_new_title">Bắt đầu mới với %1$s?</string>
+    <string name="chat_bot_new_body">Thu gọn giữ cuộc trò chuyện này và xóa ngữ cảnh làm việc của %1$s.\n\nBot Chat mới sẽ cất cuộc này đi — vẫn đọc được trong các cuộc trò chuyện cũ của %1$s — và bắt đầu cuộc mới.</string>
+    <string name="chat_bot_new_fresh">Bot Chat mới</string>
+    <string name="chat_bot_new_compact">Thu gọn</string>
+    <string name="chat_bot_chat_chip">Bot Chat</string>
+    <string name="chat_menu">Menu</string>
+    <plurals name="chat_menu_waiting">
+        <item quantity="other">Menu, %d mục chờ bạn</item>
+    </plurals>
+    <plurals name="chat_menu_unread">
+        <item quantity="other">Menu, %d chưa đọc</item>
+    </plurals>
+    <string name="chat_new_session_failed">Không bắt đầu được phiên. %1$s</string>
+    <string name="chat_new_session_hold">Phiên mới (giữ để xem tùy chọn)</string>
+    <string name="chat_unpin_run">Bỏ ghim lượt chạy này</string>
+    <string name="chat_pin_run">Ghim lượt chạy này</string>
+    <string name="chat_new_session">Phiên mới</string>
+    <string name="chat_new_session_confirm_title">Bắt đầu phiên mới?</string>
+    <string name="chat_new_session_confirm_body">Tác tử vẫn đang làm — /new sẽ kết thúc lượt chạy hiện tại và bỏ kết quả của nó.</string>
+    <string name="chat_new_session_confirm">Kết thúc &amp; bắt đầu mới</string>
+    <string name="chat_find_in_chat">Tìm trong trò chuyện</string>
+    <string name="chat_call_needs_voice">Hãy đặt endpoint STT và TTS trong Cài đặt → Giọng nói trước</string>
+    <string name="chat_call">Gọi</string>
+    <string name="chat_reasoning_header">SUY LUẬN</string>
+    <string name="chat_reasoning_sub_default">mức nỗ lực giữ nguyên giữa các phiên</string>
+    <string name="chat_reasoning_local_brain">bộ não cục bộ</string>
+    <string name="chat_reasoning_model">mô hình</string>
+    <string name="chat_reasoning_sub_binary">%1$s · công tắc bật/tắt</string>
+    <string name="chat_reasoning_sub_none">%1$s · không có mức suy luận</string>
+    <string name="chat_reasoning_sub_session">%1$s · các mức của phiên này</string>
+    <string name="chat_reasoning_sub_scale">%1$s · thang mức nỗ lực</string>
+    <string name="chat_reasoning_no_dial">Mô hình này không nhận mức nỗ lực — Hermes không gửi mức nào.</string>
+    <string name="chat_reasoning_every_session">Mọi phiên</string>
+    <string name="chat_reasoning_this_session">Chỉ phiên này</string>
+    <string name="chat_reasoning_show">Hiện suy luận</string>
+    <string name="chat_reasoning_hide">Ẩn suy luận</string>
+    <string name="chat_reasoning_reset">Đặt lại tùy chỉnh của phiên</string>
+    <string name="chat_demo_label">Demo</string>
+    <string name="chat_demo_connect">Kết nối cổng của bạn</string>
+
+    <string name="chat_attach_failed">Không đính kèm được (không đọc được, hoặc quá 50 MB)</string>
+    <string name="chat_no_camera">Không có ứng dụng máy ảnh nào phản hồi</string>
+    <string name="chat_mic_unavailable">Micro không khả dụng</string>
+    <string name="chat_transcription_failed">Chép lời thất bại: %1$s</string>
+    <string name="chat_mic_permission">Keryx cần quyền micro để đọc chính tả</string>
+    <string name="chat_nothing_to_read">Không có gì để đọc to</string>
+    <string name="chat_typing_one">%1$s đang nhập…</string>
+    <string name="chat_typing_two">%1$s và %2$s đang nhập…</string>
+    <string name="chat_typing_many">Nhiều người đang nhập…</string>
+    <string name="chat_jump_newest">Tới tin mới nhất</string>
+    <plurals name="chat_jump_newest_count">
+        <item quantity="other">Tới tin mới nhất, %d tin mới</item>
+    </plurals>
+    <string name="chat_attachments_cant_queue">Không xếp hàng được tệp đính kèm — gửi sau khi lượt này xong</string>
+    <string name="chat_stop_hint">Nhập chỉnh sửa trước — rồi chạm để định hướng lượt, giữ để xem thêm</string>
+    <string name="chat_busy_queue">Xếp hàng cho lượt sau</string>
+    <string name="chat_busy_aside">Hỏi riêng — trả lời bên ngoài cuộc trò chuyện</string>
+    <string name="chat_busy_redirect">Chuyển hướng — trả lời lại với nội dung này</string>
+    <string name="chat_starter_1">Bạn có thể làm gì trong phiên này?</string>
+    <string name="chat_starter_2">Hôm nay tôi có việc gì?</string>
+    <string name="chat_starter_3">Gần đây chúng ta đã làm gì?</string>
+    <string name="chat_starter_4">Giúp tôi lên kế hoạch một việc nhỏ, từng bước một.</string>
+    <string name="chat_fresh_page">Trang mới</string>
+    <string name="chat_fresh_page_sub">Hỏi bất cứ điều gì, hoặc bắt đầu từ một gợi ý dưới đây.</string>
+    <string name="chat_today">Hôm nay</string>
+    <string name="chat_yesterday">Hôm qua</string>
+
+    <string name="chat_arrival_mark">%1$s · tự gửi · %2$s</string>
+    <string name="chat_bubble_hold_label">Trả lời, bày tỏ cảm xúc hoặc sao chép</string>
+    <string name="chat_copied">Đã sao chép</string>
+    <string name="chat_undo_title">Rút lại lượt trao đổi cuối?</string>
+    <string name="chat_undo_body">Tin nhắn của bạn và câu trả lời này sẽ bị xóa khỏi lịch sử phiên trên cổng. Điều bạn nói tiếp theo sẽ nối tiếp từ trước đó.</string>
+    <string name="chat_undo_confirm">Rút lại</string>
+    <string name="chat_keep">Giữ</string>
+    <string name="chat_select_text">Chọn văn bản</string>
+    <string name="chat_delete_message_title">Xóa tin nhắn?</string>
+    <string name="chat_delete_message_body">Tin nhắn bị xóa với mọi người — không thể hoàn tác.</string>
+    <string name="chat_sent">Đã gửi</string>
+    <string name="chat_stop_speaking">Dừng đọc</string>
+    <string name="chat_go_to_quoted">Tới tin nhắn được trích dẫn</string>
+    <string name="chat_reaction_take_back">Bỏ cảm xúc của bạn</string>
+    <string name="chat_reaction_add">Thêm cảm xúc của bạn</string>
+    <string name="chat_react">Bày tỏ cảm xúc</string>
+    <string name="chat_action_reply">Trả lời</string>
+    <string name="chat_action_copy">Sao chép</string>
+    <string name="chat_action_copy_text">Sao chép văn bản</string>
+    <string name="chat_action_saved">Đã lưu</string>
+    <string name="chat_action_save">Lưu</string>
+    <string name="chat_action_unsave">Xóa khỏi Đã lưu</string>
+    <string name="chat_action_keep_archive">Giữ trong Kho lưu trữ</string>
+    <string name="chat_action_stop">Dừng</string>
+    <string name="chat_action_read_aloud">Đọc to</string>
+    <string name="chat_action_select">Chọn</string>
+    <string name="chat_action_edit">Sửa</string>
+    <string name="chat_action_edit_desc">Sửa và gửi lại</string>
+    <string name="chat_action_retry">Thử lại</string>
+    <string name="chat_action_retry_desc">Rút lại và nói lại</string>
+    <string name="chat_action_branch">Tách nhánh</string>
+    <string name="chat_action_branch_desc">Tách một phiên mới từ đây</string>
+    <string name="chat_action_undo">Hoàn tác</string>
+    <string name="chat_action_undo_desc">Rút lại lượt trao đổi cuối</string>
+    <string name="chat_action_delete_desc">Xóa tin nhắn</string>
+    <string name="chat_reply_attachment">tệp đính kèm</string>
+    <string name="chat_reply_message">tin nhắn</string>
+
+    <string name="chat_archive_title">Kho lưu trữ</string>
+    <string name="chat_archive_waking">đang khởi động chỉ mục…</string>
+    <plurals name="chat_archive_reaching">
+        <item quantity="other">Đã ghi nhớ %1$s · đang tải thêm…</item>
+    </plurals>
+    <plurals name="chat_archive_error">
+        <item quantity="other">Đã ghi nhớ %1$s · %2$s</item>
+    </plurals>
+    <plurals name="chat_archive_done">
+        <item quantity="other">Đã ghi nhớ %1$s tin nhắn</item>
+    </plurals>
+    <string name="chat_archive_jump_date">Đi tới ngày</string>
+    <string name="chat_archive_nothing_that_day">Chưa có gì được lập chỉ mục cho ngày đó</string>
+    <string name="chat_open">Mở</string>
+    <string name="chat_archive_tab_search">Tìm kiếm</string>
+    <string name="chat_archive_tab_saved">Đã lưu</string>
+    <string name="chat_archive_tab_media">Phương tiện</string>
+    <string name="chat_archive_search_hint">Tìm mọi điều từng nói…</string>
+    <string name="chat_archive_recent">GHI NHỚ GẦN ĐÂY</string>
+    <string name="chat_archive_empty_title">Chưa ghi nhớ gì</string>
+    <string name="chat_archive_empty_body">Chỉ mục sẽ đầy dần khi các phiên được quét. Sau đó mọi tin nhắn ứng dụng từng thấy chỉ cách một lần tìm kiếm.</string>
+    <string name="chat_archive_search_idle">Mọi tin nhắn ứng dụng từng thấy, chỉ cách một lần tìm kiếm.</string>
+    <string name="chat_archive_no_hits">Chưa có gì cho “%1$s”</string>
+    <string name="chat_archive_opening">Đang mở kho lưu trữ…</string>
+    <string name="chat_archive_saved_empty_title">Chưa giữ gì</string>
+    <string name="chat_archive_saved_empty_body">Nhấn giữ một tin nhắn và chạm dấu trang để giữ nó ở đây.</string>
+    <string name="chat_archive_looking">Đang tìm trong chỉ mục…</string>
+    <string name="chat_archive_media_empty_title">Chưa có ảnh hay tệp nào</string>
+    <string name="chat_archive_media_empty_body">Ảnh và tệp từ các cuộc trò chuyện sẽ tập trung ở đây khi chỉ mục đầy dần.</string>
+    <string name="chat_image">hình ảnh</string>
+    <string name="chat_you">Bạn</string>
+    <string name="chat_archive_context">Ngữ cảnh</string>
+    <string name="chat_archive_context_failed">Không tải được thời điểm đó (có thể nó có trước khóa của lần đăng nhập này).</string>
+    <string name="chat_archive_reach_earlier">Xem trước đó</string>
+    <string name="chat_archive_reach_later">Xem sau đó</string>
+
+    <string name="chat_attach">Đính kèm</string>
+    <string name="chat_composer_hint">Tin nhắn…</string>
+    <string name="chat_composer_hint_steer_stop">Nhập để định hướng lượt này — ■ để dừng</string>
+    <string name="chat_composer_hint_steer">Nhập để định hướng lượt này</string>
+    <string name="chat_dictate_stop">Dừng đọc chính tả</string>
+    <string name="chat_dictate">Đọc chính tả</string>
+    <string name="chat_send_steer">Định hướng lượt đang chạy</string>
+    <string name="chat_send_queue">Xếp hàng cho lượt sau</string>
+    <string name="chat_send_stop">Dừng lượt</string>
+    <string name="chat_send">Gửi</string>
+    <string name="chat_send_hold_menu">Xếp hàng, hỏi riêng hoặc chuyển hướng</string>
+    <string name="chat_send_hold_queue">Thay vào đó xếp hàng cho lượt sau</string>
+    <string name="chat_send_hold_stop">Nút dừng làm gì</string>
+    <string name="chat_choose_model">Chọn mô hình</string>
+    <string name="chat_model_label">Mô hình: %1$s</string>
+    <string name="chat_reasoning">suy luận</string>
+    <string name="chat_steer_hint">↪ định hướng lượt · giữ để xếp hàng</string>
+    <string name="chat_replying_to">Đang trả lời %1$s</string>
+    <string name="chat_cancel_reply">Hủy trả lời</string>
+    <string name="chat_image_attached">Đã đính kèm ảnh</string>
+    <string name="chat_file_attached">Đã đính kèm tệp</string>
+    <string name="chat_remove_attachment">Gỡ tệp đính kèm</string>
+    <string name="chat_attach_photo">Ảnh</string>
+    <string name="chat_attach_file">Tệp</string>
+    <string name="chat_attach_camera">Máy ảnh</string>
+
+    <string name="chat_tool_succeeded">Thành công</string>
+    <string name="chat_tool_failed">Thất bại</string>
+    <string name="chat_tool_no_verdict">Không có kết luận</string>
+    <string name="chat_duration_seconds">%1$ds</string>
+    <string name="chat_duration_millis">%1$dms</string>
+    <string name="chat_tool_flagged">⚠ Hermes đã gắn cờ đầu ra này</string>
+    <string name="chat_tool_flagged_with">⚠ Hermes đã gắn cờ đầu ra này: %1$s</string>
+    <string name="chat_tool_diff">diff</string>
+    <string name="chat_tool_diff_show">Hiện diff</string>
+    <string name="chat_tool_diff_hide">Ẩn diff</string>
+    <string name="chat_tool_diff_label">Diff</string>
+    <string name="chat_tool_output">đầu ra</string>
+    <string name="chat_tool_output_show">Hiện đầu ra</string>
+    <string name="chat_tool_output_hide">Ẩn đầu ra</string>
+    <string name="chat_tool_output_label">Đầu ra</string>
+    <string name="chat_tool_exit_failed">Mã thoát %1$d, thất bại</string>
+    <string name="chat_tool_exit_ok">Mã thoát 0</string>
+    <plurals name="chat_tools_running">
+        <item quantity="other">Đang chạy %d công cụ…</item>
+    </plurals>
+    <plurals name="chat_tools_ran">
+        <item quantity="other">Đã chạy %d công cụ</item>
+    </plurals>
+    <plurals name="chat_subagents_running">
+        <item quantity="other">%1$d / %2$d tác tử phụ đang chạy</item>
+    </plurals>
+    <string name="chat_subagent_running">Tác tử phụ đang chạy</string>
+    <plurals name="chat_delegated_tasks">
+        <item quantity="other">Đã giao %d việc</item>
+    </plurals>
+    <string name="chat_delegated_task">Đã giao một việc</string>
+    <string name="chat_working">Đang làm…</string>
+    <plurals name="chat_output_steps">
+        <item quantity="other">%d bước đầu ra</item>
+    </plurals>
+    <plurals name="chat_run_with_failed">
+        <item quantity="other">%1$s · %2$d thất bại</item>
+    </plurals>
+    <string name="chat_steps_fold">Thu gọn các bước</string>
+    <string name="chat_steps_show">Hiện các bước</string>
+    <string name="chat_tap_in_run">Xem lượt chạy này toàn màn hình</string>
+    <string name="chat_state_open">Đang mở</string>
+    <string name="chat_state_folded">Đã thu gọn</string>
+
+    <string name="chat_approval_needed">Cần phê duyệt</string>
+    <string name="chat_approval_once">Cho phép một lần</string>
+    <string name="chat_approval_session">Phiên này</string>
+    <string name="chat_approval_always">Luôn luôn</string>
+    <string name="chat_approval_deny">Từ chối</string>
+    <string name="chat_asking">Hermes đang hỏi</string>
+    <string name="chat_asking_batch">Hermes đang hỏi · %1$d / %2$d</string>
+    <string name="chat_sudo_needed">Cần mật khẩu sudo</string>
+    <string name="chat_credential_needed">Cần thông tin xác thực</string>
+    <string name="chat_stored_as">Lưu trên cổng dưới tên %1$s</string>
+    <string name="chat_multi_answers">Cho phép nhiều câu trả lời — nhập bên dưới, cách nhau bằng dấu phẩy.</string>
+    <string name="chat_your_answer">Câu trả lời của bạn</string>
+    <string name="chat_password">Mật khẩu</string>
+    <string name="chat_value">Giá trị</string>
+    <string name="chat_skip">Bỏ qua</string>
+
+    <string name="chat_new_conversation">Cuộc trò chuyện mới</string>
+    <string name="chat_new_session_body">Một phiên mới trên cổng. Đặt tên ngay, hoặc để lượt trao đổi đầu tiên tự đặt tiêu đề.</string>
+    <string name="chat_title_optional">Tiêu đề (tùy chọn)</string>
+    <string name="chat_agent">Tác tử</string>
+    <string name="chat_temporary">Tạm thời</string>
+    <string name="chat_temporary_body">Xóa khỏi cổng ở lần mở ứng dụng tới</string>
+    <string name="chat_create">Tạo</string>
+    <string name="chat_error_line">⚠ %1$s</string>
+    <string name="chat_direct_message">Tin nhắn trực tiếp</string>
+    <string name="chat_direct_message_sub">Trò chuyện riêng với một người dùng</string>
+    <string name="chat_start">Bắt đầu</string>
+    <string name="chat_new_room">Phòng mới</string>
+    <string name="chat_new_room_sub">Phòng có tên; mời mọi người ngay hoặc sau</string>
+    <string name="chat_room_name">Tên phòng</string>
+    <string name="chat_invite_optional">Mời @user:server (tùy chọn)</string>
+    <string name="chat_join_by_address">Tham gia bằng địa chỉ</string>
+    <string name="chat_join">Tham gia</string>
+
+    <string name="chat_prune_preview_failed">xem trước thất bại</string>
+    <string name="chat_prune_confirm_title">Xác nhận dọn phiên</string>
+    <plurals name="chat_prune_confirm_sub">
+        <item quantity="other">Xóa vĩnh viễn %d phiên</item>
+    </plurals>
+    <string name="chat_prune_title">Dọn phiên</string>
+    <string name="chat_prune_body">Xóa các phiên đã kết thúc khỏi hồ sơ của cổng — vĩnh viễn, gồm cả bản ghi. Phiên đang hoạt động không bao giờ bị động đến.</string>
+    <string name="chat_prune_older_than">Cũ hơn</string>
+    <string name="chat_prune_days">%1$dn</string>
+    <string name="chat_prune_max_messages">Chỉ phiên có ≤ N tin nhắn (tùy chọn)</string>
+    <string name="chat_prune_include_archived">Gồm cả phiên đã lưu trữ</string>
+    <string name="chat_prune_nothing">Không có gì khớp với bộ lọc này.</string>
+    <plurals name="chat_prune_matched">
+        <item quantity="other">%1$d phiên khớp · cũ nhất %2$s · mới nhất %3$s</item>
+    </plurals>
+    <plurals name="chat_prune_sample">
+        <item quantity="other">· %1$s (%2$d tin)</item>
+    </plurals>
+    <string name="chat_prune_preview">Xem trước</string>
+    <string name="chat_prune_delete_count">Xóa %1$d…</string>
+    <string name="chat_prune_delete">Xóa…</string>
+    <plurals name="chat_prune_final_title">
+        <item quantity="other">Xóa vĩnh viễn %d phiên?</item>
+    </plurals>
+    <string name="chat_prune_final_body">Các dòng dữ liệu và tệp bản ghi sẽ bị xóa khỏi cổng. Không thể hoàn tác.</string>
+    <string name="chat_prune_delete_n">Xóa %1$d</string>
+
+    <string name="chat_loading_lower">đang tải…</string>
+    <string name="chat_load_attachment_failed">Không tải được tệp đính kèm</string>
+    <string name="chat_animated_image">ảnh động</string>
+    <string name="chat_video">video</string>
+    <string name="chat_saved_to">Đã lưu vào %1$s</string>
+    <string name="chat_save_failed">Không lưu được</string>
+    <string name="chat_save_to_device">Lưu vào thiết bị</string>
+    <string name="chat_share_failed">Không chia sẻ được</string>
+    <string name="chat_share">Chia sẻ</string>
+    <string name="chat_close">Đóng</string>
+    <string name="chat_no_app_for_file">Không có ứng dụng nào mở được tệp này</string>
+    <string name="chat_open_with">Mở bằng</string>
+
+    <string name="chat_copy_image">Sao chép ảnh</string>
+    <string name="chat_image_copied">Đã sao chép ảnh — dán vào bài đăng</string>
+    <string name="chat_image_fetch_failed">Không tải được ảnh — đã sao chép liên kết thay thế</string>
+    <string name="chat_copy_link">Sao chép liên kết</string>
+    <string name="chat_link_copied">Đã sao chép liên kết</string>
+    <string name="chat_save_to_photos">Lưu vào Ảnh</string>
+    <string name="chat_save_image_failed">Không lưu được ảnh đó</string>
+    <string name="chat_open_in_browser">Mở trong trình duyệt</string>
+    <string name="chat_no_app_for_link">Không có gì ở đây mở được liên kết đó</string>
+
+    <string name="chat_gateway_log">Nhật ký cổng</string>
+    <string name="chat_details_copied">Đã sao chép chi tiết</string>
+    <string name="chat_copy_details">Sao chép chi tiết</string>
+
+    <string name="chat_thinking">Đang suy nghĩ…</string>
+    <string name="chat_thought">Đã suy nghĩ</string>
+    <string name="chat_thought_briefly">Đã suy nghĩ nhanh</string>
+    <string name="chat_thought_for">Đã suy nghĩ trong %1$s</string>
+    <string name="chat_reasoning_show_a11y">Hiện phần suy luận</string>
+    <string name="chat_reasoning_hide_a11y">Ẩn phần suy luận</string>
+    <string name="chat_duration_min_sec">%1$dph %2$ds</string>
+    <string name="chat_newest">mới nhất</string>
+
+    <string name="chat_config_unsaved">%1$s · chưa lưu</string>
+    <string name="chat_saving">Đang lưu…</string>
+    <string name="chat_save">Lưu</string>
+    <string name="chat_config_load_failed">Không tải được config.yaml. %1$s</string>
+    <string name="chat_loading">Đang tải…</string>
+    <string name="chat_config_restart_note">Với hầu hết các mục, thay đổi đã lưu có hiệu lực ở lần khởi động lại cổng tiếp theo.</string>
+    <string name="chat_save_anyway_title">Vẫn lưu?</string>
+    <string name="chat_save_anyway">Vẫn lưu</string>
+    <string name="chat_discard_title">Bỏ thay đổi?</string>
+    <string name="chat_config_untouched">config.yaml trên cổng không bị động đến.</string>
+    <string name="chat_discard">Bỏ</string>
+    <string name="chat_keep_editing">Tiếp tục sửa</string>
+
+    <string name="chat_export_title">Xuất “%1$s”</string>
+    <string name="chat_this_session">phiên này</string>
+    <string name="chat_export_markdown_detail">Cuộc trò chuyện như bạn đọc: ai nói gì, công cụ trên một dòng, đầu ra dài được cắt bớt.</string>
+    <string name="chat_export_json_detail">Bản xuất đầy đủ của cổng: mọi dòng, cả lượt đã hoàn tác và system prompt. Có thể nhập lại.</string>
+    <string name="chat_export_share_failed">Không mở được bảng chia sẻ.</string>
+    <string name="chat_export_failed">Xuất thất bại.</string>
+    <string name="chat_exporting">Đang xuất…</string>
+
+    <string name="chat_cmd_new">Bắt đầu cuộc trò chuyện mới</string>
+    <string name="chat_cmd_compress">Nén / tóm tắt luồng này</string>
+    <string name="chat_cmd_handoff">Chuyển ngữ cảnh sang phiên mới</string>
+    <string name="chat_cmd_steer">Định hướng tác tử giữa chừng</string>
+    <string name="chat_cmd_think">Yêu cầu suy luận sâu hơn</string>
+    <string name="chat_cmd_model">Đổi mô hình đang dùng</string>
+    <string name="chat_cmd_reset">Đặt lại trạng thái làm việc của tác tử</string>
+    <string name="chat_cmd_help">Liệt kê những gì tác tử này làm được</string>
+    <string name="chat_cmd_status">Hiện trạng thái tác tử + hệ thống</string>
+    <string name="chat_cmd_memory">Gợi nhớ hoặc sửa bộ nhớ dài hạn</string>
+    <string name="chat_cmd_tools">Liệt kê công cụ có sẵn</string>
+    <string name="chat_cmd_recent">gần đây</string>
+    <string name="chat_cmd_skill">kỹ năng</string>
+
+    <string name="chat_transition_dissolve">Tan biến</string>
+    <string name="chat_transition_dissolve_blurb">Phòng hiện lại qua một lớp mờ nhẹ, với vệt chữ nổi braille.</string>
+    <string name="chat_transition_passage">Lối đi</string>
+    <string name="chat_transition_passage_blurb">Phòng mới trượt vào trên một đường sáng trong khi phòng cũ lùi lại.</string>
+    <string name="chat_transition_weave">Đan dệt</string>
+    <string name="chat_transition_weave_blurb">Các dải hổ phách và tím đan chéo đi lên, phòng thay đổi phía sau.</string>
+    <string name="chat_transition_bloom">Nở rộ</string>
+    <string name="chat_transition_bloom_blurb">Phòng mới mở ra thành vòng tròn từ dòng bạn vừa chạm.</string>
+    <string name="chat_transition_rise">Trồi lên</string>
+    <string name="chat_transition_rise_blurb">Phòng cũ ngả ra sau và chìm xuống; phòng mới trồi lên vào chỗ.</string>
+    <string name="chat_speed_slow">Chậm</string>
+    <string name="chat_speed_normal">Bình thường</string>
+    <string name="chat_speed_fast">Nhanh</string>
+
+    <string name="chat_pet_choose">Chọn thú cưng</string>
+    <string name="chat_pet_rides">%1$s đi cùng bạn trong ngăn kéo</string>
+    <string name="chat_pet_gateway">Thú cưng sống trên cổng — mọi nơi đều hiện cùng một con</string>
+    <plurals name="chat_pet_search">
+        <item quantity="other">Tìm trong %d thú cưng…</item>
+    </plurals>
+    <string name="chat_pet_installed_header">Đã cài</string>
+    <string name="chat_pet_catalog_header">Danh mục Petdex</string>
+    <string name="chat_pet_none">Không có thú cưng nào — Hermes Link đã được cấu hình chưa?</string>
+    <string name="chat_pet_no_match">Không có thú cưng nào khớp “%1$s”</string>
+    <string name="chat_pet_badge_active">đang dùng</string>
+    <string name="chat_pet_badge_hatched">nở cục bộ</string>
+    <string name="chat_pet_badge_curated">tuyển chọn</string>
+    <string name="chat_pet_badge_installed">đã cài</string>
+    <string name="chat_pet_active">Đang dùng</string>
+
+    <string name="chat_back">Quay lại</string>
+    <string name="chat_close_named">Đóng %1$s</string>
+    <string name="chat_loading_a11y">Đang tải</string>
+
+    <string name="chat_call_header">KERYX · CUỘC GỌI</string>
+    <string name="chat_call_mic_needed">Keryx cần micro để gọi.</string>
+    <string name="chat_call_listening">đang nghe</string>
+    <string name="chat_call_hearing">đang nghe bạn…</string>
+    <string name="chat_call_thinking">đang suy nghĩ</string>
+    <string name="chat_call_interrupt">chạm quả cầu để ngắt lời</string>
+    <string name="chat_call_muted">đã tắt tiếng</string>
+    <string name="chat_call_ended">cuộc gọi đã kết thúc</string>
+    <string name="chat_call_heard">“%1$s”</string>
+    <string name="chat_call_unmute">Bật tiếng</string>
+    <string name="chat_call_mute">Tắt tiếng</string>
+    <string name="chat_call_end">Kết thúc cuộc gọi</string>
+
+    <string name="chat_sources">Nguồn</string>
+    <string name="chat_source">nguồn</string>
+    <string name="chat_hand_clipboard">BỘ NHỚ TẠM</string>
+    <string name="chat_hand_phone">ĐIỆN THOẠI</string>
+    <string name="chat_hand_share">CHIA SẺ</string>
+    <string name="chat_hand_app">ỨNG DỤNG</string>
+    <string name="chat_hand_opens">MỞ</string>
+    <string name="chat_skill_distilled">Đã đúc kết kỹ năng</string>
+    <string name="chat_open_skill_forge">Mở trong Xưởng kỹ năng →</string>
+
+    <string name="chat_tap_in_turn">Xem lượt này toàn màn hình</string>
+    <string name="chat_stream_dropped">Mất luồng — đang khôi phục qua đồng bộ Matrix…</string>
+
+    <string name="chat_context_direct_only">Chỉ kết nối trực tiếp mới liệt kê chi tiết được cửa sổ ngữ cảnh.</string>
+    <string name="chat_context_read_failed">Không đọc được cửa sổ ngữ cảnh</string>
+    <string name="chat_context_title">Ngữ cảnh</string>
+    <string name="chat_context_used">%1$s / %2$s token</string>
+    <string name="chat_context_no_agent">Cổng chưa có tác tử nào đang chạy cho phiên này — hãy gửi gì đó trước.</string>
+
+    <string name="chat_chart">Biểu đồ</string>
+    <string name="chat_chart_summary">%1$s. Biểu đồ %2$s.</string>
+    <string name="chat_chart_summary_unit">%1$s. Biểu đồ %2$s, đơn vị %3$s.</string>
+    <string name="chat_chart_no_value">không có giá trị</string>
+    <string name="chat_chart_series">Chuỗi %1$d</string>
+    <string name="chat_chart_total">tổng</string>
+    <string name="chat_show_less">Thu gọn</string>
+    <plurals name="chat_show_all_lines">
+        <item quantity="other">Hiện tất cả %d dòng</item>
+    </plurals>
+
+    <string name="chat_aside_header">HỎI RIÊNG · không thuộc cuộc trò chuyện</string>
+    <string name="chat_dismiss">Đóng</string>
+    <string name="chat_aside_answering">…đang trả lời riêng</string>
+    <string name="chat_aside_failed">Hỏi riêng thất bại: %1$s</string>
+    <string name="chat_aside_no_answer">Không có câu trả lời.</string>
+
+    <string name="chat_action_success">THÀNH CÔNG</string>
+    <string name="chat_action_failed">THẤT BẠI</string>
+    <string name="chat_action_tag">HÀNH ĐỘNG</string>
+    <string name="chat_reasoning_live">Đang suy luận…</string>
+    <string name="chat_reasoning_title">Suy luận</string>
+    <string name="chat_show_drawing">hiện hình vẽ</string>
+    <string name="chat_drawing">Hình vẽ</string>
+
+    <string name="chat_done">Xong</string>
+
+    <string name="chat_art_mission_board">Một bảng nhiệm vụ trống với cây gậy sứ giả dựa vào</string>
+    <string name="chat_art_winged_clock">Một chiếc đồng hồ có cánh với mũi tên uốn quanh</string>
+    <string name="chat_art_robot">Đầu rô-bốt đội quả cầu có cánh của sứ giả, hai bên là chỗ trống</string>
+    <string name="chat_art_folder">Một thư mục chứa trang giấy có vẽ nhánh cây</string>
+    <string name="chat_art_scroll">Một cuộn giấy mở ra với kính lúp phía trên</string>
+    <string name="chat_art_bookmark">Một trang giấy có một dòng được đánh dấu và dải ruy băng đánh dấu trang</string>
+    <string name="chat_art_picture">Bức tranh đóng khung vẽ đồi và mặt trời, phía sau là một khung trống</string>
+
+    <string name="chat_memory">Bộ nhớ trò chuyện</string>
+    <string name="chat_ring_base">Bộ nhớ trò chuyện %1$dk / %2$dk token, %3$d phần trăm</string>
+    <plurals name="chat_ring_replies">
+        <item quantity="other">%1$s, còn khoảng %2$d câu trả lời trước khi tóm tắt</item>
+    </plurals>
+    <string name="chat_ring_until">%1$s, còn %2$dk đến khi tóm tắt</string>
+    <string name="chat_ring_next">%1$s, câu trả lời tiếp theo sẽ bắt đầu tóm tắt</string>
+
+    <string name="chat_folder_hint">Thư mục trên cổng (vd. ~/workspace/keryx)</string>
+    <string name="chat_folder_found">✓ đã tìm thấy thư mục</string>
+    <string name="chat_folder_missing">chưa có thư mục ở đó</string>
+    <string name="chat_known_workspaces">Không gian làm việc đã biết</string>
+    <string name="chat_folder_truncated">hơn 30 thư mục ở đây — nhập tiếp để thu hẹp</string>
+    <string name="chat_folder_more">+%1$d nữa — nhập tiếp để thu hẹp</string>
+
+    <string name="chat_console_starting">đang bắt đầu…</string>
+    <string name="chat_console_streaming">tác tử đang làm việc</string>
+    <string name="chat_console_waiting">đang chờ phê duyệt</string>
+    <string name="chat_console_completed">lượt đã xong</string>
+    <string name="chat_console_lost">mất kết nối</string>
+    <string name="chat_console_lost_why">mất kết nối — %1$s</string>
+    <string name="chat_console_failed">thất bại</string>
+    <string name="chat_console_failed_why">thất bại — %1$s</string>
+    <string name="chat_stop">Dừng</string>
+    <string name="chat_clear">Xóa</string>
+
+    <string name="chat_mark_hide">Ẩn nội dung nó nói</string>
+    <string name="chat_mark_read">Đọc nội dung nó nói</string>
+    <string name="chat_mark_system">Hệ thống: %1$s</string>
+    <string name="chat_summary_hide">Ẩn bản tóm tắt</string>
+    <string name="chat_summary_read">Đọc bản tóm tắt</string>
+    <string name="chat_context_compacted">🗜 Đã nén ngữ cảnh · %1$s</string>
+    <string name="chat_this_session_title">Phiên này</string>
+
+    <string name="chat_goal_loop">↻ vòng lặp · %1$s · %2$s</string>
+    <string name="chat_goal_heartbeat">♥ nhịp tim · %1$d · %2$s</string>
+    <string name="chat_goal_close">Đóng mục tiêu</string>
+    <string name="chat_goal_open">Mở mục tiêu</string>
+    <string name="chat_goal_exit">thoát %1$d</string>
+
+    <string name="chat_subagent_running_lower">tác tử phụ đang chạy</string>
+    <plurals name="chat_subagents_count">
+        <item quantity="other">%d tác tử phụ</item>
+    </plurals>
+    <string name="chat_subagent">tác tử phụ</string>
+    <string name="chat_delegated_task_lower">việc được giao</string>
+    <plurals name="chat_tool_count">
+        <item quantity="other">%d công cụ</item>
+    </plurals>
+    <string name="chat_tokens_k">%1$dk token</string>
+    <plurals name="chat_files_written">
+        <item quantity="other">ghi %d</item>
+    </plurals>
+    <string name="chat_interrupted">bị ngắt</string>
+    <string name="chat_duration_min_sec_compact">%1$dph%2$ds</string>
+
+    <string name="chat_flight_plan">KẾ HOẠCH BAY</string>
+    <string name="chat_flight_all_done">mọi bước đã hạ cánh</string>
+    <string name="chat_flight_next">tiếp: %1$s</string>
+    <string name="chat_join_sub">#alias:server hoặc !roomid:server</string>
+</resources>

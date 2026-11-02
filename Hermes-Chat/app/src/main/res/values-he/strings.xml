@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">שיחה חדשה</string>
+    <string name="shortcut_new_chat_long">התחלת שיחה חדשה</string>
+    <string name="shortcut_missions">משימות</string>
+    <string name="shortcut_missions_long">פתיחת לוח המשימות</string>
+    <string name="shortcut_runs">הרצות</string>
+    <string name="shortcut_runs_long">הרצות מתוזמנות והדוחות שלהן</string>
+
+    <string name="widget_description">הסוכן במבט אחד: החיבור, הסשן האחרון, מה שאמר לאחרונה והתור שבעבודה.</string>
+
+    <string name="note_tile_label">הודעה לסוכן</string>
+    <string name="note_tile_label_to">הודעה אל %1$s</string>
+    <string name="note_tile_live">מחובר</string>
+    <string name="note_tile_offline">לא מחובר</string>
+    <string name="note_placeholder">שורה אחת לסוכן…</string>
+    <string name="note_target_prefix">אל</string>
+    <string name="note_change_target">החלפת סשן</string>
+    <string name="note_no_sessions">אין עדיין סשן</string>
+    <string name="note_send">שליחה</string>
+    <string name="note_sent_to">נשלח אל %1$s</string>
+    <string name="note_send_failed">השליחה נכשלה</string>
+    <string name="note_locked">נעול</string>
+    <string name="note_unlock">ביטול נעילה</string>
+    <string name="note_unlock_title">ביטול הנעילה של Keryx</string>
+</resources>

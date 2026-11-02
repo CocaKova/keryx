@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_turn_failed">รอบนี้ล้มเหลว</string>
+    <string name="app_photo">รูปภาพ</string>
+    <string name="app_attachment">ไฟล์แนบ</string>
+    <string name="app_new_message">ข้อความใหม่</string>
+
+    <string name="app_approval_expired">คำขออนุมัติหมดอายุไปแล้ว</string>
+    <string name="app_approval_failed">อนุมัติไม่สำเร็จ: %1$s</string>
+    <string name="app_reply_failed">ตอบกลับไม่สำเร็จ: %1$s</string>
+    <string name="app_link_unreachable_matrix">เชื่อมต่อ Hermes Link ไม่ได้ (%1$s) — ใช้การซิงก์ Matrix แทน</string>
+    <string name="app_send_failed">ส่งไม่ได้: %1$s</string>
+    <string name="app_room_photo_updated">อัปเดตรูปห้องแล้ว</string>
+    <string name="app_room_photo_forbidden">ไม่มีสิทธิ์ตั้งรูปห้องนี้ — ต้องมีสิทธิ์ผู้ดูแลในห้อง</string>
+    <string name="app_room_photo_failed">ตั้งรูปไม่ได้: %1$s</string>
+    <string name="app_unknown_error">ข้อผิดพลาดที่ไม่ทราบสาเหตุ</string>
+    <string name="app_branched">แตกแขนงแล้ว — สำเนาของบทสนทนาทั้งหมดนี้</string>
+    <string name="app_branch_failed">แตกแขนงไม่สำเร็จ: %1$s</string>
+    <string name="app_not_sent">ยังไม่ได้ส่ง %1$s</string>
+    <string name="app_undo_done">ถอนการสนทนาล่าสุดแล้ว</string>
+    <string name="app_undo_nothing">ไม่มีอะไรให้ถอน</string>
+    <string name="app_still_working">ยังทำงานอยู่ — หยุดรอบนี้ก่อน</string>
+    <string name="app_undo_failed">เลิกทำไม่ได้: %1$s</string>
+    <string name="app_retry_nothing">ไม่มีอะไรให้ลองใหม่ — เกตเวย์ไม่มีรอบให้ถอน</string>
+    <string name="app_retry_failed">ลองใหม่ไม่ได้: %1$s</string>
+    <string name="app_taken_back_edit">ถอนแล้ว — แก้ไขแล้วส่งอีกครั้ง</string>
+    <string name="app_take_back_failed">ถอนไม่ได้ — ข้อความของคุณยังอยู่ในช่องพิมพ์ให้ส่งอีกครั้ง</string>
+    <string name="app_set_gateway_url_first">ตั้ง URL ของเกตเวย์ก่อน</string>
+    <string name="app_link_ok">Hermes Link ใช้ได้ — %1$s</string>
+    <string name="app_link_failed">Hermes Link ล้มเหลว: %1$s</string>
+    <string name="app_connection_error">การเชื่อมต่อผิดพลาด</string>
+    <string name="app_link_up_api_down">Hermes Link ทำงานอยู่ แต่เซิร์ฟเวอร์ API ของ Hermes ที่อยู่เบื้องหลังไม่ได้ทำงาน ภารกิจและการรันจึงโหลดไม่ได้ ตั้งค่า API_SERVER_ENABLED=true และ API_SERVER_KEY ใน ~/.hermes/.env แล้วรีสตาร์ตเกตเวย์</string>
+
+    <string name="app_pinned">ปักหมุดแล้ว</string>
+    <string name="app_pinned_named">ปักหมุด “%1$s” แล้ว</string>
+    <string name="app_unpinned">เลิกปักหมุดแล้ว</string>
+    <string name="app_unpinned_named">เลิกปักหมุด “%1$s” แล้ว</string>
+    <string name="app_pin_failed">ปักหมุดไม่สำเร็จ: %1$s</string>
+    <string name="app_unpin_failed">เลิกปักหมุดไม่สำเร็จ: %1$s</string>
+    <string name="app_marked_unread">ทำเครื่องหมายว่ายังไม่อ่านแล้ว</string>
+    <string name="app_mark_read_failed">ทำเครื่องหมายว่าอ่านแล้วไม่ได้: %1$s</string>
+    <string name="app_mark_unread_failed">ทำเครื่องหมายว่ายังไม่อ่านไม่ได้: %1$s</string>
+    <string name="app_sticky_no_catalog">อ่านรายการโมเดลไม่ได้ — เปิดด้วยค่าเริ่มต้นของเกตเวย์</string>
+    <string name="app_sticky_not_served">ตอนนี้ไม่มีบริการ %1$s — เปิดด้วยค่าเริ่มต้นของเกตเวย์</string>
+    <string name="app_sticky_needs_confirm">%1$s ต้องยืนยัน — เลือกในตัวเลือกโมเดล</string>
+    <string name="app_sticky_opened_fallback">เปิดด้วย %1$s — ตอนนี้ไม่มีบริการ %2$s</string>
+    <string name="app_sticky_opened">เปิดด้วย %1$s — ตัวเลือกล่าสุดของคุณ (โมเดลประจำ ในการตั้งค่า)</string>
+    <string name="app_sticky_refused">%1$s ถูกปฏิเสธ — เปิดด้วยค่าเริ่มต้นของเกตเวย์</string>
+    <string name="app_create_session_failed">สร้างเซสชันไม่ได้</string>
+    <string name="app_rename_failed">เปลี่ยนชื่อไม่สำเร็จ: %1$s</string>
+    <string name="app_archive_failed">เก็บถาวรไม่ได้: %1$s</string>
+    <string name="app_archived">เก็บถาวรแล้ว</string>
+    <string name="app_archived_named">เก็บถาวร “%1$s” แล้ว</string>
+    <string name="app_restore_failed">กู้คืนไม่ได้: %1$s</string>
+    <string name="app_restored">กู้คืนแล้ว</string>
+    <string name="app_restored_named">กู้คืน “%1$s” แล้ว</string>
+    <string name="app_archive_read_failed">อ่านคลังเก็บไม่ได้: %1$s</string>
+    <string name="app_older_sessions_failed">โหลดเซสชันที่เก่ากว่าไม่ได้: %1$s</string>
+    <string name="app_session_deleted">ลบเซสชันแล้ว</string>
+    <string name="app_delete_failed">ลบไม่สำเร็จ: %1$s</string>
+
+    <string name="app_steered">กำกับแล้ว — เอเจนต์จะเห็นในขั้นตอนถัดไป</string>
+    <string name="app_steer_declined_queued">เอเจนต์ไม่รับการกำกับ — เข้าคิวไว้สำหรับรอบถัดไป</string>
+    <string name="app_queue_failed">เข้าคิวไม่สำเร็จ: %1$s</string>
+    <string name="app_steer_failed">กำกับไม่สำเร็จ: %1$s</string>
+    <string name="app_goal_failed">เป้าหมาย: %1$s</string>
+    <string name="app_aside_needs_direct">การถามแทรกต้องใช้การเชื่อมต่อตรงกับเกตเวย์</string>
+    <string name="app_aside_failed">ถามแทรกไม่สำเร็จ: %1$s</string>
+    <string name="app_redirected">เปลี่ยนทิศทางแล้ว — คำตอบจะเริ่มใหม่ตามที่คุณแก้</string>
+    <string name="app_redirect_between_calls">อยู่ระหว่างการเรียก — สิ่งที่คุณแก้จะทำงานถัดไป</string>
+    <string name="app_redirect_finished_queued">คำตอบเสร็จไปแล้ว — เข้าคิวไว้สำหรับรอบถัดไป</string>
+    <string name="app_redirect_unsupported">เอเจนต์นี้เปลี่ยนทิศทางไม่ได้ — ใช้การกำกับแทน</string>
+    <string name="app_redirect_failed">เปลี่ยนทิศทางไม่สำเร็จ: %1$s</string>
+    <string name="app_branched_from_message">แตกแขนงแล้ว — นี่คือเซสชันใหม่จากข้อความนั้น</string>
+    <string name="app_queued">เข้าคิวแล้ว — จะส่งเมื่อรอบนี้เสร็จ</string>
+    <string name="app_stopped">หยุดแล้ว</string>
+    <string name="app_stop_failed">หยุดไม่สำเร็จ: %1$s</string>
+    <string name="app_crew_steered">กำกับ %1$s แล้ว — จะเห็นในขั้นตอนถัดไป</string>
+    <string name="app_crew_steer_rejected">%1$s ไม่รับ — มันขึ้นกับช่องทางอื่น หรือกำลังจะเสร็จแล้ว</string>
+    <string name="app_crew_stopped">หยุด %1$s แล้ว</string>
+    <string name="app_crew_already_finished">%1$s เสร็จไปแล้ว</string>
+
+    <string name="app_model_confirm">%1$s แตะอีกครั้งเพื่อยืนยัน</string>
+    <string name="app_model_expensive">โมเดลนี้มีราคาแพง</string>
+    <string name="app_model_deferred">%1$s จะเริ่มใช้ในรอบถัดไป — เซสชันนี้</string>
+    <string name="app_model_deferred_global">%1$s จะเริ่มใช้ในรอบถัดไป — ทุกเซสชัน</string>
+    <string name="app_model_switched">%1$s — เซสชันนี้</string>
+    <string name="app_model_switched_global">%1$s — ทุกเซสชัน</string>
+    <string name="app_model_switch_refused">การสลับถูกปฏิเสธ: %1$s</string>
+    <string name="app_reasoning_refused_unknown">สมองนี้ปฏิเสธระดับการคิดนั้น — เลือกระดับที่ต่ำกว่า</string>
+    <string name="app_reasoning_refused_floor">สมองนี้ปฏิเสธการคิดระดับ %1$s และไม่มีระดับที่ต่ำกว่าให้ลองแล้ว</string>
+    <string name="app_reasoning_dropped">สมองนี้ปฏิเสธการคิดระดับ %1$s — ลดเหลือ %2$s</string>
+    <string name="app_reasoning_drop_failed">สมองนี้ปฏิเสธการคิดระดับ %1$s และลดเหลือ %2$s ไม่ได้</string>
+    <string name="app_reasoning_set">การให้เหตุผล → %1$s — เซสชันนี้</string>
+    <string name="app_reasoning_set_global">การให้เหตุผล → %1$s สำหรับทุกเซสชัน</string>
+    <string name="app_reasoning_refused">การให้เหตุผลถูกปฏิเสธ: %1$s</string>
+
+    <string name="app_room_joined">เข้าร่วมแล้ว — ห้องจะปรากฏในการซิงก์ครั้งถัดไป</string>
+    <string name="app_join_failed">เข้าร่วมไม่สำเร็จ: %1$s</string>
+    <string name="app_invite_declined">ปฏิเสธคำเชิญแล้ว</string>
+    <string name="app_decline_failed">ปฏิเสธไม่สำเร็จ: %1$s</string>
+    <string name="app_start_chat_failed">เริ่มแชทไม่ได้</string>
+    <string name="app_create_room_failed">สร้างห้องไม่ได้</string>
+    <string name="app_join_failed_short">เข้าร่วมไม่ได้</string>
+    <string name="app_invite_sent">ส่งคำเชิญแล้ว</string>
+    <string name="app_invite_failed">เชิญไม่สำเร็จ: %1$s</string>
+    <string name="app_left_room">ออกจากห้องแล้ว</string>
+    <string name="app_leave_failed">ออกจากห้องไม่สำเร็จ: %1$s</string>
+
+    <string name="app_try_again">ลองอีกครั้ง</string>
+    <string name="app_group_rooms_unavailable">ไม่มีรายการห้อง</string>
+    <string name="app_not_connected">ไม่ได้เชื่อมต่อกับเกตเวย์</string>
+    <string name="app_group_stop_failed">หยุดห้องไม่ได้: %1$s</string>
+    <string name="app_group_approval_failed">ตอบคำขออนุมัติไม่ได้: %1$s</string>
+    <string name="app_group_rename_failed">เปลี่ยนชื่อไม่ได้: %1$s</string>
+    <string name="app_group_disband_failed">ยุบไม่ได้: %1$s</string>
+
+    <string name="app_no_stt_endpoint">ยังไม่ได้ตั้งค่าปลายทาง STT</string>
+    <string name="app_no_tts_endpoint">ยังไม่ได้ตั้งค่าปลายทาง TTS</string>
+    <string name="app_no_stt_set">ยังไม่ได้ตั้งปลายทาง STT</string>
+    <string name="app_no_tts_set">ยังไม่ได้ตั้งปลายทาง TTS</string>
+    <string name="app_voice_unreachable">เชื่อมต่อ %1$s ที่ %2$s ไม่ได้ (%3$s)</string>
+    <string name="app_voice_ears">หู (STT)</string>
+    <string name="app_voice_mouth">เสียง (TTS)</string>
+
+    <string name="app_console_run_live">มีการรันอยู่แล้ว — หยุดหรือรอให้เสร็จ</string>
+    <string name="app_link_off">Hermes Link ปิดอยู่ — เปิดได้ในการตั้งค่า</string>
+    <string name="app_export_needs_gateway">การส่งออกต้องใช้ช่องทางเกตเวย์</string>
+    <string name="app_export_too_old">เกตเวย์นี้เก่าเกินกว่าจะส่งออกเซสชันได้</string>
+    <string name="app_export_subject">เซสชัน Hermes</string>
+    <string name="app_export_unreadable">ไฟล์ที่ส่งออกอ่านไม่ได้</string>
+
+    <string name="app_unsaved">นำออกจากที่บันทึกไว้แล้ว</string>
+    <string name="app_saved">เก็บไว้แล้ว — ดูได้ในคลังเก็บ</string>
+    <string name="app_pet_adopt_failed">รับเลี้ยง %1$s ไม่ได้</string>
+
+    <string name="app_channel_messages">ข้อความ</string>
+    <string name="app_channel_messages_desc">ข้อความใหม่จากเอเจนต์ Hermes และห้องของคุณ</string>
+    <string name="app_notify_you">คุณ</string>
+    <string name="app_notify_title_failed">%1$s · รอบล้มเหลว</string>
+    <string name="app_notify_reply">ตอบกลับ</string>
+    <string name="app_notify_reply_to">ตอบกลับ %1$s</string>
+    <string name="app_notify_mark_read">อ่านแล้ว</string>
+    <plurals name="app_notify_conversations">
+        <item quantity="other">%d บทสนทนา</item>
+    </plurals>
+    <string name="app_channel_gate">การอนุมัติ &amp; คำถาม</string>
+    <string name="app_channel_gate_desc">เอเจนต์หยุดรอคำตอบของคุณ</string>
+    <string name="app_notify_answer">ตอบ</string>
+    <string name="app_channel_runs">เอเจนต์กำลังทำงาน</string>
+    <string name="app_channel_runs_desc">บรรทัดสถานะแบบเงียบขณะเอเจนต์ทำงาน: กำลังทำอะไรและนานเท่าไร</string>
+    <string name="app_notify_stop">หยุด</string>
+    <string name="app_channel_missions">ภารกิจ</string>
+    <string name="app_channel_missions_desc">ภารกิจที่เสร็จ ติดขัด หรือล้มเลิกบนบอร์ดของเอเจนต์</string>
+
+    <string name="app_push_checking">กำลังตรวจหาข้อความ…</string>
+    <string name="app_notify_sending_text">กำลังส่ง: %1$s</string>
+    <string name="app_notify_answering">กำลังตอบ…</string>
+    <string name="app_notify_gate_unreachable">เชื่อมต่อเกตเวย์ไม่ได้ — แตะเพื่อตอบ</string>
+    <string name="app_notify_answered">ตอบแล้ว — เอเจนต์กลับมาทำงานต่อ</string>
+    <string name="app_notify_request_timed_out">คำขอนั้นหมดเวลาไปแล้ว</string>
+    <string name="app_notify_answer_failed">ตอบไม่ได้ — แตะเพื่อเปิด</string>
+    <string name="app_notify_sending">กำลังส่ง…</string>
+    <string name="app_notify_send_failed">ส่ง “%1$s” ไม่ได้ — แตะเพื่อเปิด</string>
+
+    <string name="app_push_connecting">กำลังเชื่อมต่อ…</string>
+    <string name="app_push_connected">เชื่อมต่อแล้ว — พุชในตัว</string>
+    <string name="app_push_reconnecting">กำลังเชื่อมต่อใหม่…</string>
+    <string name="app_channel_push">การเชื่อมต่อพุช</string>
+    <string name="app_channel_push_desc">การเชื่อมต่อของ Keryx เองไปยังเซิร์ฟเวอร์พุชของคุณ (ไม่ต้องใช้แอปตัวกระจาย)</string>
+    <string name="app_push_title">พุชของ Keryx</string>
+
+    <string name="app_scan_pairing_inside">สแกนโค้ดจับคู่ภายใน Keryx: เชื่อมต่อเกตเวย์ของคุณ › สแกนโค้ดจับคู่</string>
+
+    <string name="app_share_nothing">ไม่มีอะไรให้แชร์</string>
+    <string name="app_share_foreign_only">Keryx ส่งได้เฉพาะไฟล์ที่แชร์มาจากแอปอื่น</string>
+    <string name="app_share_too_large_mb">ไฟล์ใหญ่เกินกว่าจะส่ง (%1$d MB)</string>
+    <string name="app_share_too_large">ไฟล์ใหญ่เกินกว่าจะส่ง</string>
+    <string name="app_share_read_failed">อ่าน %1$s ไม่ได้</string>
+    <plurals name="app_share_attachments">
+        <item quantity="other">ไฟล์แนบ %d รายการ</item>
+    </plurals>
+    <string name="app_share_note_label">เพิ่มโน้ต (ไม่บังคับ)</string>
+    <string name="app_share_note_hint">สรุปสิ่งนี้ / จำสิ่งนี้ไว้ / …</string>
+
+    <string name="app_hands_cannot">ไม่มีอะไรในโทรศัพท์นี้ทำแบบนั้นได้</string>
+    <string name="app_hands_no_app">ไม่มีแอปชื่อ “%1$s”</string>
+    <string name="app_hands_no_handler">ไม่มีอะไรในโทรศัพท์นี้รองรับ %1$s</string>
+    <string name="app_hands_failed">ทำไม่ได้: %1$s</string>
+    <string name="app_hands_no_flash">โทรศัพท์นี้ไม่มีไฟฉาย</string>
+
+    <string name="app_crash_log_subject">บันทึกข้อขัดข้องของ Keryx</string>
+    <string name="app_crash_log_share">แชร์บันทึกข้อขัดข้อง</string>
+    <string name="app_share">แชร์</string>
+    <string name="app_share_named">แชร์ %1$s</string>
+
+    <string name="app_call_hearing_failed">ฟังไม่สำเร็จ: %1$s</string>
+    <string name="app_call_turn_failed">รอบของเอเจนต์ล้มเหลว</string>
+    <string name="app_call_voice_failed">เสียงล้มเหลว: %1$s</string>
+    <string name="app_call_no_reply">เกตเวย์ไม่ตอบกลับ</string>
+    <string name="app_tts_failed">อ่านออกเสียงไม่สำเร็จ: %1$s</string>
+    <string name="app_tts_audio_unavailable">ไม่มีเสียง</string>
+    <string name="app_tts_no_audio">เซิร์ฟเวอร์เสียงไม่ได้ส่งเสียงมา</string>
+    <string name="app_tts_no_engine">อุปกรณ์นี้ไม่มีเอนจินอ่านออกเสียง</string>
+    <string name="app_tts_playback_failed">เล่นเสียงไม่สำเร็จ</string>
+    <string name="app_tts_playback_failed_why">เล่นเสียงไม่สำเร็จ: %1$s</string>
+
+    <string name="app_tour_welcome_title">ยินดีต้อนรับสู่ Keryx</string>
+    <string name="app_tour_welcome_text">นี่คือเดโม: เกตเวย์จำลองบนโทรศัพท์ของคุณ และเอเจนต์ของมันกำลังทำงานอยู่ มาดูรอบๆ กันก่อนเชื่อมต่อเกตเวย์ของคุณเอง</string>
+    <string name="app_tour_plan_title">แผนของมัน</string>
+    <string name="app_tour_plan_text">เอเจนต์แบ่งงานเป็นขั้นตอนและติ๊กทีละข้อเมื่อทำเสร็จ ระหว่างที่ทำงาน Keryx จะแสดงการแจ้งเตือนสดของงานไว้ คุณจึงเก็บโทรศัพท์ได้เลย</string>
+    <string name="app_tour_approval_title">ถามก่อนเสมอ</string>
+    <string name="app_tour_approval_text">ก่อนทำอะไรที่เสี่ยง เช่น ลบโฟลเดอร์ เอเจนต์จะหยุดและถามก่อน ตอบที่นี่หรือจากการแจ้งเตือนได้เลย</string>
+    <string name="app_tour_approval_text_demo">ก่อนทำอะไรที่เสี่ยง เช่น ลบโฟลเดอร์ เอเจนต์จะหยุดและถามก่อน ตอบที่นี่หรือจากการแจ้งเตือนได้เลย ลองดูเมื่อจบทัวร์ แล้วดูมันทำงานจนเสร็จ</string>
+    <string name="app_tour_composer_title">ขออะไรก็ได้</string>
+    <string name="app_tour_composer_text">มอบงานให้เอเจนต์ด้วยภาษาธรรมดา มันทำงานต่อแม้คุณออกไป และ Keryx จะบอกเมื่อเสร็จ</string>
+    <string name="app_tour_model_title">สมองตัวไหนตอบ</string>
+    <string name="app_tour_model_text">สลับโมเดลสำหรับเซสชันนี้ หรือสำหรับทุกเซสชันนับจากนี้</string>
+    <string name="app_tour_new_session_title">หน้าใหม่</string>
+    <string name="app_tour_new_session_text">เริ่มเซสชันใหม่ กดค้างไว้เพื่อดูตัวเลือก เช่น ตั้งชื่อหรือเซสชันชั่วคราว</string>
+    <string name="app_tour_drawer_title">ทุกอย่างที่เหลือ</string>
+    <string name="app_tour_drawer_text">เซสชันของคุณและส่วนอื่นๆ ของ Keryx อยู่หลังปุ่มนี้</string>
+    <string name="app_tour_lenses_title">สิ่งที่รอคุณ</string>
+    <string name="app_tour_lenses_text">กรองรายการให้เหลือเซสชันที่รอคุณ กำลังทำงาน หรือยังไม่อ่าน</string>
+    <string name="app_tour_missions_title">ภารกิจ</string>
+    <string name="app_tour_missions_text">มอบงานที่ยาวกว่าให้เอเจนต์เป็นการ์ดบนบอร์ด มันจะทำไปทีละใบและถามเมื่อต้องการคุณ</string>
+    <string name="app_tour_runs_title">การรัน</string>
+    <string name="app_tour_runs_text">งานตามกำหนดเวลา และผลของการรันแต่ละครั้ง</string>
+    <string name="app_tour_bots_title">บอท</string>
+    <string name="app_tour_bots_text">โปรไฟล์อื่นๆ ของเอเจนต์ แต่ละตัวมีความจำ ทักษะ และแชทเป็นของตัวเอง</string>
+    <string name="app_tour_archive_title">คลังเก็บ</string>
+    <string name="app_tour_archive_text">ทุกอย่างที่เคยพูด ค้นหาได้บนโทรศัพท์ แม้เกตเวย์จะล่ม</string>
+    <string name="app_tour_gateway_title">เกตเวย์ของคุณ</string>
+    <string name="app_tour_gateway_text_demo">เมื่อใช้ Hermes ของคุณเอง ส่วนนี้จะแสดงการเชื่อมต่อ โมเดล และเวอร์ชัน ทุกอย่างที่เพิ่งเห็นทำงานเหมือนกันบนเกตเวย์จริง: เชื่อมต่อของคุณแล้วใช้ได้ทันที</string>
+    <string name="app_tour_gateway_text">การเชื่อมต่อ โมเดล และเวอร์ชันของ Hermes แตะเพื่อเปิดเกตเวย์ ส่วนรูปเฟืองเปิดการตั้งค่า ซึ่งมีทัวร์นี้อยู่ด้วย</string>
+    <string name="app_tour_gateway_text_direct">การเชื่อมต่อ โมเดล และเวอร์ชันของ Hermes แตะเพื่อเปิดเกตเวย์ ส่วนรูปเฟืองเปิดการตั้งค่า ซึ่งมีทัวร์นี้อยู่ด้วย มี Hermes มากกว่าหนึ่งตัวไหม เพิ่มแล้วสลับไปมาได้ที่นี่</string>
+    <string name="app_tour_cta_connect">เชื่อมต่อเกตเวย์ของคุณ</string>
+    <string name="app_tour_cta_add_gateway">เพิ่มเกตเวย์</string>
+
+    <string name="app_whatsnew_title">มีอะไรใหม่ใน Keryx 3.0</string>
+    <string name="app_whatsnew_text">ดูสั้นๆ ว่ามีอะไรเปลี่ยน ข้ามได้ถ้าต้องการ: ยังดูได้ใน การตั้งค่า › เกี่ยวกับ</string>
+    <string name="app_whatsnew_point_title">ถามว่าอะไรอยู่ตรงไหน</string>
+    <string name="app_whatsnew_point_text">ถามเอเจนต์ว่า \"งานตามกำหนดเวลาของฉันอยู่ที่ไหน\" แล้วมันจะชี้ไปที่ตำแหน่งนั้นได้บนโทรศัพท์เลย เกตเวย์ของคุณต้องมี keryx-stream 0.6 ขึ้นไป</string>
+    <string name="app_whatsnew_memory_title">ความจำของแชท</string>
+    <string name="app_whatsnew_memory_text">วงแหวนข้างโมเดลตอนนี้บอกว่าแชทนี้ยังรับคำตอบได้อีกกี่ครั้ง และจะแสดงเฉพาะเมื่อจำเป็น แตะเพื่อดูว่าอะไรใช้พื้นที่อยู่</string>
+    <string name="app_whatsnew_drawer_title">ลิ้นชักแบบใหม่</string>
+    <string name="app_whatsnew_drawer_text_direct">แต่ละแชทมีสีและสัญลักษณ์ของตัวเอง วงแหวนบอกว่าแชทไหนกำลังทำงาน และตัวกรองเหล่านี้ช่วยกรองรายการให้เหลือสิ่งที่รอคุณ</string>
+    <string name="app_whatsnew_drawer_text">แต่ละแชทมีสีและสัญลักษณ์ของตัวเอง และวงแหวนบอกว่าแชทไหนกำลังทำงาน</string>
+    <string name="app_whatsnew_cards_title">การ์ดด้วยภาษาง่ายๆ</string>
+    <string name="app_whatsnew_cards_text">การ์ดภารกิจตอนนี้เปิดมาพร้อมสถานการณ์ปัจจุบันและสิ่งเดียวที่ต้องทำต่อ รายละเอียดทางเทคนิคยังอยู่ในส่วนรายละเอียด</string>
+    <string name="app_whatsnew_look_title">หน้าตาและการอัปเดต</string>
+    <string name="app_whatsnew_look_text_direct">การตั้งค่า › รูปลักษณ์ มีสไตล์การคิดแบบใหม่และห้าวิธีในการเปลี่ยนแชท ถ้าใช้ keryx-stream รุ่นล่าสุด แผงอัปเดตของเกตเวย์ให้คุณเลือกรุ่น Stable หรือ Edge หากต้องการเพิ่ม Hermes อีกตัว ให้รัน hermes keryx pair บนเครื่องนั้นแล้วสแกนโค้ด</string>
+    <string name="app_whatsnew_look_text">การตั้งค่า › รูปลักษณ์ มีสไตล์การคิดแบบใหม่และห้าวิธีในการเปลี่ยนแชท ทัวร์และคำแนะนำต่างๆ อยู่ใน การตั้งค่า › เกี่ยวกับ</string>
+
+    <string name="app_hint_missions_title">ภารกิจ</string>
+    <string name="app_hint_missions_text">งานที่ยาวกว่าอยู่ที่นี่ในรูปแบบการ์ด เอเจนต์จะรับไปทำทีละใบ และการ์ดที่ต้องการคุณจะขึ้นไปอยู่บนสุด แตะ + เพื่อมอบงาน</string>
+    <string name="app_hint_runs_title">การรัน</string>
+    <string name="app_hint_runs_text">งานตามกำหนดเวลา เช่น สรุปข่าวตอนเช้าหรือการตรวจทุกคืน ผลของการรันแต่ละครั้งจะมาที่นี่ ขอเอเจนต์ให้ตั้งให้ได้</string>
+    <string name="app_hint_bots_title">บอท</string>
+    <string name="app_hint_bots_text">บอทแต่ละตัวคือโปรไฟล์ของ Hermes มีความจำ ทักษะ และแชทของตัวเอง เปิดตัวหนึ่งเพื่อคุย หรือรวมหลายตัวไว้ในแชทกลุ่ม</string>
+    <string name="app_hint_gateway_title">เกตเวย์ของคุณ</string>
+    <string name="app_hint_gateway_text">สถานะของ Hermes ที่คุณเชื่อมต่ออยู่ และสิ่งที่อยู่เบื้องหลัง: โมเดลและการตั้งค่า งาน ทักษะ ความจำ และเครื่องมือ</string>
+    <string name="app_hint_tapin_title">Tap-In</string>
+    <string name="app_hint_tapin_text">เอเจนต์ขณะทำงาน แบบเต็มจอ: กำลังคิดอะไร เครื่องมือที่ใช้ และผู้ช่วยที่ส่งออกไป คุณกำกับมันจากที่นี่ได้ด้วย</string>
+    <string name="app_hint_artifact_title">หน้าที่เอเจนต์สร้าง</string>
+    <string name="app_hint_artifact_text">รายงาน ม็อกอัป และหน้าที่เอเจนต์เขียนจะเปิดที่นี่บนโทรศัพท์ บันทึกหรือแชร์ได้ด้วยปุ่มด้านบน</string>
+
+    <string name="app_tour_pane">ทัวร์</string>
+    <string name="app_tour_end">จบทัวร์</string>
+    <string name="app_tour_progress">%1$d จาก %2$d</string>
+    <string name="app_tour_back">ย้อนกลับ</string>
+    <string name="app_tour_done">เสร็จ</string>
+    <string name="app_tour_got_it">เข้าใจแล้ว</string>
+    <string name="app_tour_next">ถัดไป</string>
+</resources>

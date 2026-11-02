@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_theme_to_light">Açık temaya geç</string>
+    <string name="chat_theme_follow_system">Sistemi izle</string>
+    <string name="chat_theme_to_dark">Koyu temaya geç</string>
+    <string name="chat_new_chat">Yeni sohbet</string>
+    <string name="chat_drawer_jump_hint">Git…</string>
+    <string name="chat_lens_needs_you">Seni bekliyor</string>
+    <string name="chat_lens_running">Çalışıyor</string>
+    <string name="chat_lens_unread">Okunmamış</string>
+    <string name="chat_lens_archived">Arşivlenmiş</string>
+    <string name="chat_drawer_invites">Davetler</string>
+    <string name="chat_place_missions">Görevler</string>
+    <string name="chat_place_runs">Çalıştırmalar</string>
+    <string name="chat_place_bots">Botlar</string>
+    <string name="chat_place_projects">Projeler</string>
+    <string name="chat_place_shipyard">Tersane</string>
+    <string name="chat_place_archive">Arşiv</string>
+    <string name="chat_place_gateway">Ağ Geçidi</string>
+    <string name="chat_place_settings">Ayarlar</string>
+    <string name="chat_drawer_places">Yerler</string>
+    <string name="chat_drawer_commands">Komutlar</string>
+    <string name="chat_drawer_no_matches">Eşleşme yok</string>
+    <string name="chat_drawer_nothing_archived">Arşivlenmiş bir şey yok</string>
+    <string name="chat_drawer_nothing_waiting">Seni bekleyen bir şey yok</string>
+    <string name="chat_drawer_nothing_running">Çalışan bir şey yok</string>
+    <string name="chat_drawer_all_read">Hepsi okundu</string>
+    <string name="chat_session_id_copied">Oturum kimliği kopyalandı</string>
+    <string name="chat_moved_to_project">Taşındı: %1$s</string>
+    <string name="chat_drawer_reaching_back">Geriye gidiliyor…</string>
+    <string name="chat_drawer_show_older">Daha eski: %1$s</string>
+    <string name="chat_drawer_in_transcripts">Dökümlerde</string>
+    <string name="chat_demo_gateway">demo ağ geçidi</string>
+    <string name="chat_demo_gateway_page">Bir ağ geçidi bağladığında sayfası burada olacak.</string>
+    <string name="chat_connect">Bağlan</string>
+    <string name="chat_open_gateway">Ağ Geçidini aç</string>
+    <string name="chat_settings">Ayarlar</string>
+    <string name="chat_shelf_fold">Daralt: %1$s</string>
+    <string name="chat_shelf_open">Aç: %1$s</string>
+    <string name="chat_room_forked">Başka bir konuşmadan çatallandı</string>
+    <string name="chat_room_temporary">Geçici — sonraki açılışta silinir</string>
+    <string name="chat_room_pinned">Sabitlendi</string>
+    <string name="chat_mark_unread">Okunmadı olarak işaretle</string>
+    <string name="chat_archive">Arşivle</string>
+    <string name="chat_archive_hint">Listeden kalkar, ağ geçidinde kalır</string>
+    <string name="chat_restore_to_list">Listeye geri al</string>
+    <string name="chat_export_ellipsis">Dışa aktar…</string>
+    <string name="chat_copy_session_id">Oturum kimliğini kopyala</string>
+    <string name="chat_invite_user">Kullanıcı davet et…</string>
+    <string name="chat_rename_ellipsis">Yeniden adlandır…</string>
+    <string name="chat_move_to_project">Projeye taşı…</string>
+    <string name="chat_leave_room">Odadan ayrıl</string>
+    <string name="chat_delete_session_ellipsis">Oturumu sil…</string>
+    <string name="chat_invite_to">Davet et: %1$s</string>
+    <string name="chat_invite">Davet et</string>
+    <string name="chat_cancel">İptal</string>
+    <string name="chat_leave_title">%1$s odasından ayrılınsın mı?</string>
+    <string name="chat_leave_body">Mesajlarını artık almayacaksın; yeniden katılmak için yeni bir davet gerekir.</string>
+    <string name="chat_leave">Ayrıl</string>
+    <string name="chat_rename_session">Oturumu yeniden adlandır</string>
+    <string name="chat_rename">Yeniden adlandır</string>
+    <string name="chat_delete_title">%1$s silinsin mi?</string>
+    <string name="chat_delete_session_body">Oturumu ve tüm dökümünü ağ geçidinden siler. Bu işlem geri alınamaz.</string>
+    <string name="chat_delete">Sil</string>
+    <string name="chat_invited_to_room">Bu odaya davet edildin</string>
+    <string name="chat_decline">Reddet</string>
+    <string name="chat_accept">Kabul et</string>
+    <string name="chat_running">Çalışıyor</string>
+    <string name="chat_age_now">şimdi</string>
+    <string name="chat_age_minutes">%1$d dk</string>
+    <string name="chat_age_hours">%1$d sa</string>
+    <string name="chat_age_days">%1$d g</string>
+    <string name="chat_age_weeks">%1$d hf</string>
+    <plurals name="chat_door_needs_you">
+        <item quantity="one">%1$s, %2$s seni bekliyor</item>
+        <item quantity="other">%1$s, %2$s seni bekliyor</item>
+    </plurals>
+    <string name="chat_door_unread">%1$s, %2$s okunmamış</string>
+
+    <string name="chat_bot_new_title">%1$s ile baştan başlansın mı?</string>
+    <string name="chat_bot_new_body">Sıkıştır bu konuşmayı korur ve %1$s botunun çalışma bağlamını temizler.\n\nYeni bir Bot Sohbeti bunu emekliye ayırır — %1$s botunun geçmiş sohbetlerinde okunabilir kalır — ve yenisini başlatır.</string>
+    <string name="chat_bot_new_fresh">Yeni Bot Sohbeti</string>
+    <string name="chat_bot_new_compact">Sıkıştır</string>
+    <string name="chat_bot_chat_chip">Bot Sohbeti</string>
+    <string name="chat_menu">Menü</string>
+    <plurals name="chat_menu_waiting">
+        <item quantity="one">Menü, %d seni bekliyor</item>
+        <item quantity="other">Menü, %d seni bekliyor</item>
+    </plurals>
+    <plurals name="chat_menu_unread">
+        <item quantity="one">Menü, %d okunmamış</item>
+        <item quantity="other">Menü, %d okunmamış</item>
+    </plurals>
+    <string name="chat_new_session_failed">Oturum başlatılamadı. %1$s</string>
+    <string name="chat_new_session_hold">Yeni oturum (seçenekler için basılı tut)</string>
+    <string name="chat_unpin_run">Bu çalıştırmanın sabitlemesini kaldır</string>
+    <string name="chat_pin_run">Bu çalıştırmayı sabitle</string>
+    <string name="chat_new_session">Yeni oturum</string>
+    <string name="chat_new_session_confirm_title">Yeni oturum başlatılsın mı?</string>
+    <string name="chat_new_session_confirm_body">Ajan hâlâ çalışıyor — /new mevcut çalıştırmayı bitirir ve sonucu atılır.</string>
+    <string name="chat_new_session_confirm">Bitir ve yenisini başlat</string>
+    <string name="chat_find_in_chat">Sohbette bul</string>
+    <string name="chat_call_needs_voice">Önce Ayarlar → Ses bölümünden STT ve TTS uç noktalarını ayarla</string>
+    <string name="chat_call">Ara</string>
+    <string name="chat_reasoning_header">AKIL YÜRÜTME</string>
+    <string name="chat_reasoning_sub_default">seviye oturumlar arasında korunur</string>
+    <string name="chat_reasoning_local_brain">yerel beyin</string>
+    <string name="chat_reasoning_model">model</string>
+    <string name="chat_reasoning_sub_binary">%1$s · açık/kapalı anahtarı</string>
+    <string name="chat_reasoning_sub_none">%1$s · akıl yürütme ayarı yok</string>
+    <string name="chat_reasoning_sub_session">%1$s · bu oturumun seviyeleri</string>
+    <string name="chat_reasoning_sub_scale">%1$s · seviye ölçeği</string>
+    <string name="chat_reasoning_no_dial">Bu model seviye almıyor — Hermes seviye göndermez.</string>
+    <string name="chat_reasoning_every_session">Tüm oturumlar</string>
+    <string name="chat_reasoning_this_session">Yalnızca bu oturum</string>
+    <string name="chat_reasoning_show">Akıl yürütmeyi göster</string>
+    <string name="chat_reasoning_hide">Akıl yürütmeyi gizle</string>
+    <string name="chat_reasoning_reset">Oturum ayarını sıfırla</string>
+    <string name="chat_demo_label">Demo</string>
+    <string name="chat_demo_connect">Ağ geçidini bağla</string>
+
+    <string name="chat_attach_failed">Eklenemedi (okunamıyor ya da 50 MB\'tan büyük)</string>
+    <string name="chat_no_camera">Hiçbir kamera uygulaması yanıt vermedi</string>
+    <string name="chat_mic_unavailable">Mikrofon kullanılamıyor</string>
+    <string name="chat_transcription_failed">Yazıya dökme başarısız: %1$s</string>
+    <string name="chat_mic_permission">Keryx dikte için mikrofon erişimine ihtiyaç duyuyor</string>
+    <string name="chat_nothing_to_read">Sesli okunacak bir şey yok</string>
+    <string name="chat_typing_one">%1$s yazıyor…</string>
+    <string name="chat_typing_two">%1$s ve %2$s yazıyor…</string>
+    <string name="chat_typing_many">Birkaç kişi yazıyor…</string>
+    <string name="chat_jump_newest">En yeniye git</string>
+    <plurals name="chat_jump_newest_count">
+        <item quantity="one">En yeniye git, %d yeni</item>
+        <item quantity="other">En yeniye git, %d yeni</item>
+    </plurals>
+    <string name="chat_attachments_cant_queue">Ekler sıraya alınamaz — bu tur bitince gönder</string>
+    <string name="chat_stop_hint">Önce düzeltmeni yaz — sonra dokunmak turu yönlendirir, daha fazlası için basılı tut</string>
+    <string name="chat_busy_queue">Sonraki tur için sıraya al</string>
+    <string name="chat_busy_aside">Ara soru — sohbet dışında yanıtlanır</string>
+    <string name="chat_busy_redirect">Yeniden yönlendir — yanıtı bununla baştan başlat</string>
+    <string name="chat_starter_1">Bu oturumda neler yapabilirsin?</string>
+    <string name="chat_starter_2">Bugün neler var?</string>
+    <string name="chat_starter_3">Son zamanlarda neler üzerinde çalıştık?</string>
+    <string name="chat_starter_4">Küçük bir şeyi adım adım planlamama yardım et.</string>
+    <string name="chat_fresh_page">Temiz bir sayfa</string>
+    <string name="chat_fresh_page_sub">Ne istersen sor ya da bunlardan biriyle başla.</string>
+    <string name="chat_today">Bugün</string>
+    <string name="chat_yesterday">Dün</string>
+
+    <string name="chat_arrival_mark">%1$s · kendiliğinden · %2$s</string>
+    <string name="chat_bubble_hold_label">Yanıtla, tepki ver veya kopyala</string>
+    <string name="chat_copied">Kopyalandı</string>
+    <string name="chat_undo_title">Son karşılıklı mesajlar geri alınsın mı?</string>
+    <string name="chat_undo_body">Mesajın ve bu yanıt, oturumun ağ geçidindeki geçmişinden çıkar. Söyleyeceğin bir sonraki şey onlardan öncesinden devam eder.</string>
+    <string name="chat_undo_confirm">Geri al</string>
+    <string name="chat_keep">Koru</string>
+    <string name="chat_select_text">Metni seç</string>
+    <string name="chat_delete_message_title">Mesaj silinsin mi?</string>
+    <string name="chat_delete_message_body">Herkes için kaldırılır — bu işlem geri alınamaz.</string>
+    <string name="chat_sent">Gönderildi</string>
+    <string name="chat_stop_speaking">Okumayı durdur</string>
+    <string name="chat_go_to_quoted">Alıntılanan mesaja git</string>
+    <string name="chat_reaction_take_back">Tepkini geri al</string>
+    <string name="chat_reaction_add">Tepki ekle</string>
+    <string name="chat_react">Tepki ver</string>
+    <string name="chat_action_reply">Yanıtla</string>
+    <string name="chat_action_copy">Kopyala</string>
+    <string name="chat_action_copy_text">Metni kopyala</string>
+    <string name="chat_action_saved">Kaydedildi</string>
+    <string name="chat_action_save">Kaydet</string>
+    <string name="chat_action_unsave">Kaydedilenlerden kaldır</string>
+    <string name="chat_action_keep_archive">Arşivde sakla</string>
+    <string name="chat_action_stop">Durdur</string>
+    <string name="chat_action_read_aloud">Sesli oku</string>
+    <string name="chat_action_select">Seç</string>
+    <string name="chat_action_edit">Düzenle</string>
+    <string name="chat_action_edit_desc">Düzenle ve yeniden gönder</string>
+    <string name="chat_action_retry">Yeniden dene</string>
+    <string name="chat_action_retry_desc">Geri al ve yeniden söyle</string>
+    <string name="chat_action_branch">Dallandır</string>
+    <string name="chat_action_branch_desc">Buradan yeni bir oturum dallandır</string>
+    <string name="chat_action_undo">Geri al</string>
+    <string name="chat_action_undo_desc">Son karşılıklı mesajları geri al</string>
+    <string name="chat_action_delete_desc">Mesajı sil</string>
+    <string name="chat_reply_attachment">ek</string>
+    <string name="chat_reply_message">mesaj</string>
+
+    <string name="chat_archive_title">Arşiv</string>
+    <string name="chat_archive_waking">dizin uyandırılıyor…</string>
+    <plurals name="chat_archive_reaching">
+        <item quantity="one">%1$s hatırlandı · geriye gidiliyor…</item>
+        <item quantity="other">%1$s hatırlandı · geriye gidiliyor…</item>
+    </plurals>
+    <plurals name="chat_archive_error">
+        <item quantity="one">%1$s hatırlandı · %2$s</item>
+        <item quantity="other">%1$s hatırlandı · %2$s</item>
+    </plurals>
+    <plurals name="chat_archive_done">
+        <item quantity="one">%1$s mesaj hatırlandı</item>
+        <item quantity="other">%1$s mesaj hatırlandı</item>
+    </plurals>
+    <string name="chat_archive_jump_date">Tarihe git</string>
+    <string name="chat_archive_nothing_that_day">O gün için henüz dizinlenmiş bir şey yok</string>
+    <string name="chat_open">Aç</string>
+    <string name="chat_archive_tab_search">Ara</string>
+    <string name="chat_archive_tab_saved">Kaydedilenler</string>
+    <string name="chat_archive_tab_media">Medya</string>
+    <string name="chat_archive_search_hint">Söylenmiş her şeyde ara…</string>
+    <string name="chat_archive_recent">SON HATIRLANANLAR</string>
+    <string name="chat_archive_empty_title">Henüz hatırlanan bir şey yok</string>
+    <string name="chat_archive_empty_body">Oturumlar tarandıkça dizin dolar. Sonra uygulamanın gördüğü her mesaj bir arama uzaklığında olur.</string>
+    <string name="chat_archive_search_idle">Uygulamanın gördüğü her mesaj, bir arama uzaklığında.</string>
+    <string name="chat_archive_no_hits">“%1$s” için henüz bir şey yok</string>
+    <string name="chat_archive_opening">Arşiv açılıyor…</string>
+    <string name="chat_archive_saved_empty_title">Henüz saklanan bir şey yok</string>
+    <string name="chat_archive_saved_empty_body">Burada saklamak için bir mesaja uzun bas ve yer işaretine dokun.</string>
+    <string name="chat_archive_looking">Dizinlenenlere bakılıyor…</string>
+    <string name="chat_archive_media_empty_title">Henüz fotoğraf veya dosya yok</string>
+    <string name="chat_archive_media_empty_body">Sohbetlerindeki resimler ve dosyalar dizin doldukça burada toplanır.</string>
+    <string name="chat_image">resim</string>
+    <string name="chat_you">Sen</string>
+    <string name="chat_archive_context">Bağlam</string>
+    <string name="chat_archive_context_failed">O an yüklenemedi (bu oturum açmanın anahtarlarından eski olabilir).</string>
+    <string name="chat_archive_reach_earlier">Daha öncesi</string>
+    <string name="chat_archive_reach_later">Daha sonrası</string>
+
+    <string name="chat_attach">Ekle</string>
+    <string name="chat_composer_hint">Mesaj…</string>
+    <string name="chat_composer_hint_steer_stop">Bu turu yönlendirmek için yaz — ■ durdurur</string>
+    <string name="chat_composer_hint_steer">Bu turu yönlendirmek için yaz</string>
+    <string name="chat_dictate_stop">Dikteyi durdur</string>
+    <string name="chat_dictate">Dikte et</string>
+    <string name="chat_send_steer">Çalışan turu yönlendir</string>
+    <string name="chat_send_queue">Sonraki tur için sıraya al</string>
+    <string name="chat_send_stop">Turu durdur</string>
+    <string name="chat_send">Gönder</string>
+    <string name="chat_send_hold_menu">Sıraya al, ara soru sor veya yeniden yönlendir</string>
+    <string name="chat_send_hold_queue">Bunun yerine sonraki tur için sıraya al</string>
+    <string name="chat_send_hold_stop">Durdur ne yapar</string>
+    <string name="chat_choose_model">Model seç</string>
+    <string name="chat_model_label">Model: %1$s</string>
+    <string name="chat_reasoning">akıl yürütme</string>
+    <string name="chat_steer_hint">↪ turu yönlendirir · sıraya almak için basılı tut</string>
+    <string name="chat_replying_to">Yanıtlanan: %1$s</string>
+    <string name="chat_cancel_reply">Yanıtı iptal et</string>
+    <string name="chat_image_attached">Resim eklendi</string>
+    <string name="chat_file_attached">Dosya eklendi</string>
+    <string name="chat_remove_attachment">Eki kaldır</string>
+    <string name="chat_attach_photo">Fotoğraf</string>
+    <string name="chat_attach_file">Dosya</string>
+    <string name="chat_attach_camera">Kamera</string>
+
+    <string name="chat_tool_succeeded">Başarılı</string>
+    <string name="chat_tool_failed">Başarısız</string>
+    <string name="chat_tool_no_verdict">Sonuç yok</string>
+    <string name="chat_duration_seconds">%1$d sn</string>
+    <string name="chat_duration_millis">%1$d ms</string>
+    <string name="chat_tool_flagged">⚠ Hermes bu çıktıyı işaretledi</string>
+    <string name="chat_tool_flagged_with">⚠ Hermes bu çıktıyı işaretledi: %1$s</string>
+    <string name="chat_tool_diff">fark</string>
+    <string name="chat_tool_diff_show">Farkı göster</string>
+    <string name="chat_tool_diff_hide">Farkı gizle</string>
+    <string name="chat_tool_diff_label">Fark</string>
+    <string name="chat_tool_output">çıktı</string>
+    <string name="chat_tool_output_show">Çıktıyı göster</string>
+    <string name="chat_tool_output_hide">Çıktıyı gizle</string>
+    <string name="chat_tool_output_label">Çıktı</string>
+    <string name="chat_tool_exit_failed">Çıkış kodu %1$d, başarısız</string>
+    <string name="chat_tool_exit_ok">Çıkış kodu 0</string>
+    <plurals name="chat_tools_running">
+        <item quantity="one">%d araç çalışıyor…</item>
+        <item quantity="other">%d araç çalışıyor…</item>
+    </plurals>
+    <plurals name="chat_tools_ran">
+        <item quantity="one">%d araç çalıştı</item>
+        <item quantity="other">%d araç çalıştı</item>
+    </plurals>
+    <plurals name="chat_subagents_running">
+        <item quantity="one">%2$d alt ajandan %1$d tanesi çalışıyor</item>
+        <item quantity="other">%2$d alt ajandan %1$d tanesi çalışıyor</item>
+    </plurals>
+    <string name="chat_subagent_running">Alt ajan çalışıyor</string>
+    <plurals name="chat_delegated_tasks">
+        <item quantity="one">%d görev devredildi</item>
+        <item quantity="other">%d görev devredildi</item>
+    </plurals>
+    <string name="chat_delegated_task">Bir görev devredildi</string>
+    <string name="chat_working">Çalışıyor…</string>
+    <plurals name="chat_output_steps">
+        <item quantity="one">%d çıktı adımı</item>
+        <item quantity="other">%d çıktı adımı</item>
+    </plurals>
+    <plurals name="chat_run_with_failed">
+        <item quantity="one">%1$s · %2$d başarısız</item>
+        <item quantity="other">%1$s · %2$d başarısız</item>
+    </plurals>
+    <string name="chat_steps_fold">Adımları daralt</string>
+    <string name="chat_steps_show">Adımları göster</string>
+    <string name="chat_tap_in_run">Bu çalıştırmayı tam ekran aç</string>
+    <string name="chat_state_open">Açık</string>
+    <string name="chat_state_folded">Daraltılmış</string>
+
+    <string name="chat_approval_needed">Onay gerekiyor</string>
+    <string name="chat_approval_once">Bir kez izin ver</string>
+    <string name="chat_approval_session">Oturum</string>
+    <string name="chat_approval_always">Her zaman</string>
+    <string name="chat_approval_deny">Reddet</string>
+    <string name="chat_asking">Hermes soruyor</string>
+    <string name="chat_asking_batch">Hermes soruyor · %1$d / %2$d</string>
+    <string name="chat_sudo_needed">Sudo parolası gerekiyor</string>
+    <string name="chat_credential_needed">Kimlik bilgisi gerekiyor</string>
+    <string name="chat_stored_as">Ağ geçidinde şu adla saklanır: %1$s</string>
+    <string name="chat_multi_answers">Birden fazla yanıt verilebilir — aşağıya virgülle ayırarak yaz.</string>
+    <string name="chat_your_answer">Yanıtın</string>
+    <string name="chat_password">Parola</string>
+    <string name="chat_value">Değer</string>
+    <string name="chat_skip">Atla</string>
+
+    <string name="chat_new_conversation">Yeni konuşma</string>
+    <string name="chat_new_session_body">Yeni bir ağ geçidi oturumu. Şimdi adlandır ya da ilk mesajlaşma başlığını belirlesin.</string>
+    <string name="chat_title_optional">Başlık (isteğe bağlı)</string>
+    <string name="chat_agent">Ajan</string>
+    <string name="chat_temporary">Geçici</string>
+    <string name="chat_temporary_body">Uygulama bir sonraki açılışında ağ geçidinden silinir</string>
+    <string name="chat_create">Oluştur</string>
+    <string name="chat_error_line">⚠ %1$s</string>
+    <string name="chat_direct_message">Doğrudan mesaj</string>
+    <string name="chat_direct_message_sub">Bir kullanıcıyla bire bir sohbet et</string>
+    <string name="chat_start">Başlat</string>
+    <string name="chat_new_room">Yeni oda</string>
+    <string name="chat_new_room_sub">Adı olan bir oda; kişileri şimdi ya da sonra davet et</string>
+    <string name="chat_room_name">Oda adı</string>
+    <string name="chat_invite_optional">Davet et: @user:server (isteğe bağlı)</string>
+    <string name="chat_join_by_address">Adresle katıl</string>
+    <string name="chat_join">Katıl</string>
+
+    <string name="chat_prune_preview_failed">önizleme başarısız</string>
+    <string name="chat_prune_confirm_title">Oturum temizliğini onayla</string>
+    <plurals name="chat_prune_confirm_sub">
+        <item quantity="one">%d oturumu kalıcı olarak siler</item>
+        <item quantity="other">%d oturumu kalıcı olarak siler</item>
+    </plurals>
+    <string name="chat_prune_title">Oturumları temizle</string>
+    <string name="chat_prune_body">Biten oturumları ağ geçidinin kaydından siler — kalıcı olarak, dökümler dahil. Etkin oturumlara asla dokunulmaz.</string>
+    <string name="chat_prune_older_than">Şundan eski</string>
+    <string name="chat_prune_days">%1$d g</string>
+    <string name="chat_prune_max_messages">Yalnızca ≤ N mesajlı oturumlar (isteğe bağlı)</string>
+    <string name="chat_prune_include_archived">Arşivlenmiş oturumları dahil et</string>
+    <string name="chat_prune_nothing">Bu filtrelere uyan bir şey yok.</string>
+    <plurals name="chat_prune_matched">
+        <item quantity="one">%1$d oturum eşleşti · en eski %2$s · en yeni %3$s</item>
+        <item quantity="other">%1$d oturum eşleşti · en eski %2$s · en yeni %3$s</item>
+    </plurals>
+    <plurals name="chat_prune_sample">
+        <item quantity="one">· %1$s (%2$d mesaj)</item>
+        <item quantity="other">· %1$s (%2$d mesaj)</item>
+    </plurals>
+    <string name="chat_prune_preview">Önizle</string>
+    <string name="chat_prune_delete_count">%1$d tanesini sil…</string>
+    <string name="chat_prune_delete">Sil…</string>
+    <plurals name="chat_prune_final_title">
+        <item quantity="one">%d oturum kalıcı olarak silinsin mi?</item>
+        <item quantity="other">%d oturum kalıcı olarak silinsin mi?</item>
+    </plurals>
+    <string name="chat_prune_final_body">Kayıtlar ve döküm dosyaları ağ geçidinden kaldırılır. Geri alınamaz.</string>
+    <string name="chat_prune_delete_n">%1$d tanesini sil</string>
+
+    <string name="chat_loading_lower">yükleniyor…</string>
+    <string name="chat_load_attachment_failed">Ek yüklenemedi</string>
+    <string name="chat_animated_image">hareketli resim</string>
+    <string name="chat_video">video</string>
+    <string name="chat_saved_to">Kaydedildi: %1$s</string>
+    <string name="chat_save_failed">Kaydedilemedi</string>
+    <string name="chat_save_to_device">Cihaza kaydet</string>
+    <string name="chat_share_failed">Paylaşılamadı</string>
+    <string name="chat_share">Paylaş</string>
+    <string name="chat_close">Kapat</string>
+    <string name="chat_no_app_for_file">Bu dosyayı açabilecek uygulama yok</string>
+    <string name="chat_open_with">Birlikte aç</string>
+
+    <string name="chat_copy_image">Resmi kopyala</string>
+    <string name="chat_image_copied">Resim kopyalandı — bir gönderiye yapıştır</string>
+    <string name="chat_image_fetch_failed">Resim alınamadı — bunun yerine bağlantı kopyalandı</string>
+    <string name="chat_copy_link">Bağlantıyı kopyala</string>
+    <string name="chat_link_copied">Bağlantı kopyalandı</string>
+    <string name="chat_save_to_photos">Fotoğraflar\'a kaydet</string>
+    <string name="chat_save_image_failed">Resim kaydedilemedi</string>
+    <string name="chat_open_in_browser">Tarayıcıda aç</string>
+    <string name="chat_no_app_for_link">Bu bağlantıyı açabilecek bir şey yok</string>
+
+    <string name="chat_gateway_log">Ağ geçidi günlüğü</string>
+    <string name="chat_details_copied">Ayrıntılar kopyalandı</string>
+    <string name="chat_copy_details">Ayrıntıları kopyala</string>
+
+    <string name="chat_thinking">Düşünüyor…</string>
+    <string name="chat_thought">Düşündü</string>
+    <string name="chat_thought_briefly">Kısaca düşündü</string>
+    <string name="chat_thought_for">%1$s düşündü</string>
+    <string name="chat_reasoning_show_a11y">Akıl yürütmeyi göster</string>
+    <string name="chat_reasoning_hide_a11y">Akıl yürütmeyi gizle</string>
+    <string name="chat_duration_min_sec">%1$d dk %2$d sn</string>
+    <string name="chat_newest">en yeni</string>
+
+    <string name="chat_config_unsaved">%1$s · kaydedilmedi</string>
+    <string name="chat_saving">Kaydediliyor…</string>
+    <string name="chat_save">Kaydet</string>
+    <string name="chat_config_load_failed">config.yaml yüklenemedi. %1$s</string>
+    <string name="chat_loading">Yükleniyor…</string>
+    <string name="chat_config_restart_note">Kaydedilen değişiklikler çoğu bölüm için ağ geçidinin bir sonraki yeniden başlatılmasında etkili olur.</string>
+    <string name="chat_save_anyway_title">Yine de kaydedilsin mi?</string>
+    <string name="chat_save_anyway">Yine de kaydet</string>
+    <string name="chat_discard_title">Değişiklikler atılsın mı?</string>
+    <string name="chat_config_untouched">Ağ geçidindeki config.yaml değiştirilmedi.</string>
+    <string name="chat_discard">At</string>
+    <string name="chat_keep_editing">Düzenlemeye devam et</string>
+
+    <string name="chat_export_title">Dışa aktar: “%1$s”</string>
+    <string name="chat_this_session">bu oturum</string>
+    <string name="chat_export_markdown_detail">Konuşma okuduğun gibi: kim ne dedi, araçlar tek satırda, uzun çıktılar kısaltılmış.</string>
+    <string name="chat_export_json_detail">Ağ geçidinin eksiksiz dışa aktarımı: her kayıt, geri alınan turlar ve sistem istemi dahil. Yeniden içe aktarılabilir.</string>
+    <string name="chat_export_share_failed">Paylaşım ekranı açılamadı.</string>
+    <string name="chat_export_failed">Dışa aktarma başarısız oldu.</string>
+    <string name="chat_exporting">Dışa aktarılıyor…</string>
+
+    <string name="chat_cmd_new">Yeni bir konuşma başlat</string>
+    <string name="chat_cmd_compress">Bu konuşmayı sıkıştır / özetle</string>
+    <string name="chat_cmd_handoff">Bağlamı yeni bir oturuma aktar</string>
+    <string name="chat_cmd_steer">Ajanı iş ortasında yönlendir</string>
+    <string name="chat_cmd_think">Daha derin akıl yürütme iste</string>
+    <string name="chat_cmd_model">Etkin modeli değiştir</string>
+    <string name="chat_cmd_reset">Ajanın çalışma durumunu sıfırla</string>
+    <string name="chat_cmd_help">Bu ajanın yapabileceklerini listele</string>
+    <string name="chat_cmd_status">Ajan ve sistem durumunu göster</string>
+    <string name="chat_cmd_memory">Uzun süreli belleği hatırla veya düzenle</string>
+    <string name="chat_cmd_tools">Kullanılabilir araçları listele</string>
+    <string name="chat_cmd_recent">son</string>
+    <string name="chat_cmd_skill">beceri</string>
+
+    <string name="chat_transition_dissolve">Erime</string>
+    <string name="chat_transition_dissolve_blurb">Oda, braille iziyle birlikte yumuşak bir bulanıklıktan yeniden belirir.</string>
+    <string name="chat_transition_passage">Geçit</string>
+    <string name="chat_transition_passage_blurb">Yeni oda ışıklı bir çizgi üzerinden kayarak gelir, eskisi geri çekilir.</string>
+    <string name="chat_transition_weave">Örgü</string>
+    <string name="chat_transition_weave_blurb">Kehribar ve mor şeritler yukarı doğru kesişir, oda arkalarında değişir.</string>
+    <string name="chat_transition_bloom">Açılış</string>
+    <string name="chat_transition_bloom_blurb">Yeni oda, dokunduğun satırdan bir daire olarak açılır.</string>
+    <string name="chat_transition_rise">Yükseliş</string>
+    <string name="chat_transition_rise_blurb">Eski oda geriye devrilip batar; yenisi yükselerek yerine oturur.</string>
+    <string name="chat_speed_slow">Yavaş</string>
+    <string name="chat_speed_normal">Normal</string>
+    <string name="chat_speed_fast">Hızlı</string>
+
+    <string name="chat_pet_choose">Bir evcil hayvan seç</string>
+    <string name="chat_pet_rides">%1$s menüde sana eşlik ediyor</string>
+    <string name="chat_pet_gateway">Evcil hayvanlar ağ geçidinde yaşar — her yüzey aynısını gösterir</string>
+    <plurals name="chat_pet_search">
+        <item quantity="one">%d evcil hayvanda ara…</item>
+        <item quantity="other">%d evcil hayvanda ara…</item>
+    </plurals>
+    <string name="chat_pet_installed_header">Kurulu</string>
+    <string name="chat_pet_catalog_header">Petdex kataloğu</string>
+    <string name="chat_pet_none">Evcil hayvan yok — Hermes Link yapılandırıldı mı?</string>
+    <string name="chat_pet_no_match">“%1$s” ile eşleşen evcil hayvan yok</string>
+    <string name="chat_pet_badge_active">etkin</string>
+    <string name="chat_pet_badge_hatched">yerelde çıktı</string>
+    <string name="chat_pet_badge_curated">seçkin</string>
+    <string name="chat_pet_badge_installed">kurulu</string>
+    <string name="chat_pet_active">Etkin</string>
+
+    <string name="chat_back">Geri</string>
+    <string name="chat_close_named">Kapat: %1$s</string>
+    <string name="chat_loading_a11y">Yükleniyor</string>
+
+    <string name="chat_call_header">KERYX · ARAMA</string>
+    <string name="chat_call_mic_needed">Keryx arama için mikrofona ihtiyaç duyuyor.</string>
+    <string name="chat_call_listening">dinliyor</string>
+    <string name="chat_call_hearing">seni duyuyor…</string>
+    <string name="chat_call_thinking">düşünüyor</string>
+    <string name="chat_call_interrupt">sözünü kesmek için küreye dokun</string>
+    <string name="chat_call_muted">sessizde</string>
+    <string name="chat_call_ended">arama bitti</string>
+    <string name="chat_call_heard">“%1$s”</string>
+    <string name="chat_call_unmute">Sesi aç</string>
+    <string name="chat_call_mute">Sessize al</string>
+    <string name="chat_call_end">Aramayı bitir</string>
+
+    <string name="chat_sources">Kaynaklar</string>
+    <string name="chat_source">kaynak</string>
+    <string name="chat_hand_clipboard">PANO</string>
+    <string name="chat_hand_phone">TELEFON</string>
+    <string name="chat_hand_share">PAYLAŞ</string>
+    <string name="chat_hand_app">UYGULAMA</string>
+    <string name="chat_hand_opens">AÇAR</string>
+    <string name="chat_skill_distilled">Beceri Damıtıldı</string>
+    <string name="chat_open_skill_forge">Beceri Atölyesi\'nde aç →</string>
+
+    <string name="chat_tap_in_turn">Turu tam ekran aç</string>
+    <string name="chat_stream_dropped">Akış koptu — Matrix senkronuyla kurtarılıyor…</string>
+
+    <string name="chat_context_direct_only">Pencereyi yalnızca doğrudan kapı ayrıntılandırabilir.</string>
+    <string name="chat_context_read_failed">Pencere okunamadı</string>
+    <string name="chat_context_title">Bağlam</string>
+    <string name="chat_context_used">%1$s / %2$s token</string>
+    <string name="chat_context_no_agent">Ağ geçidinde bu oturum için henüz canlı bir ajan yok — önce bir şey gönder.</string>
+
+    <string name="chat_chart">Grafik</string>
+    <string name="chat_chart_summary">%1$s. Grafik türü: %2$s.</string>
+    <string name="chat_chart_summary_unit">%1$s. Grafik türü: %2$s, birim: %3$s.</string>
+    <string name="chat_chart_no_value">değer yok</string>
+    <string name="chat_chart_series">Seri %1$d</string>
+    <string name="chat_chart_total">toplam</string>
+    <string name="chat_show_less">Daha az göster</string>
+    <plurals name="chat_show_all_lines">
+        <item quantity="one">%d satırın tümünü göster</item>
+        <item quantity="other">%d satırın tümünü göster</item>
+    </plurals>
+
+    <string name="chat_aside_header">ARA SORU · sohbetin parçası değil</string>
+    <string name="chat_dismiss">Kapat</string>
+    <string name="chat_aside_answering">…ara soru yanıtlanıyor</string>
+    <string name="chat_aside_failed">Ara soru başarısız: %1$s</string>
+    <string name="chat_aside_no_answer">Yanıt gelmedi.</string>
+
+    <string name="chat_action_success">BAŞARILI</string>
+    <string name="chat_action_failed">BAŞARISIZ</string>
+    <string name="chat_action_tag">EYLEM</string>
+    <string name="chat_reasoning_live">Akıl yürütüyor…</string>
+    <string name="chat_reasoning_title">Akıl yürütme</string>
+    <string name="chat_show_drawing">çizimi göster</string>
+    <string name="chat_drawing">Çizim</string>
+
+    <string name="chat_done">Bitti</string>
+
+    <string name="chat_art_mission_board">Habercinin asası yaslanmış boş bir görev panosu</string>
+    <string name="chat_art_winged_clock">Etrafında kıvrılan bir okla kanatlı bir saat</string>
+    <string name="chat_art_robot">Tepesinde habercinin kanatlı küresi olan bir robot başı, iki yanında boş yer</string>
+    <string name="chat_art_folder">Üzerinde dal çizilmiş bir sayfa tutan klasör</string>
+    <string name="chat_art_scroll">Üzerinde büyüteç olan açılmış bir parşömen</string>
+    <string name="chat_art_bookmark">Bir satırı işaretlenmiş ve yer imi şeridi olan bir sayfa</string>
+    <string name="chat_art_picture">Tepe ve güneş resmi olan çerçeve, arkasında boş bir çerçeve</string>
+
+    <string name="chat_memory">Sohbet belleği</string>
+    <string name="chat_ring_base">Sohbet belleği %1$dk / %2$dk token, yüzde %3$d</string>
+    <plurals name="chat_ring_replies">
+        <item quantity="one">%1$s, özetten önce yaklaşık %2$d yanıt</item>
+        <item quantity="other">%1$s, özetten önce yaklaşık %2$d yanıt</item>
+    </plurals>
+    <string name="chat_ring_until">%1$s, özete %2$dk kaldı</string>
+    <string name="chat_ring_next">%1$s, sonraki yanıt bir özet başlatır</string>
+
+    <string name="chat_folder_hint">Ağ geçidindeki klasör (ör. ~/workspace/keryx)</string>
+    <string name="chat_folder_found">✓ klasör bulundu</string>
+    <string name="chat_folder_missing">orada henüz klasör yok</string>
+    <string name="chat_known_workspaces">Bilinen çalışma alanları</string>
+    <string name="chat_folder_truncated">burada 30\'dan fazla klasör var — daraltmak için yazmaya devam et</string>
+    <string name="chat_folder_more">+%1$d tane daha — daraltmak için yazmaya devam et</string>
+
+    <string name="chat_console_starting">başlıyor…</string>
+    <string name="chat_console_streaming">ajan çalışıyor</string>
+    <string name="chat_console_waiting">onay bekleniyor</string>
+    <string name="chat_console_completed">tur tamamlandı</string>
+    <string name="chat_console_lost">bağlantı koptu</string>
+    <string name="chat_console_lost_why">bağlantı koptu — %1$s</string>
+    <string name="chat_console_failed">başarısız</string>
+    <string name="chat_console_failed_why">başarısız — %1$s</string>
+    <string name="chat_stop">Durdur</string>
+    <string name="chat_clear">Temizle</string>
+
+    <string name="chat_mark_hide">Söylediğini gizle</string>
+    <string name="chat_mark_read">Söylediğini oku</string>
+    <string name="chat_mark_system">Sistem: %1$s</string>
+    <string name="chat_summary_hide">Özeti gizle</string>
+    <string name="chat_summary_read">Özeti oku</string>
+    <string name="chat_context_compacted">🗜 Bağlam sıkıştırıldı · %1$s</string>
+    <string name="chat_this_session_title">Bu oturum</string>
+
+    <string name="chat_goal_loop">↻ döngü · %1$s · %2$s</string>
+    <string name="chat_goal_heartbeat">♥ nabız · %1$d · %2$s</string>
+    <string name="chat_goal_close">Hedefi kapat</string>
+    <string name="chat_goal_open">Hedefi aç</string>
+    <string name="chat_goal_exit">çıkış %1$d</string>
+
+    <string name="chat_subagent_running_lower">alt ajan çalışıyor</string>
+    <plurals name="chat_subagents_count">
+        <item quantity="one">%d alt ajan</item>
+        <item quantity="other">%d alt ajan</item>
+    </plurals>
+    <string name="chat_subagent">alt ajan</string>
+    <string name="chat_delegated_task_lower">devredilen görev</string>
+    <plurals name="chat_tool_count">
+        <item quantity="one">%d araç</item>
+        <item quantity="other">%d araç</item>
+    </plurals>
+    <string name="chat_tokens_k">%1$dk token</string>
+    <plurals name="chat_files_written">
+        <item quantity="one">%d yazıldı</item>
+        <item quantity="other">%d yazıldı</item>
+    </plurals>
+    <string name="chat_interrupted">kesildi</string>
+    <string name="chat_duration_min_sec_compact">%1$ddk%2$dsn</string>
+
+    <string name="chat_flight_plan">UÇUŞ PLANI</string>
+    <string name="chat_flight_all_done">tüm adımlar tamamlandı</string>
+    <string name="chat_flight_next">sıradaki: %1$s</string>
+    <string name="chat_join_sub">#alias:server veya !roomid:server</string>
+</resources>

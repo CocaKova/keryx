@@ -1222,3 +1222,9 @@ private fun Modifier.keryxLoadingSemantics(): Modifier {
     val loading = stringResource(R.string.chat_loading_a11y)
     return semantics { contentDescription = loading }
 }
+
+
+/** "›" in left-to-right languages, "‹" in Arabic and Hebrew: a text chevron that points onward. */
+@androidx.compose.runtime.Composable
+fun forwardChevron(): String =
+    if (androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl) "‹" else "›"

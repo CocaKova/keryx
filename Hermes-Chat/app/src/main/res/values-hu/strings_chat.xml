@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_theme_to_light">Váltás világosra</string>
+    <string name="chat_theme_follow_system">Rendszer követése</string>
+    <string name="chat_theme_to_dark">Váltás sötétre</string>
+    <string name="chat_new_chat">Új csevegés</string>
+    <string name="chat_drawer_jump_hint">Ugrás ide…</string>
+    <string name="chat_lens_needs_you">Rád vár</string>
+    <string name="chat_lens_running">Fut</string>
+    <string name="chat_lens_unread">Olvasatlan</string>
+    <string name="chat_lens_archived">Archivált</string>
+    <string name="chat_drawer_invites">Meghívások</string>
+    <string name="chat_place_missions">Küldetések</string>
+    <string name="chat_place_runs">Futások</string>
+    <string name="chat_place_bots">Botok</string>
+    <string name="chat_place_projects">Projektek</string>
+    <string name="chat_place_shipyard">Hajógyár</string>
+    <string name="chat_place_archive">Archívum</string>
+    <string name="chat_place_gateway">Átjáró</string>
+    <string name="chat_place_settings">Beállítások</string>
+    <string name="chat_drawer_places">Helyek</string>
+    <string name="chat_drawer_commands">Parancsok</string>
+    <string name="chat_drawer_no_matches">Nincs találat</string>
+    <string name="chat_drawer_nothing_archived">Nincs archivált elem</string>
+    <string name="chat_drawer_nothing_waiting">Semmi sem vár rád</string>
+    <string name="chat_drawer_nothing_running">Semmi sem fut</string>
+    <string name="chat_drawer_all_read">Minden elolvasva</string>
+    <string name="chat_session_id_copied">Munkamenet-azonosító másolva</string>
+    <string name="chat_moved_to_project">Áthelyezve ide: %1$s</string>
+    <string name="chat_drawer_reaching_back">Régebbiek betöltése…</string>
+    <string name="chat_drawer_show_older">Régebbiek megjelenítése (%1$s)</string>
+    <string name="chat_drawer_in_transcripts">Az átiratokban</string>
+    <string name="chat_demo_gateway">bemutató átjáró</string>
+    <string name="chat_demo_gateway_page">Az átjáród oldala itt lesz, amint csatlakoztatsz egyet.</string>
+    <string name="chat_connect">Csatlakozás</string>
+    <string name="chat_open_gateway">Az Átjáró megnyitása</string>
+    <string name="chat_settings">Beállítások</string>
+    <string name="chat_shelf_fold">Becsukás: %1$s</string>
+    <string name="chat_shelf_open">Kinyitás: %1$s</string>
+    <string name="chat_room_forked">Elágaztatva egy másik beszélgetésből</string>
+    <string name="chat_room_temporary">Ideiglenes – a következő indításkor törlődik</string>
+    <string name="chat_room_pinned">Rögzítve</string>
+    <string name="chat_mark_unread">Olvasatlannak jelölés</string>
+    <string name="chat_archive">Archiválás</string>
+    <string name="chat_archive_hint">Lekerül a listáról, de az átjárón marad</string>
+    <string name="chat_restore_to_list">Vissza a listára</string>
+    <string name="chat_export_ellipsis">Exportálás…</string>
+    <string name="chat_copy_session_id">Munkamenet-azonosító másolása</string>
+    <string name="chat_invite_user">Felhasználó meghívása…</string>
+    <string name="chat_rename_ellipsis">Átnevezés…</string>
+    <string name="chat_move_to_project">Áthelyezés projektbe…</string>
+    <string name="chat_leave_room">Kilépés a szobából</string>
+    <string name="chat_delete_session_ellipsis">Munkamenet törlése…</string>
+    <string name="chat_invite_to">Meghívás ide: %1$s</string>
+    <string name="chat_invite">Meghívás</string>
+    <string name="chat_cancel">Mégse</string>
+    <string name="chat_leave_title">Kilépsz innen: %1$s?</string>
+    <string name="chat_leave_body">Nem kapod többé az üzeneteit; az újracsatlakozáshoz új meghívás kell.</string>
+    <string name="chat_leave">Kilépés</string>
+    <string name="chat_rename_session">Munkamenet átnevezése</string>
+    <string name="chat_rename">Átnevezés</string>
+    <string name="chat_delete_title">Törlöd ezt: %1$s?</string>
+    <string name="chat_delete_session_body">Törli a munkamenetet és a teljes átiratát az átjáróról. Ez nem vonható vissza.</string>
+    <string name="chat_delete">Törlés</string>
+    <string name="chat_invited_to_room">Meghívtak ebbe a szobába</string>
+    <string name="chat_decline">Elutasítás</string>
+    <string name="chat_accept">Elfogadás</string>
+    <string name="chat_running">Fut</string>
+    <string name="chat_age_now">most</string>
+    <string name="chat_age_minutes">%1$d p</string>
+    <string name="chat_age_hours">%1$d ó</string>
+    <string name="chat_age_days">%1$d n</string>
+    <string name="chat_age_weeks">%1$d hét</string>
+    <plurals name="chat_door_needs_you">
+        <item quantity="one">%1$s, %2$s rád vár</item>
+        <item quantity="other">%1$s, %2$s rád vár</item>
+    </plurals>
+    <string name="chat_door_unread">%1$s, %2$s olvasatlan</string>
+
+    <string name="chat_bot_new_title">Újrakezded vele: %1$s?</string>
+    <string name="chat_bot_new_body">A Tömörítés megtartja ezt a beszélgetést, és üríti a bot (%1$s) munkakontextusát.\n\nAz új botcsevegés visszavonultatja ezt – olvasható marad a bot (%1$s) korábbi csevegései között –, és újat indít.</string>
+    <string name="chat_bot_new_fresh">Új botcsevegés</string>
+    <string name="chat_bot_new_compact">Tömörítés</string>
+    <string name="chat_bot_chat_chip">Botcsevegés</string>
+    <string name="chat_menu">Menü</string>
+    <plurals name="chat_menu_waiting">
+        <item quantity="one">Menü, %d rád vár</item>
+        <item quantity="other">Menü, %d rád vár</item>
+    </plurals>
+    <plurals name="chat_menu_unread">
+        <item quantity="one">Menü, %d olvasatlan</item>
+        <item quantity="other">Menü, %d olvasatlan</item>
+    </plurals>
+    <string name="chat_new_session_failed">Nem sikerült munkamenetet indítani. %1$s</string>
+    <string name="chat_new_session_hold">Új munkamenet (tartsd lenyomva a lehetőségekért)</string>
+    <string name="chat_unpin_run">A futás rögzítésének feloldása</string>
+    <string name="chat_pin_run">A futás rögzítése</string>
+    <string name="chat_new_session">Új munkamenet</string>
+    <string name="chat_new_session_confirm_title">Új munkamenetet indítasz?</string>
+    <string name="chat_new_session_confirm_body">Az ügynök még dolgozik – a /new leállítja a jelenlegi futást, és az eredménye elvész.</string>
+    <string name="chat_new_session_confirm">Futás leállítása és új indítása</string>
+    <string name="chat_find_in_chat">Keresés a csevegésben</string>
+    <string name="chat_call_needs_voice">Előbb állítsd be az STT- és TTS-végpontot itt: Beállítások → Hang</string>
+    <string name="chat_call">Hívás</string>
+    <string name="chat_reasoning_header">GONDOLKODÁS</string>
+    <string name="chat_reasoning_sub_default">a szint munkamenetek között megmarad</string>
+    <string name="chat_reasoning_local_brain">helyi agy</string>
+    <string name="chat_reasoning_model">modell</string>
+    <string name="chat_reasoning_sub_binary">%1$s · be/ki kapcsoló</string>
+    <string name="chat_reasoning_sub_none">%1$s · nincs gondolkodásszabályzó</string>
+    <string name="chat_reasoning_sub_session">%1$s · a munkamenet szintjei</string>
+    <string name="chat_reasoning_sub_scale">%1$s · erőfeszítés-skála</string>
+    <string name="chat_reasoning_no_dial">Ez a modell nem fogad gondolkodási szintet – a Hermes nem is küld.</string>
+    <string name="chat_reasoning_every_session">Minden munkamenet</string>
+    <string name="chat_reasoning_this_session">Csak ez a munkamenet</string>
+    <string name="chat_reasoning_show">Gondolkodás megjelenítése</string>
+    <string name="chat_reasoning_hide">Gondolkodás elrejtése</string>
+    <string name="chat_reasoning_reset">Munkamenet-felülírás visszaállítása</string>
+    <string name="chat_demo_label">Bemutató</string>
+    <string name="chat_demo_connect">Átjáró csatlakoztatása</string>
+
+    <string name="chat_attach_failed">Nem sikerült csatolni (olvashatatlan vagy 50 MB fölötti)</string>
+    <string name="chat_no_camera">Nem válaszolt kameraalkalmazás</string>
+    <string name="chat_mic_unavailable">A mikrofon nem érhető el</string>
+    <string name="chat_transcription_failed">Az átírás nem sikerült: %1$s</string>
+    <string name="chat_mic_permission">A diktáláshoz a Keryxnek mikrofonhozzáférés kell</string>
+    <string name="chat_nothing_to_read">Nincs mit felolvasni</string>
+    <string name="chat_typing_one">%1$s ír…</string>
+    <string name="chat_typing_two">%1$s és %2$s ír…</string>
+    <string name="chat_typing_many">Többen írnak…</string>
+    <string name="chat_jump_newest">Ugrás a legújabbra</string>
+    <plurals name="chat_jump_newest_count">
+        <item quantity="one">Ugrás a legújabbra, %d új</item>
+        <item quantity="other">Ugrás a legújabbra, %d új</item>
+    </plurals>
+    <string name="chat_attachments_cant_queue">Melléklet nem állítható sorba – küldd el, ha ez a kör véget ért</string>
+    <string name="chat_stop_hint">Előbb írd be a javításod – a koppintás tereli a kört, lenyomva tartva több lehetőség</string>
+    <string name="chat_busy_queue">Sorba állítás a következő körre</string>
+    <string name="chat_busy_aside">Mellékkérdés – a csevegésen kívül kap választ</string>
+    <string name="chat_busy_redirect">Átirányítás – a válasz újraindítása ezzel</string>
+    <string name="chat_starter_1">Mit tudsz csinálni ebben a munkamenetben?</string>
+    <string name="chat_starter_2">Mi a mai teendőm?</string>
+    <string name="chat_starter_3">Min dolgoztunk mostanában?</string>
+    <string name="chat_starter_4">Segíts megtervezni valami apróságot, lépésről lépésre.</string>
+    <string name="chat_fresh_page">Tiszta lap</string>
+    <string name="chat_fresh_page_sub">Kérdezz bármit, vagy kezdd ezek egyikével.</string>
+    <string name="chat_today">Ma</string>
+    <string name="chat_yesterday">Tegnap</string>
+
+    <string name="chat_arrival_mark">%1$s · kérés nélkül · %2$s</string>
+    <string name="chat_bubble_hold_label">Válasz, reakció vagy másolás</string>
+    <string name="chat_copied">Másolva</string>
+    <string name="chat_undo_title">Visszavonod az utolsó váltást?</string>
+    <string name="chat_undo_body">Az üzeneted és ez a válasz kikerül a munkamenet előzményeiből az átjárón. A következő üzeneted az előttük lévő állapotból folytatódik.</string>
+    <string name="chat_undo_confirm">Visszavonás</string>
+    <string name="chat_keep">Megtartás</string>
+    <string name="chat_select_text">Szöveg kijelölése</string>
+    <string name="chat_delete_message_title">Törlöd az üzenetet?</string>
+    <string name="chat_delete_message_body">Mindenkinél törlődik – ez nem vonható vissza.</string>
+    <string name="chat_sent">Elküldve</string>
+    <string name="chat_stop_speaking">Felolvasás leállítása</string>
+    <string name="chat_go_to_quoted">Ugrás az idézett üzenetre</string>
+    <string name="chat_reaction_take_back">Reakciód visszavonása</string>
+    <string name="chat_reaction_add">Reakció hozzáadása</string>
+    <string name="chat_react">Reakció</string>
+    <string name="chat_action_reply">Válasz</string>
+    <string name="chat_action_copy">Másolás</string>
+    <string name="chat_action_copy_text">Szöveg másolása</string>
+    <string name="chat_action_saved">Mentve</string>
+    <string name="chat_action_save">Mentés</string>
+    <string name="chat_action_unsave">Eltávolítás a mentettek közül</string>
+    <string name="chat_action_keep_archive">Megtartás az Archívumban</string>
+    <string name="chat_action_stop">Leállítás</string>
+    <string name="chat_action_read_aloud">Felolvasás</string>
+    <string name="chat_action_select">Kijelölés</string>
+    <string name="chat_action_edit">Szerkesztés</string>
+    <string name="chat_action_edit_desc">Szerkesztés és újraküldés</string>
+    <string name="chat_action_retry">Újra</string>
+    <string name="chat_action_retry_desc">Visszavonás és újra elmondás</string>
+    <string name="chat_action_branch">Elágaztatás</string>
+    <string name="chat_action_branch_desc">Új munkamenet elágaztatása innen</string>
+    <string name="chat_action_undo">Visszavonás</string>
+    <string name="chat_action_undo_desc">Az utolsó váltás visszavonása</string>
+    <string name="chat_action_delete_desc">Üzenet törlése</string>
+    <string name="chat_reply_attachment">melléklet</string>
+    <string name="chat_reply_message">üzenet</string>
+
+    <string name="chat_archive_title">Archívum</string>
+    <string name="chat_archive_waking">az index ébresztése…</string>
+    <plurals name="chat_archive_reaching">
+        <item quantity="one">%1$s megjegyezve · régebbiek betöltése…</item>
+        <item quantity="other">%1$s megjegyezve · régebbiek betöltése…</item>
+    </plurals>
+    <plurals name="chat_archive_error">
+        <item quantity="one">%1$s megjegyezve · %2$s</item>
+        <item quantity="other">%1$s megjegyezve · %2$s</item>
+    </plurals>
+    <plurals name="chat_archive_done">
+        <item quantity="one">%1$s üzenet megjegyezve</item>
+        <item quantity="other">%1$s üzenet megjegyezve</item>
+    </plurals>
+    <string name="chat_archive_jump_date">Ugrás dátumra</string>
+    <string name="chat_archive_nothing_that_day">Arra a napra még nincs semmi indexelve</string>
+    <string name="chat_open">Megnyitás</string>
+    <string name="chat_archive_tab_search">Keresés</string>
+    <string name="chat_archive_tab_saved">Mentett</string>
+    <string name="chat_archive_tab_media">Média</string>
+    <string name="chat_archive_search_hint">Keresés mindenben, ami valaha elhangzott…</string>
+    <string name="chat_archive_recent">NEMRÉG MEGJEGYZETT</string>
+    <string name="chat_archive_empty_title">Még nincs semmi megjegyezve</string>
+    <string name="chat_archive_empty_body">Az index a munkamenetek átfésülésével telik meg. Ezután minden üzenet, amit az alkalmazás látott, egy keresésnyire van.</string>
+    <string name="chat_archive_search_idle">Minden üzenet, amit az alkalmazás valaha látott, egy keresésnyire.</string>
+    <string name="chat_archive_no_hits">Még nincs találat erre: „%1$s”</string>
+    <string name="chat_archive_opening">Az archívum megnyitása…</string>
+    <string name="chat_archive_saved_empty_title">Még nincs semmi megtartva</string>
+    <string name="chat_archive_saved_empty_body">Nyomj hosszan egy üzenetet, és koppints a könyvjelzőre, hogy itt megtartsd.</string>
+    <string name="chat_archive_looking">Keresés az indexeltek között…</string>
+    <string name="chat_archive_media_empty_title">Még nincsenek fotók vagy fájlok</string>
+    <string name="chat_archive_media_empty_body">A csevegéseid képei és fájljai itt gyűlnek, ahogy az index megtelik.</string>
+    <string name="chat_image">kép</string>
+    <string name="chat_you">Te</string>
+    <string name="chat_archive_context">Kontextus</string>
+    <string name="chat_archive_context_failed">Ezt a pillanatot nem sikerült betölteni (lehet, hogy régebbi ennek a bejelentkezésnek a kulcsainál).</string>
+    <string name="chat_archive_reach_earlier">Korábbiak</string>
+    <string name="chat_archive_reach_later">Későbbiek</string>
+
+    <string name="chat_attach">Csatolás</string>
+    <string name="chat_composer_hint">Üzenet…</string>
+    <string name="chat_composer_hint_steer_stop">Írj a kör tereléséhez – ■ leállítja</string>
+    <string name="chat_composer_hint_steer">Írj a kör tereléséhez</string>
+    <string name="chat_dictate_stop">Diktálás leállítása</string>
+    <string name="chat_dictate">Diktálás</string>
+    <string name="chat_send_steer">A futó kör terelése</string>
+    <string name="chat_send_queue">Sorba állítás a következő körre</string>
+    <string name="chat_send_stop">A kör leállítása</string>
+    <string name="chat_send">Küldés</string>
+    <string name="chat_send_hold_menu">Sorba állítás, mellékkérdés vagy átirányítás</string>
+    <string name="chat_send_hold_queue">Inkább sorba állítás a következő körre</string>
+    <string name="chat_send_hold_stop">Mit csinál a leállítás</string>
+    <string name="chat_choose_model">Modell választása</string>
+    <string name="chat_model_label">Modell: %1$s</string>
+    <string name="chat_reasoning">gondolkodás</string>
+    <string name="chat_steer_hint">↪ tereli a kört · tartsd lenyomva a sorba állításhoz</string>
+    <string name="chat_replying_to">Válasz neki: %1$s</string>
+    <string name="chat_cancel_reply">Válasz elvetése</string>
+    <string name="chat_image_attached">Kép csatolva</string>
+    <string name="chat_file_attached">Fájl csatolva</string>
+    <string name="chat_remove_attachment">Melléklet eltávolítása</string>
+    <string name="chat_attach_photo">Fotó</string>
+    <string name="chat_attach_file">Fájl</string>
+    <string name="chat_attach_camera">Kamera</string>
+
+    <string name="chat_tool_succeeded">Sikerült</string>
+    <string name="chat_tool_failed">Sikertelen</string>
+    <string name="chat_tool_no_verdict">Nincs eredmény</string>
+    <string name="chat_duration_seconds">%1$d mp</string>
+    <string name="chat_duration_millis">%1$d ms</string>
+    <string name="chat_tool_flagged">⚠ A Hermes megjelölte ezt a kimenetet</string>
+    <string name="chat_tool_flagged_with">⚠ A Hermes megjelölte ezt a kimenetet: %1$s</string>
+    <string name="chat_tool_diff">változások</string>
+    <string name="chat_tool_diff_show">Változások megjelenítése</string>
+    <string name="chat_tool_diff_hide">Változások elrejtése</string>
+    <string name="chat_tool_diff_label">Változások</string>
+    <string name="chat_tool_output">kimenet</string>
+    <string name="chat_tool_output_show">Kimenet megjelenítése</string>
+    <string name="chat_tool_output_hide">Kimenet elrejtése</string>
+    <string name="chat_tool_output_label">Kimenet</string>
+    <string name="chat_tool_exit_failed">Kilépési kód: %1$d, sikertelen</string>
+    <string name="chat_tool_exit_ok">Kilépési kód: 0</string>
+    <plurals name="chat_tools_running">
+        <item quantity="one">%d eszköz fut…</item>
+        <item quantity="other">%d eszköz fut…</item>
+    </plurals>
+    <plurals name="chat_tools_ran">
+        <item quantity="one">%d eszköz futott</item>
+        <item quantity="other">%d eszköz futott</item>
+    </plurals>
+    <plurals name="chat_subagents_running">
+        <item quantity="one">%1$d / %2$d alügynök fut</item>
+        <item quantity="other">%1$d / %2$d alügynök fut</item>
+    </plurals>
+    <string name="chat_subagent_running">Alügynök fut</string>
+    <plurals name="chat_delegated_tasks">
+        <item quantity="one">%d részfeladat delegálva</item>
+        <item quantity="other">%d részfeladat delegálva</item>
+    </plurals>
+    <string name="chat_delegated_task">Részfeladatot delegált</string>
+    <string name="chat_working">Dolgozik…</string>
+    <plurals name="chat_output_steps">
+        <item quantity="one">%d kimeneti lépés</item>
+        <item quantity="other">%d kimeneti lépés</item>
+    </plurals>
+    <plurals name="chat_run_with_failed">
+        <item quantity="one">%1$s · %2$d sikertelen</item>
+        <item quantity="other">%1$s · %2$d sikertelen</item>
+    </plurals>
+    <string name="chat_steps_fold">Lépések becsukása</string>
+    <string name="chat_steps_show">Lépések megjelenítése</string>
+    <string name="chat_tap_in_run">A futás megnyitása teljes képernyőn</string>
+    <string name="chat_state_open">Nyitva</string>
+    <string name="chat_state_folded">Becsukva</string>
+
+    <string name="chat_approval_needed">Jóváhagyás szükséges</string>
+    <string name="chat_approval_once">Egyszeri engedélyezés</string>
+    <string name="chat_approval_session">Munkamenet</string>
+    <string name="chat_approval_always">Mindig</string>
+    <string name="chat_approval_deny">Elutasítás</string>
+    <string name="chat_asking">A Hermes kérdez</string>
+    <string name="chat_asking_batch">A Hermes kérdez · %1$d / %2$d</string>
+    <string name="chat_sudo_needed">Sudo-jelszó szükséges</string>
+    <string name="chat_credential_needed">Hitelesítő adat szükséges</string>
+    <string name="chat_stored_as">Az átjárón ezen a néven tárolva: %1$s</string>
+    <string name="chat_multi_answers">Több válasz is megengedett – írd be őket lent, vesszővel elválasztva.</string>
+    <string name="chat_your_answer">A válaszod</string>
+    <string name="chat_password">Jelszó</string>
+    <string name="chat_value">Érték</string>
+    <string name="chat_skip">Kihagyás</string>
+
+    <string name="chat_new_conversation">Új beszélgetés</string>
+    <string name="chat_new_session_body">Új átjáró-munkamenet. Nevezd el most, vagy hagyd, hogy az első váltás adjon neki címet.</string>
+    <string name="chat_title_optional">Cím (nem kötelező)</string>
+    <string name="chat_agent">Ügynök</string>
+    <string name="chat_temporary">Ideiglenes</string>
+    <string name="chat_temporary_body">Az alkalmazás következő indításakor törlődik az átjáróról</string>
+    <string name="chat_create">Létrehozás</string>
+    <string name="chat_error_line">⚠ %1$s</string>
+    <string name="chat_direct_message">Közvetlen üzenet</string>
+    <string name="chat_direct_message_sub">Négyszemközti csevegés egy felhasználóval</string>
+    <string name="chat_start">Indítás</string>
+    <string name="chat_new_room">Új szoba</string>
+    <string name="chat_new_room_sub">Elnevezett szoba; hívj meg embereket most vagy később</string>
+    <string name="chat_room_name">Szoba neve</string>
+    <string name="chat_invite_optional">\@user:server meghívása (nem kötelező)</string>
+    <string name="chat_join_by_address">Csatlakozás cím alapján</string>
+    <string name="chat_join">Csatlakozás</string>
+
+    <string name="chat_prune_preview_failed">az előnézet nem sikerült</string>
+    <string name="chat_prune_confirm_title">Munkamenet-ritkítás megerősítése</string>
+    <plurals name="chat_prune_confirm_sub">
+        <item quantity="one">Véglegesen töröl %d munkamenetet</item>
+        <item quantity="other">Véglegesen töröl %d munkamenetet</item>
+    </plurals>
+    <string name="chat_prune_title">Munkamenetek ritkítása</string>
+    <string name="chat_prune_body">Törli a befejezett munkameneteket az átjáró nyilvántartásából – véglegesen, az átiratokkal együtt. Az aktív munkamenetekhez sosem nyúl.</string>
+    <string name="chat_prune_older_than">Régebbi, mint</string>
+    <string name="chat_prune_days">%1$d n</string>
+    <string name="chat_prune_max_messages">Csak legfeljebb N üzenetes munkamenetek (nem kötelező)</string>
+    <string name="chat_prune_include_archived">Archivált munkamenetekkel együtt</string>
+    <string name="chat_prune_nothing">Semmi sem felel meg ezeknek a szűrőknek.</string>
+    <plurals name="chat_prune_matched">
+        <item quantity="one">%1$d munkamenet egyezik · legrégebbi: %2$s · legújabb: %3$s</item>
+        <item quantity="other">%1$d munkamenet egyezik · legrégebbi: %2$s · legújabb: %3$s</item>
+    </plurals>
+    <plurals name="chat_prune_sample">
+        <item quantity="one">· %1$s (%2$d üzenet)</item>
+        <item quantity="other">· %1$s (%2$d üzenet)</item>
+    </plurals>
+    <string name="chat_prune_preview">Előnézet</string>
+    <string name="chat_prune_delete_count">%1$d törlése…</string>
+    <string name="chat_prune_delete">Törlés…</string>
+    <plurals name="chat_prune_final_title">
+        <item quantity="one">Véglegesen törölsz %d munkamenetet?</item>
+        <item quantity="other">Véglegesen törölsz %d munkamenetet?</item>
+    </plurals>
+    <string name="chat_prune_final_body">A sorok és az átiratfájlok törlődnek az átjáróról. Nem vonható vissza.</string>
+    <string name="chat_prune_delete_n">%1$d törlése</string>
+
+    <string name="chat_loading_lower">betöltés…</string>
+    <string name="chat_load_attachment_failed">Nem sikerült betölteni a mellékletet</string>
+    <string name="chat_animated_image">animált kép</string>
+    <string name="chat_video">videó</string>
+    <string name="chat_saved_to">Mentve ide: %1$s</string>
+    <string name="chat_save_failed">Nem sikerült menteni</string>
+    <string name="chat_save_to_device">Mentés az eszközre</string>
+    <string name="chat_share_failed">Nem sikerült megosztani</string>
+    <string name="chat_share">Megosztás</string>
+    <string name="chat_close">Bezárás</string>
+    <string name="chat_no_app_for_file">Egy alkalmazás sem tudja megnyitni ezt a fájlt</string>
+    <string name="chat_open_with">Megnyitás ezzel</string>
+
+    <string name="chat_copy_image">Kép másolása</string>
+    <string name="chat_image_copied">Kép másolva – illeszd be egy bejegyzésbe</string>
+    <string name="chat_image_fetch_failed">Nem sikerült letölteni a képet – helyette a link lett másolva</string>
+    <string name="chat_copy_link">Link másolása</string>
+    <string name="chat_link_copied">Link másolva</string>
+    <string name="chat_save_to_photos">Mentés a Fotókba</string>
+    <string name="chat_save_image_failed">Nem sikerült menteni a képet</string>
+    <string name="chat_open_in_browser">Megnyitás böngészőben</string>
+    <string name="chat_no_app_for_link">Itt semmi sem nyitja meg ezt a linket</string>
+
+    <string name="chat_gateway_log">Átjáró naplója</string>
+    <string name="chat_details_copied">Részletek másolva</string>
+    <string name="chat_copy_details">Részletek másolása</string>
+
+    <string name="chat_thinking">Gondolkodik…</string>
+    <string name="chat_thought">Gondolkodott</string>
+    <string name="chat_thought_briefly">Röviden gondolkodott</string>
+    <string name="chat_thought_for">Gondolkodási idő: %1$s</string>
+    <string name="chat_reasoning_show_a11y">A gondolkodás megjelenítése</string>
+    <string name="chat_reasoning_hide_a11y">A gondolkodás elrejtése</string>
+    <string name="chat_duration_min_sec">%1$d p %2$d mp</string>
+    <string name="chat_newest">legújabb</string>
+
+    <string name="chat_config_unsaved">%1$s · nincs mentve</string>
+    <string name="chat_saving">Mentés…</string>
+    <string name="chat_save">Mentés</string>
+    <string name="chat_config_load_failed">Nem sikerült betölteni a config.yaml fájlt. %1$s</string>
+    <string name="chat_loading">Betöltés…</string>
+    <string name="chat_config_restart_note">A mentett módosítások a legtöbb szakasznál az átjáró következő újraindításakor lépnek életbe.</string>
+    <string name="chat_save_anyway_title">Mented mégis?</string>
+    <string name="chat_save_anyway">Mentés mégis</string>
+    <string name="chat_discard_title">Elveted a módosításokat?</string>
+    <string name="chat_config_untouched">Az átjárón lévő config.yaml érintetlen.</string>
+    <string name="chat_discard">Elvetés</string>
+    <string name="chat_keep_editing">Szerkesztés folytatása</string>
+
+    <string name="chat_export_title">Exportálás: „%1$s”</string>
+    <string name="chat_this_session">ez a munkamenet</string>
+    <string name="chat_export_markdown_detail">A beszélgetés úgy, ahogy olvasod: ki mit mondott, az eszközök egy sorban, a hosszú kimenetek rövidítve.</string>
+    <string name="chat_export_json_detail">Az átjáró teljes exportja: minden sor, a visszavont körök és a rendszerprompt is. Újra importálható.</string>
+    <string name="chat_export_share_failed">Nem sikerült megnyitni a megosztási lapot.</string>
+    <string name="chat_export_failed">Az exportálás nem sikerült.</string>
+    <string name="chat_exporting">Exportálás…</string>
+
+    <string name="chat_cmd_new">Új beszélgetés indítása</string>
+    <string name="chat_cmd_compress">A szál tömörítése / összefoglalása</string>
+    <string name="chat_cmd_handoff">Kontextus átadása egy új munkamenetnek</string>
+    <string name="chat_cmd_steer">Az ügynök terelése feladat közben</string>
+    <string name="chat_cmd_think">Mélyebb gondolkodás kérése</string>
+    <string name="chat_cmd_model">Az aktív modell váltása</string>
+    <string name="chat_cmd_reset">Az ügynök munkaállapotának visszaállítása</string>
+    <string name="chat_cmd_help">Mit tud ez az ügynök</string>
+    <string name="chat_cmd_status">Ügynök- és rendszerállapot megjelenítése</string>
+    <string name="chat_cmd_memory">Hosszú távú memória előhívása vagy szerkesztése</string>
+    <string name="chat_cmd_tools">Elérhető eszközök listázása</string>
+    <string name="chat_cmd_recent">legutóbbi</string>
+    <string name="chat_cmd_skill">képesség</string>
+
+    <string name="chat_transition_dissolve">Feloldódás</string>
+    <string name="chat_transition_dissolve_blurb">A szoba lágy elmosódáson át áll össze újra, Braille-nyomvonallal.</string>
+    <string name="chat_transition_passage">Átjárás</string>
+    <string name="chat_transition_passage_blurb">Az új szoba egy megvilágított varraton csúszik be, a régi pedig hátralép.</string>
+    <string name="chat_transition_weave">Szövés</string>
+    <string name="chat_transition_weave_blurb">Borostyán és ibolya szalagok kereszteződnek felfelé, mögöttük pedig a szoba kicserélődik.</string>
+    <string name="chat_transition_bloom">Kinyílás</string>
+    <string name="chat_transition_bloom_blurb">Az új szoba körként nyílik ki a megérintett sorból.</string>
+    <string name="chat_transition_rise">Emelkedés</string>
+    <string name="chat_transition_rise_blurb">A régi szoba hátrabillen és elsüllyed; az új a helyére emelkedik.</string>
+    <string name="chat_speed_slow">Lassú</string>
+    <string name="chat_speed_normal">Normál</string>
+    <string name="chat_speed_fast">Gyors</string>
+
+    <string name="chat_pet_choose">Kisállat választása</string>
+    <string name="chat_pet_rides">%1$s veled utazik az oldalsávban</string>
+    <string name="chat_pet_gateway">A kisállatok az átjárón élnek – minden felület ugyanazt mutatja</string>
+    <plurals name="chat_pet_search">
+        <item quantity="one">Keresés %d kisállat között…</item>
+        <item quantity="other">Keresés %d kisállat között…</item>
+    </plurals>
+    <string name="chat_pet_installed_header">Telepítve</string>
+    <string name="chat_pet_catalog_header">Petdex-katalógus</string>
+    <string name="chat_pet_none">Nincs elérhető kisállat – be van állítva a Hermes Link?</string>
+    <string name="chat_pet_no_match">Egy kisállat sem felel meg ennek: „%1$s”</string>
+    <string name="chat_pet_badge_active">aktív</string>
+    <string name="chat_pet_badge_hatched">helyben kikelt</string>
+    <string name="chat_pet_badge_curated">válogatott</string>
+    <string name="chat_pet_badge_installed">telepítve</string>
+    <string name="chat_pet_active">Aktív</string>
+
+    <string name="chat_back">Vissza</string>
+    <string name="chat_close_named">Bezárás: %1$s</string>
+    <string name="chat_loading_a11y">Betöltés</string>
+
+    <string name="chat_call_header">KERYX · HÍVÁS</string>
+    <string name="chat_call_mic_needed">A híváshoz a Keryxnek mikrofon kell.</string>
+    <string name="chat_call_listening">figyel</string>
+    <string name="chat_call_hearing">hall téged…</string>
+    <string name="chat_call_thinking">gondolkodik</string>
+    <string name="chat_call_interrupt">koppints a gömbre a közbevágáshoz</string>
+    <string name="chat_call_muted">némítva</string>
+    <string name="chat_call_ended">hívás vége</string>
+    <string name="chat_call_heard">„%1$s”</string>
+    <string name="chat_call_unmute">Némítás feloldása</string>
+    <string name="chat_call_mute">Némítás</string>
+    <string name="chat_call_end">Hívás befejezése</string>
+
+    <string name="chat_sources">Források</string>
+    <string name="chat_source">forrás</string>
+    <string name="chat_hand_clipboard">VÁGÓLAP</string>
+    <string name="chat_hand_phone">TELEFON</string>
+    <string name="chat_hand_share">MEGOSZTÁS</string>
+    <string name="chat_hand_app">ALKALMAZÁS</string>
+    <string name="chat_hand_opens">MEGNYITJA</string>
+    <string name="chat_skill_distilled">Képesség lepárolva</string>
+    <string name="chat_open_skill_forge">Megnyitás a Képességkovácsban →</string>
+
+    <string name="chat_tap_in_turn">A kör megnyitása teljes képernyőn</string>
+    <string name="chat_stream_dropped">A stream megszakadt – helyreállítás Matrix-szinkronnal…</string>
+
+    <string name="chat_context_direct_only">Csak közvetlen kapcsolattal bontható tételekre az ablak.</string>
+    <string name="chat_context_read_failed">Nem sikerült beolvasni az ablakot</string>
+    <string name="chat_context_title">Kontextus</string>
+    <string name="chat_context_used">%1$s / %2$s token</string>
+    <string name="chat_context_no_agent">Az átjárón még nincs élő ügynök ehhez a munkamenethez – előbb küldj valamit.</string>
+
+    <string name="chat_chart">Diagram</string>
+    <string name="chat_chart_summary">%1$s. Diagram típusa: %2$s.</string>
+    <string name="chat_chart_summary_unit">%1$s. Diagram típusa: %2$s, mértékegység: %3$s.</string>
+    <string name="chat_chart_no_value">nincs érték</string>
+    <string name="chat_chart_series">%1$d. adatsor</string>
+    <string name="chat_chart_total">összesen</string>
+    <string name="chat_show_less">Kevesebb</string>
+    <plurals name="chat_show_all_lines">
+        <item quantity="one">Mind a(z) %d sor megjelenítése</item>
+        <item quantity="other">Mind a(z) %d sor megjelenítése</item>
+    </plurals>
+
+    <string name="chat_aside_header">MELLÉKKÉRDÉS · nem része a csevegésnek</string>
+    <string name="chat_dismiss">Elvetés</string>
+    <string name="chat_aside_answering">…válasz a mellékkérdésre</string>
+    <string name="chat_aside_failed">A mellékkérdés nem sikerült: %1$s</string>
+    <string name="chat_aside_no_answer">Nem érkezett válasz.</string>
+
+    <string name="chat_action_success">SIKERES</string>
+    <string name="chat_action_failed">SIKERTELEN</string>
+    <string name="chat_action_tag">MŰVELET</string>
+    <string name="chat_reasoning_live">Gondolkodás…</string>
+    <string name="chat_reasoning_title">Gondolkodás</string>
+    <string name="chat_show_drawing">rajz megjelenítése</string>
+    <string name="chat_drawing">Rajz</string>
+
+    <string name="chat_done">Kész</string>
+
+    <string name="chat_art_mission_board">Üres küldetéstábla, nekitámasztva a hírnök botja</string>
+    <string name="chat_art_winged_clock">Szárnyas óra, körülötte íves nyíl</string>
+    <string name="chat_art_robot">Robotfej a hírnök szárnyas gömbjével a tetején, két oldalán üres hely</string>
+    <string name="chat_art_folder">Mappa egy lappal, rajta egy rajzolt ág</string>
+    <string name="chat_art_scroll">Kiterített tekercs, fölötte nagyító</string>
+    <string name="chat_art_bookmark">Lap egy megjelölt sorral és egy könyvjelzőszalaggal</string>
+    <string name="chat_art_picture">Bekeretezett kép egy dombról és a napról, mögötte egy üres keret</string>
+
+    <string name="chat_memory">Csevegésmemória</string>
+    <string name="chat_ring_base">Csevegésmemória: %1$dk / %2$dk token, %3$d százalék</string>
+    <plurals name="chat_ring_replies">
+        <item quantity="one">%1$s, kb. %2$d válasz az összefoglalásig</item>
+        <item quantity="other">%1$s, kb. %2$d válasz az összefoglalásig</item>
+    </plurals>
+    <string name="chat_ring_until">%1$s, %2$dk az összefoglalásig</string>
+    <string name="chat_ring_next">%1$s, a következő válasz összefoglalást indít</string>
+
+    <string name="chat_folder_hint">Mappa az átjárón (pl. ~/workspace/keryx)</string>
+    <string name="chat_folder_found">✓ mappa megtalálva</string>
+    <string name="chat_folder_missing">ott még nincs mappa</string>
+    <string name="chat_known_workspaces">Ismert munkaterületek</string>
+    <string name="chat_folder_truncated">több mint 30 mappa van itt – gépelj tovább a szűkítéshez</string>
+    <string name="chat_folder_more">+%1$d további – gépelj tovább a szűkítéshez</string>
+
+    <string name="chat_console_starting">indítás…</string>
+    <string name="chat_console_streaming">az ügynök dolgozik</string>
+    <string name="chat_console_waiting">jóváhagyásra vár</string>
+    <string name="chat_console_completed">a kör kész</string>
+    <string name="chat_console_lost">megszakadt a kapcsolat</string>
+    <string name="chat_console_lost_why">megszakadt a kapcsolat – %1$s</string>
+    <string name="chat_console_failed">sikertelen</string>
+    <string name="chat_console_failed_why">sikertelen – %1$s</string>
+    <string name="chat_stop">Leállítás</string>
+    <string name="chat_clear">Törlés</string>
+
+    <string name="chat_mark_hide">Mondandó elrejtése</string>
+    <string name="chat_mark_read">Mondandó elolvasása</string>
+    <string name="chat_mark_system">Rendszer: %1$s</string>
+    <string name="chat_summary_hide">Összefoglaló elrejtése</string>
+    <string name="chat_summary_read">Összefoglaló elolvasása</string>
+    <string name="chat_context_compacted">🗜 Kontextus tömörítve · %1$s</string>
+    <string name="chat_this_session_title">Ez a munkamenet</string>
+
+    <string name="chat_goal_loop">↻ ciklus · %1$s · %2$s</string>
+    <string name="chat_goal_heartbeat">♥ szívverés · %1$d · %2$s</string>
+    <string name="chat_goal_close">Cél bezárása</string>
+    <string name="chat_goal_open">Cél megnyitása</string>
+    <string name="chat_goal_exit">kilépés: %1$d</string>
+
+    <string name="chat_subagent_running_lower">alügynök fut</string>
+    <plurals name="chat_subagents_count">
+        <item quantity="one">%d alügynök</item>
+        <item quantity="other">%d alügynök</item>
+    </plurals>
+    <string name="chat_subagent">alügynök</string>
+    <string name="chat_delegated_task_lower">delegált részfeladat</string>
+    <plurals name="chat_tool_count">
+        <item quantity="one">%d eszköz</item>
+        <item quantity="other">%d eszköz</item>
+    </plurals>
+    <string name="chat_tokens_k">%1$dk tok</string>
+    <plurals name="chat_files_written">
+        <item quantity="one">%d írva</item>
+        <item quantity="other">%d írva</item>
+    </plurals>
+    <string name="chat_interrupted">megszakítva</string>
+    <string name="chat_duration_min_sec_compact">%1$dp%2$dmp</string>
+
+    <string name="chat_flight_plan">REPÜLÉSI TERV</string>
+    <string name="chat_flight_all_done">minden lépés leszállt</string>
+    <string name="chat_flight_next">következik: %1$s</string>
+    <string name="chat_join_sub">#alias:server vagy !roomid:server</string>
+</resources>

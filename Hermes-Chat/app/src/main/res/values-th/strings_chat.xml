@@ -1,0 +1,583 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_theme_to_light">เปลี่ยนเป็นธีมสว่าง</string>
+    <string name="chat_theme_follow_system">ตามระบบ</string>
+    <string name="chat_theme_to_dark">เปลี่ยนเป็นธีมมืด</string>
+    <string name="chat_new_chat">แชทใหม่</string>
+    <string name="chat_drawer_jump_hint">ไปที่…</string>
+    <string name="chat_lens_needs_you">รอคุณ</string>
+    <string name="chat_lens_running">กำลังทำงาน</string>
+    <string name="chat_lens_unread">ยังไม่อ่าน</string>
+    <string name="chat_lens_archived">เก็บถาวร</string>
+    <string name="chat_drawer_invites">คำเชิญ</string>
+    <string name="chat_place_missions">ภารกิจ</string>
+    <string name="chat_place_runs">การรัน</string>
+    <string name="chat_place_bots">บอท</string>
+    <string name="chat_place_projects">โปรเจกต์</string>
+    <string name="chat_place_shipyard">อู่เรือ</string>
+    <string name="chat_place_archive">คลังเก็บ</string>
+    <string name="chat_place_gateway">เกตเวย์</string>
+    <string name="chat_place_settings">การตั้งค่า</string>
+    <string name="chat_drawer_places">สถานที่</string>
+    <string name="chat_drawer_commands">คำสั่ง</string>
+    <string name="chat_drawer_no_matches">ไม่พบผลลัพธ์</string>
+    <string name="chat_drawer_nothing_archived">ไม่มีรายการที่เก็บถาวร</string>
+    <string name="chat_drawer_nothing_waiting">ไม่มีอะไรรอคุณ</string>
+    <string name="chat_drawer_nothing_running">ไม่มีอะไรกำลังทำงาน</string>
+    <string name="chat_drawer_all_read">อ่านหมดแล้ว</string>
+    <string name="chat_session_id_copied">คัดลอก id เซสชันแล้ว</string>
+    <string name="chat_moved_to_project">ย้ายไปที่ %1$s แล้ว</string>
+    <string name="chat_drawer_reaching_back">กำลังโหลดเพิ่ม…</string>
+    <string name="chat_drawer_show_older">แสดง%1$sที่เก่ากว่า</string>
+    <string name="chat_drawer_in_transcripts">ในบันทึกสนทนา</string>
+    <string name="chat_demo_gateway">เกตเวย์เดโม</string>
+    <string name="chat_demo_gateway_page">หน้าเกตเวย์ของคุณจะอยู่ที่นี่เมื่อเชื่อมต่อแล้ว</string>
+    <string name="chat_connect">เชื่อมต่อ</string>
+    <string name="chat_open_gateway">เปิดเกตเวย์</string>
+    <string name="chat_settings">การตั้งค่า</string>
+    <string name="chat_shelf_fold">ยุบ %1$s</string>
+    <string name="chat_shelf_open">เปิด %1$s</string>
+    <string name="chat_room_forked">แยกมาจากบทสนทนาอื่น</string>
+    <string name="chat_room_temporary">ชั่วคราว — ลบเมื่อเปิดแอปครั้งถัดไป</string>
+    <string name="chat_room_pinned">ปักหมุดแล้ว</string>
+    <string name="chat_mark_unread">ทำเครื่องหมายว่ายังไม่อ่าน</string>
+    <string name="chat_archive">เก็บถาวร</string>
+    <string name="chat_archive_hint">ออกจากรายการ แต่ยังอยู่บนเกตเวย์</string>
+    <string name="chat_restore_to_list">คืนกลับเข้ารายการ</string>
+    <string name="chat_export_ellipsis">ส่งออก…</string>
+    <string name="chat_copy_session_id">คัดลอก id เซสชัน</string>
+    <string name="chat_invite_user">เชิญผู้ใช้…</string>
+    <string name="chat_rename_ellipsis">เปลี่ยนชื่อ…</string>
+    <string name="chat_move_to_project">ย้ายไปโปรเจกต์…</string>
+    <string name="chat_leave_room">ออกจากห้อง</string>
+    <string name="chat_delete_session_ellipsis">ลบเซสชัน…</string>
+    <string name="chat_invite_to">เชิญเข้า %1$s</string>
+    <string name="chat_invite">เชิญ</string>
+    <string name="chat_cancel">ยกเลิก</string>
+    <string name="chat_leave_title">ออกจาก %1$s ไหม</string>
+    <string name="chat_leave_body">คุณจะไม่ได้รับข้อความจากที่นี่อีก การกลับเข้ามาต้องใช้คำเชิญใหม่</string>
+    <string name="chat_leave">ออก</string>
+    <string name="chat_rename_session">เปลี่ยนชื่อเซสชัน</string>
+    <string name="chat_rename">เปลี่ยนชื่อ</string>
+    <string name="chat_delete_title">ลบ %1$s ไหม</string>
+    <string name="chat_delete_session_body">ลบเซสชันและบันทึกสนทนาทั้งหมดออกจากเกตเวย์ ย้อนกลับไม่ได้</string>
+    <string name="chat_delete">ลบ</string>
+    <string name="chat_invited_to_room">คุณได้รับเชิญเข้าห้องนี้</string>
+    <string name="chat_decline">ปฏิเสธ</string>
+    <string name="chat_accept">ยอมรับ</string>
+    <string name="chat_running">กำลังทำงาน</string>
+    <string name="chat_age_now">ตอนนี้</string>
+    <string name="chat_age_minutes">%1$d น.</string>
+    <string name="chat_age_hours">%1$d ชม.</string>
+    <string name="chat_age_days">%1$d วัน</string>
+    <string name="chat_age_weeks">%1$d สป.</string>
+    <plurals name="chat_door_needs_you">
+        <item quantity="other">%1$s, %2$s รายการรอคุณ</item>
+    </plurals>
+    <string name="chat_door_unread">%1$s, ยังไม่อ่าน %2$s</string>
+
+    <string name="chat_bot_new_title">เริ่มใหม่กับ %1$s ไหม</string>
+    <string name="chat_bot_new_body">บีบอัด จะเก็บบทสนทนานี้ไว้และล้างบริบทการทำงานของ %1$s\n\nBot Chat ใหม่ จะเก็บแชทนี้เข้ากรุ — ยังอ่านได้ในแชทเก่าของ %1$s — แล้วเริ่มแชทใหม่</string>
+    <string name="chat_bot_new_fresh">Bot Chat ใหม่</string>
+    <string name="chat_bot_new_compact">บีบอัด</string>
+    <string name="chat_bot_chat_chip">Bot Chat</string>
+    <string name="chat_menu">เมนู</string>
+    <plurals name="chat_menu_waiting">
+        <item quantity="other">เมนู, %d รายการรอคุณ</item>
+    </plurals>
+    <plurals name="chat_menu_unread">
+        <item quantity="other">เมนู, ยังไม่อ่าน %d</item>
+    </plurals>
+    <string name="chat_new_session_failed">เริ่มเซสชันไม่ได้ %1$s</string>
+    <string name="chat_new_session_hold">เซสชันใหม่ (กดค้างเพื่อดูตัวเลือก)</string>
+    <string name="chat_unpin_run">เลิกปักหมุดการรันนี้</string>
+    <string name="chat_pin_run">ปักหมุดการรันนี้</string>
+    <string name="chat_new_session">เซสชันใหม่</string>
+    <string name="chat_new_session_confirm_title">เริ่มเซสชันใหม่ไหม</string>
+    <string name="chat_new_session_confirm_body">เอเจนต์ยังทำงานอยู่ — /new จะจบการรันปัจจุบันและทิ้งผลลัพธ์</string>
+    <string name="chat_new_session_confirm">จบการรัน &amp; เริ่มใหม่</string>
+    <string name="chat_find_in_chat">ค้นหาในแชท</string>
+    <string name="chat_call_needs_voice">ตั้งปลายทาง STT และ TTS ใน การตั้งค่า → เสียง ก่อน</string>
+    <string name="chat_call">โทร</string>
+    <string name="chat_reasoning_header">การให้เหตุผล</string>
+    <string name="chat_reasoning_sub_default">ระดับความพยายามคงอยู่ข้ามเซสชัน</string>
+    <string name="chat_reasoning_local_brain">สมองในเครื่อง</string>
+    <string name="chat_reasoning_model">โมเดล</string>
+    <string name="chat_reasoning_sub_binary">%1$s · สวิตช์เปิด/ปิด</string>
+    <string name="chat_reasoning_sub_none">%1$s · ไม่มีปุ่มปรับการให้เหตุผล</string>
+    <string name="chat_reasoning_sub_session">%1$s · ระดับของเซสชันนี้</string>
+    <string name="chat_reasoning_sub_scale">%1$s · ระดับความพยายาม</string>
+    <string name="chat_reasoning_no_dial">โมเดลนี้ไม่รับระดับความพยายาม — Hermes จะไม่ส่งไป</string>
+    <string name="chat_reasoning_every_session">ทุกเซสชัน</string>
+    <string name="chat_reasoning_this_session">เฉพาะเซสชันนี้</string>
+    <string name="chat_reasoning_show">แสดงการให้เหตุผล</string>
+    <string name="chat_reasoning_hide">ซ่อนการให้เหตุผล</string>
+    <string name="chat_reasoning_reset">รีเซ็ตค่าเฉพาะเซสชัน</string>
+    <string name="chat_demo_label">เดโม</string>
+    <string name="chat_demo_connect">เชื่อมต่อเกตเวย์ของคุณ</string>
+
+    <string name="chat_attach_failed">แนบไม่ได้ (อ่านไม่ได้ หรือเกิน 50 MB)</string>
+    <string name="chat_no_camera">ไม่มีแอปกล้องตอบสนอง</string>
+    <string name="chat_mic_unavailable">ไมค์ไม่พร้อมใช้งาน</string>
+    <string name="chat_transcription_failed">ถอดเสียงไม่สำเร็จ: %1$s</string>
+    <string name="chat_mic_permission">Keryx ต้องใช้ไมค์เพื่อพิมพ์ด้วยเสียง</string>
+    <string name="chat_nothing_to_read">ไม่มีอะไรให้อ่านออกเสียง</string>
+    <string name="chat_typing_one">%1$s กำลังพิมพ์…</string>
+    <string name="chat_typing_two">%1$s และ %2$s กำลังพิมพ์…</string>
+    <string name="chat_typing_many">หลายคนกำลังพิมพ์…</string>
+    <string name="chat_jump_newest">ไปที่ล่าสุด</string>
+    <plurals name="chat_jump_newest_count">
+        <item quantity="other">ไปที่ล่าสุด, ใหม่ %d</item>
+    </plurals>
+    <string name="chat_attachments_cant_queue">ไฟล์แนบเข้าคิวไม่ได้ — ส่งหลังรอบนี้เสร็จ</string>
+    <string name="chat_stop_hint">พิมพ์สิ่งที่จะแก้ก่อน — แล้วแตะเพื่อกำกับรอบนี้ กดค้างเพื่อดูเพิ่ม</string>
+    <string name="chat_busy_queue">เข้าคิวสำหรับรอบถัดไป</string>
+    <string name="chat_busy_aside">ถามแทรก — ตอบนอกแชท</string>
+    <string name="chat_busy_redirect">เปลี่ยนทิศทาง — เริ่มคำตอบใหม่ด้วยสิ่งนี้</string>
+    <string name="chat_starter_1">คุณทำอะไรได้บ้างในเซสชันนี้</string>
+    <string name="chat_starter_2">วันนี้ฉันมีอะไรต้องทำบ้าง</string>
+    <string name="chat_starter_3">ช่วงนี้เราทำอะไรกันไปบ้าง</string>
+    <string name="chat_starter_4">ช่วยวางแผนเรื่องเล็กๆ ทีละขั้นตอน</string>
+    <string name="chat_fresh_page">หน้าใหม่</string>
+    <string name="chat_fresh_page_sub">ถามอะไรก็ได้ หรือเริ่มจากหนึ่งในนี้</string>
+    <string name="chat_today">วันนี้</string>
+    <string name="chat_yesterday">เมื่อวาน</string>
+
+    <string name="chat_arrival_mark">%1$s · ส่งมาเอง · %2$s</string>
+    <string name="chat_bubble_hold_label">ตอบกลับ แสดงความรู้สึก หรือคัดลอก</string>
+    <string name="chat_copied">คัดลอกแล้ว</string>
+    <string name="chat_undo_title">ถอนการสนทนาล่าสุดไหม</string>
+    <string name="chat_undo_body">ข้อความของคุณและคำตอบนี้จะถูกลบออกจากประวัติเซสชันบนเกตเวย์ สิ่งที่คุณพูดต่อไปจะต่อจากก่อนหน้านั้น</string>
+    <string name="chat_undo_confirm">ถอน</string>
+    <string name="chat_keep">เก็บไว้</string>
+    <string name="chat_select_text">เลือกข้อความ</string>
+    <string name="chat_delete_message_title">ลบข้อความไหม</string>
+    <string name="chat_delete_message_body">จะถูกลบสำหรับทุกคน — ย้อนกลับไม่ได้</string>
+    <string name="chat_sent">ส่งแล้ว</string>
+    <string name="chat_stop_speaking">หยุดพูด</string>
+    <string name="chat_go_to_quoted">ไปที่ข้อความที่อ้างถึง</string>
+    <string name="chat_reaction_take_back">ถอนความรู้สึกของคุณ</string>
+    <string name="chat_reaction_add">เพิ่มความรู้สึกของคุณ</string>
+    <string name="chat_react">แสดงความรู้สึก</string>
+    <string name="chat_action_reply">ตอบกลับ</string>
+    <string name="chat_action_copy">คัดลอก</string>
+    <string name="chat_action_copy_text">คัดลอกข้อความ</string>
+    <string name="chat_action_saved">บันทึกแล้ว</string>
+    <string name="chat_action_save">บันทึก</string>
+    <string name="chat_action_unsave">นำออกจากที่บันทึกไว้</string>
+    <string name="chat_action_keep_archive">เก็บในคลังเก็บ</string>
+    <string name="chat_action_stop">หยุด</string>
+    <string name="chat_action_read_aloud">อ่านออกเสียง</string>
+    <string name="chat_action_select">เลือก</string>
+    <string name="chat_action_edit">แก้ไข</string>
+    <string name="chat_action_edit_desc">แก้ไขแล้วส่งอีกครั้ง</string>
+    <string name="chat_action_retry">ลองใหม่</string>
+    <string name="chat_action_retry_desc">ถอนแล้วพูดใหม่</string>
+    <string name="chat_action_branch">แตกแขนง</string>
+    <string name="chat_action_branch_desc">แตกแขนงเซสชันใหม่จากตรงนี้</string>
+    <string name="chat_action_undo">เลิกทำ</string>
+    <string name="chat_action_undo_desc">ถอนการสนทนาล่าสุด</string>
+    <string name="chat_action_delete_desc">ลบข้อความ</string>
+    <string name="chat_reply_attachment">ไฟล์แนบ</string>
+    <string name="chat_reply_message">ข้อความ</string>
+
+    <string name="chat_archive_title">คลังเก็บ</string>
+    <string name="chat_archive_waking">กำลังปลุกดัชนี…</string>
+    <plurals name="chat_archive_reaching">
+        <item quantity="other">จดจำแล้ว %1$s · กำลังโหลดเพิ่ม…</item>
+    </plurals>
+    <plurals name="chat_archive_error">
+        <item quantity="other">จดจำแล้ว %1$s · %2$s</item>
+    </plurals>
+    <plurals name="chat_archive_done">
+        <item quantity="other">จดจำแล้ว %1$s ข้อความ</item>
+    </plurals>
+    <string name="chat_archive_jump_date">ไปที่วันที่</string>
+    <string name="chat_archive_nothing_that_day">ยังไม่มีการทำดัชนีสำหรับวันนั้น</string>
+    <string name="chat_open">เปิด</string>
+    <string name="chat_archive_tab_search">ค้นหา</string>
+    <string name="chat_archive_tab_saved">ที่บันทึกไว้</string>
+    <string name="chat_archive_tab_media">สื่อ</string>
+    <string name="chat_archive_search_hint">ค้นหาทุกอย่างที่เคยพูด…</string>
+    <string name="chat_archive_recent">จดจำล่าสุด</string>
+    <string name="chat_archive_empty_title">ยังไม่มีอะไรถูกจดจำ</string>
+    <string name="chat_archive_empty_body">ดัชนีจะค่อยๆ เต็มเมื่อเซสชันถูกกวาด จากนั้นทุกข้อความที่แอปเคยเห็นจะค้นหาได้ในครั้งเดียว</string>
+    <string name="chat_archive_search_idle">ทุกข้อความที่แอปเคยเห็น ค้นหาได้ในครั้งเดียว</string>
+    <string name="chat_archive_no_hits">ยังไม่พบ “%1$s”</string>
+    <string name="chat_archive_opening">กำลังเปิดคลังเก็บ…</string>
+    <string name="chat_archive_saved_empty_title">ยังไม่ได้เก็บอะไร</string>
+    <string name="chat_archive_saved_empty_body">กดค้างที่ข้อความแล้วแตะบุ๊กมาร์กเพื่อเก็บไว้ที่นี่</string>
+    <string name="chat_archive_looking">กำลังค้นในดัชนี…</string>
+    <string name="chat_archive_media_empty_title">ยังไม่มีรูปภาพหรือไฟล์</string>
+    <string name="chat_archive_media_empty_body">รูปภาพและไฟล์จากแชทของคุณจะรวมอยู่ที่นี่เมื่อดัชนีเต็มขึ้น</string>
+    <string name="chat_image">รูปภาพ</string>
+    <string name="chat_you">คุณ</string>
+    <string name="chat_archive_context">บริบท</string>
+    <string name="chat_archive_context_failed">โหลดช่วงเวลานั้นไม่ได้ (อาจเก่ากว่าคีย์ของการเข้าสู่ระบบนี้)</string>
+    <string name="chat_archive_reach_earlier">ดูก่อนหน้า</string>
+    <string name="chat_archive_reach_later">ดูถัดไป</string>
+
+    <string name="chat_attach">แนบ</string>
+    <string name="chat_composer_hint">ข้อความ…</string>
+    <string name="chat_composer_hint_steer_stop">พิมพ์เพื่อกำกับรอบนี้ — ■ หยุด</string>
+    <string name="chat_composer_hint_steer">พิมพ์เพื่อกำกับรอบนี้</string>
+    <string name="chat_dictate_stop">หยุดพิมพ์ด้วยเสียง</string>
+    <string name="chat_dictate">พิมพ์ด้วยเสียง</string>
+    <string name="chat_send_steer">กำกับรอบที่กำลังทำงาน</string>
+    <string name="chat_send_queue">เข้าคิวสำหรับรอบถัดไป</string>
+    <string name="chat_send_stop">หยุดรอบนี้</string>
+    <string name="chat_send">ส่ง</string>
+    <string name="chat_send_hold_menu">เข้าคิว ถามแทรก หรือเปลี่ยนทิศทาง</string>
+    <string name="chat_send_hold_queue">เข้าคิวสำหรับรอบถัดไปแทน</string>
+    <string name="chat_send_hold_stop">ปุ่มหยุดทำอะไร</string>
+    <string name="chat_choose_model">เลือกโมเดล</string>
+    <string name="chat_model_label">โมเดล: %1$s</string>
+    <string name="chat_reasoning">การให้เหตุผล</string>
+    <string name="chat_steer_hint">↪ กำกับรอบนี้ · กดค้างเพื่อเข้าคิว</string>
+    <string name="chat_replying_to">กำลังตอบกลับ %1$s</string>
+    <string name="chat_cancel_reply">ยกเลิกการตอบกลับ</string>
+    <string name="chat_image_attached">แนบรูปภาพแล้ว</string>
+    <string name="chat_file_attached">แนบไฟล์แล้ว</string>
+    <string name="chat_remove_attachment">นำไฟล์แนบออก</string>
+    <string name="chat_attach_photo">รูปภาพ</string>
+    <string name="chat_attach_file">ไฟล์</string>
+    <string name="chat_attach_camera">กล้อง</string>
+
+    <string name="chat_tool_succeeded">สำเร็จ</string>
+    <string name="chat_tool_failed">ล้มเหลว</string>
+    <string name="chat_tool_no_verdict">ไม่มีผลสรุป</string>
+    <string name="chat_duration_seconds">%1$d วิ</string>
+    <string name="chat_duration_millis">%1$d ms</string>
+    <string name="chat_tool_flagged">⚠ Hermes ตั้งค่าสถานะผลลัพธ์นี้</string>
+    <string name="chat_tool_flagged_with">⚠ Hermes ตั้งค่าสถานะผลลัพธ์นี้: %1$s</string>
+    <string name="chat_tool_diff">diff</string>
+    <string name="chat_tool_diff_show">แสดง diff</string>
+    <string name="chat_tool_diff_hide">ซ่อน diff</string>
+    <string name="chat_tool_diff_label">Diff</string>
+    <string name="chat_tool_output">ผลลัพธ์</string>
+    <string name="chat_tool_output_show">แสดงผลลัพธ์</string>
+    <string name="chat_tool_output_hide">ซ่อนผลลัพธ์</string>
+    <string name="chat_tool_output_label">ผลลัพธ์</string>
+    <string name="chat_tool_exit_failed">รหัสออก %1$d, ล้มเหลว</string>
+    <string name="chat_tool_exit_ok">รหัสออก 0</string>
+    <plurals name="chat_tools_running">
+        <item quantity="other">กำลังรันเครื่องมือ %d รายการ…</item>
+    </plurals>
+    <plurals name="chat_tools_ran">
+        <item quantity="other">รันเครื่องมือ %d รายการแล้ว</item>
+    </plurals>
+    <plurals name="chat_subagents_running">
+        <item quantity="other">เอเจนต์ย่อยกำลังทำงาน %1$d จาก %2$d</item>
+    </plurals>
+    <string name="chat_subagent_running">เอเจนต์ย่อยกำลังทำงาน</string>
+    <plurals name="chat_delegated_tasks">
+        <item quantity="other">มอบหมายงาน %d รายการ</item>
+    </plurals>
+    <string name="chat_delegated_task">มอบหมายงานแล้ว</string>
+    <string name="chat_working">กำลังทำงาน…</string>
+    <plurals name="chat_output_steps">
+        <item quantity="other">ขั้นตอนผลลัพธ์ %d ขั้น</item>
+    </plurals>
+    <plurals name="chat_run_with_failed">
+        <item quantity="other">%1$s · ล้มเหลว %2$d</item>
+    </plurals>
+    <string name="chat_steps_fold">ยุบขั้นตอน</string>
+    <string name="chat_steps_show">แสดงขั้นตอน</string>
+    <string name="chat_tap_in_run">ดูการรันนี้แบบเต็มจอ</string>
+    <string name="chat_state_open">เปิดอยู่</string>
+    <string name="chat_state_folded">ยุบอยู่</string>
+
+    <string name="chat_approval_needed">ต้องการการอนุมัติ</string>
+    <string name="chat_approval_once">อนุญาตครั้งเดียว</string>
+    <string name="chat_approval_session">เซสชันนี้</string>
+    <string name="chat_approval_always">เสมอ</string>
+    <string name="chat_approval_deny">ปฏิเสธ</string>
+    <string name="chat_asking">Hermes กำลังถาม</string>
+    <string name="chat_asking_batch">Hermes กำลังถาม · %1$d จาก %2$d</string>
+    <string name="chat_sudo_needed">ต้องใช้รหัสผ่าน sudo</string>
+    <string name="chat_credential_needed">ต้องใช้ข้อมูลรับรอง</string>
+    <string name="chat_stored_as">เก็บบนเกตเวย์เป็น %1$s</string>
+    <string name="chat_multi_answers">ตอบได้หลายข้อ — พิมพ์ด้านล่างโดยคั่นด้วยจุลภาค</string>
+    <string name="chat_your_answer">คำตอบของคุณ</string>
+    <string name="chat_password">รหัสผ่าน</string>
+    <string name="chat_value">ค่า</string>
+    <string name="chat_skip">ข้าม</string>
+
+    <string name="chat_new_conversation">บทสนทนาใหม่</string>
+    <string name="chat_new_session_body">เซสชันใหม่บนเกตเวย์ ตั้งชื่อตอนนี้ หรือให้การสนทนาครั้งแรกตั้งชื่อให้</string>
+    <string name="chat_title_optional">ชื่อ (ไม่บังคับ)</string>
+    <string name="chat_agent">เอเจนต์</string>
+    <string name="chat_temporary">ชั่วคราว</string>
+    <string name="chat_temporary_body">ลบออกจากเกตเวย์เมื่อเปิดแอปครั้งถัดไป</string>
+    <string name="chat_create">สร้าง</string>
+    <string name="chat_error_line">⚠ %1$s</string>
+    <string name="chat_direct_message">ข้อความส่วนตัว</string>
+    <string name="chat_direct_message_sub">แชทตัวต่อตัวกับผู้ใช้</string>
+    <string name="chat_start">เริ่ม</string>
+    <string name="chat_new_room">ห้องใหม่</string>
+    <string name="chat_new_room_sub">ห้องที่มีชื่อ เชิญคนตอนนี้หรือภายหลัง</string>
+    <string name="chat_room_name">ชื่อห้อง</string>
+    <string name="chat_invite_optional">เชิญ @user:server (ไม่บังคับ)</string>
+    <string name="chat_join_by_address">เข้าร่วมด้วยที่อยู่</string>
+    <string name="chat_join">เข้าร่วม</string>
+
+    <string name="chat_prune_preview_failed">ดูตัวอย่างไม่สำเร็จ</string>
+    <string name="chat_prune_confirm_title">ยืนยันการล้างเซสชัน</string>
+    <plurals name="chat_prune_confirm_sub">
+        <item quantity="other">ลบ %d เซสชันอย่างถาวร</item>
+    </plurals>
+    <string name="chat_prune_title">ล้างเซสชัน</string>
+    <string name="chat_prune_body">ลบเซสชันที่จบแล้วออกจากบันทึกของเกตเวย์ — อย่างถาวร รวมบันทึกสนทนา เซสชันที่ใช้งานอยู่จะไม่ถูกแตะต้อง</string>
+    <string name="chat_prune_older_than">เก่ากว่า</string>
+    <string name="chat_prune_days">%1$d วัน</string>
+    <string name="chat_prune_max_messages">เฉพาะเซสชันที่มี ≤ N ข้อความ (ไม่บังคับ)</string>
+    <string name="chat_prune_include_archived">รวมเซสชันที่เก็บถาวร</string>
+    <string name="chat_prune_nothing">ไม่มีรายการตรงกับตัวกรองนี้</string>
+    <plurals name="chat_prune_matched">
+        <item quantity="other">ตรงกัน %1$d เซสชัน · เก่าสุด %2$s · ใหม่สุด %3$s</item>
+    </plurals>
+    <plurals name="chat_prune_sample">
+        <item quantity="other">· %1$s (%2$d ข้อความ)</item>
+    </plurals>
+    <string name="chat_prune_preview">ดูตัวอย่าง</string>
+    <string name="chat_prune_delete_count">ลบ %1$d…</string>
+    <string name="chat_prune_delete">ลบ…</string>
+    <plurals name="chat_prune_final_title">
+        <item quantity="other">ลบ %d เซสชันอย่างถาวรไหม</item>
+    </plurals>
+    <string name="chat_prune_final_body">แถวข้อมูลและไฟล์บันทึกสนทนาจะถูกลบออกจากเกตเวย์ ย้อนกลับไม่ได้</string>
+    <string name="chat_prune_delete_n">ลบ %1$d</string>
+
+    <string name="chat_loading_lower">กำลังโหลด…</string>
+    <string name="chat_load_attachment_failed">โหลดไฟล์แนบไม่ได้</string>
+    <string name="chat_animated_image">ภาพเคลื่อนไหว</string>
+    <string name="chat_video">วิดีโอ</string>
+    <string name="chat_saved_to">บันทึกไว้ที่ %1$s</string>
+    <string name="chat_save_failed">บันทึกไม่ได้</string>
+    <string name="chat_save_to_device">บันทึกลงอุปกรณ์</string>
+    <string name="chat_share_failed">แชร์ไม่ได้</string>
+    <string name="chat_share">แชร์</string>
+    <string name="chat_close">ปิด</string>
+    <string name="chat_no_app_for_file">ไม่มีแอปที่เปิดไฟล์นี้ได้</string>
+    <string name="chat_open_with">เปิดด้วย</string>
+
+    <string name="chat_copy_image">คัดลอกรูปภาพ</string>
+    <string name="chat_image_copied">คัดลอกรูปภาพแล้ว — วางลงในโพสต์ได้เลย</string>
+    <string name="chat_image_fetch_failed">ดึงรูปภาพไม่ได้ — คัดลอกลิงก์แทนแล้ว</string>
+    <string name="chat_copy_link">คัดลอกลิงก์</string>
+    <string name="chat_link_copied">คัดลอกลิงก์แล้ว</string>
+    <string name="chat_save_to_photos">บันทึกลงรูปภาพ</string>
+    <string name="chat_save_image_failed">บันทึกรูปภาพนั้นไม่ได้</string>
+    <string name="chat_open_in_browser">เปิดในเบราว์เซอร์</string>
+    <string name="chat_no_app_for_link">ไม่มีอะไรที่นี่เปิดลิงก์นั้นได้</string>
+
+    <string name="chat_gateway_log">บันทึกของเกตเวย์</string>
+    <string name="chat_details_copied">คัดลอกรายละเอียดแล้ว</string>
+    <string name="chat_copy_details">คัดลอกรายละเอียด</string>
+
+    <string name="chat_thinking">กำลังคิด…</string>
+    <string name="chat_thought">คิดแล้ว</string>
+    <string name="chat_thought_briefly">คิดสั้นๆ</string>
+    <string name="chat_thought_for">คิดอยู่ %1$s</string>
+    <string name="chat_reasoning_show_a11y">แสดงการให้เหตุผล</string>
+    <string name="chat_reasoning_hide_a11y">ซ่อนการให้เหตุผล</string>
+    <string name="chat_duration_min_sec">%1$d น. %2$d วิ</string>
+    <string name="chat_newest">ล่าสุด</string>
+
+    <string name="chat_config_unsaved">%1$s · ยังไม่บันทึก</string>
+    <string name="chat_saving">กำลังบันทึก…</string>
+    <string name="chat_save">บันทึก</string>
+    <string name="chat_config_load_failed">โหลด config.yaml ไม่ได้ %1$s</string>
+    <string name="chat_loading">กำลังโหลด…</string>
+    <string name="chat_config_restart_note">การเปลี่ยนแปลงที่บันทึกในส่วนส่วนใหญ่จะมีผลเมื่อรีสตาร์ตเกตเวย์ครั้งถัดไป</string>
+    <string name="chat_save_anyway_title">บันทึกต่อไหม</string>
+    <string name="chat_save_anyway">บันทึกต่อ</string>
+    <string name="chat_discard_title">ทิ้งการเปลี่ยนแปลงไหม</string>
+    <string name="chat_config_untouched">config.yaml บนเกตเวย์ไม่ถูกแตะต้อง</string>
+    <string name="chat_discard">ทิ้ง</string>
+    <string name="chat_keep_editing">แก้ไขต่อ</string>
+
+    <string name="chat_export_title">ส่งออก “%1$s”</string>
+    <string name="chat_this_session">เซสชันนี้</string>
+    <string name="chat_export_markdown_detail">บทสนทนาแบบที่คุณอ่าน: ใครพูดอะไร เครื่องมือในบรรทัดเดียว ผลลัพธ์ยาวถูกตัดให้สั้น</string>
+    <string name="chat_export_json_detail">การส่งออกฉบับเต็มของเกตเวย์: ทุกแถว รวมรอบที่ถอนแล้วและ system prompt นำเข้ากลับได้</string>
+    <string name="chat_export_share_failed">เปิดหน้าแชร์ไม่ได้</string>
+    <string name="chat_export_failed">ส่งออกไม่สำเร็จ</string>
+    <string name="chat_exporting">กำลังส่งออก…</string>
+
+    <string name="chat_cmd_new">เริ่มบทสนทนาใหม่</string>
+    <string name="chat_cmd_compress">บีบอัด / สรุปเธรดนี้</string>
+    <string name="chat_cmd_handoff">ส่งต่อบริบทไปยังเซสชันใหม่</string>
+    <string name="chat_cmd_steer">กำกับเอเจนต์ระหว่างทำงาน</string>
+    <string name="chat_cmd_think">ขอให้ให้เหตุผลลึกขึ้น</string>
+    <string name="chat_cmd_model">สลับโมเดลที่ใช้งาน</string>
+    <string name="chat_cmd_reset">รีเซ็ตสถานะการทำงานของเอเจนต์</string>
+    <string name="chat_cmd_help">แสดงสิ่งที่เอเจนต์นี้ทำได้</string>
+    <string name="chat_cmd_status">แสดงสถานะเอเจนต์ + ระบบ</string>
+    <string name="chat_cmd_memory">เรียกคืนหรือแก้ไขความจำระยะยาว</string>
+    <string name="chat_cmd_tools">แสดงเครื่องมือที่มี</string>
+    <string name="chat_cmd_recent">ล่าสุด</string>
+    <string name="chat_cmd_skill">ทักษะ</string>
+
+    <string name="chat_transition_dissolve">ละลาย</string>
+    <string name="chat_transition_dissolve_blurb">ห้องก่อตัวใหม่ผ่านความเบลอนุ่มๆ พร้อมรอยอักษรเบรลล์</string>
+    <string name="chat_transition_passage">ทางผ่าน</string>
+    <string name="chat_transition_passage_blurb">ห้องใหม่เลื่อนเข้ามาบนรอยต่อที่ส่องสว่าง ขณะที่ห้องเก่าถอยออกไป</string>
+    <string name="chat_transition_weave">ถักทอ</string>
+    <string name="chat_transition_weave_blurb">ริบบิ้นสีอำพันและม่วงไขว้กันขึ้นไป และห้องเปลี่ยนอยู่เบื้องหลัง</string>
+    <string name="chat_transition_bloom">เบ่งบาน</string>
+    <string name="chat_transition_bloom_blurb">ห้องใหม่เปิดออกเป็นวงกลมจากแถวที่คุณแตะ</string>
+    <string name="chat_transition_rise">ผุดขึ้น</string>
+    <string name="chat_transition_rise_blurb">ห้องเก่าเอนไปด้านหลังและจมลง ห้องใหม่ผุดขึ้นมาแทนที่</string>
+    <string name="chat_speed_slow">ช้า</string>
+    <string name="chat_speed_normal">ปกติ</string>
+    <string name="chat_speed_fast">เร็ว</string>
+
+    <string name="chat_pet_choose">เลือกสัตว์เลี้ยง</string>
+    <string name="chat_pet_rides">%1$s ติดตามอยู่ในลิ้นชัก</string>
+    <string name="chat_pet_gateway">สัตว์เลี้ยงอยู่บนเกตเวย์ — ทุกที่แสดงตัวเดียวกัน</string>
+    <plurals name="chat_pet_search">
+        <item quantity="other">ค้นหาสัตว์เลี้ยง %d ตัว…</item>
+    </plurals>
+    <string name="chat_pet_installed_header">ติดตั้งแล้ว</string>
+    <string name="chat_pet_catalog_header">แคตตาล็อก Petdex</string>
+    <string name="chat_pet_none">ไม่มีสัตว์เลี้ยง — ตั้งค่า Hermes Link แล้วหรือยัง</string>
+    <string name="chat_pet_no_match">ไม่มีสัตว์เลี้ยงที่ตรงกับ “%1$s”</string>
+    <string name="chat_pet_badge_active">ใช้งานอยู่</string>
+    <string name="chat_pet_badge_hatched">ฟักในเครื่อง</string>
+    <string name="chat_pet_badge_curated">คัดสรร</string>
+    <string name="chat_pet_badge_installed">ติดตั้งแล้ว</string>
+    <string name="chat_pet_active">ใช้งานอยู่</string>
+
+    <string name="chat_back">ย้อนกลับ</string>
+    <string name="chat_close_named">ปิด %1$s</string>
+    <string name="chat_loading_a11y">กำลังโหลด</string>
+
+    <string name="chat_call_header">KERYX · โทร</string>
+    <string name="chat_call_mic_needed">Keryx ต้องใช้ไมโครโฟนเพื่อโทร</string>
+    <string name="chat_call_listening">กำลังฟัง</string>
+    <string name="chat_call_hearing">กำลังฟังคุณ…</string>
+    <string name="chat_call_thinking">กำลังคิด</string>
+    <string name="chat_call_interrupt">แตะลูกแก้วเพื่อขัดจังหวะ</string>
+    <string name="chat_call_muted">ปิดเสียงอยู่</string>
+    <string name="chat_call_ended">วางสายแล้ว</string>
+    <string name="chat_call_heard">“%1$s”</string>
+    <string name="chat_call_unmute">เปิดเสียง</string>
+    <string name="chat_call_mute">ปิดเสียง</string>
+    <string name="chat_call_end">วางสาย</string>
+
+    <string name="chat_sources">แหล่งที่มา</string>
+    <string name="chat_source">แหล่งที่มา</string>
+    <string name="chat_hand_clipboard">คลิปบอร์ด</string>
+    <string name="chat_hand_phone">โทรศัพท์</string>
+    <string name="chat_hand_share">แชร์</string>
+    <string name="chat_hand_app">แอป</string>
+    <string name="chat_hand_opens">เปิด</string>
+    <string name="chat_skill_distilled">กลั่นทักษะแล้ว</string>
+    <string name="chat_open_skill_forge">เปิดในโรงตีทักษะ →</string>
+
+    <string name="chat_tap_in_turn">ดูรอบนี้แบบเต็มจอ</string>
+    <string name="chat_stream_dropped">สตรีมหลุด — กำลังกู้คืนผ่านการซิงก์ Matrix…</string>
+
+    <string name="chat_context_direct_only">เฉพาะช่องทางตรงเท่านั้นที่แจกแจงหน้าต่างบริบทได้</string>
+    <string name="chat_context_read_failed">อ่านหน้าต่างบริบทไม่ได้</string>
+    <string name="chat_context_title">บริบท</string>
+    <string name="chat_context_used">%1$s จาก %2$s โทเค็น</string>
+    <string name="chat_context_no_agent">เกตเวย์ยังไม่มีเอเจนต์ที่ทำงานอยู่สำหรับเซสชันนี้ — ส่งอะไรสักอย่างก่อน</string>
+
+    <string name="chat_chart">แผนภูมิ</string>
+    <string name="chat_chart_summary">%1$s แผนภูมิ%2$s</string>
+    <string name="chat_chart_summary_unit">%1$s แผนภูมิ%2$s หน่วยเป็น %3$s</string>
+    <string name="chat_chart_no_value">ไม่มีค่า</string>
+    <string name="chat_chart_series">ชุดข้อมูล %1$d</string>
+    <string name="chat_chart_total">รวม</string>
+    <string name="chat_show_less">แสดงน้อยลง</string>
+    <plurals name="chat_show_all_lines">
+        <item quantity="other">แสดงทั้งหมด %d บรรทัด</item>
+    </plurals>
+
+    <string name="chat_aside_header">ถามแทรก · ไม่ใช่ส่วนหนึ่งของแชท</string>
+    <string name="chat_dismiss">ปิด</string>
+    <string name="chat_aside_answering">…กำลังตอบแทรก</string>
+    <string name="chat_aside_failed">ถามแทรกไม่สำเร็จ: %1$s</string>
+    <string name="chat_aside_no_answer">ไม่มีคำตอบกลับมา</string>
+
+    <string name="chat_action_success">สำเร็จ</string>
+    <string name="chat_action_failed">ล้มเหลว</string>
+    <string name="chat_action_tag">การดำเนินการ</string>
+    <string name="chat_reasoning_live">กำลังให้เหตุผล…</string>
+    <string name="chat_reasoning_title">การให้เหตุผล</string>
+    <string name="chat_show_drawing">แสดงภาพวาด</string>
+    <string name="chat_drawing">ภาพวาด</string>
+
+    <string name="chat_done">เสร็จ</string>
+
+    <string name="chat_art_mission_board">บอร์ดภารกิจว่างเปล่า มีคทาของผู้ประกาศพิงอยู่</string>
+    <string name="chat_art_winged_clock">นาฬิกามีปีก มีลูกศรโค้งวนรอบ</string>
+    <string name="chat_art_robot">หัวหุ่นยนต์สวมลูกแก้วมีปีกของผู้ประกาศ มีที่ว่างทั้งสองข้าง</string>
+    <string name="chat_art_folder">แฟ้มที่มีกระดาษหนึ่งแผ่น มีรูปกิ่งวาดอยู่</string>
+    <string name="chat_art_scroll">ม้วนกระดาษที่คลี่ออก มีแว่นขยายวางอยู่</string>
+    <string name="chat_art_bookmark">กระดาษที่มีบรรทัดหนึ่งถูกทำเครื่องหมาย และริบบิ้นบุ๊กมาร์ก</string>
+    <string name="chat_art_picture">ภาพในกรอบเป็นรูปเนินเขาและดวงอาทิตย์ มีกรอบเปล่าอยู่ด้านหลัง</string>
+
+    <string name="chat_memory">ความจำของแชท</string>
+    <string name="chat_ring_base">ความจำของแชท %1$dk จาก %2$dk โทเค็น, %3$d เปอร์เซ็นต์</string>
+    <plurals name="chat_ring_replies">
+        <item quantity="other">%1$s, อีกประมาณ %2$d คำตอบก่อนสรุป</item>
+    </plurals>
+    <string name="chat_ring_until">%1$s, อีก %2$dk ก่อนสรุป</string>
+    <string name="chat_ring_next">%1$s, คำตอบถัดไปจะเริ่มการสรุป</string>
+
+    <string name="chat_folder_hint">โฟลเดอร์บนเกตเวย์ (เช่น ~/workspace/keryx)</string>
+    <string name="chat_folder_found">✓ พบโฟลเดอร์</string>
+    <string name="chat_folder_missing">ยังไม่มีโฟลเดอร์ที่นั่น</string>
+    <string name="chat_known_workspaces">พื้นที่ทำงานที่รู้จัก</string>
+    <string name="chat_folder_truncated">มีมากกว่า 30 โฟลเดอร์ — พิมพ์ต่อเพื่อกรอง</string>
+    <string name="chat_folder_more">+อีก %1$d — พิมพ์ต่อเพื่อกรอง</string>
+
+    <string name="chat_console_starting">กำลังเริ่ม…</string>
+    <string name="chat_console_streaming">เอเจนต์กำลังทำงาน</string>
+    <string name="chat_console_waiting">รอการอนุมัติ</string>
+    <string name="chat_console_completed">รอบเสร็จสิ้น</string>
+    <string name="chat_console_lost">การเชื่อมต่อขาดหาย</string>
+    <string name="chat_console_lost_why">การเชื่อมต่อขาดหาย — %1$s</string>
+    <string name="chat_console_failed">ล้มเหลว</string>
+    <string name="chat_console_failed_why">ล้มเหลว — %1$s</string>
+    <string name="chat_stop">หยุด</string>
+    <string name="chat_clear">ล้าง</string>
+
+    <string name="chat_mark_hide">ซ่อนสิ่งที่พูด</string>
+    <string name="chat_mark_read">อ่านสิ่งที่พูด</string>
+    <string name="chat_mark_system">ระบบ: %1$s</string>
+    <string name="chat_summary_hide">ซ่อนบทสรุป</string>
+    <string name="chat_summary_read">อ่านบทสรุป</string>
+    <string name="chat_context_compacted">🗜 บีบอัดบริบทแล้ว · %1$s</string>
+    <string name="chat_this_session_title">เซสชันนี้</string>
+
+    <string name="chat_goal_loop">↻ วนซ้ำ · %1$s · %2$s</string>
+    <string name="chat_goal_heartbeat">♥ ฮาร์ตบีต · %1$d · %2$s</string>
+    <string name="chat_goal_close">ปิดเป้าหมาย</string>
+    <string name="chat_goal_open">เปิดเป้าหมาย</string>
+    <string name="chat_goal_exit">ออก %1$d</string>
+
+    <string name="chat_subagent_running_lower">เอเจนต์ย่อยกำลังทำงาน</string>
+    <plurals name="chat_subagents_count">
+        <item quantity="other">เอเจนต์ย่อย %d ตัว</item>
+    </plurals>
+    <string name="chat_subagent">เอเจนต์ย่อย</string>
+    <string name="chat_delegated_task_lower">งานที่มอบหมาย</string>
+    <plurals name="chat_tool_count">
+        <item quantity="other">%d เครื่องมือ</item>
+    </plurals>
+    <string name="chat_tokens_k">%1$dk โทเค็น</string>
+    <plurals name="chat_files_written">
+        <item quantity="other">เขียน %d</item>
+    </plurals>
+    <string name="chat_interrupted">ถูกขัดจังหวะ</string>
+    <string name="chat_duration_min_sec_compact">%1$dน.%2$dวิ</string>
+
+    <string name="chat_flight_plan">แผนการบิน</string>
+    <string name="chat_flight_all_done">ทุกขั้นตอนลงจอดแล้ว</string>
+    <string name="chat_flight_next">ถัดไป: %1$s</string>
+    <string name="chat_join_sub">#alias:server หรือ !roomid:server</string>
+</resources>

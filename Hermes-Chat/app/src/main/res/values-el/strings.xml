@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">Νέα συνομιλία</string>
+    <string name="shortcut_new_chat_long">Έναρξη νέας συνομιλίας</string>
+    <string name="shortcut_missions">Αποστολές</string>
+    <string name="shortcut_missions_long">Άνοιγμα πίνακα αποστολών</string>
+    <string name="shortcut_runs">Εκτελέσεις</string>
+    <string name="shortcut_runs_long">Προγραμματισμένες εκτελέσεις και οι αναφορές τους</string>
+
+    <string name="widget_description">Ο πράκτορας με μια ματιά: σύνδεση, νεότερη συνεδρία, τι είπε τελευταία και ο γύρος σε εξέλιξη.</string>
+
+    <string name="note_tile_label">Σημείωση στον πράκτορα</string>
+    <string name="note_tile_label_to">Σημείωση προς %1$s</string>
+    <string name="note_tile_live">ενεργός</string>
+    <string name="note_tile_offline">εκτός σύνδεσης</string>
+    <string name="note_placeholder">Μία γραμμή στον πράκτορα…</string>
+    <string name="note_target_prefix">προς</string>
+    <string name="note_change_target">Αλλαγή συνεδρίας</string>
+    <string name="note_no_sessions">Καμία συνεδρία ακόμη</string>
+    <string name="note_send">Αποστολή</string>
+    <string name="note_sent_to">Στάλθηκε σε %1$s</string>
+    <string name="note_send_failed">Η αποστολή απέτυχε</string>
+    <string name="note_locked">Κλειδωμένο</string>
+    <string name="note_unlock">Ξεκλείδωμα</string>
+    <string name="note_unlock_title">Ξεκλείδωμα Keryx</string>
+</resources>

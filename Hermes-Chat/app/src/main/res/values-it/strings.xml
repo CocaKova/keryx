@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">Nuova chat</string>
+    <string name="shortcut_new_chat_long">Inizia una nuova chat</string>
+    <string name="shortcut_missions">Missioni</string>
+    <string name="shortcut_missions_long">Apri la bacheca delle missioni</string>
+    <string name="shortcut_runs">Esecuzioni</string>
+    <string name="shortcut_runs_long">Esecuzioni pianificate e i loro report</string>
+
+    <string name="widget_description">L\'agente in un colpo d\'occhio: collegamento, sessione più recente, l\'ultima cosa detta e il turno in corso.</string>
+
+    <string name="note_tile_label">Nota all\'agente</string>
+    <string name="note_tile_label_to">Nota a %1$s</string>
+    <string name="note_tile_live">attivo</string>
+    <string name="note_tile_offline">offline</string>
+    <string name="note_placeholder">Una riga per l\'agente…</string>
+    <string name="note_target_prefix">a</string>
+    <string name="note_change_target">Cambia sessione</string>
+    <string name="note_no_sessions">Ancora nessuna sessione</string>
+    <string name="note_send">Invia</string>
+    <string name="note_sent_to">Inviato a %1$s</string>
+    <string name="note_send_failed">Invio non riuscito</string>
+    <string name="note_locked">Bloccato</string>
+    <string name="note_unlock">Sblocca</string>
+    <string name="note_unlock_title">Sblocca Keryx</string>
+</resources>

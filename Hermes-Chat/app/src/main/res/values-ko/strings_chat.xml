@@ -1,0 +1,583 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_theme_to_light">라이트로 전환</string>
+    <string name="chat_theme_follow_system">시스템 설정 따르기</string>
+    <string name="chat_theme_to_dark">다크로 전환</string>
+    <string name="chat_new_chat">새 채팅</string>
+    <string name="chat_drawer_jump_hint">이동할 곳…</string>
+    <string name="chat_lens_needs_you">내 차례</string>
+    <string name="chat_lens_running">실행 중</string>
+    <string name="chat_lens_unread">읽지 않음</string>
+    <string name="chat_lens_archived">보관됨</string>
+    <string name="chat_drawer_invites">초대</string>
+    <string name="chat_place_missions">미션</string>
+    <string name="chat_place_runs">실행</string>
+    <string name="chat_place_bots">봇</string>
+    <string name="chat_place_projects">프로젝트</string>
+    <string name="chat_place_shipyard">조선소</string>
+    <string name="chat_place_archive">보관함</string>
+    <string name="chat_place_gateway">게이트웨이</string>
+    <string name="chat_place_settings">설정</string>
+    <string name="chat_drawer_places">장소</string>
+    <string name="chat_drawer_commands">명령</string>
+    <string name="chat_drawer_no_matches">일치하는 항목 없음</string>
+    <string name="chat_drawer_nothing_archived">보관된 항목 없음</string>
+    <string name="chat_drawer_nothing_waiting">나를 기다리는 항목 없음</string>
+    <string name="chat_drawer_nothing_running">실행 중인 항목 없음</string>
+    <string name="chat_drawer_all_read">모두 읽음</string>
+    <string name="chat_session_id_copied">세션 ID를 복사했어요</string>
+    <string name="chat_moved_to_project">%1$s(으)로 옮겼어요</string>
+    <string name="chat_drawer_reaching_back">이전 항목 불러오는 중…</string>
+    <string name="chat_drawer_show_older">이전 %1$s 보기</string>
+    <string name="chat_drawer_in_transcripts">대화 기록에서</string>
+    <string name="chat_demo_gateway">데모 게이트웨이</string>
+    <string name="chat_demo_gateway_page">게이트웨이를 연결하면 그 페이지가 여기에 표시돼요.</string>
+    <string name="chat_connect">연결</string>
+    <string name="chat_open_gateway">게이트웨이 열기</string>
+    <string name="chat_settings">설정</string>
+    <string name="chat_shelf_fold">%1$s 접기</string>
+    <string name="chat_shelf_open">%1$s 펼치기</string>
+    <string name="chat_room_forked">다른 대화에서 분기됨</string>
+    <string name="chat_room_temporary">임시 — 다음 실행 때 삭제됨</string>
+    <string name="chat_room_pinned">고정됨</string>
+    <string name="chat_mark_unread">읽지 않음으로 표시</string>
+    <string name="chat_archive">보관</string>
+    <string name="chat_archive_hint">목록에서는 사라지지만 게이트웨이에는 남아요</string>
+    <string name="chat_restore_to_list">목록으로 복원</string>
+    <string name="chat_export_ellipsis">내보내기…</string>
+    <string name="chat_copy_session_id">세션 ID 복사</string>
+    <string name="chat_invite_user">사용자 초대…</string>
+    <string name="chat_rename_ellipsis">이름 바꾸기…</string>
+    <string name="chat_move_to_project">프로젝트로 이동…</string>
+    <string name="chat_leave_room">방 나가기</string>
+    <string name="chat_delete_session_ellipsis">세션 삭제…</string>
+    <string name="chat_invite_to">%1$s에 초대</string>
+    <string name="chat_invite">초대</string>
+    <string name="chat_cancel">취소</string>
+    <string name="chat_leave_title">%1$s에서 나갈까요?</string>
+    <string name="chat_leave_body">이 방의 메시지를 더 이상 받지 않아요. 다시 들어오려면 새 초대가 필요해요.</string>
+    <string name="chat_leave">나가기</string>
+    <string name="chat_rename_session">세션 이름 바꾸기</string>
+    <string name="chat_rename">이름 바꾸기</string>
+    <string name="chat_delete_title">%1$s을(를) 삭제할까요?</string>
+    <string name="chat_delete_session_body">세션과 전체 대화 기록을 게이트웨이에서 삭제해요. 되돌릴 수 없어요.</string>
+    <string name="chat_delete">삭제</string>
+    <string name="chat_invited_to_room">이 방에 초대받았어요</string>
+    <string name="chat_decline">거절</string>
+    <string name="chat_accept">수락</string>
+    <string name="chat_running">실행 중</string>
+    <string name="chat_age_now">방금</string>
+    <string name="chat_age_minutes">%1$d분</string>
+    <string name="chat_age_hours">%1$d시간</string>
+    <string name="chat_age_days">%1$d일</string>
+    <string name="chat_age_weeks">%1$d주</string>
+    <plurals name="chat_door_needs_you">
+        <item quantity="other">%1$s, %2$s개가 나를 기다림</item>
+    </plurals>
+    <string name="chat_door_unread">%1$s, 읽지 않음 %2$s개</string>
+
+    <string name="chat_bot_new_title">%1$s와(과) 새로 시작할까요?</string>
+    <string name="chat_bot_new_body">압축은 이 대화를 유지하면서 %1$s의 작업 컨텍스트를 비워요.\n\n새 봇 채팅은 이 대화를 종료하고(%1$s의 지난 채팅에서 계속 읽을 수 있어요) 새 대화를 시작해요.</string>
+    <string name="chat_bot_new_fresh">새 봇 채팅</string>
+    <string name="chat_bot_new_compact">압축</string>
+    <string name="chat_bot_chat_chip">봇 채팅</string>
+    <string name="chat_menu">메뉴</string>
+    <plurals name="chat_menu_waiting">
+        <item quantity="other">메뉴, %d개가 나를 기다림</item>
+    </plurals>
+    <plurals name="chat_menu_unread">
+        <item quantity="other">메뉴, 읽지 않음 %d개</item>
+    </plurals>
+    <string name="chat_new_session_failed">세션을 시작하지 못했어요. %1$s</string>
+    <string name="chat_new_session_hold">새 세션(길게 눌러 옵션)</string>
+    <string name="chat_unpin_run">이 실행 고정 해제</string>
+    <string name="chat_pin_run">이 실행 고정</string>
+    <string name="chat_new_session">새 세션</string>
+    <string name="chat_new_session_confirm_title">새 세션을 시작할까요?</string>
+    <string name="chat_new_session_confirm_body">에이전트가 아직 작업 중이에요 — /new를 하면 현재 실행이 끝나고 결과는 버려져요.</string>
+    <string name="chat_new_session_confirm">실행 종료 후 새로 시작</string>
+    <string name="chat_find_in_chat">채팅에서 찾기</string>
+    <string name="chat_call_needs_voice">먼저 설정 → 음성에서 STT와 TTS 엔드포인트를 설정하세요</string>
+    <string name="chat_call">통화</string>
+    <string name="chat_reasoning_header">추론</string>
+    <string name="chat_reasoning_sub_default">수준은 세션이 바뀌어도 유지돼요</string>
+    <string name="chat_reasoning_local_brain">로컬 두뇌</string>
+    <string name="chat_reasoning_model">모델</string>
+    <string name="chat_reasoning_sub_binary">%1$s · 켜기/끄기</string>
+    <string name="chat_reasoning_sub_none">%1$s · 추론 조절 없음</string>
+    <string name="chat_reasoning_sub_session">%1$s · 이 세션의 단계</string>
+    <string name="chat_reasoning_sub_scale">%1$s · 수준 단계</string>
+    <string name="chat_reasoning_no_dial">이 모델은 추론 수준을 받지 않아요. Hermes는 아무것도 보내지 않아요.</string>
+    <string name="chat_reasoning_every_session">모든 세션</string>
+    <string name="chat_reasoning_this_session">이 세션만</string>
+    <string name="chat_reasoning_show">추론 보기</string>
+    <string name="chat_reasoning_hide">추론 숨기기</string>
+    <string name="chat_reasoning_reset">세션 설정 초기화</string>
+    <string name="chat_demo_label">데모</string>
+    <string name="chat_demo_connect">게이트웨이 연결</string>
+
+    <string name="chat_attach_failed">첨부하지 못했어요(읽을 수 없거나 50 MB를 넘어요)</string>
+    <string name="chat_no_camera">응답하는 카메라 앱이 없어요</string>
+    <string name="chat_mic_unavailable">마이크를 사용할 수 없어요</string>
+    <string name="chat_transcription_failed">받아쓰기 실패: %1$s</string>
+    <string name="chat_mic_permission">음성 입력을 하려면 Keryx에 마이크 권한이 필요해요</string>
+    <string name="chat_nothing_to_read">읽어 줄 내용이 없어요</string>
+    <string name="chat_typing_one">%1$s 님이 입력 중…</string>
+    <string name="chat_typing_two">%1$s 님과 %2$s 님이 입력 중…</string>
+    <string name="chat_typing_many">여러 명이 입력 중…</string>
+    <string name="chat_jump_newest">최신으로 이동</string>
+    <plurals name="chat_jump_newest_count">
+        <item quantity="other">최신으로 이동, 새 메시지 %d개</item>
+    </plurals>
+    <string name="chat_attachments_cant_queue">첨부 파일은 대기열에 넣을 수 없어요 — 이 턴이 끝난 뒤 보내세요</string>
+    <string name="chat_stop_hint">먼저 수정할 내용을 입력하세요 — 탭하면 방향 조정, 길게 누르면 더 보기</string>
+    <string name="chat_busy_queue">다음 턴으로 넘기기</string>
+    <string name="chat_busy_aside">곁질문 — 채팅 밖에서 답변</string>
+    <string name="chat_busy_redirect">방향 바꾸기 — 이 내용으로 답변 다시 시작</string>
+    <string name="chat_starter_1">이 세션에서 뭘 할 수 있어?</string>
+    <string name="chat_starter_2">오늘 할 일이 뭐야?</string>
+    <string name="chat_starter_3">최근에 우리가 뭘 작업했지?</string>
+    <string name="chat_starter_4">작은 일 하나 계획하는 걸 단계별로 도와줘.</string>
+    <string name="chat_fresh_page">새 페이지</string>
+    <string name="chat_fresh_page_sub">무엇이든 물어보거나 아래에서 골라 시작하세요.</string>
+    <string name="chat_today">오늘</string>
+    <string name="chat_yesterday">어제</string>
+
+    <string name="chat_arrival_mark">%1$s · 먼저 말함 · %2$s</string>
+    <string name="chat_bubble_hold_label">답장, 반응, 복사</string>
+    <string name="chat_copied">복사했어요</string>
+    <string name="chat_undo_title">마지막 대화를 되돌릴까요?</string>
+    <string name="chat_undo_body">내 메시지와 이 답변이 게이트웨이의 세션 기록에서 사라져요. 다음 말은 그 이전 시점부터 이어져요.</string>
+    <string name="chat_undo_confirm">되돌리기</string>
+    <string name="chat_keep">유지</string>
+    <string name="chat_select_text">텍스트 선택</string>
+    <string name="chat_delete_message_title">메시지를 삭제할까요?</string>
+    <string name="chat_delete_message_body">모든 사람에게서 삭제돼요 — 되돌릴 수 없어요.</string>
+    <string name="chat_sent">보냄</string>
+    <string name="chat_stop_speaking">읽기 중지</string>
+    <string name="chat_go_to_quoted">인용한 메시지로 이동</string>
+    <string name="chat_reaction_take_back">내 반응 취소</string>
+    <string name="chat_reaction_add">반응 추가</string>
+    <string name="chat_react">반응</string>
+    <string name="chat_action_reply">답장</string>
+    <string name="chat_action_copy">복사</string>
+    <string name="chat_action_copy_text">텍스트 복사</string>
+    <string name="chat_action_saved">저장됨</string>
+    <string name="chat_action_save">저장</string>
+    <string name="chat_action_unsave">저장됨에서 삭제</string>
+    <string name="chat_action_keep_archive">보관함에 저장</string>
+    <string name="chat_action_stop">중지</string>
+    <string name="chat_action_read_aloud">소리 내어 읽기</string>
+    <string name="chat_action_select">선택</string>
+    <string name="chat_action_edit">수정</string>
+    <string name="chat_action_edit_desc">수정해서 다시 보내기</string>
+    <string name="chat_action_retry">다시 시도</string>
+    <string name="chat_action_retry_desc">되돌리고 다시 말하기</string>
+    <string name="chat_action_branch">분기</string>
+    <string name="chat_action_branch_desc">여기서 새 세션으로 분기</string>
+    <string name="chat_action_undo">실행 취소</string>
+    <string name="chat_action_undo_desc">마지막 대화 되돌리기</string>
+    <string name="chat_action_delete_desc">메시지 삭제</string>
+    <string name="chat_reply_attachment">첨부 파일</string>
+    <string name="chat_reply_message">메시지</string>
+
+    <string name="chat_archive_title">보관함</string>
+    <string name="chat_archive_waking">색인 깨우는 중…</string>
+    <plurals name="chat_archive_reaching">
+        <item quantity="other">%1$s개 기억함 · 이전 항목 불러오는 중…</item>
+    </plurals>
+    <plurals name="chat_archive_error">
+        <item quantity="other">%1$s개 기억함 · %2$s</item>
+    </plurals>
+    <plurals name="chat_archive_done">
+        <item quantity="other">메시지 %1$s개 기억함</item>
+    </plurals>
+    <string name="chat_archive_jump_date">날짜로 이동</string>
+    <string name="chat_archive_nothing_that_day">그날은 아직 색인된 항목이 없어요</string>
+    <string name="chat_open">열기</string>
+    <string name="chat_archive_tab_search">검색</string>
+    <string name="chat_archive_tab_saved">저장됨</string>
+    <string name="chat_archive_tab_media">미디어</string>
+    <string name="chat_archive_search_hint">지금까지 나눈 모든 말 검색…</string>
+    <string name="chat_archive_recent">최근 기억</string>
+    <string name="chat_archive_empty_title">아직 기억한 것이 없어요</string>
+    <string name="chat_archive_empty_body">세션을 훑으면서 색인이 채워져요. 그러면 앱이 본 모든 메시지를 검색 한 번으로 찾을 수 있어요.</string>
+    <string name="chat_archive_search_idle">앱이 본 모든 메시지를 검색 한 번으로.</string>
+    <string name="chat_archive_no_hits">“%1$s”에 대한 결과가 아직 없어요</string>
+    <string name="chat_archive_opening">보관함 여는 중…</string>
+    <string name="chat_archive_saved_empty_title">아직 저장한 것이 없어요</string>
+    <string name="chat_archive_saved_empty_body">메시지를 길게 누르고 책갈피를 탭하면 여기에 저장돼요.</string>
+    <string name="chat_archive_looking">색인된 항목을 찾는 중…</string>
+    <string name="chat_archive_media_empty_title">아직 사진이나 파일이 없어요</string>
+    <string name="chat_archive_media_empty_body">색인이 채워지면서 채팅의 사진과 파일이 여기에 모여요.</string>
+    <string name="chat_image">이미지</string>
+    <string name="chat_you">나</string>
+    <string name="chat_archive_context">앞뒤 메시지</string>
+    <string name="chat_archive_context_failed">그 시점을 불러오지 못했어요(이 로그인의 키보다 오래된 것일 수 있어요).</string>
+    <string name="chat_archive_reach_earlier">더 이전</string>
+    <string name="chat_archive_reach_later">더 이후</string>
+
+    <string name="chat_attach">첨부</string>
+    <string name="chat_composer_hint">메시지…</string>
+    <string name="chat_composer_hint_steer_stop">입력해서 이 턴의 방향 조정 — ■ 중지</string>
+    <string name="chat_composer_hint_steer">입력해서 이 턴의 방향 조정</string>
+    <string name="chat_dictate_stop">음성 입력 중지</string>
+    <string name="chat_dictate">음성 입력</string>
+    <string name="chat_send_steer">진행 중인 턴의 방향 조정</string>
+    <string name="chat_send_queue">다음 턴으로 넘기기</string>
+    <string name="chat_send_stop">턴 중지</string>
+    <string name="chat_send">보내기</string>
+    <string name="chat_send_hold_menu">대기열, 곁질문, 방향 바꾸기</string>
+    <string name="chat_send_hold_queue">대신 다음 턴으로 넘기기</string>
+    <string name="chat_send_hold_stop">중지 버튼이 하는 일</string>
+    <string name="chat_choose_model">모델 선택</string>
+    <string name="chat_model_label">모델: %1$s</string>
+    <string name="chat_reasoning">추론</string>
+    <string name="chat_steer_hint">↪ 방향 조정 · 길게 눌러 대기열</string>
+    <string name="chat_replying_to">%1$s에게 답장 중</string>
+    <string name="chat_cancel_reply">답장 취소</string>
+    <string name="chat_image_attached">이미지 첨부됨</string>
+    <string name="chat_file_attached">파일 첨부됨</string>
+    <string name="chat_remove_attachment">첨부 파일 삭제</string>
+    <string name="chat_attach_photo">사진</string>
+    <string name="chat_attach_file">파일</string>
+    <string name="chat_attach_camera">카메라</string>
+
+    <string name="chat_tool_succeeded">성공</string>
+    <string name="chat_tool_failed">실패</string>
+    <string name="chat_tool_no_verdict">판정 없음</string>
+    <string name="chat_duration_seconds">%1$d초</string>
+    <string name="chat_duration_millis">%1$dms</string>
+    <string name="chat_tool_flagged">⚠ Hermes가 이 출력에 경고를 표시했어요</string>
+    <string name="chat_tool_flagged_with">⚠ Hermes가 이 출력에 경고를 표시했어요: %1$s</string>
+    <string name="chat_tool_diff">변경 사항</string>
+    <string name="chat_tool_diff_show">변경 사항 보기</string>
+    <string name="chat_tool_diff_hide">변경 사항 숨기기</string>
+    <string name="chat_tool_diff_label">변경 사항</string>
+    <string name="chat_tool_output">출력</string>
+    <string name="chat_tool_output_show">출력 보기</string>
+    <string name="chat_tool_output_hide">출력 숨기기</string>
+    <string name="chat_tool_output_label">출력</string>
+    <string name="chat_tool_exit_failed">종료 코드 %1$d, 실패</string>
+    <string name="chat_tool_exit_ok">종료 코드 0</string>
+    <plurals name="chat_tools_running">
+        <item quantity="other">도구 %d개 실행 중…</item>
+    </plurals>
+    <plurals name="chat_tools_ran">
+        <item quantity="other">도구 %d개 실행함</item>
+    </plurals>
+    <plurals name="chat_subagents_running">
+        <item quantity="other">하위 에이전트 %2$d개 중 %1$d개 실행 중</item>
+    </plurals>
+    <string name="chat_subagent_running">하위 에이전트 실행 중</string>
+    <plurals name="chat_delegated_tasks">
+        <item quantity="other">작업 %d개 위임함</item>
+    </plurals>
+    <string name="chat_delegated_task">작업 위임함</string>
+    <string name="chat_working">작업 중…</string>
+    <plurals name="chat_output_steps">
+        <item quantity="other">출력 단계 %d개</item>
+    </plurals>
+    <plurals name="chat_run_with_failed">
+        <item quantity="other">%1$s · %2$d개 실패</item>
+    </plurals>
+    <string name="chat_steps_fold">단계 접기</string>
+    <string name="chat_steps_show">단계 보기</string>
+    <string name="chat_tap_in_run">이 실행을 전체 화면으로 보기</string>
+    <string name="chat_state_open">펼쳐짐</string>
+    <string name="chat_state_folded">접힘</string>
+
+    <string name="chat_approval_needed">승인 필요</string>
+    <string name="chat_approval_once">한 번만 허용</string>
+    <string name="chat_approval_session">이 세션</string>
+    <string name="chat_approval_always">항상</string>
+    <string name="chat_approval_deny">거부</string>
+    <string name="chat_asking">Hermes의 질문</string>
+    <string name="chat_asking_batch">Hermes의 질문 · %1$d / %2$d</string>
+    <string name="chat_sudo_needed">sudo 비밀번호 필요</string>
+    <string name="chat_credential_needed">자격 증명 필요</string>
+    <string name="chat_stored_as">게이트웨이에 %1$s(으)로 저장돼요</string>
+    <string name="chat_multi_answers">여러 답을 할 수 있어요 — 아래에 쉼표로 구분해 입력하세요.</string>
+    <string name="chat_your_answer">내 답변</string>
+    <string name="chat_password">비밀번호</string>
+    <string name="chat_value">값</string>
+    <string name="chat_skip">건너뛰기</string>
+
+    <string name="chat_new_conversation">새 대화</string>
+    <string name="chat_new_session_body">새 게이트웨이 세션이에요. 지금 이름을 붙이거나 첫 대화로 제목이 정해지게 하세요.</string>
+    <string name="chat_title_optional">제목(선택)</string>
+    <string name="chat_agent">에이전트</string>
+    <string name="chat_temporary">임시</string>
+    <string name="chat_temporary_body">앱을 다음에 실행할 때 게이트웨이에서 삭제돼요</string>
+    <string name="chat_create">만들기</string>
+    <string name="chat_error_line">⚠ %1$s</string>
+    <string name="chat_direct_message">1:1 메시지</string>
+    <string name="chat_direct_message_sub">사용자와 1:1로 채팅</string>
+    <string name="chat_start">시작</string>
+    <string name="chat_new_room">새 방</string>
+    <string name="chat_new_room_sub">이름이 있는 방. 지금 또는 나중에 초대하세요</string>
+    <string name="chat_room_name">방 이름</string>
+    <string name="chat_invite_optional">초대: @user:server(선택)</string>
+    <string name="chat_join_by_address">주소로 참여</string>
+    <string name="chat_join">참여</string>
+
+    <string name="chat_prune_preview_failed">미리보기 실패</string>
+    <string name="chat_prune_confirm_title">세션 정리 확인</string>
+    <plurals name="chat_prune_confirm_sub">
+        <item quantity="other">세션 %d개를 영구 삭제해요</item>
+    </plurals>
+    <string name="chat_prune_title">세션 정리</string>
+    <string name="chat_prune_body">끝난 세션을 게이트웨이 기록에서 삭제해요 — 대화 기록까지 영구적으로요. 활성 세션은 건드리지 않아요.</string>
+    <string name="chat_prune_older_than">다음보다 오래됨</string>
+    <string name="chat_prune_days">%1$d일</string>
+    <string name="chat_prune_max_messages">메시지가 N개 이하인 세션만(선택)</string>
+    <string name="chat_prune_include_archived">보관된 세션 포함</string>
+    <string name="chat_prune_nothing">이 조건에 맞는 항목이 없어요.</string>
+    <plurals name="chat_prune_matched">
+        <item quantity="other">세션 %1$d개 일치 · 가장 오래된 것 %2$s · 가장 최근 것 %3$s</item>
+    </plurals>
+    <plurals name="chat_prune_sample">
+        <item quantity="other">· %1$s(메시지 %2$d개)</item>
+    </plurals>
+    <string name="chat_prune_preview">미리보기</string>
+    <string name="chat_prune_delete_count">%1$d개 삭제…</string>
+    <string name="chat_prune_delete">삭제…</string>
+    <plurals name="chat_prune_final_title">
+        <item quantity="other">세션 %d개를 영구 삭제할까요?</item>
+    </plurals>
+    <string name="chat_prune_final_body">기록과 대화 기록 파일이 게이트웨이에서 삭제돼요. 되돌릴 수 없어요.</string>
+    <string name="chat_prune_delete_n">%1$d개 삭제</string>
+
+    <string name="chat_loading_lower">불러오는 중…</string>
+    <string name="chat_load_attachment_failed">첨부 파일을 불러오지 못했어요</string>
+    <string name="chat_animated_image">움직이는 이미지</string>
+    <string name="chat_video">동영상</string>
+    <string name="chat_saved_to">%1$s에 저장했어요</string>
+    <string name="chat_save_failed">저장하지 못했어요</string>
+    <string name="chat_save_to_device">기기에 저장</string>
+    <string name="chat_share_failed">공유하지 못했어요</string>
+    <string name="chat_share">공유</string>
+    <string name="chat_close">닫기</string>
+    <string name="chat_no_app_for_file">이 파일을 열 수 있는 앱이 없어요</string>
+    <string name="chat_open_with">다음 앱으로 열기</string>
+
+    <string name="chat_copy_image">이미지 복사</string>
+    <string name="chat_image_copied">이미지를 복사했어요 — 게시물에 붙여 넣으세요</string>
+    <string name="chat_image_fetch_failed">이미지를 가져오지 못했어요 — 대신 링크를 복사했어요</string>
+    <string name="chat_copy_link">링크 복사</string>
+    <string name="chat_link_copied">링크를 복사했어요</string>
+    <string name="chat_save_to_photos">사진에 저장</string>
+    <string name="chat_save_image_failed">이미지를 저장하지 못했어요</string>
+    <string name="chat_open_in_browser">브라우저에서 열기</string>
+    <string name="chat_no_app_for_link">이 링크를 열 수 있는 앱이 없어요</string>
+
+    <string name="chat_gateway_log">게이트웨이 로그</string>
+    <string name="chat_details_copied">세부 정보를 복사했어요</string>
+    <string name="chat_copy_details">세부 정보 복사</string>
+
+    <string name="chat_thinking">생각 중…</string>
+    <string name="chat_thought">생각함</string>
+    <string name="chat_thought_briefly">잠깐 생각함</string>
+    <string name="chat_thought_for">%1$s 동안 생각함</string>
+    <string name="chat_reasoning_show_a11y">추론 보기</string>
+    <string name="chat_reasoning_hide_a11y">추론 숨기기</string>
+    <string name="chat_duration_min_sec">%1$d분 %2$d초</string>
+    <string name="chat_newest">최신</string>
+
+    <string name="chat_config_unsaved">%1$s · 저장 안 됨</string>
+    <string name="chat_saving">저장 중…</string>
+    <string name="chat_save">저장</string>
+    <string name="chat_config_load_failed">config.yaml을 불러오지 못했어요. %1$s</string>
+    <string name="chat_loading">불러오는 중…</string>
+    <string name="chat_config_restart_note">저장한 변경 사항은 대부분 다음 게이트웨이 재시작 때 적용돼요.</string>
+    <string name="chat_save_anyway_title">그래도 저장할까요?</string>
+    <string name="chat_save_anyway">그래도 저장</string>
+    <string name="chat_discard_title">변경 사항을 버릴까요?</string>
+    <string name="chat_config_untouched">게이트웨이의 config.yaml은 바뀌지 않아요.</string>
+    <string name="chat_discard">버리기</string>
+    <string name="chat_keep_editing">계속 편집</string>
+
+    <string name="chat_export_title">“%1$s” 내보내기</string>
+    <string name="chat_this_session">이 세션</string>
+    <string name="chat_export_markdown_detail">읽는 그대로의 대화: 누가 무슨 말을 했는지, 도구는 한 줄로, 긴 출력은 줄여서.</string>
+    <string name="chat_export_json_detail">게이트웨이의 완전한 내보내기: 모든 행, 되돌린 턴, 시스템 프롬프트까지 포함. 다시 가져올 수 있어요.</string>
+    <string name="chat_export_share_failed">공유 시트를 열지 못했어요.</string>
+    <string name="chat_export_failed">내보내기에 실패했어요.</string>
+    <string name="chat_exporting">내보내는 중…</string>
+
+    <string name="chat_cmd_new">새 대화 시작</string>
+    <string name="chat_cmd_compress">이 스레드 압축/요약</string>
+    <string name="chat_cmd_handoff">컨텍스트를 새 세션으로 넘기기</string>
+    <string name="chat_cmd_steer">작업 중인 에이전트의 방향 조정</string>
+    <string name="chat_cmd_think">더 깊은 추론 요청</string>
+    <string name="chat_cmd_model">사용 중인 모델 전환</string>
+    <string name="chat_cmd_reset">에이전트의 작업 상태 초기화</string>
+    <string name="chat_cmd_help">이 에이전트가 할 수 있는 일 보기</string>
+    <string name="chat_cmd_status">에이전트와 시스템 상태 보기</string>
+    <string name="chat_cmd_memory">장기 메모리 불러오기 또는 편집</string>
+    <string name="chat_cmd_tools">사용 가능한 도구 보기</string>
+    <string name="chat_cmd_recent">최근</string>
+    <string name="chat_cmd_skill">스킬</string>
+
+    <string name="chat_transition_dissolve">디졸브</string>
+    <string name="chat_transition_dissolve_blurb">부드러운 흐림과 점자 잔상을 지나 방이 다시 만들어져요.</string>
+    <string name="chat_transition_passage">통로</string>
+    <string name="chat_transition_passage_blurb">빛나는 이음매를 따라 새 방이 미끄러져 들어오고 이전 방은 뒤로 물러나요.</string>
+    <string name="chat_transition_weave">엮기</string>
+    <string name="chat_transition_weave_blurb">호박색과 보라색 리본이 교차하며 올라가고, 그 뒤에서 방이 바뀌어요.</string>
+    <string name="chat_transition_bloom">피어나기</string>
+    <string name="chat_transition_bloom_blurb">탭한 줄에서 새 방이 원 모양으로 열려요.</string>
+    <string name="chat_transition_rise">떠오르기</string>
+    <string name="chat_transition_rise_blurb">이전 방이 뒤로 기울며 가라앉고, 새 방이 제자리로 떠올라요.</string>
+    <string name="chat_speed_slow">느리게</string>
+    <string name="chat_speed_normal">보통</string>
+    <string name="chat_speed_fast">빠르게</string>
+
+    <string name="chat_pet_choose">펫 고르기</string>
+    <string name="chat_pet_rides">%1$s이(가) 서랍에 함께 타요</string>
+    <string name="chat_pet_gateway">펫은 게이트웨이에 살아요 — 모든 화면에 같은 펫이 보여요</string>
+    <plurals name="chat_pet_search">
+        <item quantity="other">펫 %d마리 검색…</item>
+    </plurals>
+    <string name="chat_pet_installed_header">설치됨</string>
+    <string name="chat_pet_catalog_header">Petdex 카탈로그</string>
+    <string name="chat_pet_none">사용할 수 있는 펫이 없어요 — Hermes Link가 설정되어 있나요?</string>
+    <string name="chat_pet_no_match">“%1$s”와(과) 일치하는 펫이 없어요</string>
+    <string name="chat_pet_badge_active">사용 중</string>
+    <string name="chat_pet_badge_hatched">로컬에서 부화</string>
+    <string name="chat_pet_badge_curated">엄선</string>
+    <string name="chat_pet_badge_installed">설치됨</string>
+    <string name="chat_pet_active">사용 중</string>
+
+    <string name="chat_back">뒤로</string>
+    <string name="chat_close_named">%1$s 닫기</string>
+    <string name="chat_loading_a11y">불러오는 중</string>
+
+    <string name="chat_call_header">KERYX · 통화</string>
+    <string name="chat_call_mic_needed">통화하려면 Keryx에 마이크 권한이 필요해요.</string>
+    <string name="chat_call_listening">듣는 중</string>
+    <string name="chat_call_hearing">알아듣는 중…</string>
+    <string name="chat_call_thinking">생각 중</string>
+    <string name="chat_call_interrupt">구슬을 탭해서 끼어들기</string>
+    <string name="chat_call_muted">음소거됨</string>
+    <string name="chat_call_ended">통화 종료</string>
+    <string name="chat_call_heard">“%1$s”</string>
+    <string name="chat_call_unmute">음소거 해제</string>
+    <string name="chat_call_mute">음소거</string>
+    <string name="chat_call_end">통화 종료</string>
+
+    <string name="chat_sources">출처</string>
+    <string name="chat_source">출처</string>
+    <string name="chat_hand_clipboard">클립보드</string>
+    <string name="chat_hand_phone">전화</string>
+    <string name="chat_hand_share">공유</string>
+    <string name="chat_hand_app">앱</string>
+    <string name="chat_hand_opens">열기</string>
+    <string name="chat_skill_distilled">스킬 추출됨</string>
+    <string name="chat_open_skill_forge">스킬 공방에서 열기 →</string>
+
+    <string name="chat_tap_in_turn">이 턴을 전체 화면으로 보기</string>
+    <string name="chat_stream_dropped">스트림이 끊겼어요 — Matrix 동기화로 복구 중…</string>
+
+    <string name="chat_context_direct_only">컨텍스트 세부 내역은 게이트웨이 직접 연결에서만 볼 수 있어요.</string>
+    <string name="chat_context_read_failed">컨텍스트를 읽지 못했어요</string>
+    <string name="chat_context_title">컨텍스트</string>
+    <string name="chat_context_used">토큰 %2$s 중 %1$s</string>
+    <string name="chat_context_no_agent">게이트웨이에 아직 이 세션의 실행 중인 에이전트가 없어요 — 먼저 무언가 보내세요.</string>
+
+    <string name="chat_chart">차트</string>
+    <string name="chat_chart_summary">%1$s. %2$s 차트.</string>
+    <string name="chat_chart_summary_unit">%1$s. %2$s 차트, 단위: %3$s.</string>
+    <string name="chat_chart_no_value">값 없음</string>
+    <string name="chat_chart_series">계열 %1$d</string>
+    <string name="chat_chart_total">합계</string>
+    <string name="chat_show_less">간단히 보기</string>
+    <plurals name="chat_show_all_lines">
+        <item quantity="other">전체 %d줄 보기</item>
+    </plurals>
+
+    <string name="chat_aside_header">곁질문 · 채팅에 포함되지 않음</string>
+    <string name="chat_dismiss">닫기</string>
+    <string name="chat_aside_answering">…곁질문에 답하는 중</string>
+    <string name="chat_aside_failed">곁질문 실패: %1$s</string>
+    <string name="chat_aside_no_answer">답이 오지 않았어요.</string>
+
+    <string name="chat_action_success">성공</string>
+    <string name="chat_action_failed">실패</string>
+    <string name="chat_action_tag">작업</string>
+    <string name="chat_reasoning_live">추론 중…</string>
+    <string name="chat_reasoning_title">추론</string>
+    <string name="chat_show_drawing">그림 보기</string>
+    <string name="chat_drawing">그림</string>
+
+    <string name="chat_done">완료</string>
+
+    <string name="chat_art_mission_board">전령의 지팡이가 기대어 있는 빈 미션 보드</string>
+    <string name="chat_art_winged_clock">화살표가 둘러싼 날개 달린 시계</string>
+    <string name="chat_art_robot">전령의 날개 달린 구슬을 머리에 얹은 로봇, 양옆은 비어 있음</string>
+    <string name="chat_art_folder">가지 그림이 그려진 종이가 든 폴더</string>
+    <string name="chat_art_scroll">펼쳐진 두루마리와 그 위의 돋보기</string>
+    <string name="chat_art_bookmark">한 줄이 표시된 페이지와 책갈피 리본</string>
+    <string name="chat_art_picture">언덕과 해가 그려진 액자, 그 뒤의 빈 액자</string>
+
+    <string name="chat_memory">채팅 메모리</string>
+    <string name="chat_ring_base">채팅 메모리 토큰 %2$dk 중 %1$dk, %3$d퍼센트</string>
+    <plurals name="chat_ring_replies">
+        <item quantity="other">%1$s, 요약까지 답변 약 %2$d번</item>
+    </plurals>
+    <string name="chat_ring_until">%1$s, 요약까지 %2$dk</string>
+    <string name="chat_ring_next">%1$s, 다음 답변에서 요약 시작</string>
+
+    <string name="chat_folder_hint">게이트웨이의 폴더(예: ~/workspace/keryx)</string>
+    <string name="chat_folder_found">✓ 폴더 찾음</string>
+    <string name="chat_folder_missing">아직 그 위치에 폴더가 없어요</string>
+    <string name="chat_known_workspaces">알려진 작업 공간</string>
+    <string name="chat_folder_truncated">폴더가 30개를 넘어요 — 계속 입력해서 좁혀 보세요</string>
+    <string name="chat_folder_more">%1$d개 더 — 계속 입력해서 좁혀 보세요</string>
+
+    <string name="chat_console_starting">시작 중…</string>
+    <string name="chat_console_streaming">에이전트 작업 중</string>
+    <string name="chat_console_waiting">승인 대기 중</string>
+    <string name="chat_console_completed">턴 완료</string>
+    <string name="chat_console_lost">연결 끊김</string>
+    <string name="chat_console_lost_why">연결 끊김 — %1$s</string>
+    <string name="chat_console_failed">실패</string>
+    <string name="chat_console_failed_why">실패 — %1$s</string>
+    <string name="chat_stop">중지</string>
+    <string name="chat_clear">지우기</string>
+
+    <string name="chat_mark_hide">한 말 숨기기</string>
+    <string name="chat_mark_read">한 말 읽기</string>
+    <string name="chat_mark_system">시스템: %1$s</string>
+    <string name="chat_summary_hide">요약 숨기기</string>
+    <string name="chat_summary_read">요약 읽기</string>
+    <string name="chat_context_compacted">🗜 컨텍스트 압축됨 · %1$s</string>
+    <string name="chat_this_session_title">이 세션</string>
+
+    <string name="chat_goal_loop">↻ 반복 · %1$s · %2$s</string>
+    <string name="chat_goal_heartbeat">♥ 하트비트 · %1$d · %2$s</string>
+    <string name="chat_goal_close">목표 닫기</string>
+    <string name="chat_goal_open">목표 열기</string>
+    <string name="chat_goal_exit">종료 %1$d</string>
+
+    <string name="chat_subagent_running_lower">하위 에이전트 실행 중</string>
+    <plurals name="chat_subagents_count">
+        <item quantity="other">하위 에이전트 %d개</item>
+    </plurals>
+    <string name="chat_subagent">하위 에이전트</string>
+    <string name="chat_delegated_task_lower">위임된 작업</string>
+    <plurals name="chat_tool_count">
+        <item quantity="other">도구 %d개</item>
+    </plurals>
+    <string name="chat_tokens_k">%1$dk 토큰</string>
+    <plurals name="chat_files_written">
+        <item quantity="other">%d개 작성</item>
+    </plurals>
+    <string name="chat_interrupted">중단됨</string>
+    <string name="chat_duration_min_sec_compact">%1$d분%2$d초</string>
+
+    <string name="chat_flight_plan">비행 계획</string>
+    <string name="chat_flight_all_done">모든 단계 착륙</string>
+    <string name="chat_flight_next">다음: %1$s</string>
+    <string name="chat_join_sub">#alias:server 또는 !roomid:server</string>
+</resources>

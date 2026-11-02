@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">प्रीव्यू: %2$s गति पर %1$s रूम ट्रांज़िशन</string>
+    <string name="mk_cancel">रद्द करें</string>
+    <string name="mk_mcp_test">टेस्ट</string>
+    <string name="mk_mcp_testing">टेस्ट हो रहा है</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="one">पहुँच गए · %d टूल</item>
+        <item quantity="other">पहुँच गए · %d टूल</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="one">%d प्रॉम्प्ट</item>
+        <item quantity="other">%d प्रॉम्प्ट</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="one">%d रिसोर्स</item>
+        <item quantity="other">%d रिसोर्स</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">पहुँच नहीं सके: %1$s</string>
+    <string name="mk_mcp_test_unsupported">यह गेटवे यहाँ से सर्वर टेस्ट नहीं कर सकता।</string>
+    <string name="mk_mcp_catalog">कैटलॉग · जोड़ने के लिए %1$d</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="one">%d की (key) चाहिए</item>
+        <item quantity="other">%d की (keys) चाहिए</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">सोर्स से बनता है</string>
+    <string name="mk_mcp_catalog_oauth">OAuth से साइन इन करता है</string>
+    <string name="mk_mcp_installed">इंस्टॉल है</string>
+    <string name="mk_mcp_install">इंस्टॉल करें</string>
+    <string name="mk_mcp_installing">इंस्टॉल हो रहा है…</string>
+    <string name="mk_mcp_install_title">%1$s इंस्टॉल करें?</string>
+    <string name="mk_mcp_install_runs">यह चलाएगा</string>
+    <string name="mk_mcp_install_builds">गेटवे पहले इसे %1$s से बैकग्राउंड में क्लोन करके बनाता है।</string>
+    <string name="mk_mcp_install_oauth">यह OAuth से साइन इन करता है: इंस्टॉल होने के बाद यह काम गेटवे के डैशबोर्ड पर पूरा करें।</string>
+    <string name="mk_mcp_install_env_note">गेटवे पर रखा जाता है: सीक्रेट उसकी .env में, बाकी उसके कॉन्फ़िग में।</string>
+    <string name="mk_mcp_installed_toast">%1$s इंस्टॉल हो गया — अगले सेशन से चालू</string>
+    <string name="mk_mcp_building_toast">%1$s गेटवे पर बन रहा है — तैयार होते ही यहाँ दिखेगा</string>
+    <string name="mk_mcp_install_refused">%1$s इंस्टॉल नहीं हो सका: %2$s</string>
+    <string name="mk_mcp_install_unsupported">यह गेटवे यहाँ से MCP सर्वर इंस्टॉल नहीं कर सकता।</string>
+    <string name="mk_usage">उपयोग</string>
+    <string name="mk_usage_subtitle">टोकन, लागत और सेशन</string>
+    <string name="mk_usage_subtitle_read">%1$s टोकन · %2$s · पिछले %3$d दिन</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="one">%d सेशन</item>
+        <item quantity="other">%d सेशन</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="one">सेशन</item>
+        <item quantity="other">सेशन</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="one">%d दिन</item>
+        <item quantity="other">%d दिन</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="one">%1$s API कॉल</item>
+        <item quantity="other">%1$s API कॉल</item>
+    </plurals>
+    <string name="mk_usage_tokens">टोकन</string>
+    <string name="mk_usage_in_out">%1$s इनपुट · %2$s आउटपुट</string>
+    <string name="mk_usage_cost">लागत</string>
+    <string name="mk_usage_cost_estimated">लागत, अनुमानित</string>
+    <string name="mk_usage_none">पिछले %1$d दिनों में कुछ भी उपयोग नहीं हुआ।</string>
+    <string name="mk_usage_by_day">दिन के हिसाब से</string>
+    <string name="mk_usage_peak">सबसे व्यस्त: %2$s को %1$s</string>
+    <string name="mk_usage_by_model">मॉडल के हिसाब से</string>
+    <string name="mk_usage_note_estimate">लागत Hermes का अपना अनुमान है, उसकी कीमत सूची से; लोकल मॉडल की कोई लागत नहीं। गेटवे का डैशबोर्ड भी यही आँकड़े दिखाता है।</string>
+    <string name="mk_usage_note_reported">लागत वही है जो प्रोवाइडर ने बताई, जहाँ बताई। गेटवे का डैशबोर्ड भी यही आँकड़े दिखाता है।</string>
+</resources>

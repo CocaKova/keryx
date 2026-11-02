@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mk_transition_preview">Xem trước: hiệu ứng chuyển phòng %1$s ở tốc độ %2$s</string>
+    <string name="mk_cancel">Hủy</string>
+
+    <string name="mk_mcp_test">Kiểm tra</string>
+    <string name="mk_mcp_testing">Đang kiểm tra</string>
+    <plurals name="mk_mcp_test_ok">
+        <item quantity="other">Đã kết nối · %d công cụ</item>
+    </plurals>
+    <plurals name="mk_mcp_prompts">
+        <item quantity="other">%d prompt</item>
+    </plurals>
+    <plurals name="mk_mcp_resources">
+        <item quantity="other">%d tài nguyên</item>
+    </plurals>
+    <string name="mk_mcp_test_failed">Không kết nối được: %1$s</string>
+    <string name="mk_mcp_test_unsupported">Cổng này không thể kiểm tra máy chủ từ đây.</string>
+    <string name="mk_mcp_catalog">Danh mục · %1$d mục có thể thêm</string>
+    <plurals name="mk_mcp_catalog_keys">
+        <item quantity="other">cần %d khóa</item>
+    </plurals>
+    <string name="mk_mcp_catalog_builds">dựng từ mã nguồn</string>
+    <string name="mk_mcp_catalog_oauth">đăng nhập bằng OAuth</string>
+    <string name="mk_mcp_installed">Đã cài</string>
+    <string name="mk_mcp_install">Cài đặt</string>
+    <string name="mk_mcp_installing">Đang cài…</string>
+    <string name="mk_mcp_install_title">Cài đặt %1$s?</string>
+    <string name="mk_mcp_install_runs">Nó sẽ chạy</string>
+    <string name="mk_mcp_install_builds">Cổng sẽ clone và dựng nó từ %1$s trước, ở chế độ nền.</string>
+    <string name="mk_mcp_install_oauth">Máy chủ này đăng nhập bằng OAuth: hãy hoàn tất trên bảng điều khiển của cổng sau khi cài xong.</string>
+    <string name="mk_mcp_install_env_note">Lưu trên cổng: bí mật trong tệp .env, phần còn lại trong cấu hình.</string>
+    <string name="mk_mcp_installed_toast">Đã cài %1$s — bật từ phiên tiếp theo</string>
+    <string name="mk_mcp_building_toast">%1$s đang được dựng trên cổng — sẽ hiện ở đây khi xong</string>
+    <string name="mk_mcp_install_refused">Không cài được %1$s: %2$s</string>
+    <string name="mk_mcp_install_unsupported">Cổng này không thể cài máy chủ MCP từ đây.</string>
+    <string name="mk_usage">Mức dùng</string>
+    <string name="mk_usage_subtitle">Token, chi phí và phiên</string>
+    <string name="mk_usage_subtitle_read">%1$s token · %2$s · %3$d ngày qua</string>
+    <plurals name="mk_usage_sessions">
+        <item quantity="other">%d phiên</item>
+    </plurals>
+    <plurals name="mk_usage_sessions_label">
+        <item quantity="other">phiên</item>
+    </plurals>
+    <plurals name="mk_usage_days">
+        <item quantity="other">%d ngày</item>
+    </plurals>
+    <plurals name="mk_usage_calls">
+        <item quantity="other">%1$s lệnh gọi API</item>
+    </plurals>
+    <string name="mk_usage_tokens">token</string>
+    <string name="mk_usage_in_out">%1$s vào · %2$s ra</string>
+    <string name="mk_usage_cost">chi phí</string>
+    <string name="mk_usage_cost_estimated">chi phí, ước tính</string>
+    <string name="mk_usage_none">Không dùng gì trong %1$d ngày qua.</string>
+    <string name="mk_usage_by_day">Theo ngày</string>
+    <string name="mk_usage_peak">Bận nhất: %1$s vào %2$s</string>
+    <string name="mk_usage_by_model">Theo mô hình</string>
+    <string name="mk_usage_note_estimate">Chi phí là ước tính của chính Hermes theo bảng giá; mô hình cục bộ không tốn gì. Bảng điều khiển của cổng đọc cùng các số liệu này.</string>
+    <string name="mk_usage_note_reported">Chi phí là số nhà cung cấp báo cáo, nếu có. Bảng điều khiển của cổng đọc cùng các số liệu này.</string>
+</resources>

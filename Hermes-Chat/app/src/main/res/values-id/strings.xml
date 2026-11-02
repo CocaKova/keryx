@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">Obrolan baru</string>
+    <string name="shortcut_new_chat_long">Mulai obrolan baru</string>
+    <string name="shortcut_missions">Misi</string>
+    <string name="shortcut_missions_long">Buka papan misi</string>
+    <string name="shortcut_runs">Eksekusi</string>
+    <string name="shortcut_runs_long">Eksekusi terjadwal dan laporannya</string>
+
+    <string name="widget_description">Agen dalam sekilas: koneksi, sesi terbaru, ucapan terakhirnya, dan giliran yang sedang berjalan.</string>
+
+    <string name="note_tile_label">Catatan untuk agen</string>
+    <string name="note_tile_label_to">Catatan untuk %1$s</string>
+    <string name="note_tile_live">aktif</string>
+    <string name="note_tile_offline">offline</string>
+    <string name="note_placeholder">Satu baris untuk agen…</string>
+    <string name="note_target_prefix">ke</string>
+    <string name="note_change_target">Ganti sesi</string>
+    <string name="note_no_sessions">Belum ada sesi</string>
+    <string name="note_send">Kirim</string>
+    <string name="note_sent_to">Terkirim ke %1$s</string>
+    <string name="note_send_failed">Gagal mengirim</string>
+    <string name="note_locked">Terkunci</string>
+    <string name="note_unlock">Buka kunci</string>
+    <string name="note_unlock_title">Buka kunci Keryx</string>
+</resources>

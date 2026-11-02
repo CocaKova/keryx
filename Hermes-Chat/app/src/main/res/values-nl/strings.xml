@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">Nieuwe chat</string>
+    <string name="shortcut_new_chat_long">Een nieuwe chat starten</string>
+    <string name="shortcut_missions">Missies</string>
+    <string name="shortcut_missions_long">Het missiebord openen</string>
+    <string name="shortcut_runs">Uitvoeringen</string>
+    <string name="shortcut_runs_long">Geplande uitvoeringen en hun rapporten</string>
+    <string name="widget_description">De agent in één oogopslag: verbinding, nieuwste sessie, wat hij als laatste zei en de beurt die loopt.</string>
+    <string name="note_tile_label">Notitie aan agent</string>
+    <string name="note_tile_label_to">Notitie aan %1$s</string>
+    <string name="note_tile_live">live</string>
+    <string name="note_tile_offline">offline</string>
+    <string name="note_placeholder">Eén regel aan de agent…</string>
+    <string name="note_target_prefix">aan</string>
+    <string name="note_change_target">Sessie wijzigen</string>
+    <string name="note_no_sessions">Nog geen sessie</string>
+    <string name="note_send">Versturen</string>
+    <string name="note_sent_to">Verstuurd naar %1$s</string>
+    <string name="note_send_failed">Versturen mislukt</string>
+    <string name="note_locked">Vergrendeld</string>
+    <string name="note_unlock">Ontgrendelen</string>
+    <string name="note_unlock_title">Keryx ontgrendelen</string>
+</resources>

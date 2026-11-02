@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Keryx</string>
+    <string name="shortcut_new_chat">แชทใหม่</string>
+    <string name="shortcut_new_chat_long">เริ่มแชทใหม่</string>
+    <string name="shortcut_missions">ภารกิจ</string>
+    <string name="shortcut_missions_long">เปิดบอร์ดภารกิจ</string>
+    <string name="shortcut_runs">การรัน</string>
+    <string name="shortcut_runs_long">การรันตามกำหนดเวลาและรายงาน</string>
+
+    <string name="widget_description">ดูเอเจนต์ได้ในแวบเดียว: การเชื่อมต่อ เซสชันล่าสุด สิ่งที่พูดล่าสุด และรอบที่กำลังทำงาน</string>
+
+    <string name="note_tile_label">โน้ตถึงเอเจนต์</string>
+    <string name="note_tile_label_to">โน้ตถึง %1$s</string>
+    <string name="note_tile_live">ออนไลน์</string>
+    <string name="note_tile_offline">ออฟไลน์</string>
+    <string name="note_placeholder">ข้อความหนึ่งบรรทัดถึงเอเจนต์…</string>
+    <string name="note_target_prefix">ถึง</string>
+    <string name="note_change_target">เปลี่ยนเซสชัน</string>
+    <string name="note_no_sessions">ยังไม่มีเซสชัน</string>
+    <string name="note_send">ส่ง</string>
+    <string name="note_sent_to">ส่งถึง %1$s แล้ว</string>
+    <string name="note_send_failed">ส่งไม่สำเร็จ</string>
+    <string name="note_locked">ล็อกอยู่</string>
+    <string name="note_unlock">ปลดล็อก</string>
+    <string name="note_unlock_title">ปลดล็อก Keryx</string>
+</resources>
