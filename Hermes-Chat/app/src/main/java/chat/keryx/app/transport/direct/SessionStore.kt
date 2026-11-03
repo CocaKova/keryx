@@ -292,12 +292,17 @@ internal class SessionStore(
     fun interim(text: String, alreadyStreamed: Boolean) {
         if (!streaming) streamStart()
         if (alreadyStreamed) {
-            val last = items.lastOrNull()
-            if (buffer.isBlank() && last is TurnItem.Text && last.provisional) {
-                // tool.start already sealed this segment; adopt the authoritative text.
-                items[items.lastIndex] = last.copy(
-                    text = text.ifBlank { last.text }, provisional = false,
-                )
+            // The segment a call sealed, looking back past the call cards after it: Hermes
+            // emits the interim only once the row is saved, and by then `tool.generating`
+            // has already put its card under the words (11-02, the words drawn twice).
+            val ti = items.indexOfLast { it is TurnItem.Text }
+            val sealed = (items.getOrNull(ti) as? TurnItem.Text)?.takeIf {
+                it.provisional && items.subList(ti + 1, items.size).all { i -> i is TurnItem.Tool }
+            }
+            if (buffer.isBlank() && sealed != null) {
+                // tool.start / tool.generating already sealed this segment; adopt the
+                // authoritative text where it stands.
+                items[ti] = sealed.copy(text = text.ifBlank { sealed.text }, provisional = false)
             } else {
                 sealBuffer(finalText = text.ifBlank { null })
             }
