@@ -462,48 +462,11 @@ fun NavigationDrawerContent(
                 }
             }
 
-            // The agent's own card (makeover): the visible door to its page. Direct door only —
-            // Matrix has no dashboard behind it, and the demo keeps its strip's "connect" offer.
-            if (direct && !viewModel.isDemo) chat.keryx.app.presentation.ui.components.AgentDoorCard(viewModel) {
-                viewModel.hub.refreshReasoningCaps()
-                onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway)
-            }
-
-            // The bot lights (3.0): every bot one tap from wherever you are. A bot's chat is
-            // a chat chosen on purpose, so it closes the drawer the way a new conversation does.
-            if (direct) chat.keryx.app.presentation.ui.components.BotLights(
-                viewModel = viewModel,
-                visible = drawerVisible,
-                onOpenBot = { bot -> viewModel.bots.open(bot); onConversationCreated() },
-                onManageBot = { bot ->
-                    viewModel.bots.requestManage(bot.name)
-                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Bots)
-                },
-                onOpenGroup = { room ->
-                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Group(room.roomId, room.name))
-                },
-                modifier = Modifier.padding(bottom = 8.dp).tourTarget(KeryxTour.BOT_LIGHTS),
-            )
 
             var query by remember { mutableStateOf("") }
             // A filled well rather than an outlined box (3.0): the outline drew the heaviest line
             // in the drawer around its least important control. Focus still rings it.
             val well = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f)
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                placeholder = { Text(stringResource(R.string.chat_drawer_jump_hint)) },
-                leadingIcon = { Icon(KeryxGlyphs.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
-                singleLine = true,
-                shape = RoundedCornerShape(14.dp),
-                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedContainerColor = well,
-                    focusedContainerColor = well,
-                ),
-                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-            )
 
             // Deep search rides the same field on the direct door: after a typing pause the
             // gateway's server-side FTS answers over message CONTENT, which the local title
@@ -529,42 +492,6 @@ fun NavigationDrawerContent(
             val archivedRooms by viewModel.sessions.archivedRooms.collectAsState()
             LaunchedEffect(lens, drawerVisible) {
                 if (lens == LENS_ARCHIVED && drawerVisible) viewModel.sessions.loadArchivedSessions()
-            }
-            if (direct && query.isBlank()) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .tourTarget(KeryxTour.LENSES)
-                        .horizontalScroll(rememberScrollState())
-                        .padding(bottom = 8.dp),
-                ) {
-                    listOf(
-                        LENS_NEEDS_YOU to stringResource(R.string.chat_lens_needs_you),
-                        LENS_RUNNING to stringResource(R.string.chat_lens_running),
-                        LENS_UNREAD to stringResource(R.string.chat_lens_unread),
-                        LENS_ARCHIVED to stringResource(R.string.chat_lens_archived),
-                    ).forEach { (id, label) ->
-                        val count = when (id) {
-                            LENS_NEEDS_YOU -> rooms.count { it.id in needsYou }
-                            LENS_RUNNING -> rooms.count { it.id in busy }
-                            LENS_UNREAD -> rooms.count { it.hasUnread }
-                            else -> 0
-                        }
-                        LensChip(
-                            label = label,
-                            count = count,
-                            selected = lens == id,
-                            mark = when (id) {
-                                LENS_NEEDS_YOU -> LensMark.NEEDS_YOU
-                                LENS_RUNNING -> if (count > 0) LensMark.LIVE else LensMark.NONE
-                                else -> LensMark.NONE
-                            },
-                            live = drawerVisible,
-                            onClick = { lens = if (lens == id) null else id },
-                        )
-                    }
-                }
             }
             val lensRows = if (lens == LENS_ARCHIVED && query.isBlank()) archivedRooms else rooms
             val filtered = when {
@@ -651,7 +578,149 @@ fun NavigationDrawerContent(
             val placeArchive = stringResource(R.string.chat_place_archive)
             val placeGateway = stringResource(R.string.chat_place_gateway)
             val placeSettings = stringResource(R.string.chat_place_settings)
-            LazyColumn(modifier = Modifier.weight(1f)) {
+            // The drawer opens at its top, where the lights and the places are.
+            val drawerList = androidx.compose.foundation.lazy.rememberLazyListState()
+            LaunchedEffect(drawerVisible) { if (drawerVisible) drawerList.scrollToItem(0) }
+            LazyColumn(state = drawerList, modifier = Modifier.weight(1f)) {
+                // 3.0: the drawer's head scrolls with the list. The agent, the bot lights, the
+                // places, search and the lenses open the drawer at the top; scroll into your
+                // sessions and the whole height is theirs (it was two rows on a phone).
+                item(key = "drawer-head") {
+                    Column {
+                        // The agent's own card (makeover): the visible door to its page. Direct door only —
+                        // Matrix has no dashboard behind it, and the demo keeps its strip's "connect" offer.
+                        if (direct && !viewModel.isDemo) chat.keryx.app.presentation.ui.components.AgentDoorCard(viewModel) {
+                            viewModel.hub.refreshReasoningCaps()
+                            onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway)
+                        }
+
+                        // The bot lights (3.0): every bot one tap from wherever you are. A bot's chat is
+                        // a chat chosen on purpose, so it closes the drawer the way a new conversation does.
+                        if (direct) chat.keryx.app.presentation.ui.components.BotLights(
+                            viewModel = viewModel,
+                            visible = drawerVisible,
+                            onOpenBot = { bot -> viewModel.bots.open(bot); onConversationCreated() },
+                            onManageBot = { bot ->
+                                viewModel.bots.requestManage(bot.name)
+                                onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Bots)
+                            },
+                            onOpenGroup = { room ->
+                                onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Group(room.roomId, room.name))
+                            },
+                            modifier = Modifier.padding(bottom = 8.dp).tourTarget(KeryxTour.BOT_LIGHTS),
+                        )
+                        // The places (2.10). Two kinds of thing used to share one grid of nine: the places
+                        // you read daily and the machine you visit on purpose. The grid keeps the places —
+                        // icon over a small label, the phone-launcher grammar, three to a row so six make
+                        // two even rows and a seventh still costs a list entry, not a re-layout. The
+                        // machine went to the strip below.
+                        androidx.compose.foundation.layout.FlowRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp, bottom = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            maxItemsInEachRow = 3,
+                        ) {
+                            // The needs-you orb (2.14.1): cards waiting on you, board-wide — warm and
+                            // breathing, so it never reads as one more unread count. Fresh on every drawer
+                            // open (one quiet GET), and kept current meanwhile by the on-screen pulse.
+                            val missionsNeedYou by viewModel.missions.needsYouCount.collectAsState()
+                            LaunchedEffect(drawerVisible) {
+                                if (drawerVisible) viewModel.missions.refreshKanbanQuietly()
+                            }
+                            DrawerDoor(
+                                KeryxGlyphs.Board, stringResource(R.string.chat_place_missions), Modifier.weight(1f).tourTarget(KeryxTour.MISSIONS),
+                                badge = missionsNeedYou,
+                                urgent = true,
+                                // The drawer composes while closed: the glow only breathes while it's seen.
+                                alive = drawerVisible,
+                            ) {
+                                onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Missions)
+                            }
+                            // Scheduled work reads at floor level. Gated on [hasRuns]: keryx-stream's probe
+                            // or the stock board having loaded over the same Link. Badged with what has
+                            // landed since you last looked — the same ledger the Runs place's arrivals
+                            // rail reads, so door and rail never disagree.
+                            if (hasRuns) DrawerDoor(
+                                KeryxGlyphs.Watch, stringResource(R.string.chat_place_runs), Modifier.weight(1f).tourTarget(KeryxTour.RUNS),
+                                badge = cronBoard.data?.unread?.total ?: 0,
+                            ) {
+                                onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Runs)
+                            }
+                            // Bot Mode (2.8): the roster of profiles, badged with the bots that have news
+                            // since you last looked. Direct door only — on Matrix a room already is a
+                            // profile, so the door would open onto the drawer you are standing in.
+                            if (direct) DrawerDoor(
+                                KeryxGlyphs.Robot, stringResource(R.string.chat_place_bots), Modifier.weight(1f).tourTarget(KeryxTour.BOTS),
+                                badge = botsUnread,
+                            ) {
+                                onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Bots)
+                            }
+                            // Only where the gateway serves projects.* — the probe is the overview fetch.
+                            if (hasProjects) DrawerDoor(KeryxGlyphs.Folder, stringResource(R.string.chat_place_projects), Modifier.weight(1f)) {
+                                onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Projects)
+                            }
+                            // Only where the gateway declares `git` (keryx.git.enabled) — a capability, not a probe.
+                            if (caps?.git == true) DrawerDoor(KeryxGlyphs.GitBranch, stringResource(R.string.chat_place_shipyard), Modifier.weight(1f)) {
+                                onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Shipyard)
+                            }
+                            DrawerDoor(KeryxGlyphs.Archive, stringResource(R.string.chat_place_archive), Modifier.weight(1f).tourTarget(KeryxTour.ARCHIVE)) {
+                                onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Archive)
+                            }
+                        }
+                        OutlinedTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            placeholder = { Text(stringResource(R.string.chat_drawer_jump_hint)) },
+                            leadingIcon = { Icon(KeryxGlyphs.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(14.dp),
+                            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedContainerColor = well,
+                                focusedContainerColor = well,
+                            ),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                        )
+                        if (direct && query.isBlank()) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .tourTarget(KeryxTour.LENSES)
+                                    .horizontalScroll(rememberScrollState())
+                                    .padding(bottom = 8.dp),
+                            ) {
+                                listOf(
+                                    LENS_NEEDS_YOU to stringResource(R.string.chat_lens_needs_you),
+                                    LENS_RUNNING to stringResource(R.string.chat_lens_running),
+                                    LENS_UNREAD to stringResource(R.string.chat_lens_unread),
+                                    LENS_ARCHIVED to stringResource(R.string.chat_lens_archived),
+                                ).forEach { (id, label) ->
+                                    val count = when (id) {
+                                        LENS_NEEDS_YOU -> rooms.count { it.id in needsYou }
+                                        LENS_RUNNING -> rooms.count { it.id in busy }
+                                        LENS_UNREAD -> rooms.count { it.hasUnread }
+                                        else -> 0
+                                    }
+                                    LensChip(
+                                        label = label,
+                                        count = count,
+                                        selected = lens == id,
+                                        mark = when (id) {
+                                            LENS_NEEDS_YOU -> LensMark.NEEDS_YOU
+                                            LENS_RUNNING -> if (count > 0) LensMark.LIVE else LensMark.NONE
+                                            else -> LensMark.NONE
+                                        },
+                                        live = drawerVisible,
+                                        onClick = { lens = if (lens == id) null else id },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
                 // Pending invitations first — they need a decision, not a scroll hunt.
                 if (invites.isNotEmpty() && query.isBlank()) {
                     item { DrawerSectionHeader(stringResource(R.string.chat_drawer_invites)) }
@@ -921,66 +990,6 @@ fun NavigationDrawerContent(
             }
 
             Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-
-            // The places (2.10). Two kinds of thing used to share one grid of nine: the places
-            // you read daily and the machine you visit on purpose. The grid keeps the places —
-            // icon over a small label, the phone-launcher grammar, three to a row so six make
-            // two even rows and a seventh still costs a list entry, not a re-layout. The
-            // machine went to the strip below.
-            androidx.compose.foundation.layout.FlowRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                maxItemsInEachRow = 3,
-            ) {
-                // The needs-you orb (2.14.1): cards waiting on you, board-wide — warm and
-                // breathing, so it never reads as one more unread count. Fresh on every drawer
-                // open (one quiet GET), and kept current meanwhile by the on-screen pulse.
-                val missionsNeedYou by viewModel.missions.needsYouCount.collectAsState()
-                LaunchedEffect(drawerVisible) {
-                    if (drawerVisible) viewModel.missions.refreshKanbanQuietly()
-                }
-                DrawerDoor(
-                    KeryxGlyphs.Board, stringResource(R.string.chat_place_missions), Modifier.weight(1f).tourTarget(KeryxTour.MISSIONS),
-                    badge = missionsNeedYou,
-                    urgent = true,
-                    // The drawer composes while closed: the glow only breathes while it's seen.
-                    alive = drawerVisible,
-                ) {
-                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Missions)
-                }
-                // Scheduled work reads at floor level. Gated on [hasRuns]: keryx-stream's probe
-                // or the stock board having loaded over the same Link. Badged with what has
-                // landed since you last looked — the same ledger the Runs place's arrivals
-                // rail reads, so door and rail never disagree.
-                if (hasRuns) DrawerDoor(
-                    KeryxGlyphs.Watch, stringResource(R.string.chat_place_runs), Modifier.weight(1f).tourTarget(KeryxTour.RUNS),
-                    badge = cronBoard.data?.unread?.total ?: 0,
-                ) {
-                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Runs)
-                }
-                // Bot Mode (2.8): the roster of profiles, badged with the bots that have news
-                // since you last looked. Direct door only — on Matrix a room already is a
-                // profile, so the door would open onto the drawer you are standing in.
-                if (direct) DrawerDoor(
-                    KeryxGlyphs.Robot, stringResource(R.string.chat_place_bots), Modifier.weight(1f).tourTarget(KeryxTour.BOTS),
-                    badge = botsUnread,
-                ) {
-                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Bots)
-                }
-                // Only where the gateway serves projects.* — the probe is the overview fetch.
-                if (hasProjects) DrawerDoor(KeryxGlyphs.Folder, stringResource(R.string.chat_place_projects), Modifier.weight(1f)) {
-                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Projects)
-                }
-                // Only where the gateway declares `git` (keryx.git.enabled) — a capability, not a probe.
-                if (caps?.git == true) DrawerDoor(KeryxGlyphs.GitBranch, stringResource(R.string.chat_place_shipyard), Modifier.weight(1f)) {
-                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Shipyard)
-                }
-                DrawerDoor(KeryxGlyphs.Archive, stringResource(R.string.chat_place_archive), Modifier.weight(1f).tourTarget(KeryxTour.ARCHIVE)) {
-                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Archive)
-                }
-            }
 
             // The status strip (2.10): the machine, in one line — the link's dot, the brain,
             // the gateway's version — and Settings at its end. The strip IS the Gateway door:
