@@ -19,6 +19,7 @@
     <string name="chat_place_gateway">Gateway</string>
     <string name="chat_place_settings">Einstellungen</string>
     <string name="chat_return_to">Zurück zu %1$s</string>
+    <string name="chat_bot_light_manage">%1$s verwalten</string>
     <string name="chat_drawer_places">Orte</string>
     <string name="chat_drawer_commands">Befehle</string>
     <string name="chat_drawer_no_matches">Keine Treffer</string>

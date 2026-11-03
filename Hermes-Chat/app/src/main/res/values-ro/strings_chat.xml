@@ -19,6 +19,7 @@
     <string name="chat_place_gateway">Gateway</string>
     <string name="chat_place_settings">Setări</string>
     <string name="chat_return_to">Înapoi la %1$s</string>
+    <string name="chat_bot_light_manage">Gestionează %1$s</string>
     <string name="chat_drawer_places">Locuri</string>
     <string name="chat_drawer_commands">Comenzi</string>
     <string name="chat_drawer_no_matches">Niciun rezultat</string>

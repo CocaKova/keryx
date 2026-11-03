@@ -107,6 +107,8 @@ fun BotsSpace(
     // Toasts land in callbacks, where stringResource can't be called.
     val botsCtx = androidx.compose.ui.platform.LocalContext.current
     var editing by remember { mutableStateOf<BotProfile?>(null) }
+    // A light long-pressed in the drawer (3.0): this place opens on that bot's sheet.
+    val manageRequest by bots.manageRequest.collectAsState()
     var creating by remember { mutableStateOf(false) }
     var routinesFor by remember { mutableStateOf<BotProfile?>(null) }
     var sessionsFor by remember { mutableStateOf<BotProfile?>(null) }
@@ -143,6 +145,10 @@ fun BotsSpace(
     fun open(bot: BotProfile) {
         bots.open(bot)
         onOpened()
+    }
+    LaunchedEffect(manageRequest, all) {
+        val wanted = manageRequest ?: return@LaunchedEffect
+        all.firstOrNull { it.name == wanted }?.let { editing = it; bots.consumeManage() }
     }
 
     KeryxSpace(

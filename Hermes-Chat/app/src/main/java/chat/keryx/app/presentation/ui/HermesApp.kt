@@ -515,11 +515,20 @@ fun HermesApp(viewModel: ChatViewModel) {
                         Column {
                             chat.keryx.app.presentation.ui.components.KeryxWordmark(fontSize = KeryxType.headline)
                             currentRoom?.let { room ->
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    // Bot Mode (2.8): a bot's forever-chat wears the bot — its
-                                    // sigil in its own light, its name, and the one-word chip
-                                    // that says this conversation never resets.
-                                    val botHere = viewModel.bots.botForSession(room.id)
+                                // Bot Mode (2.8): a bot's forever-chat wears the bot — its
+                                // sigil in its own light, its name, and the one-word chip
+                                // that says this conversation never resets.
+                                val botHere = viewModel.bots.botForSession(room.id)
+                                // 3.0: in a bot's chat the name is the way to the other bots —
+                                // a tap opens the drawer on the bot lights.
+                                val switchBots = stringResource(R.string.chat_place_bots)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = if (botHere != null) Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable(onClickLabel = switchBots) { scope.launch { drawerState.open() } }
+                                    else Modifier,
+                                ) {
                                     // A plain session on another profile (2.17.3) wears its
                                     // agent's sigil too — just not the forever-chat chip.
                                     val agentHere = botHere ?: viewModel.bots.agentOf(room.id)

@@ -469,6 +469,22 @@ fun NavigationDrawerContent(
                 onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Gateway)
             }
 
+            // The bot lights (3.0): every bot one tap from wherever you are. A bot's chat is
+            // a chat chosen on purpose, so it closes the drawer the way a new conversation does.
+            if (direct) chat.keryx.app.presentation.ui.components.BotLights(
+                viewModel = viewModel,
+                visible = drawerVisible,
+                onOpenBot = { bot -> viewModel.bots.open(bot); onConversationCreated() },
+                onManageBot = { bot ->
+                    viewModel.bots.requestManage(bot.name)
+                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Bots)
+                },
+                onOpenGroup = { room ->
+                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Group(room.roomId, room.name))
+                },
+                modifier = Modifier.padding(bottom = 8.dp).tourTarget(KeryxTour.BOT_LIGHTS),
+            )
+
             var query by remember { mutableStateOf("") }
             // A filled well rather than an outlined box (3.0): the outline drew the heaviest line
             // in the drawer around its least important control. Focus still rings it.

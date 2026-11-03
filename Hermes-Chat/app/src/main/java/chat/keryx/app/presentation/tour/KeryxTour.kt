@@ -23,6 +23,8 @@ object KeryxTour {
     const val NEW_SESSION = "new-session"
     const val DRAWER_BUTTON = "drawer-button"
     const val LENSES = "drawer-lenses"
+    /** The bot lights across the top of the drawer (3.0). Joins [ALL] with its tour stop. */
+    const val BOT_LIGHTS = "drawer-bot-lights"
     const val MISSIONS = "door-missions"
     const val RUNS = "door-runs"
     const val BOTS = "door-bots"

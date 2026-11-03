@@ -19,6 +19,7 @@
     <string name="chat_place_gateway">Ağ Geçidi</string>
     <string name="chat_place_settings">Ayarlar</string>
     <string name="chat_return_to">%1$s bölümüne dön</string>
+    <string name="chat_bot_light_manage">%1$s yönet</string>
     <string name="chat_drawer_places">Yerler</string>
     <string name="chat_drawer_commands">Komutlar</string>
     <string name="chat_drawer_no_matches">Eşleşme yok</string>

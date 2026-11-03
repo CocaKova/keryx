@@ -19,6 +19,7 @@
     <string name="chat_place_gateway">Bramka</string>
     <string name="chat_place_settings">Ustawienia</string>
     <string name="chat_return_to">Wróć do: %1$s</string>
+    <string name="chat_bot_light_manage">Zarządzaj: %1$s</string>
     <string name="chat_drawer_places">Miejsca</string>
     <string name="chat_drawer_commands">Polecenia</string>
     <string name="chat_drawer_no_matches">Brak wyników</string>

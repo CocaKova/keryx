@@ -19,6 +19,7 @@
     <string name="chat_place_gateway">閘道</string>
     <string name="chat_place_settings">設定</string>
     <string name="chat_return_to">返回%1$s</string>
+    <string name="chat_bot_light_manage">管理%1$s</string>
     <string name="chat_drawer_places">位置</string>
     <string name="chat_drawer_commands">指令</string>
     <string name="chat_drawer_no_matches">沒有相符的結果</string>

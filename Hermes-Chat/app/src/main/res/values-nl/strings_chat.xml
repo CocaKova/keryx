@@ -19,6 +19,7 @@
     <string name="chat_place_gateway">Gateway</string>
     <string name="chat_place_settings">Instellingen</string>
     <string name="chat_return_to">Terug naar %1$s</string>
+    <string name="chat_bot_light_manage">%1$s beheren</string>
     <string name="chat_drawer_places">Plekken</string>
     <string name="chat_drawer_commands">Opdrachten</string>
     <string name="chat_drawer_no_matches">Geen resultaten</string>

@@ -19,6 +19,7 @@
     <string name="chat_place_gateway">Шлюз</string>
     <string name="chat_place_settings">Налаштування</string>
     <string name="chat_return_to">Назад: %1$s</string>
+    <string name="chat_bot_light_manage">Керування: %1$s</string>
     <string name="chat_drawer_places">Розділи</string>
     <string name="chat_drawer_commands">Команди</string>
     <string name="chat_drawer_no_matches">Нічого не знайдено</string>

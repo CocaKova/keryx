@@ -207,6 +207,15 @@ class BotsDelegate(
     /** Chats opened this process life before the roster caught up: stored id → profile name. */
     private val pendingOpens = java.util.concurrent.ConcurrentHashMap<String, String>()
 
+    /**
+     * A bot asked to be managed from outside the Bots place (3.0: a long-pressed light in the
+     * drawer). The place opens its edit sheet for it and consumes the request.
+     */
+    private val _manageRequest = MutableStateFlow<String?>(null)
+    val manageRequest: StateFlow<String?> = _manageRequest.asStateFlow()
+    fun requestManage(name: String) { _manageRequest.value = name }
+    fun consumeManage() { _manageRequest.value = null }
+
     /** Tap a bot: find or create its chat, mark it looked at, and land on the floor in it. */
     fun open(bot: BotProfile, kickoff: Boolean = false) {
         val gw = gateway ?: return
