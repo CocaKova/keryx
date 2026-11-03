@@ -207,6 +207,9 @@ class KeryxApp : Application() {
         appScope.launch {
             attention.filterNotNull().collect { KeryxNotifications.clear(applicationContext, it) }
         }
+        // A summary orphaned by an earlier process (its children read, swiped or cleared
+        // while this memory did not exist) goes now, not at the next clear.
+        KeryxNotifications.reconcileSummary(applicationContext)
         // The launcher's hands (2.13): the widget card and the tile follow the link from here.
         if (transport !is DemoTransport) traced("Keryx:handsSync") { chat.keryx.app.widget.HandsSync.observe(this) }
     }

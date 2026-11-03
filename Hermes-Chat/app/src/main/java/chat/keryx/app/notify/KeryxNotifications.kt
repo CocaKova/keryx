@@ -400,7 +400,52 @@ object KeryxNotifications {
     fun clear(context: Context, roomId: String) {
         history.remove(roomId)
         runCatching { NotificationManagerCompat.from(context).cancel(roomId.hashCode()) }
-        if (history.isEmpty()) runCatching { NotificationManagerCompat.from(context).cancel(SUMMARY_ID) }
+        reconcileSummary(context, leaving = roomId.hashCode())
+    }
+
+    /**
+     * The summary answers to the shade, not to memory (3.0). [history] lives only as long as the
+     * process and never hears of a notice swiped away, so "history is empty" both missed and
+     * outlived the real children — and a summary Android leaves behind its last child keeps the
+     * launcher's badge lit with nothing under it. The shade's own list decides: no conversation
+     * notice left in the group, no summary. History forgets every room the shade no longer shows,
+     * so a later summary counts what is really there. [leaving] is a notice just cancelled, which
+     * the shade may still list for a moment.
+     */
+    fun reconcileSummary(context: Context, leaving: Int? = null) {
+        val mgr = context.getSystemService(NotificationManager::class.java)
+        val live = mgr?.let {
+            runCatching {
+                it.activeNotifications
+                    .filter { sbn -> sbn.notification.group == GROUP_KEY && sbn.id != SUMMARY_ID && sbn.id != leaving }
+                    .map { sbn -> sbn.id }
+                    .toSet()
+            }.getOrNull()
+        }
+        if (live == null) {
+            if (history.isEmpty()) runCatching { NotificationManagerCompat.from(context).cancel(SUMMARY_ID) }
+            return
+        }
+        history.keys.removeAll { it.hashCode() !in live }
+        if (live.isEmpty()) runCatching { NotificationManagerCompat.from(context).cancel(SUMMARY_ID) }
+    }
+
+    /**
+     * Mission alerts the board has now shown you (3.0): while the board is on screen, every
+     * alert for [gatewayId] is already answered by what you are looking at. An alert that never
+     * said its gateway (posted before 3.0) counts as this one's.
+     */
+    fun clearMissions(context: Context, gatewayId: String) {
+        val mgr = context.getSystemService(NotificationManager::class.java) ?: return
+        runCatching {
+            mgr.activeNotifications
+                .filter { it.notification.channelId == MISSIONS_CHANNEL_ID }
+                .filter {
+                    val of = it.notification.extras.getString(EXTRA_MISSION_GATEWAY).orEmpty()
+                    of.isBlank() || of == gatewayId
+                }
+                .forEach { mgr.cancel(it.tag, it.id) }
+        }
     }
 
     // --- Mission alerts (kanban watcher) --------------------------------------------------------
@@ -768,6 +813,8 @@ object KeryxNotifications {
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setContentIntent(pending)
+            // Which board it belongs to, readable back off the shade ([clearMissions]).
+            .addExtras(android.os.Bundle().apply { putString(EXTRA_MISSION_GATEWAY, gatewayId) })
             .build()
         // Offset from the message-notification id space so a task never clobbers a room.
         runCatching { nm.notify(key.hashCode(), notification) }

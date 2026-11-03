@@ -156,6 +156,9 @@ class MissionsDelegate(
         MissionAlertsWorker.boardOnScreen = onScreen
     }
 
+    /** The gateway the board on screen belongs to, in the alerts' own key (see [MissionAlertsWorker.alertScope]). */
+    fun alertScope(): String = MissionAlertsWorker.alertScope(settings.transportMode, settings.fleet)
+
     /**
      * A card to open, asked for from outside the board — a mission notification's tap (2.14.1).
      * A request, not an event: the Missions screen may not be composed when the tap lands (the

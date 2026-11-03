@@ -297,6 +297,9 @@ fun MissionsScreen(
             // the worker) stay quiet — this screen already shows every move they would ring
             // about. The finally clears it on background and on leaving alike.
             viewModel.missions.setBoardOnScreen(true)
+            // What the board shows needs no alert in the shade (3.0): they were the badge that
+            // stayed on the launcher after every card had been read.
+            chat.keryx.app.notify.KeryxNotifications.clearMissions(context, viewModel.missions.alertScope())
             try {
                 viewModel.missions.refreshKanban()
                 while (true) {
