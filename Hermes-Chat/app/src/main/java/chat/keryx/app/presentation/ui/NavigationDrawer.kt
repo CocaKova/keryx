@@ -578,6 +578,11 @@ fun NavigationDrawerContent(
             val placeArchive = stringResource(R.string.chat_place_archive)
             val placeGateway = stringResource(R.string.chat_place_gateway)
             val placeSettings = stringResource(R.string.chat_place_settings)
+            // The fleet (2.11): with several gateways the drawer leads with the Desktop's one named
+            // gateway selector. A switch moves the whole workspace, so it relaunches onto the
+            // chosen gateway — the door toggle's own path.
+            val fleet by viewModel.doors.fleet.collectAsState()
+            val fleetContext = LocalContext.current
             // The drawer opens at its top, where the lights and the places are.
             val drawerList = androidx.compose.foundation.lazy.rememberLazyListState()
             LaunchedEffect(drawerVisible) { if (drawerVisible) drawerList.scrollToItem(0) }
@@ -587,6 +592,18 @@ fun NavigationDrawerContent(
                 // sessions and the whole height is theirs (it was two rows on a phone).
                 item(key = "drawer-head") {
                     Column {
+                        // Which gateway (2.11, several on the fleet): first, since everything
+                        // under it is that gateway's. Scrolls away with the rest (3.0).
+                        if (viewModel.transportIsDirect) chat.keryx.app.presentation.ui.components.FleetSelector(
+                            fleet = fleet,
+                            onSwitch = { id ->
+                                if (viewModel.doors.switchGateway(id)) chat.keryx.app.presentation.ui.components.relaunchApp(fleetContext)
+                            },
+                            onManage = {
+                                viewModel.jumpToSetting(chat.keryx.app.presentation.ui.components.SettingsRow.CONNECTION_GATEWAY.id)
+                                onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Settings)
+                            },
+                        )
                         // The agent's own card (makeover): the visible door to its page. Direct door only —
                         // Matrix has no dashboard behind it, and the demo keeps its strip's "connect" offer.
                         if (direct && !viewModel.isDemo) chat.keryx.app.presentation.ui.components.AgentDoorCard(viewModel) {
@@ -997,23 +1014,6 @@ fun NavigationDrawerContent(
             // sidebar footer, with the Desktop's status bar folded into it).
             val hubHealth by viewModel.hub.health.collectAsState()
             val linkHealth by viewModel.linkHealth.collectAsState()
-            // The fleet (2.11): with several gateways the foot grows the Desktop's one named
-            // gateway selector. A switch moves the whole workspace, so it relaunches onto the
-            // chosen gateway — the door toggle's own path.
-            val fleet by viewModel.doors.fleet.collectAsState()
-            val fleetContext = LocalContext.current
-            // Direct door only: on Matrix the fleet may exist (doors were crossed) but the
-            // workspace is the homeserver's, and a switch here would relaunch into Matrix again.
-            if (viewModel.transportIsDirect) chat.keryx.app.presentation.ui.components.FleetSelector(
-                fleet = fleet,
-                onSwitch = { id ->
-                    if (viewModel.doors.switchGateway(id)) chat.keryx.app.presentation.ui.components.relaunchApp(fleetContext)
-                },
-                onManage = {
-                    viewModel.jumpToSetting(chat.keryx.app.presentation.ui.components.SettingsRow.CONNECTION_GATEWAY.id)
-                    onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Settings)
-                },
-            )
             val stripContext = androidx.compose.ui.platform.LocalContext.current
             DrawerStatusStrip(
                 health = linkHealth,
