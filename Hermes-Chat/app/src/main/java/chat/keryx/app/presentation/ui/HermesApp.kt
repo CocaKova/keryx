@@ -895,6 +895,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                 KeryxDest.Missions -> chat.keryx.app.presentation.ui.components.MissionsScreen(
                     viewModel = viewModel,
                     onDismissRequest = nav::back,
+                    onSteppedAside = nav::stepAside,
                 )
                 KeryxDest.Gateway -> chat.keryx.app.presentation.ui.components.GatewaySpace(
                     viewModel = viewModel,

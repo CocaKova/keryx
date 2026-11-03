@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -30,6 +31,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
@@ -236,6 +238,8 @@ private const val ALERTS_HINT_DISMISSED = "alerts_hint_dismissed"
 fun MissionsScreen(
     viewModel: ChatViewModel,
     onDismissRequest: () -> Unit,
+    /** A card's session opened in the chat (3.0): the board steps aside and stays the way back. */
+    onSteppedAside: () -> Unit = onDismissRequest,
 ) {
     val board by viewModel.missions.kanbanBoard.collectAsState()
     val refreshing by viewModel.missions.kanbanRefreshing.collectAsState()
@@ -243,7 +247,10 @@ fun MissionsScreen(
     val caps by viewModel.hub.reasoningCaps.collectAsState()
     val subs by viewModel.missions.kanbanSubs.collectAsState()
     var createOpen by remember { mutableStateOf(false) }
-    var openTaskId by remember { mutableStateOf<String?>(null) }
+    // The open card, as a stack (3.0): a linked card opens over the one that named it, and back
+    // steps down to it. Saved, so the way back from a card's session lands on the same card.
+    var openCards by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(emptyList<String>()) }
+    val openTaskId = openCards.lastOrNull()
     val bulk by viewModel.missions.bulkProgress.collectAsState()
     val alertsOn by viewModel.missions.alertsEnabled.collectAsState()
     val haptics = LocalKeryxHaptics.current
@@ -264,7 +271,7 @@ fun MissionsScreen(
     LaunchedEffect(openRequest) {
         val requested = openRequest ?: return@LaunchedEffect
         exitSelection()
-        openTaskId = requested
+        openCards = listOf(requested)
         viewModel.missions.consumeOpenTask()
     }
 
@@ -303,9 +310,10 @@ fun MissionsScreen(
     }
 
     // Search + owner filter (2.16): the board narrows, every count and lane follows it.
-    var query by remember { mutableStateOf("") }
-    var ownerFilter by remember { mutableStateOf<String?>(null) }
-    var searchOpen by remember { mutableStateOf(false) }
+    // Saved (3.0): coming back to the board finds it narrowed the way you left it.
+    var query by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var ownerFilter by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
+    var searchOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val allTasks = board?.tasks.orEmpty()
     val owners = remember(allTasks) { chat.keryx.app.presentation.MissionFilter.assignees(allTasks) }
     val tasks = remember(allTasks, query, ownerFilter) {
@@ -549,7 +557,7 @@ fun MissionsScreen(
                             subscribed = subs[task.id]?.isNotEmpty() == true,
                             selecting = selecting,
                             selected = task.id in chosen,
-                            onClick = { if (selecting) toggle(task.id) else openTaskId = task.id },
+                            onClick = { if (selecting) toggle(task.id) else openCards = listOf(task.id) },
                             onLongClick = {
                                 if (selecting) toggle(task.id)
                                 else {
@@ -581,19 +589,29 @@ fun MissionsScreen(
     }
 
     openTaskId?.let { tid ->
-        MissionDetailSheet(
-            taskId = tid,
-            viewModel = viewModel,
-            profiles = missionAssignees(caps?.roomProfiles.orEmpty()),
-            onOpenTask = { openTaskId = it },
-            onDismiss = { openTaskId = null },
-            // A worker's session carried on in the chat: the board steps aside for the floor.
-            onOpenSession = { sessionId, title ->
-                openTaskId = null
-                viewModel.openSessionById(sessionId, title)
-                onDismissRequest()
-            },
-        )
+        // Keyed by card: stepping down the stack is one sheet leaving and the earlier one
+        // rising, never one sheet quietly swapping its contents.
+        androidx.compose.runtime.key(tid) {
+            MissionDetailSheet(
+                taskId = tid,
+                viewModel = viewModel,
+                profiles = missionAssignees(caps?.roomProfiles.orEmpty()),
+                // Already in the stack: back down to it rather than opening a twin above.
+                onOpenTask = { next ->
+                    val at = openCards.indexOf(next)
+                    openCards = if (at >= 0) openCards.subList(0, at + 1) else openCards + next
+                },
+                // Back or a swipe steps down one card; the last one closes the stack.
+                onDismiss = { openCards = openCards.dropLast(1) },
+                onBack = if (openCards.size > 1) ({ openCards = openCards.dropLast(1) }) else null,
+                // A worker's session carried on in the chat: the board steps aside and keeps the
+                // card open, so the way back lands right here.
+                onOpenSession = { sessionId, title ->
+                    viewModel.openSessionById(sessionId, title)
+                    onSteppedAside()
+                },
+            )
+        }
     }
 
     pendingArchive?.let { (ids, clearDone) ->
@@ -994,6 +1012,8 @@ private fun MissionDetailSheet(
     profiles: List<String>,
     onOpenTask: (String) -> Unit,
     onDismiss: () -> Unit,
+    /** Down to the card that linked here (3.0); null on the first card of the stack. */
+    onBack: (() -> Unit)? = null,
     onOpenSession: (sessionId: String, title: String) -> Unit,
 ) {
     var detail by remember(taskId) { mutableStateOf<KanbanDetail?>(null) }
@@ -1017,6 +1037,15 @@ private fun MissionDetailSheet(
 
     KeryxSheet(onDismiss = onDismiss) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 4.dp)) {
+            if (onBack != null) {
+                IconButton(onClick = onBack, modifier = Modifier.offset(x = (-12).dp)) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.settings_back),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
             val d = detail
             when {
                 loadError != null -> Text(
