@@ -18,6 +18,7 @@
     <string name="chat_place_archive">Arkiv</string>
     <string name="chat_place_gateway">Gateway</string>
     <string name="chat_place_settings">Inställningar</string>
+    <string name="chat_return_to">Tillbaka till %1$s</string>
     <string name="chat_drawer_places">Platser</string>
     <string name="chat_drawer_commands">Kommandon</string>
     <string name="chat_drawer_no_matches">Inga träffar</string>

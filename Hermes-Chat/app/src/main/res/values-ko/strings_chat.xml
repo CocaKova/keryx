@@ -18,6 +18,7 @@
     <string name="chat_place_archive">보관함</string>
     <string name="chat_place_gateway">게이트웨이</string>
     <string name="chat_place_settings">설정</string>
+    <string name="chat_return_to">%1$s(으)로 돌아가기</string>
     <string name="chat_drawer_places">장소</string>
     <string name="chat_drawer_commands">명령</string>
     <string name="chat_drawer_no_matches">일치하는 항목 없음</string>

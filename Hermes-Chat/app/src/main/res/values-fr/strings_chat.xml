@@ -18,6 +18,7 @@
     <string name="chat_place_archive">Archives</string>
     <string name="chat_place_gateway">Passerelle</string>
     <string name="chat_place_settings">Paramètres</string>
+    <string name="chat_return_to">Retour à %1$s</string>
     <string name="chat_drawer_places">Lieux</string>
     <string name="chat_drawer_commands">Commandes</string>
     <string name="chat_drawer_no_matches">Aucun résultat</string>

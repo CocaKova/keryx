@@ -18,6 +18,7 @@
     <string name="chat_place_archive">归档</string>
     <string name="chat_place_gateway">网关</string>
     <string name="chat_place_settings">设置</string>
+    <string name="chat_return_to">返回%1$s</string>
     <string name="chat_drawer_places">位置</string>
     <string name="chat_drawer_commands">命令</string>
     <string name="chat_drawer_no_matches">无匹配结果</string>

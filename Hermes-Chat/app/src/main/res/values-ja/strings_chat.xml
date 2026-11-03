@@ -18,6 +18,7 @@
     <string name="chat_place_archive">アーカイブ</string>
     <string name="chat_place_gateway">ゲートウェイ</string>
     <string name="chat_place_settings">設定</string>
+    <string name="chat_return_to">%1$s に戻る</string>
     <string name="chat_drawer_places">場所</string>
     <string name="chat_drawer_commands">コマンド</string>
     <string name="chat_drawer_no_matches">一致するものはありません</string>

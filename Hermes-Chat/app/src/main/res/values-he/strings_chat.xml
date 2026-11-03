@@ -18,6 +18,7 @@
     <string name="chat_place_archive">ארכיון</string>
     <string name="chat_place_gateway">שער</string>
     <string name="chat_place_settings">הגדרות</string>
+    <string name="chat_return_to">חזרה אל %1$s</string>
     <string name="chat_drawer_places">מקומות</string>
     <string name="chat_drawer_commands">פקודות</string>
     <string name="chat_drawer_no_matches">אין תוצאות</string>

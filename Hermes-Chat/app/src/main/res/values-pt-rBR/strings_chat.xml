@@ -31,6 +31,7 @@
     <string name="chat_place_archive">Arquivo</string>
     <string name="chat_place_gateway">Gateway</string>
     <string name="chat_place_settings">Configurações</string>
+    <string name="chat_return_to">Voltar para %1$s</string>
     <!-- Section header in the drawer's search results. -->
     <string name="chat_drawer_places">Lugares</string>
     <!-- Section header in the drawer's search results. -->

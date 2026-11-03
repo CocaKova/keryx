@@ -18,6 +18,7 @@
     <string name="chat_place_archive">আর্কাইভ</string>
     <string name="chat_place_gateway">গেটওয়ে</string>
     <string name="chat_place_settings">সেটিংস</string>
+    <string name="chat_return_to">%1$s-এ ফিরে যান</string>
     <string name="chat_drawer_places">জায়গা</string>
     <string name="chat_drawer_commands">কমান্ড</string>
     <string name="chat_drawer_no_matches">কোনো মিল নেই</string>

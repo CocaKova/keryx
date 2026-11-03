@@ -18,6 +18,7 @@
     <string name="chat_place_archive">الأرشيف</string>
     <string name="chat_place_gateway">البوابة</string>
     <string name="chat_place_settings">الإعدادات</string>
+    <string name="chat_return_to">العودة إلى %1$s</string>
     <string name="chat_drawer_places">الأماكن</string>
     <string name="chat_drawer_commands">الأوامر</string>
     <string name="chat_drawer_no_matches">لا نتائج</string>

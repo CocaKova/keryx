@@ -146,10 +146,22 @@ private const val GROUP_ROUTE = "group"
 private fun enc(v: String): String = java.net.URLEncoder.encode(v, "UTF-8")
 private fun dec(v: String): String = runCatching { java.net.URLDecoder.decode(v, "UTF-8") }.getOrDefault(v)
 
-/** The back stack. [open] brings an already-open place to the front instead of stacking twins. */
+/**
+ * The back stack. [open] brings an already-open place to the front instead of stacking twins.
+ *
+ * 3.0 continuity: a place that hands you to the chat floor (a bot's chat, a card's session, a
+ * run) no longer simply vanishes. [stepAside] lowers the whole stack to the floor and keeps it as
+ * the [trail]; the floor shows the way back, and back at the floor walks it ([returnBack]). The
+ * places themselves keep what they were showing through [KeryxNavHost]'s saved-state holder, so
+ * the way back lands on the same card, tab and scroll. Choosing another chat on purpose ends the
+ * trail ([forgetTrail]).
+ */
 @Stable
-class KeryxNavState internal constructor(initial: List<KeryxDest>) {
+class KeryxNavState internal constructor(initial: List<KeryxDest>, trail: List<KeryxDest> = emptyList()) {
     internal val stack = mutableStateListOf<KeryxDest>().apply { addAll(initial) }
+
+    /** The places a [stepAside] lowered, bottom first. Empty = no way back to offer. */
+    internal val trail = mutableStateListOf<KeryxDest>().apply { addAll(trail) }
 
     /** Nothing layered over the floor — the chat is the screen. */
     val atFloor: Boolean get() = stack.isEmpty()
@@ -159,7 +171,15 @@ class KeryxNavState internal constructor(initial: List<KeryxDest>) {
 
     val current: KeryxDest? get() = stack.lastOrNull()
 
+    /** Where the floor's way back leads (the top of the [trail]), or null when there is none. */
+    val returnTarget: KeryxDest? get() = if (stack.isEmpty()) trail.lastOrNull() else null
+
     fun open(dest: KeryxDest) {
+        // Reopening a place the trail holds is taking the way back by another door.
+        if (stack.isEmpty() && dest in trail) {
+            returnBack()
+            if (stack.lastOrNull() == dest) return
+        }
         if (stack.lastOrNull() == dest) return
         stack.remove(dest)
         stack.add(dest)
@@ -169,17 +189,46 @@ class KeryxNavState internal constructor(initial: List<KeryxDest>) {
         if (stack.isNotEmpty()) stack.removeAt(stack.lastIndex)
     }
 
-    /** Straight to the chat floor — the assist gesture's landing. */
+    /** Straight to the chat floor — the assist gesture's landing. The trail survives it. */
     fun home() {
         stack.clear()
     }
+
+    /** A place handed the user to the chat floor: lower every place, remembered as the trail. */
+    fun stepAside() {
+        if (stack.isEmpty()) return
+        trail.clear()
+        trail.addAll(stack)
+        stack.clear()
+    }
+
+    /** Back along the trail: every place it holds rises again, as it was. */
+    fun returnBack() {
+        if (trail.isEmpty()) return
+        val places = trail.toList()
+        trail.clear()
+        places.forEach { stack.remove(it); stack.add(it) }
+    }
+
+    /** Another chat was chosen on purpose: the way back no longer means anything. */
+    fun forgetTrail() {
+        trail.clear()
+    }
 }
+
+/** Separates the stack from the trail in the saved route list. Never a route character. */
+private const val TRAIL_MARK = "\u0000trail"
 
 @Composable
 fun rememberKeryxNav(): KeryxNavState = rememberSaveable(
     saver = listSaver(
-        save = { it.stack.map(KeryxDest::route) },
-        restore = { KeryxNavState(it.mapNotNull(KeryxDest::fromRoute)) },
+        save = { it.stack.map(KeryxDest::route) + TRAIL_MARK + it.trail.map(KeryxDest::route) },
+        restore = { saved ->
+            val cut = saved.indexOf(TRAIL_MARK)
+            val stack = if (cut < 0) saved else saved.subList(0, cut)
+            val trail = if (cut < 0) emptyList() else saved.subList(cut + 1, saved.size)
+            KeryxNavState(stack.mapNotNull(KeryxDest::fromRoute), trail.mapNotNull(KeryxDest::fromRoute))
+        },
     ),
 ) { KeryxNavState(emptyList()) }
 
@@ -214,6 +263,11 @@ fun KeryxNavHost(
     content: @Composable (KeryxDest) -> Unit,
 ) {
     val layers = remember { mutableStateListOf<NavLayer>() }
+    // 3.0 continuity: what each place was showing (its tab, open card, search, scroll) is kept
+    // here by route when the place leaves, and handed back when it opens again. Only the saved
+    // values stay: the place's composition is released as before, so a closed place costs no
+    // memory beyond its few remembered values.
+    val saved = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
 
     // Mirror the stack into layers: new destinations get an entering layer, vanished ones flip
     // to exiting (their layer stays until the departure animation lands), survivors reorder to
@@ -221,7 +275,12 @@ fun KeryxNavHost(
     val stackNow = nav.stack.toList()
     LaunchedEffect(stackNow) {
         stackNow.forEach { dest ->
-            if (layers.none { it.dest == dest && !it.exiting }) layers.add(NavLayer(dest))
+            if (layers.none { it.dest == dest && !it.exiting }) {
+                // Called back mid-departure: the same layer turns round and rises again. Two
+                // layers of one place would also be two owners of its saved state.
+                val leaving = layers.firstOrNull { it.dest == dest && it.exiting }
+                if (leaving != null) leaving.exiting = false else layers.add(NavLayer(dest))
+            }
         }
         layers.forEach { layer ->
             if (!layer.exiting && stackNow.none { it == layer.dest }) layer.exiting = true
@@ -320,7 +379,7 @@ fun KeryxNavHost(
                             indication = null,
                             onClick = {},
                         ),
-                ) { content(layer.dest) }
+                ) { saved.SaveableStateProvider(layer.dest.route) { content(layer.dest) } }
             }
         }
     }

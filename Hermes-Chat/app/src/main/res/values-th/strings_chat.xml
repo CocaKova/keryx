@@ -18,6 +18,7 @@
     <string name="chat_place_archive">คลังเก็บ</string>
     <string name="chat_place_gateway">เกตเวย์</string>
     <string name="chat_place_settings">การตั้งค่า</string>
+    <string name="chat_return_to">กลับไปที่ %1$s</string>
     <string name="chat_drawer_places">สถานที่</string>
     <string name="chat_drawer_commands">คำสั่ง</string>
     <string name="chat_drawer_no_matches">ไม่พบผลลัพธ์</string>

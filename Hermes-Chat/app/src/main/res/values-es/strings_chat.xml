@@ -31,6 +31,7 @@
     <string name="chat_place_archive">Archivo</string>
     <string name="chat_place_gateway">Pasarela</string>
     <string name="chat_place_settings">Ajustes</string>
+    <string name="chat_return_to">Volver a %1$s</string>
     <!-- Section header in the drawer's search results. -->
     <string name="chat_drawer_places">Lugares</string>
     <!-- Section header in the drawer's search results. -->

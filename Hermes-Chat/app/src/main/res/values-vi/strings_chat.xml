@@ -18,6 +18,7 @@
     <string name="chat_place_archive">Kho lưu trữ</string>
     <string name="chat_place_gateway">Cổng</string>
     <string name="chat_place_settings">Cài đặt</string>
+    <string name="chat_return_to">Quay lại %1$s</string>
     <string name="chat_drawer_places">Địa điểm</string>
     <string name="chat_drawer_commands">Lệnh</string>
     <string name="chat_drawer_no_matches">Không có kết quả</string>

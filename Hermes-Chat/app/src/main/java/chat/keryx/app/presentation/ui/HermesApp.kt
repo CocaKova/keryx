@@ -25,8 +25,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
@@ -432,6 +435,9 @@ fun HermesApp(viewModel: ChatViewModel) {
         // Tap-In carries its own input (the steer bar), so a notice clears it there too.
         clearInput = (nav.atFloor || nav.top == KeryxDest.TapIn) && drawerState.targetValue == DrawerValue.Closed,
     ) {
+    // 3.0 continuity: at the floor, back walks the way back to the place that handed you here.
+    // Registered before the host and the drawer, so an open drawer or a place's own handler wins.
+    androidx.activity.compose.BackHandler(enabled = nav.returnTarget != null) { nav.returnBack() }
     KeryxNavHost(
         nav = nav,
         originOf = { dest -> if (dest == KeryxDest.TapIn) viewModel.cloudBounds else null },
@@ -472,6 +478,8 @@ fun HermesApp(viewModel: ChatViewModel) {
                 NavigationDrawerContent(
                     viewModel = viewModel,
                     onRoomSelected = { room ->
+                        // A chat chosen on purpose: the way back to a place no longer applies.
+                        nav.forgetTrail()
                         viewModel.selectRoom(room)
                         scope.launch { drawerState.close() }
                     },
@@ -481,7 +489,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                         drawerState.targetValue == DrawerValue.Open,
                     // A new session from the drawer's plus lands you IN it: the drawer
                     // slides away as the ViewModel moves onto the new room.
-                    onConversationCreated = { scope.launch { drawerState.close() } },
+                    onConversationCreated = { nav.forgetTrail(); scope.launch { drawerState.close() } },
                 )
             }
         }
@@ -812,6 +820,8 @@ fun HermesApp(viewModel: ChatViewModel) {
                 )
                 // The demo says so, and the way out to a real gateway is always one tap.
                 if (viewModel.isDemo) DemoStrip(onConnect = ::leaveDemo)
+                // 3.0 continuity: the place that handed you this chat, one tap away.
+                nav.returnTarget?.let { dest -> ReturnChip(dest, onReturn = nav::returnBack) }
                 }
             }
         ) { paddingValues ->
@@ -859,7 +869,7 @@ fun HermesApp(viewModel: ChatViewModel) {
                     viewModel = viewModel,
                     // Project sessions can live outside the roster (cron runs, desktop work) —
                     // the name rides along so the floor can title them.
-                    onOpenSession = { id, name -> viewModel.openSessionById(id, name); nav.back() },
+                    onOpenSession = { id, name -> viewModel.openSessionById(id, name); nav.stepAside() },
                     onClose = nav::back,
                 )
                 KeryxDest.Shipyard -> chat.keryx.app.presentation.ui.components.ShipyardSpace(
@@ -870,14 +880,14 @@ fun HermesApp(viewModel: ChatViewModel) {
                     viewModel = viewModel,
                     // A cron run lives outside every roster — the title travels so the floor
                     // can name the room it adopts (direct door; Matrix reads in-space).
-                    onOpenSession = { id, name -> viewModel.openSessionById(id, name); nav.back() },
+                    onOpenSession = { id, name -> viewModel.openSessionById(id, name); nav.stepAside() },
                     onClose = nav::back,
                 )
                 KeryxDest.Bots -> chat.keryx.app.presentation.ui.components.BotsSpace(
                     viewModel = viewModel,
                     // A bot's chat is adopted as a roster row by the delegate; landing on the
-                    // floor is the same move a run makes.
-                    onOpened = { nav.back() },
+                    // floor is the same move a run makes, and the roster stays the way back.
+                    onOpened = { nav.stepAside() },
                     onOpenRuns = { nav.open(KeryxDest.Runs) },
                     onOpenGroup = { room -> nav.open(KeryxDest.Group(room.roomId, room.name)) },
                     onClose = nav::back,
@@ -1175,6 +1185,63 @@ private fun DemoStrip(onConnect: () -> Unit) {
                     tint = ink,
                     modifier = Modifier.size(16.dp),
                 )
+            }
+        }
+    }
+}
+
+/** What the way back is called: the place's own name, the one its drawer door wears. */
+@Composable
+private fun placeName(dest: KeryxDest): String = when (dest) {
+    KeryxDest.Archive -> stringResource(R.string.chat_place_archive)
+    KeryxDest.Missions -> stringResource(R.string.chat_place_missions)
+    KeryxDest.Projects -> stringResource(R.string.chat_place_projects)
+    KeryxDest.Shipyard -> stringResource(R.string.chat_place_shipyard)
+    KeryxDest.Runs -> stringResource(R.string.chat_place_runs)
+    KeryxDest.Bots -> stringResource(R.string.chat_place_bots)
+    KeryxDest.Gateway -> stringResource(R.string.chat_place_gateway)
+    KeryxDest.Settings -> stringResource(R.string.chat_place_settings)
+    KeryxDest.TapIn -> stringResource(R.string.settings_back)
+    is KeryxDest.Group -> dest.name
+    is KeryxDest.Artifact -> dest.name
+}
+
+/**
+ * The way back (3.0 continuity): a place that handed you this chat stays one tap away, as a small
+ * pill under the bar wearing the place's name. Tapping it, or back, raises the place as it was.
+ * The DemoStrip's grammar (a 10% wash, an accent hairline) so the two never look like rivals.
+ */
+@Composable
+private fun ReturnChip(dest: KeryxDest, onReturn: () -> Unit) {
+    val accent = MaterialTheme.colorScheme.primary
+    val page = MaterialTheme.colorScheme.background
+    val ink = chat.keryx.app.theme.KeryxInk.readable(
+        chat.keryx.app.presentation.ui.components.keryxAccentInk(),
+        listOf(accent.copy(alpha = 0.10f).compositeOver(page), accent.copy(alpha = 0.32f).compositeOver(page)),
+    )
+    val name = placeName(dest)
+    val label = stringResource(R.string.chat_return_to, name)
+    Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp), contentAlignment = Alignment.CenterStart) {
+        androidx.compose.material3.Surface(
+            onClick = onReturn,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
+            color = accent.copy(alpha = 0.10f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = 0.35f)),
+            modifier = Modifier.semantics { contentDescription = label },
+        ) {
+            Row(
+                Modifier.padding(start = 8.dp, end = 12.dp, top = 4.dp, bottom = 4.dp).heightIn(min = 24.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = null,
+                    tint = ink,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(name, color = ink, fontSize = KeryxType.caption, fontWeight = FontWeight.SemiBold, maxLines = 1,
+                    overflow = TextOverflow.Ellipsis)
             }
         }
     }

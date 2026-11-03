@@ -18,6 +18,7 @@
     <string name="chat_place_archive">Arsip</string>
     <string name="chat_place_gateway">Gateway</string>
     <string name="chat_place_settings">Setelan</string>
+    <string name="chat_return_to">Kembali ke %1$s</string>
     <string name="chat_drawer_places">Tempat</string>
     <string name="chat_drawer_commands">Perintah</string>
     <string name="chat_drawer_no_matches">Tidak ada yang cocok</string>

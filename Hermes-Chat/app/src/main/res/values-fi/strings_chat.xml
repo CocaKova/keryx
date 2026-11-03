@@ -18,6 +18,7 @@
     <string name="chat_place_archive">Arkisto</string>
     <string name="chat_place_gateway">Yhdyskäytävä</string>
     <string name="chat_place_settings">Asetukset</string>
+    <string name="chat_return_to">Takaisin: %1$s</string>
     <string name="chat_drawer_places">Paikat</string>
     <string name="chat_drawer_commands">Komennot</string>
     <string name="chat_drawer_no_matches">Ei osumia</string>
