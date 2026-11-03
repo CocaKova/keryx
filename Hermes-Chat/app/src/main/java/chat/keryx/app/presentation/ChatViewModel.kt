@@ -1088,7 +1088,31 @@ class ChatViewModel(
         // The typing indicator is the authoritative "busy" signal; this collector was defined but
         // never started, which is why the banner still died during long silent tool calls.
         observeTyping()
+        discoverLinkPort()
         models.refreshReasoningCaps()
+    }
+
+    /**
+     * keryx-stream serves on :8646, the stock API server on :8642. A derived Link (nothing
+     * typed) used to assume :8642, so a plugin user who skipped the README never met Runs'
+     * probe or the Shipyard (11-03). Ask the plugin's unauthenticated /keryx/health on the
+     * same host; whichever answers becomes the derived port. A typed URL is never touched.
+     */
+    private fun discoverLinkPort() {
+        if (!settingsRepository.linkUrlIsDerived) return
+        val host = runCatching { java.net.URI(_gatewayUrl.value.trim()).host }.getOrNull()
+        if (host.isNullOrBlank()) return
+        viewModelScope.launch {
+            val plugin = chat.keryx.app.data.remote.HermesStreamClient(
+                "http://$host:8646", _gatewayApiKey.value, settingsRepository.allowInsecure,
+            ).linkHealth().isSuccess
+            val want = if (plugin) 8646 else 8642
+            if (want != settingsRepository.linkDefaultPort && settingsRepository.linkUrlIsDerived) {
+                settingsRepository.linkDefaultPort = want
+                _gatewayUrl.value = settingsRepository.gatewayUrl
+                models.refreshReasoningCaps()
+            }
+        }
     }
 
     private fun workStateMessage(messages: List<Message>, latest: Message): Message =
@@ -2067,6 +2091,7 @@ class ChatViewModel(
         _gatewayApiKey.value = settingsRepository.gatewayApiKey
         _sideChannelEnabled.value = settingsRepository.sideChannelEnabled
         _linkHealth.value = if (_gatewayUrl.value.isBlank()) LinkHealth.OFF else LinkHealth.UNKNOWN
+        discoverLinkPort()
     }
 
     fun setGatewayApiKey(key: String) {

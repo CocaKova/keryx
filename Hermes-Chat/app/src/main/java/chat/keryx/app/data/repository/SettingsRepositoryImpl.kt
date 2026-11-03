@@ -490,6 +490,13 @@ class SettingsRepositoryImpl(
         return ""
     }
 
+    override var linkDefaultPort: Int
+        get() = prefs.getInt(ledgerKey("link_default_port"), 8642)
+        set(value) = prefs.edit().putInt(ledgerKey("link_default_port"), value).apply()
+
+    override val linkUrlIsDerived: Boolean
+        get() = (prefs.getString(ledgerKey("gateway_url"), "") ?: "").isBlank()
+
     override var sideChannelEnabled: Boolean
         get() = prefs.getBoolean("side_channel_enabled", true)
         set(value) = prefs.edit().putBoolean("side_channel_enabled", value).apply()
@@ -609,6 +616,6 @@ class SettingsRepositoryImpl(
                 .substringBefore('/')
                 .substringBefore(':')
                 .trim()
-        return if (host.isBlank()) "" else "http://$host:8642"
+        return if (host.isBlank()) "" else "http://$host:$linkDefaultPort"
     }
 }

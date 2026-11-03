@@ -73,6 +73,13 @@ interface SettingsRepository {
     // --- Hermes side-channel streaming (tier-1) ---
     /** Base URL of the Hermes gateway API server (e.g. http://your-gateway-host:8642). Blank = disabled. */
     var gatewayUrl: String
+
+    /** Port of the DERIVED Hermes Link default (no URL typed): 8642 is the stock API server,
+     *  8646 keryx-stream's own server. Discovered per gateway; never applied to a typed URL. */
+    var linkDefaultPort: Int
+
+    /** True while [gatewayUrl] is the derived default, i.e. nothing was typed by hand. */
+    val linkUrlIsDerived: Boolean
     /** Bearer key for the gateway API server (API_SERVER_KEY). */
     var gatewayApiKey: String
 

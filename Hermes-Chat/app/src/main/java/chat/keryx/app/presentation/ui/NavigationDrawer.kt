@@ -262,6 +262,10 @@ fun NavigationDrawerContent(
     val caps by viewModel.hub.reasoningCaps.collectAsState()
     val hasProjects by viewModel.projects.hasProjects.collectAsState()
     val cronBoard by viewModel.hub.cron.collectAsState()
+    // Runs reads stock routes only (/api/jobs + /api/sessions?source=cron), so its door opens
+    // on a stock API server too: keryx-stream's capabilities probe OR a board that loaded.
+    // Gating on the probe alone hid Runs from every Hermes without the plugin (11-03).
+    val hasRuns = caps != null || cronBoard.data != null
     val botsUnread by viewModel.bots.unreadCount.collectAsState()
     val direct = viewModel.transportIsDirect
 
@@ -351,10 +355,10 @@ fun NavigationDrawerContent(
                             // pins and read marks set from Desktop, a cron continuation, a
                             // compaction's new id — the drawer opening is the moment to know.
                             viewModel.refreshRoster()
-                            // The Runs door's badge: the board is otherwise only fetched while
-                            // the Runs place polls, so a drawer opened cold would show no count
-                            // even with a dozen reports waiting. Same gate as the door itself.
-                            if (viewModel.hub.reasoningCaps.value != null) viewModel.hub.refreshCron()
+                            // The Runs door's badge AND its stock-gateway probe: the board is
+                            // otherwise only fetched while the Runs place polls, so a drawer opened
+                            // cold would show no count (and, without keryx-stream, no door at all).
+                            if (viewModel.gatewayUrl.value.isNotBlank()) viewModel.hub.refreshCron()
                             // The palette's commands (2.10) — rate-limited inside, so this is
                             // one fetch a minute at most.
                             viewModel.refreshCommands()
@@ -690,7 +694,7 @@ fun NavigationDrawerContent(
                     val q = query.trim()
                     val places = buildList {
                         add(Triple(placeMissions, KeryxGlyphs.Board, chat.keryx.app.presentation.ui.nav.KeryxDest.Missions))
-                        if (caps != null) add(Triple(placeRuns, KeryxGlyphs.Watch, chat.keryx.app.presentation.ui.nav.KeryxDest.Runs))
+                        if (hasRuns) add(Triple(placeRuns, KeryxGlyphs.Watch, chat.keryx.app.presentation.ui.nav.KeryxDest.Runs))
                         if (direct) add(Triple(placeBots, KeryxGlyphs.Robot, chat.keryx.app.presentation.ui.nav.KeryxDest.Bots))
                         if (hasProjects) add(Triple(placeProjects, KeryxGlyphs.Folder, chat.keryx.app.presentation.ui.nav.KeryxDest.Projects))
                         if (caps?.git == true) add(Triple(placeShipyard, KeryxGlyphs.GitBranch, chat.keryx.app.presentation.ui.nav.KeryxDest.Shipyard))
@@ -930,11 +934,11 @@ fun NavigationDrawerContent(
                 ) {
                     onOpenSpace(chat.keryx.app.presentation.ui.nav.KeryxDest.Missions)
                 }
-                // Scheduled work reads at floor level. Gated the cheap way: the capabilities
-                // probe answering means Hermes Link is alive, which is the same wire the runs
-                // ride. Badged with what has landed since you last looked — the same ledger
-                // the Runs place's arrivals rail reads, so door and rail never disagree.
-                if (caps != null) DrawerDoor(
+                // Scheduled work reads at floor level. Gated on [hasRuns]: keryx-stream's probe
+                // or the stock board having loaded over the same Link. Badged with what has
+                // landed since you last looked — the same ledger the Runs place's arrivals
+                // rail reads, so door and rail never disagree.
+                if (hasRuns) DrawerDoor(
                     KeryxGlyphs.Watch, stringResource(R.string.chat_place_runs), Modifier.weight(1f).tourTarget(KeryxTour.RUNS),
                     badge = cronBoard.data?.unread?.total ?: 0,
                 ) {
