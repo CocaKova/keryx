@@ -40,6 +40,12 @@ Keryx speaks 31 languages, and the agent gets a page of its own.
 - The context ring shows its last reading at once when a chat opens, instead of waiting for the
   gateway to recount.
 
+**Fixes**
+- The agent's name comes from its Hermes profile (`hermes profile rename`), then the profile's
+  id, then the name you gave the gateway, instead of the first heading of its SOUL file.
+- What the agent said just before a tool call no longer shows twice in a running turn, once above
+  the call and again below it.
+
 ## 3.0.0 · beta 3, versionCode 142 (pre-release)
 
 The herald release. A stranger can try Keryx before owning a gateway, pair one with a QR code,
