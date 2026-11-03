@@ -261,6 +261,11 @@
     <string name="work_lane_blocked">Bị chặn</string>
     <string name="work_lane_review">Xem xét</string>
     <string name="work_lane_done">Xong</string>
+    <string name="work_board_switch">Đổi bảng</string>
+    <string name="work_board_name">Tên bảng</string>
+    <string name="work_board_new">Bảng mới</string>
+    <string name="work_boards">Bảng</string>
+    <string name="work_lane_empty">Chưa có gì ở đây</string>
     <string name="work_block_review">chờ bạn xem xét</string>
     <string name="work_block_needs_input">cần bạn nhập thông tin</string>
     <string name="work_block_capability">cần thứ nó không làm được</string>

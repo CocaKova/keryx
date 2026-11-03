@@ -285,6 +285,11 @@
     <string name="work_lane_blocked">Zablokováno</string>
     <string name="work_lane_review">Ke kontrole</string>
     <string name="work_lane_done">Hotovo</string>
+    <string name="work_board_switch">Přepnout tabuli</string>
+    <string name="work_board_name">Název tabule</string>
+    <string name="work_board_new">Nová tabule</string>
+    <string name="work_boards">Tabule</string>
+    <string name="work_lane_empty">Nic tu není</string>
     <string name="work_block_review">čeká na tvou kontrolu</string>
     <string name="work_block_needs_input">potřebuje tvůj vstup</string>
     <string name="work_block_capability">potřebuje něco, co neumí</string>

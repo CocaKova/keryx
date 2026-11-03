@@ -261,6 +261,11 @@
     <string name="work_lane_blocked">Terhambat</string>
     <string name="work_lane_review">Tinjauan</string>
     <string name="work_lane_done">Selesai</string>
+    <string name="work_board_switch">Ganti papan</string>
+    <string name="work_board_name">Nama papan</string>
+    <string name="work_board_new">Papan baru</string>
+    <string name="work_boards">Papan</string>
+    <string name="work_lane_empty">Belum ada apa-apa</string>
     <string name="work_block_review">menunggu tinjauanmu</string>
     <string name="work_block_needs_input">butuh masukanmu</string>
     <string name="work_block_capability">butuh sesuatu yang tidak bisa dilakukannya</string>

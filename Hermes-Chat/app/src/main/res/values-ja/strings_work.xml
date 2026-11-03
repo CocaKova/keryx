@@ -261,6 +261,11 @@
     <string name="work_lane_blocked">ブロック中</string>
     <string name="work_lane_review">レビュー</string>
     <string name="work_lane_done">完了</string>
+    <string name="work_board_switch">ボードを切り替える</string>
+    <string name="work_board_name">ボード名</string>
+    <string name="work_board_new">新しいボード</string>
+    <string name="work_boards">ボード</string>
+    <string name="work_lane_empty">ここには何もありません</string>
     <string name="work_block_review">あなたのレビュー待ち</string>
     <string name="work_block_needs_input">あなたの入力が必要</string>
     <string name="work_block_capability">できないことが必要</string>

@@ -15,6 +15,15 @@ interface SettingsRepository {
     /** Drawer shelves the user folded (RosterGroup names). A fold is a preference, not a state:
      *  it survives the process so "Older" stays put away until you open it again. */
     var collapsedRosterGroups: Set<String>
+
+    /**
+     * The Missions board this install looks at on this gateway (3.0), by board slug; null = the
+     * gateway's own current board. Keryx's choice only: the gateway's current board, which the CLI
+     * and the desktop follow, is never moved by it. Per gateway, like every ledger.
+     */
+    var missionBoard: String?
+        get() = null
+        set(@Suppress("UNUSED_PARAMETER") value) {}
     var biometricLockEnabled: Boolean
     var e2eeEnabled: Boolean
     var hapticsEnabled: Boolean

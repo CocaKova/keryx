@@ -261,6 +261,11 @@
     <string name="work_lane_blocked">受阻</string>
     <string name="work_lane_review">待審查</string>
     <string name="work_lane_done">完成</string>
+    <string name="work_board_switch">切換看板</string>
+    <string name="work_board_name">看板名稱</string>
+    <string name="work_board_new">新增看板</string>
+    <string name="work_boards">看板</string>
+    <string name="work_lane_empty">這裡還沒有內容</string>
     <string name="work_block_review">等你審查</string>
     <string name="work_block_needs_input">需要你的意見</string>
     <string name="work_block_capability">需要它做不到的事</string>

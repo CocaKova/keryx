@@ -423,6 +423,8 @@ class ChatViewModel(
         return chat.keryx.app.data.remote.HermesStreamClient(
             url, _gatewayApiKey.value, settingsRepository.allowInsecure,
             snapshotStore = settingsRepository::putHubSnapshot,
+            // The Missions board this install chose on this gateway (3.0).
+            kanbanBoardSlug = { settingsRepository.missionBoard },
         )
     }
 
@@ -614,6 +616,8 @@ class ChatViewModel(
 
     /** Edit a mission after it was made (2.16): words, priority, owner. */
     val missionEdit = MissionEditDelegate(deps, missions) { direct?.restClient }
+    /** Missions boards (3.0): which boards there are, which one this install looks at. */
+    val missionBoards = MissionBoardsDelegate(deps, missions) { direct?.restClient }
     val console = ConsoleDelegate(deps)
     val voice = VoiceDelegate(deps)
     val archive = ArchiveDelegate(

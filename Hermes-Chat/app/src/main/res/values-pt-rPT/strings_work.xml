@@ -269,6 +269,11 @@
     <string name="work_lane_blocked">Bloqueadas</string>
     <string name="work_lane_review">Revisão</string>
     <string name="work_lane_done">Concluídas</string>
+    <string name="work_board_switch">Mudar de quadro</string>
+    <string name="work_board_name">Nome do quadro</string>
+    <string name="work_board_new">Novo quadro</string>
+    <string name="work_boards">Quadros</string>
+    <string name="work_lane_empty">Nada aqui</string>
     <string name="work_block_review">à espera da tua revisão</string>
     <string name="work_block_needs_input">precisa da tua resposta</string>
     <string name="work_block_capability">precisa de algo que não consegue fazer</string>

@@ -269,6 +269,11 @@
     <string name="work_lane_blocked">Blokkert</string>
     <string name="work_lane_review">Gjennomgang</string>
     <string name="work_lane_done">Ferdig</string>
+    <string name="work_board_switch">Bytt tavle</string>
+    <string name="work_board_name">Navn på tavlen</string>
+    <string name="work_board_new">Ny tavle</string>
+    <string name="work_boards">Tavler</string>
+    <string name="work_lane_empty">Ingenting her</string>
     <string name="work_block_review">venter på gjennomgangen din</string>
     <string name="work_block_needs_input">trenger innspill fra deg</string>
     <string name="work_block_capability">trenger noe den ikke kan</string>

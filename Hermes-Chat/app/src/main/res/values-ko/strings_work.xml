@@ -261,6 +261,11 @@
     <string name="work_lane_blocked">막힘</string>
     <string name="work_lane_review">검토</string>
     <string name="work_lane_done">완료</string>
+    <string name="work_board_switch">보드 전환</string>
+    <string name="work_board_name">보드 이름</string>
+    <string name="work_board_new">새 보드</string>
+    <string name="work_boards">보드</string>
+    <string name="work_lane_empty">여기에는 아무것도 없습니다</string>
     <string name="work_block_review">내 검토 대기 중</string>
     <string name="work_block_needs_input">내 입력 필요</string>
     <string name="work_block_capability">할 수 없는 것이 필요함</string>

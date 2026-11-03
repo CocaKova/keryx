@@ -301,6 +301,11 @@
     <string name="work_lane_blocked">محظورة</string>
     <string name="work_lane_review">المراجعة</string>
     <string name="work_lane_done">منجزة</string>
+    <string name="work_board_switch">تبديل اللوحة</string>
+    <string name="work_board_name">اسم اللوحة</string>
+    <string name="work_board_new">لوحة جديدة</string>
+    <string name="work_boards">اللوحات</string>
+    <string name="work_lane_empty">لا شيء هنا</string>
     <string name="work_block_review">بانتظار مراجعتك</string>
     <string name="work_block_needs_input">تحتاج إلى مدخلاتك</string>
     <string name="work_block_capability">تحتاج إلى شيء لا تستطيع فعله</string>

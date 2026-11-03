@@ -258,6 +258,11 @@
     <string name="work_lane_blocked">Geblokkeerd</string>
     <string name="work_lane_review">Review</string>
     <string name="work_lane_done">Klaar</string>
+    <string name="work_board_switch">Ander bord kiezen</string>
+    <string name="work_board_name">Naam van het bord</string>
+    <string name="work_board_new">Nieuw bord</string>
+    <string name="work_boards">Borden</string>
+    <string name="work_lane_empty">Niets hier</string>
     <string name="work_block_review">wacht op je review</string>
     <string name="work_block_needs_input">heeft je input nodig</string>
     <string name="work_block_capability">heeft iets nodig wat hij niet kan</string>

@@ -285,6 +285,11 @@
     <string name="work_lane_blocked">Zablokowane</string>
     <string name="work_lane_review">Do przeglądu</string>
     <string name="work_lane_done">Gotowe</string>
+    <string name="work_board_switch">Zmień tablicę</string>
+    <string name="work_board_name">Nazwa tablicy</string>
+    <string name="work_board_new">Nowa tablica</string>
+    <string name="work_boards">Tablice</string>
+    <string name="work_lane_empty">Nic tu nie ma</string>
     <string name="work_block_review">czeka na twój przegląd</string>
     <string name="work_block_needs_input">potrzebuje twojej odpowiedzi</string>
     <string name="work_block_capability">potrzebuje czegoś, czego nie potrafi</string>

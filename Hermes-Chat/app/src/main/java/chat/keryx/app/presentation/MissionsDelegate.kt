@@ -79,6 +79,16 @@ class MissionsDelegate(
         null
     }
 
+    /**
+     * Another board was chosen (3.0): the old board's cards must not stand in for the new one's
+     * while it loads, and the needs-you orb follows the board on screen.
+     */
+    fun boardSwitched() {
+        _kanbanBoard.value = null
+        _kanbanError.value = null
+        refreshKanban()
+    }
+
     fun refreshKanban() {
         val client = client() ?: run {
             if (demo) _kanbanBoard.value = chat.keryx.app.transport.demo.DemoBoard.board(System.currentTimeMillis())

@@ -64,7 +64,8 @@ class MissionAlertsWorker(
                     val settings = if (id.isBlank()) root else root.forGateway(id)
                     val url = settings.gatewayUrl.trim()
                     if (url.isBlank()) return@async null
-                    val client = HermesStreamClient(url, settings.gatewayApiKey, root.allowInsecure)
+                    // The board this install looks at on that gateway (3.0), and its own cursor.
+                    val client = HermesStreamClient(url, settings.gatewayApiKey, root.allowInsecure, kanbanBoardSlug = { settings.missionBoard })
                     checkAndNotify(
                         applicationContext, client, settings,
                         gatewayId = id,

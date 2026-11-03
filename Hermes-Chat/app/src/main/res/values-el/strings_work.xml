@@ -269,6 +269,11 @@
     <string name="work_lane_blocked">Μπλοκαρισμένες</string>
     <string name="work_lane_review">Έλεγχος</string>
     <string name="work_lane_done">Ολοκληρωμένες</string>
+    <string name="work_board_switch">Αλλαγή πίνακα</string>
+    <string name="work_board_name">Όνομα πίνακα</string>
+    <string name="work_board_new">Νέος πίνακας</string>
+    <string name="work_boards">Πίνακες</string>
+    <string name="work_lane_empty">Τίποτα εδώ</string>
     <string name="work_block_review">περιμένει τον έλεγχό σας</string>
     <string name="work_block_needs_input">χρειάζεται τη συμβολή σας</string>
     <string name="work_block_capability">χρειάζεται κάτι που δεν μπορεί να κάνει</string>

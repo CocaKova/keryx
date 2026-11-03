@@ -258,6 +258,11 @@
     <string name="work_lane_blocked">আটকে আছে</string>
     <string name="work_lane_review">রিভিউ</string>
     <string name="work_lane_done">সম্পূর্ণ</string>
+    <string name="work_board_switch">বোর্ড বদলান</string>
+    <string name="work_board_name">বোর্ডের নাম</string>
+    <string name="work_board_new">নতুন বোর্ড</string>
+    <string name="work_boards">বোর্ড</string>
+    <string name="work_lane_empty">এখানে কিছু নেই</string>
     <string name="work_block_review">আপনার রিভিউয়ের অপেক্ষায়</string>
     <string name="work_block_needs_input">আপনার ইনপুট দরকার</string>
     <string name="work_block_capability">এমন কিছু দরকার যা এটি পারে না</string>

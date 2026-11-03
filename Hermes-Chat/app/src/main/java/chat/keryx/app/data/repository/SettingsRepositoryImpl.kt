@@ -243,6 +243,12 @@ class SettingsRepositoryImpl(
         get() = prefs.getStringSet("collapsed_roster_groups", emptySet())?.toSet() ?: emptySet()
         set(value) = prefs.edit().putStringSet("collapsed_roster_groups", value).apply()
 
+    override var missionBoard: String?
+        get() = prefs.getString(ledgerKey("mission_board"), null)?.takeIf { it.isNotBlank() }
+        set(value) = prefs.edit().apply {
+            if (value.isNullOrBlank()) remove(ledgerKey("mission_board")) else putString(ledgerKey("mission_board"), value)
+        }.apply()
+
     override var biometricLockEnabled: Boolean
         get() = prefs.getBoolean("biometric_lock", false)
         set(value) = prefs.edit().putBoolean("biometric_lock", value).apply()
@@ -561,9 +567,15 @@ class SettingsRepositoryImpl(
         get() = prefs.getBoolean("mission_alerts", false)
         set(value) = prefs.edit().putBoolean("mission_alerts", value).apply()
 
+    // One cursor per board (3.0): event numbers are a board's own, so a cursor carried across
+    // a board switch would skip that board's news or ring old news again. The gateway's current
+    // board keeps the pre-3.0 key, so an upgrade resumes where it was.
+    private fun cursorKey(): String =
+        ledgerKey("mission_events_cursor" + (missionBoard?.let { "@$it" } ?: ""))
+
     override var missionEventsCursor: Long
-        get() = prefs.getLong(ledgerKey("mission_events_cursor"), -1L)
-        set(value) = prefs.edit().putLong(ledgerKey("mission_events_cursor"), value).apply()
+        get() = prefs.getLong(cursorKey(), -1L)
+        set(value) = prefs.edit().putLong(cursorKey(), value).apply()
 
     // Hub snapshots live in their own prefs file: they're whole gateway responses (the sessions
     // list runs tens of KB) and shouldn't bloat every hermes_settings load.

@@ -269,6 +269,11 @@
     <string name="work_lane_blocked">Elakadt</string>
     <string name="work_lane_review">Átnézés</string>
     <string name="work_lane_done">Kész</string>
+    <string name="work_board_switch">Tábla váltása</string>
+    <string name="work_board_name">A tábla neve</string>
+    <string name="work_board_new">Új tábla</string>
+    <string name="work_boards">Táblák</string>
+    <string name="work_lane_empty">Itt nincs semmi</string>
     <string name="work_block_review">az átnézésedre vár</string>
     <string name="work_block_needs_input">a válaszodra vár</string>
     <string name="work_block_capability">olyasmi kell neki, amire nem képes</string>

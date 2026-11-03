@@ -261,6 +261,11 @@
     <string name="work_lane_blocked">ติดขัด</string>
     <string name="work_lane_review">ตรวจทาน</string>
     <string name="work_lane_done">เสร็จ</string>
+    <string name="work_board_switch">สลับบอร์ด</string>
+    <string name="work_board_name">ชื่อบอร์ด</string>
+    <string name="work_board_new">บอร์ดใหม่</string>
+    <string name="work_boards">บอร์ด</string>
+    <string name="work_lane_empty">ยังไม่มีอะไรที่นี่</string>
     <string name="work_block_review">รอคุณตรวจทาน</string>
     <string name="work_block_needs_input">ต้องการข้อมูลจากคุณ</string>
     <string name="work_block_capability">ต้องการสิ่งที่มันทำไม่ได้</string>

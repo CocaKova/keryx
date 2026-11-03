@@ -269,6 +269,11 @@
     <string name="work_lane_blocked">Bloccate</string>
     <string name="work_lane_review">Revisione</string>
     <string name="work_lane_done">Fatte</string>
+    <string name="work_board_switch">Cambia bacheca</string>
+    <string name="work_board_name">Nome della bacheca</string>
+    <string name="work_board_new">Nuova bacheca</string>
+    <string name="work_boards">Bacheche</string>
+    <string name="work_lane_empty">Niente qui</string>
     <string name="work_block_review">aspetta la tua revisione</string>
     <string name="work_block_needs_input">serve un tuo input</string>
     <string name="work_block_capability">serve qualcosa che non sa fare</string>

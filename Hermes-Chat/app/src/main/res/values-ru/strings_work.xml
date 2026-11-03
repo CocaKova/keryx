@@ -274,6 +274,11 @@
     <string name="work_lane_blocked">Заблокированы</string>
     <string name="work_lane_review">Проверка</string>
     <string name="work_lane_done">Готово</string>
+    <string name="work_board_switch">Сменить доску</string>
+    <string name="work_board_name">Название доски</string>
+    <string name="work_board_new">Новая доска</string>
+    <string name="work_boards">Доски</string>
+    <string name="work_lane_empty">Здесь пусто</string>
     <string name="work_block_review">ждёт вашей проверки</string>
     <string name="work_block_needs_input">нужен ваш ответ</string>
     <string name="work_block_capability">нужно то, чего агент не умеет</string>

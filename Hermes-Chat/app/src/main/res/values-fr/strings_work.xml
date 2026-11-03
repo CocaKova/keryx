@@ -266,6 +266,11 @@
     <string name="work_lane_blocked">Bloquées</string>
     <string name="work_lane_review">Relecture</string>
     <string name="work_lane_done">Terminées</string>
+    <string name="work_board_switch">Changer de tableau</string>
+    <string name="work_board_name">Nom du tableau</string>
+    <string name="work_board_new">Nouveau tableau</string>
+    <string name="work_boards">Tableaux</string>
+    <string name="work_lane_empty">Rien ici</string>
     <string name="work_block_review">attend votre relecture</string>
     <string name="work_block_needs_input">attend votre réponse</string>
     <string name="work_block_capability">demande une chose impossible pour lui</string>

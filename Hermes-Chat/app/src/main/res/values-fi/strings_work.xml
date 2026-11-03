@@ -269,6 +269,11 @@
     <string name="work_lane_blocked">Estetty</string>
     <string name="work_lane_review">Tarkistus</string>
     <string name="work_lane_done">Valmis</string>
+    <string name="work_board_switch">Vaihda taulua</string>
+    <string name="work_board_name">Taulun nimi</string>
+    <string name="work_board_new">Uusi taulu</string>
+    <string name="work_boards">Taulut</string>
+    <string name="work_lane_empty">Täällä ei ole mitään</string>
     <string name="work_block_review">odottaa tarkistustasi</string>
     <string name="work_block_needs_input">tarvitsee tietojasi</string>
     <string name="work_block_capability">tarvitsee jotain, mihin se ei pysty</string>

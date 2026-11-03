@@ -269,6 +269,11 @@
     <string name="work_lane_blocked">Blockiert</string>
     <string name="work_lane_review">Prüfung</string>
     <string name="work_lane_done">Erledigt</string>
+    <string name="work_board_switch">Board wechseln</string>
+    <string name="work_board_name">Name des Boards</string>
+    <string name="work_board_new">Neues Board</string>
+    <string name="work_boards">Boards</string>
+    <string name="work_lane_empty">Hier ist nichts</string>
     <string name="work_block_review">wartet auf deine Prüfung</string>
     <string name="work_block_needs_input">braucht deine Eingabe</string>
     <string name="work_block_capability">braucht etwas, das es nicht kann</string>

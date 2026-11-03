@@ -319,6 +319,11 @@
     <!-- Lane: work waiting for the owner to review it. -->
     <string name="work_lane_review">Review</string>
     <string name="work_lane_done">Done</string>
+    <string name="work_board_switch">Switch board</string>
+    <string name="work_board_name">Board name</string>
+    <string name="work_board_new">New board</string>
+    <string name="work_boards">Boards</string>
+    <string name="work_lane_empty">Nothing here</string>
     <!-- Why a card is held, as a short status pill. -->
     <string name="work_block_review">waiting on your review</string>
     <string name="work_block_needs_input">needs your input</string>

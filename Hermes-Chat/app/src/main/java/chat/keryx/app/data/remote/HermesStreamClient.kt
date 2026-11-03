@@ -51,6 +51,8 @@ class HermesStreamClient(
     /** When set, every successful GET's raw body is handed here keyed by path — the Agent Hub's
      *  offline cache. Kept as a plain hook so this client stays free of Android storage types. */
     private val snapshotStore: ((path: String, json: String) -> Unit)? = null,
+    /** The kanban board every `/keryx/kanban/…` call speaks to (3.0); null = the gateway's current. */
+    private val kanbanBoardSlug: () -> String? = { null },
 ) {
 
     sealed interface Event {
@@ -718,7 +720,14 @@ class HermesStreamClient(
         path: String,
         post: kotlinx.serialization.json.JsonObject? = null,
     ): kotlinx.serialization.json.JsonObject =
-        apiCall(path, method = if (post != null) "POST" else "GET", body = post)
+        apiCall(onBoard(path), method = if (post != null) "POST" else "GET", body = post)
+
+    /** [path] aimed at the chosen board: every keryx-stream kanban route reads `?board=`. */
+    private fun onBoard(path: String): String {
+        val board = kanbanBoardSlug()?.takeIf { it.isNotBlank() } ?: return path
+        val sep = if ('?' in path) '&' else '?'
+        return path + sep + "board=" + java.net.URLEncoder.encode(board, "UTF-8")
+    }
 
     /**
      * One authenticated JSON round-trip to the gateway. The gateway speaks two error dialects —

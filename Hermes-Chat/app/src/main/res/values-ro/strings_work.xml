@@ -277,6 +277,11 @@
     <string name="work_lane_blocked">Blocate</string>
     <string name="work_lane_review">Revizuire</string>
     <string name="work_lane_done">Finalizate</string>
+    <string name="work_board_switch">Schimbă panoul</string>
+    <string name="work_board_name">Numele panoului</string>
+    <string name="work_board_new">Panou nou</string>
+    <string name="work_boards">Panouri</string>
+    <string name="work_lane_empty">Nimic aici</string>
     <string name="work_block_review">așteaptă revizuirea ta</string>
     <string name="work_block_needs_input">are nevoie de răspunsul tău</string>
     <string name="work_block_capability">are nevoie de ceva ce nu poate face</string>

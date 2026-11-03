@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -118,6 +119,33 @@ internal fun missionSections(tasks: Map<String, List<KanbanTask>>): List<Mission
     }
 }
 
+/** Left to right, the way a card travels (3.0 board): the lanes a board always shows first. */
+private val BOARD_LANES = listOf("triage", "todo", "scheduled", "ready", "running", "review", "blocked", "done")
+
+/** Lanes a board keeps even when empty, so its shape never jumps; the rest show when used. */
+private val STANDING_LANES = setOf("triage", "todo", "ready", "running", "done")
+
+/**
+ * The board's lanes (3.0): "Needs you" first when anything does, then the travel order, then
+ * any status the app doesn't know. With [filtering] on, only lanes holding a match.
+ */
+internal fun boardLanes(sections: List<MissionSection>, filtering: Boolean): List<MissionSection> {
+    if (filtering) return sections
+    val byKey = sections.associateBy { it.key }
+    val known = BOARD_LANES.toSet() + NEEDS_YOU
+    return buildList {
+        byKey[NEEDS_YOU]?.let { add(it) }
+        BOARD_LANES.forEach { key ->
+            val lane = byKey[key]
+            when {
+                lane != null -> add(lane)
+                key in STANDING_LANES -> add(MissionSection(key, SECTION_ORDER.firstOrNull { it.first == key }?.second ?: key, emptyList()))
+            }
+        }
+        sections.filter { it.key !in known }.forEach { add(it) }
+    }
+}
+
 /** The plain words for a block kind, as the card and the sheet say it. */
 internal fun blockKindLabel(kind: String, status: String): String = when {
     status == "review" -> "waiting on your review"
@@ -170,18 +198,6 @@ internal fun runLength(seconds: Long?): String? = when {
     seconds < 60 -> "${seconds}s"
     seconds < 3600 -> "${seconds / 60}m"
     else -> "${seconds / 3600}h ${"%02d".format((seconds % 3600) / 60)}m"
-}
-
-/** LazyColumn start index of each section's header, given (status, cardCount) in render order:
- *  one header item + N card items per section. Pure so the lane-jump math is unit-testable. */
-internal fun sectionStartIndices(sections: List<Pair<String, Int>>): Map<String, Int> {
-    var index = 0
-    val starts = LinkedHashMap<String, Int>()
-    for ((status, count) in sections) {
-        starts[status] = index
-        index += 1 + count
-    }
-    return starts
 }
 
 /**
@@ -342,13 +358,29 @@ fun MissionsScreen(
         if (liveSelection(selected, sections).isEmpty()) exitSelection()
     }
 
+    // Boards (3.0): which one is on screen, and the sheet that changes it or makes another.
+    val boards by viewModel.missionBoards.boards.collectAsState()
+    val chosenBoard by viewModel.missionBoards.chosen.collectAsState()
+    var boardsOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val canSwitchBoards = viewModel.transportIsDirect && !viewModel.isDemo
+    LaunchedEffect(canSwitchBoards) { if (canSwitchBoards) viewModel.missionBoards.refresh() }
+    val boardName = viewModel.missionBoards.shownName(boards, chosenBoard)
+
     KeryxSpace(
         title = stringResource(R.string.work_missions),
         hint = chat.keryx.app.presentation.tour.KeryxHints.MISSIONS,
         onClose = onDismissRequest,
         standalone = false,
         liveSlot = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            val switchLabel = stringResource(R.string.work_board_switch)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = if (canSwitchBoards) Modifier
+                    .clip(RoundedCornerShape(KeryxRadius.chip))
+                    .clickable(onClickLabel = switchLabel) { boardsOpen = true }
+                    .padding(end = 4.dp)
+                else Modifier,
+            ) {
                 KeryxBreathingDot(
                     color = if (runningCount > 0) MaterialTheme.colorScheme.primary else KeryxStatus.idle,
                     alive = runningCount > 0,
@@ -359,13 +391,19 @@ fun MissionsScreen(
                         needsCount > 0 -> pluralStringResource(R.plurals.work_missions_need_you, needsCount, needsCount) +
                             (if (runningCount > 0) " · " + stringResource(R.string.work_missions_n_running, runningCount) else "")
                         runningCount > 0 -> stringResource(R.string.work_missions_n_running, runningCount) +
-                            (board?.board?.let { " · $it" } ?: "")
-                        board?.board != null -> stringResource(R.string.work_missions_board_named, board?.board.orEmpty())
+                            ((boardName ?: board?.board)?.let { " · $it" } ?: "")
+                        (boardName ?: board?.board) != null -> stringResource(R.string.work_missions_board_named, boardName ?: board?.board.orEmpty())
                         else -> stringResource(R.string.work_missions_board_default)
                     },
                     fontSize = KeryxType.micro,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
+                )
+                if (canSwitchBoards) Icon(
+                    KeryxGlyphs.ChevronDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 2.dp).size(14.dp),
                 )
             }
         },
@@ -404,9 +442,11 @@ fun MissionsScreen(
             }
         },
     ) {
-        val listState = rememberLazyListState()
         val scope = rememberCoroutineScope()
-        val starts = sectionStartIndices(sections.map { it.key to it.cards.size })
+        // The board (3.0): lanes side by side, the next one peeking in at the edge. A filter
+        // shows only the lanes with something in them; otherwise the board keeps its shape.
+        val lanes = boardLanes(sections, filtering)
+        val pager = androidx.compose.foundation.pager.rememberPagerState { lanes.size }
 
         // The selection bar replaces the lane chips while picking, and shows a running bulk
         // archive's progress either way ("Clear done" archives without entering picking).
@@ -465,26 +505,27 @@ fun MissionsScreen(
             }
         }
 
-        // Lane-jump chips: one per non-empty section, tap scrolls to that lane's header.
-        if (sections.size > 1 && !selecting) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
+        // The lane bar: one chip per lane, the lane on screen lit; a tap swings to it.
+        if (lanes.size > 1 && !selecting && sections.isNotEmpty()) {
+            // The lit chip stays in view as the lanes swing under it.
+            val chipRow = rememberLazyListState()
+            LaunchedEffect(pager.currentPage) { chipRow.animateScrollToItem((pager.currentPage - 1).coerceAtLeast(0)) }
+            androidx.compose.foundation.lazy.LazyRow(
+                state = chipRow,
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                sections.forEach { section ->
+                itemsIndexed(lanes, key = { _, it -> "chip-" + it.key }) { index, section ->
                     val status = section.key
                     val color = statusColor(status)
+                    val here = pager.currentPage == index
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .clip(RoundedCornerShape(KeryxRadius.chip))
-                            .background(color.copy(alpha = 0.10f))
-                            .clickable {
-                                starts[status]?.let { scope.launch { listState.animateScrollToItem(it) } }
-                            }
+                            .background(color.copy(alpha = if (here) 0.26f else 0.10f))
+                            .clickable { scope.launch { pager.animateScrollToPage(index) } }
                             .padding(horizontal = 10.dp, vertical = 5.dp),
                     ) {
                         Box(Modifier.size(6.dp).clip(CircleShape).background(color))
@@ -515,21 +556,33 @@ fun MissionsScreen(
                 line2 = stringResource(R.string.work_missions_empty_body),
                 onCreate = { createOpen = true },
             )
-            else -> LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    start = 14.dp, end = 14.dp, bottom = 96.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                sections.forEach { section ->
+            else -> androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+                // A lane is most of a phone's width, so the next one shows at the edge; a wide
+                // screen holds several at once, like a board on a wall.
+                val laneWidth = if (maxWidth >= 600.dp) 320.dp else maxWidth * 0.86f
+                androidx.compose.foundation.pager.HorizontalPager(
+                    state = pager,
+                    pageSize = androidx.compose.foundation.pager.PageSize.Fixed(laneWidth),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp),
+                    pageSpacing = 10.dp,
+                    beyondViewportPageCount = 1,
+                    key = { lanes[it].key },
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.fillMaxSize(),
+                ) { index ->
+                    val section = lanes[index]
                     val status = section.key
                     val cards = section.cards
-                    item(key = "hdr-$status") {
+                    Column(
+                        Modifier
+                            .fillMaxSize()
+                            .padding(top = 6.dp)
+                            .clip(RoundedCornerShape(KeryxRadius.card))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)),
+                    ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 2.dp),
+                            modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 6.dp, top = 8.dp),
                         ) {
                             KeryxSectionHeader(
                                 label = sectionTitle(section),
@@ -539,7 +592,7 @@ fun MissionsScreen(
                                 modifier = Modifier.weight(1f),
                             )
                             when {
-                                selecting -> LaneAction(
+                                selecting && cards.isNotEmpty() -> LaneAction(
                                     if (cards.all { it.id in chosen }) stringResource(R.string.work_missions_unselect_lane) else stringResource(R.string.work_missions_select_all),
                                 ) {
                                     selected = toggleLane(selected, cards)
@@ -547,33 +600,61 @@ fun MissionsScreen(
                                 }
                                 // The swarm's leftovers, in one move: every finished card off
                                 // the board. Behind a confirm that states the count.
-                                status == "done" && bulk == null -> LaneAction(stringResource(R.string.work_missions_clear_done)) {
+                                status == "done" && cards.isNotEmpty() && bulk == null -> LaneAction(stringResource(R.string.work_missions_clear_done)) {
                                     pendingArchive = doneLaneIds(sections) to true
                                 }
                             }
                         }
-                    }
-                    items(cards, key = { it.id }) { task ->
-                        MissionCard(
-                            task = task,
-                            sinceLooked = task.id in sinceLooked,
-                            subscribed = subs[task.id]?.isNotEmpty() == true,
-                            selecting = selecting,
-                            selected = task.id in chosen,
-                            onClick = { if (selecting) toggle(task.id) else openCards = listOf(task.id) },
-                            onLongClick = {
-                                if (selecting) toggle(task.id)
-                                else {
-                                    haptics.press()
-                                    selecting = true
-                                    selected = setOf(task.id)
-                                }
-                            },
-                        )
+                        if (cards.isEmpty()) {
+                            Text(
+                                stringResource(R.string.work_lane_empty),
+                                fontSize = KeryxType.caption,
+                                color = chat.keryx.app.theme.quietInk(alpha = 0.6f),
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 18.dp),
+                            )
+                        }
+                        // Its own scroll per lane, kept by the pager while the lane is away.
+                        LazyColumn(
+                            state = rememberLazyListState(),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                                start = 8.dp, end = 8.dp, top = 4.dp, bottom = 96.dp,
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            items(cards, key = { it.id }) { task ->
+                                MissionCard(
+                                    task = task,
+                                    sinceLooked = task.id in sinceLooked,
+                                    subscribed = subs[task.id]?.isNotEmpty() == true,
+                                    selecting = selecting,
+                                    selected = task.id in chosen,
+                                    onClick = { if (selecting) toggle(task.id) else openCards = listOf(task.id) },
+                                    onLongClick = {
+                                        if (selecting) toggle(task.id)
+                                        else {
+                                            haptics.press()
+                                            selecting = true
+                                            selected = setOf(task.id)
+                                        }
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
+    }
+
+    if (boardsOpen) {
+        MissionBoardsSheet(
+            boards = boards,
+            chosen = chosenBoard,
+            onChoose = { slug -> viewModel.missionBoards.choose(slug); boardsOpen = false },
+            onCreate = { name, done -> viewModel.missionBoards.create(name) { ok -> done(ok); if (ok) boardsOpen = false } },
+            onDismiss = { boardsOpen = false },
+        )
     }
 
     if (createOpen) {
@@ -1075,7 +1156,7 @@ private fun MissionDetailSheet(
                     task = t,
                     owners = editOwners.ifEmpty { profiles },
                     onSave = { title, body, priority, assignee ->
-                        viewModel.missionEdit.save(t, null, title, body, priority, assignee) { ok ->
+                        viewModel.missionEdit.save(t, viewModel.missionBoards.chosen.value, title, body, priority, assignee) { ok ->
                             if (ok) { editing = false; reload++ }
                         }
                     },
@@ -2096,6 +2177,93 @@ internal fun MissionEditDialog(
                     ) { Text(stringResource(R.string.work_save)) }
                 }
             }
+        }
+    }
+}
+
+/**
+ * The boards (3.0): every board the gateway keeps, with its count, the one on screen ticked, and
+ * a new one named in place. Choosing is this phone's choice only; the gateway's current board
+ * (the CLI's, the desktop's) stays where it is.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MissionBoardsSheet(
+    boards: List<chat.keryx.app.presentation.MissionBoardInfo>,
+    chosen: String?,
+    onChoose: (String?) -> Unit,
+    onCreate: (name: String, done: (Boolean) -> Unit) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var naming by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var name by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    val onScreen = chosen ?: boards.firstOrNull { it.isCurrent }?.slug
+    KeryxSheet(onDismiss = onDismiss) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 4.dp)) {
+            Text(
+                stringResource(R.string.work_boards),
+                fontSize = KeryxType.title,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            boards.forEach { b ->
+                val here = b.slug == onScreen
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(KeryxRadius.card))
+                        .clickable { onChoose(if (b.isCurrent) null else b.slug) }
+                        .background(if (here) MaterialTheme.colorScheme.primary.copy(alpha = 0.10f) else androidx.compose.ui.graphics.Color.Transparent)
+                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                ) {
+                    Icon(KeryxGlyphs.Board, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        b.name,
+                        fontSize = KeryxType.body,
+                        fontWeight = if (here) FontWeight.SemiBold else FontWeight.Normal,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text("${b.total}", fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (here) {
+                        Spacer(Modifier.width(8.dp))
+                        Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            if (!naming) {
+                TextButton(onClick = { naming = true }) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.work_board_new))
+                }
+            } else {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it.take(64) },
+                    label = { Text(stringResource(R.string.work_board_name)) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(KeryxRadius.field),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
+                    TextButton(
+                        enabled = name.isNotBlank() && !busy,
+                        onClick = {
+                            busy = true
+                            onCreate(name) { ok -> busy = false; if (ok) { naming = false; name = "" } }
+                        },
+                    ) { Text(stringResource(R.string.work_create)) }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
         }
     }
 }

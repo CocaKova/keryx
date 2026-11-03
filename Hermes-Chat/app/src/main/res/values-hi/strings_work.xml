@@ -258,6 +258,11 @@
     <string name="work_lane_blocked">अटके</string>
     <string name="work_lane_review">रिव्यू</string>
     <string name="work_lane_done">पूरे</string>
+    <string name="work_board_switch">बोर्ड बदलें</string>
+    <string name="work_board_name">बोर्ड का नाम</string>
+    <string name="work_board_new">नया बोर्ड</string>
+    <string name="work_boards">बोर्ड</string>
+    <string name="work_lane_empty">यहाँ कुछ नहीं है</string>
     <string name="work_block_review">आपके रिव्यू का इंतज़ार</string>
     <string name="work_block_needs_input">आपका इनपुट चाहिए</string>
     <string name="work_block_capability">कुछ ऐसा चाहिए जो यह नहीं कर सकता</string>

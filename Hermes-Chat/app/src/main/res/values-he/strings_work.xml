@@ -277,6 +277,11 @@
     <string name="work_lane_blocked">חסומות</string>
     <string name="work_lane_review">סקירה</string>
     <string name="work_lane_done">בוצעו</string>
+    <string name="work_board_switch">החלפת לוח</string>
+    <string name="work_board_name">שם הלוח</string>
+    <string name="work_board_new">לוח חדש</string>
+    <string name="work_boards">לוחות</string>
+    <string name="work_lane_empty">אין כאן כלום</string>
     <string name="work_block_review">מחכה לסקירה שלך</string>
     <string name="work_block_needs_input">צריכה קלט ממך</string>
     <string name="work_block_capability">צריכה משהו שהיא לא יכולה לעשות</string>
