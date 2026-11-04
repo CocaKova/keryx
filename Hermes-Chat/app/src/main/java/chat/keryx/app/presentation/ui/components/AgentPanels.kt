@@ -325,6 +325,10 @@ internal fun McpTab(viewModel: ChatViewModel) {
     // The catalog is read when the spoke opens, not with the landing: it is a browse, not a count.
     LaunchedEffect(Unit) { viewModel.agent.refreshMcpCatalog() }
     var installing by remember { mutableStateOf<McpCatalogEntry?>(null) }
+    var adding by rememberSaveable { mutableStateOf(false) }
+    var removing by remember { mutableStateOf<McpServer?>(null) }
+    val uri = androidx.compose.ui.platform.LocalUriHandler.current
+    val context = androidx.compose.ui.platform.LocalContext.current
     Column(Modifier.fillMaxSize()) {
         PanelErrorLine(panel.error)
         val servers = panel.data
@@ -350,6 +354,21 @@ internal fun McpTab(viewModel: ChatViewModel) {
                                 s,
                                 probe = probes[s.name],
                                 onTest = { viewModel.agent.testMcp(s.name) },
+                                // 3.0: sign an OAuth server in again, and take out one you added.
+                                onSignIn = if (s.auth == "oauth" && s.plugin == null) ({
+                                    viewModel.agent.signInMcp(s.name) { outcome ->
+                                        when (outcome) {
+                                            is AgentDelegate.McpAddOutcome.SignIn -> {
+                                                viewModel.toast(context.getString(R.string.agent_mcp_signin_opening, s.name))
+                                                runCatching { uri.openUri(outcome.url) }
+                                            }
+                                            is AgentDelegate.McpAddOutcome.Refused ->
+                                                viewModel.toast(context.getString(R.string.agent_mcp_signin_failed, s.name, outcome.message.take(80)))
+                                            else -> Unit
+                                        }
+                                    }
+                                }) else null,
+                                onRemove = if (s.plugin == null) ({ removing = s }) else null,
                             ) { viewModel.agent.setMcpEnabled(s.name, it) }
                         }
                     }
@@ -361,6 +380,11 @@ internal fun McpTab(viewModel: ChatViewModel) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 10.dp),
                     )
+                }
+            }
+            item(key = "mcp-add") {
+                TextButton(onClick = { adding = true }, modifier = Modifier.padding(top = 8.dp)) {
+                    Text(stringResource(R.string.agent_mcp_add_url), fontSize = KeryxType.body)
                 }
             }
             // Makeover: the dashboard's catalog — the approved servers, each showing what it
@@ -385,6 +409,23 @@ internal fun McpTab(viewModel: ChatViewModel) {
         }
     }
     installing?.let { entry -> McpInstallDialog(entry, viewModel) { installing = null } }
+    if (adding) McpAddDialog(viewModel) { adding = false }
+    removing?.let { s ->
+        var busy by remember { mutableStateOf(false) }
+        androidx.compose.material3.AlertDialog(
+            shape = RoundedCornerShape(KeryxRadius.sheet),
+            onDismissRequest = { if (!busy) removing = null },
+            title = { Text(stringResource(R.string.agent_mcp_remove_title, s.name), fontSize = KeryxType.titleLarge) },
+            text = { Text(stringResource(R.string.agent_mcp_remove_body), fontSize = KeryxType.body) },
+            confirmButton = {
+                TextButton(enabled = !busy, onClick = {
+                    busy = true
+                    viewModel.agent.removeMcp(s.name) { busy = false; removing = null }
+                }) { Text(stringResource(R.string.agent_plugin_remove), color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(enabled = !busy, onClick = { removing = null }) { Text(stringResource(R.string.mk_cancel)) } },
+        )
+    }
 }
 
 @Composable
@@ -392,6 +433,8 @@ private fun McpRow(
     s: McpServer,
     probe: AgentDelegate.ProbeState?,
     onTest: () -> Unit,
+    onSignIn: (() -> Unit)? = null,
+    onRemove: (() -> Unit)? = null,
     onToggle: (Boolean) -> Unit,
 ) {
     val dim by androidx.compose.animation.core.animateFloatAsState(
@@ -437,6 +480,19 @@ private fun McpRow(
         }
         AnimatedVisibility(probe != null && probe != AgentDelegate.ProbeState.Testing, enter = keryxReveal(), exit = keryxConceal()) {
             if (probe != null) McpProbeResult(probe)
+        }
+        if (onSignIn != null || onRemove != null) Row {
+            onSignIn?.let {
+                TextButton(onClick = it, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                    Text(stringResource(R.string.agent_mcp_signin), fontSize = KeryxType.caption)
+                }
+                Spacer(Modifier.width(16.dp))
+            }
+            onRemove?.let {
+                TextButton(onClick = it, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                    Text(stringResource(R.string.agent_plugin_remove), fontSize = KeryxType.caption, color = MaterialTheme.colorScheme.error)
+                }
+            }
         }
     }
 }

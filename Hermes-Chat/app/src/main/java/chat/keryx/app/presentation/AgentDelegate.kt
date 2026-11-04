@@ -8,6 +8,19 @@ import chat.keryx.app.transport.direct.McpProbe
 import chat.keryx.app.transport.direct.McpServer
 import chat.keryx.app.transport.direct.SoulText
 import chat.keryx.app.transport.direct.UsageReport
+import chat.keryx.app.transport.direct.AgentPlugin
+import chat.keryx.app.transport.direct.McpAuthStyle
+import chat.keryx.app.transport.direct.PluginCatalogEntry
+import chat.keryx.app.transport.direct.PluginInstallResult
+import chat.keryx.app.transport.direct.mcpAdd
+import chat.keryx.app.transport.direct.mcpAuthFlow
+import chat.keryx.app.transport.direct.mcpAuthStart
+import chat.keryx.app.transport.direct.mcpRemove
+import chat.keryx.app.transport.direct.pluginCatalog
+import chat.keryx.app.transport.direct.pluginInstall
+import chat.keryx.app.transport.direct.pluginRemove
+import chat.keryx.app.transport.direct.pluginSetEnabled
+import chat.keryx.app.transport.direct.pluginsHub
 import chat.keryx.app.transport.direct.usage
 import chat.keryx.app.transport.direct.currentProfile
 import chat.keryx.app.transport.direct.profileDisplayName
@@ -234,7 +247,167 @@ class AgentDelegate(
         }
     }
 
+    // --- Plugins (3.0): the dashboard's plugin hub, catalog and install -------------------------
+
+    private val _plugins = MutableStateFlow(HubDelegate.PanelState<List<AgentPlugin>>())
+    val plugins: StateFlow<HubDelegate.PanelState<List<AgentPlugin>>> = _plugins.asStateFlow()
+    /** Null until asked; false on a dashboard without the plugin hub, which hides the spoke. */
+    private val _pluginsAvailable = MutableStateFlow<Boolean?>(null)
+    val pluginsAvailable: StateFlow<Boolean?> = _pluginsAvailable.asStateFlow()
+    private val _pluginCatalog = MutableStateFlow(HubDelegate.PanelState<List<PluginCatalogEntry>>())
+    val pluginCatalog: StateFlow<HubDelegate.PanelState<List<PluginCatalogEntry>>> = _pluginCatalog.asStateFlow()
+    private var pluginsJob: Job? = null
+    private var pluginCatalogJob: Job? = null
+
+    fun refreshPlugins() {
+        val r = rest() ?: return
+        if (pluginsJob?.isActive == true) return
+        _plugins.value = _plugins.value.copy(refreshing = true)
+        pluginsJob = scope.launch {
+            when (val got = r.pluginsHub()) {
+                is Routed.Ok -> { _pluginsAvailable.value = true; _plugins.value = HubDelegate.PanelState(data = got.value) }
+                is Routed.Failed -> { _pluginsAvailable.value = true; _plugins.value = _plugins.value.copy(error = got.message, refreshing = false) }
+                Routed.Missing -> { _pluginsAvailable.value = false; _plugins.value = HubDelegate.PanelState() }
+            }
+        }
+    }
+
+    fun refreshPluginCatalog() {
+        val r = rest() ?: return
+        if (pluginCatalogJob?.isActive == true) return
+        _pluginCatalog.value = _pluginCatalog.value.copy(refreshing = true)
+        pluginCatalogJob = scope.launch {
+            when (val got = r.pluginCatalog()) {
+                is Routed.Ok -> _pluginCatalog.value = HubDelegate.PanelState(data = got.value)
+                is Routed.Failed -> _pluginCatalog.value = _pluginCatalog.value.copy(error = got.message, refreshing = false)
+                Routed.Missing -> _pluginCatalog.value = HubDelegate.PanelState(data = emptyList())
+            }
+        }
+    }
+
+    /** Flip a plugin: the row moves at once and settles back on a refusal. Hermes loads it on restart. */
+    fun setPluginEnabled(name: String, enabled: Boolean) {
+        val r = rest() ?: return
+        val before = _plugins.value.data ?: return
+        _plugins.value = _plugins.value.copy(data = before.map {
+            if (it.name == name) it.copy(status = if (enabled) "enabled" else "disabled") else it
+        })
+        scope.launch {
+            when (val res = r.pluginSetEnabled(name, enabled)) {
+                is Routed.Ok -> toast(KeryxText.get(if (enabled) R.string.agent_plugin_on else R.string.agent_plugin_off, name))
+                is Routed.Failed -> { toast(KeryxText.get(R.string.agent_skill_change_failed, name, res.message.take(80))); refreshPlugins() }
+                Routed.Missing -> { toast(KeryxText.get(R.string.agent_plugin_unsupported)); refreshPlugins() }
+            }
+        }
+    }
+
+    fun removePlugin(name: String, onDone: (Boolean) -> Unit) {
+        val r = rest() ?: return onDone(false)
+        scope.launch {
+            when (val res = r.pluginRemove(name)) {
+                is Routed.Ok -> { toast(KeryxText.get(R.string.agent_plugin_removed, name)); onDone(true); refreshPlugins(); refreshPluginCatalog() }
+                is Routed.Failed -> { toast(KeryxText.get(R.string.agent_skill_change_failed, name, res.message.take(80))); onDone(false) }
+                Routed.Missing -> { toast(KeryxText.get(R.string.agent_plugin_unsupported)); onDone(false) }
+            }
+        }
+    }
+
+    sealed interface PluginInstallOutcome {
+        data class Installed(val result: PluginInstallResult) : PluginInstallOutcome
+        data class Refused(val message: String) : PluginInstallOutcome
+        data object Unsupported : PluginInstallOutcome
+    }
+
+    /** Install from the catalog ([catalogName]) or from a git URL or `owner/repo` ([identifier]). */
+    fun installPlugin(identifier: String?, catalogName: String?, onDone: (PluginInstallOutcome) -> Unit) {
+        val r = rest() ?: return onDone(PluginInstallOutcome.Unsupported)
+        scope.launch {
+            when (val res = r.pluginInstall(identifier?.trim(), catalogName)) {
+                is Routed.Ok -> { onDone(PluginInstallOutcome.Installed(res.value)); refreshPlugins(); refreshPluginCatalog() }
+                is Routed.Failed -> onDone(PluginInstallOutcome.Refused(cleanDetail(res.message)))
+                Routed.Missing -> onDone(PluginInstallOutcome.Unsupported)
+            }
+        }
+    }
+
+    // --- An MCP server by URL (3.0) -------------------------------------------------------------
+
+    sealed interface McpAddOutcome {
+        data object Added : McpAddOutcome
+        /** OAuth: the server is saved; open [url] to sign in, and the flow is watched from here. */
+        data class SignIn(val url: String) : McpAddOutcome
+        data class Refused(val message: String) : McpAddOutcome
+        data object Unsupported : McpAddOutcome
+    }
+
+    /**
+     * Save a server that lives at [url]. With [McpAuthStyle.OAUTH] the sign-in starts straight
+     * after, and the page to open comes back through [onDone]; the flow is then polled until the
+     * gateway has its tokens (or gives up), and the list is read again.
+     */
+    fun addMcpByUrl(name: String, url: String, auth: McpAuthStyle, token: String?, onDone: (McpAddOutcome) -> Unit) {
+        val r = rest() ?: return onDone(McpAddOutcome.Unsupported)
+        scope.launch {
+            when (val res = r.mcpAdd(name.trim(), url.trim(), auth, token?.trim())) {
+                is Routed.Ok -> {
+                    refreshMcp()
+                    if (auth == McpAuthStyle.OAUTH) signIn(name.trim(), onDone) else onDone(McpAddOutcome.Added)
+                }
+                is Routed.Failed -> onDone(McpAddOutcome.Refused(cleanDetail(res.message)))
+                Routed.Missing -> onDone(McpAddOutcome.Unsupported)
+            }
+        }
+    }
+
+    /** Sign an OAuth server in again (an expired grant, or one added elsewhere). */
+    fun signInMcp(name: String, onDone: (McpAddOutcome) -> Unit) {
+        scope.launch { signIn(name, onDone) }
+    }
+
+    private suspend fun signIn(name: String, onDone: (McpAddOutcome) -> Unit) {
+        val r = rest() ?: return onDone(McpAddOutcome.Unsupported)
+        val flow = when (val got = r.mcpAuthStart(name)) {
+            is Routed.Ok -> got.value
+            is Routed.Failed -> return onDone(McpAddOutcome.Refused(cleanDetail(got.message)))
+            Routed.Missing -> return onDone(McpAddOutcome.Unsupported)
+        }
+        val page = flow.authorizationUrl
+        if (page == null || flow.status == "error") {
+            return onDone(McpAddOutcome.Refused(flow.error ?: KeryxText.get(R.string.agent_mcp_signin_failed_plain)))
+        }
+        onDone(McpAddOutcome.SignIn(page))
+        // The gateway waits up to five minutes for the browser to come back; watch for as long.
+        repeat(AUTH_POLLS) {
+            kotlinx.coroutines.delay(AUTH_POLL_MS)
+            val now = (r.mcpAuthFlow(flow.flowId) as? Routed.Ok)?.value ?: return@repeat
+            if (now.done) {
+                if (now.status == "approved") toast(KeryxText.get(R.string.agent_mcp_signed_in, name))
+                else toast(KeryxText.get(R.string.agent_mcp_signin_failed, name, (now.error ?: "").take(80)))
+                refreshMcp()
+                return
+            }
+        }
+    }
+
+    fun removeMcp(name: String, onDone: (Boolean) -> Unit) {
+        val r = rest() ?: return onDone(false)
+        scope.launch {
+            when (val res = r.mcpRemove(name)) {
+                is Routed.Ok -> { toast(KeryxText.get(R.string.agent_mcp_removed, name)); onDone(true); refreshMcp(); refreshMcpCatalog() }
+                is Routed.Failed -> { toast(KeryxText.get(R.string.agent_skill_change_failed, name, res.message.take(80))); onDone(false) }
+                Routed.Missing -> onDone(false)
+            }
+        }
+    }
+
+    /** The server's own words from `HTTP 400 for /path — {"detail": "..."}`, else the whole line. */
+    private fun cleanDetail(message: String): String =
+        Regex("\"detail\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"").find(message)?.groupValues?.get(1)?.take(200)
+            ?: message.take(200)
+
     private companion object {
         const val BUILD_RECHECK_MS = 20_000L
+        const val AUTH_POLL_MS = 3_000L
+        const val AUTH_POLLS = 100
     }
 }

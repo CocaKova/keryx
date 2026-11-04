@@ -262,6 +262,29 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
             mcp.data?.let { l -> stringResource(R.string.agent_n_of_m, l.count { it.enabled }, l.size) }
         },
     ),
+    // 3.0: the agent's plugins, the dashboard's plugin hub. Stock routes; hidden without them.
+    HubPanel(
+        id = "plugins",
+        label = "Plugins",
+        labelRes = R.string.agent_spoke_plugins,
+        icon = KeryxGlyphs.Plug,
+        refresh = { vm -> vm.agent.refreshPlugins() },
+        subtitle = { vm ->
+            val plugins by vm.agent.plugins.collectAsState()
+            plugins.data?.filter { !it.bundled && it.enabled }?.take(3)?.joinToString(", ") { it.name }?.ifBlank { null }
+                ?: stringResource(R.string.agent_plugins_sub)
+        },
+        content = { PluginsTab(it.viewModel) },
+        shown = { vm ->
+            val available by vm.agent.pluginsAvailable.collectAsState()
+            vm.transportIsDirect && available == true
+        },
+        group = "Reach",
+        trailing = { vm ->
+            val plugins by vm.agent.plugins.collectAsState()
+            plugins.data?.filterNot { it.bundled }?.let { l -> stringResource(R.string.agent_n_of_m, l.count { it.enabled }, l.size) }
+        },
+    ),
     HubPanel(
         id = "soul",
         label = "Soul",
