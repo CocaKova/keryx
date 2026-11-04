@@ -99,6 +99,11 @@
     <string name="work_proj_archive">प्रोजेक्ट आर्काइव करें</string>
     <string name="work_proj_archived">%1$s आर्काइव किया</string>
     <string name="work_proj_delete">प्रोजेक्ट हटाएँ</string>
+    <string name="work_proj_hidden_toast">%1$s Keryx में छिपा है। गेटवे पर यह अब भी दिखता है।</string>
+    <string name="work_proj_hide_hidden">फिर से छिपाएँ</string>
+    <string name="work_proj_show_hidden">छिपे हुए दिखाएँ (%1$d)</string>
+    <string name="work_proj_unhide">फिर से दिखाएँ</string>
+    <string name="work_proj_hide">Keryx में छिपाएँ</string>
     <string name="work_proj_actions">%1$s के विकल्प</string>
     <string name="work_proj_delete_title">%1$s हटाएँ?</string>
     <string name="work_proj_delete_body">सिर्फ़ प्रोजेक्ट की एंट्री हटेगी। गेटवे पर फ़ोल्डर और उसका हर सेशन जहाँ है वहीं रहेगा।</string>

@@ -101,6 +101,11 @@
     <string name="work_proj_archive">프로젝트 보관</string>
     <string name="work_proj_archived">%1$s 보관했어요</string>
     <string name="work_proj_delete">프로젝트 삭제</string>
+    <string name="work_proj_hidden_toast">%1$s 프로젝트를 Keryx에서 숨겼어요. 게이트웨이에서는 계속 보여요.</string>
+    <string name="work_proj_hide_hidden">다시 숨기기</string>
+    <string name="work_proj_show_hidden">숨긴 항목 보기 (%1$d)</string>
+    <string name="work_proj_unhide">다시 표시</string>
+    <string name="work_proj_hide">Keryx에서 숨기기</string>
     <string name="work_proj_actions">%1$s 옵션</string>
     <string name="work_proj_delete_title">%1$s을(를) 삭제할까요?</string>
     <string name="work_proj_delete_body">프로젝트 항목만 삭제돼요. 게이트웨이의 폴더와 그 안의 모든 세션은 그대로 남아요.</string>

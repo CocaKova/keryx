@@ -104,6 +104,11 @@
     <string name="work_proj_archive">Projekt archiválása</string>
     <string name="work_proj_archived">Archiválva: %1$s</string>
     <string name="work_proj_delete">Projekt törlése</string>
+    <string name="work_proj_hidden_toast">%1$s el van rejtve a Keryxben. Az átjárón továbbra is látszik.</string>
+    <string name="work_proj_hide_hidden">Elrejtés újra</string>
+    <string name="work_proj_show_hidden">Rejtettek mutatása (%1$d)</string>
+    <string name="work_proj_unhide">Megjelenítés újra</string>
+    <string name="work_proj_hide">Elrejtés a Keryxben</string>
     <string name="work_proj_actions">%1$s beállításai</string>
     <string name="work_proj_delete_title">Törlöd ezt: %1$s?</string>
     <string name="work_proj_delete_body">Csak a projektsor törlődik. Az átjárón lévő mappa és benne minden munkamenet pontosan ott marad, ahol van.</string>

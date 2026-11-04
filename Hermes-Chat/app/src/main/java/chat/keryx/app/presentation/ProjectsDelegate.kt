@@ -30,6 +30,7 @@ class ProjectsDelegate(
     private val onSessionCreated: (id: String) -> Unit = {},
 ) {
     private val scope = deps.scope
+    private val settings = deps.settings
     private val gateway get() = transport.gateway
 
     private val _tree = MutableStateFlow<ProjectsTree?>(null)
@@ -76,7 +77,19 @@ class ProjectsDelegate(
     val explicitSessionIds: StateFlow<Set<String>> = _explicitSessionIds.asStateFlow()
 
     /** One probe = the door AND the overview. A no-op on Matrix (no gateway seam). */
+    private val _hidden = MutableStateFlow(settings.hiddenProjects)
+    /** Auto projects this install hides (3.0), by id; per gateway, so re-read on every refresh. */
+    val hiddenProjects: StateFlow<Set<String>> = _hidden.asStateFlow()
+
+    /** Hide or show again an auto project in Keryx only; the gateway is not told. */
+    fun setProjectHidden(projectId: String, hidden: Boolean) {
+        val next = if (hidden) _hidden.value + projectId else _hidden.value - projectId
+        settings.hiddenProjects = next
+        _hidden.value = next
+    }
+
     fun refreshProjects() {
+        _hidden.value = settings.hiddenProjects
         val gw = gateway ?: return
         scope.launch {
             gw.projectsTree()

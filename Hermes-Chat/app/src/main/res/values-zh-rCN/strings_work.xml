@@ -101,6 +101,11 @@
     <string name="work_proj_archive">归档项目</string>
     <string name="work_proj_archived">已归档 %1$s</string>
     <string name="work_proj_delete">删除项目</string>
+    <string name="work_proj_hidden_toast">%1$s 已在 Keryx 中隐藏，网关上仍会显示。</string>
+    <string name="work_proj_hide_hidden">再次隐藏</string>
+    <string name="work_proj_show_hidden">显示已隐藏 (%1$d)</string>
+    <string name="work_proj_unhide">重新显示</string>
+    <string name="work_proj_hide">在 Keryx 中隐藏</string>
     <string name="work_proj_actions">%1$s 的选项</string>
     <string name="work_proj_delete_title">删除 %1$s？</string>
     <string name="work_proj_delete_body">只删除项目条目。网关上的文件夹及其中的所有会话都保持原样。</string>

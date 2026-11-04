@@ -104,6 +104,11 @@
     <string name="work_proj_archive">Arkivér projekt</string>
     <string name="work_proj_archived">%1$s arkiveret</string>
     <string name="work_proj_delete">Slet projekt</string>
+    <string name="work_proj_hidden_toast">%1$s er skjult i Keryx. Det vises stadig på gatewayen.</string>
+    <string name="work_proj_hide_hidden">Skjul dem igen</string>
+    <string name="work_proj_show_hidden">Vis skjulte (%1$d)</string>
+    <string name="work_proj_unhide">Vis igen</string>
+    <string name="work_proj_hide">Skjul i Keryx</string>
     <string name="work_proj_actions">Indstillinger for %1$s</string>
     <string name="work_proj_delete_title">Slet %1$s?</string>
     <string name="work_proj_delete_body">Kun projektrækken forsvinder. Mappen på gatewayen og alle sessioner i den bliver nøjagtig, hvor de er.</string>

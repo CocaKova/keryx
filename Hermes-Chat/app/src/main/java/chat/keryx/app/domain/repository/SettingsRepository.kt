@@ -24,6 +24,14 @@ interface SettingsRepository {
     var missionBoard: String?
         get() = null
         set(@Suppress("UNUSED_PARAMETER") value) {}
+    /**
+     * Auto projects (repos Hermes finds from chats' folders) this install hides from Projects
+     * (3.0), by project id. Keryx's own list, per gateway: stock Hermes has no way to remove an
+     * auto project, so the gateway and the desktop still show them.
+     */
+    var hiddenProjects: Set<String>
+        get() = emptySet()
+        set(@Suppress("UNUSED_PARAMETER") value) {}
     var biometricLockEnabled: Boolean
     var e2eeEnabled: Boolean
     var hapticsEnabled: Boolean

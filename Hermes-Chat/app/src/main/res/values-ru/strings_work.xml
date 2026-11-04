@@ -105,6 +105,11 @@
     <string name="work_proj_archive">Архивировать проект</string>
     <string name="work_proj_archived">В архиве: %1$s</string>
     <string name="work_proj_delete">Удалить проект</string>
+    <string name="work_proj_hidden_toast">%1$s скрыт в Keryx. На шлюзе он по-прежнему виден.</string>
+    <string name="work_proj_hide_hidden">Снова скрыть</string>
+    <string name="work_proj_show_hidden">Показать скрытые (%1$d)</string>
+    <string name="work_proj_unhide">Показать снова</string>
+    <string name="work_proj_hide">Скрыть в Keryx</string>
     <string name="work_proj_actions">Действия: %1$s</string>
     <string name="work_proj_delete_title">Удалить %1$s?</string>
     <string name="work_proj_delete_body">Удаляется только запись проекта. Папка на шлюзе и все сессии в ней остаются на своих местах.</string>

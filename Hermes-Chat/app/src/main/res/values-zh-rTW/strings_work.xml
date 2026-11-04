@@ -101,6 +101,11 @@
     <string name="work_proj_archive">封存專案</string>
     <string name="work_proj_archived">已封存 %1$s</string>
     <string name="work_proj_delete">刪除專案</string>
+    <string name="work_proj_hidden_toast">%1$s 已在 Keryx 中隱藏，閘道上仍會顯示。</string>
+    <string name="work_proj_hide_hidden">再次隱藏</string>
+    <string name="work_proj_show_hidden">顯示已隱藏 (%1$d)</string>
+    <string name="work_proj_unhide">重新顯示</string>
+    <string name="work_proj_hide">在 Keryx 中隱藏</string>
     <string name="work_proj_actions">%1$s 的選項</string>
     <string name="work_proj_delete_title">要刪除 %1$s 嗎？</string>
     <string name="work_proj_delete_body">只會刪除專案項目。閘道上的資料夾以及其中的所有工作階段都會維持原樣。</string>

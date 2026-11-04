@@ -39,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
@@ -96,7 +97,12 @@ fun ProjectsSpace(
         )
     }
 
-    val nodes = (tree?.projects ?: emptyList()).filter { !it.isNoProject }
+    val hidden by viewModel.projects.hiddenProjects.collectAsState()
+    var showHidden by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val allNodes = (tree?.projects ?: emptyList()).filter { !it.isNoProject }
+    // Only auto projects can be hidden; an id left over from one that has since gone counts for nothing.
+    val hiddenCount = allNodes.count { it.isAuto && it.id in hidden }
+    val nodes = if (showHidden) allNodes else allNodes.filterNot { it.isAuto && it.id in hidden }
     val openNode = openId?.let { id -> nodes.firstOrNull { it.id == id } }
 
     KeryxSpace(
@@ -188,7 +194,23 @@ fun ProjectsSpace(
                     onDelete = if (node.isAuto) null else { done ->
                         viewModel.projects.deleteProject(node.id, done)
                     },
+                    // An auto project can't be removed on stock Hermes, only hidden here (3.0).
+                    hidden = node.isAuto && node.id in hidden,
+                    onHide = if (!node.isAuto) null else { hide ->
+                        viewModel.projects.setProjectHidden(node.id, hide)
+                    },
                 )
+            }
+            if (hiddenCount > 0) {
+                item(key = "hidden-toggle") {
+                    TextButton(onClick = { showHidden = !showHidden }, modifier = Modifier.padding(top = 4.dp)) {
+                        Text(
+                            if (showHidden) stringResource(R.string.work_proj_hide_hidden)
+                            else stringResource(R.string.work_proj_show_hidden, hiddenCount),
+                            fontSize = KeryxType.caption,
+                        )
+                    }
+                }
             }
         }
     }
@@ -212,6 +234,10 @@ private fun ProjectCard(
     onArchive: ((done: (String?) -> Unit) -> Unit)? = null,
     /** Forget the row entirely — folder and sessions untouched. */
     onDelete: ((done: (String?) -> Unit) -> Unit)? = null,
+    /** This auto project is hidden in Keryx and only on screen because hidden ones are shown. */
+    hidden: Boolean = false,
+    /** Hide (true) or show again (false) an auto project, in Keryx only. */
+    onHide: ((Boolean) -> Unit)? = null,
 ) {
     val haptics = LocalKeryxHaptics.current
     val snack = LocalKeryxSnack.current
@@ -221,7 +247,7 @@ private fun ProjectCard(
         snack.show(err ?: ok)
     }
     val onLongPress: (() -> Unit)? =
-        if (onArchive == null && onDelete == null) null
+        if (onArchive == null && onDelete == null && onHide == null) null
         else ({
             haptics.press()
             menuOpen = true
@@ -236,6 +262,8 @@ private fun ProjectCard(
                 MaterialTheme.colorScheme.onSurface.copy(alpha = TalariaStroke.line),
                 RoundedCornerShape(TalariaRadius.card),
             )
+            // A hidden one, shown on request, reads as set aside.
+            .then(if (hidden) Modifier.alpha(0.5f) else Modifier)
             .combinedClickable(onClick = onOpen, onLongClick = onLongPress)
             .drawTintRail(tintFor(node))
             .padding(start = 15.dp, end = 12.dp, top = 11.dp, bottom = 11.dp),
@@ -317,6 +345,17 @@ private fun ProjectCard(
             androidx.compose.material3.DropdownMenuItem(
                 text = { Text(stringResource(R.string.work_proj_archive)) },
                 onClick = { menuOpen = false; archive { report(it, archivedMsg) } },
+            )
+        }
+        onHide?.let { hide ->
+            val hiddenMsg = stringResource(R.string.work_proj_hidden_toast, node.label)
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text(stringResource(if (hidden) R.string.work_proj_unhide else R.string.work_proj_hide)) },
+                onClick = {
+                    menuOpen = false
+                    hide(!hidden)
+                    if (!hidden) snack.show(hiddenMsg)
+                },
             )
         }
         onDelete?.let {

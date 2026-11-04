@@ -110,6 +110,11 @@
     <string name="work_proj_archive">Archivovat projekt</string>
     <string name="work_proj_archived">Archivováno: %1$s</string>
     <string name="work_proj_delete">Smazat projekt</string>
+    <string name="work_proj_hidden_toast">%1$s je v Keryxu skrytý. Na bráně se dál zobrazuje.</string>
+    <string name="work_proj_hide_hidden">Znovu skrýt</string>
+    <string name="work_proj_show_hidden">Zobrazit skryté (%1$d)</string>
+    <string name="work_proj_unhide">Znovu zobrazit</string>
+    <string name="work_proj_hide">Skrýt v Keryxu</string>
     <string name="work_proj_actions">Možnosti pro %1$s</string>
     <string name="work_proj_delete_title">Smazat %1$s?</string>
     <string name="work_proj_delete_body">Zmizí jen záznam projektu. Složka na bráně i všechny relace v ní zůstanou přesně tam, kde jsou.</string>

@@ -116,6 +116,11 @@
     <string name="work_proj_archive">أرشفة المشروع</string>
     <string name="work_proj_archived">تمت أرشفة %1$s</string>
     <string name="work_proj_delete">حذف المشروع</string>
+    <string name="work_proj_hidden_toast">‏%1$s مخفي في Keryx، ولا يزال يظهر على البوابة.</string>
+    <string name="work_proj_hide_hidden">إخفاؤها مجددًا</string>
+    <string name="work_proj_show_hidden">إظهار المخفية (%1$d)</string>
+    <string name="work_proj_unhide">إظهار مجددًا</string>
+    <string name="work_proj_hide">إخفاء في Keryx</string>
     <string name="work_proj_actions">خيارات %1$s</string>
     <string name="work_proj_delete_title">حذف %1$s؟</string>
     <string name="work_proj_delete_body">يُحذف صف المشروع فقط. المجلد على البوابة وكل جلسة فيه يبقيان في مكانهما تمامًا.</string>

@@ -107,6 +107,11 @@
     <string name="work_proj_archive">העברת הפרויקט לארכיון</string>
     <string name="work_proj_archived">%1$s הועבר לארכיון</string>
     <string name="work_proj_delete">מחיקת הפרויקט</string>
+    <string name="work_proj_hidden_toast">%1$s מוסתר ב-Keryx. הוא עדיין מופיע בשער.</string>
+    <string name="work_proj_hide_hidden">הסתרה מחדש</string>
+    <string name="work_proj_show_hidden">הצגת מוסתרים (%1$d)</string>
+    <string name="work_proj_unhide">הצגה מחדש</string>
+    <string name="work_proj_hide">הסתרה ב-Keryx</string>
     <string name="work_proj_actions">אפשרויות עבור %1$s</string>
     <string name="work_proj_delete_title">למחוק את %1$s?</string>
     <string name="work_proj_delete_body">רק שורת הפרויקט נמחקת. התיקייה בשער וכל הסשנים בה נשארים בדיוק במקומם.</string>

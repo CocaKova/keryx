@@ -99,6 +99,11 @@
     <string name="work_proj_archive">Project archiveren</string>
     <string name="work_proj_archived">%1$s gearchiveerd</string>
     <string name="work_proj_delete">Project verwijderen</string>
+    <string name="work_proj_hidden_toast">%1$s is verborgen in Keryx. Op de gateway is het nog te zien.</string>
+    <string name="work_proj_hide_hidden">Weer verbergen</string>
+    <string name="work_proj_show_hidden">Verborgen tonen (%1$d)</string>
+    <string name="work_proj_unhide">Weer tonen</string>
+    <string name="work_proj_hide">Verbergen in Keryx</string>
     <string name="work_proj_actions">Opties voor %1$s</string>
     <string name="work_proj_delete_title">%1$s verwijderen?</string>
     <string name="work_proj_delete_body">Alleen de projectregel verdwijnt. De map op de gateway en alle sessies erin blijven precies waar ze zijn.</string>

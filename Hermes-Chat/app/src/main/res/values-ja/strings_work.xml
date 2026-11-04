@@ -101,6 +101,11 @@
     <string name="work_proj_archive">プロジェクトをアーカイブ</string>
     <string name="work_proj_archived">%1$s をアーカイブしました</string>
     <string name="work_proj_delete">プロジェクトを削除</string>
+    <string name="work_proj_hidden_toast">%1$s を Keryx で非表示にしました。ゲートウェイでは引き続き表示されます。</string>
+    <string name="work_proj_hide_hidden">再び非表示</string>
+    <string name="work_proj_show_hidden">非表示を表示 (%1$d)</string>
+    <string name="work_proj_unhide">再表示</string>
+    <string name="work_proj_hide">Keryx で非表示</string>
     <string name="work_proj_actions">%1$s のオプション</string>
     <string name="work_proj_delete_title">%1$s を削除しますか？</string>
     <string name="work_proj_delete_body">削除されるのはプロジェクトの項目だけです。ゲートウェイ上のフォルダとその中のセッションはそのまま残ります。</string>

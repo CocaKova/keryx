@@ -104,6 +104,11 @@
     <string name="work_proj_archive">Αρχειοθέτηση έργου</string>
     <string name="work_proj_archived">Αρχειοθετήθηκε: %1$s</string>
     <string name="work_proj_delete">Διαγραφή έργου</string>
+    <string name="work_proj_hidden_toast">Το %1$s είναι κρυφό στο Keryx. Εξακολουθεί να φαίνεται στην πύλη.</string>
+    <string name="work_proj_hide_hidden">Απόκρυψη ξανά</string>
+    <string name="work_proj_show_hidden">Εμφάνιση κρυφών (%1$d)</string>
+    <string name="work_proj_unhide">Εμφάνιση ξανά</string>
+    <string name="work_proj_hide">Απόκρυψη στο Keryx</string>
     <string name="work_proj_actions">Επιλογές για %1$s</string>
     <string name="work_proj_delete_title">Διαγραφή του %1$s;</string>
     <string name="work_proj_delete_body">Φεύγει μόνο η εγγραφή του έργου. Ο φάκελος στην πύλη και κάθε συνεδρία μέσα του μένουν ακριβώς όπου είναι.</string>

@@ -104,6 +104,11 @@
     <string name="work_proj_archive">Projeyi arşivle</string>
     <string name="work_proj_archived">Arşivlendi: %1$s</string>
     <string name="work_proj_delete">Projeyi sil</string>
+    <string name="work_proj_hidden_toast">%1$s Keryx\'te gizlendi. Ağ geçidinde hâlâ görünüyor.</string>
+    <string name="work_proj_hide_hidden">Yeniden gizle</string>
+    <string name="work_proj_show_hidden">Gizlileri göster (%1$d)</string>
+    <string name="work_proj_unhide">Yeniden göster</string>
+    <string name="work_proj_hide">Keryx\'te gizle</string>
     <string name="work_proj_actions">%1$s seçenekleri</string>
     <string name="work_proj_delete_title">%1$s silinsin mi?</string>
     <string name="work_proj_delete_body">Yalnızca proje kaydı silinir. Ağ geçidindeki klasör ve içindeki tüm oturumlar oldukları yerde kalır.</string>

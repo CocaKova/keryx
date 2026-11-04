@@ -125,6 +125,11 @@
     <string name="work_proj_archive">Archivar proyecto</string>
     <string name="work_proj_archived">%1$s archivado</string>
     <string name="work_proj_delete">Eliminar proyecto</string>
+    <string name="work_proj_hidden_toast">%1$s está oculto en Keryx. Sigue apareciendo en la pasarela.</string>
+    <string name="work_proj_hide_hidden">Volver a ocultarlos</string>
+    <string name="work_proj_show_hidden">Mostrar ocultos (%1$d)</string>
+    <string name="work_proj_unhide">Volver a mostrar</string>
+    <string name="work_proj_hide">Ocultar en Keryx</string>
     <string name="work_proj_actions">Opciones de %1$s</string>
     <string name="work_proj_delete_title">¿Eliminar %1$s?</string>
     <string name="work_proj_delete_body">Solo se elimina la fila del proyecto. La carpeta en la pasarela y todas sus sesiones se quedan donde están.</string>

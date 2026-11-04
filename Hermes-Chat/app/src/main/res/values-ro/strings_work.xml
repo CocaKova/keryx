@@ -107,6 +107,11 @@
     <string name="work_proj_archive">Arhivează proiectul</string>
     <string name="work_proj_archived">%1$s arhivat</string>
     <string name="work_proj_delete">Șterge proiectul</string>
+    <string name="work_proj_hidden_toast">%1$s e ascuns în Keryx. Pe gateway se vede în continuare.</string>
+    <string name="work_proj_hide_hidden">Ascunde-le din nou</string>
+    <string name="work_proj_show_hidden">Arată ascunsele (%1$d)</string>
+    <string name="work_proj_unhide">Arată din nou</string>
+    <string name="work_proj_hide">Ascunde în Keryx</string>
     <string name="work_proj_actions">Opțiuni pentru %1$s</string>
     <string name="work_proj_delete_title">Ștergi %1$s?</string>
     <string name="work_proj_delete_body">Dispare doar rândul proiectului. Dosarul de pe gateway și toate sesiunile din el rămân exact unde sunt.</string>

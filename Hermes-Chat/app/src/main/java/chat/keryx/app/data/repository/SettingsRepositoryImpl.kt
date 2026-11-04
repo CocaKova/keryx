@@ -249,6 +249,12 @@ class SettingsRepositoryImpl(
             if (value.isNullOrBlank()) remove(ledgerKey("mission_board")) else putString(ledgerKey("mission_board"), value)
         }.apply()
 
+    override var hiddenProjects: Set<String>
+        get() = prefs.getStringSet(ledgerKey("hidden_projects"), null)?.toSet().orEmpty()
+        set(value) = prefs.edit().apply {
+            if (value.isEmpty()) remove(ledgerKey("hidden_projects")) else putStringSet(ledgerKey("hidden_projects"), value.toSet())
+        }.apply()
+
     override var biometricLockEnabled: Boolean
         get() = prefs.getBoolean("biometric_lock", false)
         set(value) = prefs.edit().putBoolean("biometric_lock", value).apply()

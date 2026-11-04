@@ -104,6 +104,11 @@
     <string name="work_proj_archive">Arquivar projeto</string>
     <string name="work_proj_archived">%1$s arquivado</string>
     <string name="work_proj_delete">Eliminar projeto</string>
+    <string name="work_proj_hidden_toast">%1$s está oculto no Keryx. Continua a aparecer no gateway.</string>
+    <string name="work_proj_hide_hidden">Ocultar novamente</string>
+    <string name="work_proj_show_hidden">Mostrar ocultos (%1$d)</string>
+    <string name="work_proj_unhide">Mostrar novamente</string>
+    <string name="work_proj_hide">Ocultar no Keryx</string>
     <string name="work_proj_actions">Opções de %1$s</string>
     <string name="work_proj_delete_title">Eliminar %1$s?</string>
     <string name="work_proj_delete_body">Só a entrada do projeto desaparece. A pasta no gateway e todas as sessões nela ficam exatamente onde estão.</string>

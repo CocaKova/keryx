@@ -101,6 +101,11 @@
     <string name="work_proj_archive">เก็บโปรเจกต์ถาวร</string>
     <string name="work_proj_archived">เก็บ %1$s ถาวรแล้ว</string>
     <string name="work_proj_delete">ลบโปรเจกต์</string>
+    <string name="work_proj_hidden_toast">ซ่อน %1$s ใน Keryx แล้ว บนเกตเวย์ยังคงแสดงอยู่</string>
+    <string name="work_proj_hide_hidden">ซ่อนอีกครั้ง</string>
+    <string name="work_proj_show_hidden">แสดงที่ซ่อนไว้ (%1$d)</string>
+    <string name="work_proj_unhide">แสดงอีกครั้ง</string>
+    <string name="work_proj_hide">ซ่อนใน Keryx</string>
     <string name="work_proj_actions">ตัวเลือกสำหรับ %1$s</string>
     <string name="work_proj_delete_title">ลบ %1$s ไหม</string>
     <string name="work_proj_delete_body">ลบเฉพาะรายการโปรเจกต์ โฟลเดอร์บนเกตเวย์และทุกเซสชันในนั้นยังอยู่ที่เดิม</string>

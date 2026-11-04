@@ -104,6 +104,11 @@
     <string name="work_proj_archive">Arkiver prosjekt</string>
     <string name="work_proj_archived">%1$s arkivert</string>
     <string name="work_proj_delete">Slett prosjekt</string>
+    <string name="work_proj_hidden_toast">%1$s er skjult i Keryx. Det vises fortsatt på gatewayen.</string>
+    <string name="work_proj_hide_hidden">Skjul dem igjen</string>
+    <string name="work_proj_show_hidden">Vis skjulte (%1$d)</string>
+    <string name="work_proj_unhide">Vis igjen</string>
+    <string name="work_proj_hide">Skjul i Keryx</string>
     <string name="work_proj_actions">Valg for %1$s</string>
     <string name="work_proj_delete_title">Slette %1$s?</string>
     <string name="work_proj_delete_body">Bare prosjektraden forsvinner. Mappen på gatewayen og alle økter i den blir nøyaktig der de er.</string>

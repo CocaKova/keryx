@@ -102,6 +102,11 @@
     <string name="work_proj_archive">Archiver le projet</string>
     <string name="work_proj_archived">%1$s archivé</string>
     <string name="work_proj_delete">Supprimer le projet</string>
+    <string name="work_proj_hidden_toast">%1$s est masqué dans Keryx. Il reste visible sur la passerelle.</string>
+    <string name="work_proj_hide_hidden">Les masquer à nouveau</string>
+    <string name="work_proj_show_hidden">Afficher les masqués (%1$d)</string>
+    <string name="work_proj_unhide">Afficher à nouveau</string>
+    <string name="work_proj_hide">Masquer dans Keryx</string>
     <string name="work_proj_actions">Options pour %1$s</string>
     <string name="work_proj_delete_title">Supprimer %1$s ?</string>
     <string name="work_proj_delete_body">Seule l\'entrée du projet disparaît. Le dossier sur la passerelle et toutes ses sessions restent exactement où ils sont.</string>

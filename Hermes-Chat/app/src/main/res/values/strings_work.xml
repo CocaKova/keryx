@@ -125,6 +125,11 @@
     <string name="work_proj_archive">Archive project</string>
     <string name="work_proj_archived">Archived %1$s</string>
     <string name="work_proj_delete">Delete project</string>
+    <string name="work_proj_hidden_toast">%1$s is hidden in Keryx. It still shows on the gateway.</string>
+    <string name="work_proj_hide_hidden">Hide them again</string>
+    <string name="work_proj_show_hidden">Show hidden (%1$d)</string>
+    <string name="work_proj_unhide">Show again</string>
+    <string name="work_proj_hide">Hide in Keryx</string>
     <string name="work_proj_actions">Options for %1$s</string>
     <string name="work_proj_delete_title">Delete %1$s?</string>
     <string name="work_proj_delete_body">Only the project row goes. The folder on the gateway and every session in it stay exactly where they are.</string>

@@ -104,6 +104,11 @@
     <string name="work_proj_archive">Projekt archivieren</string>
     <string name="work_proj_archived">%1$s archiviert</string>
     <string name="work_proj_delete">Projekt löschen</string>
+    <string name="work_proj_hidden_toast">%1$s ist in Keryx ausgeblendet. Auf dem Gateway ist es weiter zu sehen.</string>
+    <string name="work_proj_hide_hidden">Wieder ausblenden</string>
+    <string name="work_proj_show_hidden">Ausgeblendete zeigen (%1$d)</string>
+    <string name="work_proj_unhide">Wieder anzeigen</string>
+    <string name="work_proj_hide">In Keryx ausblenden</string>
     <string name="work_proj_actions">Optionen für %1$s</string>
     <string name="work_proj_delete_title">%1$s löschen?</string>
     <string name="work_proj_delete_body">Nur der Projekteintrag verschwindet. Der Ordner auf dem Gateway und alle Sitzungen darin bleiben genau, wo sie sind.</string>
