@@ -290,6 +290,15 @@ Hub reach Hermes' own API server through keryx-stream, so that needs `API_SERVER
 - No personal or install-specific names ship in the app, its tests or its docs. The release APK was
   checked with a strings scan before going public.
 
+## 2.19.2 · versionCode 140
+
+One fix, for gateways on Hermes 0.22.4 or newer.
+
+- Read marks, pin, archive, rename, hide and delete from a direct connection were refused by the
+  gateway, so a chat kept its unread dot however often it was opened. Keryx now sends the edit
+  fence those Hermes versions ask for, the way the official web client does. Older gateways get
+  the same request as before.
+
 ## 2.19.1 · versionCode 139
 
 A polish pass: a code audit (transport, speed, release safety) and a walk through every
