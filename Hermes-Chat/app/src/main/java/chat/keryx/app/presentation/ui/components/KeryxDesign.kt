@@ -1100,20 +1100,39 @@ private fun KeryxSpaceBody(
  * A hard fling in a sheet's list used to reach the top with velocity left over; the sheet took
  * it, dragged a few px and sprang back — the bounce (1.13 fixed it in the Hub; the Hub's rewrite
  * dropped it and the Missions card sheet grew it back). Swallow what a fling or its overscroll
- * side effect leaves; a real finger drag (UserInput) still passes through, so swipe-down closes.
+ * side effect leaves.
+ *
+ * But only a fling the LIST threw (3.0). It used to swallow every fling, including the one that
+ * ends a finger dragging the sheet itself down from its content: the sheet then settled with no
+ * speed at all and sprang back up unless it had been dragged past half way, so a card took
+ * swipe after swipe to put away. When the finger has pulled the sheet (a drag the list could
+ * not take, downward), the fling that follows is the sheet's, and passes.
  */
-private val SheetFlingTamer = object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+internal class SheetFlingTamer : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+    /** This gesture moved the sheet, not only the list. */
+    private var pulledSheet = false
+
     override fun onPostScroll(
         consumed: androidx.compose.ui.geometry.Offset,
         available: androidx.compose.ui.geometry.Offset,
         source: androidx.compose.ui.input.nestedscroll.NestedScrollSource,
-    ): androidx.compose.ui.geometry.Offset =
-        if (source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.SideEffect) available
+    ): androidx.compose.ui.geometry.Offset {
+        if (source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput) {
+            if (available.y > 0f) pulledSheet = true
+            return androidx.compose.ui.geometry.Offset.Zero
+        }
+        return if (source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.SideEffect) available
         else androidx.compose.ui.geometry.Offset.Zero
+    }
+
     override suspend fun onPostFling(
         consumed: androidx.compose.ui.unit.Velocity,
         available: androidx.compose.ui.unit.Velocity,
-    ): androidx.compose.ui.unit.Velocity = available
+    ): androidx.compose.ui.unit.Velocity {
+        val pass = pulledSheet
+        pulledSheet = false
+        return if (pass) androidx.compose.ui.unit.Velocity.Zero else available
+    }
 }
 
 /**
@@ -1125,7 +1144,9 @@ private val SheetFlingTamer = object : androidx.compose.ui.input.nestedscroll.Ne
 fun KeryxSheet(
     onDismiss: () -> Unit,
     title: String? = null,
-    sheetState: SheetState = rememberModalBottomSheetState(),
+    // Open or closed, no half-way stop (3.0): with one, a swipe down from a tall sheet only
+    // halved it and a second swipe was needed to put it away.
+    sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val accent = MaterialTheme.colorScheme.primary
@@ -1137,6 +1158,7 @@ fun KeryxSheet(
     LaunchedEffect(Unit) {
         if (reduced) arrival.snapTo(1f) else arrival.animateTo(1f, KeryxMotion.settle)
     }
+    val tamer = remember { SheetFlingTamer() }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -1158,7 +1180,7 @@ fun KeryxSheet(
         Column(
             // 3.0 depth: the sheet's crown catches the light, so it reads as a plane laid over
             // the page rather than the page changing colour.
-            Modifier.fillMaxWidth().keryxTopLight().nestedScroll(SheetFlingTamer).graphicsLayer {
+            Modifier.fillMaxWidth().keryxTopLight().nestedScroll(tamer).graphicsLayer {
                 alpha = 0.4f + 0.6f * arrival.value
                 translationY = (1f - arrival.value) * 10.dp.toPx()
             },
