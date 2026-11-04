@@ -433,6 +433,7 @@
     <string name="agent_skill_change_failed">%1$s nelze změnit: %2$s</string>
     <string name="agent_skill_switch_unsupported">Tato brána neumí odsud přepínat dovednosti.</string>
     <string name="agent_skill_lock_unsupported">Tato brána neumí zamykat dovednosti. Potřebuje Hermes 0.22.6 nebo novější.</string>
+    <string name="agent_plugins_slow">Hermes tento seznam sestavuje na bráně. Když je brána vytížená, může to trvat minutu či dvě.</string>
     <string name="agent_mcp_removed">%1$s odebrán</string>
     <string name="agent_mcp_remove_body">Odebere se z konfigurace MCP agenta. Nové chaty ho přestanou používat.</string>
     <string name="agent_mcp_remove_title">Odebrat %1$s?</string>

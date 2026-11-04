@@ -388,6 +388,7 @@
     <string name="agent_skill_change_failed">%1$s を変更できませんでした：%2$s</string>
     <string name="agent_skill_switch_unsupported">このゲートウェイはここからスキルを切り替えられません。</string>
     <string name="agent_skill_lock_unsupported">このゲートウェイはスキルをロックできません。Hermes 0.22.6 以降が必要です。</string>
+    <string name="agent_plugins_slow">この一覧は Hermes がゲートウェイ上で作成します。ゲートウェイが混み合っていると 1〜2 分かかることがあります。</string>
     <string name="agent_mcp_removed">%1$s を削除しました</string>
     <string name="agent_mcp_remove_body">エージェントの MCP 設定から外されます。新しいチャットでは使われなくなります。</string>
     <string name="agent_mcp_remove_title">%1$s を削除しますか？</string>

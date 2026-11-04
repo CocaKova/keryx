@@ -388,6 +388,7 @@
     <string name="agent_skill_change_failed">Tidak bisa mengubah %1$s: %2$s</string>
     <string name="agent_skill_switch_unsupported">Gateway ini tidak bisa mengubah keahlian dari sini.</string>
     <string name="agent_skill_lock_unsupported">Gateway ini tidak bisa mengunci skill. Perlu Hermes 0.22.6 atau lebih baru.</string>
+    <string name="agent_plugins_slow">Hermes menyusun daftar ini di gateway. Pada gateway yang sibuk, ini bisa memakan waktu satu atau dua menit.</string>
     <string name="agent_mcp_removed">%1$s dihapus</string>
     <string name="agent_mcp_remove_body">Server ini dikeluarkan dari konfigurasi MCP agen. Chat baru berhenti memakainya.</string>
     <string name="agent_mcp_remove_title">Hapus %1$s?</string>

@@ -139,10 +139,10 @@ private fun parse(body: String): JsonElement? = runCatching { lenient.parseToJso
 private fun enc(v: String): String = java.net.URLEncoder.encode(v, "UTF-8").replace("+", "%20")
 
 internal suspend fun GatewayRest.pluginsHub(): Routed<List<AgentPlugin>> =
-    routed("GET", "/api/dashboard/plugins/hub").map { parse(it)?.let(PluginParser::hub) }
+    routed("GET", "/api/dashboard/plugins/hub", slow = true).map { parse(it)?.let(PluginParser::hub) }
 
 internal suspend fun GatewayRest.pluginCatalog(): Routed<List<PluginCatalogEntry>> =
-    routed("GET", "/api/dashboard/plugins/catalog").map { parse(it)?.let(PluginParser::catalog) }
+    routed("GET", "/api/dashboard/plugins/catalog", slow = true).map { parse(it)?.let(PluginParser::catalog) }
 
 /** Install from the curated catalog by [catalogName] (pinned, reviewed) or from a git [identifier]. */
 internal suspend fun GatewayRest.pluginInstall(identifier: String?, catalogName: String?): Routed<PluginInstallResult> =
@@ -153,13 +153,14 @@ internal suspend fun GatewayRest.pluginInstall(identifier: String?, catalogName:
             if (!catalogName.isNullOrBlank()) put("catalog_name", JsonPrimitive(catalogName))
             put("enable", JsonPrimitive(true))
         }.toString(),
+        slow = true,
     ).map { parse(it)?.let(PluginParser::install) }
 
 internal suspend fun GatewayRest.pluginSetEnabled(name: String, enabled: Boolean): Routed<Unit> =
-    routed("POST", "/api/dashboard/agent-plugins/" + enc(name) + if (enabled) "/enable" else "/disable", "{}").map { }
+    routed("POST", "/api/dashboard/agent-plugins/" + enc(name) + if (enabled) "/enable" else "/disable", "{}", slow = true).map { }
 
 internal suspend fun GatewayRest.pluginRemove(name: String): Routed<Unit> =
-    routed("DELETE", "/api/dashboard/agent-plugins/" + enc(name)).map { }
+    routed("DELETE", "/api/dashboard/agent-plugins/" + enc(name), slow = true).map { }
 
 /**
  * `POST /api/mcp/servers` with a URL: [token] only for [McpAuthStyle.TOKEN], where the gateway keeps

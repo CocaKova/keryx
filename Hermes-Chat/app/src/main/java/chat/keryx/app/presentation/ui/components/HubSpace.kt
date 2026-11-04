@@ -276,8 +276,10 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
         },
         content = { PluginsTab(it.viewModel) },
         shown = { vm ->
+            // Unknown until the spoke has been opened once (the landing doesn't ask): show it on
+            // the direct door, and hide it only once a gateway has said it has no plugin hub.
             val available by vm.agent.pluginsAvailable.collectAsState()
-            vm.transportIsDirect && available == true
+            vm.transportIsDirect && !vm.isDemo && available != false
         },
         group = "Reach",
         trailing = { vm ->
@@ -330,7 +332,9 @@ fun GatewaySpace(viewModel: ChatViewModel, health: LinkHealth, onDismiss: () -> 
     val refreshLanding: (ChatViewModel) -> Unit = remember {
         { vm ->
             vm.hub.refreshHealth(); vm.hub.refreshModels(); vm.hub.refreshReasoningCaps()
-            GATEWAY_SPOKES.forEach { it.refresh(vm) }
+            // Not Plugins: the gateway builds that list slowly (22–109 s on a busy one, 11-04), and
+            // the landing only wanted a count. It is read when its spoke opens.
+            GATEWAY_SPOKES.filter { it.id != "plugins" }.forEach { it.refresh(vm) }
         }
     }
     val visibleId = spoke?.id ?: LANDING

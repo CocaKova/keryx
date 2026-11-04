@@ -488,6 +488,7 @@
     <string name="agent_skill_change_failed">Couldn\'t change %1$s: %2$s</string>
     <string name="agent_skill_switch_unsupported">This gateway can\'t switch skills from here.</string>
     <string name="agent_skill_lock_unsupported">This gateway can’t lock skills. It needs Hermes 0.22.6 or newer.</string>
+    <string name="agent_plugins_slow">Hermes builds this list on the gateway. On a busy gateway that can take a minute or two.</string>
     <string name="agent_mcp_removed">%1$s removed</string>
     <string name="agent_mcp_remove_body">It is taken out of the agent\'s MCP config. New chats stop using it.</string>
     <string name="agent_mcp_remove_title">Remove %1$s?</string>

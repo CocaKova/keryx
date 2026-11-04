@@ -561,7 +561,19 @@ class GatewayRest(
      * dashboard lacks answers 404/405, which hides a panel instead of erroring it. [send] is
      * this plus "anything outside 2xx is a failure".
      */
-    internal suspend fun exchange(method: String, path: String, jsonBody: String?): Result<Pair<Int, String>> = withContext(Dispatchers.IO) {
+    /**
+     * The shared client's 30 s read timeout, stretched for the few routes the gateway builds
+     * slowly (3.0): the plugin hub took 22 to 109 s inside a busy gateway on 11-04 while the same
+     * work took 3 s on its own, and an install clones a repo.
+     */
+    private val slowClient by lazy { client.newBuilder().readTimeout(SLOW_READ_S, TimeUnit.SECONDS).build() }
+
+    internal suspend fun exchange(
+        method: String,
+        path: String,
+        jsonBody: String?,
+        slow: Boolean = false,
+    ): Result<Pair<Int, String>> = withContext(Dispatchers.IO) {
         runCatching {
             fun run(hdr: Pair<String, String>?): Pair<Int, String> {
                 val req = Request.Builder()
@@ -569,7 +581,7 @@ class GatewayRest(
                     .method(method, jsonBody?.toRequestBody("application/json".toMediaType()))
                     .apply { hdr?.let { header(it.first, it.second) } }
                     .build()
-                return client.newCall(req).execute().use { resp ->
+                return (if (slow) slowClient else client).newCall(req).execute().use { resp ->
                     resp.code to resp.body?.string().orEmpty()
                 }
             }
@@ -641,3 +653,6 @@ class GatewayRest(
 
 /** The most a media or file download reads into memory. */
 private const val MAX_DOWNLOAD_BYTES = 64L * 1024 * 1024
+
+/** How long a slow dashboard route may take to answer (see GatewayRest.exchange). */
+private const val SLOW_READ_S = 150L

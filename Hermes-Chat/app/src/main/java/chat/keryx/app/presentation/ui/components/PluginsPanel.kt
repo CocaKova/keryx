@@ -65,7 +65,16 @@ internal fun PluginsTab(viewModel: ChatViewModel) {
         PanelErrorLine(panel.error)
         val all = panel.data
         if (all == null) {
-            if (panel.error == null) PanelLoading()
+            if (panel.error == null) {
+                PanelLoading()
+                // A busy gateway can take a minute or more to build this list; say so.
+                Text(
+                    stringResource(R.string.agent_plugins_slow),
+                    fontSize = KeryxType.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                )
+            }
             return@Column
         }
         val yours = all.filterNot { it.bundled }.sortedBy { it.name.lowercase() }

@@ -391,6 +391,7 @@
     <string name="agent_skill_change_failed">%1$s বদলানো যায়নি: %2$s</string>
     <string name="agent_skill_switch_unsupported">এই গেটওয়ে এখান থেকে স্কিল চালু/বন্ধ করতে পারে না।</string>
     <string name="agent_skill_lock_unsupported">এই গেটওয়ে দক্ষতা লক করতে পারে না। Hermes 0.22.6 বা নতুন সংস্করণ লাগবে।</string>
+    <string name="agent_plugins_slow">Hermes এই তালিকাটি গেটওয়েতে তৈরি করে। গেটওয়ে ব্যস্ত থাকলে এতে এক-দুই মিনিট লাগতে পারে।</string>
     <string name="agent_mcp_removed">%1$s সরানো হয়েছে</string>
     <string name="agent_mcp_remove_body">এটি এজেন্টের MCP কনফিগ থেকে সরানো হবে। নতুন চ্যাট আর এটি ব্যবহার করবে না।</string>
     <string name="agent_mcp_remove_title">%1$s সরাবেন?</string>

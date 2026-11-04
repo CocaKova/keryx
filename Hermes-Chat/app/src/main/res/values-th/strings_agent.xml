@@ -388,6 +388,7 @@
     <string name="agent_skill_change_failed">เปลี่ยน %1$s ไม่ได้: %2$s</string>
     <string name="agent_skill_switch_unsupported">เกตเวย์นี้สลับทักษะจากที่นี่ไม่ได้</string>
     <string name="agent_skill_lock_unsupported">เกตเวย์นี้ล็อกสกิลไม่ได้ ต้องใช้ Hermes 0.22.6 ขึ้นไป</string>
+    <string name="agent_plugins_slow">Hermes สร้างรายการนี้บนเกตเวย์ ถ้าเกตเวย์ไม่ว่างอาจใช้เวลาหนึ่งถึงสองนาที</string>
     <string name="agent_mcp_removed">นำ %1$s ออกแล้ว</string>
     <string name="agent_mcp_remove_body">จะถูกนำออกจากคอนฟิก MCP ของเอเจนต์ แชทใหม่จะไม่ใช้อีก</string>
     <string name="agent_mcp_remove_title">นำ %1$s ออกไหม</string>

@@ -403,6 +403,7 @@
     <string name="agent_skill_change_failed">Δεν ήταν δυνατή η αλλαγή του %1$s: %2$s</string>
     <string name="agent_skill_switch_unsupported">Αυτή η πύλη δεν μπορεί να αλλάξει δεξιότητες από εδώ.</string>
     <string name="agent_skill_lock_unsupported">Αυτή η πύλη δεν μπορεί να κλειδώσει δεξιότητες. Χρειάζεται Hermes 0.22.6 ή νεότερο.</string>
+    <string name="agent_plugins_slow">Το Hermes φτιάχνει αυτή τη λίστα στην πύλη. Σε μια απασχολημένη πύλη αυτό μπορεί να πάρει ένα με δύο λεπτά.</string>
     <string name="agent_mcp_removed">Το %1$s αφαιρέθηκε</string>
     <string name="agent_mcp_remove_body">Αφαιρείται από τη ρύθμιση MCP του πράκτορα. Οι νέες συνομιλίες σταματούν να το χρησιμοποιούν.</string>
     <string name="agent_mcp_remove_title">Αφαίρεση του %1$s;</string>

@@ -403,6 +403,7 @@
     <string name="agent_skill_change_failed">%1$s konnte nicht geändert werden: %2$s</string>
     <string name="agent_skill_switch_unsupported">Dieses Gateway kann Skills nicht von hier aus schalten.</string>
     <string name="agent_skill_lock_unsupported">Dieses Gateway kann keine Skills sperren. Es braucht Hermes 0.22.6 oder neuer.</string>
+    <string name="agent_plugins_slow">Hermes baut diese Liste auf dem Gateway. Auf einem ausgelasteten Gateway kann das ein bis zwei Minuten dauern.</string>
     <string name="agent_mcp_removed">%1$s entfernt</string>
     <string name="agent_mcp_remove_body">Er wird aus der MCP-Konfiguration des Agenten entfernt. Neue Chats nutzen ihn nicht mehr.</string>
     <string name="agent_mcp_remove_title">%1$s entfernen?</string>

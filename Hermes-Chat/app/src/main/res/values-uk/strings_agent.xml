@@ -421,6 +421,7 @@
     <string name="agent_skill_change_failed">Не вдалося змінити %1$s: %2$s</string>
     <string name="agent_skill_switch_unsupported">Цей шлюз не вміє перемикати навички звідси.</string>
     <string name="agent_skill_lock_unsupported">Цей шлюз не вміє блокувати навички. Потрібен Hermes 0.22.6 або новіший.</string>
+    <string name="agent_plugins_slow">Hermes збирає цей список на шлюзі. Якщо шлюз зайнятий, це може тривати хвилину-дві.</string>
     <string name="agent_mcp_removed">%1$s вилучено</string>
     <string name="agent_mcp_remove_body">Його буде вилучено з MCP-конфігу агента. Нові чати перестануть ним користуватися.</string>
     <string name="agent_mcp_remove_title">Вилучити %1$s?</string>

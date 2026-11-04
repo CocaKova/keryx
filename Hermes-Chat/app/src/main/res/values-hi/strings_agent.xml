@@ -391,6 +391,7 @@
     <string name="agent_skill_change_failed">%1$s बदला नहीं जा सका: %2$s</string>
     <string name="agent_skill_switch_unsupported">यह गेटवे यहाँ से स्किल चालू/बंद नहीं कर सकता।</string>
     <string name="agent_skill_lock_unsupported">यह गेटवे स्किल लॉक नहीं कर सकता। Hermes 0.22.6 या नया चाहिए।</string>
+    <string name="agent_plugins_slow">Hermes यह सूची गेटवे पर बनाता है। व्यस्त गेटवे पर इसमें एक-दो मिनट लग सकते हैं।</string>
     <string name="agent_mcp_removed">%1$s हटाया गया</string>
     <string name="agent_mcp_remove_body">इसे एजेंट के MCP कॉन्फ़िग से हटा दिया जाता है। नई चैट इसका इस्तेमाल बंद कर देंगी।</string>
     <string name="agent_mcp_remove_title">%1$s हटाएँ?</string>

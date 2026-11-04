@@ -406,6 +406,7 @@
     <string name="agent_skill_change_failed">Impossible de modifier %1$s : %2$s</string>
     <string name="agent_skill_switch_unsupported">Cette passerelle ne peut pas activer ou désactiver de compétences d\'ici.</string>
     <string name="agent_skill_lock_unsupported">Cette passerelle ne peut pas verrouiller les compétences. Il faut Hermes 0.22.6 ou plus récent.</string>
+    <string name="agent_plugins_slow">Hermes construit cette liste sur la passerelle. Sur une passerelle chargée, cela peut prendre une ou deux minutes.</string>
     <string name="agent_mcp_removed">%1$s retiré</string>
     <string name="agent_mcp_remove_body">Il est retiré de la config MCP de l\'agent. Les nouveaux chats ne l\'utilisent plus.</string>
     <string name="agent_mcp_remove_title">Retirer %1$s ?</string>

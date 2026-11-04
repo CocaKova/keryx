@@ -418,6 +418,7 @@
     <string name="agent_skill_change_failed">Nu s-a putut modifica %1$s: %2$s</string>
     <string name="agent_skill_switch_unsupported">Acest gateway nu poate comuta abilitățile de aici.</string>
     <string name="agent_skill_lock_unsupported">Acest gateway nu poate bloca abilități. Are nevoie de Hermes 0.22.6 sau mai nou.</string>
+    <string name="agent_plugins_slow">Hermes construiește această listă pe gateway. Pe un gateway ocupat poate dura un minut sau două.</string>
     <string name="agent_mcp_removed">%1$s eliminat</string>
     <string name="agent_mcp_remove_body">E scos din config-ul MCP al agentului. Chaturile noi nu-l mai folosesc.</string>
     <string name="agent_mcp_remove_title">Elimini %1$s?</string>

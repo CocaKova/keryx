@@ -463,6 +463,7 @@
     <string name="agent_skill_change_failed">تعذّر تغيير %1$s: %2$s</string>
     <string name="agent_skill_switch_unsupported">لا تستطيع هذه البوابة تبديل المهارات من هنا.</string>
     <string name="agent_skill_lock_unsupported">لا تستطيع هذه البوابة قفل المهارات. تحتاج إلى Hermes 0.22.6 أو أحدث.</string>
+    <string name="agent_plugins_slow">يبني Hermes هذه القائمة على البوابة، وقد يستغرق ذلك دقيقة أو دقيقتين إذا كانت البوابة مشغولة.</string>
     <string name="agent_mcp_removed">تمت إزالة %1$s</string>
     <string name="agent_mcp_remove_body">يُزال من إعدادات MCP للوكيل. تتوقف المحادثات الجديدة عن استخدامه.</string>
     <string name="agent_mcp_remove_title">إزالة %1$s؟</string>

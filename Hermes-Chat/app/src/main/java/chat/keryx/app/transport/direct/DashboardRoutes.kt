@@ -21,8 +21,8 @@ import kotlinx.serialization.json.buildJsonObject
  * and never a second client beside it. Every call answers [Routed]: a route this gateway is too
  * old to have comes back [Routed.Missing] and hides its part of the screen instead of erroring.
  */
-internal suspend fun GatewayRest.routed(method: String, path: String, jsonBody: String? = null): Routed<String> =
-    exchange(method, path, jsonBody).fold(
+internal suspend fun GatewayRest.routed(method: String, path: String, jsonBody: String? = null, slow: Boolean = false): Routed<String> =
+    exchange(method, path, jsonBody, slow).fold(
         onSuccess = { (code, body) -> RouteProbe.classify(code, body) },
         // No answer at all: the network, or a gateway mid-restart. Status 0 says so.
         onFailure = { Routed.Failed(it.message?.take(160) ?: chat.keryx.app.KeryxText.getOr(chat.keryx.app.R.string.p2_gateway_no_answer, "The gateway didn't answer.")) },

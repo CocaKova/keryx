@@ -403,6 +403,7 @@
     <string name="agent_skill_change_failed">Muutos epäonnistui (%1$s): %2$s</string>
     <string name="agent_skill_switch_unsupported">Tämä yhdyskäytävä ei voi vaihtaa taitoja täältä.</string>
     <string name="agent_skill_lock_unsupported">Tämä yhdyskäytävä ei voi lukita taitoja. Se tarvitsee Hermes 0.22.6:n tai uudemman.</string>
+    <string name="agent_plugins_slow">Hermes kokoaa tämän listan yhdyskäytävällä. Kiireisellä yhdyskäytävällä se voi kestää minuutin tai kaksi.</string>
     <string name="agent_mcp_removed">%1$s poistettu</string>
     <string name="agent_mcp_remove_body">Se poistetaan agentin MCP-asetuksista. Uudet keskustelut lakkaavat käyttämästä sitä.</string>
     <string name="agent_mcp_remove_title">Poistetaanko %1$s?</string>

@@ -403,6 +403,7 @@
     <string name="agent_skill_change_failed">Değiştirilemedi: %1$s (%2$s)</string>
     <string name="agent_skill_switch_unsupported">Bu ağ geçidi becerileri buradan açıp kapatamıyor.</string>
     <string name="agent_skill_lock_unsupported">Bu ağ geçidi becerileri kilitleyemez. Hermes 0.22.6 veya daha yenisi gerekir.</string>
+    <string name="agent_plugins_slow">Hermes bu listeyi ağ geçidinde oluşturur. Ağ geçidi meşgulse bu bir iki dakika sürebilir.</string>
     <string name="agent_mcp_removed">%1$s kaldırıldı</string>
     <string name="agent_mcp_remove_body">Ajanın MCP yapılandırmasından çıkarılır. Yeni sohbetler onu artık kullanmaz.</string>
     <string name="agent_mcp_remove_title">%1$s kaldırılsın mı?</string>

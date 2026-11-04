@@ -388,6 +388,7 @@
     <string name="agent_skill_change_failed">Không thay đổi được %1$s: %2$s</string>
     <string name="agent_skill_switch_unsupported">Cổng này không thể bật/tắt kỹ năng từ đây.</string>
     <string name="agent_skill_lock_unsupported">Cổng này không khóa được kỹ năng. Cần Hermes 0.22.6 trở lên.</string>
+    <string name="agent_plugins_slow">Hermes dựng danh sách này trên gateway. Khi gateway bận, việc này có thể mất một hai phút.</string>
     <string name="agent_mcp_removed">Đã gỡ %1$s</string>
     <string name="agent_mcp_remove_body">Máy chủ bị gỡ khỏi cấu hình MCP của tác tử. Các cuộc trò chuyện mới sẽ không dùng nó nữa.</string>
     <string name="agent_mcp_remove_title">Gỡ %1$s?</string>
