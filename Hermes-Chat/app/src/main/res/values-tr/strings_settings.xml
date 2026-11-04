@@ -172,6 +172,8 @@
     <string name="settings_text_default">Varsayılan</string>
     <string name="settings_text_large">Büyük</string>
     <string name="settings_palette">Palet</string>
+    <string name="settings_accent_for_light">Açık mod için. Koyu mod kendi renklerini korur.</string>
+    <string name="settings_accent_for_dark">Koyu mod için. Açık mod kendi renklerini korur.</string>
     <string name="settings_accent">Vurgu</string>
     <string name="settings_accent_2">Vurgu 2</string>
     <string name="settings_accent_2_help">Gradyan eşi: balonlar, çalışma bulutu ve kenarlıklar Vurgu → Vurgu 2 geçişiyle karışır.</string>

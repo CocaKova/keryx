@@ -172,6 +172,8 @@
     <string name="settings_text_default">Oletus</string>
     <string name="settings_text_large">Suuri</string>
     <string name="settings_palette">Paletti</string>
+    <string name="settings_accent_for_light">Vaaleaan tilaan. Tummalla tilalla on omat värinsä.</string>
+    <string name="settings_accent_for_dark">Tummaan tilaan. Vaalealla tilalla on omat värinsä.</string>
     <string name="settings_accent">Korostus</string>
     <string name="settings_accent_2">Korostus 2</string>
     <string name="settings_accent_2_help">Liukuvärin pari: kuplat, työpilvi ja reunat liukuvat Korostus → Korostus 2.</string>

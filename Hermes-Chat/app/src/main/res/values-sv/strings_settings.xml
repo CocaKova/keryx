@@ -172,6 +172,8 @@
     <string name="settings_text_default">Standard</string>
     <string name="settings_text_large">Stor</string>
     <string name="settings_palette">Palett</string>
+    <string name="settings_accent_for_light">För ljust läge. Mörkt läge behåller sina egna färger.</string>
+    <string name="settings_accent_for_dark">För mörkt läge. Ljust läge behåller sina egna färger.</string>
     <string name="settings_accent">Accent</string>
     <string name="settings_accent_2">Accent 2</string>
     <string name="settings_accent_2_help">Gradientpartnern: bubblor, arbetsmolnet och kanter tonar Accent → Accent 2.</string>

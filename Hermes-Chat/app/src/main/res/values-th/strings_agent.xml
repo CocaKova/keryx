@@ -387,6 +387,11 @@
     <string name="agent_skill_off">ปิด %1$s — เซสชันใหม่จะข้าม</string>
     <string name="agent_skill_change_failed">เปลี่ยน %1$s ไม่ได้: %2$s</string>
     <string name="agent_skill_switch_unsupported">เกตเวย์นี้สลับทักษะจากที่นี่ไม่ได้</string>
+    <string name="agent_skill_lock_unsupported">เกตเวย์นี้ล็อกสกิลไม่ได้ ต้องใช้ Hermes 0.22.6 ขึ้นไป</string>
+    <string name="agent_skill_unlocked">ปลดล็อก %1$s แล้ว เอเจนต์แก้ไขได้อีกครั้ง</string>
+    <string name="agent_skill_locked">ล็อก %1$s แล้ว เอเจนต์แก้ไขไม่ได้</string>
+    <string name="agent_skill_unlock_a11y">ปลดล็อก %1$s</string>
+    <string name="agent_skill_lock_a11y">ล็อก %1$s ไม่ให้เอเจนต์แก้ไข</string>
     <plurals name="agent_pruned">
         <item quantity="other">ล้าง %d เซสชันแล้ว</item>
     </plurals>

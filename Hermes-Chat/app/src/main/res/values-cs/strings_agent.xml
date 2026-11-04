@@ -432,6 +432,11 @@
     <string name="agent_skill_off">%1$s vypnuto — nové relace ji vynechají</string>
     <string name="agent_skill_change_failed">%1$s nelze změnit: %2$s</string>
     <string name="agent_skill_switch_unsupported">Tato brána neumí odsud přepínat dovednosti.</string>
+    <string name="agent_skill_lock_unsupported">Tato brána neumí zamykat dovednosti. Potřebuje Hermes 0.22.6 nebo novější.</string>
+    <string name="agent_skill_unlocked">%1$s odemčeno — agent ho může znovu upravovat</string>
+    <string name="agent_skill_locked">%1$s zamčeno — agent ho nemůže měnit</string>
+    <string name="agent_skill_unlock_a11y">Odemknout %1$s</string>
+    <string name="agent_skill_lock_a11y">Zamknout %1$s proti úpravám agenta</string>
     <plurals name="agent_pruned">
         <item quantity="one">Pročištěna %d relace</item>
         <item quantity="few">Pročištěny %d relace</item>

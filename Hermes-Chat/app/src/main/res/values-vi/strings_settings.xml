@@ -171,6 +171,8 @@
     <string name="settings_text_default">Mặc định</string>
     <string name="settings_text_large">Lớn</string>
     <string name="settings_palette">Bảng màu</string>
+    <string name="settings_accent_for_light">Cho chế độ sáng. Chế độ tối giữ màu riêng.</string>
+    <string name="settings_accent_for_dark">Cho chế độ tối. Chế độ sáng giữ màu riêng.</string>
     <string name="settings_accent">Màu nhấn</string>
     <string name="settings_accent_2">Màu nhấn 2</string>
     <string name="settings_accent_2_help">Màu phối chuyển sắc: bong bóng, đám mây làm việc và viền chuyển từ Màu nhấn → Màu nhấn 2.</string>

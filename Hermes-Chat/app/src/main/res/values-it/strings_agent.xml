@@ -402,6 +402,11 @@
     <string name="agent_skill_off">%1$s disattiva — le nuove sessioni la saltano</string>
     <string name="agent_skill_change_failed">Impossibile modificare %1$s: %2$s</string>
     <string name="agent_skill_switch_unsupported">Questo gateway non può attivare o disattivare competenze da qui.</string>
+    <string name="agent_skill_lock_unsupported">Questo gateway non può bloccare le skill. Serve Hermes 0.22.6 o successivo.</string>
+    <string name="agent_skill_unlocked">%1$s sbloccato: l’agente può di nuovo modificarlo</string>
+    <string name="agent_skill_locked">%1$s bloccato: l’agente non può modificarlo</string>
+    <string name="agent_skill_unlock_a11y">Sblocca %1$s</string>
+    <string name="agent_skill_lock_a11y">Blocca %1$s contro le modifiche dell’agente</string>
     <plurals name="agent_pruned">
         <item quantity="one">%d sessione sfoltita</item>
         <item quantity="other">%d sessioni sfoltite</item>

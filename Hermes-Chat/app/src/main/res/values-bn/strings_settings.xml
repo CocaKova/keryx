@@ -164,6 +164,8 @@
     <string name="settings_text_default">ডিফল্ট</string>
     <string name="settings_text_large">বড়</string>
     <string name="settings_palette">প্যালেট</string>
+    <string name="settings_accent_for_light">লাইট মোডের জন্য। ডার্ক মোড নিজের রং রাখে।</string>
+    <string name="settings_accent_for_dark">ডার্ক মোডের জন্য। লাইট মোড নিজের রং রাখে।</string>
     <string name="settings_accent">অ্যাকসেন্ট</string>
     <string name="settings_accent_2">অ্যাকসেন্ট 2</string>
     <string name="settings_accent_2_help">গ্রেডিয়েন্টের সঙ্গী: বাবল, কাজের মেঘ আর বর্ডার অ্যাকসেন্ট → অ্যাকসেন্ট 2-এ মিশে যায়।</string>

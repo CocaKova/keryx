@@ -164,6 +164,8 @@
     <string name="settings_text_default">Standaard</string>
     <string name="settings_text_large">Groot</string>
     <string name="settings_palette">Palet</string>
+    <string name="settings_accent_for_light">Voor de lichte modus. De donkere modus houdt eigen kleuren.</string>
+    <string name="settings_accent_for_dark">Voor de donkere modus. De lichte modus houdt eigen kleuren.</string>
     <string name="settings_accent">Accent</string>
     <string name="settings_accent_2">Accent 2</string>
     <string name="settings_accent_2_help">De verlooppartner: ballonnen, de werkwolk en randen lopen van Accent → Accent 2.</string>

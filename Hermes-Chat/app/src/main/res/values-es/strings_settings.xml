@@ -200,6 +200,8 @@
     <string name="settings_text_large">Grande</string>
     <!-- A ready-made pair of accent colours. -->
     <string name="settings_palette">Paleta</string>
+    <string name="settings_accent_for_light">Para el modo claro. El modo oscuro conserva sus propios colores.</string>
+    <string name="settings_accent_for_dark">Para el modo oscuro. El modo claro conserva sus propios colores.</string>
     <string name="settings_accent">Acento</string>
     <string name="settings_accent_2">Acento 2</string>
     <string name="settings_accent_2_help">El color pareja del degradado: las burbujas, la nube de trabajo y los bordes mezclan Acento → Acento 2.</string>

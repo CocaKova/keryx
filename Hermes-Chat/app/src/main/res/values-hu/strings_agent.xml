@@ -402,6 +402,11 @@
     <string name="agent_skill_off">%1$s ki – az új munkamenetek kihagyják</string>
     <string name="agent_skill_change_failed">Nem sikerült módosítani (%1$s): %2$s</string>
     <string name="agent_skill_switch_unsupported">Ez az átjáró innen nem tud képességeket kapcsolni.</string>
+    <string name="agent_skill_lock_unsupported">Ez az átjáró nem tud képességeket zárolni. Hermes 0.22.6 vagy újabb kell.</string>
+    <string name="agent_skill_unlocked">%1$s feloldva — az ügynök újra szerkesztheti</string>
+    <string name="agent_skill_locked">%1$s zárolva — az ügynök nem módosíthatja</string>
+    <string name="agent_skill_unlock_a11y">%1$s feloldása</string>
+    <string name="agent_skill_lock_a11y">%1$s zárolása az ügynök módosításai ellen</string>
     <plurals name="agent_pruned">
         <item quantity="one">%d munkamenet ritkítva</item>
         <item quantity="other">%d munkamenet ritkítva</item>

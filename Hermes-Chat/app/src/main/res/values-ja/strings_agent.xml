@@ -387,6 +387,11 @@
     <string name="agent_skill_off">%1$s をオフ — 新しいセッションでは読み込まれません</string>
     <string name="agent_skill_change_failed">%1$s を変更できませんでした：%2$s</string>
     <string name="agent_skill_switch_unsupported">このゲートウェイはここからスキルを切り替えられません。</string>
+    <string name="agent_skill_lock_unsupported">このゲートウェイはスキルをロックできません。Hermes 0.22.6 以降が必要です。</string>
+    <string name="agent_skill_unlocked">%1$s のロックを解除しました。エージェントは再び編集できます</string>
+    <string name="agent_skill_locked">%1$s をロックしました。エージェントは変更できません</string>
+    <string name="agent_skill_unlock_a11y">%1$s のロックを解除</string>
+    <string name="agent_skill_lock_a11y">%1$s をエージェントの変更からロック</string>
     <plurals name="agent_pruned">
         <item quantity="other">%d 件のセッションを整理しました</item>
     </plurals>

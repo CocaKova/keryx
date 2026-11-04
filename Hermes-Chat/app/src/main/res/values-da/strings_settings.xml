@@ -172,6 +172,8 @@
     <string name="settings_text_default">Standard</string>
     <string name="settings_text_large">Stor</string>
     <string name="settings_palette">Palet</string>
+    <string name="settings_accent_for_light">Til lys tilstand. Mørk tilstand beholder sine egne farver.</string>
+    <string name="settings_accent_for_dark">Til mørk tilstand. Lys tilstand beholder sine egne farver.</string>
     <string name="settings_accent">Accent</string>
     <string name="settings_accent_2">Accent 2</string>
     <string name="settings_accent_2_help">Gradientpartneren: bobler, arbejdsskyen og kanter glider fra Accent → Accent 2.</string>

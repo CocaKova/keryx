@@ -387,6 +387,11 @@
     <string name="agent_skill_off">Đã tắt %1$s — phiên mới sẽ bỏ qua nó</string>
     <string name="agent_skill_change_failed">Không thay đổi được %1$s: %2$s</string>
     <string name="agent_skill_switch_unsupported">Cổng này không thể bật/tắt kỹ năng từ đây.</string>
+    <string name="agent_skill_lock_unsupported">Cổng này không khóa được kỹ năng. Cần Hermes 0.22.6 trở lên.</string>
+    <string name="agent_skill_unlocked">Đã mở khóa %1$s — tác tử có thể sửa lại</string>
+    <string name="agent_skill_locked">Đã khóa %1$s — tác tử không thể sửa</string>
+    <string name="agent_skill_unlock_a11y">Mở khóa %1$s</string>
+    <string name="agent_skill_lock_a11y">Khóa %1$s để tác tử không sửa được</string>
     <plurals name="agent_pruned">
         <item quantity="other">Đã dọn %d phiên</item>
     </plurals>

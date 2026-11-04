@@ -452,6 +452,17 @@ object KeryxGlyphs {
         )
     }
 
+    /** A skill the agent may still edit (3.0 skill locks): the same lock, its shackle swung open. */
+    val LockOpen: ImageVector by lazy {
+        draw(
+            "lock-open",
+            listOf(
+                "M7,11 h10 a1.5,1.5 0 0 1 1.5,1.5 v6 a1.5,1.5 0 0 1 -1.5,1.5 H7 a1.5,1.5 0 0 1 -1.5,-1.5 v-6 A1.5,1.5 0 0 1 7,11 z",
+                "M8.5,11 V8.25 a3.5,3.5 0 0 1 6.85,-1",
+            ),
+        )
+    }
+
     /** Diagnostics — Settings' debug row: a probe scope. */
     val Scope: ImageVector by lazy {
         draw(

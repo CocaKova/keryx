@@ -432,6 +432,11 @@
     <string name="agent_skill_off">%1$s wyłączona — nowe sesje ją pominą</string>
     <string name="agent_skill_change_failed">Nie udało się zmienić %1$s: %2$s</string>
     <string name="agent_skill_switch_unsupported">Ta bramka nie pozwala stąd przełączać umiejętności.</string>
+    <string name="agent_skill_lock_unsupported">Ta brama nie może blokować umiejętności. Wymaga Hermes 0.22.6 lub nowszego.</string>
+    <string name="agent_skill_unlocked">%1$s odblokowano — agent może go znów edytować</string>
+    <string name="agent_skill_locked">%1$s zablokowano — agent nie może go zmienić</string>
+    <string name="agent_skill_unlock_a11y">Odblokuj %1$s</string>
+    <string name="agent_skill_lock_a11y">Zablokuj %1$s przed zmianami agenta</string>
     <plurals name="agent_pruned">
         <item quantity="one">Wyczyszczono %d sesję</item>
         <item quantity="few">Wyczyszczono %d sesje</item>

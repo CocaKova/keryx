@@ -124,8 +124,15 @@ class NoteActivity : androidx.fragment.app.FragmentActivity() {
 
         setContent {
             val dark = isSystemInDarkTheme()
-            val accent = remember { colorFromHex(settings.accentColorHex, Color(0xFFE55A00)) }
-            val accent2 = remember { colorFromHex(settings.accentColor2Hex, Color(0xFF8B5CF6)) }
+            // The mode's own pair (3.0): light wears dark's until it has its own.
+            val accent = remember(dark) {
+                val d = colorFromHex(settings.accentColorHex, Color(0xFFE55A00))
+                if (dark) d else settings.accentColorHexLight?.let { colorFromHex(it, d) } ?: d
+            }
+            val accent2 = remember(dark) {
+                val d = colorFromHex(settings.accentColor2Hex, Color(0xFF8B5CF6))
+                if (dark) d else settings.accentColor2HexLight?.let { colorFromHex(it, d) } ?: d
+            }
             HermesChatTheme(darkTheme = dark, customAccent = accent, customAccent2 = accent2) {
                 Surface(
                     color = MaterialTheme.colorScheme.surface,

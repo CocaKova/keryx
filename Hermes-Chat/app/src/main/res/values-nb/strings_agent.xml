@@ -402,6 +402,11 @@
     <string name="agent_skill_off">%1$s av — nye økter hopper over den</string>
     <string name="agent_skill_change_failed">Kunne ikke endre %1$s: %2$s</string>
     <string name="agent_skill_switch_unsupported">Denne gatewayen kan ikke slå ferdigheter av og på herfra.</string>
+    <string name="agent_skill_lock_unsupported">Denne gatewayen kan ikke låse ferdigheter. Den trenger Hermes 0.22.6 eller nyere.</string>
+    <string name="agent_skill_unlocked">%1$s låst opp — agenten kan redigere den igjen</string>
+    <string name="agent_skill_locked">%1$s låst — agenten kan ikke endre den</string>
+    <string name="agent_skill_unlock_a11y">Lås opp %1$s</string>
+    <string name="agent_skill_lock_a11y">Lås %1$s mot endringer fra agenten</string>
     <plurals name="agent_pruned">
         <item quantity="one">Ryddet bort %d økt</item>
         <item quantity="other">Ryddet bort %d økter</item>

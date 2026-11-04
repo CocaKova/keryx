@@ -173,6 +173,8 @@
     <string name="settings_text_default">ברירת מחדל</string>
     <string name="settings_text_large">גדול</string>
     <string name="settings_palette">פלטה</string>
+    <string name="settings_accent_for_light">למצב בהיר. למצב כהה יש צבעים משלו.</string>
+    <string name="settings_accent_for_dark">למצב כהה. למצב בהיר יש צבעים משלו.</string>
     <string name="settings_accent">הדגשה</string>
     <string name="settings_accent_2">הדגשה 2</string>
     <string name="settings_accent_2_help">שותף המעבר: בועות, ענן העבודה והמסגרות מתמזגים מהדגשה ← הדגשה 2.</string>

@@ -263,6 +263,11 @@ fun ChatScreen(
     // opens at its own newest message, not wherever the last room was scrolled.
     val listState = androidx.compose.runtime.saveable.rememberSaveable(currentRoom?.id, saver = LazyListState.Saver) { LazyListState() }
     val scope = rememberCoroutineScope()
+    /** A tool run is opening or shutting: the transcript's rows stop gliding until it settles. */
+    var runReveal by remember { mutableStateOf(false) }
+    var runRevealJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    /** The sub-pixel part of a run's growth, carried to the next frame. */
+    var runGrowCarry by remember { mutableStateOf(0f) }
     val context = LocalContext.current
     val density = LocalDensity.current
     val focusRequester = remember { FocusRequester() }
@@ -928,7 +933,13 @@ fun ChatScreen(
                     }
                 },
             ) { index, item ->
-                Box(modifier = Modifier.animateItem()) {
+                // While a tool run opens or shuts, the rows around it follow it in the same frame
+                // (3.0): their placement glide chased the growing run a few frames behind, and for
+                // those frames the run's steps were drawn over the message above it.
+                Box(
+                    modifier = if (runReveal) Modifier.animateItem(placementSpec = null)
+                    else Modifier.animateItem(),
+                ) {
                     when (item) {
                         is ChatRenderItem.DayHeader -> DaySeparator(item.epochMillis)
                         is ChatRenderItem.Arrival -> ArrivalMark(item.message)
@@ -944,10 +955,29 @@ fun ChatScreen(
                             // still await Hermes' reply; older runs are settled ("Ran N tools").
                             active = index == 0 && awaitingReply,
                             baseColor = MaterialTheme.colorScheme.onSurface,
-                            // Predictable anchor: when opened, pin the group to a known spot so the
-                            // viewport never jumps unpredictably as the accordion grows.
-                            onToggle = { isExpanded ->
-                                if (isExpanded) scope.launch { listState.animateScrollToItem(index) }
+                            // Opening a run is ONE motion (3.0): the transcript moves by exactly what
+                            // the run grows, in the same frame, so the header stays where it was
+                            // tapped and the steps unroll beneath it. It used to scroll to the run
+                            // while the run grew, and the two motions fought.
+                            onToggle = {
+                                runRevealJob?.cancel()
+                                runReveal = true
+                                runRevealJob = scope.launch {
+                                    kotlinx.coroutines.delay(RUN_REVEAL_SETTLE_MS)
+                                    runReveal = false
+                                }
+                            },
+                            // Asked of the list's NEXT layout, not dispatched now: a scroll now is bounded by the
+                            // heights before the growth, and near the top of a short chat most of it
+                            // was refused, so the header rose anyway.
+                            onGrow = { grew ->
+                                runGrowCarry += grew
+                                val px = runGrowCarry.toInt()
+                                runGrowCarry -= px
+                                if (px != 0) listState.requestScrollToItem(
+                                    listState.firstVisibleItemIndex,
+                                    (listState.firstVisibleItemScrollOffset + px).coerceAtLeast(0),
+                                )
                             },
                         )
                         is ChatRenderItem.Single -> {
@@ -1640,3 +1670,6 @@ fun DaySeparator(epochMillis: Long) {
 
 /** How many attachments one message carries (2.16). */
 private const val MAX_ATTACHMENTS = 6
+
+/** How long a tool run's reveal takes to settle before the list checks its header is on screen. */
+private const val RUN_REVEAL_SETTLE_MS = 420L

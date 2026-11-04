@@ -164,6 +164,8 @@
     <string name="settings_text_default">डिफ़ॉल्ट</string>
     <string name="settings_text_large">बड़ा</string>
     <string name="settings_palette">पैलेट</string>
+    <string name="settings_accent_for_light">लाइट मोड के लिए। डार्क मोड अपने रंग रखता है।</string>
+    <string name="settings_accent_for_dark">डार्क मोड के लिए। लाइट मोड अपने रंग रखता है।</string>
     <string name="settings_accent">एक्सेंट</string>
     <string name="settings_accent_2">एक्सेंट 2</string>
     <string name="settings_accent_2_help">ग्रेडिएंट का जोड़ीदार: बबल, काम करता बादल और बॉर्डर एक्सेंट → एक्सेंट 2 में घुलते हैं।</string>

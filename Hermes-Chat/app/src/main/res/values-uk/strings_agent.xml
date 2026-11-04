@@ -420,6 +420,11 @@
     <string name="agent_skill_off">%1$s вимкнено — нові сесії її пропустять</string>
     <string name="agent_skill_change_failed">Не вдалося змінити %1$s: %2$s</string>
     <string name="agent_skill_switch_unsupported">Цей шлюз не вміє перемикати навички звідси.</string>
+    <string name="agent_skill_lock_unsupported">Цей шлюз не вміє блокувати навички. Потрібен Hermes 0.22.6 або новіший.</string>
+    <string name="agent_skill_unlocked">%1$s розблоковано — агент знову може його редагувати</string>
+    <string name="agent_skill_locked">%1$s заблоковано — агент не може його змінити</string>
+    <string name="agent_skill_unlock_a11y">Розблокувати %1$s</string>
+    <string name="agent_skill_lock_a11y">Заблокувати %1$s від змін агентом</string>
     <plurals name="agent_pruned">
         <item quantity="one">Видалено %d сесію</item>
         <item quantity="few">Видалено %d сесії</item>

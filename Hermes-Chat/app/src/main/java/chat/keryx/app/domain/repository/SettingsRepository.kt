@@ -42,6 +42,14 @@ interface SettingsRepository {
     var syncToken: String?
     var accentColorHex: String
     var accentColor2Hex: String
+    /** Light mode's own accents (3.0); null = light uses the pair above, as it did before. The
+     *  pair above is then dark mode's (and the only one, until light is given its own). */
+    var accentColorHexLight: String?
+        get() = null
+        set(_) {}
+    var accentColor2HexLight: String?
+        get() = null
+        set(_) {}
     /** Room ID of the last conversation the user had open, restored on next launch. */
     var lastRoomId: String?
     /** That conversation's name, so a cold start can reopen it even when the list doesn't

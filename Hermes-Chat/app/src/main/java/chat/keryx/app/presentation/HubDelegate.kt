@@ -4,6 +4,7 @@ import chat.keryx.app.R
 import chat.keryx.app.KeryxText
 import chat.keryx.app.transport.direct.dashboardSkills
 import chat.keryx.app.transport.direct.skillToggle
+import chat.keryx.app.transport.direct.skillLock
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -447,6 +448,20 @@ class HubDelegate(
                 is chat.keryx.core.model.Routed.Ok -> toast(KeryxText.get(if (enabled) R.string.agent_skill_on else R.string.agent_skill_off, name))
                 is chat.keryx.core.model.Routed.Failed -> { toast(KeryxText.get(R.string.agent_skill_change_failed, name, res.message.take(80))); refreshSkills() }
                 chat.keryx.core.model.Routed.Missing -> { toast(KeryxText.get(R.string.agent_skill_switch_unsupported)); refreshSkills() }
+            }
+        }
+    }
+    /** Lock one skill against the agent's edits (3.0, Hermes 0.22.6+): the row moves now and
+     *  settles back on a refusal. Takes effect at once, in running sessions too. */
+    fun setSkillLocked(name: String, locked: Boolean) {
+        val r = rest() ?: return
+        val before = _hubSkills.value.data ?: return
+        _hubSkills.value = _hubSkills.value.copy(data = before.map { if (it.name == name) it.copy(locked = locked) else it })
+        scope.launch {
+            when (val res = r.skillLock(name, locked)) {
+                is chat.keryx.core.model.Routed.Ok -> toast(KeryxText.get(if (locked) R.string.agent_skill_locked else R.string.agent_skill_unlocked, name))
+                is chat.keryx.core.model.Routed.Failed -> { toast(KeryxText.get(R.string.agent_skill_change_failed, name, res.message.take(80))); refreshSkills() }
+                chat.keryx.core.model.Routed.Missing -> { toast(KeryxText.get(R.string.agent_skill_lock_unsupported)); refreshSkills() }
             }
         }
     }

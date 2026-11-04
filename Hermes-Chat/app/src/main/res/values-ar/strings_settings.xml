@@ -176,6 +176,8 @@
     <string name="settings_text_default">افتراضي</string>
     <string name="settings_text_large">كبير</string>
     <string name="settings_palette">لوحة الألوان</string>
+    <string name="settings_accent_for_light">للوضع الفاتح. يحتفظ الوضع الداكن بألوانه الخاصة.</string>
+    <string name="settings_accent_for_dark">للوضع الداكن. يحتفظ الوضع الفاتح بألوانه الخاصة.</string>
     <string name="settings_accent">لون التمييز</string>
     <string name="settings_accent_2">لون التمييز 2</string>
     <string name="settings_accent_2_help">شريك التدرّج: الفقاعات وسحابة العمل والحدود تمتزج من لون التمييز ← لون التمييز 2.</string>

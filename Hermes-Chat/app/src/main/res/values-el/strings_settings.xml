@@ -172,6 +172,8 @@
     <string name="settings_text_default">Προεπιλογή</string>
     <string name="settings_text_large">Μεγάλο</string>
     <string name="settings_palette">Παλέτα</string>
+    <string name="settings_accent_for_light">Για τη φωτεινή λειτουργία. Η σκοτεινή κρατά τα δικά της χρώματα.</string>
+    <string name="settings_accent_for_dark">Για τη σκοτεινή λειτουργία. Η φωτεινή κρατά τα δικά της χρώματα.</string>
     <string name="settings_accent">Έμφαση</string>
     <string name="settings_accent_2">Έμφαση 2</string>
     <string name="settings_accent_2_help">Το ζευγάρι της διαβάθμισης: οι φυσαλίδες, το σύννεφο εργασίας και τα περιγράμματα περνούν από Έμφαση → Έμφαση 2.</string>

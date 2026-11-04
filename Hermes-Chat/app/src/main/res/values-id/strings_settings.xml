@@ -171,6 +171,8 @@
     <string name="settings_text_default">Default</string>
     <string name="settings_text_large">Besar</string>
     <string name="settings_palette">Palet</string>
+    <string name="settings_accent_for_light">Untuk mode terang. Mode gelap punya warnanya sendiri.</string>
+    <string name="settings_accent_for_dark">Untuk mode gelap. Mode terang punya warnanya sendiri.</string>
     <string name="settings_accent">Aksen</string>
     <string name="settings_accent_2">Aksen 2</string>
     <string name="settings_accent_2_help">Pasangan gradien: gelembung, awan kerja, dan tepi memadukan Aksen → Aksen 2.</string>

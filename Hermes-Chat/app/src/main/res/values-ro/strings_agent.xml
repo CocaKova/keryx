@@ -417,6 +417,11 @@
     <string name="agent_skill_off">%1$s oprită — sesiunile noi o omit</string>
     <string name="agent_skill_change_failed">Nu s-a putut modifica %1$s: %2$s</string>
     <string name="agent_skill_switch_unsupported">Acest gateway nu poate comuta abilitățile de aici.</string>
+    <string name="agent_skill_lock_unsupported">Acest gateway nu poate bloca abilități. Are nevoie de Hermes 0.22.6 sau mai nou.</string>
+    <string name="agent_skill_unlocked">%1$s deblocat — agentul îl poate edita din nou</string>
+    <string name="agent_skill_locked">%1$s blocat — agentul nu îl poate modifica</string>
+    <string name="agent_skill_unlock_a11y">Deblochează %1$s</string>
+    <string name="agent_skill_lock_a11y">Blochează %1$s împotriva modificărilor agentului</string>
     <plurals name="agent_pruned">
         <item quantity="one">%d sesiune curățată</item>
         <item quantity="few">%d sesiuni curățate</item>

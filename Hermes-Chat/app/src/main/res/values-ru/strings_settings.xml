@@ -166,6 +166,8 @@
     <string name="settings_text_default">Обычный</string>
     <string name="settings_text_large">Крупный</string>
     <string name="settings_palette">Палитра</string>
+    <string name="settings_accent_for_light">Для светлой темы. У тёмной темы свои цвета.</string>
+    <string name="settings_accent_for_dark">Для тёмной темы. У светлой темы свои цвета.</string>
     <string name="settings_accent">Акцент</string>
     <string name="settings_accent_2">Акцент 2</string>
     <string name="settings_accent_2_help">Пара для градиента: пузыри, рабочее облако и рамки переходят от Акцента к Акценту 2.</string>

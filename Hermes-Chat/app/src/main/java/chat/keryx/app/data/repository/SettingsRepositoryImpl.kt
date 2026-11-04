@@ -295,6 +295,12 @@ class SettingsRepositoryImpl(
     override var accentColor2Hex: String
         get() = prefs.getString("accent_color2_hex", "#8B5CF6") ?: "#8B5CF6"
         set(value) = prefs.edit().putString("accent_color2_hex", value).apply()
+    override var accentColorHexLight: String?
+        get() = prefs.getString("accent_color_hex_light", null)
+        set(value) = prefs.edit().putString("accent_color_hex_light", value).apply()
+    override var accentColor2HexLight: String?
+        get() = prefs.getString("accent_color2_hex_light", null)
+        set(value) = prefs.edit().putString("accent_color2_hex_light", value).apply()
 
     override var lastRoomId: String?
         get() = prefs.getString(ledgerKey("last_room_id"), null)

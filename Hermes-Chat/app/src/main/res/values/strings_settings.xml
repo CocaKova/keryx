@@ -200,6 +200,8 @@
     <string name="settings_text_large">Large</string>
     <!-- A ready-made pair of accent colours. -->
     <string name="settings_palette">Palette</string>
+    <string name="settings_accent_for_light">For light mode. Dark mode keeps its own colours.</string>
+    <string name="settings_accent_for_dark">For dark mode. Light mode keeps its own colours.</string>
     <string name="settings_accent">Accent</string>
     <string name="settings_accent_2">Accent 2</string>
     <string name="settings_accent_2_help">The gradient partner: bubbles, the working cloud, and borders blend Accent → Accent 2.</string>

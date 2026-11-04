@@ -387,6 +387,11 @@
     <string name="agent_skill_off">%1$s 꺼짐 — 새 세션에서 건너뛰어요</string>
     <string name="agent_skill_change_failed">%1$s을(를) 바꾸지 못했어요: %2$s</string>
     <string name="agent_skill_switch_unsupported">이 게이트웨이는 여기서 스킬을 전환할 수 없어요.</string>
+    <string name="agent_skill_lock_unsupported">이 게이트웨이는 스킬을 잠글 수 없습니다. Hermes 0.22.6 이상이 필요합니다.</string>
+    <string name="agent_skill_unlocked">%1$s 잠금 해제 — 에이전트가 다시 수정할 수 있습니다</string>
+    <string name="agent_skill_locked">%1$s 잠김 — 에이전트가 수정할 수 없습니다</string>
+    <string name="agent_skill_unlock_a11y">%1$s 잠금 해제</string>
+    <string name="agent_skill_lock_a11y">에이전트가 %1$s을(를) 수정하지 못하게 잠그기</string>
     <plurals name="agent_pruned">
         <item quantity="other">세션 %d개를 정리했어요</item>
     </plurals>

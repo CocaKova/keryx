@@ -402,6 +402,11 @@
     <string name="agent_skill_off">%1$s aus – neue Sitzungen überspringen ihn</string>
     <string name="agent_skill_change_failed">%1$s konnte nicht geändert werden: %2$s</string>
     <string name="agent_skill_switch_unsupported">Dieses Gateway kann Skills nicht von hier aus schalten.</string>
+    <string name="agent_skill_lock_unsupported">Dieses Gateway kann keine Skills sperren. Es braucht Hermes 0.22.6 oder neuer.</string>
+    <string name="agent_skill_unlocked">%1$s entsperrt — der Agent kann ihn wieder bearbeiten</string>
+    <string name="agent_skill_locked">%1$s gesperrt — der Agent kann ihn nicht ändern</string>
+    <string name="agent_skill_unlock_a11y">%1$s entsperren</string>
+    <string name="agent_skill_lock_a11y">%1$s gegen Änderungen des Agenten sperren</string>
     <plurals name="agent_pruned">
         <item quantity="one">%d Sitzung bereinigt</item>
         <item quantity="other">%d Sitzungen bereinigt</item>

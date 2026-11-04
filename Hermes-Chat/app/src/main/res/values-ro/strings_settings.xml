@@ -173,6 +173,8 @@
     <string name="settings_text_default">Implicit</string>
     <string name="settings_text_large">Mare</string>
     <string name="settings_palette">Paletă</string>
+    <string name="settings_accent_for_light">Pentru modul luminos. Modul întunecat își păstrează culorile.</string>
+    <string name="settings_accent_for_dark">Pentru modul întunecat. Modul luminos își păstrează culorile.</string>
     <string name="settings_accent">Accent</string>
     <string name="settings_accent_2">Accent 2</string>
     <string name="settings_accent_2_help">Partenerul de gradient: bulele, norul de lucru și marginile trec din Accent → Accent 2.</string>

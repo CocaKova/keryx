@@ -1080,7 +1080,14 @@ class HermesStreamClient(
 
     /** [enabled] is null when the source can't say (the Link's /v1/skills); the dashboard's
      *  `/api/skills` knows, and the Skills spoke then draws a switch. */
-    data class HubSkill(val name: String, val description: String, val enabled: Boolean? = null, val usage: Int = 0)
+    data class HubSkill(
+        val name: String,
+        val description: String,
+        val enabled: Boolean? = null,
+        val usage: Int = 0,
+        /** Locked against the agent's own edits (Hermes 0.22.6+); null = the gateway can't lock. */
+        val locked: Boolean? = null,
+    )
 
     data class HubToolset(
         val name: String,

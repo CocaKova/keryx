@@ -55,6 +55,16 @@ class PreferencesDelegate(private val settings: SettingsRepository) {
     )
     val accentColor2: StateFlow<Color> = _accentColor2.asStateFlow()
 
+    // Light mode's own pair (3.0): until it is given one, it wears dark mode's. The pair above is
+    // dark mode's; [accentFor] picks by the ground the screen is on.
+    private val _accentLight = MutableStateFlow(parseHex(settings.accentColorHexLight))
+    private val _accent2Light = MutableStateFlow(parseHex(settings.accentColor2HexLight))
+    val accentLight: StateFlow<Color?> = _accentLight.asStateFlow()
+    val accent2Light: StateFlow<Color?> = _accent2Light.asStateFlow()
+
+    private fun parseHex(hex: String?): Color? =
+        hex?.let { runCatching { Color(android.graphics.Color.parseColor(it)) }.getOrNull() }
+
     private val _matrixUrl = MutableStateFlow(settings.homeserverUrl)
     val matrixUrl: StateFlow<String> = _matrixUrl.asStateFlow()
 
@@ -110,15 +120,39 @@ class PreferencesDelegate(private val settings: SettingsRepository) {
         _isDarkTheme.value = isDark
     }
 
-    fun setAccentColor(color: Color) {
+    /** Set the accent of the mode being looked at (3.0): each mode keeps its own pair. */
+    fun setAccentColor(color: Color, light: Boolean = false) {
+        if (light) {
+            // The first colour picked in light mode gives light its own pair: the other accent
+            // starts as the one it was wearing, so only the one picked changes.
+            if (_accent2Light.value == null) setLight2(_accentColor2.value)
+            _accentLight.value = color
+            settings.accentColorHexLight = hex(color)
+            return
+        }
         _accentColor.value = color
-        settings.accentColorHex = String.format("#%06X", (0xFFFFFF and color.toArgb()))
+        settings.accentColorHex = hex(color)
     }
 
-    fun setAccentColor2(color: Color) {
+    fun setAccentColor2(color: Color, light: Boolean = false) {
+        if (light) {
+            if (_accentLight.value == null) {
+                _accentLight.value = _accentColor.value
+                settings.accentColorHexLight = hex(_accentColor.value)
+            }
+            setLight2(color)
+            return
+        }
         _accentColor2.value = color
-        settings.accentColor2Hex = String.format("#%06X", (0xFFFFFF and color.toArgb()))
+        settings.accentColor2Hex = hex(color)
     }
+
+    private fun setLight2(color: Color) {
+        _accent2Light.value = color
+        settings.accentColor2HexLight = hex(color)
+    }
+
+    private fun hex(color: Color) = String.format("#%06X", (0xFFFFFF and color.toArgb()))
 
     fun setMatrixUrl(url: String) {
         _matrixUrl.value = url
@@ -191,6 +225,9 @@ class PreferencesDelegate(private val settings: SettingsRepository) {
         setMessageTextScale(1.0f)
         setAccentColor(Color(0xFFE55A00))
         setAccentColor2(Color(0xFF8B5CF6))
+        // Both modes back to one pair.
+        _accentLight.value = null; settings.accentColorHexLight = null
+        _accent2Light.value = null; settings.accentColor2HexLight = null
     }
 
     fun setShowTelemetry(enabled: Boolean) {

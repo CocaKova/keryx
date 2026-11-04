@@ -906,6 +906,23 @@ internal fun SkillsTab(viewModel: ChatViewModel) {
                                             maxLines = 3, overflow = TextOverflow.Ellipsis)
                                     }
                                 }
+                                // The lock (3.0): only where the gateway can lock (it sends the flag).
+                                // Locked reads in the accent; open is the quiet outline.
+                                s.locked?.let { locked ->
+                                    androidx.compose.material3.IconToggleButton(
+                                        checked = locked,
+                                        onCheckedChange = { viewModel.hub.setSkillLocked(s.name, it) },
+                                    ) {
+                                        Icon(
+                                            if (locked) KeryxGlyphs.Lock else KeryxGlyphs.LockOpen,
+                                            contentDescription = if (locked) stringResource(R.string.agent_skill_unlock_a11y, s.name)
+                                                else stringResource(R.string.agent_skill_lock_a11y, s.name),
+                                            tint = if (locked) MaterialTheme.colorScheme.primary
+                                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                    }
+                                }
                                 s.enabled?.let { on ->
                                     Spacer(Modifier.width(10.dp))
                                     Switch(checked = on, onCheckedChange = { viewModel.hub.setSkillEnabled(s.name, it) })

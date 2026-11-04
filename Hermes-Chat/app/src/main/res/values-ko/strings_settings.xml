@@ -171,6 +171,8 @@
     <string name="settings_text_default">기본</string>
     <string name="settings_text_large">크게</string>
     <string name="settings_palette">팔레트</string>
+    <string name="settings_accent_for_light">라이트 모드용입니다. 다크 모드는 자체 색상을 유지합니다.</string>
+    <string name="settings_accent_for_dark">다크 모드용입니다. 라이트 모드는 자체 색상을 유지합니다.</string>
     <string name="settings_accent">강조색</string>
     <string name="settings_accent_2">강조색 2</string>
     <string name="settings_accent_2_help">그라데이션 짝: 말풍선, 작업 구름, 테두리가 강조색 → 강조색 2로 섞여요.</string>

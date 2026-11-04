@@ -171,6 +171,8 @@
     <string name="settings_text_default">默认</string>
     <string name="settings_text_large">大</string>
     <string name="settings_palette">配色</string>
+    <string name="settings_accent_for_light">用于浅色模式。深色模式保留自己的颜色。</string>
+    <string name="settings_accent_for_dark">用于深色模式。浅色模式保留自己的颜色。</string>
     <string name="settings_accent">强调色</string>
     <string name="settings_accent_2">强调色 2</string>
     <string name="settings_accent_2_help">渐变搭档：气泡、工作中的云和边框会从强调色渐变到强调色 2。</string>

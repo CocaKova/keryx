@@ -390,6 +390,11 @@
     <string name="agent_skill_off">%1$s বন্ধ — নতুন সেশন এটি বাদ দেবে</string>
     <string name="agent_skill_change_failed">%1$s বদলানো যায়নি: %2$s</string>
     <string name="agent_skill_switch_unsupported">এই গেটওয়ে এখান থেকে স্কিল চালু/বন্ধ করতে পারে না।</string>
+    <string name="agent_skill_lock_unsupported">এই গেটওয়ে দক্ষতা লক করতে পারে না। Hermes 0.22.6 বা নতুন সংস্করণ লাগবে।</string>
+    <string name="agent_skill_unlocked">%1$s আনলক হয়েছে — এজেন্ট আবার এটি সম্পাদনা করতে পারবে</string>
+    <string name="agent_skill_locked">%1$s লক হয়েছে — এজেন্ট এটি বদলাতে পারবে না</string>
+    <string name="agent_skill_unlock_a11y">%1$s আনলক করুন</string>
+    <string name="agent_skill_lock_a11y">এজেন্টের সম্পাদনা থেকে %1$s লক করুন</string>
     <plurals name="agent_pruned">
         <item quantity="one">%dটি সেশন ছাঁটাই হয়েছে</item>
         <item quantity="other">%dটি সেশন ছাঁটাই হয়েছে</item>

@@ -198,8 +198,13 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
         setContent {
             val isDarkOverride by viewModel.prefs.isDarkTheme.collectAsState()
             val useDarkTheme = isDarkOverride ?: isSystemInDarkTheme()
-            val currentAccent by viewModel.prefs.accentColor.collectAsState()
-            val currentAccent2 by viewModel.prefs.accentColor2.collectAsState()
+            val darkAccent by viewModel.prefs.accentColor.collectAsState()
+            val darkAccent2 by viewModel.prefs.accentColor2.collectAsState()
+            val lightAccent by viewModel.prefs.accentLight.collectAsState()
+            val lightAccent2 by viewModel.prefs.accent2Light.collectAsState()
+            // Each mode its own colours (3.0); light wears dark's until it is given its own.
+            val currentAccent = if (useDarkTheme) darkAccent else lightAccent ?: darkAccent
+            val currentAccent2 = if (useDarkTheme) darkAccent2 else lightAccent2 ?: darkAccent2
 
             // Keep the status-bar icons legible: light glyphs on our dark (OLED-black) background,
             // dark glyphs in light mode. Without this the clock/battery vanish into the black bar.

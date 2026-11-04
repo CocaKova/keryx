@@ -19,6 +19,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -408,6 +411,9 @@ fun ToolTheaterRun(
     active: Boolean,
     baseColor: Color,
     onToggle: (expanded: Boolean) -> Unit = {},
+    /** How many px the open body grew (shrank, negative) this frame, told before layout so the
+     *  transcript can move by the same amount in the same frame. */
+    onGrow: (Float) -> Unit = {},
     /**
      * The structured record of this run, when the turn was watched live (2.4).
      *
@@ -508,11 +514,15 @@ fun ToolTheaterRun(
 
     Column(
         horizontalAlignment = Alignment.Start,
-        modifier = Modifier.widthIn(max = 340.dp).animateContentSize(),
+        // No animateContentSize here (3.0): the body's own reveal already animates the height,
+        // and a second size animation over it lagged behind the first — the two fought, and the
+        // run wobbled open. Only the header pill keeps one, for its live sentence growing.
+        modifier = Modifier.widthIn(max = 340.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
+                .animateContentSize()
                 .clip(RoundedCornerShape(10.dp))
                 // Hairline, not a filled gradient card. This is scaffolding around the answer,
                 // and at rest it should read as quietly as the live theater does; only the
@@ -589,11 +599,11 @@ fun ToolTheaterRun(
             }
         }
 
-        AnimatedVisibility(
-            visible = expanded,
-            enter = keryxReveal(),
-            exit = keryxConceal(),
-        ) {
+        // Opened by hand, not by AnimatedVisibility (3.0): the reveal tells the transcript how
+        // far it grew each frame, BEFORE that frame is laid out, so the list moves the same
+        // amount in the same frame — the header stays under the finger and the steps unroll
+        // below it, instead of the run growing upward and the list chasing it afterwards.
+        RunReveal(expanded = expanded, onGrow = onGrow) {
             Column(modifier = Modifier.padding(top = 6.dp, start = 8.dp)) {
                 // One consolidated reasoning block for the whole run, above the steps — the same
                 // disclosure every settled thought renders as (3.1 §B3: one renderer, one voice).
@@ -609,38 +619,49 @@ fun ToolTheaterRun(
                 }
                 // Tool steps: bounded height + own scroll, so a long run opens at the FIRST tool
                 // (the scroll state starts at the top) instead of jumping to the newest one.
-                Column(
-                    modifier = Modifier
-                        .heightIn(max = 360.dp)
-                        .verticalScroll(rememberScrollState()),
+                // Which index is consumed by the delivery before it, and which rows a wing group
+                // stands for, worked out once: the steps are a lazy list now (3.0), so a long run
+                // composes the rows on screen, not all of them in the frame it opens (that frame
+                // was the stutter on a long log).
+                val consumed = remember(run.entries) {
+                    run.entries.indices.filterTo(HashSet()) { i ->
+                        val call = run.entries[i] as? ToolRunEntry.Call
+                        call != null && !call.call.failed && deliveryTargetOf(call.call) != null &&
+                            run.entries.getOrNull(i + 1) is ToolRunEntry.Note
+                    }.mapTo(HashSet()) { it + 1 }
+                }
+                val stepRows = remember(run.entries, consumed, deliveryIdx) {
+                    buildList {
+                        var inWings = false
+                        run.entries.forEachIndexed { i, entry ->
+                            if (i in consumed || i in deliveryIdx) return@forEachIndexed
+                            if (entry is ToolRunEntry.Delegated) {
+                                // Consecutive wings are one dispatch — one rail, not one header per wing.
+                                if (!inWings) add(i)
+                                inWings = true
+                            } else {
+                                inWings = false
+                                add(i)
+                            }
+                        }
+                    }
+                }
+                // Tool steps: bounded height + own scroll, so a long run opens at the FIRST tool
+                // (the list state starts at the top) instead of jumping to the newest one.
+                androidx.compose.foundation.lazy.LazyColumn(
+                    modifier = Modifier.heightIn(max = 360.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    // Indexed, not forEach: a delivery call swallows the note that follows it —
-                    // that note is the recipient's answer, not a blob of stdout to stack below.
-                    // Keryx has no `call.result` the way Talaria does, so the adjacent Note IS the
-                    // result, cut at its documented `session_id:` boundary.
-                    val consumed = remember(run.entries) {
-                        run.entries.indices.filterTo(HashSet()) { i ->
-                            val call = run.entries[i] as? ToolRunEntry.Call
-                            call != null && !call.call.failed && deliveryTargetOf(call.call) != null &&
-                                run.entries.getOrNull(i + 1) is ToolRunEntry.Note
-                        }.mapTo(HashSet()) { it + 1 }
-                    }
-                    // Consecutive wings are one dispatch — one rail, not one header per wing.
-                    var wingGroupStart = -1
-                    run.entries.forEachIndexed { i, entry ->
-                        if (i in consumed || i in deliveryIdx) return@forEachIndexed
+                    items(stepRows.size, key = { stepRows[it] }) { row ->
+                        val i = stepRows[row]
+                        val entry = run.entries[i]
                         if (entry is ToolRunEntry.Delegated) {
-                            if (wingGroupStart < 0) {
-                                wingGroupStart = i
-                                val group = run.entries.drop(i)
-                                    .takeWhile { it is ToolRunEntry.Delegated }
-                                    .map { (it as ToolRunEntry.Delegated).run }
-                                DelegationWings(group, live = active, baseColor = baseColor, onOpen = onOpenSubagent)
-                            }
-                            return@forEachIndexed
+                            val group = run.entries.drop(i)
+                                .takeWhile { it is ToolRunEntry.Delegated }
+                                .map { (it as ToolRunEntry.Delegated).run }
+                            DelegationWings(group, live = active, baseColor = baseColor, onOpen = onOpenSubagent)
+                            return@items
                         }
-                        wingGroupStart = -1
                         when (entry) {
                             is ToolRunEntry.Call -> ToolTheaterRow(
                                 entry.call,
@@ -683,4 +704,47 @@ fun ToolTheaterRun(
     }
 }
 
-
+/**
+ * A run's body, opened and shut as a fraction of its natural height: critically damped (the
+ * shared settle springs a hair past and back, which on a tall log shoved the transcript), and
+ * reporting each frame's growth through [onGrow] from the animation step, which runs before the
+ * frame's layout. A restored open run starts open, without a reveal.
+ */
+@Composable
+private fun RunReveal(expanded: Boolean, onGrow: (Float) -> Unit, content: @Composable () -> Unit) {
+    val reduced by rememberReducedMotion()
+    val fraction = remember { androidx.compose.animation.core.Animatable(if (expanded) 1f else 0f) }
+    // The body's natural height, written while measuring: a plain holder, not state, so writing
+    // it never asks for another layout.
+    val bodyPx = remember { IntArray(1) }
+    val grow by androidx.compose.runtime.rememberUpdatedState(onGrow)
+    androidx.compose.runtime.LaunchedEffect(expanded) {
+        val target = if (expanded) 1f else 0f
+        if (fraction.value == target) return@LaunchedEffect
+        // Opening: one frame for the body to be measured at 0 before it starts to grow.
+        if (expanded && bodyPx[0] == 0) androidx.compose.runtime.withFrameNanos { }
+        var last = fraction.value
+        val step: androidx.compose.animation.core.Animatable<Float, *>.() -> Unit = {
+            val d = (value - last) * bodyPx[0]
+            last = value
+            if (d != 0f) grow(d)
+        }
+        if (reduced) {
+            fraction.snapTo(target); fraction.step()
+        } else {
+            fraction.animateTo(target, androidx.compose.animation.core.spring(dampingRatio = 1f, stiffness = 380f), block = step)
+        }
+    }
+    if (!expanded && fraction.value == 0f) return
+    Box(
+        Modifier
+            .clipToBounds()
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints.copy(minHeight = 0, maxHeight = androidx.compose.ui.unit.Constraints.Infinity))
+                bodyPx[0] = placeable.height
+                val h = (placeable.height * fraction.value).toInt()
+                layout(placeable.width, h) { placeable.place(0, 0) }
+            }
+            .graphicsLayer { alpha = fraction.value },
+    ) { content() }
+}

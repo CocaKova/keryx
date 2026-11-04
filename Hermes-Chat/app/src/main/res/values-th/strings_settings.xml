@@ -171,6 +171,8 @@
     <string name="settings_text_default">ค่าเริ่มต้น</string>
     <string name="settings_text_large">ใหญ่</string>
     <string name="settings_palette">ชุดสี</string>
+    <string name="settings_accent_for_light">สำหรับโหมดสว่าง โหมดมืดใช้สีของตัวเอง</string>
+    <string name="settings_accent_for_dark">สำหรับโหมดมืด โหมดสว่างใช้สีของตัวเอง</string>
     <string name="settings_accent">สีเน้น</string>
     <string name="settings_accent_2">สีเน้น 2</string>
     <string name="settings_accent_2_help">สีคู่ไล่เฉด: บับเบิล กลุ่มเมฆขณะทำงาน และเส้นขอบจะไล่จาก สีเน้น → สีเน้น 2</string>

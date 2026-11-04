@@ -165,6 +165,8 @@
     <string name="settings_text_default">Par défaut</string>
     <string name="settings_text_large">Grand</string>
     <string name="settings_palette">Palette</string>
+    <string name="settings_accent_for_light">Pour le mode clair. Le mode sombre garde ses propres couleurs.</string>
+    <string name="settings_accent_for_dark">Pour le mode sombre. Le mode clair garde ses propres couleurs.</string>
     <string name="settings_accent">Accent</string>
     <string name="settings_accent_2">Accent 2</string>
     <string name="settings_accent_2_help">La couleur partenaire du dégradé : bulles, nuage de travail et bordures passent d\'Accent → Accent 2.</string>

@@ -172,6 +172,8 @@
     <string name="settings_text_default">Predefinito</string>
     <string name="settings_text_large">Grande</string>
     <string name="settings_palette">Tavolozza</string>
+    <string name="settings_accent_for_light">Per la modalità chiara. La modalità scura mantiene i suoi colori.</string>
+    <string name="settings_accent_for_dark">Per la modalità scura. La modalità chiara mantiene i suoi colori.</string>
     <string name="settings_accent">Accento</string>
     <string name="settings_accent_2">Accento 2</string>
     <string name="settings_accent_2_help">Il compagno del gradiente: fumetti, la nuvola di lavoro e i bordi sfumano da Accento → Accento 2.</string>

@@ -166,6 +166,8 @@
     <string name="settings_text_default">Звичайний</string>
     <string name="settings_text_large">Великий</string>
     <string name="settings_palette">Палітра</string>
+    <string name="settings_accent_for_light">Для світлої теми. Темна тема має власні кольори.</string>
+    <string name="settings_accent_for_dark">Для темної теми. Світла тема має власні кольори.</string>
     <string name="settings_accent">Акцент</string>
     <string name="settings_accent_2">Акцент 2</string>
     <string name="settings_accent_2_help">Пара для градієнта: бульбашки, робоча хмара й рамки переходять від Акценту до Акценту 2.</string>

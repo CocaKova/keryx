@@ -172,6 +172,8 @@
     <string name="settings_text_default">Predefinido</string>
     <string name="settings_text_large">Grande</string>
     <string name="settings_palette">Paleta</string>
+    <string name="settings_accent_for_light">Para o modo claro. O modo escuro mantém as suas próprias cores.</string>
+    <string name="settings_accent_for_dark">Para o modo escuro. O modo claro mantém as suas próprias cores.</string>
     <string name="settings_accent">Destaque</string>
     <string name="settings_accent_2">Destaque 2</string>
     <string name="settings_accent_2_help">O par do gradiente: balões, a nuvem de trabalho e as margens fundem Destaque → Destaque 2.</string>

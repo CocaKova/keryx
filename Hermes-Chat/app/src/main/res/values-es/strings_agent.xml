@@ -487,6 +487,11 @@
     <string name="agent_skill_off">%1$s desactivada — las sesiones nuevas la omiten</string>
     <string name="agent_skill_change_failed">No se pudo cambiar %1$s: %2$s</string>
     <string name="agent_skill_switch_unsupported">Esta pasarela no puede cambiar habilidades desde aquí.</string>
+    <string name="agent_skill_lock_unsupported">Esta pasarela no puede bloquear habilidades. Necesita Hermes 0.22.6 o posterior.</string>
+    <string name="agent_skill_unlocked">%1$s desbloqueado: el agente puede volver a editarlo</string>
+    <string name="agent_skill_locked">%1$s bloqueado: el agente no puede cambiarlo</string>
+    <string name="agent_skill_unlock_a11y">Desbloquear %1$s</string>
+    <string name="agent_skill_lock_a11y">Bloquear %1$s frente a cambios del agente</string>
     <plurals name="agent_pruned">
         <item quantity="one">%d sesión limpiada</item>
         <item quantity="other">%d sesiones limpiadas</item>

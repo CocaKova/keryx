@@ -171,6 +171,8 @@
     <string name="settings_text_default">標準</string>
     <string name="settings_text_large">大</string>
     <string name="settings_palette">パレット</string>
+    <string name="settings_accent_for_light">ライトモード用です。ダークモードは独自の色を保ちます。</string>
+    <string name="settings_accent_for_dark">ダークモード用です。ライトモードは独自の色を保ちます。</string>
     <string name="settings_accent">アクセント</string>
     <string name="settings_accent_2">アクセント 2</string>
     <string name="settings_accent_2_help">グラデーションの相方：吹き出し、作業中の雲、枠線がアクセント → アクセント 2 で混ざります。</string>

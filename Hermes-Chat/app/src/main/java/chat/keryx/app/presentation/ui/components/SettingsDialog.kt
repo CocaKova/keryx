@@ -1,5 +1,6 @@
 package chat.keryx.app.presentation.ui.components
 
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.size
@@ -901,6 +902,16 @@ fun SettingsScreen(
                         // rainbow circle. Two 180dp wheels used to open the page.
                         SettingsAnchor(SettingsRow.APPEARANCE_ACCENT) {
                             SettingsChoiceLabel(stringResource(R.string.settings_palette))
+                            // Which mode these colours belong to (3.0): each keeps its own.
+                            Text(
+                                stringResource(
+                                    if (MaterialTheme.colorScheme.background.luminance() >= 0.5f) R.string.settings_accent_for_light
+                                    else R.string.settings_accent_for_dark,
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = KeryxType.micro,
+                                modifier = Modifier.padding(bottom = 8.dp),
+                            )
                             AccentPalettes(currentAccentColor, currentAccentColor2) { a, b ->
                                 onAccentColorChanged(a); onAccentColor2Changed(b)
                             }
@@ -1200,8 +1211,14 @@ private fun settingsPageTransition(deeper: Boolean, reduced: Boolean, rtl: Boole
 fun SettingsPlace(viewModel: ChatViewModel, onClose: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val currentUserId by viewModel.currentUserId.collectAsState()
-    val currentAccent by viewModel.prefs.accentColor.collectAsState()
-    val currentAccent2 by viewModel.prefs.accentColor2.collectAsState()
+    // The colours being edited are the ones on screen (3.0): light mode's in light, dark's in dark.
+    val onLight = MaterialTheme.colorScheme.background.luminance() >= 0.5f
+    val darkAccent by viewModel.prefs.accentColor.collectAsState()
+    val darkAccent2 by viewModel.prefs.accentColor2.collectAsState()
+    val lightAccent by viewModel.prefs.accentLight.collectAsState()
+    val lightAccent2 by viewModel.prefs.accent2Light.collectAsState()
+    val currentAccent = if (onLight) lightAccent ?: darkAccent else darkAccent
+    val currentAccent2 = if (onLight) lightAccent2 ?: darkAccent2 else darkAccent2
     val matrixUrl by viewModel.prefs.matrixUrl.collectAsState()
     val agentMatrixId by viewModel.prefs.agentMatrixId.collectAsState()
     val matrixToken by viewModel.prefs.matrixToken.collectAsState()
@@ -1231,9 +1248,9 @@ fun SettingsPlace(viewModel: ChatViewModel, onClose: () -> Unit) {
     SettingsScreen(
         viewModel = viewModel,
         currentAccentColor = currentAccent,
-        onAccentColorChanged = { viewModel.prefs.setAccentColor(it) },
+        onAccentColorChanged = { viewModel.prefs.setAccentColor(it, light = onLight) },
         currentAccentColor2 = currentAccent2,
-        onAccentColor2Changed = { viewModel.prefs.setAccentColor2(it) },
+        onAccentColor2Changed = { viewModel.prefs.setAccentColor2(it, light = onLight) },
         currentUserId = currentUserId,
         matrixUrl = matrixUrl,
         onMatrixUrlChanged = { viewModel.prefs.setMatrixUrl(it) },

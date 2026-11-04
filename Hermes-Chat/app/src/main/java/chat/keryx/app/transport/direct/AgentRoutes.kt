@@ -295,9 +295,25 @@ internal suspend fun GatewayRest.dashboardSkills(): Routed<List<chat.keryx.app.d
                 description = (o["description"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                 enabled = (o["enabled"] as? JsonPrimitive)?.booleanOrNull ?: true,
                 usage = (o["usage"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull() ?: 0,
+                // Only a gateway that can lock sends the flag (0.22.6+): absent = no lock button.
+                locked = (o["locked"] as? JsonPrimitive)?.booleanOrNull,
             )
         }
     }
+
+/**
+ * `PUT /api/skills/lock` (Hermes 0.22.6+) — lock a skill against the AGENT's edits: skill_manage,
+ * file writes and terminal writes into its folder are refused. The user's own edits (the Skill
+ * Forge here, the desktop editor) stay allowed. The same record as `hermes curator lock`.
+ */
+internal suspend fun GatewayRest.skillLock(name: String, locked: Boolean): Routed<Unit> =
+    routed(
+        "PUT", "/api/skills/lock",
+        buildJsonObject {
+            put("name", JsonPrimitive(name))
+            put("locked", JsonPrimitive(locked))
+        }.toString(),
+    ).map { }
 
 /** `PUT /api/skills/toggle` — a disabled skill stays installed; new sessions stop loading it. */
 internal suspend fun GatewayRest.skillToggle(name: String, enabled: Boolean): Routed<Unit> =

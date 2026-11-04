@@ -172,6 +172,8 @@
     <string name="settings_text_default">Alapértelmezett</string>
     <string name="settings_text_large">Nagy</string>
     <string name="settings_palette">Paletta</string>
+    <string name="settings_accent_for_light">Világos módhoz. A sötét mód megtartja a saját színeit.</string>
+    <string name="settings_accent_for_dark">Sötét módhoz. A világos mód megtartja a saját színeit.</string>
     <string name="settings_accent">Kiemelés</string>
     <string name="settings_accent_2">Kiemelés 2</string>
     <string name="settings_accent_2_help">A színátmenet párja: a buborékok, a munkafelhő és a szegélyek Kiemelés → Kiemelés 2 között váltanak át.</string>

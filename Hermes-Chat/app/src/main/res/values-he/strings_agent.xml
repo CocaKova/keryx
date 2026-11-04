@@ -417,6 +417,11 @@
     <string name="agent_skill_off">%1$s כבויה — סשנים חדשים מדלגים עליה</string>
     <string name="agent_skill_change_failed">לא ניתן לשנות את %1$s: %2$s</string>
     <string name="agent_skill_switch_unsupported">השער הזה לא יכול להחליף מיומנויות מכאן.</string>
+    <string name="agent_skill_lock_unsupported">השער הזה לא יכול לנעול מיומנויות. נדרש Hermes 0.22.6 ומעלה.</string>
+    <string name="agent_skill_unlocked">נעילת %1$s בוטלה — הסוכן יכול לערוך אותו שוב</string>
+    <string name="agent_skill_locked">%1$s ננעל — הסוכן לא יכול לשנות אותו</string>
+    <string name="agent_skill_unlock_a11y">בטל את נעילת %1$s</string>
+    <string name="agent_skill_lock_a11y">נעל את %1$s מפני שינויים של הסוכן</string>
     <plurals name="agent_pruned">
         <item quantity="one">נוקה סשן %d</item>
         <item quantity="two">נוקו %d סשנים</item>

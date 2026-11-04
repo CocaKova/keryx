@@ -172,6 +172,8 @@
     <string name="settings_text_default">Standard</string>
     <string name="settings_text_large">Groß</string>
     <string name="settings_palette">Palette</string>
+    <string name="settings_accent_for_light">Für den hellen Modus. Der dunkle Modus behält eigene Farben.</string>
+    <string name="settings_accent_for_dark">Für den dunklen Modus. Der helle Modus behält eigene Farben.</string>
     <string name="settings_accent">Akzent</string>
     <string name="settings_accent_2">Akzent 2</string>
     <string name="settings_accent_2_help">Der Verlaufspartner: Blasen, die Arbeitswolke und Ränder gehen von Akzent → Akzent 2 über.</string>
