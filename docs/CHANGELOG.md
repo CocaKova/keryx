@@ -11,7 +11,7 @@ Keryx keeps your place. Pages remember where you were, every page has the same w
 bots sit across the top of the drawer, and Missions becomes a real board.
 
 **Finding your way**
-- Places keep their state. Leave the Missions board, Runs or a project and come back, and the
+- Places keep their state. Leave the Missions board or Runs and come back, and the
   search, filter and scroll are where you left them.
 - When a place sends you into a chat (a card's "Open in chat", for one), a chip at the top of the
   chat takes you back to it, and so does Back.
