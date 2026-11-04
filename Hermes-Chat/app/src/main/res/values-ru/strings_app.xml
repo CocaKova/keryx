@@ -238,6 +238,12 @@
     <string name="app_whatsnew_look_title">Вид и обновления</string>
     <string name="app_whatsnew_look_text_direct">В Настройках › Оформление — новые стили размышлений и пять способов переходить между чатами. Со свежим keryx-stream панель Обновление на Шлюзе позволяет выбрать релизы Stable или Edge. Чтобы добавить ещё один Hermes, запустите на нём hermes keryx pair и отсканируйте код.</string>
     <string name="app_whatsnew_look_text">В Настройках › Оформление — новые стили размышлений и пять способов переходить между чатами. Тур и подсказки разделов — в Настройках › О приложении.</string>
+    <string name="app_whatsnew_more_text">Разделы помнят, где вы были, а после отлучки значок вернёт вас обратно. Заблокируйте навык, чтобы агент не мог его изменить. У светлой и тёмной темы теперь свои цвета.</string>
+    <string name="app_whatsnew_more_title">Мелочи</string>
+    <string name="app_whatsnew_board_text">Карточки теперь лежат в колонках, между которыми можно листать, и досок может быть несколько.</string>
+    <string name="app_whatsnew_board_title">Миссии на доске</string>
+    <string name="app_tour_bot_lights_text">Нажмите на бота, чтобы открыть его чат, или удерживайте, чтобы управлять им. Пульсирующее кольцо значит, что он работает.</string>
+    <string name="app_tour_bot_lights_title">Ваши боты</string>
     <string name="app_hint_missions_title">Миссии</string>
     <string name="app_hint_missions_text">Здесь живут длинные задачи в виде карточек. Агенты берут их и прорабатывают, а карточка, которой нужны вы, поднимается наверх. Нажмите +, чтобы выдать задачу.</string>
     <string name="app_hint_runs_title">Запуски</string>

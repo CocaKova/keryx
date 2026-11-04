@@ -234,6 +234,12 @@
     <string name="app_whatsnew_look_title">Uiterlijk en updates</string>
     <string name="app_whatsnew_look_text_direct">Instellingen › Uiterlijk heeft nieuwe denkstijlen en vijf manieren om tussen chats te wisselen. Met een recente keryx-stream laat het Update-paneel van de Gateway je kiezen tussen Stable-releases en Edge. Om nog een Hermes toe te voegen, voer je daar hermes keryx pair uit en scan je de code.</string>
     <string name="app_whatsnew_look_text">Instellingen › Uiterlijk heeft nieuwe denkstijlen en vijf manieren om tussen chats te wisselen. De rondleiding en de tips staan in Instellingen › Over.</string>
+    <string name="app_whatsnew_more_text">Plekken onthouden waar je was, en na een omweg brengt een chip je terug. Vergrendel een vaardigheid zodat je agent hem niet kan wijzigen. Lichte en donkere modus houden elk hun eigen kleuren.</string>
+    <string name="app_whatsnew_more_title">Kleine dingen</string>
+    <string name="app_whatsnew_board_text">Kaarten staan nu in kolommen waar je tussen veegt, en je kunt meer dan één bord hebben.</string>
+    <string name="app_whatsnew_board_title">Missies op een bord</string>
+    <string name="app_tour_bot_lights_text">Tik op een bot om zijn chat te openen, of houd vast om hem te beheren. Een ademende ring betekent dat hij bezig is.</string>
+    <string name="app_tour_bot_lights_title">Je bots</string>
     <string name="app_hint_missions_title">Missies</string>
     <string name="app_hint_missions_text">Langere klussen staan hier als kaarten. Je agents pakken ze op en werken ze af, en een kaart die jou nodig heeft gaat naar boven. Tik op + om er een uit te delen.</string>
     <string name="app_hint_runs_title">Uitvoeringen</string>

@@ -255,6 +255,12 @@
     <string name="app_whatsnew_look_title">Aspect și actualizări</string>
     <string name="app_whatsnew_look_text_direct">Setări › Aspect are stiluri noi de gândire și cinci moduri de a trece între chaturi. Cu un keryx-stream recent, panoul Actualizare al Gateway-ului îți permite să alegi versiunile Stable sau Edge. Ca să adaugi alt Hermes, rulează hermes keryx pair pe el și scanează codul.</string>
     <string name="app_whatsnew_look_text">Setări › Aspect are stiluri noi de gândire și cinci moduri de a trece între chaturi. Turul și sugestiile locurilor se află în Setări › Despre.</string>
+    <string name="app_whatsnew_more_text">Locurile își amintesc unde ai rămas, iar după un ocol un cip te duce înapoi. Blochează o abilitate ca agentul să n-o poată schimba. Modul luminos și cel întunecat își păstrează propriile culori.</string>
+    <string name="app_whatsnew_more_title">Lucruri mărunte</string>
+    <string name="app_whatsnew_board_text">Cardurile stau acum pe coloane între care glisezi și poți avea mai multe table.</string>
+    <string name="app_whatsnew_board_title">Misiuni pe o tablă</string>
+    <string name="app_tour_bot_lights_text">Atinge un bot ca să-i deschizi chatul sau ține apăsat ca să-l gestionezi. Un inel care pulsează înseamnă că lucrează.</string>
+    <string name="app_tour_bot_lights_title">Boții tăi</string>
 
     <string name="app_hint_missions_title">Misiuni</string>
     <string name="app_hint_missions_text">Sarcinile mai lungi stau aici sub formă de carduri. Agenții tăi le preiau și le parcurg, iar un card care are nevoie de tine urcă sus. Atinge + ca să dai una.</string>

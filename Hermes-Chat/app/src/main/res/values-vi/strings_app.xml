@@ -251,6 +251,12 @@
     <string name="app_whatsnew_look_title">Giao diện và cập nhật</string>
     <string name="app_whatsnew_look_text_direct">Cài đặt › Giao diện có thêm kiểu hiển thị suy nghĩ mới và năm cách chuyển giữa các cuộc trò chuyện. Với keryx-stream mới, bảng Cập nhật của Cổng cho phép chọn bản Stable hoặc Edge. Để thêm Hermes khác, chạy hermes keryx pair trên đó và quét mã.</string>
     <string name="app_whatsnew_look_text">Cài đặt › Giao diện có thêm kiểu hiển thị suy nghĩ mới và năm cách chuyển giữa các cuộc trò chuyện. Phần hướng dẫn và các gợi ý nằm trong Cài đặt › Giới thiệu.</string>
+    <string name="app_whatsnew_more_text">Mỗi khu vực nhớ bạn đang ở đâu, và một thẻ nhỏ đưa bạn quay lại sau khi rẽ sang chỗ khác. Khóa một kỹ năng để tác tử không thể thay đổi nó. Chế độ sáng và tối giữ màu riêng.</string>
+    <string name="app_whatsnew_more_title">Những điều nhỏ</string>
+    <string name="app_whatsnew_board_text">Thẻ giờ nằm trong các cột bạn vuốt qua lại, và bạn có thể có nhiều bảng.</string>
+    <string name="app_whatsnew_board_title">Nhiệm vụ trên bảng</string>
+    <string name="app_tour_bot_lights_text">Chạm vào một bot để mở cuộc trò chuyện, hoặc giữ để quản lý. Vòng sáng nhấp nháy nghĩa là bot đang làm việc.</string>
+    <string name="app_tour_bot_lights_title">Bot của bạn</string>
 
     <string name="app_hint_missions_title">Nhiệm vụ</string>
     <string name="app_hint_missions_text">Các việc dài hơn nằm ở đây dưới dạng thẻ. Tác tử nhận và làm lần lượt, và thẻ nào cần bạn sẽ lên đầu. Chạm + để giao việc.</string>

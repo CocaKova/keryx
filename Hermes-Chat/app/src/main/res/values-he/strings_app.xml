@@ -255,6 +255,12 @@
     <string name="app_whatsnew_look_title">מראה ועדכונים</string>
     <string name="app_whatsnew_look_text_direct">בהגדרות › מראה יש סגנונות חשיבה חדשים וחמש דרכים לעבור בין שיחות. עם keryx-stream עדכני, לוח העדכון של השער מאפשר לבחור גרסאות Stable או Edge. כדי להוסיף Hermes נוסף, מריצים עליו hermes keryx pair וסורקים את הקוד.</string>
     <string name="app_whatsnew_look_text">בהגדרות › מראה יש סגנונות חשיבה חדשים וחמש דרכים לעבור בין שיחות. הסיור וההסברים על כל אזור נמצאים בהגדרות › מידע.</string>
+    <string name="app_whatsnew_more_text">המקומות זוכרים איפה הייתם, ושבב קטן מחזיר אתכם אחרי עיקוף. נעלו מיומנות כדי שהסוכן לא יוכל לשנות אותה. למצב בהיר ולמצב כהה יש צבעים משלהם.</string>
+    <string name="app_whatsnew_more_title">דברים קטנים</string>
+    <string name="app_whatsnew_board_text">הכרטיסים יושבים עכשיו בטורים שעוברים ביניהם בהחלקה, ואפשר להחזיק יותר מלוח אחד.</string>
+    <string name="app_whatsnew_board_title">משימות על לוח</string>
+    <string name="app_tour_bot_lights_text">הקישו על בוט כדי לפתוח את הצ\'אט שלו, או לחצו עליו לחיצה ארוכה כדי לנהל אותו. טבעת נושמת אומרת שהוא עובד.</string>
+    <string name="app_tour_bot_lights_title">הבוטים שלך</string>
 
     <string name="app_hint_missions_title">משימות</string>
     <string name="app_hint_missions_text">עבודות ארוכות יותר נמצאות כאן ככרטיסים. הסוכנים שלך לוקחים אותן ועובדים עליהן, וכרטיס שצריך אותך עולה לראש. הקשה על + מוסרת משימה.</string>

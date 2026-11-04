@@ -5,6 +5,55 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 3.0.0 · beta 5, versionCode 144 (pre-release)
+
+Keryx keeps your place. Pages remember where you were, every page has the same way back, your
+bots sit across the top of the drawer, and Missions becomes a real board.
+
+**Finding your way**
+- Places keep their state. Leave the Missions board, Runs or a project and come back, and the
+  search, filter and scroll are where you left them.
+- When a place sends you into a chat (a card's "Open in chat", for one), a chip at the top of the
+  chat takes you back to it, and so does Back.
+- Every page wears the same header. The arrow goes up one level (a section to the list, a file to
+  its repo, a transcript to the runs) and the X leaves the page from wherever you are. Settings,
+  the gateway log and the Archive's moment view now use it too. Back never skips past a
+  transcript any more.
+- The bot lights: every bot across the top of the drawer, in its own colour. Tap one for its chat,
+  hold it to manage it; a breathing ring means it is working. Group chats sit beside them. In a
+  bot's chat, tapping its name opens them.
+- The drawer's head (agent card, bot lights, search, places) scrolls away, so the session list
+  gets the height.
+
+**Missions**
+- The board is laid out in lanes you swipe between: Triage, To do, Ready, Running and Done always,
+  plus Needs you, Blocked and the rest when they hold cards.
+- More than one board. Pick one or make a new one on the Missions page. Keryx keeps its own
+  choice per gateway and never moves the board the CLI and the desktop app use.
+- Opening a linked card stacks it on the one you were reading, and Back returns to it.
+
+**Look and feel**
+- Depth: cards, groups and the drawer's places stand up from the page, lit from above, and search
+  wells and board lanes sit into it.
+- Sheets close in one swipe. There is no half-open stop, and a downward fling is no longer
+  swallowed.
+- A long tool log opens smoothly: its title stays where you tapped and the steps unroll below.
+- Light and dark mode keep their own accent colours. Pick colours while in a mode to change that
+  mode's pair; "Reset appearance" shares one pair again.
+- English text in an Arabic or Hebrew app, and the other way round, now runs in its own direction,
+  so punctuation and times stay at the end of the line.
+
+**Agent**
+- Skill locks (Hermes 0.22.6 or newer): a lock beside each skill's switch. A locked skill cannot be
+  changed by the agent; you can still edit it.
+
+**Fixes**
+- Runs opens on any stock Hermes gateway, without keryx-stream. A Hermes Link left blank finds
+  keryx-stream on its own port.
+- The launcher badge no longer outlives the notices you have read, and the board on screen clears
+  its gateway's mission alerts.
+- The tour has a stop for the bot lights, and What's new shows once more with this beta's changes.
+
 ## 3.0.0 · beta 4, versionCode 143 (pre-release)
 
 Keryx speaks 31 languages, and the agent gets a page of its own.

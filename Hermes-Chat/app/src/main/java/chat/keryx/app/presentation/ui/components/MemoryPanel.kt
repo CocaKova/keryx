@@ -131,7 +131,7 @@ private fun MemoryShelves(
                 onValueChange = onQuery,
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text(pluralStringResource(R.plurals.agent_mem_search, entries.size, entries.size), fontSize = KeryxType.caption) },
-                textStyle = TextStyle(fontSize = KeryxType.body),
+                textStyle = TextStyle(textDirection = androidx.compose.ui.text.style.TextDirection.Content, fontSize = KeryxType.body),
                 singleLine = true,
             )
         }
@@ -272,7 +272,7 @@ private fun MemoryEntryPage(
                 value = draft,
                 onValueChange = { draft = it },
                 modifier = Modifier.fillMaxSize().padding(bottom = 12.dp),
-                textStyle = TextStyle(fontSize = KeryxType.caption, fontFamily = FontFamily.Monospace),
+                textStyle = TextStyle(textDirection = androidx.compose.ui.text.style.TextDirection.Content, fontSize = KeryxType.caption, fontFamily = FontFamily.Monospace),
             )
         } else {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {

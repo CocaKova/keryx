@@ -253,6 +253,12 @@
     <string name="app_whatsnew_look_title">Aspeto e atualizações</string>
     <string name="app_whatsnew_look_text_direct">Definições › Aspeto tem novos estilos de raciocínio e cinco formas de passar entre conversas. Com um keryx-stream recente, o painel Atualizar do Gateway deixa-te escolher versões Stable ou Edge. Para adicionar outro Hermes, executa hermes keryx pair nele e lê o código.</string>
     <string name="app_whatsnew_look_text">Definições › Aspeto tem novos estilos de raciocínio e cinco formas de passar entre conversas. A visita e as dicas de cada espaço estão em Definições › Acerca.</string>
+    <string name="app_whatsnew_more_text">Os espaços lembram-se de onde estava, e um chip leva-o de volta depois de um desvio. Bloqueie uma skill para que o seu agente não a possa alterar. Os modos claro e escuro guardam as suas próprias cores.</string>
+    <string name="app_whatsnew_more_title">Pequenos detalhes</string>
+    <string name="app_whatsnew_board_text">Os cartões ficam agora em colunas que percorre a deslizar, e pode ter mais do que um quadro.</string>
+    <string name="app_whatsnew_board_title">Missões num quadro</string>
+    <string name="app_tour_bot_lights_text">Toque num bot para abrir o chat dele ou mantenha premido para o gerir. Um anel a pulsar indica que está a trabalhar.</string>
+    <string name="app_tour_bot_lights_title">Os seus bots</string>
 
     <string name="app_hint_missions_title">Missões</string>
     <string name="app_hint_missions_text">As tarefas mais longas ficam aqui como cartões. Os teus agentes pegam nelas e tratam delas, e um cartão que precisa de ti sobe para o topo. Toca em + para atribuir uma.</string>

@@ -94,7 +94,7 @@ fun SteerBar(
             BasicTextField(
                 value = text,
                 onValueChange = { text = it },
-                textStyle = TextStyle(fontSize = KeryxType.bodyLarge, color = ink, lineHeight = 19.sp),
+                textStyle = TextStyle(textDirection = androidx.compose.ui.text.style.TextDirection.Content, fontSize = KeryxType.bodyLarge, color = ink, lineHeight = 19.sp),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 maxLines = 4,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),

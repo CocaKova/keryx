@@ -253,6 +253,12 @@
     <string name="app_whatsnew_look_title">Aspetto e aggiornamenti</string>
     <string name="app_whatsnew_look_text_direct">Impostazioni › Aspetto ha nuovi stili di ragionamento e cinque modi per passare da una chat all\'altra. Con un keryx-stream recente, il pannello Aggiorna del Gateway ti fa scegliere tra le release Stable o Edge. Per aggiungere un altro Hermes, esegui hermes keryx pair su di esso e scansiona il codice.</string>
     <string name="app_whatsnew_look_text">Impostazioni › Aspetto ha nuovi stili di ragionamento e cinque modi per passare da una chat all\'altra. Il giro e i suggerimenti delle sezioni sono in Impostazioni › Info.</string>
+    <string name="app_whatsnew_more_text">I luoghi ricordano dov\'eri e, dopo una deviazione, un chip ti riporta indietro. Blocca una skill così il tuo agente non può modificarla. Le modalità chiara e scura hanno ciascuna i propri colori.</string>
+    <string name="app_whatsnew_more_title">Piccole cose</string>
+    <string name="app_whatsnew_board_text">Le schede ora stanno in colonne che scorri con un gesto, e puoi avere più di una bacheca.</string>
+    <string name="app_whatsnew_board_title">Missioni su una bacheca</string>
+    <string name="app_tour_bot_lights_text">Tocca un bot per aprire la sua chat o tienilo premuto per gestirlo. Un anello che respira significa che sta lavorando.</string>
+    <string name="app_tour_bot_lights_title">I tuoi bot</string>
 
     <string name="app_hint_missions_title">Missioni</string>
     <string name="app_hint_missions_text">Qui i lavori più lunghi vivono come schede. I tuoi agenti le prendono e le portano avanti, e una scheda che ha bisogno di te sale in cima. Tocca + per assegnarne una.</string>

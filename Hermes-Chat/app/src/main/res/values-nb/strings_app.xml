@@ -253,6 +253,12 @@
     <string name="app_whatsnew_look_title">Utseende og oppdateringer</string>
     <string name="app_whatsnew_look_text_direct">Innstillinger › Utseende har nye tenkestiler og fem måter å bytte mellom chatter på. Med en nyere keryx-stream kan du i Gatewayens Oppdater-panel velge Stabil eller Edge. For å legge til en annen Hermes kjører du hermes keryx pair på den og skanner koden.</string>
     <string name="app_whatsnew_look_text">Innstillinger › Utseende har nye tenkestiler og fem måter å bytte mellom chatter på. Omvisningen og tipsene for hvert område ligger i Innstillinger › Om.</string>
+    <string name="app_whatsnew_more_text">Stedene husker hvor du var, og en brikke tar deg tilbake etter en avstikker. Lås en ferdighet så agenten din ikke kan endre den. Lys og mørk modus har hver sine farger.</string>
+    <string name="app_whatsnew_more_title">Små ting</string>
+    <string name="app_whatsnew_board_text">Kortene ligger nå i kolonner du sveiper mellom, og du kan ha mer enn én tavle.</string>
+    <string name="app_whatsnew_board_title">Oppdrag på en tavle</string>
+    <string name="app_tour_bot_lights_text">Trykk på en bot for å åpne chatten, eller hold for å administrere den. En pulserende ring betyr at den jobber.</string>
+    <string name="app_tour_bot_lights_title">Dine boter</string>
 
     <string name="app_hint_missions_title">Oppdrag</string>
     <string name="app_hint_missions_text">Lengre jobber ligger her som kort. Agentene dine plukker dem opp og jobber seg gjennom dem, og et kort som trenger deg, flyttes til toppen. Trykk + for å dele ut et.</string>

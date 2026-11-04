@@ -251,6 +251,12 @@
     <string name="app_whatsnew_look_title">見た目とアップデート</string>
     <string name="app_whatsnew_look_text_direct">設定 › 外観 に新しい思考表示スタイルと、チャット間を移動する 5 つの切り替え方が加わりました。最近の keryx-stream なら、ゲートウェイの「アップデート」パネルで Stable と Edge を選べます。別の Hermes を追加するには、そこで hermes keryx pair を実行してコードをスキャンします。</string>
     <string name="app_whatsnew_look_text">設定 › 外観 に新しい思考表示スタイルと、チャット間を移動する 5 つの切り替え方が加わりました。ツアーと画面ごとのヒントは 設定 › アプリについて にあります。</string>
+    <string name="app_whatsnew_more_text">各画面は見ていた位置を覚え、寄り道したあとはチップで戻れます。スキルをロックするとエージェントは変更できません。ライトモードとダークモードはそれぞれの色を保ちます。</string>
+    <string name="app_whatsnew_more_title">細かな変更</string>
+    <string name="app_whatsnew_board_text">カードはスワイプで移動できるレーンに並ぶようになり、ボードを複数持てるようになりました。</string>
+    <string name="app_whatsnew_board_title">ボードでミッション</string>
+    <string name="app_tour_bot_lights_text">ボットをタップするとチャットが開き、長押しで管理できます。リングが呼吸するように光っていれば作業中です。</string>
+    <string name="app_tour_bot_lights_title">あなたのボット</string>
 
     <string name="app_hint_missions_title">ミッション</string>
     <string name="app_hint_missions_text">長めの仕事はここにカードとして置かれます。エージェントが引き受けて進め、あなたが必要なカードは一番上に移動します。+ をタップして仕事を渡しましょう。</string>

@@ -234,6 +234,12 @@
     <string name="app_whatsnew_look_title">চেহারা ও আপডেট</string>
     <string name="app_whatsnew_look_text_direct">সেটিংস › চেহারায় নতুন চিন্তার স্টাইল আর চ্যাটের মধ্যে যাওয়ার পাঁচটি উপায় আছে। সাম্প্রতিক keryx-stream থাকলে গেটওয়ের আপডেট প্যানেলে Stable রিলিজ বা Edge বেছে নিতে পারবেন। আরেকটি Hermes যোগ করতে, সেখানে hermes keryx pair চালান আর কোডটি স্ক্যান করুন।</string>
     <string name="app_whatsnew_look_text">সেটিংস › চেহারায় নতুন চিন্তার স্টাইল আর চ্যাটের মধ্যে যাওয়ার পাঁচটি উপায় আছে। ট্যুর আর জায়গার টিপস সেটিংস › পরিচিতিতে থাকে।</string>
+    <string name="app_whatsnew_more_text">জায়গাগুলো মনে রাখে আপনি কোথায় ছিলেন, আর ঘুরে আসার পর একটি চিপ আপনাকে ফিরিয়ে নেয়। কোনো স্কিল লক করুন যাতে আপনার এজেন্ট সেটি বদলাতে না পারে। লাইট আর ডার্ক মোড নিজেদের রং রাখে।</string>
+    <string name="app_whatsnew_more_title">ছোট ছোট জিনিস</string>
+    <string name="app_whatsnew_board_text">কার্ডগুলো এখন লেনে থাকে, সোয়াইপ করে এক লেন থেকে আরেকটিতে যান। আর একাধিক বোর্ডও রাখতে পারেন।</string>
+    <string name="app_whatsnew_board_title">বোর্ডে মিশন</string>
+    <string name="app_tour_bot_lights_text">কোনো বটের চ্যাট খুলতে ট্যাপ করুন, পরিচালনা করতে চেপে ধরুন। শ্বাস নেওয়া রিং মানে সেটি কাজ করছে।</string>
+    <string name="app_tour_bot_lights_title">আপনার বট</string>
     <string name="app_hint_missions_title">মিশন</string>
     <string name="app_hint_missions_text">বড় কাজগুলো এখানে কার্ড হিসেবে থাকে। আপনার এজেন্টরা সেগুলো তুলে নিয়ে শেষ করে, আর যে কার্ডে আপনাকে দরকার সেটি ওপরে চলে আসে। একটি দিতে + ট্যাপ করুন।</string>
     <string name="app_hint_runs_title">রান</string>

@@ -19,7 +19,6 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Memory
@@ -124,14 +123,10 @@ fun SettingsScreen(
     // 2.0 Phase 4: Settings is a place on the nav stack, not a Dialog window — the host owns
     // its window, transition, and back gesture. The internal spoke BackHandler composes later
     // than the host's handler, so back still walks spoke → hub → out of the space.
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-          Box(Modifier.fillMaxSize().keryxDuskSky()) {
+        run {
             // Hub-and-spoke: null = the section list; a name = that section's page.
             // One long scroll of seven dense cards was the old layout — cluttered.
-            var section by remember { mutableStateOf<String?>(null) }
+            var section by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
             BackHandler(enabled = section != null) { section = null }
             val direct = viewModel.transportIsDirect
             // The row to land on (2.10): from the hub's own search, or from the drawer palette
@@ -147,31 +142,15 @@ fun SettingsScreen(
             }
             var query by remember { mutableStateOf("") }
 
-            Column(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)) {
-                TopAppBar(
-                    title = {
-                        Text(
-                            (settingsSectionLabel(section)?.let { stringResource(it) } ?: section ?: stringResource(R.string.settings_title)).uppercase(),
-                            fontSize = KeryxType.headline,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 5.sp,
-                        )
-                    },
-                    navigationIcon = {
-                        if (section != null) {
-                            IconButton(onClick = { section = null }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.settings_back))
-                            }
-                        } else {
-                            IconButton(onClick = onDismissRequest) {
-                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.settings_close))
-                            }
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent
-                    )
-                )
+            // 3.0: the same header as every other place, so the way back sits in the same seat
+            // and does the same thing: the arrow is up one level (a section → the list), the X
+            // leaves Settings.
+            KeryxSpace(
+                title = settingsSectionLabel(section)?.let { stringResource(it) } ?: section ?: stringResource(R.string.settings_title),
+                onClose = onDismissRequest,
+                standalone = false,
+                onBack = if (section != null) ({ section = null }) else null,
+            ) {
 
                 // Makeover: the hub and its pages slide like places, not swap like tabs — in
                 // from the right going deeper, back out to the right coming home, on the app's
@@ -1179,7 +1158,6 @@ fun SettingsScreen(
                 }
                 }
             }
-          }
         }
 }
 

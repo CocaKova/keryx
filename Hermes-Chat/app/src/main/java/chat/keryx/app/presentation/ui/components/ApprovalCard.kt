@@ -213,7 +213,7 @@ fun BlockingRequestCard(
             value = typed,
             onValueChange = { typed = it },
             singleLine = true,
-            textStyle = TextStyle(fontSize = KeryxType.body),
+            textStyle = TextStyle(textDirection = androidx.compose.ui.text.style.TextDirection.Content, fontSize = KeryxType.body),
             shape = RoundedCornerShape(KeryxRadius.field),
             placeholder = {
                 Text(

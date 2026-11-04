@@ -251,6 +251,12 @@
     <string name="app_whatsnew_look_title">外觀與更新</string>
     <string name="app_whatsnew_look_text_direct">設定 › 外觀 中有新的思考樣式，以及五種切換聊天的方式。搭配較新的 keryx-stream，閘道的「更新」面板可以選擇 Stable 或 Edge 版本。要新增另一個 Hermes，請在它上面執行 hermes keryx pair 並掃描配對碼。</string>
     <string name="app_whatsnew_look_text">設定 › 外觀 中有新的思考樣式，以及五種切換聊天的方式。導覽和各頁面的提示都在 設定 › 關於 中。</string>
+    <string name="app_whatsnew_more_text">各個頁面會記住你看到哪裡，繞到別處後有個小標籤帶你回去。鎖定技能後，代理就無法修改它。淺色和深色模式各自保留自己的顏色。</string>
+    <string name="app_whatsnew_more_title">小改進</string>
+    <string name="app_whatsnew_board_text">卡片現在按欄排放，左右滑動切換，而且你可以擁有多個看板。</string>
+    <string name="app_whatsnew_board_title">看板上的任務</string>
+    <string name="app_tour_bot_lights_text">輕觸機器人開啟它的聊天，長按可管理它。呼吸的光環表示它正在工作。</string>
+    <string name="app_tour_bot_lights_title">你的機器人</string>
 
     <string name="app_hint_missions_title">任務</string>
     <string name="app_hint_missions_text">較長的工作會以卡片的形式放在這裡。代理會接手並一一處理，需要你的卡片會移到最上方。輕觸 + 即可分派一項。</string>

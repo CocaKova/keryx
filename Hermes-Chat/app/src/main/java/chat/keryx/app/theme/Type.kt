@@ -5,6 +5,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.sp
 import chat.keryx.app.R
 
@@ -42,3 +43,20 @@ val Typography =
     )
     */
   )
+
+/**
+ * Every style reads its direction from its own first letter (3.0): an English line in an Arabic
+ * or Hebrew app stays left-to-right, so its full stop and its "2:" stay at its end, and Arabic in
+ * an English app runs right-to-left. Text with no letters at all follows the layout. This is what
+ * a plain Android TextView does (FIRSTSTRONG); Compose's own default follows the layout only.
+ */
+internal fun Typography.readingItsOwnDirection(): Typography {
+    fun TextStyle.own() = copy(textDirection = TextDirection.Content)
+    return copy(
+        displayLarge = displayLarge.own(), displayMedium = displayMedium.own(), displaySmall = displaySmall.own(),
+        headlineLarge = headlineLarge.own(), headlineMedium = headlineMedium.own(), headlineSmall = headlineSmall.own(),
+        titleLarge = titleLarge.own(), titleMedium = titleMedium.own(), titleSmall = titleSmall.own(),
+        bodyLarge = bodyLarge.own(), bodyMedium = bodyMedium.own(), bodySmall = bodySmall.own(),
+        labelLarge = labelLarge.own(), labelMedium = labelMedium.own(), labelSmall = labelSmall.own(),
+    )
+}

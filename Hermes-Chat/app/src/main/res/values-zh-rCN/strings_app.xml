@@ -251,6 +251,12 @@
     <string name="app_whatsnew_look_title">外观与更新</string>
     <string name="app_whatsnew_look_text_direct">设置 › 外观 里有新的思考样式，以及五种切换聊天的动画。使用较新的 keryx-stream 时，网关的“更新”面板可以选择 Stable 或 Edge 版本。要添加另一个 Hermes，请在它上面运行 hermes keryx pair 并扫描配对码。</string>
     <string name="app_whatsnew_look_text">设置 › 外观 里有新的思考样式，以及五种切换聊天的动画。导览和各处提示在 设置 › 关于 中。</string>
+    <string name="app_whatsnew_more_text">各个页面会记住你看到哪里，绕到别处后有个小标签带你回去。锁定技能后，智能体就无法修改它。浅色和深色模式各自保留自己的颜色。</string>
+    <string name="app_whatsnew_more_title">小改进</string>
+    <string name="app_whatsnew_board_text">卡片现在按列排放，左右滑动切换，而且你可以拥有多个看板。</string>
+    <string name="app_whatsnew_board_title">看板上的任务</string>
+    <string name="app_tour_bot_lights_text">点按机器人打开它的聊天，长按可管理它。呼吸的光环表示它正在工作。</string>
+    <string name="app_tour_bot_lights_title">你的机器人</string>
 
     <string name="app_hint_missions_title">任务</string>
     <string name="app_hint_missions_text">较长的工作以卡片形式放在这里。智能体会领取并逐一处理，需要你的卡片会移到最上面。点按 + 来分配一项。</string>

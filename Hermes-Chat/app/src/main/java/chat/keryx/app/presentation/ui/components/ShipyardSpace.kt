@@ -97,12 +97,13 @@ fun ShipyardSpace(
 
     KeryxSpace(
         title = title,
-        onClose = {
-            when {
-                openFile != null -> yard.closeFile()
-                repo != null -> yard.closeRepo()
-                else -> onClose()
-            }
+        // 3.0: the arrow is up one level (a file → its repo → the yard); the X leaves the
+        // Shipyard from wherever you are, as in every place.
+        onClose = onClose,
+        onBack = when {
+            openFile != null -> ({ yard.closeFile() })
+            repo != null -> ({ yard.closeRepo() })
+            else -> null
         },
         standalone = false,
     ) {

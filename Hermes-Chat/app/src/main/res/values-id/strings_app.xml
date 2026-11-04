@@ -251,6 +251,12 @@
     <string name="app_whatsnew_look_title">Tampilan dan pembaruan</string>
     <string name="app_whatsnew_look_text_direct">Setelan › Tampilan punya gaya berpikir baru dan lima cara berpindah antarobrolan. Dengan keryx-stream terbaru, panel Pembaruan di Gateway memungkinkanmu memilih rilis Stabil atau Edge. Untuk menambah Hermes lain, jalankan hermes keryx pair di sana lalu pindai kodenya.</string>
     <string name="app_whatsnew_look_text">Setelan › Tampilan punya gaya berpikir baru dan lima cara berpindah antarobrolan. Tur dan petunjuk ruang ada di Setelan › Tentang.</string>
+    <string name="app_whatsnew_more_text">Tempat-tempat mengingat posisi Anda, dan sebuah chip membawa Anda kembali setelah memutar. Kunci skill agar agen Anda tidak bisa mengubahnya. Mode terang dan gelap menyimpan warnanya sendiri.</string>
+    <string name="app_whatsnew_more_title">Hal-hal kecil</string>
+    <string name="app_whatsnew_board_text">Kartu kini berada di lajur yang bisa Anda geser, dan Anda bisa punya lebih dari satu papan.</string>
+    <string name="app_whatsnew_board_title">Misi di papan</string>
+    <string name="app_tour_bot_lights_text">Ketuk bot untuk membuka obrolannya, atau tahan untuk mengelolanya. Cincin yang berdenyut berarti bot sedang bekerja.</string>
+    <string name="app_tour_bot_lights_title">Bot Anda</string>
 
     <string name="app_hint_missions_title">Misi</string>
     <string name="app_hint_missions_text">Pekerjaan panjang ada di sini sebagai kartu. Agenmu mengambil dan mengerjakannya, dan kartu yang membutuhkanmu naik ke atas. Ketuk + untuk memberikan satu.</string>

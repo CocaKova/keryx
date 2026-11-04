@@ -219,15 +219,25 @@ fun RunsSpace(
     }
 
     openSession?.let { session ->
-        SessionTranscript(
-            session = session,
-            viewModel = viewModel,
+        // 3.0: a run's transcript stands in the place's own header, so the arrow (back to the
+        // runs) and the X (out of Runs) sit where they sit everywhere else.
+        KeryxSpace(
+            title = stringResource(R.string.work_runs),
+            onClose = onClose,
             onBack = { openSession = null },
-            onForked = { fork ->
-                if (viewModel.transportIsDirect) onOpenSession(fork.id, fork.title ?: fork.model)
-                else openSession = fork
-            },
-        )
+            standalone = false,
+        ) {
+            SessionTranscript(
+                session = session,
+                viewModel = viewModel,
+                onBack = { openSession = null },
+                onForked = { fork ->
+                    if (viewModel.transportIsDirect) onOpenSession(fork.id, fork.title ?: fork.model)
+                    else openSession = fork
+                },
+                backArrow = false,
+            )
+        }
         return
     }
 
@@ -1466,7 +1476,7 @@ private fun RunsControls(
                         value = query,
                         onValueChange = onQuery,
                         singleLine = true,
-                        textStyle = TextStyle(fontSize = KeryxType.body, color = onSurface),
+                        textStyle = TextStyle(textDirection = androidx.compose.ui.text.style.TextDirection.Content, fontSize = KeryxType.body, color = onSurface),
                         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),

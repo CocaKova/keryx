@@ -251,6 +251,12 @@
     <string name="app_whatsnew_look_title">모양과 업데이트</string>
     <string name="app_whatsnew_look_text_direct">설정 › 모양에 새로운 생각 표시 스타일과 채팅 간 이동 방식 5가지가 추가됐어요. 최신 keryx-stream이라면 게이트웨이의 업데이트 패널에서 Stable 또는 Edge를 고를 수 있어요. 다른 Hermes를 추가하려면 거기서 hermes keryx pair를 실행하고 코드를 스캔하세요.</string>
     <string name="app_whatsnew_look_text">설정 › 모양에 새로운 생각 표시 스타일과 채팅 간 이동 방식 5가지가 추가됐어요. 둘러보기와 화면별 힌트는 설정 › 정보에 있어요.</string>
+    <string name="app_whatsnew_more_text">각 공간은 보던 위치를 기억하고, 잠깐 다른 곳에 다녀오면 칩이 원래 자리로 돌려보내요. 스킬을 잠그면 에이전트가 바꿀 수 없어요. 라이트 모드와 다크 모드는 각자 색을 따로 가져요.</string>
+    <string name="app_whatsnew_more_title">작은 변화들</string>
+    <string name="app_whatsnew_board_text">이제 카드가 스와이프로 넘기는 레인에 놓이고, 보드를 여러 개 둘 수 있어요.</string>
+    <string name="app_whatsnew_board_title">보드 위의 미션</string>
+    <string name="app_tour_bot_lights_text">봇을 탭하면 채팅이 열리고, 길게 누르면 관리할 수 있어요. 숨 쉬듯 깜빡이는 링은 작업 중이라는 뜻이에요.</string>
+    <string name="app_tour_bot_lights_title">내 봇</string>
 
     <string name="app_hint_missions_title">미션</string>
     <string name="app_hint_missions_text">긴 일은 여기에 카드로 놓여요. 에이전트가 맡아서 처리하고, 내가 필요한 카드는 맨 위로 올라와요. +를 탭해서 일을 맡기세요.</string>

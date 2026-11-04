@@ -257,6 +257,12 @@
     <string name="app_whatsnew_look_title">Wygląd i aktualizacje</string>
     <string name="app_whatsnew_look_text_direct">Ustawienia › Wygląd mają nowe style myślenia i pięć sposobów przechodzenia między czatami. Z nowym keryx-stream panel Aktualizacji w Bramce pozwala wybrać wydania Stable albo Edge. Aby dodać kolejnego Hermesa, uruchom na nim hermes keryx pair i zeskanuj kod.</string>
     <string name="app_whatsnew_look_text">Ustawienia › Wygląd mają nowe style myślenia i pięć sposobów przechodzenia między czatami. Przewodnik i podpowiedzi są w Ustawienia › O aplikacji.</string>
+    <string name="app_whatsnew_more_text">Miejsca pamiętają, gdzie byłeś, a po zboczeniu z drogi żeton zabierze cię z powrotem. Zablokuj umiejętność, aby agent nie mógł jej zmienić. Tryb jasny i ciemny mają własne kolory.</string>
+    <string name="app_whatsnew_more_title">Drobiazgi</string>
+    <string name="app_whatsnew_board_text">Karty leżą teraz w kolumnach, między którymi przesuwasz palcem, i możesz mieć więcej niż jedną tablicę.</string>
+    <string name="app_whatsnew_board_title">Misje na tablicy</string>
+    <string name="app_tour_bot_lights_text">Stuknij bota, aby otworzyć jego czat, albo przytrzymaj, aby nim zarządzać. Pulsujący pierścień oznacza, że pracuje.</string>
+    <string name="app_tour_bot_lights_title">Twoje boty</string>
 
     <string name="app_hint_missions_title">Misje</string>
     <string name="app_hint_missions_text">Tu mieszkają dłuższe zadania jako karty. Agenci je podejmują i przerabiają, a karta, która cię potrzebuje, wędruje na górę. Stuknij +, aby jakąś zlecić.</string>

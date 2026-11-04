@@ -251,6 +251,12 @@
     <string name="app_whatsnew_look_title">หน้าตาและการอัปเดต</string>
     <string name="app_whatsnew_look_text_direct">การตั้งค่า › รูปลักษณ์ มีสไตล์การคิดแบบใหม่และห้าวิธีในการเปลี่ยนแชท ถ้าใช้ keryx-stream รุ่นล่าสุด แผงอัปเดตของเกตเวย์ให้คุณเลือกรุ่น Stable หรือ Edge หากต้องการเพิ่ม Hermes อีกตัว ให้รัน hermes keryx pair บนเครื่องนั้นแล้วสแกนโค้ด</string>
     <string name="app_whatsnew_look_text">การตั้งค่า › รูปลักษณ์ มีสไตล์การคิดแบบใหม่และห้าวิธีในการเปลี่ยนแชท ทัวร์และคำแนะนำต่างๆ อยู่ใน การตั้งค่า › เกี่ยวกับ</string>
+    <string name="app_whatsnew_more_text">แต่ละพื้นที่จำได้ว่าคุณอยู่ตรงไหน และชิปจะพาคุณกลับหลังแวะไปที่อื่น ล็อกสกิลเพื่อไม่ให้เอเจนต์เปลี่ยนแปลงได้ โหมดสว่างและโหมดมืดเก็บสีของตัวเองแยกกัน</string>
+    <string name="app_whatsnew_more_title">เรื่องเล็ก ๆ</string>
+    <string name="app_whatsnew_board_text">การ์ดอยู่ในเลนที่ปัดสลับไปมาได้แล้ว และคุณมีบอร์ดได้มากกว่าหนึ่งบอร์ด</string>
+    <string name="app_whatsnew_board_title">มิชชันบนบอร์ด</string>
+    <string name="app_tour_bot_lights_text">แตะบอตเพื่อเปิดแชตของมัน หรือกดค้างเพื่อจัดการ วงแหวนที่กะพริบเหมือนหายใจแปลว่ากำลังทำงาน</string>
+    <string name="app_tour_bot_lights_title">บอตของคุณ</string>
 
     <string name="app_hint_missions_title">ภารกิจ</string>
     <string name="app_hint_missions_text">งานที่ยาวกว่าอยู่ที่นี่ในรูปแบบการ์ด เอเจนต์จะรับไปทำทีละใบ และการ์ดที่ต้องการคุณจะขึ้นไปอยู่บนสุด แตะ + เพื่อมอบงาน</string>

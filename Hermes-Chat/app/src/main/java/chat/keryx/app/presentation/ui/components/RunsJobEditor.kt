@@ -320,7 +320,7 @@ private fun SchedulePicker(draft: ScheduleDraft, onChange: (ScheduleDraft) -> Un
             label = { Text(stringResource(R.string.work_job_schedule)) },
             supportingText = { Text(stringResource(R.string.work_job_schedule_help), fontSize = KeryxType.micro) },
             singleLine = true,
-            textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = KeryxType.body),
+            textStyle = TextStyle(textDirection = androidx.compose.ui.text.style.TextDirection.Content, fontFamily = FontFamily.Monospace, fontSize = KeryxType.body),
             shape = RoundedCornerShape(KeryxRadius.field),
         )
         else -> {
@@ -483,7 +483,7 @@ private fun DeliveryPicker(options: List<DeliveryOption>, value: String, label: 
             label = { Text(stringResource(R.string.work_job_target)) },
             supportingText = { Text(stringResource(R.string.work_job_target_help), fontSize = KeryxType.micro) },
             singleLine = true,
-            textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = KeryxType.caption),
+            textStyle = TextStyle(textDirection = androidx.compose.ui.text.style.TextDirection.Content, fontFamily = FontFamily.Monospace, fontSize = KeryxType.caption),
             shape = RoundedCornerShape(KeryxRadius.field),
         )
     }

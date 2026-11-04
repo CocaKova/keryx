@@ -152,7 +152,7 @@ fun ModelPickerSheet(
                     focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
                 ),
-                textStyle = TextStyle(fontSize = KeryxType.bodyLarge),
+                textStyle = TextStyle(textDirection = androidx.compose.ui.text.style.TextDirection.Content, fontSize = KeryxType.bodyLarge),
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(4.dp))

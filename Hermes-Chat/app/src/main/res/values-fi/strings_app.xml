@@ -253,6 +253,12 @@
     <string name="app_whatsnew_look_title">Ulkoasu ja päivitykset</string>
     <string name="app_whatsnew_look_text_direct">Kohdassa Asetukset › Ulkoasu on uusia ajattelutyylejä ja viisi tapaa siirtyä keskustelujen välillä. Tuoreella keryx-streamilla Yhdyskäytävän päivityspaneelista voi valita Stable- tai Edge-julkaisut. Lisätäksesi toisen Hermesin aja siinä hermes keryx pair ja skannaa koodi.</string>
     <string name="app_whatsnew_look_text">Kohdassa Asetukset › Ulkoasu on uusia ajattelutyylejä ja viisi tapaa siirtyä keskustelujen välillä. Kierros ja vinkit löytyvät kohdasta Asetukset › Tietoja.</string>
+    <string name="app_whatsnew_more_text">Paikat muistavat, missä olit, ja sivupolun jälkeen siru vie sinut takaisin. Lukitse taito, jottei agenttisi voi muuttaa sitä. Vaalealla ja tummalla tilalla on omat värinsä.</string>
+    <string name="app_whatsnew_more_title">Pieniä asioita</string>
+    <string name="app_whatsnew_board_text">Kortit ovat nyt sarakkeissa, joiden välillä pyyhkäiset, ja tauluja voi olla useampi.</string>
+    <string name="app_whatsnew_board_title">Tehtävät taululla</string>
+    <string name="app_tour_bot_lights_text">Napauta bottia avataksesi sen keskustelun tai pidä painettuna hallitaksesi sitä. Sykkivä rengas tarkoittaa, että se työskentelee.</string>
+    <string name="app_tour_bot_lights_title">Bottisi</string>
 
     <string name="app_hint_missions_title">Tehtävät</string>
     <string name="app_hint_missions_text">Pidemmät työt asuvat täällä kortteina. Agenttisi ottavat ne työn alle, ja sinua tarvitseva kortti nousee ylimmäksi. Jaa uusi napauttamalla +.</string>

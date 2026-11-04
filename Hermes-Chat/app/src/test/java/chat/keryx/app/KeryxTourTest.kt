@@ -29,7 +29,7 @@ class KeryxTourTest {
     @Test
     fun `the direct door with Link offers every stop, ending on the gateway with Add a gateway`() {
         val full = KeryxTour.builtIn(TourPreset.FULL, ids(direct), direct, words = EnglishStrings::get)
-        assertEquals(12, full.size)
+        assertEquals(13, full.size)
         assertEquals(KeryxTour.MACHINE, full.last().target)
         assertEquals(KeryxTour.CTA_ADD_GATEWAY, full.last().cta?.id)
         assertEquals(
@@ -120,7 +120,7 @@ class KeryxTourTest {
             val offered = ids(ctx)
             val steps = KeryxTour.whatsNew(offered, ctx, words = EnglishStrings::get)
             assertNull("the opener is narration, mid-screen", steps.first().target)
-            assertTrue(steps.drop(1).all { it.target in offered })
+            assertTrue(steps.drop(1).all { it.target == null || it.target in offered })
             assertTrue("a look, not a tour: a handful of stops", steps.size in 3..6)
         }
         // Matrix never sees the agent's pointing, so What's new doesn't promise it there.

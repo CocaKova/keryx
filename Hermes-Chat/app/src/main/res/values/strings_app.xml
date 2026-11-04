@@ -420,6 +420,12 @@
     <!-- Keep "keryx-stream" and the command "hermes keryx pair" as is. "Stable" and "Edge" are release channel names. -->
     <string name="app_whatsnew_look_text_direct">Settings › Appearance has new thinking styles and five ways to move between chats. With a recent keryx-stream, the Gateway\'s Update panel lets you pick Stable releases or Edge. To add another Hermes, run hermes keryx pair on it and scan the code.</string>
     <string name="app_whatsnew_look_text">Settings › Appearance has new thinking styles and five ways to move between chats. The tour and the space hints live in Settings › About.</string>
+    <string name="app_whatsnew_more_text">Places remember where you were, and a chip takes you back after a detour. Lock a skill so your agent can\'t change it. Light and dark mode keep their own colours.</string>
+    <string name="app_whatsnew_more_title">Small things</string>
+    <string name="app_whatsnew_board_text">Cards now sit in lanes you swipe between, and you can keep more than one board.</string>
+    <string name="app_whatsnew_board_title">Missions on a board</string>
+    <string name="app_tour_bot_lights_text">Tap a bot to open its chat, or hold it to manage it. A breathing ring means it\'s working.</string>
+    <string name="app_tour_bot_lights_title">Your bots</string>
 
     <!-- First-visit hints: one card the first time a place opens -->
     <string name="app_hint_missions_title">Missions</string>

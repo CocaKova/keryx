@@ -23,7 +23,7 @@ object KeryxTour {
     const val NEW_SESSION = "new-session"
     const val DRAWER_BUTTON = "drawer-button"
     const val LENSES = "drawer-lenses"
-    /** The bot lights across the top of the drawer (3.0). Joins [ALL] with its tour stop. */
+    /** The bot lights across the top of the drawer (3.0). */
     const val BOT_LIGHTS = "drawer-bot-lights"
     const val MISSIONS = "door-missions"
     const val RUNS = "door-runs"
@@ -37,7 +37,7 @@ object KeryxTour {
     const val APPROVAL = "approval"
 
     /** Every id above, in tour order. */
-    val ALL = listOf(FLIGHT_PLAN, APPROVAL, COMPOSER, MODEL, NEW_SESSION, DRAWER_BUTTON, LENSES, MISSIONS, RUNS, BOTS, ARCHIVE, MACHINE)
+    val ALL = listOf(FLIGHT_PLAN, APPROVAL, COMPOSER, MODEL, NEW_SESSION, DRAWER_BUTTON, BOT_LIGHTS, LENSES, MISSIONS, RUNS, BOTS, ARCHIVE, MACHINE)
 
     /** Ends the tour by opening Settings › Gateways. */
     const val CTA_ADD_GATEWAY = "add-gateway"
@@ -59,6 +59,7 @@ object KeryxTour {
         add(TourTarget(MODEL, "Model picker", TourPlace.CHAT))
         if (ctx.direct) add(TourTarget(NEW_SESSION, "New session", TourPlace.CHAT))
         add(TourTarget(DRAWER_BUTTON, "Menu: sessions and places", TourPlace.CHAT))
+        if (ctx.direct) add(TourTarget(BOT_LIGHTS, "Bot lights: every bot, one tap from its chat", TourPlace.DRAWER))
         if (ctx.direct) add(TourTarget(LENSES, "Session filters: needs you, running, unread", TourPlace.DRAWER))
         add(TourTarget(MISSIONS, "Missions board", TourPlace.DRAWER))
         if (ctx.link) add(TourTarget(RUNS, "Runs: scheduled jobs", TourPlace.DRAWER))
@@ -102,6 +103,7 @@ object KeryxTour {
             stop(DRAWER_BUTTON, R.string.app_tour_drawer_title, R.string.app_tour_drawer_text),
         )
         val full = quick + listOf(
+            stop(BOT_LIGHTS, R.string.app_tour_bot_lights_title, R.string.app_tour_bot_lights_text),
             stop(LENSES, R.string.app_tour_lenses_title, R.string.app_tour_lenses_text),
             stop(MISSIONS, R.string.app_tour_missions_title, R.string.app_tour_missions_text),
             stop(RUNS, R.string.app_tour_runs_title, R.string.app_tour_runs_text),
@@ -120,7 +122,8 @@ object KeryxTour {
     }
 
     /** Which release [whatsNew] describes. Stored once it has shown, so it shows once per release. */
-    const val WHATS_NEW_RELEASE = "3.0"
+    // "3.0-b5": the beta.5 stops (bots, board, small things) show once more to beta.4 testers.
+    const val WHATS_NEW_RELEASE = "3.0-b5"
 
     /**
      * "What's new in 3.0", for someone who used Keryx before it: a handful of stops on the real
@@ -137,10 +140,13 @@ object KeryxTour {
             stop(null, R.string.app_whatsnew_title, R.string.app_whatsnew_text),
             // The agent pointing comes through Hermes Link on the direct door; Matrix never sees it.
             if (ctx.direct) stop(COMPOSER, R.string.app_whatsnew_point_title, R.string.app_whatsnew_point_text) else null,
-            stop(MODEL, R.string.app_whatsnew_memory_title, R.string.app_whatsnew_memory_text),
-            if (ctx.direct) stop(LENSES, R.string.app_whatsnew_drawer_title, R.string.app_whatsnew_drawer_text_direct)
+            // Six stops at most, so it stays a look and not a tour. On the direct door the bots
+            // up top stand in for the drawer stop and the memory ring gives way to pointing.
+            if (!ctx.direct) stop(MODEL, R.string.app_whatsnew_memory_title, R.string.app_whatsnew_memory_text) else null,
+            if (ctx.direct) stop(BOT_LIGHTS, R.string.app_tour_bot_lights_title, R.string.app_tour_bot_lights_text)
             else stop(DRAWER_BUTTON, R.string.app_whatsnew_drawer_title, R.string.app_whatsnew_drawer_text),
-            stop(MISSIONS, R.string.app_whatsnew_cards_title, R.string.app_whatsnew_cards_text),
+            stop(MISSIONS, R.string.app_whatsnew_board_title, R.string.app_whatsnew_board_text),
+            stop(null, R.string.app_whatsnew_more_title, R.string.app_whatsnew_more_text),
             stop(
                 MACHINE, R.string.app_whatsnew_look_title,
                 if (ctx.direct) R.string.app_whatsnew_look_text_direct else R.string.app_whatsnew_look_text,

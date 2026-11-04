@@ -215,7 +215,10 @@ fun ArchiveScreen(
     }
 
     contextAnchor?.let { (anchor, room) ->
-        ArchiveContextViewer(viewModel, anchorId = anchor, roomId = room, onDismiss = { contextAnchor = null })
+        ArchiveContextViewer(
+            viewModel, anchorId = anchor, roomId = room, onDismiss = { contextAnchor = null },
+            onLeave = { contextAnchor = null; onDismissRequest() },
+        )
     }
 }
 
@@ -667,6 +670,8 @@ fun ArchiveContextViewer(
     anchorId: String,
     roomId: String? = null,
     onDismiss: () -> Unit,
+    /** Leave the Archive itself (3.0): the X does that; the arrow and back step out to the list. */
+    onLeave: (() -> Unit)? = null,
 ) {
     var items by remember(anchorId) { mutableStateOf<List<Message>>(emptyList()) }
     var loading by remember(anchorId) { mutableStateOf(true) }
@@ -686,7 +691,7 @@ fun ArchiveContextViewer(
         ?.let { java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM, java.util.Locale.getDefault()).format(java.util.Date(it.timestamp)) }
         ?: stringResource(R.string.chat_archive_context)
 
-    KeryxSpace(title = title, onClose = onDismiss) {
+    KeryxSpace(title = title, onClose = onLeave ?: onDismiss, onBack = if (onLeave != null) onDismiss else null) {
         if (loading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 KeryxBreathingDot(KeryxStatus.good, alive = true, size = 10.dp)

@@ -100,9 +100,10 @@ fun ProjectsSpace(
 
     KeryxSpace(
         title = openNode?.label?.uppercase() ?: stringResource(R.string.work_projects),
-        onClose = {
-            if (openId != null) { openId = null; viewModel.projects.closeProjectDetail() } else onClose()
-        },
+        // 3.0: one meaning per button, as in every place. The arrow steps out of a project to
+        // the list; the X leaves Projects from wherever you are.
+        onClose = onClose,
+        onBack = if (openId != null) ({ openId = null; viewModel.projects.closeProjectDetail() }) else null,
         standalone = false,
     ) {
         if (openNode != null) {

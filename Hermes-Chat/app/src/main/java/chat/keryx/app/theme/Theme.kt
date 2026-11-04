@@ -59,7 +59,7 @@ fun HermesChatTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = Typography.readingItsOwnDirection(),
         content = content
     )
 }

@@ -253,6 +253,12 @@
     <string name="app_whatsnew_look_title">Aussehen und Updates</string>
     <string name="app_whatsnew_look_text_direct">Unter Einstellungen › Darstellung gibt es neue Denkstile und fünf Arten, zwischen Chats zu wechseln. Mit einem aktuellen keryx-stream kannst du im Update-Bereich des Gateways Stable- oder Edge-Releases wählen. Um ein weiteres Hermes hinzuzufügen, führ dort hermes keryx pair aus und scanne den Code.</string>
     <string name="app_whatsnew_look_text">Unter Einstellungen › Darstellung gibt es neue Denkstile und fünf Arten, zwischen Chats zu wechseln. Der Rundgang und die Hinweise findest du unter Einstellungen › Info.</string>
+    <string name="app_whatsnew_more_text">Orte merken sich, wo du warst, und nach einem Abstecher bringt dich ein Chip zurück. Sperre einen Skill, damit dein Agent ihn nicht ändern kann. Heller und dunkler Modus behalten eigene Farben.</string>
+    <string name="app_whatsnew_more_title">Kleinigkeiten</string>
+    <string name="app_whatsnew_board_text">Karten liegen jetzt in Spalten, zwischen denen du wischst, und du kannst mehr als ein Board haben.</string>
+    <string name="app_whatsnew_board_title">Missionen auf einem Board</string>
+    <string name="app_tour_bot_lights_text">Tippe auf einen Bot, um seinen Chat zu öffnen, oder halte ihn gedrückt, um ihn zu verwalten. Ein atmender Ring heißt, er arbeitet.</string>
+    <string name="app_tour_bot_lights_title">Deine Bots</string>
 
     <string name="app_hint_missions_title">Missionen</string>
     <string name="app_hint_missions_text">Längere Aufgaben liegen hier als Karten. Deine Agenten nehmen sie auf und arbeiten sie ab, und eine Karte, die dich braucht, rückt nach oben. Tipp auf +, um eine zu vergeben.</string>

@@ -261,6 +261,12 @@
     <string name="app_whatsnew_look_title">المظهر والتحديثات</string>
     <string name="app_whatsnew_look_text_direct">في الإعدادات › المظهر أنماط تفكير جديدة وخمس طرق للتنقل بين المحادثات. مع إصدار حديث من keryx-stream، تتيح لوحة التحديث في البوابة اختيار إصدارات Stable أو Edge. لإضافة Hermes آخر، شغّل hermes keryx pair عليه وامسح الرمز.</string>
     <string name="app_whatsnew_look_text">في الإعدادات › المظهر أنماط تفكير جديدة وخمس طرق للتنقل بين المحادثات. الجولة وتلميحات الأقسام موجودة في الإعدادات › حول.</string>
+    <string name="app_whatsnew_more_text">تتذكر الأماكن أين كنت، وتعيدك شارة صغيرة بعد أي تحويلة. اقفل مهارة كي لا يغيّرها وكيلك. ويحتفظ الوضعان الفاتح والداكن بألوانهما الخاصة.</string>
+    <string name="app_whatsnew_more_title">أشياء صغيرة</string>
+    <string name="app_whatsnew_board_text">تجلس البطاقات الآن في مسارات تتنقل بينها بالسحب، ويمكنك الاحتفاظ بأكثر من لوحة.</string>
+    <string name="app_whatsnew_board_title">المهام على لوحة</string>
+    <string name="app_tour_bot_lights_text">اضغط على بوت لفتح محادثته، أو اضغط مطولًا لإدارته. الحلقة النابضة تعني أنه يعمل.</string>
+    <string name="app_tour_bot_lights_title">بوتاتك</string>
 
     <string name="app_hint_missions_title">المهام</string>
     <string name="app_hint_missions_text">المهام الأطول توجد هنا كبطاقات. يلتقطها وكلاؤك ويعملون عليها، والبطاقة التي تحتاج إليك تنتقل إلى الأعلى. انقر + لتسليم واحدة.</string>

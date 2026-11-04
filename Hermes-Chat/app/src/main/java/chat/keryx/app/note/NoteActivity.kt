@@ -328,7 +328,7 @@ class NoteActivity : androidx.fragment.app.FragmentActivity() {
                         value = text,
                         onValueChange = { text = it },
                         enabled = !isSending,
-                        textStyle = TextStyle(fontSize = KeryxType.bodyLarge, color = ink, lineHeight = 19.sp),
+                        textStyle = TextStyle(textDirection = androidx.compose.ui.text.style.TextDirection.Content, fontSize = KeryxType.bodyLarge, color = ink, lineHeight = 19.sp),
                         cursorBrush = SolidColor(accent),
                         maxLines = 3,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),

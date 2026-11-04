@@ -24,7 +24,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,8 +45,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import chat.keryx.app.data.remote.HermesStreamClient.ConfigKnob
 import chat.keryx.app.presentation.ChatViewModel
 import androidx.compose.ui.res.stringResource
@@ -590,22 +587,21 @@ internal fun GatewayLogViewer(viewModel: ChatViewModel, onDismiss: () -> Unit) {
             .onFailure { error = it.message }
     }
 
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
-            Column(Modifier.fillMaxSize().padding(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.settings_controls_gateway_log).uppercase(), fontSize = KeryxType.caption, letterSpacing = 3.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.weight(1f))
-                    listOf(120, 300, 500).forEach { n ->
-                        TextButton(onClick = { text = null; lines = n }) {
-                            Text("$n", fontSize = KeryxType.caption,
-                                fontWeight = if (lines == n) FontWeight.Bold else FontWeight.Normal)
-                        }
-                    }
-                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_close), fontSize = KeryxType.caption) }
+    // 3.0: the log stands in the same frame as every place: its title where titles sit, the
+    // line counts among the header's actions, the X where the X always is.
+    KeryxSpace(
+        title = stringResource(R.string.settings_controls_gateway_log),
+        onClose = onDismiss,
+        actions = {
+            listOf(120, 300, 500).forEach { n ->
+                TextButton(onClick = { text = null; lines = n }) {
+                    Text("$n", fontSize = KeryxType.caption,
+                        fontWeight = if (lines == n) FontWeight.Bold else FontWeight.Normal)
                 }
+            }
+        },
+    ) {
+            Column(Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
                 when {
                     error != null -> Text("⚠ $error", fontSize = KeryxType.caption,
                         color = MaterialTheme.colorScheme.error)
@@ -627,6 +623,5 @@ internal fun GatewayLogViewer(viewModel: ChatViewModel, onDismiss: () -> Unit) {
                     }
                 }
             }
-        }
     }
 }

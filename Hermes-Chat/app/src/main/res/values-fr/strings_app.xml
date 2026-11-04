@@ -236,6 +236,12 @@
     <string name="app_whatsnew_look_title">Apparence et mises à jour</string>
     <string name="app_whatsnew_look_text_direct">Paramètres › Apparence propose de nouveaux styles de réflexion et cinq façons de passer d\'une discussion à l\'autre. Avec un keryx-stream récent, le panneau Mise à jour de la Passerelle permet de choisir les versions Stable ou Edge. Pour ajouter un autre Hermes, lancez hermes keryx pair dessus et scannez le code.</string>
     <string name="app_whatsnew_look_text">Paramètres › Apparence propose de nouveaux styles de réflexion et cinq façons de passer d\'une discussion à l\'autre. La visite et les astuces se trouvent dans Paramètres › À propos.</string>
+    <string name="app_whatsnew_more_text">Les espaces se souviennent d\'où vous étiez, et une puce vous ramène après un détour. Verrouillez une compétence pour que votre agent ne puisse pas la modifier. Les modes clair et sombre gardent chacun leurs couleurs.</string>
+    <string name="app_whatsnew_more_title">Petites choses</string>
+    <string name="app_whatsnew_board_text">Les cartes sont maintenant rangées en colonnes que l\'on parcourt en balayant, et vous pouvez avoir plusieurs tableaux.</string>
+    <string name="app_whatsnew_board_title">Les missions sur un tableau</string>
+    <string name="app_tour_bot_lights_text">Touchez un bot pour ouvrir sa conversation, ou maintenez-le pour le gérer. Un anneau qui respire signifie qu\'il travaille.</string>
+    <string name="app_tour_bot_lights_title">Vos bots</string>
     <string name="app_hint_missions_title">Missions</string>
     <string name="app_hint_missions_text">Les tâches plus longues vivent ici sous forme de cartes. Vos agents les prennent et les traitent, et une carte qui a besoin de vous remonte en haut. Touchez + pour en confier une.</string>
     <string name="app_hint_runs_title">Exécutions</string>

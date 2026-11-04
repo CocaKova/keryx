@@ -234,6 +234,12 @@
     <string name="app_whatsnew_look_title">लुक और अपडेट</string>
     <string name="app_whatsnew_look_text_direct">सेटिंग्स › दिखावट में नई थिंकिंग स्टाइल और चैट के बीच जाने के पाँच तरीके हैं। हाल के keryx-stream के साथ, गेटवे के अपडेट पैनल में आप Stable रिलीज़ या Edge चुन सकते हैं। एक और Hermes जोड़ने के लिए, उस पर hermes keryx pair चलाएँ और कोड स्कैन करें।</string>
     <string name="app_whatsnew_look_text">सेटिंग्स › दिखावट में नई थिंकिंग स्टाइल और चैट के बीच जाने के पाँच तरीके हैं। टूर और जगहों के संकेत सेटिंग्स › परिचय में हैं।</string>
+    <string name="app_whatsnew_more_text">जगहें याद रखती हैं कि आप कहाँ थे, और कहीं और जाने के बाद एक चिप आपको वापस ले आती है। किसी स्किल को लॉक करें ताकि आपका एजेंट उसे बदल न सके। लाइट और डार्क मोड अपने-अपने रंग रखते हैं।</string>
+    <string name="app_whatsnew_more_title">छोटी-छोटी बातें</string>
+    <string name="app_whatsnew_board_text">कार्ड अब लेन में रहते हैं जिनके बीच आप स्वाइप करते हैं, और आप एक से ज़्यादा बोर्ड रख सकते हैं।</string>
+    <string name="app_whatsnew_board_title">बोर्ड पर मिशन</string>
+    <string name="app_tour_bot_lights_text">किसी बॉट की चैट खोलने के लिए टैप करें, या उसे प्रबंधित करने के लिए दबाकर रखें। साँस लेती रिंग का मतलब है कि वह काम कर रहा है।</string>
+    <string name="app_tour_bot_lights_title">आपके बॉट</string>
     <string name="app_hint_missions_title">मिशन</string>
     <string name="app_hint_missions_text">लंबे काम यहाँ कार्ड के रूप में रहते हैं। आपके एजेंट उन्हें उठाकर पूरा करते हैं, और जिस कार्ड को आपकी ज़रूरत हो वह ऊपर आ जाता है। नया देने के लिए + पर टैप करें।</string>
     <string name="app_hint_runs_title">रन</string>

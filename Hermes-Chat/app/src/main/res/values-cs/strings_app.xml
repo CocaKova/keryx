@@ -257,6 +257,12 @@
     <string name="app_whatsnew_look_title">Vzhled a aktualizace</string>
     <string name="app_whatsnew_look_text_direct">Nastavení › Vzhled má nové styly přemýšlení a pět způsobů přechodu mezi chaty. S novějším keryx-stream si v panelu Aktualizace na Bráně vybereš vydání Stable nebo Edge. Chceš přidat další Hermes? Spusť na něm hermes keryx pair a naskenuj kód.</string>
     <string name="app_whatsnew_look_text">Nastavení › Vzhled má nové styly přemýšlení a pět způsobů přechodu mezi chaty. Prohlídka a nápovědy jsou v Nastavení › O aplikaci.</string>
+    <string name="app_whatsnew_more_text">Místa si pamatují, kde jste byli, a po odbočce vás štítek vrátí zpět. Zamkněte dovednost, aby ji agent nemohl měnit. Světlý a tmavý režim mají každý své barvy.</string>
+    <string name="app_whatsnew_more_title">Drobnosti</string>
+    <string name="app_whatsnew_board_text">Karty teď leží ve sloupcích, mezi kterými přejíždíte, a můžete mít víc než jednu nástěnku.</string>
+    <string name="app_whatsnew_board_title">Mise na nástěnce</string>
+    <string name="app_tour_bot_lights_text">Klepnutím na bota otevřete jeho chat, podržením ho spravujete. Dýchající kroužek znamená, že pracuje.</string>
+    <string name="app_tour_bot_lights_title">Vaši boti</string>
 
     <string name="app_hint_missions_title">Mise</string>
     <string name="app_hint_missions_text">Tady bydlí delší práce jako karty. Tví agenti si je berou a zpracovávají, a karta, která tě potřebuje, se přesune nahoru. Klepni na + a nějakou zadej.</string>

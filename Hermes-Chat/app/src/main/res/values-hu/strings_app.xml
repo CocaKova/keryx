@@ -253,6 +253,12 @@
     <string name="app_whatsnew_look_title">Megjelenés és frissítések</string>
     <string name="app_whatsnew_look_text_direct">A Beállítások › Megjelenés alatt új gondolkodási stílusok és öt módja van a csevegések közti váltásnak. Friss keryx-streammel az Átjáró Frissítés paneljén választhatsz Stable kiadások vagy Edge között. Másik Hermes hozzáadásához futtasd rajta a hermes keryx pair parancsot, és olvasd be a kódot.</string>
     <string name="app_whatsnew_look_text">A Beállítások › Megjelenés alatt új gondolkodási stílusok és öt módja van a csevegések közti váltásnak. A bemutató és a tippek a Beállítások › Névjegy alatt vannak.</string>
+    <string name="app_whatsnew_more_text">A helyek emlékeznek, hol jártál, és egy kitérő után egy címke visszavisz. Zárolj egy képességet, hogy az ügynököd ne módosíthassa. A világos és a sötét mód saját színeket tart.</string>
+    <string name="app_whatsnew_more_title">Apróságok</string>
+    <string name="app_whatsnew_board_text">A kártyák most oszlopokban állnak, amelyek között húzással váltasz, és több táblád is lehet.</string>
+    <string name="app_whatsnew_board_title">Küldetések táblán</string>
+    <string name="app_tour_bot_lights_text">Koppints egy botra a csevegése megnyitásához, vagy tartsd lenyomva a kezeléséhez. A lélegző gyűrű azt jelzi, hogy dolgozik.</string>
+    <string name="app_tour_bot_lights_title">A botjaid</string>
 
     <string name="app_hint_missions_title">Küldetések</string>
     <string name="app_hint_missions_text">A hosszabb feladatok itt élnek, kártyákként. Az ügynökeid felveszik és végigdolgozzák őket, a rád váró kártya pedig felülre kerül. Koppints a + gombra egy új kiadásához.</string>

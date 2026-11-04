@@ -614,7 +614,11 @@ internal fun SessionTranscript(
     onBack: () -> Unit,
     /** Where to take the user when a fork succeeds; null keeps the old stay-put behavior. */
     onForked: ((HubSession) -> Unit)? = null,
+    /** False when the place's own header already holds the way back (Runs, 3.0). */
+    backArrow: Boolean = true,
 ) {
+    // 3.0: back steps out of the transcript to the list it was opened from, never past it.
+    androidx.activity.compose.BackHandler(onBack = onBack)
     var messages by remember { mutableStateOf<List<HubMessage>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var renameOpen by remember { mutableStateOf(false) }
@@ -676,8 +680,8 @@ internal fun SessionTranscript(
 
     Column(Modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 6.dp, end = 20.dp)) {
-            IconButton(onClick = onBack) {
+            modifier = Modifier.padding(start = if (backArrow) 6.dp else 20.dp, end = 20.dp)) {
+            if (backArrow) IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.agent_back_to_sessions))
             }
             Column {

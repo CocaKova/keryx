@@ -253,6 +253,12 @@
     <string name="app_whatsnew_look_title">Görünüm ve güncellemeler</string>
     <string name="app_whatsnew_look_text_direct">Ayarlar › Görünüm\'de yeni düşünme stilleri ve sohbetler arasında geçmenin beş yolu var. Yeni bir keryx-stream ile Ağ Geçidi\'nin Güncelleme panelinden Stable sürümleri veya Edge sürümlerini seçebilirsin. Başka bir Hermes eklemek için onda hermes keryx pair komutunu çalıştır ve kodu tara.</string>
     <string name="app_whatsnew_look_text">Ayarlar › Görünüm\'de yeni düşünme stilleri ve sohbetler arasında geçmenin beş yolu var. Tur ve alan ipuçları Ayarlar › Hakkında\'da.</string>
+    <string name="app_whatsnew_more_text">Alanlar nerede kaldığını hatırlar, bir sapmadan sonra bir çip seni geri götürür. Ajanının değiştiremeyeceği şekilde bir beceriyi kilitle. Açık ve koyu mod kendi renklerini korur.</string>
+    <string name="app_whatsnew_more_title">Küçük şeyler</string>
+    <string name="app_whatsnew_board_text">Kartlar artık kaydırarak geçtiğin sütunlarda duruyor ve birden fazla panon olabilir.</string>
+    <string name="app_whatsnew_board_title">Görevler bir panoda</string>
+    <string name="app_tour_bot_lights_text">Sohbetini açmak için bir bota dokun, yönetmek için basılı tut. Nefes alan bir halka çalıştığı anlamına gelir.</string>
+    <string name="app_tour_bot_lights_title">Botların</string>
 
     <string name="app_hint_missions_title">Görevler</string>
     <string name="app_hint_missions_text">Uzun işler burada kart olarak durur. Ajanların onları alıp işler; sana ihtiyaç duyan kart en üste çıkar. Yeni bir tane vermek için + simgesine dokun.</string>

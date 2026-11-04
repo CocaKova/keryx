@@ -420,6 +420,12 @@
     <!-- Keep "keryx-stream" and the command "hermes keryx pair" as is. "Stable" and "Edge" are release channel names. -->
     <string name="app_whatsnew_look_text_direct">Configurações › Aparência tem novos estilos de raciocínio e cinco jeitos de passar de um chat para outro. Com um keryx-stream recente, o painel Atualizar do Gateway deixa você escolher versões Stable ou Edge. Para adicionar outro Hermes, rode hermes keryx pair nele e escaneie o código.</string>
     <string name="app_whatsnew_look_text">Configurações › Aparência tem novos estilos de raciocínio e cinco jeitos de passar de um chat para outro. O tour e as dicas de cada área ficam em Configurações › Sobre.</string>
+    <string name="app_whatsnew_more_text">Os espaços lembram onde você estava, e um chip leva você de volta depois de um desvio. Bloqueie uma skill para que seu agente não possa alterá-la. Os modos claro e escuro guardam as próprias cores.</string>
+    <string name="app_whatsnew_more_title">Pequenos detalhes</string>
+    <string name="app_whatsnew_board_text">Os cartões agora ficam em colunas que você percorre deslizando, e você pode ter mais de um quadro.</string>
+    <string name="app_whatsnew_board_title">Missões em um quadro</string>
+    <string name="app_tour_bot_lights_text">Toque em um bot para abrir o chat dele ou segure para gerenciá-lo. Um anel pulsando indica que ele está trabalhando.</string>
+    <string name="app_tour_bot_lights_title">Seus bots</string>
 
     <!-- First-visit hints: one card the first time a place opens -->
     <string name="app_hint_missions_title">Missões</string>

@@ -139,7 +139,7 @@ fun RawConfigEditor(viewModel: ChatViewModel, onDismiss: () -> Unit) {
                         value = draft.orEmpty(),
                         onValueChange = { draft = it },
                         modifier = Modifier.fillMaxWidth().weight(1f),
-                        textStyle = TextStyle(fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace),
+                        textStyle = TextStyle(textDirection = androidx.compose.ui.text.style.TextDirection.Content, fontSize = KeryxType.micro, fontFamily = FontFamily.Monospace),
                     )
                     Spacer(Modifier.height(12.dp))
                 }
