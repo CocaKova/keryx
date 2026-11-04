@@ -277,6 +277,13 @@
     <string name="work_board_switch">Змінити дошку</string>
     <string name="work_board_name">Назва дошки</string>
     <string name="work_board_new">Нова дошка</string>
+    <string name="work_board_archive_failed">Не вдалося надіслати дошку в архів: %1$s</string>
+    <string name="work_board_archived">Дошку надіслано в архів</string>
+    <string name="work_board_archive_current">Цю дошку також використовують CLI і програма для комп\'ютера. Вони повернуться до Default.</string>
+    <string name="work_board_archive_body">Дошка зникне зі списку. Її картки залишаться в теці архівних дошок на шлюзі, нічого не видаляється.</string>
+    <string name="work_board_archive_title">Надіслати %1$s в архів?</string>
+    <string name="work_board_archive_a11y">Надіслати %1$s в архів</string>
+    <string name="work_board_archive">В архів</string>
     <string name="work_boards">Дошки</string>
     <string name="work_lane_empty">Тут порожньо</string>
     <string name="work_block_review">чекає на вашу перевірку</string>

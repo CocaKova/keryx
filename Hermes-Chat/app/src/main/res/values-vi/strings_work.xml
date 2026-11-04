@@ -264,6 +264,13 @@
     <string name="work_board_switch">Đổi bảng</string>
     <string name="work_board_name">Tên bảng</string>
     <string name="work_board_new">Bảng mới</string>
+    <string name="work_board_archive_failed">Không thể lưu trữ bảng: %1$s</string>
+    <string name="work_board_archived">Đã lưu trữ bảng</string>
+    <string name="work_board_archive_current">Đây cũng là bảng mà CLI và ứng dụng máy tính đang dùng. Chúng sẽ quay về Default.</string>
+    <string name="work_board_archive_body">Bảng sẽ rời khỏi danh sách. Các thẻ được giữ trong thư mục bảng đã lưu trữ trên gateway, không bị xóa.</string>
+    <string name="work_board_archive_title">Lưu trữ %1$s?</string>
+    <string name="work_board_archive_a11y">Lưu trữ %1$s</string>
+    <string name="work_board_archive">Lưu trữ</string>
     <string name="work_boards">Bảng</string>
     <string name="work_lane_empty">Chưa có gì ở đây</string>
     <string name="work_block_review">chờ bạn xem xét</string>

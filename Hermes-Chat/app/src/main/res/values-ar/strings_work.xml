@@ -304,6 +304,13 @@
     <string name="work_board_switch">تبديل اللوحة</string>
     <string name="work_board_name">اسم اللوحة</string>
     <string name="work_board_new">لوحة جديدة</string>
+    <string name="work_board_archive_failed">تعذّرت أرشفة اللوحة: %1$s</string>
+    <string name="work_board_archived">تمت أرشفة اللوحة</string>
+    <string name="work_board_archive_current">إنها أيضًا اللوحة التي يستخدمها سطر الأوامر وتطبيق سطح المكتب، وسيعودان إلى اللوحة الافتراضية.</string>
+    <string name="work_board_archive_body">ستختفي اللوحة من القائمة. تُحفظ بطاقاتها في مجلد اللوحات المؤرشفة على البوابة، ولا تُحذف.</string>
+    <string name="work_board_archive_title">أرشفة %1$s؟</string>
+    <string name="work_board_archive_a11y">أرشفة %1$s</string>
+    <string name="work_board_archive">أرشفة</string>
     <string name="work_boards">اللوحات</string>
     <string name="work_lane_empty">لا شيء هنا</string>
     <string name="work_block_review">بانتظار مراجعتك</string>

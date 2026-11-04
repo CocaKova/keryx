@@ -264,6 +264,13 @@
     <string name="work_board_switch">Ganti papan</string>
     <string name="work_board_name">Nama papan</string>
     <string name="work_board_new">Papan baru</string>
+    <string name="work_board_archive_failed">Tidak bisa mengarsipkan papan: %1$s</string>
+    <string name="work_board_archived">Papan diarsipkan</string>
+    <string name="work_board_archive_current">Ini juga papan yang dipakai CLI dan aplikasi desktop. Keduanya akan kembali ke Default.</string>
+    <string name="work_board_archive_body">Papan keluar dari daftar. Kartunya disimpan di folder papan terarsip pada gateway, tidak dihapus.</string>
+    <string name="work_board_archive_title">Arsipkan %1$s?</string>
+    <string name="work_board_archive_a11y">Arsipkan %1$s</string>
+    <string name="work_board_archive">Arsipkan</string>
     <string name="work_boards">Papan</string>
     <string name="work_lane_empty">Belum ada apa-apa</string>
     <string name="work_block_review">menunggu tinjauanmu</string>

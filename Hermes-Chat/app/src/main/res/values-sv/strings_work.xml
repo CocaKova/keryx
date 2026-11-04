@@ -272,6 +272,13 @@
     <string name="work_board_switch">Byt tavla</string>
     <string name="work_board_name">Tavlans namn</string>
     <string name="work_board_new">Ny tavla</string>
+    <string name="work_board_archive_failed">Det gick inte att arkivera tavlan: %1$s</string>
+    <string name="work_board_archived">Tavlan har arkiverats</string>
+    <string name="work_board_archive_current">Det är också tavlan som CLI:t och skrivbordsappen använder. De går tillbaka till Default.</string>
+    <string name="work_board_archive_body">Tavlan försvinner från listan. Korten sparas i gatewayens mapp för arkiverade tavlor och raderas inte.</string>
+    <string name="work_board_archive_title">Arkivera %1$s?</string>
+    <string name="work_board_archive_a11y">Arkivera %1$s</string>
+    <string name="work_board_archive">Arkivera</string>
     <string name="work_boards">Tavlor</string>
     <string name="work_lane_empty">Inget här</string>
     <string name="work_block_review">väntar på din granskning</string>

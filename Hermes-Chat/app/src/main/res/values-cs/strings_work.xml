@@ -288,6 +288,13 @@
     <string name="work_board_switch">Přepnout tabuli</string>
     <string name="work_board_name">Název tabule</string>
     <string name="work_board_new">Nová tabule</string>
+    <string name="work_board_archive_failed">Nástěnku se nepodařilo archivovat: %1$s</string>
+    <string name="work_board_archived">Nástěnka archivována</string>
+    <string name="work_board_archive_current">Tuto nástěnku používá i CLI a aplikace pro počítač. Ty se vrátí na Default.</string>
+    <string name="work_board_archive_body">Nástěnka zmizí ze seznamu. Její karty zůstanou ve složce archivovaných nástěnek na bráně, nic se nesmaže.</string>
+    <string name="work_board_archive_title">Archivovat %1$s?</string>
+    <string name="work_board_archive_a11y">Archivovat %1$s</string>
+    <string name="work_board_archive">Archivovat</string>
     <string name="work_boards">Tabule</string>
     <string name="work_lane_empty">Nic tu není</string>
     <string name="work_block_review">čeká na tvou kontrolu</string>

@@ -63,3 +63,12 @@ class BoardLanesTest {
         assertEquals(listOf("running"), lanes("running", filtering = true))
     }
 }
+
+/** Archiving (3.0): the gateway refuses to remove its first board, so the app never offers it. */
+class MissionBoardArchiveTest {
+    @Test fun theDefaultBoardIsTheGatewaysOwnSlug() {
+        assertEquals("default", MissionBoards.DEFAULT)
+        val boards = MissionBoards.parse("""{"boards":[{"slug":"default"},{"slug":"ops"}],"current":"default"}""")!!
+        assertEquals(listOf("ops"), boards.filter { it.slug != MissionBoards.DEFAULT }.map { it.slug })
+    }
+}

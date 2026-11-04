@@ -269,6 +269,13 @@
     <string name="work_board_switch">Changer de tableau</string>
     <string name="work_board_name">Nom du tableau</string>
     <string name="work_board_new">Nouveau tableau</string>
+    <string name="work_board_archive_failed">Impossible d\'archiver le tableau : %1$s</string>
+    <string name="work_board_archived">Tableau archivé</string>
+    <string name="work_board_archive_current">C\'est aussi le tableau qu\'utilisent la CLI et l\'appli de bureau. Elles reviennent à Default.</string>
+    <string name="work_board_archive_body">Le tableau quitte la liste. Ses cartes sont conservées dans le dossier des tableaux archivés de la passerelle, rien n\'est supprimé.</string>
+    <string name="work_board_archive_title">Archiver %1$s ?</string>
+    <string name="work_board_archive_a11y">Archiver %1$s</string>
+    <string name="work_board_archive">Archiver</string>
     <string name="work_boards">Tableaux</string>
     <string name="work_lane_empty">Rien ici</string>
     <string name="work_block_review">attend votre relecture</string>

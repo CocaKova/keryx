@@ -27,6 +27,9 @@ data class MissionBoardInfo(
 
 /** The pure half of the boards (3.0): read the dashboard's answer, and name a new board. */
 object MissionBoards {
+    /** The gateway's own first board: it can be renamed but never archived or deleted. */
+    const val DEFAULT = "default"
+
     /** `GET /api/plugins/kanban/boards` → the boards, or null when the body is not that. */
     fun parse(body: String): List<MissionBoardInfo>? {
         val root = runCatching { Json.parseToJsonElement(body) as? JsonObject }.getOrNull() ?: return null
@@ -113,6 +116,36 @@ class MissionBoardsDelegate(
         settings.missionBoard = pick
         _chosen.value = pick
         missions.boardSwitched()
+    }
+
+    /**
+     * Archive the board [slug] (3.0): the gateway moves its folder to `boards/_archived/` and
+     * keeps every card there; nothing is deleted. `default` cannot go (the gateway refuses it, so
+     * the sheet never offers it). If this phone was looking at it, it goes back to the gateway's
+     * current board; if it WAS the gateway's current board, the gateway itself falls back to
+     * default, which is why the confirm says so. [onDone] true = archived.
+     */
+    fun archive(slug: String, onDone: (Boolean) -> Unit) {
+        val r = rest() ?: return onDone(false)
+        if (slug == MissionBoards.DEFAULT) return onDone(false)
+        scope.launch {
+            val res = r.call("DELETE", "/api/plugins/kanban/boards/" + java.net.URLEncoder.encode(slug, "UTF-8"))
+            if (res.isFailure) {
+                deps.toast(
+                    KeryxText.get(
+                        R.string.work_board_archive_failed,
+                        CronRestParser.errorDetail(res.exceptionOrNull()?.message).take(100),
+                    ),
+                )
+                onDone(false)
+                return@launch
+            }
+            _boards.value = _boards.value.filterNot { it.slug == slug }
+            if (_chosen.value == slug) choose(null)
+            deps.toast(KeryxText.get(R.string.work_board_archived))
+            onDone(true)
+            refresh()
+        }
     }
 
     /** Make a board named [name] and look at it. [onDone] true = the gateway made it. */

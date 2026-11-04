@@ -654,6 +654,7 @@ fun MissionsScreen(
             chosen = chosenBoard,
             onChoose = { slug -> viewModel.missionBoards.choose(slug); boardsOpen = false },
             onCreate = { name, done -> viewModel.missionBoards.create(name) { ok -> done(ok); if (ok) boardsOpen = false } },
+            onArchive = { slug, done -> viewModel.missionBoards.archive(slug, done) },
             onDismiss = { boardsOpen = false },
         )
     }
@@ -2197,9 +2198,40 @@ private fun MissionBoardsSheet(
     chosen: String?,
     onChoose: (String?) -> Unit,
     onCreate: (name: String, done: (Boolean) -> Unit) -> Unit,
+    /** Archive a board (3.0); the gateway keeps its cards. Never offered for `default`. */
+    onArchive: (slug: String, done: (Boolean) -> Unit) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var naming by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    // The board waiting on "Archive?", by slug.
+    var archiving by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
+    var archiveBusy by remember { mutableStateOf(false) }
+    boards.firstOrNull { it.slug == archiving }?.let { b ->
+        AlertDialog(
+            onDismissRequest = { if (!archiveBusy) archiving = null },
+            title = { Text(stringResource(R.string.work_board_archive_title, b.name)) },
+            text = {
+                Text(
+                    stringResource(R.string.work_board_archive_body) +
+                        // Archiving the gateway's own current board moves the CLI and the desktop
+                        // back to Default too: say so before, not after.
+                        (if (b.isCurrent) "\n\n" + stringResource(R.string.work_board_archive_current) else ""),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !archiveBusy,
+                    onClick = {
+                        archiveBusy = true
+                        onArchive(b.slug) { ok -> archiveBusy = false; if (ok) archiving = null }
+                    },
+                ) { Text(stringResource(R.string.work_board_archive), color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(enabled = !archiveBusy, onClick = { archiving = null }) { Text(stringResource(R.string.chat_cancel)) }
+            },
+        )
+    }
     var name by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     val onScreen = chosen ?: boards.firstOrNull { it.isCurrent }?.slug
@@ -2239,6 +2271,16 @@ private fun MissionBoardsSheet(
                         Spacer(Modifier.width(8.dp))
                         Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                     }
+                    if (b.slug != chat.keryx.app.presentation.MissionBoards.DEFAULT) {
+                        IconButton(onClick = { archiving = b.slug }, modifier = Modifier.size(40.dp)) {
+                            Icon(
+                                KeryxGlyphs.Archive,
+                                contentDescription = stringResource(R.string.work_board_archive_a11y, b.name),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    } else Spacer(Modifier.width(40.dp))
                 }
             }
             Spacer(Modifier.height(8.dp))

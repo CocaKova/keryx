@@ -272,6 +272,13 @@
     <string name="work_board_switch">Board wechseln</string>
     <string name="work_board_name">Name des Boards</string>
     <string name="work_board_new">Neues Board</string>
+    <string name="work_board_archive_failed">Board konnte nicht archiviert werden: %1$s</string>
+    <string name="work_board_archived">Board archiviert</string>
+    <string name="work_board_archive_current">Es ist auch das Board, das die CLI und die Desktop-App nutzen. Sie wechseln zurück zu Default.</string>
+    <string name="work_board_archive_body">Das Board verschwindet aus der Liste. Seine Karten bleiben im Ordner der archivierten Boards auf dem Gateway, nichts wird gelöscht.</string>
+    <string name="work_board_archive_title">%1$s archivieren?</string>
+    <string name="work_board_archive_a11y">%1$s archivieren</string>
+    <string name="work_board_archive">Archivieren</string>
     <string name="work_boards">Boards</string>
     <string name="work_lane_empty">Hier ist nichts</string>
     <string name="work_block_review">wartet auf deine Prüfung</string>

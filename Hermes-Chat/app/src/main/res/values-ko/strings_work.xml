@@ -264,6 +264,13 @@
     <string name="work_board_switch">보드 전환</string>
     <string name="work_board_name">보드 이름</string>
     <string name="work_board_new">새 보드</string>
+    <string name="work_board_archive_failed">보드를 보관하지 못했어요: %1$s</string>
+    <string name="work_board_archived">보드를 보관했어요</string>
+    <string name="work_board_archive_current">CLI와 데스크톱 앱이 쓰는 보드이기도 해요. 둘 다 Default로 돌아가요.</string>
+    <string name="work_board_archive_body">보드가 목록에서 사라져요. 카드는 게이트웨이의 보관된 보드 폴더에 남고, 삭제되지 않아요.</string>
+    <string name="work_board_archive_title">%1$s 보드를 보관할까요?</string>
+    <string name="work_board_archive_a11y">%1$s 보관</string>
+    <string name="work_board_archive">보관</string>
     <string name="work_boards">보드</string>
     <string name="work_lane_empty">여기에는 아무것도 없습니다</string>
     <string name="work_block_review">내 검토 대기 중</string>

@@ -322,6 +322,13 @@
     <string name="work_board_switch">Cambiar de tablero</string>
     <string name="work_board_name">Nombre del tablero</string>
     <string name="work_board_new">Tablero nuevo</string>
+    <string name="work_board_archive_failed">No se pudo archivar el tablero: %1$s</string>
+    <string name="work_board_archived">Tablero archivado</string>
+    <string name="work_board_archive_current">También es el tablero que usan la CLI y la app de escritorio. Volverán a Default.</string>
+    <string name="work_board_archive_body">El tablero sale de la lista. Sus tarjetas se guardan en la carpeta de tableros archivados de la pasarela; no se borran.</string>
+    <string name="work_board_archive_title">¿Archivar %1$s?</string>
+    <string name="work_board_archive_a11y">Archivar %1$s</string>
+    <string name="work_board_archive">Archivar</string>
     <string name="work_boards">Tableros</string>
     <string name="work_lane_empty">Nada por aquí</string>
     <!-- Why a card is held, as a short status pill. -->

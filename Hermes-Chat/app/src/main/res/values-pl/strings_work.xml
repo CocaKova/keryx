@@ -288,6 +288,13 @@
     <string name="work_board_switch">Zmień tablicę</string>
     <string name="work_board_name">Nazwa tablicy</string>
     <string name="work_board_new">Nowa tablica</string>
+    <string name="work_board_archive_failed">Nie udało się zarchiwizować tablicy: %1$s</string>
+    <string name="work_board_archived">Tablica zarchiwizowana</string>
+    <string name="work_board_archive_current">To także tablica, której używa CLI i aplikacja na komputer. Wrócą do Default.</string>
+    <string name="work_board_archive_body">Tablica zniknie z listy. Jej karty zostaną w folderze zarchiwizowanych tablic na bramie, nic nie zostanie usunięte.</string>
+    <string name="work_board_archive_title">Zarchiwizować %1$s?</string>
+    <string name="work_board_archive_a11y">Archiwizuj %1$s</string>
+    <string name="work_board_archive">Archiwizuj</string>
     <string name="work_boards">Tablice</string>
     <string name="work_lane_empty">Nic tu nie ma</string>
     <string name="work_block_review">czeka na twój przegląd</string>

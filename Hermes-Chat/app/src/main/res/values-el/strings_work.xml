@@ -272,6 +272,13 @@
     <string name="work_board_switch">Αλλαγή πίνακα</string>
     <string name="work_board_name">Όνομα πίνακα</string>
     <string name="work_board_new">Νέος πίνακας</string>
+    <string name="work_board_archive_failed">Δεν ήταν δυνατή η αρχειοθέτηση του πίνακα: %1$s</string>
+    <string name="work_board_archived">Ο πίνακας αρχειοθετήθηκε</string>
+    <string name="work_board_archive_current">Είναι επίσης ο πίνακας που χρησιμοποιούν το CLI και η εφαρμογή υπολογιστή. Θα επιστρέψουν στο Default.</string>
+    <string name="work_board_archive_body">Ο πίνακας φεύγει από τη λίστα. Οι κάρτες του φυλάσσονται στον φάκελο αρχειοθετημένων πινάκων της πύλης και δεν διαγράφονται.</string>
+    <string name="work_board_archive_title">Αρχειοθέτηση %1$s;</string>
+    <string name="work_board_archive_a11y">Αρχειοθέτηση %1$s</string>
+    <string name="work_board_archive">Αρχειοθέτηση</string>
     <string name="work_boards">Πίνακες</string>
     <string name="work_lane_empty">Τίποτα εδώ</string>
     <string name="work_block_review">περιμένει τον έλεγχό σας</string>

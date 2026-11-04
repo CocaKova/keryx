@@ -264,6 +264,13 @@
     <string name="work_board_switch">切換看板</string>
     <string name="work_board_name">看板名稱</string>
     <string name="work_board_new">新增看板</string>
+    <string name="work_board_archive_failed">無法封存看板：%1$s</string>
+    <string name="work_board_archived">看板已封存</string>
+    <string name="work_board_archive_current">它也是 CLI 和桌面應用程式正在使用的看板。它們會回到 Default。</string>
+    <string name="work_board_archive_body">該看板會從清單中移除。它的卡片保留在閘道的已封存看板資料夾中，不會被刪除。</string>
+    <string name="work_board_archive_title">封存 %1$s？</string>
+    <string name="work_board_archive_a11y">封存 %1$s</string>
+    <string name="work_board_archive">封存</string>
     <string name="work_boards">看板</string>
     <string name="work_lane_empty">這裡還沒有內容</string>
     <string name="work_block_review">等你審查</string>

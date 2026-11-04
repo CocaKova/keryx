@@ -277,6 +277,13 @@
     <string name="work_board_switch">Сменить доску</string>
     <string name="work_board_name">Название доски</string>
     <string name="work_board_new">Новая доска</string>
+    <string name="work_board_archive_failed">Не удалось отправить доску в архив: %1$s</string>
+    <string name="work_board_archived">Доска в архиве</string>
+    <string name="work_board_archive_current">Эту же доску используют CLI и приложение для компьютера. Они вернутся к Default.</string>
+    <string name="work_board_archive_body">Доска исчезнет из списка. Её карточки останутся в папке архивных досок на шлюзе, ничего не удаляется.</string>
+    <string name="work_board_archive_title">Отправить %1$s в архив?</string>
+    <string name="work_board_archive_a11y">Отправить %1$s в архив</string>
+    <string name="work_board_archive">В архив</string>
     <string name="work_boards">Доски</string>
     <string name="work_lane_empty">Здесь пусто</string>
     <string name="work_block_review">ждёт вашей проверки</string>

@@ -322,6 +322,13 @@
     <string name="work_board_switch">Switch board</string>
     <string name="work_board_name">Board name</string>
     <string name="work_board_new">New board</string>
+    <string name="work_board_archive_failed">Couldn\'t archive the board: %1$s</string>
+    <string name="work_board_archived">Board archived</string>
+    <string name="work_board_archive_current">It\'s also the board the CLI and the desktop app use. They go back to Default.</string>
+    <string name="work_board_archive_body">The board leaves the list. Its cards are kept in the gateway\'s archived boards folder, not deleted.</string>
+    <string name="work_board_archive_title">Archive %1$s?</string>
+    <string name="work_board_archive_a11y">Archive %1$s</string>
+    <string name="work_board_archive">Archive</string>
     <string name="work_boards">Boards</string>
     <string name="work_lane_empty">Nothing here</string>
     <!-- Why a card is held, as a short status pill. -->

@@ -261,6 +261,13 @@
     <string name="work_board_switch">बोर्ड बदलें</string>
     <string name="work_board_name">बोर्ड का नाम</string>
     <string name="work_board_new">नया बोर्ड</string>
+    <string name="work_board_archive_failed">बोर्ड संग्रहित नहीं हो सका: %1$s</string>
+    <string name="work_board_archived">बोर्ड संग्रहित हुआ</string>
+    <string name="work_board_archive_current">यही वह बोर्ड है जिसे CLI और डेस्कटॉप ऐप इस्तेमाल करते हैं। वे Default पर लौट जाएँगे।</string>
+    <string name="work_board_archive_body">बोर्ड सूची से हट जाएगा। उसके कार्ड गेटवे के संग्रहित बोर्ड फ़ोल्डर में रखे जाते हैं, हटाए नहीं जाते।</string>
+    <string name="work_board_archive_title">%1$s को संग्रहित करें?</string>
+    <string name="work_board_archive_a11y">%1$s को संग्रहित करें</string>
+    <string name="work_board_archive">संग्रहित करें</string>
     <string name="work_boards">बोर्ड</string>
     <string name="work_lane_empty">यहाँ कुछ नहीं है</string>
     <string name="work_block_review">आपके रिव्यू का इंतज़ार</string>

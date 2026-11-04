@@ -272,6 +272,13 @@
     <string name="work_board_switch">Tábla váltása</string>
     <string name="work_board_name">A tábla neve</string>
     <string name="work_board_new">Új tábla</string>
+    <string name="work_board_archive_failed">Nem sikerült archiválni a táblát: %1$s</string>
+    <string name="work_board_archived">Tábla archiválva</string>
+    <string name="work_board_archive_current">Ezt a táblát használja a CLI és az asztali alkalmazás is. Ezek visszaváltanak a Default táblára.</string>
+    <string name="work_board_archive_body">A tábla eltűnik a listából. A kártyái az átjáró archivált tábláinak mappájában maradnak, semmi sem törlődik.</string>
+    <string name="work_board_archive_title">Archiválod: %1$s?</string>
+    <string name="work_board_archive_a11y">%1$s archiválása</string>
+    <string name="work_board_archive">Archiválás</string>
     <string name="work_boards">Táblák</string>
     <string name="work_lane_empty">Itt nincs semmi</string>
     <string name="work_block_review">az átnézésedre vár</string>

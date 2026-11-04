@@ -322,6 +322,13 @@
     <string name="work_board_switch">Trocar de quadro</string>
     <string name="work_board_name">Nome do quadro</string>
     <string name="work_board_new">Novo quadro</string>
+    <string name="work_board_archive_failed">Não foi possível arquivar o quadro: %1$s</string>
+    <string name="work_board_archived">Quadro arquivado</string>
+    <string name="work_board_archive_current">Também é o quadro que a CLI e o app de desktop usam. Eles voltam para Default.</string>
+    <string name="work_board_archive_body">O quadro sai da lista. Os cartões ficam guardados na pasta de quadros arquivados do gateway; nada é excluído.</string>
+    <string name="work_board_archive_title">Arquivar %1$s?</string>
+    <string name="work_board_archive_a11y">Arquivar %1$s</string>
+    <string name="work_board_archive">Arquivar</string>
     <string name="work_boards">Quadros</string>
     <string name="work_lane_empty">Nada aqui</string>
     <!-- Why a card is held, as a short status pill. -->

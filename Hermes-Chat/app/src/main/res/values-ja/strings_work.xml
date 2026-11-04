@@ -264,6 +264,13 @@
     <string name="work_board_switch">ボードを切り替える</string>
     <string name="work_board_name">ボード名</string>
     <string name="work_board_new">新しいボード</string>
+    <string name="work_board_archive_failed">ボードをアーカイブできませんでした: %1$s</string>
+    <string name="work_board_archived">ボードをアーカイブしました</string>
+    <string name="work_board_archive_current">これは CLI とデスクトップアプリが使っているボードでもあります。どちらも Default に戻ります。</string>
+    <string name="work_board_archive_body">ボードは一覧から消えます。カードはゲートウェイのアーカイブ済みボードのフォルダーに残り、削除はされません。</string>
+    <string name="work_board_archive_title">%1$s をアーカイブしますか？</string>
+    <string name="work_board_archive_a11y">%1$s をアーカイブ</string>
+    <string name="work_board_archive">アーカイブ</string>
     <string name="work_boards">ボード</string>
     <string name="work_lane_empty">ここには何もありません</string>
     <string name="work_block_review">あなたのレビュー待ち</string>

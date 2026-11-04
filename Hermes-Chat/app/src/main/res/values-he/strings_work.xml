@@ -280,6 +280,13 @@
     <string name="work_board_switch">החלפת לוח</string>
     <string name="work_board_name">שם הלוח</string>
     <string name="work_board_new">לוח חדש</string>
+    <string name="work_board_archive_failed">לא ניתן היה להעביר את הלוח לארכיון: %1$s</string>
+    <string name="work_board_archived">הלוח הועבר לארכיון</string>
+    <string name="work_board_archive_current">זה גם הלוח שבו משתמשים ה-CLI ואפליקציית המחשב. הם יחזרו ל-Default.</string>
+    <string name="work_board_archive_body">הלוח יוצא מהרשימה. הכרטיסים שלו נשמרים בתיקיית הלוחות שבארכיון בשער, ולא נמחקים.</string>
+    <string name="work_board_archive_title">להעביר את %1$s לארכיון?</string>
+    <string name="work_board_archive_a11y">העברת %1$s לארכיון</string>
+    <string name="work_board_archive">העברה לארכיון</string>
     <string name="work_boards">לוחות</string>
     <string name="work_lane_empty">אין כאן כלום</string>
     <string name="work_block_review">מחכה לסקירה שלך</string>

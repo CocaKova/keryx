@@ -272,6 +272,13 @@
     <string name="work_board_switch">Cambia bacheca</string>
     <string name="work_board_name">Nome della bacheca</string>
     <string name="work_board_new">Nuova bacheca</string>
+    <string name="work_board_archive_failed">Impossibile archiviare la bacheca: %1$s</string>
+    <string name="work_board_archived">Bacheca archiviata</string>
+    <string name="work_board_archive_current">È anche la bacheca usata dalla CLI e dall\'app desktop. Torneranno a Default.</string>
+    <string name="work_board_archive_body">La bacheca esce dall\'elenco. Le sue schede restano nella cartella delle bacheche archiviate del gateway, non vengono eliminate.</string>
+    <string name="work_board_archive_title">Archiviare %1$s?</string>
+    <string name="work_board_archive_a11y">Archivia %1$s</string>
+    <string name="work_board_archive">Archivia</string>
     <string name="work_boards">Bacheche</string>
     <string name="work_lane_empty">Niente qui</string>
     <string name="work_block_review">aspetta la tua revisione</string>

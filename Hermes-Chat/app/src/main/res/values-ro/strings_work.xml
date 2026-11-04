@@ -280,6 +280,13 @@
     <string name="work_board_switch">Schimbă panoul</string>
     <string name="work_board_name">Numele panoului</string>
     <string name="work_board_new">Panou nou</string>
+    <string name="work_board_archive_failed">Tabla nu a putut fi arhivată: %1$s</string>
+    <string name="work_board_archived">Tabla a fost arhivată</string>
+    <string name="work_board_archive_current">Este și tabla folosită de CLI și de aplicația desktop. Acestea revin la Default.</string>
+    <string name="work_board_archive_body">Tabla dispare din listă. Cardurile ei rămân în folderul de table arhivate al gateway-ului, nu se șterg.</string>
+    <string name="work_board_archive_title">Arhivezi %1$s?</string>
+    <string name="work_board_archive_a11y">Arhivează %1$s</string>
+    <string name="work_board_archive">Arhivează</string>
     <string name="work_boards">Panouri</string>
     <string name="work_lane_empty">Nimic aici</string>
     <string name="work_block_review">așteaptă revizuirea ta</string>

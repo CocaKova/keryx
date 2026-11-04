@@ -261,6 +261,13 @@
     <string name="work_board_switch">Ander bord kiezen</string>
     <string name="work_board_name">Naam van het bord</string>
     <string name="work_board_new">Nieuw bord</string>
+    <string name="work_board_archive_failed">Kon het bord niet archiveren: %1$s</string>
+    <string name="work_board_archived">Bord gearchiveerd</string>
+    <string name="work_board_archive_current">Het is ook het bord dat de CLI en de desktop-app gebruiken. Die gaan terug naar Default.</string>
+    <string name="work_board_archive_body">Het bord verdwijnt uit de lijst. De kaarten blijven bewaard in de map met gearchiveerde borden op de gateway en worden niet verwijderd.</string>
+    <string name="work_board_archive_title">%1$s archiveren?</string>
+    <string name="work_board_archive_a11y">%1$s archiveren</string>
+    <string name="work_board_archive">Archiveren</string>
     <string name="work_boards">Borden</string>
     <string name="work_lane_empty">Niets hier</string>
     <string name="work_block_review">wacht op je review</string>

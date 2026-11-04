@@ -261,6 +261,13 @@
     <string name="work_board_switch">বোর্ড বদলান</string>
     <string name="work_board_name">বোর্ডের নাম</string>
     <string name="work_board_new">নতুন বোর্ড</string>
+    <string name="work_board_archive_failed">বোর্ড আর্কাইভ করা যায়নি: %1$s</string>
+    <string name="work_board_archived">বোর্ড আর্কাইভ হয়েছে</string>
+    <string name="work_board_archive_current">এটিই সেই বোর্ড যা CLI আর ডেস্কটপ অ্যাপ ব্যবহার করে। তারা Default-এ ফিরে যাবে।</string>
+    <string name="work_board_archive_body">বোর্ডটি তালিকা থেকে সরে যাবে। এর কার্ডগুলো গেটওয়ের আর্কাইভ করা বোর্ডের ফোল্ডারে রাখা থাকে, মুছে ফেলা হয় না।</string>
+    <string name="work_board_archive_title">%1$s আর্কাইভ করবেন?</string>
+    <string name="work_board_archive_a11y">%1$s আর্কাইভ করুন</string>
+    <string name="work_board_archive">আর্কাইভ</string>
     <string name="work_boards">বোর্ড</string>
     <string name="work_lane_empty">এখানে কিছু নেই</string>
     <string name="work_block_review">আপনার রিভিউয়ের অপেক্ষায়</string>

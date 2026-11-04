@@ -272,6 +272,13 @@
     <string name="work_board_switch">Vaihda taulua</string>
     <string name="work_board_name">Taulun nimi</string>
     <string name="work_board_new">Uusi taulu</string>
+    <string name="work_board_archive_failed">Taulua ei voitu arkistoida: %1$s</string>
+    <string name="work_board_archived">Taulu arkistoitu</string>
+    <string name="work_board_archive_current">Tätä taulua käyttävät myös CLI ja työpöytäsovellus. Ne palaavat Default-tauluun.</string>
+    <string name="work_board_archive_body">Taulu poistuu listalta. Sen kortit säilyvät yhdyskäytävän arkistoitujen taulujen kansiossa, mitään ei poisteta.</string>
+    <string name="work_board_archive_title">Arkistoidaanko %1$s?</string>
+    <string name="work_board_archive_a11y">Arkistoi %1$s</string>
+    <string name="work_board_archive">Arkistoi</string>
     <string name="work_boards">Taulut</string>
     <string name="work_lane_empty">Täällä ei ole mitään</string>
     <string name="work_block_review">odottaa tarkistustasi</string>

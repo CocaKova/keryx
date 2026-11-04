@@ -264,6 +264,13 @@
     <string name="work_board_switch">切换看板</string>
     <string name="work_board_name">看板名称</string>
     <string name="work_board_new">新建看板</string>
+    <string name="work_board_archive_failed">无法归档看板：%1$s</string>
+    <string name="work_board_archived">看板已归档</string>
+    <string name="work_board_archive_current">它也是 CLI 和桌面应用正在使用的看板。它们会回到 Default。</string>
+    <string name="work_board_archive_body">该看板会从列表中移除。它的卡片保留在网关的已归档看板文件夹中，不会被删除。</string>
+    <string name="work_board_archive_title">归档 %1$s？</string>
+    <string name="work_board_archive_a11y">归档 %1$s</string>
+    <string name="work_board_archive">归档</string>
     <string name="work_boards">看板</string>
     <string name="work_lane_empty">这里还没有内容</string>
     <string name="work_block_review">等你审查</string>

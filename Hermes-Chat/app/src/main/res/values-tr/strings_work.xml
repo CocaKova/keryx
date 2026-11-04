@@ -272,6 +272,13 @@
     <string name="work_board_switch">Pano değiştir</string>
     <string name="work_board_name">Pano adı</string>
     <string name="work_board_new">Yeni pano</string>
+    <string name="work_board_archive_failed">Pano arşivlenemedi: %1$s</string>
+    <string name="work_board_archived">Pano arşivlendi</string>
+    <string name="work_board_archive_current">Bu aynı zamanda CLI ve masaüstü uygulamasının kullandığı pano. İkisi de Default\'a döner.</string>
+    <string name="work_board_archive_body">Pano listeden çıkar. Kartları ağ geçidindeki arşivlenmiş panolar klasöründe saklanır, silinmez.</string>
+    <string name="work_board_archive_title">%1$s arşivlensin mi?</string>
+    <string name="work_board_archive_a11y">%1$s panosunu arşivle</string>
+    <string name="work_board_archive">Arşivle</string>
     <string name="work_boards">Panolar</string>
     <string name="work_lane_empty">Burada bir şey yok</string>
     <string name="work_block_review">incelemeni bekliyor</string>
