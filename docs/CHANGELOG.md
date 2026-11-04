@@ -5,6 +5,33 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 3.0.0 · versionCode 146
+
+Keryx 3.0. The betas 3 to 5 below have the detail; this is the whole release in one place, then
+what changed since beta 5.
+
+**In 3.0**
+- 31 languages, chosen in Settings or following the phone. Arabic and Hebrew lay out right to left.
+- A page of its own for the agent: context, turns and jobs at a glance, then Mind, Reach, Work,
+  Self and Machine. Skills (with locks), Memory, Tools, MCP servers, Plugins, Soul and Usage.
+- Keryx keeps your place: pages remember where you were, every page has the same header and the
+  same way back, and a chip takes you back after a place sends you into a chat.
+- The bot lights across the top of the drawer, and Missions as a real board in lanes, with more
+  than one board.
+- A first-run welcome, a demo gateway to try before you have one, pairing by QR code, a tour,
+  and the agent pointing at things on the phone (with keryx-stream).
+- A depth pass on the look, sheets that close in one swipe, and light and dark mode with their
+  own colours.
+
+**Since beta 5**
+- Plugins (Agent › Reach): your plugins with a switch each, the ones Hermes ships folded away, the
+  curated catalog, and Install from Git. The list waits for a gateway that is slow to build it.
+- MCP servers by URL, signing in with nothing, a Bearer token (kept in the gateway's .env), or
+  OAuth in the browser. OAuth servers can sign in again; servers you added can be removed.
+- Archive a Missions board (the gateway keeps its cards). Default cannot be archived.
+- Projects: Archive and Delete behind a visible menu button, and Hide in Keryx for auto projects,
+  which stock Hermes has no way to remove. Show hidden brings them back.
+
 ## 3.0.0 · beta 5, versionCode 144 (pre-release)
 
 Keryx keeps your place. Pages remember where you were, every page has the same way back, your
