@@ -267,7 +267,7 @@ val GATEWAY_SPOKES: List<HubPanel> = listOf(
         id = "plugins",
         label = "Plugins",
         labelRes = R.string.agent_spoke_plugins,
-        icon = KeryxGlyphs.Plug,
+        icon = KeryxGlyphs.Wrench,
         refresh = { vm -> vm.agent.refreshPlugins() },
         subtitle = { vm ->
             val plugins by vm.agent.plugins.collectAsState()

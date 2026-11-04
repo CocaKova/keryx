@@ -269,6 +269,8 @@ private fun ProjectCard(
             .padding(start = 15.dp, end = 12.dp, top = 11.dp, bottom = 11.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+          // The name and its "auto" tag take the room; the menu button keeps the far edge.
+          Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = node.label,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -289,10 +291,10 @@ private fun ProjectCard(
                     color = chat.keryx.app.theme.quietInk(alpha = 0.55f),
                 )
             }
+          }
             // 3.0: archive and delete in plain sight. They were only behind a long-press,
             // which nobody finds; the long-press still opens the same menu.
             if (onLongPress != null) {
-                Spacer(Modifier.weight(1f))
                 IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(32.dp)) {
                     Icon(
                         KeryxGlyphs.Kebab,
