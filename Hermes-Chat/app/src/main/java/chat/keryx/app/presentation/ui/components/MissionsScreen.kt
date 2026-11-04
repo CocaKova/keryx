@@ -577,8 +577,8 @@ fun MissionsScreen(
                         Modifier
                             .fillMaxSize()
                             .padding(top = 6.dp)
-                            .clip(RoundedCornerShape(KeryxRadius.card))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)),
+                            // A lane is a trough the cards stand in (3.0 depth).
+                            .keryxSunken(RoundedCornerShape(KeryxRadius.card)),
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -609,7 +609,8 @@ fun MissionsScreen(
                             Text(
                                 stringResource(R.string.work_lane_empty),
                                 fontSize = KeryxType.caption,
-                                color = chat.keryx.app.theme.quietInk(alpha = 0.6f),
+                                // Read against the trough it sits in, not the page.
+                                color = chat.keryx.app.theme.quietInk(alpha = 0.6f, on = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.055f)),
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 18.dp),
                             )
                         }
@@ -902,7 +903,10 @@ private fun MissionCard(
         tint = if (selected) accent else if (running || task.needsYou || task.status == "blocked") color else null,
         // The gleam stills while picking: a travelling border would fight the selection ring.
         breathing = running && !selecting,
+        height = if (selected) KeryxDepth.Height.Lifted else KeryxDepth.Height.Resting,
+        castShadow = false,
         modifier = (if (task.status == "done" && !selected) Modifier.alpha(0.55f) else Modifier)
+            .keryxCastShadow(shape, if (selected) KeryxDepth.Height.Lifted else KeryxDepth.Height.Resting)
             .clip(shape)
             .keryxLightSweep(color, MaterialTheme.colorScheme.tertiary, core = keryxSweepCore()) { sweep.value }
             .then(if (selected) Modifier.border(2.dp, accent, shape) else Modifier)

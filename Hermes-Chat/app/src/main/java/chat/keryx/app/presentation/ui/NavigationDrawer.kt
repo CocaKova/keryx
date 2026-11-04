@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui
 
+import chat.keryx.app.presentation.ui.components.keryxRaised
+import chat.keryx.app.presentation.ui.components.keryxSunken
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import chat.keryx.app.R
@@ -466,7 +468,9 @@ fun NavigationDrawerContent(
             var query by remember { mutableStateOf("") }
             // A filled well rather than an outlined box (3.0): the outline drew the heaviest line
             // in the drawer around its least important control. Focus still rings it.
-            val well = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f)
+            // 3.0 depth: the well is sunk (keryxSunken below), so its fill is the drawer's own
+            // ground darkened, no longer a lighter patch laid on it.
+            val well = Color.Transparent
 
             // Deep search rides the same field on the direct door: after a typing pause the
             // gateway's server-side FTS answers over message CONTENT, which the local title
@@ -698,7 +702,9 @@ fun NavigationDrawerContent(
                                 unfocusedContainerColor = well,
                                 focusedContainerColor = well,
                             ),
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                            // Sunk into the drawer (3.0 depth): a well you type into.
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                                .keryxSunken(RoundedCornerShape(14.dp)),
                         )
                         if (direct && query.isBlank()) {
                             Row(
@@ -1365,6 +1371,13 @@ fun RoomRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 2.dp)
+            // The open chat stands up out of the list (3.0 depth); the rest lie in the drawer.
+            .then(
+                if (isSelected) Modifier.keryxRaised(
+                    RoundedCornerShape(10.dp), height = chat.keryx.app.presentation.ui.components.KeryxDepth.Height.Lifted,
+                    tint = MaterialTheme.colorScheme.primary,
+                ) else Modifier,
+            )
             .clip(RoundedCornerShape(10.dp))
             .background(rowFill)
             .then(
@@ -1981,9 +1994,12 @@ private fun DrawerDoor(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            // Each door stands up from the drawer as a small tile (3.0 depth): a row of bare
+            // icons read as labels, not as places you can step into.
+            .padding(vertical = 3.dp)
+            .keryxRaised(RoundedCornerShape(12.dp))
             .keryxPressable(onClick = onClick)
-            .padding(vertical = 8.dp),
+            .padding(vertical = 9.dp),
     ) {
         // The box is the icon's exact size: the badge overflows its corner and never adds
         // height, so a badged door's label sits level with its neighbours.

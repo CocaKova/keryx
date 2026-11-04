@@ -1,5 +1,7 @@
 package chat.keryx.app.presentation.ui
 
+import chat.keryx.app.presentation.ui.components.keryxCastShadow
+import chat.keryx.app.presentation.ui.components.keryxTopLight
 import androidx.compose.ui.res.stringResource
 import chat.keryx.app.R
 import chat.keryx.app.presentation.tour.tourTarget
@@ -194,11 +196,15 @@ internal fun Composer(
         modifier = Modifier
             .fillMaxWidth()
             .tourTarget(KeryxTour.COMPOSER)
+            // It floats over the transcript (3.0 depth): it casts a shadow onto the bubbles
+            // under it, and its crown catches the light.
+            .keryxCastShadow(composerShape, chat.keryx.app.presentation.ui.components.KeryxDepth.Height.Lifted)
             .clip(composerShape)
             // Floats over the transcript, so it stands on its own floor first and takes its tint
             // second: the tint alone let whatever scrolled underneath read through the draft.
             .background(MaterialTheme.colorScheme.surface.copy(alpha = ComposerFloor.ALPHA))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = ComposerFloor.TINT_ALPHA))
+            .keryxTopLight(reach = 40.dp)
             .then(
                 if (busyAction != null) Modifier.keryxShimmerBorder(
                     active = true,

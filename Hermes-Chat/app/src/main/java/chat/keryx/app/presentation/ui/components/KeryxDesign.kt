@@ -703,12 +703,14 @@ fun KeryxCard(
     onClick: (() -> Unit)? = null,
     tint: Color? = null,
     breathing: Boolean = false,
+    /** How high it stands (3.0 depth): Lifted for the chosen one. */
+    height: KeryxDepth.Height = KeryxDepth.Height.Resting,
+    /** False when the caller clips [modifier] to the card's shape: it casts the shadow itself,
+     *  with [keryxCastShadow] ahead of that clip, or the clip would cut it off. */
+    castShadow: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(KeryxRadius.card)
-    val fill = tint?.copy(alpha = 0.08f)?.compositeOver(
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-    ) ?: MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
     val borderBase = tint ?: MaterialTheme.colorScheme.outline
     // Makeover: a card you can tap gives under the finger, like every other tile in the app.
     val source = remember { MutableInteractionSource() }
@@ -716,10 +718,16 @@ fun KeryxCard(
         modifier = modifier
             .fillMaxWidth()
             .let { if (onClick != null) it.keryxPressScale(source) else it }
-            .clip(shape)
-            .background(fill)
+            // 3.0 depth: the card stands up from the page (KeryxDepth.kt) instead of lying in it
+            // as a 35% wash with a hairline box round it.
+            .keryxRaised(shape, height = height, tint = tint, castShadow = castShadow)
             // Running things used to pulse; now the shimmer gleam travels their border (2.0).
-            .keryxShimmerBorder(active = breathing, baseColor = borderBase.copy(alpha = 0.25f), shape = shape)
+            // At rest the lit rim is the edge, so no second ring is drawn over it.
+            .keryxShimmerBorder(
+                active = breathing,
+                baseColor = if (breathing) borderBase.copy(alpha = 0.25f) else Color.Transparent,
+                shape = shape,
+            )
             .let {
                 if (onClick != null) it.clickable(
                     interactionSource = source, indication = androidx.compose.material3.ripple(), onClick = onClick,
@@ -887,8 +895,10 @@ fun KeryxHubRow(
             .fillMaxWidth()
             .let { if (grouped) it else it.padding(vertical = 4.dp) }
             .keryxPressScale(source, scale = if (grouped) GROUPED_PRESS_SCALE else KeryxMotion.PRESS_SCALE)
-            .clip(RoundedCornerShape(if (grouped) KeryxRadius.field else KeryxRadius.card))
-            .let { if (grouped) it else it.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)) }
+            .let {
+                if (grouped) it.clip(RoundedCornerShape(KeryxRadius.field))
+                else it.keryxRaised(RoundedCornerShape(KeryxRadius.card))
+            }
             .clickable(interactionSource = source, indication = androidx.compose.material3.ripple(), onClick = onClick)
             .padding(horizontal = 14.dp, vertical = if (grouped) 12.dp else 14.dp),
     ) {
@@ -967,9 +977,7 @@ fun KeryxHubGroup(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(shape)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-                .border(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f), shape)
+                .keryxRaised(shape)
                 .padding(4.dp),
         ) {
             CompositionLocalProvider(LocalHubGroup provides true) { content() }
@@ -1148,7 +1156,9 @@ fun KeryxSheet(
         // an Undo can still be tapped, not under its scrim (2.16).
         KeryxSnackLayer(Modifier.fillMaxWidth()) {
         Column(
-            Modifier.fillMaxWidth().nestedScroll(SheetFlingTamer).graphicsLayer {
+            // 3.0 depth: the sheet's crown catches the light, so it reads as a plane laid over
+            // the page rather than the page changing colour.
+            Modifier.fillMaxWidth().keryxTopLight().nestedScroll(SheetFlingTamer).graphicsLayer {
                 alpha = 0.4f + 0.6f * arrival.value
                 translationY = (1f - arrival.value) * 10.dp.toPx()
             },
