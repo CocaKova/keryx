@@ -104,6 +104,7 @@
     <string name="work_proj_archive">Projeyi arşivle</string>
     <string name="work_proj_archived">Arşivlendi: %1$s</string>
     <string name="work_proj_delete">Projeyi sil</string>
+    <string name="work_proj_actions">%1$s seçenekleri</string>
     <string name="work_proj_delete_title">%1$s silinsin mi?</string>
     <string name="work_proj_delete_body">Yalnızca proje kaydı silinir. Ağ geçidindeki klasör ve içindeki tüm oturumlar oldukları yerde kalır.</string>
     <string name="work_proj_deleted">Silindi: %1$s</string>

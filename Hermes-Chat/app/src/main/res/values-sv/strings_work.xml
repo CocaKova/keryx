@@ -104,6 +104,7 @@
     <string name="work_proj_archive">Arkivera projekt</string>
     <string name="work_proj_archived">Arkiverade %1$s</string>
     <string name="work_proj_delete">Ta bort projekt</string>
+    <string name="work_proj_actions">Alternativ för %1$s</string>
     <string name="work_proj_delete_title">Ta bort %1$s?</string>
     <string name="work_proj_delete_body">Bara projektraden försvinner. Mappen på gatewayen och alla sessioner i den ligger kvar precis där de är.</string>
     <string name="work_proj_deleted">Tog bort %1$s</string>

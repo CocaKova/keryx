@@ -102,6 +102,7 @@
     <string name="work_proj_archive">Archiver le projet</string>
     <string name="work_proj_archived">%1$s archivé</string>
     <string name="work_proj_delete">Supprimer le projet</string>
+    <string name="work_proj_actions">Options pour %1$s</string>
     <string name="work_proj_delete_title">Supprimer %1$s ?</string>
     <string name="work_proj_delete_body">Seule l\'entrée du projet disparaît. Le dossier sur la passerelle et toutes ses sessions restent exactement où ils sont.</string>
     <string name="work_proj_deleted">%1$s supprimé</string>

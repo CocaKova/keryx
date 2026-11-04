@@ -101,6 +101,7 @@
     <string name="work_proj_archive">归档项目</string>
     <string name="work_proj_archived">已归档 %1$s</string>
     <string name="work_proj_delete">删除项目</string>
+    <string name="work_proj_actions">%1$s 的选项</string>
     <string name="work_proj_delete_title">删除 %1$s？</string>
     <string name="work_proj_delete_body">只删除项目条目。网关上的文件夹及其中的所有会话都保持原样。</string>
     <string name="work_proj_deleted">已删除 %1$s</string>

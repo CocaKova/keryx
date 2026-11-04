@@ -99,6 +99,7 @@
     <string name="work_proj_archive">প্রজেক্ট আর্কাইভ করুন</string>
     <string name="work_proj_archived">%1$s আর্কাইভ করা হয়েছে</string>
     <string name="work_proj_delete">প্রজেক্ট মুছুন</string>
+    <string name="work_proj_actions">%1$s-এর বিকল্প</string>
     <string name="work_proj_delete_title">%1$s মুছবেন?</string>
     <string name="work_proj_delete_body">শুধু প্রজেক্টের এন্ট্রি মুছবে। গেটওয়েতে ফোল্ডার আর তার প্রতিটি সেশন যেখানে আছে সেখানেই থাকবে।</string>
     <string name="work_proj_deleted">%1$s মোছা হয়েছে</string>

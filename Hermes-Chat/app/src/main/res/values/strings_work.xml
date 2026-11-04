@@ -125,6 +125,7 @@
     <string name="work_proj_archive">Archive project</string>
     <string name="work_proj_archived">Archived %1$s</string>
     <string name="work_proj_delete">Delete project</string>
+    <string name="work_proj_actions">Options for %1$s</string>
     <string name="work_proj_delete_title">Delete %1$s?</string>
     <string name="work_proj_delete_body">Only the project row goes. The folder on the gateway and every session in it stay exactly where they are.</string>
     <string name="work_proj_deleted">Deleted %1$s</string>

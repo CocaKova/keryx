@@ -104,6 +104,7 @@
     <string name="work_proj_archive">Arquivar projeto</string>
     <string name="work_proj_archived">%1$s arquivado</string>
     <string name="work_proj_delete">Eliminar projeto</string>
+    <string name="work_proj_actions">Opções de %1$s</string>
     <string name="work_proj_delete_title">Eliminar %1$s?</string>
     <string name="work_proj_delete_body">Só a entrada do projeto desaparece. A pasta no gateway e todas as sessões nela ficam exatamente onde estão.</string>
     <string name="work_proj_deleted">%1$s eliminado</string>

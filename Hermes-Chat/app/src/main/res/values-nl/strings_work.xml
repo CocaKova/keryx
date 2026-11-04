@@ -99,6 +99,7 @@
     <string name="work_proj_archive">Project archiveren</string>
     <string name="work_proj_archived">%1$s gearchiveerd</string>
     <string name="work_proj_delete">Project verwijderen</string>
+    <string name="work_proj_actions">Opties voor %1$s</string>
     <string name="work_proj_delete_title">%1$s verwijderen?</string>
     <string name="work_proj_delete_body">Alleen de projectregel verdwijnt. De map op de gateway en alle sessies erin blijven precies waar ze zijn.</string>
     <string name="work_proj_deleted">%1$s verwijderd</string>

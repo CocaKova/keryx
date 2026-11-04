@@ -125,6 +125,7 @@
     <string name="work_proj_archive">Archivar proyecto</string>
     <string name="work_proj_archived">%1$s archivado</string>
     <string name="work_proj_delete">Eliminar proyecto</string>
+    <string name="work_proj_actions">Opciones de %1$s</string>
     <string name="work_proj_delete_title">¿Eliminar %1$s?</string>
     <string name="work_proj_delete_body">Solo se elimina la fila del proyecto. La carpeta en la pasarela y todas sus sesiones se quedan donde están.</string>
     <string name="work_proj_deleted">%1$s eliminado</string>

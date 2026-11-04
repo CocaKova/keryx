@@ -110,6 +110,7 @@
     <string name="work_proj_archive">Archivovat projekt</string>
     <string name="work_proj_archived">Archivováno: %1$s</string>
     <string name="work_proj_delete">Smazat projekt</string>
+    <string name="work_proj_actions">Možnosti pro %1$s</string>
     <string name="work_proj_delete_title">Smazat %1$s?</string>
     <string name="work_proj_delete_body">Zmizí jen záznam projektu. Složka na bráně i všechny relace v ní zůstanou přesně tam, kde jsou.</string>
     <string name="work_proj_deleted">Smazáno: %1$s</string>

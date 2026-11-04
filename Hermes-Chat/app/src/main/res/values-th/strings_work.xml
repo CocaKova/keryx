@@ -101,6 +101,7 @@
     <string name="work_proj_archive">เก็บโปรเจกต์ถาวร</string>
     <string name="work_proj_archived">เก็บ %1$s ถาวรแล้ว</string>
     <string name="work_proj_delete">ลบโปรเจกต์</string>
+    <string name="work_proj_actions">ตัวเลือกสำหรับ %1$s</string>
     <string name="work_proj_delete_title">ลบ %1$s ไหม</string>
     <string name="work_proj_delete_body">ลบเฉพาะรายการโปรเจกต์ โฟลเดอร์บนเกตเวย์และทุกเซสชันในนั้นยังอยู่ที่เดิม</string>
     <string name="work_proj_deleted">ลบ %1$s แล้ว</string>

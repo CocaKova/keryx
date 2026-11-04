@@ -107,6 +107,7 @@
     <string name="work_proj_archive">העברת הפרויקט לארכיון</string>
     <string name="work_proj_archived">%1$s הועבר לארכיון</string>
     <string name="work_proj_delete">מחיקת הפרויקט</string>
+    <string name="work_proj_actions">אפשרויות עבור %1$s</string>
     <string name="work_proj_delete_title">למחוק את %1$s?</string>
     <string name="work_proj_delete_body">רק שורת הפרויקט נמחקת. התיקייה בשער וכל הסשנים בה נשארים בדיוק במקומם.</string>
     <string name="work_proj_deleted">%1$s נמחק</string>

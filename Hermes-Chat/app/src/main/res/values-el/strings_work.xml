@@ -104,6 +104,7 @@
     <string name="work_proj_archive">Αρχειοθέτηση έργου</string>
     <string name="work_proj_archived">Αρχειοθετήθηκε: %1$s</string>
     <string name="work_proj_delete">Διαγραφή έργου</string>
+    <string name="work_proj_actions">Επιλογές για %1$s</string>
     <string name="work_proj_delete_title">Διαγραφή του %1$s;</string>
     <string name="work_proj_delete_body">Φεύγει μόνο η εγγραφή του έργου. Ο φάκελος στην πύλη και κάθε συνεδρία μέσα του μένουν ακριβώς όπου είναι.</string>
     <string name="work_proj_deleted">Διαγράφηκε: %1$s</string>

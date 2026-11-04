@@ -101,6 +101,7 @@
     <string name="work_proj_archive">プロジェクトをアーカイブ</string>
     <string name="work_proj_archived">%1$s をアーカイブしました</string>
     <string name="work_proj_delete">プロジェクトを削除</string>
+    <string name="work_proj_actions">%1$s のオプション</string>
     <string name="work_proj_delete_title">%1$s を削除しますか？</string>
     <string name="work_proj_delete_body">削除されるのはプロジェクトの項目だけです。ゲートウェイ上のフォルダとその中のセッションはそのまま残ります。</string>
     <string name="work_proj_deleted">%1$s を削除しました</string>

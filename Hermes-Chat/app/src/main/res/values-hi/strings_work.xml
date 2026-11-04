@@ -99,6 +99,7 @@
     <string name="work_proj_archive">प्रोजेक्ट आर्काइव करें</string>
     <string name="work_proj_archived">%1$s आर्काइव किया</string>
     <string name="work_proj_delete">प्रोजेक्ट हटाएँ</string>
+    <string name="work_proj_actions">%1$s के विकल्प</string>
     <string name="work_proj_delete_title">%1$s हटाएँ?</string>
     <string name="work_proj_delete_body">सिर्फ़ प्रोजेक्ट की एंट्री हटेगी। गेटवे पर फ़ोल्डर और उसका हर सेशन जहाँ है वहीं रहेगा।</string>
     <string name="work_proj_deleted">%1$s हटाया</string>

@@ -101,6 +101,7 @@
     <string name="work_proj_archive">Arsipkan proyek</string>
     <string name="work_proj_archived">%1$s diarsipkan</string>
     <string name="work_proj_delete">Hapus proyek</string>
+    <string name="work_proj_actions">Opsi untuk %1$s</string>
     <string name="work_proj_delete_title">Hapus %1$s?</string>
     <string name="work_proj_delete_body">Hanya baris proyeknya yang dihapus. Folder di gateway dan semua sesi di dalamnya tetap di tempatnya.</string>
     <string name="work_proj_deleted">%1$s dihapus</string>

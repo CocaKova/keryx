@@ -116,6 +116,7 @@
     <string name="work_proj_archive">أرشفة المشروع</string>
     <string name="work_proj_archived">تمت أرشفة %1$s</string>
     <string name="work_proj_delete">حذف المشروع</string>
+    <string name="work_proj_actions">خيارات %1$s</string>
     <string name="work_proj_delete_title">حذف %1$s؟</string>
     <string name="work_proj_delete_body">يُحذف صف المشروع فقط. المجلد على البوابة وكل جلسة فيه يبقيان في مكانهما تمامًا.</string>
     <string name="work_proj_deleted">حُذف %1$s</string>

@@ -104,6 +104,7 @@
     <string name="work_proj_archive">Arkivér projekt</string>
     <string name="work_proj_archived">%1$s arkiveret</string>
     <string name="work_proj_delete">Slet projekt</string>
+    <string name="work_proj_actions">Indstillinger for %1$s</string>
     <string name="work_proj_delete_title">Slet %1$s?</string>
     <string name="work_proj_delete_body">Kun projektrækken forsvinder. Mappen på gatewayen og alle sessioner i den bliver nøjagtig, hvor de er.</string>
     <string name="work_proj_deleted">%1$s slettet</string>

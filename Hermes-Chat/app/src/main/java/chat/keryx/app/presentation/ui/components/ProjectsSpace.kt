@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -259,6 +260,19 @@ private fun ProjectCard(
                     fontFamily = FontFamily.Monospace,
                     color = chat.keryx.app.theme.quietInk(alpha = 0.55f),
                 )
+            }
+            // 3.0: archive and delete in plain sight. They were only behind a long-press,
+            // which nobody finds; the long-press still opens the same menu.
+            if (onLongPress != null) {
+                Spacer(Modifier.weight(1f))
+                IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        KeryxGlyphs.Kebab,
+                        contentDescription = stringResource(R.string.work_proj_actions, node.label),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
         }
         val meta = buildList {

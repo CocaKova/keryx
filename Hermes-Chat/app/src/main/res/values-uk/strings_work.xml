@@ -105,6 +105,7 @@
     <string name="work_proj_archive">Архівувати проєкт</string>
     <string name="work_proj_archived">В архіві: %1$s</string>
     <string name="work_proj_delete">Видалити проєкт</string>
+    <string name="work_proj_actions">Дії: %1$s</string>
     <string name="work_proj_delete_title">Видалити %1$s?</string>
     <string name="work_proj_delete_body">Видаляється лише запис проєкту. Тека на шлюзі й усі сесії в ній лишаються на своїх місцях.</string>
     <string name="work_proj_deleted">Видалено: %1$s</string>

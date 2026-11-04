@@ -104,6 +104,7 @@
     <string name="work_proj_archive">Projekt archiválása</string>
     <string name="work_proj_archived">Archiválva: %1$s</string>
     <string name="work_proj_delete">Projekt törlése</string>
+    <string name="work_proj_actions">%1$s beállításai</string>
     <string name="work_proj_delete_title">Törlöd ezt: %1$s?</string>
     <string name="work_proj_delete_body">Csak a projektsor törlődik. Az átjárón lévő mappa és benne minden munkamenet pontosan ott marad, ahol van.</string>
     <string name="work_proj_deleted">Törölve: %1$s</string>

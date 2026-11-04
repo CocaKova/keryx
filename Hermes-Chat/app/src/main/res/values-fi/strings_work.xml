@@ -104,6 +104,7 @@
     <string name="work_proj_archive">Arkistoi projekti</string>
     <string name="work_proj_archived">Arkistoitu: %1$s</string>
     <string name="work_proj_delete">Poista projekti</string>
+    <string name="work_proj_actions">Valinnat: %1$s</string>
     <string name="work_proj_delete_title">Poistetaanko %1$s?</string>
     <string name="work_proj_delete_body">Vain projektirivi poistuu. Yhdyskäytävän kansio ja jokainen sen istunto pysyvät täsmälleen paikallaan.</string>
     <string name="work_proj_deleted">Poistettu: %1$s</string>

@@ -101,6 +101,7 @@
     <string name="work_proj_archive">Lưu trữ dự án</string>
     <string name="work_proj_archived">Đã lưu trữ %1$s</string>
     <string name="work_proj_delete">Xóa dự án</string>
+    <string name="work_proj_actions">Tùy chọn cho %1$s</string>
     <string name="work_proj_delete_title">Xóa %1$s?</string>
     <string name="work_proj_delete_body">Chỉ mục dự án bị xóa. Thư mục trên cổng và mọi phiên trong đó vẫn giữ nguyên.</string>
     <string name="work_proj_deleted">Đã xóa %1$s</string>

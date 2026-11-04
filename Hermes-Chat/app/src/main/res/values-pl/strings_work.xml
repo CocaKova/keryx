@@ -110,6 +110,7 @@
     <string name="work_proj_archive">Archiwizuj projekt</string>
     <string name="work_proj_archived">Zarchiwizowano: %1$s</string>
     <string name="work_proj_delete">Usuń projekt</string>
+    <string name="work_proj_actions">Opcje: %1$s</string>
     <string name="work_proj_delete_title">Usunąć %1$s?</string>
     <string name="work_proj_delete_body">Zniknie tylko wpis projektu. Folder na bramce i każda sesja w nim zostają dokładnie tam, gdzie są.</string>
     <string name="work_proj_deleted">Usunięto: %1$s</string>

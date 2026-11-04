@@ -104,6 +104,7 @@
     <string name="work_proj_archive">Projekt archivieren</string>
     <string name="work_proj_archived">%1$s archiviert</string>
     <string name="work_proj_delete">Projekt löschen</string>
+    <string name="work_proj_actions">Optionen für %1$s</string>
     <string name="work_proj_delete_title">%1$s löschen?</string>
     <string name="work_proj_delete_body">Nur der Projekteintrag verschwindet. Der Ordner auf dem Gateway und alle Sitzungen darin bleiben genau, wo sie sind.</string>
     <string name="work_proj_deleted">%1$s gelöscht</string>
