@@ -136,6 +136,12 @@ internal fun dayKeyOf(epochMillis: Long): String {
     return "${cal.get(java.util.Calendar.YEAR)}-${cal.get(java.util.Calendar.DAY_OF_YEAR)}"
 }
 
+/** [dayKeyOf]'s key as a sortable number (year * 1000 + day-of-year). */
+private fun dayOrdinal(key: String): Long {
+    val (y, d) = key.split('-')
+    return y.toLong() * 1000 + d.toLong()
+}
+
 /** A message's contribution to a run: its tool calls/outputs and any reasoning, kept separate so
  *  reasoning can be consolidated and never interleaved with the steps. */
 private class MsgParts(val entries: List<ToolRunEntry>, val reasoning: String?)
@@ -585,11 +591,14 @@ private fun insertDayHeaders(items: MutableList<ChatRenderItem>, lastDayInit: St
         }
         if (ts > 0L) {
             val day = dayKeyOf(ts)
-            if (day != lastDay) {
+            // Only a day LATER than any already headed gets a header. Timestamps are not always in
+            // order (a compacted session carries older messages after its summary), and a day
+            // that came back would repeat its key and crash the LazyColumn.
+            if (lastDay == null || dayOrdinal(day) > dayOrdinal(lastDay)) {
                 items.add(j, ChatRenderItem.DayHeader(ts, day))
                 j++
+                lastDay = day
             }
-            lastDay = day
         }
         j++
     }

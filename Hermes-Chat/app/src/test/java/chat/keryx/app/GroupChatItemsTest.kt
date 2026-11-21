@@ -200,4 +200,24 @@ class GroupChatItemsTest {
         // Same-day messages never repeat a header, and keys are unique per day.
         assertEquals(headers.map { it.dayKey }.distinct().size, headers.size)
     }
+
+    @Test
+    fun `out-of-order days never repeat a header key`() {
+        // A compacted session: the summary is "today", then older messages carried over from
+        // yesterday, then today again. Each day may be headed once at most.
+        val day = 86_400_000L
+        val monday = 1_751_500_800_000L
+        val items = group(
+            Message("m1", "!r", SenderType.ME, "hello", monday),
+            Message("m2", "!r", SenderType.ME, "summary", monday + day),
+            Message("m3", "!r", SenderType.HERMES, "carried over", monday + 60_000L),
+            Message("m4", "!r", SenderType.HERMES, "today again", monday + day + 120_000L),
+        )
+        val keys = items.filterIsInstance<ChatRenderItem.DayHeader>().map { it.key }
+        assertEquals(keys.distinct().size, keys.size)
+        assertEquals(2, keys.size)
+        // Every LazyColumn key in the list is unique.
+        val all = items.map { it.key }
+        assertEquals(all.distinct().size, all.size)
+    }
 }
