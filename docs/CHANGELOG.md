@@ -5,6 +5,13 @@ each entry's facts cross-checked against the shipped source. Some versions never
 marked, and their numbers come from the version header in their own plan doc plus the commit that names
 them.
 
+## 3.0.1 · versionCode 150
+
+- **Fix.** Keryx could crash on every launch after a long chat was compacted around midnight. A
+  compacted session carries older messages after its summary, so the same day could come back out
+  of order and get a second day header, which the chat list does not allow. A day header now goes
+  in only for a day later than any already shown.
+
 ## 3.0.0 · versionCode 146
 
 Keryx 3.0. The betas 3 to 5 below have the detail; this is the whole release in one place, then
